@@ -37,25 +37,26 @@ download_file() {
 }
 
 echo ""
-echo "Step 1: Downloading Dev Set (~2GB)"
+echo "Step 1: Downloading Dev Set (~330MB)"
 echo "-----------------------------------"
 
 # Dev set - from BIRD benchmark
-if [ ! -d "dev" ]; then
+if [ ! -d "dev/dev_20240627/dev_databases" ]; then
     if [ ! -f "dev.zip" ]; then
-        echo "Please download the dev set manually from:"
-        echo "  https://bird-bench.github.io/"
-        echo ""
-        echo "Then place dev.zip in: $DATASETS_DIR"
-        echo "And run this script again."
-        echo ""
-        echo "Direct link (may require authentication):"
-        echo "  https://bird-bench.oss-cn-beijing.aliyuncs.com/dev.zip"
+        download_file "https://bird-bench.oss-cn-beijing.aliyuncs.com/dev.zip" "dev.zip"
     fi
 
     if [ -f "dev.zip" ]; then
         echo "Extracting dev.zip..."
         unzip -q dev.zip
+        # Create expected directory structure
+        mkdir -p dev
+        mv dev_20240627 dev/
+        # Extract nested databases zip
+        cd dev/dev_20240627
+        unzip -q dev_databases.zip
+        rm -rf __MACOSX 2>/dev/null || true
+        cd "$DATASETS_DIR"
         echo "Dev set extracted successfully."
     fi
 else
@@ -66,21 +67,33 @@ echo ""
 echo "Step 2: Downloading Train Set (~40GB)"
 echo "--------------------------------------"
 
-if [ ! -d "train" ]; then
+if [ ! -d "train/train/train_databases" ]; then
     if [ ! -f "train.zip" ]; then
-        echo "Please download the train set manually from:"
-        echo "  https://bird-bench.github.io/"
-        echo ""
-        echo "Then place train.zip in: $DATASETS_DIR"
-        echo "And run this script again."
-        echo ""
-        echo "Direct link (may require authentication):"
-        echo "  https://bird-bench.oss-cn-beijing.aliyuncs.com/train.zip"
+        download_file "https://bird-bench.oss-cn-beijing.aliyuncs.com/train.zip" "train.zip"
     fi
 
     if [ -f "train.zip" ]; then
         echo "Extracting train.zip..."
         unzip -q train.zip
+        # train.zip extracts to train/ folder, but we need train/train/
+        # Move contents to create nested structure
+        if [ -d "train" ] && [ ! -d "train/train" ]; then
+            mkdir -p train_temp
+            mv train/* train_temp/
+            mkdir -p train/train
+            mv train_temp/* train/train/
+            rmdir train_temp
+        fi
+        rm -rf __MACOSX 2>/dev/null || true
+
+        # Extract train_databases.zip inside train/train/
+        if [ -f "train/train/train_databases.zip" ]; then
+            echo "Extracting train_databases.zip (~9GB)..."
+            cd train/train
+            unzip -q train_databases.zip
+            rm -rf __MACOSX 2>/dev/null || true
+            cd "$DATASETS_DIR"
+        fi
         echo "Train set extracted successfully."
     fi
 else
@@ -92,11 +105,18 @@ echo "Step 3: Creating train-filtered subset"
 echo "---------------------------------------"
 
 # The train-filtered dataset is a curated subset with better quality
-# It should be generated from the train set
-if [ -d "train" ] && [ ! -f "train/train_filtered.json" ]; then
-    echo "Note: train_filtered.json needs to be created from train.json"
-    echo "This is a curated subset with 6,601 questions (vs 9,428 in full train)."
-    echo "See documentation for the filtering criteria."
+if [ -d "train/train" ] && [ ! -d "train-filtered" ]; then
+    echo "Creating train-filtered directory..."
+    mkdir -p train-filtered
+    # train_filtered.json should be generated or copied if available
+    if [ -f "train/train/train_filtered.json" ]; then
+        cp train/train/train_filtered.json train-filtered/
+        echo "train-filtered dataset ready."
+    else
+        echo "Note: train_filtered.json needs to be created from train.json"
+        echo "This is a curated subset with 6,601 questions (vs 9,428 in full train)."
+        echo "See documentation for the filtering criteria."
+    fi
 fi
 
 echo ""
