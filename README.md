@@ -39,7 +39,10 @@ export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"
 # 4. Download BIRD dataset
 ./benchmark_resources/download_bird.sh
 
-# 5. Run a quick test
+# 5. Pre-compute ground truth (prevents timeout warnings)
+python RoboPhD/tools/precompute_ground_truth.py
+
+# 6. Run a quick test
 python RoboPhD/researcher.py \
   --num-iterations 2 \
   --config '{"databases_per_iteration": 2, "questions_per_database": 10}'
