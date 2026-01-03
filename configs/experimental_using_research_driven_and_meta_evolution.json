@@ -1,0 +1,35 @@
+{
+  "comment": "Experimental config: Uses research-driven evolution and meta-evolution. Haiku for eval/analysis, Opus for evolution.",
+  "eval_model": "haiku-4.5",
+  "analysis_model": "haiku-4.5",
+  "evolution_model": "opus-4.5",
+  "meta_evolution_model": "opus-4.5",
+  "meta_evolution_budget": 450.0,
+  "agents_directory": "RoboPhD/agents",
+  "initial_strategies": [
+    "cross_pollination_tool_only",
+    "research_driven_tool_only"
+  ],
+  "config_schedule": {
+    "2": {"evolution_strategy": "research_driven_tool_only"},
+    "3": {"evolution_strategy": "cross_pollination_tool_only"},
+    "4": {"evolution_strategy": "research_driven_tool_only"},
+    "5": {"evolution_strategy": "cross_pollination_tool_only"},
+    "6": {"evolution_strategy": "research_driven_tool_only"},
+    "7": {"evolution_strategy": "cross_pollination_tool_only"},
+    "8": {"evolution_strategy": "research_driven_tool_only"},
+    "9": {"evolution_strategy": "cross_pollination_tool_only"},
+    "10": {"evolution_strategy": "research_driven_tool_only"},
+    "11": {"evolution_strategy": "cross_pollination_tool_only"},
+    "12": {"meta_evolution_strategy": "train_a_new_winner"},
+    "13": {"meta_evolution_strategy": null},
+    "16": {"meta_evolution_strategy": "train_a_new_winner"},
+    "17": {"meta_evolution_strategy": null},
+    "20": {"meta_evolution_strategy": "train_a_new_winner"},
+    "21": {"meta_evolution_strategy": null},
+    "24": {"meta_evolution_strategy": "train_a_new_winner"},
+    "25": {"meta_evolution_strategy": null},
+    "28": {"meta_evolution_strategy": "train_a_new_winner"},
+    "29": {"meta_evolution_strategy": null}
+  }
+}

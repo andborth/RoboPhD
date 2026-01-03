@@ -1,0 +1,46 @@
+{
+    "comment": "Primary production config: Opus evolution + Haiku eval/analysis. No meta-evo, no research-driven. 1 new agent test round.",
+    "eval_model": "haiku-4.5",
+    "analysis_model": "haiku-4.5",
+    "evolution_model": "opus-4.5",
+    "meta_evolution_model": "opus-4.5",
+    "meta_evolution_strategy": null,
+    "new_agent_test_rounds": 1,
+    "meta_evolution_budget": 450.0,
+    "agents_directory": "RoboPhD/agents",
+    "evolution_strategy": "cross_pollination_tool_only",
+    "initial_strategies": [
+        "cross_pollination_tool_only"
+    ],
+    "config_schedule": {
+        "2": {
+            "evolution_strategy": "cross_pollination_tool_only"
+        },
+        "12": {
+            "use_weighted_random": true,
+            "weighted_random_configs": [
+                [
+                    {
+                        "evolution_strategy": "challenger",
+                        "agents_per_iteration": 4
+                    },
+                    15
+                ],
+                [
+                    {
+                        "evolution_strategy": "none",
+                        "agents_per_iteration": 4
+                    },
+                    15
+                ],
+                [
+                    {
+                        "evolution_strategy": "cross_pollination_tool_only",
+                        "agents_per_iteration": 3
+                    },
+                    70
+                ]
+            ]
+        }
+    }
+}
