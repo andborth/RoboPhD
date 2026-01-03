@@ -49,7 +49,7 @@ from typing import Dict, List, Optional, Tuple
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from RoboPhD.core import DatabaseManager
-from RoboPhD.utilities.cached_sql_executor import CachedSQLExecutor, SQLCache
+from RoboPhD.utilities.cached_sql_executor import CachedSQLExecutor, SQLCache, SQLTimeoutError
 
 
 def load_questions_and_databases(
@@ -131,7 +131,7 @@ def precompute_database_ground_truth(
         timeout_seconds: Timeout for SQL execution in seconds (default: 300)
 
     Returns:
-        Tuple of (cached_count, error_count, skip_count, too_large_count, error_messages)
+        Tuple of (cached_count, error_count, timeout_count, skip_count, too_large_count, error_messages)
     """
     db_path = db_root / db_name / f"{db_name}.sqlite"
 
@@ -150,6 +150,7 @@ def precompute_database_ground_truth(
 
     cached_count = 0
     error_count = 0
+    timeout_count = 0
     skip_count = 0
     too_large_count = 0
     error_messages = []
@@ -185,12 +186,16 @@ def precompute_database_ground_truth(
                 else:
                     cached_count += 1
 
+        except SQLTimeoutError as e:
+            timeout_count += 1
+            error_msg = f"Question {q.get('question_id')}: TIMEOUT - {str(e)[:80]}"
+            error_messages.append(error_msg)
         except Exception as e:
             error_count += 1
             error_msg = f"Question {q.get('question_id')}: {str(e)[:100]}"
             error_messages.append(error_msg)
 
-    return cached_count, error_count, skip_count, too_large_count, error_messages
+    return cached_count, error_count, timeout_count, skip_count, too_large_count, error_messages
 
 
 def precompute_ground_truth(
@@ -310,6 +315,7 @@ def precompute_ground_truth(
     results = {}
     total_cached = 0
     total_errors = 0
+    total_timeouts = 0
     total_skipped = 0
     total_too_large = 0
 
@@ -339,11 +345,12 @@ def precompute_ground_truth(
             db_name = future_to_db[future]
 
             try:
-                cached, errors, skipped, too_large, error_msgs = future.result()
+                cached, errors, timeouts, skipped, too_large, error_msgs = future.result()
 
                 results[db_name] = {
                     'cached': cached,
                     'errors': errors,
+                    'timeouts': timeouts,
                     'skipped': skipped,
                     'too_large': too_large,
                     'error_messages': error_msgs
@@ -351,13 +358,14 @@ def precompute_ground_truth(
 
                 total_cached += cached
                 total_errors += errors
+                total_timeouts += timeouts
                 total_skipped += skipped
                 total_too_large += too_large
 
                 # Print status
-                if errors == 0 and too_large == 0:
+                if errors == 0 and timeouts == 0 and too_large == 0:
                     status = "✅"
-                elif too_large > 0:
+                elif too_large > 0 or timeouts > 0:
                     status = "⚠️"
                 else:
                     status = "❌"
@@ -366,6 +374,8 @@ def precompute_ground_truth(
                     status_parts = [f"{cached} cached"]
                     if too_large > 0:
                         status_parts.append(f"{too_large} too large")
+                    if timeouts > 0:
+                        status_parts.append(f"{timeouts} timeouts")
                     if errors > 0:
                         status_parts.append(f"{errors} errors")
                     if skipped > 0:
@@ -403,6 +413,7 @@ def precompute_ground_truth(
         print(f"Databases processed: {len(databases_to_process)}")
         print(f"Total cached: {total_cached}")
         print(f"Total too large: {total_too_large}")
+        print(f"Total timeouts: {total_timeouts}")
         print(f"Total errors: {total_errors}")
         print(f"Total skipped: {total_skipped}")
         print(f"Cache entries: {gt_cache.get('total_entries', 0)}")
@@ -415,6 +426,10 @@ def precompute_ground_truth(
             print("   These queries will be executed during each evaluation run.")
             print()
 
+        if total_timeouts > 0:
+            print(f"⚠️  {total_timeouts} queries timed out. Consider using --timeout with a higher value.")
+            print()
+
         if total_errors > 0:
             print(f"⚠️  {total_errors} ground truth queries failed. These questions will be")
             print("   excluded from accuracy calculations during evaluation.")
@@ -425,6 +440,7 @@ def precompute_ground_truth(
         'databases_processed': len(databases_to_process),
         'total_cached': total_cached,
         'total_too_large': total_too_large,
+        'total_timeouts': total_timeouts,
         'total_errors': total_errors,
         'total_skipped': total_skipped,
         'cache_stats': cache_stats,
