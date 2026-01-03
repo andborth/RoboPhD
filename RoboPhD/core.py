@@ -159,9 +159,9 @@ class SQLGenerator:
                 debug_log_dir = workspace_dir / "debug"
                 debug_log_dir.mkdir(parents=True, exist_ok=True)
 
-            # Build command
+            # Build command - run as module to ensure proper package imports
             cmd = [
-                'python', str(self.script_path),
+                'python', '-m', 'RoboPhD.questions_to_sql_prompt_based',
                 '--prompt', str(prompt_file),
                 '--questions', str(self.questions_file),
                 '--db_name', db_name,
@@ -195,17 +195,21 @@ class SQLGenerator:
                 cmd.extend(['--limit', str(limit)])
 
             env = os.environ.copy()
+            # Add project root to PYTHONPATH for subprocess to find utilities/evaluation modules
+            project_root = str(Path(__file__).parent.parent)
+            env['PYTHONPATH'] = project_root + os.pathsep + env.get('PYTHONPATH', '')
 
             # Run generation (progress messages printed by questions_to_sql_prompt_based.py)
             start_time = datetime.now()
-            
+
             try:
                 result = subprocess.run(
                     cmd,
                     capture_output=True,
                     text=True,
                     timeout=self.timeout,
-                    env=env
+                    env=env,
+                    cwd=project_root
                 )
                 
                 if result.returncode != 0:
