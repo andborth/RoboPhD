@@ -27,7 +27,7 @@ Text-to-SQL research system achieving **73.67% accuracy** on BIRD benchmark test
 
 ### Environment Setup
 ```bash
-export ANTHROPIC_API_KEY="your_key"
+export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"
 pip install -r requirements.txt
 
 # Install Claude Code CLI (required for evolution)
@@ -375,7 +375,7 @@ set(predicted_results) == set(ground_truth_results)
 ### Model Configuration
 - **API Models**: opus-4.5 ($15/$75/MTok), sonnet-4.5 ($3/$15), haiku-4.5 ($1/$5/MTok)
 - **Timeouts**: 1800s (30 minutes) default for phase1, phase2, sql, and evolution
-- **API Key**: Set via `ANTHROPIC_API_KEY` environment variable
+- **API Key**: Set via `ANTHROPIC_API_KEY_FOR_ROBOPHD` environment variable
 
 ## Development Tips
 

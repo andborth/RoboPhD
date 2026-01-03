@@ -34,7 +34,7 @@ cd RoboPhD
 pip install -r requirements.txt
 
 # 3. Set your API key
-export ANTHROPIC_API_KEY="your_key"
+export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"
 
 # 4. Download BIRD dataset
 ./benchmark_resources/download_bird.sh

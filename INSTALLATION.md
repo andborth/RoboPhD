@@ -26,7 +26,7 @@ RoboPhD requires an Anthropic API key for SQL generation and evaluation.
 
 ```bash
 # Add to your shell profile (~/.bashrc, ~/.zshrc, etc.)
-export ANTHROPIC_API_KEY="your_anthropic_api_key_here"
+export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_anthropic_api_key_here"
 
 # Reload your shell
 source ~/.zshrc  # or ~/.bashrc

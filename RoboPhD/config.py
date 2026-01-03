@@ -66,7 +66,7 @@ MAX_TOKENS = 1000
 DEFAULT_MAX_CONCURRENT_DBS = 10
 
 # API settings
-API_KEY_ENV_VAR = "ANTHROPIC_API_KEY"
+API_KEY_ENV_VAR = "ANTHROPIC_API_KEY_FOR_ROBOPHD"
 
 # File paths
 DEFAULT_DEV_DATA = "benchmark_resources/datasets/dev/dev_20240627/dev.json"
