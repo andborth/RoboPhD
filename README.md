@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
 
-RoboPhD is an autonomous research system that evolves AI agents to improve Text-to-SQL accuracy. It achieves **73.67% accuracy** on the BIRD benchmark test set through a three-level AI hierarchy where AI agents conduct autonomous research to improve other AI agents.
+RoboPhD evolves AI agents to improve Text-to-SQL performance without human intervention or author-supplied domain knowledge. It implements a closed-loop evolution cycle with two coordinated components: a SQL Generation agent composed of a database analysis script and SQL generation instructions, and an Evolution agent that designs new versions of the SQL agent based on performance feedback. RoboPhD achieves **73.67% accuracy** on the BIRD benchmark test set.
 
 ## Key Results
 
@@ -15,11 +15,11 @@ RoboPhD is an autonomous research system that evolves AI agents to improve Text-
 
 ## How It Works
 
-RoboPhD implements a three-level AI architecture:
+RoboPhD uses AI throughout:
 
-1. **Development Layer**: Claude Code writes and maintains the research system
-2. **Research Layer**: AI agents conduct autonomous prompt engineering research
-3. **Execution Layer**: Evolved agents guide SQL generation
+1. **SQL Generation**: Claude agents generate SQL from natural language questions
+2. **Evolution**: Claude Code agents evolve increasingly better database analysis scripts and SQL generation instructions
+3. **Infrastructure**: The authors used Claude Code to build the RoboPhD system
 
 The system uses ELO-based evolutionary selection to continuously improve agents across iterations.
 

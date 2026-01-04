@@ -22,16 +22,15 @@ This runs 1 iteration on 1 database with 5 questions - fast but verifies your se
 
 ### 2. Dev Set Evaluation (10 minutes)
 
-Evaluate the pre-trained `opus_best` agent on the dev set:
+Evaluate the pre-trained `haiku_best` agent on the dev set:
 
 ```bash
 python RoboPhD/researcher.py \
   --dev-eval \
-  --num-iterations 1 \
-  --config '{"initial_agents": ["opus_best"], "eval_model": "haiku-4.5"}'
+  --config '{"initial_agents": ["haiku_best"], "eval_model": "haiku-4.5"}'
 ```
 
-Expected accuracy: ~71% with Opus, ~66% with Haiku.
+Expected accuracy: ~66%.
 
 ### 3. Run Evolution (1+ hours)
 
@@ -134,9 +133,9 @@ python RoboPhD/researcher.py \
 ## Tips for Best Results
 
 1. **Start with `primary_production.json`** - It's tuned for good results
-2. **Use `opus_best` as initial agent** - Already high-performing
+2. **Use `opus_best` as initial agent** - Our best performer, good starting point for improving BIRD accuracy. Use `naive` if you want to start fresh.
 3. **Run 20+ iterations** - Evolution needs time to find improvements
-4. **Pre-compute ground truth** - Prevents database lock errors
+4. **Pre-compute ground truth** - Prevents database timeout errors
 
 ## Next Steps
 
