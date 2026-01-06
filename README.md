@@ -94,6 +94,7 @@ python RoboPhD/researcher.py --num-iterations 30 \
 
 ## Documentation
 
+- [Paper](https://arxiv.org/abs/2601.01126) - RoboPhD: Self-Improving Text-to-SQL Through Autonomous Agent Evolution
 - [CLAUDE.md](CLAUDE.md) - Comprehensive system documentation
 - [INSTALLATION.md](INSTALLATION.md) - Detailed installation guide
 - [QUICKSTART.md](QUICKSTART.md) - 5-minute getting started guide
