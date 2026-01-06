@@ -1,7 +1,7 @@
 # RoboPhD: Self-Improving Text-to-SQL Through Autonomous Agent Evolution
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
+[![arXiv](https://img.shields.io/badge/arXiv-2601.01126-b31b1b.svg)](https://arxiv.org/abs/2601.01126)
 
 RoboPhD evolves AI agents to improve Text-to-SQL performance without human intervention or author-supplied domain knowledge. It implements a closed-loop evolution cycle with two coordinated components: a SQL Generation agent composed of a database analysis script and SQL generation instructions, and an Evolution agent that designs new versions of the SQL agent based on performance feedback. RoboPhD achieves **73.67% accuracy** on the BIRD benchmark test set.
 
@@ -104,11 +104,11 @@ python RoboPhD/researcher.py --num-iterations 30 \
 If you use RoboPhD in your research, please cite:
 
 ```bibtex
-@article{borthwick2025robophd,
+@article{borthwick2026robophd,
   title={RoboPhD: Self-Improving Text-to-SQL Through Autonomous Agent Evolution},
   author={Borthwick, Andrew and Ash, Steve},
-  journal={arXiv preprint arXiv:XXXX.XXXXX},
-  year={2025}
+  journal={arXiv preprint arXiv:2601.01126},
+  year={2026}
 }
 ```
 

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Text-to-SQL research system achieving **73.67% accuracy** on BIRD benchmark test set using RoboPhD architecture. The system implements a three-level AI hierarchy where AI agents conduct autonomous research to improve other AI agents.
 
-**Paper**: [RoboPhD: Self-Improving Text-to-SQL Through Autonomous Agent Evolution](https://arxiv.org/abs/XXXX.XXXXX)
+**Paper**: [RoboPhD: Self-Improving Text-to-SQL Through Autonomous Agent Evolution](https://arxiv.org/abs/2601.01126)
 
 ## Dataset Overview
 
