@@ -19,10 +19,10 @@ if TYPE_CHECKING:
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent))
-from config import MODEL_FALLBACKS, CLAUDE_CLI_MODEL_MAP
+from config import CLAUDE_CLI_MODEL_MAP
 # Add grandparent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
-from utilities.claude_cli import find_claude_cli
+from utilities.claude_cli import find_claude_cli, call_claude_cli, RateLimitExceeded
 
 class AgentOrchestrator:
     """Orchestrates database analysis agents in RoboPhD system."""
@@ -503,11 +503,9 @@ If the Task tool invocation fails, read and follow the instructions in .claude/a
         phase1_start = time.time()
 
         try:
-            result = subprocess.run(
-                cmd,
-                cwd=str(workspace),
-                capture_output=True,
-                text=True,
+            result = call_claude_cli(
+                cmd=cmd,
+                cwd=Path(workspace),
                 timeout=self.timeout_phase1
             )
 
@@ -517,7 +515,6 @@ If the Task tool invocation fails, read and follow the instructions in .claude/a
             cost_info = None
             if result.returncode == 0 and result.stdout:
                 try:
-                    import json
                     json_output = json.loads(result.stdout)
                     usage = json_output.get('usage', {})
                     cost_info = {
@@ -546,14 +543,6 @@ If the Task tool invocation fails, read and follow the instructions in .claude/a
                 if result.stderr:
                     error_preview = result.stderr[:500]
                     self._log_with_context(f"Error: {error_preview}", agent_id, database_name)
-
-                # Check for fallback model
-                if self.analysis_model in MODEL_FALLBACKS:
-                    fallback = MODEL_FALLBACKS[self.analysis_model]
-                    if fallback:
-                        self._log_with_context(f"Retrying with fallback model: {fallback}", agent_id, database_name)
-                        # Pass tool_error through fallback
-                        return self._run_phase1_with_fallback(workspace, fallback, prompt, agent_id, database_name, tool_error)
 
                 return False, None, None, tool_error
 
@@ -597,70 +586,13 @@ If the Task tool invocation fails, read and follow the instructions in .claude/a
             })
 
             return False, None, None, tool_error
+        except RateLimitExceeded:
+            # Let rate limit exceeded propagate for checkpoint/exit handling
+            raise
         except Exception as e:
             self._log_with_context(f"❌ Phase 1 error: {e}", agent_id, database_name)
             return False, None, None, tool_error
-    
-    def _run_phase1_with_fallback(self, workspace: Path, fallback_model: str,
-                                  prompt: str, agent_id: str, database_name: str, tool_error: Optional[str] = None) -> Tuple[bool, Optional[str], Optional[dict], Optional[str]]:
-        """Run phase 1 with fallback model."""
-        cli_model = CLAUDE_CLI_MODEL_MAP.get(fallback_model, fallback_model)
-        cmd = [
-            self.claude_path,
-            "--model", cli_model,
-            "--print", prompt,
-            "--output-format", "json",
-            "--permission-mode", "bypassPermissions"
-        ]
 
-        try:
-            result = subprocess.run(
-                cmd,
-                cwd=str(workspace),
-                capture_output=True,
-                text=True,
-                timeout=self.timeout_phase1
-            )
-
-            # Parse JSON output for cost tracking
-            cost_info = None
-            if result.returncode == 0 and result.stdout:
-                try:
-                    import json
-                    json_output = json.loads(result.stdout)
-                    usage = json_output.get('usage', {})
-                    cost_info = {
-                        'cost': json_output.get('total_cost_usd', 0.0),
-                        'tokens_in': usage.get('input_tokens', 0),
-                        'tokens_out': usage.get('output_tokens', 0),
-                        'cache_created': usage.get('cache_creation_input_tokens', 0),
-                        'cache_read': usage.get('cache_read_input_tokens', 0)
-                    }
-                except (json.JSONDecodeError, KeyError) as e:
-                    self._log_with_context(f"⚠️  Failed to parse cost data from fallback: {e}", agent_id, database_name)
-
-            if result.returncode == 0:
-                output_file = workspace / "output" / "agent_output.txt"
-                if output_file.exists():
-                    agent_output = output_file.read_text()
-                    eval_instructions_file = workspace / "eval_instructions.md"
-
-                    if eval_instructions_file.exists():
-                        eval_instructions = eval_instructions_file.read_text()
-                        combined_prompt = f"{agent_output}\n\n---\n\n{eval_instructions}"
-
-                        system_prompt_file = workspace / "output" / "system_prompt.txt"
-                        system_prompt_file.write_text(combined_prompt)
-
-                        self._log_with_context(f"✅ Phase 1 complete with fallback", agent_id, database_name)
-                        # Pass through tool_error if present
-                        return True, combined_prompt, cost_info, tool_error
-
-            return False, None, cost_info, tool_error
-
-        except (subprocess.TimeoutExpired, Exception):
-            return False, None, None, tool_error
-    
     def validate_agent_output(self, workspace: Path, agent_id: str, database_name: str) -> bool:
         """
         Validate that agent produced expected output.

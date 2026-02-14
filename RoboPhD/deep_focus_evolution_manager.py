@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 from RoboPhD.domains.base import SampledProblems, EvaluationResult
 from RoboPhD.comparison_report_generator import ComparisonReportGenerator
 from RoboPhD.config import CLAUDE_CLI_MODEL_MAP
+from utilities.claude_cli import call_claude_cli, RateLimitExceeded
 
 logger = logging.getLogger(__name__)
 
@@ -633,15 +634,11 @@ class DeepFocusEvolutionManager:
                 report_lines.extend([
                     "## Extract Details",
                     "",
-                    "Use the @extract_error_details MCP tool for detailed analysis:",
-                    "",
-                    "You have access to the @extract_error_details MCP tool that can extract full evaluation details",
-                    "for specific question IDs across all agents (baseline agents are accessible via symlinks).",
-                    "This tool is equivalent to RoboPhD/tools/error_analysis/extract_error_details.py.",
-                    "",
-                    "Example usage:",
-                    "```",
-                    f"Use @extract_error_details tool with question_ids ['ID1', 'ID2'] from iteration_dirs ['{test_workspace.name}']",
+                    "To extract detailed error information for specific questions:",
+                    "```bash",
+                    "python RoboPhD/tools/error_analysis/extract_error_details.py \\",
+                    f"  --question-ids 'ID1,ID2' \\",
+                    f"  --iteration-dir '{test_workspace.name}'",
                     "```",
                     "",
                     "The tool returns complete evaluation data including SQL, results, and error details.",
@@ -689,22 +686,16 @@ Based on the evolution strategy guidance above, please:
 **Error Analysis Available:**
 - Previous iteration error analysis: `../../iteration_{self.current_iteration-1:03d}/error_analysis_report.md`
 
-**For detailed question analysis, use the @extract_error_details MCP tool:**
+**For detailed question analysis, use the CLI tool:**
 
-You have access to the @extract_error_details tool from the error-analysis MCP server. This tool extracts full evaluation details for specific question IDs, including SQL queries, predicted results, ground truth, verification attempts, and error messages. It is equivalent to RoboPhD/tools/error_analysis/extract_error_details.py.
-
-Example usage:
+```bash
+python RoboPhD/tools/error_analysis/extract_error_details.py \\
+  --question-ids '1234,5678,9012' \\
+  --iteration-dir '../../iteration_{self.current_iteration-1:03d}'
 ```
-Use the @extract_error_details tool to get details for question IDs ['1234', '5678', '9012'] from iteration directory '../../iteration_{self.current_iteration-1:03d}'
-```
 
-The tool will return:
-- Full evaluation data for each question across all agents
-- Cross-agent analysis (which agents got it right/wrong)
-- Verification retry information
-- Detailed error messages and result comparisons
-
-This is much more efficient than reading individual evaluation.json files and provides rich context for understanding failure patterns.
+The tool returns complete evaluation data including SQL queries, predicted results, ground truth,
+verification attempts, and error details for each question across all agents.
 
 Create a file called `reasoning.md` with your analysis and plan.
 
@@ -1198,18 +1189,17 @@ A structured error analysis comparing your new agent against baselines has been 
 - Report: `./{test_workspace_name}/error_analysis_report.md`
 - Error index: `./{test_workspace_name}/error_index.json`
 
-**For detailed question analysis, use the @extract_error_details MCP tool:**
+**For detailed question analysis, use the CLI tool:**
 
-You have access to the @extract_error_details tool that extracts full evaluation details for specific question IDs.
-This tool is equivalent to RoboPhD/tools/error_analysis/extract_error_details.py.
-All agents from the baseline iteration are accessible via symlinks in the test workspace.
-
-Example usage:
-```
-Use @extract_error_details tool with question_ids ['1234', '5678'] from iteration_dirs ['{test_workspace_name}']
+```bash
+python RoboPhD/tools/error_analysis/extract_error_details.py \\
+  --question-ids '1234,5678' \\
+  --iteration-dir '{test_workspace_name}'
 ```
 
-The tool returns complete evaluation data including SQL queries, predicted results, ground truth, verification attempts, and error details. This is much more efficient than reading individual evaluation.json files.
+The tool returns complete evaluation data including SQL queries, predicted results, ground truth,
+verification attempts, and error details. All agents from the baseline iteration are accessible
+via symlinks in the test workspace.
 """
 
         comparison_section = ""
@@ -1271,12 +1261,11 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
         ]
 
         try:
-            result = subprocess.run(
-                cmd,
+            result = call_claude_cli(
+                cmd=cmd,
                 cwd=self.working_dir,
-                capture_output=True,
-                text=True,
-                timeout=600  # 10 minutes for compact (can take a while with large sessions)
+                timeout=600,  # 10 minutes for compact (can take a while with large sessions)
+                logger=logger
             )
 
             if result.returncode != 0:
@@ -1290,6 +1279,9 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
 
         except subprocess.TimeoutExpired:
             logger.error("Compact timed out after 600s")
+            return False
+        except RateLimitExceeded as e:
+            logger.error(f"Rate limit exceeded during compact: {e}")
             return False
         except Exception as e:
             logger.error(f"Compact failed: {e}")
@@ -1347,13 +1339,12 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
         logger.debug(f"Calling Claude Code: {' '.join(cmd[:4])}...")
 
         try:
-            # Run in working directory
-            result = subprocess.run(
-                cmd,
+            # Run in working directory with rate limit handling
+            result = call_claude_cli(
+                cmd=cmd,
                 cwd=self.working_dir,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout
+                timeout=self.timeout,
+                logger=logger
             )
 
             if result.returncode != 0:
@@ -1389,13 +1380,12 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
                             "--settings", '{"autoCompact": true}'
                         ])
 
-                        # Retry with the corrected command
-                        retry_result = subprocess.run(
-                            retry_cmd,
+                        # Retry with the corrected command (also handles rate limits)
+                        retry_result = call_claude_cli(
+                            cmd=retry_cmd,
                             cwd=self.working_dir,
-                            capture_output=True,
-                            text=True,
-                            timeout=self.timeout
+                            timeout=self.timeout,
+                            logger=logger
                         )
 
                         if retry_result.returncode != 0:
@@ -1449,6 +1439,10 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
         except subprocess.TimeoutExpired:
             logger.error(f"Claude Code call timed out after {self.timeout}s")
             return False
+        except RateLimitExceeded as e:
+            # Let rate limit exceeded propagate for checkpoint/exit handling
+            logger.error(f"Rate limit exceeded: {e}")
+            raise
         except Exception as e:
             logger.error(f"Claude Code call failed: {e}")
             return False

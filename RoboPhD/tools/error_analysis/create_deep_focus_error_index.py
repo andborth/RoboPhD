@@ -233,13 +233,13 @@ def build_cross_agent_analysis(newest_agent: str, baseline_agents: List[str],
             continue
 
         new_result = agents_results[newest_agent]
-        new_correct = new_result.get('matches', False)
+        new_correct = new_result.get('correct', False)
 
         # Check baseline agents
         baseline_results = []
         for agent in baseline_agents:
             if agent in agents_results:
-                baseline_correct = agents_results[agent].get('matches', False)
+                baseline_correct = agents_results[agent].get('correct', False)
                 baseline_results.append((agent, baseline_correct))
 
         if not baseline_results:
@@ -302,8 +302,8 @@ def build_cross_agent_analysis(newest_agent: str, baseline_agents: List[str],
             new_result = agents_results[newest_agent]
             baseline_result = agents_results[baseline_agent]
 
-            new_correct = new_result.get('matches', False)
-            baseline_correct = baseline_result.get('matches', False)
+            new_correct = new_result.get('correct', False)
+            baseline_correct = baseline_result.get('correct', False)
 
             if not new_correct and baseline_correct:
                 new_wrong_A_right.append(question_id)
@@ -373,7 +373,7 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
         for db_name, questions in results['by_agent_db'][agent].items():
             for question_id, result in questions.items():
                 total_questions += 1
-                if result.get('matches', False):
+                if result.get('correct', False):
                     total_correct += 1
                 else:
                     errors_by_database[db_name].append(question_id)
@@ -397,9 +397,9 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
         db_questions = results['by_agent_db'][newest_agent].get(db_name, {})
         total_questions = len(db_questions)
 
-        new_correct = sum(1 for r in db_questions.values() if r.get('matches', False))
+        new_correct = sum(1 for r in db_questions.values() if r.get('correct', False))
         new_errors = total_questions - new_correct
-        error_question_ids = [qid for qid, r in db_questions.items() if not r.get('matches', False)]
+        error_question_ids = [qid for qid, r in db_questions.items() if not r.get('correct', False)]
 
         # Build cross-agent analysis for this database
         db_question_ids = set(db_questions.keys())
@@ -413,7 +413,7 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
         for agent in all_agents:
             if agent in results['by_agent_db'] and db_name in results['by_agent_db'][agent]:
                 agent_db_questions = results['by_agent_db'][agent][db_name]
-                correct = sum(1 for r in agent_db_questions.values() if r.get('matches', False))
+                correct = sum(1 for r in agent_db_questions.values() if r.get('correct', False))
                 total = len(agent_db_questions)
                 agent_stats[agent] = {
                     'correct': correct,
@@ -447,7 +447,7 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
     for question_id, agents_results in results['by_question'].items():
         if newest_agent not in agents_results:
             continue
-        new_correct = agents_results[newest_agent].get('matches', False)
+        new_correct = agents_results[newest_agent].get('correct', False)
         if new_correct:
             continue
 
@@ -455,7 +455,7 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
         all_baseline_wrong = True
         for baseline in baseline_agents:
             if baseline in agents_results:
-                if agents_results[baseline].get('matches', False):
+                if agents_results[baseline].get('correct', False):
                     all_baseline_wrong = False
                     break
 

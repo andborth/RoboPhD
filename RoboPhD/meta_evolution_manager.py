@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 
 from RoboPhD.config_manager import ConfigManager, ConfigSource
+from utilities.claude_cli import call_claude_cli, RateLimitExceeded
 
 logger = logging.getLogger(__name__)
 
@@ -157,16 +158,17 @@ class MetaEvolutionManager:
             working_dir=iteration_output
         )
 
-        # PHASE 5: Champion viability assessment
-        logger.info("🤔 Phase 5: Assessing champion viability...")
-        cost_data = self._assess_champion_viability(
-            iteration=iteration,
-            model=model,
-            session_id=session_id,
-            working_dir=iteration_output,
-            total_cost_data=total_cost_data
-        )
-        self._accumulate_costs(total_cost_data, cost_data)
+        # PHASE 5: Champion viability assessment (optional)
+        if config.get('enable_champion_viability_assessment', False):
+            logger.info("🤔 Phase 5: Assessing champion viability...")
+            cost_data = self._assess_champion_viability(
+                iteration=iteration,
+                model=model,
+                session_id=session_id,
+                working_dir=iteration_output,
+                total_cost_data=total_cost_data
+            )
+            self._accumulate_costs(total_cost_data, cost_data)
 
         logger.info(f"\n{'=' * 60}")
         logger.info(f"✓ Meta-evolution complete for iteration {iteration}")
@@ -502,13 +504,12 @@ class MetaEvolutionManager:
         logger.debug(f"Calling Claude Code: {' '.join(cmd[:4])}...")
 
         try:
-            # Run in iteration-specific working directory
-            result = subprocess.run(
-                cmd,
+            # Run in iteration-specific working directory with rate limit handling
+            result = call_claude_cli(
+                cmd=cmd,
                 cwd=working_dir,
-                capture_output=True,
-                text=True,
-                timeout=1800  # 30 minutes default
+                timeout=1800,  # 30 minutes default
+                logger=logger
             )
 
             if result.returncode != 0:
@@ -538,6 +539,9 @@ class MetaEvolutionManager:
 
         except subprocess.TimeoutExpired:
             raise RuntimeError("Claude Code call timed out after 1800s")
+        except RateLimitExceeded:
+            # Let rate limit exceeded propagate for checkpoint/exit handling
+            raise
         except Exception as e:
             raise RuntimeError(f"Claude Code call failed: {e}")
 

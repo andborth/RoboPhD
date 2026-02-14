@@ -51,14 +51,6 @@ CLAUDE_CLI_MODEL_MAP = {
     'haiku-4.5': 'haiku'     # CLI expects 'haiku' not 'haiku-4.5'
 }
 
-# Model fallback configuration for Claude CLI
-MODEL_FALLBACKS = {
-    'opus-4.5': 'sonnet',    # opus-4.5 falls back to sonnet
-    'opus-4.1': 'sonnet',    # opus-4.1 falls back to sonnet
-    'sonnet-4.5': 'haiku',   # sonnet falls back to haiku
-    'haiku-4.5': None        # haiku has no fallback
-}
-
 # Default model settings
 DEFAULT_MODEL = 'sonnet-4.5'
 MODEL_NAME = SUPPORTED_MODELS[DEFAULT_MODEL]['name']

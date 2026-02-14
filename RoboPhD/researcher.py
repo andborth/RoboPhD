@@ -479,49 +479,23 @@ class ParallelAgentEvolver:
         lines.append("Experiment directory structure (paths relative to evolution workspace):")
         lines.append("")
 
-        # Get all agent and database names for comprehensive listing
         agent_dirs = sorted(iter_dir.glob("agent_*"))
         if not agent_dirs:
             return "No agent data available yet."
 
-        # Get all unique databases across all agents
-        all_databases = set()
-        for agent_dir in agent_dirs:
-            db_dirs = [d.name for d in agent_dir.iterdir() if d.is_dir()]
-            all_databases.update(db_dirs)
+        # Use domain-specific structure documentation
+        structure_docs = self.domain.experiment_structure_docs
+        # Replace XXX with actual iteration number
+        structure_docs = structure_docs.replace("iteration_XXX", f"iteration_{iteration:03d}")
+        lines.append(structure_docs)
+        lines.append("")
 
-        all_databases = sorted(all_databases)
+        # List agents tested
         agent_names = [agent_dir.name for agent_dir in agent_dirs]
-
-        # Show schematic pattern first with agent source locations
-        lines.append("```")
-        lines.append(f"../../iteration_{iteration:03d}/")
-        lines.append("  agent_<AGENT_NAME>/")
-        lines.append("    <DATABASE_NAME>/")
-        lines.append("      output/system_prompt.txt  ← Agent's database analysis")
-        lines.append("      results/evaluation.json   ← Performance metrics")
-        lines.append("")
-        lines.append("Agent source code (three-artifact packages):")
-        lines.append("  ../../agents/")
-        lines.append("    <agent_name>/")
-        lines.append("      agent.md              ← Database analysis agent definition")
-        lines.append("      eval_instructions.md  ← SQL generation instructions")
-        lines.append("      tools/                ← Analysis scripts (optional)")
-        lines.append("```")
-        lines.append("")
-
-        # List all agents
         lines.append(f"**Agents tested ({len(agent_names)}):**")
         for agent_name in agent_names:
-            # Strip 'agent_' prefix and add note about source location
             clean_name = agent_name.replace('agent_', '')
             lines.append(f"- {agent_name} (source: ../../agents/{clean_name}/)")
-        lines.append("")
-
-        # List all databases
-        lines.append(f"**Databases evaluated ({len(all_databases)}):**")
-        for db_name in all_databases:
-            lines.append(f"- {db_name}")
 
         return "\n".join(lines)
     
@@ -1739,9 +1713,15 @@ class ParallelAgentResearcher:
                     self.phase1_failures.append((agent_id, context_name, iteration))
 
                 # Track zero accuracy cases
+                # For hierarchical domains: track per-context (one entry per database)
+                # For non-hierarchical domains: track per-iteration (one entry per agent)
                 if accuracy == 0 and total_questions > 0:
-                    for context_name in contexts:
-                        self.zero_accuracy_cases.append((agent_id, context_name, iteration, total_questions // len(contexts)))
+                    if self.domain.is_hierarchical:
+                        for ctx in contexts:
+                            self.zero_accuracy_cases.append((agent_id, ctx, iteration, total_questions // len(contexts)))
+                    else:
+                        # Non-hierarchical: single entry for the iteration
+                        self.zero_accuracy_cases.append((agent_id, None, iteration, total_questions))
 
                 # Accumulate Phase 1 costs and token counts from metadata
                 if metadata.get('phase1_cost'):
@@ -2173,6 +2153,29 @@ class ParallelAgentResearcher:
                 test_count = perf.get('test_count', 0)
                 print(f"  ✓ Pending winner: {agent_id} (ELO: {elo:.0f}, tests: {test_count})")
 
+        # Final fallback: agents with ELO <= 1500, ordered by ELO
+        if len(selected) < self.agents_per_iteration:
+            remaining_slots = self.agents_per_iteration - len(selected)
+            already_selected = set(selected)
+
+            # Get all agents with ELO <= 1500, not already selected
+            low_elo_agents = []
+            for agent_id, perf in self.performance_records.items():
+                if agent_id in already_selected:
+                    continue
+                elo = perf.get('elo', 1500)
+                if elo <= 1500 and perf.get('test_count', 0) > 0:
+                    low_elo_agents.append((agent_id, elo))
+
+            # Sort by ELO descending (best of the low-ELO agents first)
+            low_elo_agents.sort(key=lambda x: x[1], reverse=True)
+
+            if low_elo_agents:
+                print(f"\n🔄 Final fallback: Including agents with ELO ≤ 1500 to fill {remaining_slots} slot(s)")
+                for agent_id, elo in low_elo_agents[:remaining_slots]:
+                    selected.append(agent_id)
+                    print(f"  ✓ Low-ELO agent: {agent_id} (ELO: {elo:.0f})")
+
         print(f"\n🎯 Final Challenger Selection: {selected}")
         print("=" * 60)
 
@@ -2451,30 +2454,50 @@ class ParallelAgentResearcher:
             else:
                 print("  ✗ No slots remaining for untested agents")
         
-        # Priority 4: ELO-based selection
+        # Priority 4: ELO-based selection (threshold: > 1500)
         if slots_remaining > 0 and tested:
             print("\nPriority 4 - ELO-Based Selection:")
-            # Sort tested agents by ELO
-            sorted_tested = sorted(tested, 
-                                 key=lambda a: self.performance_records[a]['elo'],
-                                 reverse=True)
-            
-            # Always use random selection from top 2*k agents
-            pool_size = min(slots_remaining * 2, len(sorted_tested))
-            candidate_pool = sorted_tested[:pool_size]
-            num_to_select = min(slots_remaining, len(candidate_pool))
-            
-            print(f"  Mode: Random selection from top {pool_size} agents")
-            print(f"  Need to fill: {slots_remaining} slot(s)")
-            print(f"  Candidate pool (top {pool_size} by ELO):")
-            for i, agent in enumerate(candidate_pool, 1):
-                elo = self.performance_records[agent]['elo']
-                test_count = self.performance_records[agent]['test_count']
-                print(f"    {i}. {agent} (ELO: {elo:.0f}, tested: {test_count} times)")
-            
-            elo_selected = random.sample(candidate_pool, num_to_select)
-            selected.extend(elo_selected)
-            print(f"  Selected: {elo_selected} (random from pool)")
+
+            # Filter to high-performing agents (ELO > 1500)
+            high_elo = [(a, self.performance_records[a]['elo'])
+                        for a in tested
+                        if self.performance_records[a]['elo'] > 1500]
+            high_elo.sort(key=lambda x: x[1], reverse=True)
+
+            if high_elo:
+                # Random selection from top 2*k high-ELO agents
+                pool_size = min(slots_remaining * 2, len(high_elo))
+                candidate_pool = [a for a, _ in high_elo[:pool_size]]
+                num_to_select = min(slots_remaining, len(candidate_pool))
+
+                print(f"  Mode: Random selection from top {pool_size} agents (ELO > 1500)")
+                print(f"  Need to fill: {slots_remaining} slot(s)")
+                print(f"  Candidate pool:")
+                for agent, elo in high_elo[:pool_size]:
+                    test_count = self.performance_records[agent]['test_count']
+                    print(f"    - {agent} (ELO: {elo:.0f}, tested: {test_count} times)")
+
+                elo_selected = random.sample(candidate_pool, num_to_select)
+                selected.extend(elo_selected)
+                slots_remaining -= len(elo_selected)
+                print(f"  Selected: {elo_selected} (random from pool)")
+            else:
+                print(f"  ⚠️ No agents with ELO > 1500 available")
+
+            # Fallback: agents with ELO <= 1500, deterministic by ELO
+            if slots_remaining > 0:
+                already_selected = set(selected)
+                low_elo = [(a, self.performance_records[a]['elo'])
+                           for a in tested
+                           if a not in already_selected and self.performance_records[a]['elo'] <= 1500]
+                low_elo.sort(key=lambda x: x[1], reverse=True)
+
+                if low_elo:
+                    print(f"\n  Fallback: Filling {slots_remaining} slot(s) from agents with ELO ≤ 1500 (by ELO)")
+                    for agent, elo in low_elo[:slots_remaining]:
+                        selected.append(agent)
+                        test_count = self.performance_records[agent]['test_count']
+                        print(f"    ✓ {agent} (ELO: {elo:.0f}, tested: {test_count} times)")
         elif slots_remaining > 0:
             print("\nPriority 4 - ELO-Based Selection:")
             print("  ✗ No tested agents available for ELO-based selection")
@@ -3297,12 +3320,7 @@ class ParallelAgentResearcher:
                 report_lines.extend([
                     "## Extract Details",
                     "",
-                    "**Option 1: MCP Tool (when using Claude Code with --mcp-config):**",
-                    "```",
-                    f"Use @extract_error_details tool with question_ids ['ID1', 'ID2'] from iteration_dirs ['{iteration_dir.name}']",
-                    "```",
-                    "",
-                    "**Option 2: CLI Script (manual analysis):**",
+                    "To extract detailed error information for specific questions:",
                     "```bash",
                     "# All agents:",
                     f"python RoboPhD/tools/error_analysis/extract_error_details.py \\",

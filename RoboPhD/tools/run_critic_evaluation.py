@@ -38,9 +38,12 @@ from typing import Dict, List, Optional, Set, Tuple
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
+# Add grandparent directory to path for utilities
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # Reuse evaluation logic from evaluate_livecodebench
 from evaluate_livecodebench import evaluate_single, load_dataset
+from utilities.claude_cli import call_claude_cli, RateLimitExceeded
 
 # Setup logging
 logging.basicConfig(
@@ -276,12 +279,11 @@ class CriticEvaluator:
         cmd.extend(["-p", prompt])
 
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout,
+            result = call_claude_cli(
+                cmd=cmd,
                 cwd=working_dir,
+                timeout=self.timeout,
+                logger=logger
             )
 
             # Try to parse JSON even on non-zero return code
@@ -316,6 +318,9 @@ class CriticEvaluator:
         except subprocess.TimeoutExpired:
             logger.warning(f"Claude CLI timed out after {self.timeout}s{ctx}")
             return {}, "", {}
+        except RateLimitExceeded:
+            # Let rate limit exceeded propagate for checkpoint/exit handling
+            raise
         except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse Claude output{ctx}: {e}")
             return {}, "", {}
@@ -468,11 +473,19 @@ class CriticEvaluator:
         # Validate verdict format, re-prompt once if invalid
         verdict = parse_verdict(feedback_path)
         if verdict is None and session_id:
-            fix_prompt = (
-                "Your feedback.md is missing the required verdict line. "
-                "Please rewrite feedback.md starting with exactly 'VERDICT: CORRECT' or "
-                "'VERDICT: INCORRECT' on the first line, followed by your analysis."
-            )
+            if not feedback_path.exists():
+                fix_prompt = (
+                    f"feedback.md was NOT created in the working directory. "
+                    f"The file must be at: {feedback_path} "
+                    f"Please create feedback.md in the current working directory (not the scratchpad) "
+                    f"starting with exactly 'VERDICT: CORRECT' or 'VERDICT: INCORRECT' on the first line."
+                )
+            else:
+                fix_prompt = (
+                    "feedback.md exists but is missing the required verdict line. "
+                    "Please rewrite feedback.md starting with exactly 'VERDICT: CORRECT' or "
+                    "'VERDICT: INCORRECT' on the first line, followed by your analysis."
+                )
             _, _, retry_cost = self._run_claude_code(
                 fix_prompt,
                 working_dir=output_problem_dir,
@@ -510,7 +523,8 @@ class CriticEvaluator:
         parts.append(
             "## Task\n\n"
             "Review solution.py and reflection.md. "
-            "Create feedback.md starting with VERDICT: CORRECT or VERDICT: INCORRECT "
+            "Create feedback.md in the current working directory (not the scratchpad) "
+            "starting with VERDICT: CORRECT or VERDICT: INCORRECT "
             "on the first line, followed by your analysis."
         )
 

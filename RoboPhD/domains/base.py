@@ -344,6 +344,18 @@ class DomainInterface(ABC):
         pass
 
     @property
+    @abstractmethod
+    def experiment_structure_docs(self) -> str:
+        """
+        Return documentation of experiment directory structure for evolution prompts.
+
+        This describes where agents can find evaluation results, outputs, and source code.
+        Each domain has its own structure. The string should use 'iteration_XXX' as a
+        placeholder which will be replaced with the actual iteration number.
+        """
+        pass
+
+    @property
     def sampling_style(self) -> str:
         """
         Sampling model label, derived from is_hierarchical.

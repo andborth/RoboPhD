@@ -2,26 +2,27 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Quick Reference
+
+- **Available CLI Tools**: `jq` and `tree` are installed and available
+- **Text2SQL domain**: See [docs/claude/text2sql.md](docs/claude/text2sql.md)
+- **CodeGen domain**: See [docs/claude/codegen.md](docs/claude/codegen.md)
+
 ## Project Overview
 
-Text-to-SQL research system achieving **73.67% accuracy** on BIRD benchmark test set using RoboPhD architecture. The system implements a three-level AI hierarchy where AI agents conduct autonomous research to improve other AI agents.
+RoboPhD is a multi-domain evolution system that implements a three-level AI hierarchy where AI agents conduct autonomous research to improve other AI agents.
 
+**Text2SQL**: Achieving **73.67% accuracy** on BIRD benchmark test set.
 **Paper**: [RoboPhD: Self-Improving Text-to-SQL Through Autonomous Agent Evolution](https://arxiv.org/abs/2601.01126)
 
-## Dataset Overview
+**CodeGen**: Evolving critic agents for code review on LiveCodeBench.
 
-| Dataset | Total Questions | Usable Questions | Databases | Notes |
-|---------|----------------|------------------|-----------|-------|
-| train | 9,428 | ~9,300 | 62 | Original BIRD training set; only retail_world blacklisted |
-| train-filtered | 6,601 | 6,601 (100%) | 69 | BIRD23 curated subset; all databases working **DEFAULT** |
-| train-no-evidence | 6,601 | 6,601 (100%) | 69 | Same as train-filtered with all evidence fields cleared |
-| dev | 1,534 | 1,534 | 11 | Development set; all databases working |
-| dev-no-evidence | 1,534 | 1,534 | 11 | Same as dev with all evidence fields cleared |
+## Domains
 
-**train-filtered breakdown:**
-- 6,601 fully usable questions (100%) across all 69 databases
-- Represents 70.0% of original 9,428 train questions with improved quality
-- All previously problematic databases fixed via proper extraction
+| Domain | Benchmark | Phase 1 Input | Phase 2 Output |
+|--------|-----------|---------------|----------------|
+| Text2SQL | BIRD | Database schema | SQL query |
+| CodeGen | LiveCodeBench | Problem context | Revised code |
 
 ## Key Commands
 
@@ -32,64 +33,6 @@ pip install -r requirements.txt
 
 # Install Claude Code CLI (required for evolution)
 # See: https://docs.anthropic.com/en/docs/claude-code
-```
-
-### Ground Truth Pre-Computation (Recommended)
-Pre-compute ground truth results to prevent "database is locked" errors during research runs.
-
-```bash
-# Pre-compute for train-filtered (default) or dev dataset
-python RoboPhD/tools/precompute_ground_truth.py
-python RoboPhD/tools/precompute_ground_truth.py --dataset dev
-
-# Use --max-concurrent 2 if hitting file descriptor limits
-# Use --timeout 600 for slow databases (default: 300s)
-```
-
-**Caching behavior:**
-- Results cached up to 2500 rows per query
-- Run after deleting cache/ or switching datasets
-
-### Basic Usage
-```bash
-# Run with defaults (train-filtered dataset, 6,601 questions, 100% usable)
-python RoboPhD/researcher.py --num-iterations 10
-
-# Use a pre-configured config file
-python RoboPhD/researcher.py --num-iterations 10 --config configs/primary_production.json
-
-# Quick test with custom config
-python RoboPhD/researcher.py \
-  --num-iterations 2 \
-  --config '{"contexts_per_iteration": 3, "problems_per_context": 10}'
-```
-
-### Configuration via --config
-All parameters can be configured via `--config` (JSON string or file path):
-
-```bash
-# Use different dataset and models
-python RoboPhD/researcher.py \
-  --num-iterations 10 \
-  --config '{"dataset": "train", "eval_model": "sonnet-4.5", "analysis_model": "opus-4.5"}'
-
-# Load config from file
-python RoboPhD/researcher.py --num-iterations 10 --config configs/primary_production.json
-```
-
-**Note**: Both `"problems-per-context"` (CLI-style) and `"problems_per_context"` (Python-style) work - hyphens are automatically converted to underscores.
-
-### Dev Set Evaluation Mode
-```bash
-# Evaluate on dev set (with evidence)
-python RoboPhD/researcher.py \
-  --dev-eval \
-  --config '{"initial_agents": ["opus_best"], "eval_model": "haiku-4.5"}'
-
-# Evaluate on dev-no-evidence set (evidence fields cleared)
-python RoboPhD/researcher.py \
-  --dev-no-evidence-eval \
-  --config '{"initial_agents": ["opus_best"], "eval_model": "haiku-4.5"}'
 ```
 
 ### Resume and Extend
@@ -123,11 +66,11 @@ RoboPhD agents conduct autonomous prompt/agent engineering research:
 - **Evolution Schedule**: Fine-grained per-iteration control of evolution strategies
 
 ### Level 3: Execution Layer
-Evolved prompts/agents guide SQL generation with discovered optimizations.
+Evolved prompts/agents guide task execution with discovered optimizations.
 
 ## System Architecture: The Three AI Calls
 
-The system orchestrates three distinct AI model calls to achieve accurate SQL generation:
+The system orchestrates three distinct AI model calls per iteration:
 
 ```
                             ITERATION CYCLE
@@ -147,15 +90,15 @@ The system orchestrates three distinct AI model calls to achieve accurate SQL ge
     │           │                            │                    │
     │           │                            ▼                    │
     │  ┌───────────────────┐       ┌────────────────────┐         │
-    │  │   EVALUATION      │       │  DB ANALYSIS AI    │         │
+    │  │   EVALUATION      │       │  DOMAIN ANALYSIS   │         │
     │  │   RESULTS         │       │  (Tool-only or LLM)│         │
     │  │ • Successes       │       └────────────────────┘         │
     │  │ • Failures        │                │                     │
     │  │ • Error Patterns  │                │ Analyzes            │
-    │  └────────┬──────────┘                │ Database            │
+    │  └────────┬──────────┘                │ Context             │
     │           │                           ▼                     │
     │           │                   ┌────────────────────┐        │
-    │           │                   │ DATABASE-SPECIFIC  │        │
+    │           │                   │ DOMAIN-SPECIFIC    │        │
     │           │                   │ ANALYSIS           │        │
     │           │                   └────────┬───────────┘        │
     │           │                            │                    │
@@ -163,14 +106,14 @@ The system orchestrates three distinct AI model calls to achieve accurate SQL ge
     │           │                            │ eval_instructions  │
     │           │                            ▼                    │
     │           │                   ┌────────────────────┐        │
-    │           │                   │  SQL EVAL AI       │        │
+    │           │                   │  EVAL AI           │        │
     │           │                   │  (Haiku or Sonnet) │        │
     │           │                   └────────┬───────────┘        │
     │           │                            │                    │
     │           │                            │ Generates          │
     │           │                            ▼                    │
     │           │                   ┌────────────────────┐        │
-    │           │                   │   SQL QUERIES      │        │
+    │           │                   │   OUTPUT           │        │
     │           │                   └────────┬───────────┘        │
     │           │                            │                    │
     │           │                            │ Evaluated          │
@@ -187,26 +130,24 @@ The system orchestrates three distinct AI model calls to achieve accurate SQL ge
    - **Output**: New 3-artifact agent package (agent.md, eval_instructions.md, tools/)
    - **Purpose**: Learn from failures and evolve better agents
 
-2. **Database Analysis AI** - Runs once per database
-   - **What it needs to do**: Analyze database schema and produce comprehensive documentation that enables accurate SQL generation without direct database access
-   - **How it's accomplished**: Three distinct strategy patterns have emerged:
+2. **Domain Analysis AI** - Runs once per context (database/problem)
+   - **What it needs to do**: Analyze domain input and produce comprehensive documentation
+   - **How it's accomplished**: Three strategy patterns:
      - **Tool-only**: Deterministic Python scripts do all analysis ($0.00, fast, consistent)
-     - **Agent-centric**: Agent uses natural language reasoning to analyze schema
-     - **Hybrid approach**: Agent provides high-level analysis while tools handle specific technical details
-   - **Input**: agent.md instructions + database schema (NO questions)
-   - **Output**: Database-specific analysis describing tables, relationships, patterns
+     - **Agent-centric**: Agent uses natural language reasoning
+     - **Hybrid approach**: Agent provides high-level analysis while tools handle specifics
+   - **Input**: agent.md instructions + domain context (NO questions)
+   - **Output**: Domain-specific analysis
 
-3. **SQL Evaluation AI (Haiku-4.5 or Sonnet-4.5)** - Runs once per question
-   - **Input**: Database analysis + eval_instructions.md + question + evidence
-   - **Output**: SQL query
-   - **Purpose**: Generate accurate SQL based on the provided context
+3. **Eval AI (usually Haiku-4.5 or Sonnet-4.5)** - Runs once per problem
+   - **Input**: Domain analysis + eval_instructions.md + question
+   - **Output**: Solution (SQL query, revised code, etc.)
+   - **Purpose**: Generate accurate output based on the provided context
 
 ### Key Insights:
-- **The eval model never sees the database** - it relies entirely on the analysis agent's output
 - **Evolution learns from mistakes** - each iteration analyzes what went wrong and evolves
-- **Separation of concerns** - database analysis is separate from SQL generation instructions
+- **Separation of concerns** - domain analysis is separate from solution generation
 - **Strategy diversity**: Successful agents use different mixes of agent reasoning vs tool automation
-- **Iterative improvement** - the system gets better with each evolution cycle
 
 ## Unified Agent Architecture
 
@@ -215,33 +156,34 @@ The system orchestrates three distinct AI model calls to achieve accurate SQL ge
 - **Runtime Location**: `<experiment_dir>/agents/` (agents copied to each experiment workspace)
 - **Structure**: Self-contained directories with three artifacts
 - **Three-Artifact Format**:
-  - `agent.md`: Database analysis agent with model configuration
-  - `eval_instructions.md`: Direct SQL generation instructions for eval model
+  - `agent.md`: Domain analysis agent with model configuration
+  - `eval_instructions.md`: Direct solution generation instructions for eval model
   - `tools/`: Optional Python/shell analysis scripts
-
-### Included Agents
-
-| Agent | Description | Dev Accuracy |
-|-------|-------------|--------------|
-| `naive` | Baseline agent | 57-69% |
-| `opus_best` | Best Opus-4.5 evolved agent | 71.3% |
-| `sonnet_best` | Best Sonnet-4.5 evolved agent | 69.2% |
-| `haiku_best` | Best Haiku-4.5 evolved agent | 66.1% |
 
 ### Tool-Only Execution Mode
 
-Agents can use **tool-only execution mode** where a Python/shell script generates complete database analysis output, bypassing the AI agent entirely.
+Agents can use **tool-only execution mode** where a Python/shell script generates complete analysis output, bypassing the AI agent entirely.
 
 **Benefits**: Speed (1-5s vs 30-60s), cost ($0.00 for Phase 1), consistency (deterministic output), debuggability (clear code vs AI reasoning).
 
-**YAML Frontmatter Configuration**:
+**YAML Frontmatter Configuration** (tool-only mode):
 ```yaml
 ---
+name: hybrid-comprehensive-analyzer
+description: Cross-pollinated tool combining techniques from top agents
 execution_mode: tool_only
 tool_command: python tools/comprehensive_analyzer.py
-tool_output_file: tool_output/schema_analysis.txt
+tool_output_file: tool_output/analysis.txt
 ---
 ```
+
+| Field | Description |
+|-------|-------------|
+| `name` | Short identifier for the agent |
+| `description` | One-line summary of the agent's approach |
+| `execution_mode` | Set to `tool_only` to bypass LLM agent |
+| `tool_command` | Command to execute (runs from agent directory) |
+| `tool_output_file` | Path where tool writes output (relative to agent directory) |
 
 **Execution**: System runs tool command (300s timeout), verifies output (exit 0, file exists, ≥200 bytes), copies to `output/agent_output.txt`. Falls back to normal agent execution on any failure.
 
@@ -250,18 +192,22 @@ tool_output_file: tool_output/schema_analysis.txt
 ### Evolution Strategies
 Evolution strategies are loaded from `RoboPhD/evolution_strategies/`:
 
-**Tool-only variants** (deterministic, no LLM in DB analysis - recommended):
+**Tool-only variants** (deterministic, no LLM in analysis):
 - `cross_pollination_tool_only`: Cross-pollination with emphasis on combining tool-only patterns
 - `refinement_tool_only`: Refinement with emphasis on tool-only execution
 - `research_driven_tool_only`: Research-driven with emphasis on implementing insights as tool-only
 
-**Neutral variants** (allow LLM in DB analysis):
+**Neutral variants** (allow LLM in analysis):
 - `cross_pollination_neutral`: Cross-pollination presenting multiple approaches with equal weight
 - `refinement_neutral`: Refinement presenting multiple approaches with equal weight
 - `research_driven_neutral`: Research-driven presenting multiple approaches with equal weight
 
-**Selection strategies**:
-- `challenger`: Skip evolution, test under-tested high-ELO agents
+**Note**: Meta-evolution can generate additional strategies beyond these built-in options.
+
+**Agent selection**: Prioritizes pending winners, new agents, then untested agents. Remaining slots filled randomly from top ELO > 1500 agents (falling back to lower ELO if needed).
+
+**Selection strategies** (skip evolution):
+- `challenger`: Skip evolution, test under-tested agents (fewest tests first)
 - `greedy`: Skip evolution, use deterministic top-k ELO selection
 - `none`: Skip evolution, use randomized ELO-based agent selection
 
@@ -312,8 +258,8 @@ python RoboPhD/researcher.py \
 ```
 
 - `"new_agent_test_rounds": 0`: Planning + implementation only
-- `"new_agent_test_rounds": 1`: Adds testing against 1 prior iteration
-- `"new_agent_test_rounds": 2`: Adds testing against 2 prior iterations [DEFAULT]
+- `"new_agent_test_rounds": 1`: Adds testing against 1 prior iteration [DEFAULT]
+- `"new_agent_test_rounds": 2`: Adds testing against 2 prior iterations
 
 ### Meta-Evolution
 Meta-evolution allows evolving the evolution strategies themselves:
@@ -341,7 +287,7 @@ Available meta-evolution strategies:
 - **`evolution.py`**: Evolution strategy selector and orchestration
 - **`deep_focus_evolution_manager.py`**: Multi-round evolution with testing
 - **`meta_evolution_manager.py`**: Meta-evolution for strategy improvement
-- **`agent_orchestrator.py`**: Phase 1 database analysis orchestration
+- **`agent_orchestrator.py`**: Phase 1 analysis orchestration
 
 ### Common Utilities
 - **`core.py`**: Contains `SQLGenerator`, `Evaluator`, `DatabaseManager`
@@ -357,23 +303,8 @@ Available meta-evolution strategies:
 - **K-factor**: 32 for moderate rating changes
 - **Initial ELO**: 1500 for new agents
 
-### BIRD Evaluation Methodology
-
-**CRITICAL**: Accuracy is based on comparing query RESULTS, not SQL syntax.
-
-```python
-# Set comparison - row order ignored, duplicates removed
-set(predicted_results) == set(ground_truth_results)
-```
-
-**What this means**:
-- Different SQL queries can be equally correct if they produce the same result set
-- Row order is completely ignored
-- Duplicates are ignored
-- Column order must match
-
 ### Model Configuration
-- **API Models**: opus-4.5 ($15/$75/MTok), sonnet-4.5 ($3/$15), haiku-4.5 ($1/$5/MTok)
+- **API Models**: opus-4.5 ($5/$25/MTok), sonnet-4.5 ($3/$15/MTok), haiku-4.5 ($1/$5/MTok)
 - **Timeouts**: 1800s (30 minutes) default for phase1, phase2, sql, and evolution
 - **API Key**: Set via `ANTHROPIC_API_KEY_FOR_ROBOPHD` environment variable
 
@@ -381,7 +312,7 @@ set(predicted_results) == set(ground_truth_results)
 
 - **Quick Test**: Use `--config '{"contexts_per_iteration": 1, "problems_per_context": 5}'`
 - **Check Progress**: Review `checkpoint.json` and `final_report.md`
-- **Debug Phase 1**: Check `iteration_XXX/agent_YYY/DB_NAME/` for agent outputs
+- **Debug Phase 1**: Check `iteration_XXX/agent_YYY/CONTEXT_NAME/` for agent outputs
 - **Evolution Output**: Check `evolution_output/iteration_XXX/` for Claude's reasoning
 - **Config Files**: Save common configs to JSON files and use `--config path/to/config.json`
 
@@ -396,9 +327,9 @@ set(predicted_results) == set(ground_truth_results)
 - **Context too long**: Use `--config '{"problems_per_context": 10, "contexts_per_iteration": 3}'`
 - **Session errors**: Check Claude CLI authentication with `claude --version`
 
-### Database Locks
-- **Symptom**: "Database is locked" errors
-- **Solution**: Run `python RoboPhD/tools/precompute_ground_truth.py` before research runs
+### Domain-Specific Issues
+- **Text2SQL**: See [docs/claude/text2sql.md](docs/claude/text2sql.md) for database-related issues
+- **CodeGen**: See [docs/claude/codegen.md](docs/claude/codegen.md) for test execution issues
 
 ## License
 

@@ -266,6 +266,24 @@ class Text2SQLDomain(DomainInterface):
         """Text2SQL is hierarchical: each database contains multiple questions."""
         return True
 
+    @property
+    def experiment_structure_docs(self) -> str:
+        """Return Text2SQL experiment directory structure documentation."""
+        return '''```
+../../iteration_XXX/
+  agent_<AGENT_NAME>/
+    <DATABASE_NAME>/
+      output/system_prompt.txt  ← Agent's database analysis
+      results/evaluation.json   ← Performance metrics
+
+Agent source code (three-artifact packages):
+  ../../agents/
+    <agent_name>/
+      agent.md              ← Database analysis agent definition
+      eval_instructions.md  ← SQL generation instructions
+      tools/                ← Analysis scripts (optional)
+```'''
+
     def load_agent_results(self, agent_dir: Path, contexts: List[str]) -> Dict[str, Any]:
         """
         Load evaluation results from an agent's output directory.

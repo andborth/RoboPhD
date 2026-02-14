@@ -248,6 +248,34 @@ class CodeGenDomain(DomainInterface):
         """CodeGen is flat: each problem is its own context (1:1 mapping)."""
         return False
 
+    @property
+    def experiment_structure_docs(self) -> str:
+        """Return CodeGen experiment directory structure documentation."""
+        return '''```
+../../iteration_XXX/
+  agent_<AGENT_NAME>/
+    evaluation.json                ← Summary metrics for all problems
+    report.md                      ← Human-readable evaluation report
+    problems/
+      <problem_id>/
+        solution.py                ← Original code (v1)
+        reflection.md              ← Coder's self-reflection on their approach
+        tool_output/
+          critic_feedback.txt      ← Tool-generated analysis
+        critic_prompt.md           ← Full prompt sent to critic (includes eval_instructions)
+        feedback.md                ← Critic's verdict (CORRECT/INCORRECT) and feedback
+        solution_v2.py             ← Revised code (or symlink to v1 if verdict=CORRECT)
+        acceptance.md              ← Coder's explanation of changes (if revised)
+        result.json                ← Per-problem evaluation result
+
+Agent source code (three-artifact packages):
+  ../../agents/
+    <agent_name>/
+      agent.md              ← Problem analysis agent definition
+      eval_instructions.md  ← Code generation instructions
+      tools/                ← Analysis scripts (optional)
+```'''
+
     def load_agent_results(self, agent_dir: Path, contexts: List[str]) -> Dict[str, Any]:
         """
         Load evaluation results from an agent's output directory.

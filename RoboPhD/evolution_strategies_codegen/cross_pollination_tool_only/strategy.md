@@ -34,7 +34,7 @@ When examining top-performing critics, look for:
 - What patterns of effectiveness emerge across multiple critics?
 - Which combinations of techniques might create synergies?
 
-### Cross-Pollination Approach:
+### Cross-Pollination Example Approach:
 1. Identify Critic A's most effective bug-detection techniques
 2. Identify Critic B's complementary edge-case analysis
 3. Identify Critic C's unique code pattern recognition
