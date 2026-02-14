@@ -56,8 +56,8 @@ class ReportGenerator:
         return {
             "Dataset & Sampling": [
                 "dataset",
-                "databases_per_iteration",
-                "questions_per_database",
+                "contexts_per_iteration",
+                "problems_per_context",
                 "agents_per_iteration"
             ],
             "Models": [
@@ -79,11 +79,11 @@ class ReportGenerator:
                 "temperature_strategy"
             ],
             "Performance": [
-                "max_concurrent_dbs"
+                "max_concurrent"
             ],
             "Timeouts": [
                 "phase1_timeout",
-                "sql_timeout",
+                "phase2_timeout",
                 "evolution_timeout"
             ],
             "Other": [
@@ -157,7 +157,7 @@ class ReportGenerator:
         Args:
             agent_id: ID of the agent
             iteration: Iteration number
-            databases: List of databases tested
+            databases: List of databases/contexts tested
             agent_time: Estimated time spent on this agent (in seconds)
             agent_cost: Estimated cost for this agent
         """
@@ -172,55 +172,96 @@ class ReportGenerator:
 
         report_path = agent_dir / "agent_evaluation_report.md"
 
-        # Collect database results
+        # Check domain sampling style to determine file structure
+        is_flat = self.researcher.domain and self.researcher.domain.sampling_style == 'flat'
+
+        # Collect results
         database_results = []
         total_questions = 0
         total_correct = 0
         total_sql_errors = 0
         warnings = []
 
-        for db_name in databases:
-            db_results_file = agent_dir / db_name / "results" / "evaluation.json"
-            if db_results_file.exists():
+        if is_flat:
+            # Flat domains (CodeGen): single aggregate evaluation.json at agent level
+            eval_file = agent_dir / "evaluation.json"
+            if eval_file.exists():
                 try:
-                    with open(db_results_file, 'r') as f:
-                        db_data = json.load(f)
+                    with open(eval_file, 'r') as f:
+                        eval_data = json.load(f)
 
-                    # Extract metrics
-                    questions = db_data.get('total_questions', 0)
-                    correct = db_data.get('correct', 0)
-                    accuracy = (correct / questions * 100) if questions > 0 else 0
-                    sql_errors = db_data.get('prediction_errors', 0)
+                    # Extract aggregate metrics from summary
+                    summary = eval_data.get('summary', {})
+                    total_problems = summary.get('total_problems', 0)
+                    v2_passed = summary.get('v2_passed', 0)
+                    v2_pass_rate = summary.get('v2_pass_rate', 0.0)
 
+                    total_questions = total_problems
+                    total_correct = v2_passed
+
+                    # For flat domains, show aggregate result as single entry
+                    context_plural = self.researcher.domain.context_label_plural.title()
                     database_results.append({
-                        'database': db_name,
-                        'accuracy': accuracy,
-                        'correct': correct,
-                        'total': questions,
-                        'sql_errors': sql_errors
+                        'database': f'All {context_plural}',
+                        'accuracy': v2_pass_rate * 100,
+                        'correct': v2_passed,
+                        'total': total_problems,
+                        'sql_errors': 0  # Not tracked per-problem for flat domains
                     })
 
-                    total_questions += questions
-                    total_correct += correct
-                    total_sql_errors += sql_errors
-
-                    # Check for unusual errors and generate warnings
-                    pred_timeouts = db_data.get('prediction_timeouts', 0)
-                    gt_errors = db_data.get('ground_truth_errors', 0)
-                    gt_timeouts = db_data.get('ground_truth_timeouts', 0)
-
-                    if pred_timeouts > 0:
-                        warnings.append(f"Prediction timeouts in {db_name}: {pred_timeouts} questions")
-                    if gt_errors > 0:
-                        warnings.append(f"Ground truth errors in {db_name}: {gt_errors} questions")
-                    if gt_timeouts > 0:
-                        warnings.append(f"Ground truth timeouts in {db_name}: {gt_timeouts} questions")
+                    # Check for CodeGen-specific warnings
+                    problems_regressed = summary.get('problems_regressed', 0)
+                    if problems_regressed > 0:
+                        warnings.append(f"Problems regressed from v1 to v2: {problems_regressed}")
 
                 except Exception as e:
-                    print(f"  ⚠️  Error reading {db_results_file}: {e}")
-                    continue
+                    print(f"  ⚠️  Error reading {eval_file}: {e}")
             else:
-                print(f"  ⚠️  Results file not found: {db_results_file}")
+                print(f"  ⚠️  Results file not found: {eval_file}")
+        else:
+            # Hierarchical domains (Text2SQL): per-context evaluation files
+            for db_name in databases:
+                db_results_file = agent_dir / db_name / "results" / "evaluation.json"
+                if db_results_file.exists():
+                    try:
+                        with open(db_results_file, 'r') as f:
+                            db_data = json.load(f)
+
+                        # Extract metrics
+                        questions = db_data.get('total_questions', 0)
+                        correct = db_data.get('correct', 0)
+                        accuracy = (correct / questions * 100) if questions > 0 else 0
+                        sql_errors = db_data.get('prediction_errors', 0)
+
+                        database_results.append({
+                            'database': db_name,
+                            'accuracy': accuracy,
+                            'correct': correct,
+                            'total': questions,
+                            'sql_errors': sql_errors
+                        })
+
+                        total_questions += questions
+                        total_correct += correct
+                        total_sql_errors += sql_errors
+
+                        # Check for unusual errors and generate warnings
+                        pred_timeouts = db_data.get('prediction_timeouts', 0)
+                        gt_errors = db_data.get('ground_truth_errors', 0)
+                        gt_timeouts = db_data.get('ground_truth_timeouts', 0)
+
+                        if pred_timeouts > 0:
+                            warnings.append(f"Prediction timeouts in {db_name}: {pred_timeouts} questions")
+                        if gt_errors > 0:
+                            warnings.append(f"Ground truth errors in {db_name}: {gt_errors} questions")
+                        if gt_timeouts > 0:
+                            warnings.append(f"Ground truth timeouts in {db_name}: {gt_timeouts} questions")
+
+                    except Exception as e:
+                        print(f"  ⚠️  Error reading {db_results_file}: {e}")
+                        continue
+                else:
+                    print(f"  ⚠️  Results file not found: {db_results_file}")
 
         # Calculate overall accuracy
         overall_accuracy = (total_correct / total_questions * 100) if total_questions > 0 else 0
@@ -251,8 +292,8 @@ class ReportGenerator:
         report_lines.append(f"- **Evaluation model**: {self._format_model_name(self.researcher.eval_model)}")
         report_lines.append(f"- **Analysis model**: {self._format_model_name(self.researcher.analysis_model)}")
         report_lines.append(f"- **Date**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        report_lines.append(f"- **Databases tested**: {len(databases)}")
-        report_lines.append(f"- **Questions per database**: {self.researcher.questions_per_database}")
+        report_lines.append(f"- **{self.researcher.domain.context_label_plural.title()} tested**: {len(databases)}")
+        report_lines.append(f"- **Problems per {self.researcher.domain.context_label.lower()}**: {self.researcher.problems_per_context}")
         report_lines.append(f"- **Total time**: {agent_time/60:.1f} minutes")
         report_lines.append(f"- **Total cost**: ${agent_cost:.2f}")
 
@@ -268,16 +309,31 @@ class ReportGenerator:
             for warning in warnings:
                 report_lines.append(f"- {warning}")
 
-        # Per-database results table
-        report_lines.append("\n## Per-Database Results")
-        report_lines.append("| Database | Accuracy | Correct/Total | SQL Errors |")
-        report_lines.append("|----------|----------|---------------|------------|")
+        # Per-context results table (domain-aware header)
+        context_label = self.researcher.domain.context_label if self.researcher.domain else "Database"
+        solution_name = self.researcher.domain.solution_name if self.researcher.domain else "SQL"
 
-        for result in database_results:
-            report_lines.append(
-                f"| {result['database']} | {result['accuracy']:.2f}% | "
-                f"{result['correct']}/{result['total']} | {result['sql_errors']} |"
-            )
+        if is_flat:
+            # Flat domains: show aggregate summary (already collected as single entry)
+            report_lines.append(f"\n## Results Summary")
+            report_lines.append(f"| Metric | Value |")
+            report_lines.append("|--------|-------|")
+            if database_results:
+                result = database_results[0]
+                report_lines.append(f"| Accuracy | {result['accuracy']:.2f}% |")
+                report_lines.append(f"| Correct | {result['correct']} |")
+                report_lines.append(f"| Total | {result['total']} |")
+        else:
+            # Hierarchical domains: show per-context breakdown
+            report_lines.append(f"\n## Per-{context_label} Results")
+            report_lines.append(f"| {context_label} | Accuracy | Correct/Total | {solution_name.title()} Errors |")
+            report_lines.append("|----------|----------|---------------|------------|")
+
+            for result in database_results:
+                report_lines.append(
+                    f"| {result['database']} | {result['accuracy']:.2f}% | "
+                    f"{result['correct']}/{result['total']} | {result['sql_errors']} |"
+                )
 
         # Agent details
         report_lines.append("\n## Agent Details")
@@ -316,70 +372,44 @@ class ReportGenerator:
         else:
             report_lines.append(f"**Iterations**: {iteration}/{self.researcher.num_iterations}")
 
-        # Initial Configuration (Iteration 1) - condensed with configurability labels
-        report_lines.append("")
-        report_lines.append("### Initial Configuration (Iteration 1)")
-        report_lines.append("")
-
-        config_iter1 = self.researcher.config_manager.get_config(1)
-
-        # Get forbidden parameters (not configurable by meta-evolution)
-        forbidden = set(self.researcher.config_manager._get_meta_evolution_forbidden_params())
-
         # Meta-parameters to filter out (implementation details)
         meta_params = {"config_schedule", "meta_config_schedule", "weighted_random_configs", "meta_evolution_strategy"}
 
-        # Group configurable vs non-configurable
-        configurable_params = []
-        non_configurable_params = []
+        # System Defaults (Iteration 0)
+        report_lines.append("")
+        report_lines.append("### System Defaults (Iteration 0)")
+        report_lines.append("")
+        report_lines.append("Default values when no configuration is specified:")
+        report_lines.append("")
 
-        categories = self._categorize_parameters()
-        for category_name, param_names in categories.items():
-            for param_name in param_names:
-                if param_name in meta_params:
-                    continue  # Skip meta-parameters
-                value = config_iter1.get(param_name)
-                # Format model names specially
+        defaults = self.researcher.config_manager.get_config(0)
+        for param_name in sorted(defaults.keys()):
+            if param_name in meta_params:
+                continue
+            value = defaults[param_name]
+            if param_name.endswith('_model') and value:
+                value = self._format_model_name(value)
+            report_lines.append(f"- {param_name}: {value}")
+        report_lines.append("")
+
+        # User Configuration (Iteration 1) - show delta only
+        report_lines.append("### User Configuration (Iteration 1)")
+        report_lines.append("")
+
+        user_delta = self.researcher.config_manager.iteration_configs.get(1, {})
+        # Filter out meta params
+        user_delta_filtered = {k: v for k, v in user_delta.items() if k not in meta_params}
+
+        if user_delta_filtered:
+            report_lines.append("The following parameters were explicitly set, overriding defaults:")
+            report_lines.append("")
+            for param_name in sorted(user_delta_filtered.keys()):
+                value = user_delta_filtered[param_name]
                 if param_name.endswith('_model') and value:
-                    formatted_value = self._format_model_name(value)
-                else:
-                    formatted_value = value
-
-                if param_name in forbidden:
-                    non_configurable_params.append((param_name, formatted_value))
-                else:
-                    configurable_params.append((param_name, formatted_value))
-
-        # Display configurable parameters (meta-evolution can modify)
-        report_lines.append("#### Configurable by Meta-Evolution")
-        for param_name, value in sorted(configurable_params):
-            report_lines.append(f"- {param_name}: {value}")
-        report_lines.append("")
-
-        # Display non-configurable parameters (user-controlled / system-managed)
-        report_lines.append("#### System Settings (User-Controlled)")
-        system_settings = [(p, v) for p, v in non_configurable_params
-                          if p in {"max_concurrent_dbs", "phase1_timeout", "sql_timeout",
-                                  "evolution_timeout", "debug_log_probability"}]
-        for param_name, value in sorted(system_settings):
-            report_lines.append(f"- {param_name}: {value}")
-        report_lines.append("")
-
-        # Display immutable parameters
-        report_lines.append("#### Immutable (Set Once at Start)")
-        immutable = [(p, v) for p, v in non_configurable_params
-                    if p in {"dataset", "initial_agents", "agents_directory",
-                            "initial_strategies", "strategies_directory"}]
-        for param_name, value in sorted(immutable):
-            report_lines.append(f"- {param_name}: {value}")
-        report_lines.append("")
-
-        # Display meta-evolution self-reference (shown for completeness)
-        report_lines.append("#### Meta-Evolution Settings (Self-Reference)")
-        meta_evo = [(p, v) for p, v in non_configurable_params
-                   if p in {"meta_evolution_strategy", "meta_evolution_model", "meta_evolution_budget"}]
-        for param_name, value in sorted(meta_evo):
-            report_lines.append(f"- {param_name}: {value}")
+                    value = self._format_model_name(value)
+                report_lines.append(f"- {param_name}: {value}")
+        else:
+            report_lines.append("(No changes from defaults)")
         report_lines.append("")
 
         # Configuration Changes by Iteration
@@ -803,12 +833,17 @@ class ReportGenerator:
             evolution_pct = (total_evolution_cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
             meta_evolution_pct = (total_meta_evolution_cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
 
+            # Get domain display names (fallback to Text2SQL labels for backward compatibility)
+            domain = getattr(self.researcher, 'domain', None)
+            phase1_display = domain.phase1_display_name if domain else "DB Analysis"
+            phase2_display = domain.phase2_display_name if domain else "SQL Generation"
+
             report_lines.append(
-                f"| Phase 1 (DB Analysis - CLI) | ${total_phase1_cost:.2f} | {phase1_pct:.1f}% | "
+                f"| Phase 1 ({phase1_display} - CLI) | ${total_phase1_cost:.2f} | {phase1_pct:.1f}% | "
                 f"{total_phase1_calls} | {total_phase1_tokens_in:,} | {total_phase1_tokens_out:,} |"
             )
             report_lines.append(
-                f"| Phase 2 (SQL Generation - API) | ${total_api_cost:.2f} | {api_pct:.1f}% | "
+                f"| Phase 2 ({phase2_display} - API) | ${total_api_cost:.2f} | {api_pct:.1f}% | "
                 f"- | - | - |"
             )
             report_lines.append(
@@ -826,9 +861,12 @@ class ReportGenerator:
             )
 
             # Answer the key question - identify the highest cost driver
+            # Get domain names for cost driver labels
+            phase1_input = domain.phase1_input_name if domain else "database"
+            solution = domain.solution_name if domain else "SQL"
             cost_drivers = [
-                ('Phase 1 database analysis', phase1_pct),
-                ('Phase 2 SQL generation', api_pct),
+                (f'Phase 1 {phase1_input} analysis', phase1_pct),
+                (f'Phase 2 {solution} generation', api_pct),
                 ('Evolution', evolution_pct),
                 ('Meta-Evolution', meta_evolution_pct)
             ]
@@ -899,8 +937,11 @@ class ReportGenerator:
                 )
 
             # Detailed per-iteration costs (one row per iteration with subtotals + components)
+            # Use domain-specific labels for phase columns
+            phase1_short = domain.phase1_short_label if domain else "DB"
+            phase2_short = solution if domain else "SQL"  # "SQL" or "code"
             report_lines.append("\n### Detailed Per-Iteration Costs\n")
-            report_lines.append("| Iter | Total | **DB Analysis** | P1 | Test DB | **SQL Gen** | P2 | Test SQL | **Evolution** | Plan | Impl | Test Evo | Refl | Meta | Strategy | Meta-strategy |")
+            report_lines.append(f"| Iter | Total | **{phase1_display}** | P1 | Test {phase1_short} | **{phase2_short.title()} Gen** | P2 | Test {phase2_short.title()} | **Evolution** | Plan | Impl | Test Evo | Refl | Meta | Strategy | Meta-strategy |")
             report_lines.append("|------|-------|-----------------|----|---------|-----------|----|----------|---------------|------|------|----------|------|------|----------|---------------|")
 
             # Accumulators for totals
@@ -1182,9 +1223,11 @@ class ReportGenerator:
                         )
 
                         # Nested breakdown (if cost > 0)
+                        # Use domain-specific labels
+                        nested_phase1_label = domain.phase1_display_name if domain else "DB Analysis"
                         if stats['cost'] > 0:
                             report_lines.append(
-                                f"|   ├─ DB Analysis | ${stats['phase1_cost']:.2f} | {stats['pct_phase1']:.1f}% | "
+                                f"|   ├─ {nested_phase1_label} | ${stats['phase1_cost']:.2f} | {stats['pct_phase1']:.1f}% | "
                                 f"{stats['phase1_tokens_in']:.0f} | {stats['phase1_tokens_out']:.0f} |"
                             )
                             report_lines.append(
@@ -1250,7 +1293,10 @@ class ReportGenerator:
         if self.researcher.exception_failures:
             report_lines.append(f"Total exception failures: {len(self.researcher.exception_failures)}")
             report_lines.append("")
-            report_lines.append("These are errors that occurred during SQL generation or evaluation (Phase 2).")
+            # Use domain-specific solution name
+            exception_solution = getattr(self.researcher, 'domain', None)
+            exception_solution_name = exception_solution.solution_name if exception_solution else "SQL"
+            report_lines.append(f"These are errors that occurred during {exception_solution_name} generation or evaluation (Phase 2).")
             report_lines.append("Unlike Phase 1 failures, these may indicate issues with generated SQL or evaluation logic.")
             report_lines.append("")
             report_lines.append("| Agent | Database | Iteration | Error | Questions |")

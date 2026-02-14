@@ -10,9 +10,12 @@ import shutil
 import time
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 from datetime import datetime
 import hashlib
+
+if TYPE_CHECKING:
+    from RoboPhD.domains.base import DomainInterface
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent))
@@ -23,12 +26,13 @@ from utilities.claude_cli import find_claude_cli
 
 class AgentOrchestrator:
     """Orchestrates database analysis agents in RoboPhD system."""
-    
+
     def __init__(self,
                  base_experiment_dir: Path,
                  analysis_model: str = 'haiku-4.5',
                  claude_path: Optional[str] = None,
-                 timeout_phase1: int = 900):  # 15 minutes default
+                 timeout_phase1: int = 900,  # 15 minutes default
+                 domain: Optional['DomainInterface'] = None):
         """
         Initialize the orchestrator.
 
@@ -37,11 +41,14 @@ class AgentOrchestrator:
             analysis_model: Model to use for analysis (opus-4.5, sonnet-4.5, haiku-4.5)
             claude_path: Path to Claude CLI
             timeout_phase1: Timeout for Phase 1 in seconds
+            domain: Optional domain interface for domain-specific workspace setup.
+                   If not provided, defaults to Text2SQL-style database symlink.
         """
         self.base_dir = Path(base_experiment_dir)
         self.analysis_model = analysis_model
         self.claude_path = claude_path or find_claude_cli()
         self.timeout_phase1 = timeout_phase1
+        self.domain = domain
         self.performance_log = []
         self.active_agent_name = None
     
@@ -53,19 +60,21 @@ class AgentOrchestrator:
         
     def setup_workspace(self,
                        iteration: int,
-                       database_name: str,
-                       database_path: Path,
+                       context_name: str,
+                       context_path: Path,
                        package_dir: Path,
-                       agent_id: str) -> Path:
+                       agent_id: str,
+                       problem: Optional[Dict] = None) -> Path:
         """
         Create workspace with specific agent.
 
         Args:
             iteration: Iteration number
-            database_name: Name of the database
-            database_path: Path to the SQLite database
+            context_name: Name of the context (database name for Text2SQL, problem_id for CodeGen)
+            context_path: Path to the context data (database path for Text2SQL)
             package_dir: Path to three-artifact package directory
             agent_id: ID for tracking this agent
+            problem: Optional problem dict (used by CodeGen for code_v1, approach)
 
         Returns:
             Path to the configured workspace
@@ -81,30 +90,31 @@ class AgentOrchestrator:
             raise FileNotFoundError(
                 f"Agent package directory does not exist: {package_dir}\n"
                 f"Agent: {agent_id}\n"
-                f"Database: {database_name}\n"
+                f"Context: {context_name}\n"
                 f"This may indicate a checkpoint restoration issue or missing agent files."
             )
 
         # Create workspace directory
-        workspace = self.base_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}" / database_name
+        workspace = self.base_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}" / context_name
         workspace.mkdir(parents=True, exist_ok=True)
-        
+
         # Set up three-artifact workspace
-        self._setup_three_artifact_workspace(workspace, package_dir, database_path)
-        
+        self._setup_three_artifact_workspace(workspace, package_dir, context_path)
+
         # Store agent name from the package
         self.active_agent_name = package_dir.name
 
-        # Create symbolic link to database instead of copying (saves disk space)
-        db_dest = workspace / "database.sqlite"
-        if db_dest.exists():
-            db_dest.unlink()
-        # Use symlink to avoid copying large database files
-        db_dest.symlink_to(database_path.absolute())
-        
+        # Prepare Phase 1 input using domain interface
+        if self.domain is None:
+            raise ValueError(
+                "AgentOrchestrator requires a domain to be set. "
+                "Pass domain to __init__ or set orchestrator.domain after creation."
+            )
+        self.domain.prepare_phase1_input(workspace, context_name, problem)
+
         # Create required directories
         (workspace / "output").mkdir(exist_ok=True)
-        
+
         return workspace
     
     def _setup_three_artifact_workspace(self, workspace: Path, package_dir: Path, database_path: Path):

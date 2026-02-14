@@ -15,7 +15,7 @@ Test that everything works with a minimal run:
 ```bash
 python RoboPhD/researcher.py \
   --num-iterations 1 \
-  --config '{"databases_per_iteration": 1, "questions_per_database": 5}'
+  --config '{"contexts_per_iteration": 1, "problems_per_context": 5}'
 ```
 
 This runs 1 iteration on 1 database with 5 questions - fast but verifies your setup.
@@ -115,8 +115,8 @@ python RoboPhD/researcher.py \
 
 ```json
 {
-  "databases_per_iteration": 8,    // More = better signal, slower
-  "questions_per_database": 40,    // More = better signal, more API cost
+  "contexts_per_iteration": 8,     // More = better signal, slower (databases for Text2SQL)
+  "problems_per_context": 40,      // More = better signal, more API cost (questions per DB)
   "agents_per_iteration": 3        // Agents tested per iteration
 }
 ```

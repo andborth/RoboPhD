@@ -73,6 +73,34 @@ DEFAULT_DEV_DATA = "benchmark_resources/datasets/dev/dev_20240627/dev.json"
 DEFAULT_DB_ROOT = "benchmark_resources/datasets/dev/dev_20240627/dev_databases"
 DEFAULT_DEV_SQL = "benchmark_resources/datasets/dev/dev_20240627/dev.sql"
 
+# Dataset paths - single source of truth for all dataset locations
+DATASET_PATHS = {
+    'train': {
+        'questions': 'benchmark_resources/datasets/train/train/train.json',
+        'db_root': 'benchmark_resources/datasets/train/train/train_databases'
+    },
+    'train-filtered': {
+        'questions': 'benchmark_resources/datasets/train-filtered/train_filtered.json',
+        'db_root': 'benchmark_resources/datasets/train/train/train_databases'
+    },
+    'train-no-evidence': {
+        'questions': 'benchmark_resources/datasets/train-no-evidence/train_filtered_no_evidence.json',
+        'db_root': 'benchmark_resources/datasets/train/train/train_databases'
+    },
+    'test': {
+        'questions': 'benchmark_resources/datasets/test/test/test.json',
+        'db_root': 'benchmark_resources/datasets/test/test/test_databases'
+    },
+    'dev': {
+        'questions': 'benchmark_resources/datasets/dev/dev_20240627/dev.json',
+        'db_root': 'benchmark_resources/datasets/dev/dev_20240627/dev_databases'
+    },
+    'dev-no-evidence': {
+        'questions': 'benchmark_resources/datasets/dev-no-evidence/dev_no_evidence.json',
+        'db_root': 'benchmark_resources/datasets/dev/dev_20240627/dev_databases'
+    }
+}
+
 # Evaluation settings
 EVALUATION_TIMEOUT = 5  # seconds per SQL query
 

@@ -45,7 +45,7 @@ python RoboPhD/tools/precompute_ground_truth.py
 # 6. Run a quick test
 python RoboPhD/researcher.py \
   --num-iterations 2 \
-  --config '{"databases_per_iteration": 2, "questions_per_database": 10}'
+  --config '{"contexts_per_iteration": 2, "problems_per_context": 10}'
 ```
 
 See [INSTALLATION.md](INSTALLATION.md) for detailed setup instructions and [QUICKSTART.md](QUICKSTART.md) for a 5-minute tutorial.

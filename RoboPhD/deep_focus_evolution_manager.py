@@ -19,16 +19,16 @@ import subprocess
 import sys
 import time
 import uuid
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from RoboPhD.domains.base import DomainInterface
+
+from RoboPhD.domains.base import SampledProblems, EvaluationResult
 from RoboPhD.comparison_report_generator import ComparisonReportGenerator
-from RoboPhD.core import SQLGenerator, Evaluator, DatabaseManager
-from RoboPhD.agent_orchestrator import AgentOrchestrator
 from RoboPhD.config import CLAUDE_CLI_MODEL_MAP
-from RoboPhD.utilities.database_compression import ensure_database_decompressed
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +54,13 @@ class DeepFocusEvolutionManager:
         eval_model: str = "haiku-4.5",
         analysis_model: str = "haiku-4.5",
         timeout: int = 1800,
-        max_concurrent_dbs: int = 8,
+        max_concurrent: int = 8,
         verification_retries: int = 2,
         temperature_strategy: str = "progressive",
         debug_log_probability: float = 0.02,
-        llm_call_timeout: int = 120
+        llm_call_timeout: int = 120,
+        domain: Optional['DomainInterface'] = None,
+        config: Optional[Dict[str, Any]] = None
     ):
         """
         Initialize Deep Focus Evolution Manager.
@@ -72,22 +74,29 @@ class DeepFocusEvolutionManager:
             eval_model: Model for SQL generation (default haiku-4.5)
             analysis_model: Model for database analysis (default haiku-4.5)
             timeout: Timeout in seconds for Claude CLI calls (default 1800)
-            max_concurrent_dbs: Maximum concurrent database processing (default 8)
+            max_concurrent: Maximum concurrent context processing (default 8)
             verification_retries: Number of SQL verification attempts (default 2)
             temperature_strategy: Temperature strategy for SQL generation (default "progressive")
             debug_log_probability: Probability (0.0-1.0) of logging API calls for debugging (default 0.02)
             llm_call_timeout: Per-call LLM timeout in seconds (default 120, for local models)
+            domain: Optional domain interface for domain-specific workspace setup.
+                   If not provided, defaults to Text2SQL-style database symlink.
+            config: Full configuration from ConfigManager. Passed to domain evaluation
+                   to ensure all domain-specific fields (coder_model, critic_model, etc.)
+                   are available without manual extraction.
         """
         self.test_rounds = test_rounds
         self.evolution_model = evolution_model
         self.eval_model = eval_model
         self.analysis_model = analysis_model
         self.timeout = timeout
-        self.max_concurrent_dbs = max_concurrent_dbs
+        self.max_concurrent = max_concurrent
         self.verification_retries = verification_retries
         self.temperature_strategy = temperature_strategy
         self.debug_log_probability = debug_log_probability
         self.llm_call_timeout = llm_call_timeout
+        self.domain = domain
+        self.config = config or {}
 
         # Set during evolve_agent() call
         self.working_dir: Optional[Path] = None
@@ -103,10 +112,8 @@ class DeepFocusEvolutionManager:
         current_iteration: int,
         evolution_strategy_name: str,
         evolution_prompt: str,
-        databases: Dict[int, List[str]],
-        questions_per_db: int,
-        questions_file: Path,
-        db_root: Path
+        contexts: Dict[int, List[str]],
+        problems_per_context: int,
     ) -> Tuple[Path, Path, Optional[Path], Dict[str, float]]:
         """
         Main orchestration method for deep focus evolution.
@@ -117,12 +124,10 @@ class DeepFocusEvolutionManager:
             current_iteration: Current iteration number
             evolution_strategy_name: Name of evolution strategy (for Round 1)
             evolution_prompt: Strategy-specific prompt (for Round 1)
-            databases: Dict mapping test_iteration -> list of database names
+            contexts: Dict mapping test_iteration -> list of context names
                       e.g., {34: ['db1', 'db2'], 33: ['db1', 'db2']}
                       Used for Rounds 3+ testing against prior iterations
-            questions_per_db: Questions per database for testing
-            questions_file: Path to questions JSON file (e.g., train_filtered.json, dev.json)
-            db_root: Path to database root directory
+            problems_per_context: Problems per context for testing
 
         Returns:
             Tuple of (agent.md path, eval_instructions.md path, tools/ path, timing_info dict, cost_info dict)
@@ -137,6 +142,7 @@ class DeepFocusEvolutionManager:
 
         Raises:
             RuntimeError: If any round fails
+            NotImplementedError: If domain is CodeGen (not yet supported)
         """
         self.working_dir = working_dir
         self.experiment_dir = experiment_dir
@@ -231,16 +237,16 @@ class DeepFocusEvolutionManager:
                     logger.warning(f"Cannot test against iteration {test_iteration} (doesn't exist)")
                     break
 
-                # Get databases for this test iteration
-                test_databases = databases.get(test_iteration, [])
-                if not test_databases:
-                    logger.info(f"No databases available for iteration {test_iteration}, skipping Round {round_num}")
+                # Get contexts for this test iteration
+                test_contexts = contexts.get(test_iteration, [])
+                if not test_contexts:
+                    logger.info(f"No contexts available for iteration {test_iteration}, skipping Round {round_num}")
                     break
 
                 logger.info("=" * 60)
                 logger.info(f"ROUND {round_num}: Testing and Refinement")
                 logger.info(f"Testing against iteration {test_iteration}")
-                logger.info(f"Databases: {', '.join(test_databases)}")
+                logger.info(f"Contexts: {', '.join(test_contexts)}")
                 logger.info("=" * 60)
 
                 start_time = time.time()
@@ -248,10 +254,8 @@ class DeepFocusEvolutionManager:
                 self._test_and_refine_round(
                     round_num=round_num,
                     test_iteration=test_iteration,
-                    databases=test_databases,
-                    questions_per_db=questions_per_db,
-                    questions_file=questions_file,
-                    db_root=db_root
+                    contexts=test_contexts,
+                    problems_per_context=problems_per_context,
                 )
                 self.timing_info[f'test_refine_{test_round + 1}'] = time.time() - start_time
                 self._aggregate_round_costs(f'test_refine_{test_round + 1}')
@@ -375,14 +379,19 @@ class DeepFocusEvolutionManager:
 
         try:
             # Run create_deep_focus_error_index.py with both directories
+            cmd = [
+                sys.executable,
+                str(script_path),
+                "--iteration-dirs", f"{baseline_iter},{test_workspace}",
+                "--output", str(error_index_path),
+                "--new-agent", new_agent_name
+            ]
+            # Add --flat-domain for non-hierarchical domains (e.g., CodeGen)
+            if self.domain and not self.domain.is_hierarchical:
+                cmd.append("--flat-domain")
+
             result = subprocess.run(
-                [
-                    sys.executable,
-                    str(script_path),
-                    "--iteration-dirs", f"{baseline_iter},{test_workspace}",
-                    "--output", str(error_index_path),
-                    "--new-agent", new_agent_name
-                ],
+                cmd,
                 capture_output=True,
                 text=True,
                 timeout=300  # 5 minute timeout
@@ -785,165 +794,45 @@ After completing implementation, respond with: "ROUND 2 COMPLETE"
         # Save Round 2 snapshot
         self._save_snapshot(round_num=2)
 
-    def _setup_test_workspace(
+    def _load_baseline_problems(
         self,
-        workspace: Path,
-        agent_md: Path,
-        eval_instructions_md: Path,
-        tools_dir: Path,
-        db_root: Path,
-        db_name: str
-    ):
-        """
-        Set up three-artifact workspace structure for testing.
-
-        This mimics AgentOrchestrator.setup_workspace() to create:
-        - .claude/agents/agent.md
-        - eval_instructions.md
-        - tools/ (if exists)
-        - database.sqlite symlink
-        - output/ directory
-        - tool_output/ directory
-
-        Args:
-            workspace: Database workspace directory
-            agent_md: Path to agent.md file
-            eval_instructions_md: Path to eval_instructions.md file
-            tools_dir: Path to tools directory (may not exist)
-            db_root: Path to database root directory
-            db_name: Database name
-        """
-        # Copy agent to .claude/agents directory
-        agents_dir = workspace / ".claude" / "agents"
-        agents_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(agent_md, agents_dir / "agent.md")
-
-        # Copy eval instructions to workspace
-        shutil.copy2(eval_instructions_md, workspace / "eval_instructions.md")
-
-        # Copy tools if present
-        if tools_dir.exists() and tools_dir.is_dir():
-            workspace_tools = workspace / "tools"
-            if workspace_tools.exists():
-                shutil.rmtree(workspace_tools)
-            shutil.copytree(tools_dir, workspace_tools)
-
-        # Ensure database is decompressed (handles large compressed databases from prior iterations)
-        try:
-            ensure_database_decompressed(db_root, db_name)
-        except FileNotFoundError:
-            # Database doesn't exist - will fail downstream with clearer error
-            pass
-        except Exception as e:
-            logger.warning(f"Decompression check failed for {db_name}: {e}")
-            # Continue anyway - might be a non-compressed database
-
-        # Create database symlink
-        db_path = db_root / db_name / f"{db_name}.sqlite"
-        db_dest = workspace / "database.sqlite"
-        if db_dest.exists():
-            db_dest.unlink()
-        db_dest.symlink_to(db_path.absolute())
-
-        # Create required directories
-        (workspace / "output").mkdir(exist_ok=True)
-        (workspace / "tool_output").mkdir(exist_ok=True)
-
-    def _process_test_database(
-        self,
-        db_name: str,
-        test_workspace: Path,
-        agent_md: Path,
-        eval_instructions_md: Path,
-        tools_dir: Path,
-        questions_file: Path,
-        questions_per_db: int,
-        db_root: Path,
         test_iteration: int,
-        agent_name: str
-    ) -> Dict[str, any]:
+        contexts: List[str],
+        questions_per_context: int
+    ) -> Dict[str, List[Dict]]:
         """
-        Process a single test database (Phase 1 + Phase 2 + Evaluation).
+        Load problems for each context, reusing baseline question IDs where available.
 
-        This method is called concurrently for each database in ThreadPoolExecutor.
+        For Text2SQL: Loads question IDs from baseline evaluation.json files
+        For CodeGen: Loads problem data from domain
 
         Args:
-            db_name: Database name
-            test_workspace: Test workspace directory (contains agent subdirectories)
-            agent_md: Path to agent.md file
-            eval_instructions_md: Path to eval_instructions.md file
-            tools_dir: Path to tools directory
-            questions_file: Path to questions JSON file
-            questions_per_db: Questions per database limit
-            db_root: Path to database root directory
-            test_iteration: Iteration number being tested against (for reusing question IDs)
-            agent_name: Agent directory name (for nested structure)
+            test_iteration: Iteration number to get baseline questions from
+            contexts: List of context names (database names or problem_ids)
+            questions_per_context: Max questions per context (fallback if no baseline)
 
         Returns:
-            Dict with keys: accuracy, correct, total (or error)
+            Dict mapping context_name -> list of problem dicts
         """
-        logger.info(f"  Testing database: {db_name}")
+        import glob
+        import random
 
-        # Create database workspace with nested agent/database structure
-        db_workspace = test_workspace / agent_name / db_name
-        db_workspace.mkdir(parents=True, exist_ok=True)
+        problems_by_context: Dict[str, List[Dict]] = {}
 
-        try:
-            # Set up three-artifact workspace structure
-            self._setup_test_workspace(db_workspace, agent_md, eval_instructions_md, tools_dir, db_root, db_name)
+        # Load all problems from domain
+        all_problems = self.domain.load_problems()
 
-            # Phase 1: Database analysis using AgentOrchestrator
-            orchestrator = AgentOrchestrator(
-                base_experiment_dir=test_workspace.parent,  # Evolution workspace
-                analysis_model=self.analysis_model,
-                timeout_phase1=self.timeout
-            )
+        # For each context, try to reuse baseline question IDs
+        baseline_iter_dir = self.experiment_dir / f"iteration_{test_iteration:03d}"
 
-            # Run Phase 1
-            success, agent_output_content, phase1_cost_info, tool_error = orchestrator.run_phase1(
-                workspace=db_workspace,
-                agent_id="new_agent",
-                database_name=db_name
-            )
+        for context_name in contexts:
+            context_problems = all_problems.get(context_name, [])
 
-            # Accumulate cost from Phase 1 test run into current round costs
-            # Tag as 'phase1' to distinguish from evolution calls
-            if phase1_cost_info:
-                if not hasattr(self, '_current_call_costs'):
-                    self._current_call_costs = []
-                phase1_cost_info['call_type'] = 'phase1'
-                self._current_call_costs.append(phase1_cost_info)
-
-            if not success or not agent_output_content:
-                raise RuntimeError("Phase 1 failed")
-
-            # Get the actual file path for the prompt (combined agent output + eval instructions)
-            prompt_file = db_workspace / "output" / "system_prompt.txt"
-            if not prompt_file.exists():
-                raise RuntimeError(f"System prompt file not found: {prompt_file}")
-
-            # Phase 2: SQL generation using SQLGenerator
-            # Load all questions and filter for this database
-            with open(questions_file, 'r') as f:
-                all_questions = json.load(f)
-
-            # Add question_id if not present (train dataset doesn't have it)
-            for idx, q in enumerate(all_questions):
-                if 'question_id' not in q:
-                    q['question_id'] = idx
-
-            # Filter questions for this database
-            db_questions = [q for q in all_questions if q.get('db_id') == db_name]
-
-            # Reuse the exact question IDs from the baseline iteration
-            # This ensures test rounds use the same questions as the iteration they're testing against
+            # Try to load baseline question IDs
             baseline_question_ids = None
-            baseline_iter_dir = self.experiment_dir / f"iteration_{test_iteration:03d}"
-
             if baseline_iter_dir.exists():
-                # Find any agent's evaluation file (they all tested the same questions)
-                import glob
-                eval_pattern = str(baseline_iter_dir / "agent_*" / db_name / "results" / "evaluation.json")
+                # Look for evaluation.json in any agent's context directory
+                eval_pattern = str(baseline_iter_dir / "agent_*" / context_name / "results" / "evaluation.json")
                 eval_files = glob.glob(eval_pattern)
 
                 if eval_files:
@@ -951,129 +840,39 @@ After completing implementation, respond with: "ROUND 2 COMPLETE"
                         with open(eval_files[0], 'r') as f:
                             baseline_data = json.load(f)
                             baseline_question_ids = set(baseline_data['results'].keys())
-                        logger.info(f"    Reusing {len(baseline_question_ids)} question IDs from iteration {test_iteration}")
+                        logger.info(f"    Reusing {len(baseline_question_ids)} question IDs from iteration {test_iteration} for {context_name}")
                     except Exception as e:
                         logger.warning(f"    Could not read baseline questions from {eval_files[0]}: {e}")
 
             if baseline_question_ids:
-                # Filter to only include questions with matching IDs from baseline
-                db_questions = [q for q in db_questions if str(q.get('question_id')) in baseline_question_ids]
-            elif questions_per_db and len(db_questions) > questions_per_db:
-                # Fallback: sample randomly if we couldn't load baseline questions
-                logger.warning(f"    Could not load baseline questions, sampling {questions_per_db} randomly")
-                import random
-                db_questions = random.sample(db_questions, questions_per_db)
+                # Filter to only questions matching baseline IDs
+                problems_by_context[context_name] = [
+                    q for q in context_problems
+                    if str(q.get('question_id')) in baseline_question_ids
+                ]
+            elif questions_per_context and len(context_problems) > questions_per_context:
+                # Fallback: sample randomly if no baseline available
+                logger.warning(f"    Could not load baseline questions for {context_name}, sampling {questions_per_context} randomly")
+                problems_by_context[context_name] = random.sample(context_problems, questions_per_context)
+            else:
+                # Use all available problems
+                problems_by_context[context_name] = list(context_problems)
 
-            # Create temp questions file
-            import tempfile
-            temp_questions_file = tempfile.NamedTemporaryFile(
-                mode='w',
-                suffix=f'_{db_name}_questions.json',
-                delete=False
-            )
-            json.dump(db_questions, temp_questions_file)
-            temp_questions_file.close()
-            temp_questions_path = Path(temp_questions_file.name)
-
-            try:
-                # Get database path
-                db_path = db_root / db_name / f"{db_name}.sqlite"
-
-                # Get API key
-                from RoboPhD.config import API_KEY_ENV_VAR
-                import os
-                api_key = os.getenv(API_KEY_ENV_VAR)
-                if not api_key:
-                    raise RuntimeError(f"API key not found in environment variable {API_KEY_ENV_VAR}")
-
-                # Create SQLGenerator
-                sql_generator = SQLGenerator(
-                    eval_model=self.eval_model,
-                    questions_file=temp_questions_path,
-                    timeout=self.timeout,
-                    use_evidence=True,
-                    api_key=api_key,
-                    verification_retries=self.verification_retries,
-                    temperature_strategy=self.temperature_strategy,
-                    debug_log_probability=self.debug_log_probability,
-                    llm_call_timeout=self.llm_call_timeout
-                )
-
-                # Create results directory
-                results_dir = db_workspace / "results"
-                results_dir.mkdir(parents=True, exist_ok=True)
-
-                # Generate predictions
-                # Pass output_path to results/ for consistency and to enable debug logs
-                predictions_path = results_dir / "predictions.json"
-                result, phase2_cost = sql_generator.generate(
-                    prompt_file=prompt_file,
-                    db_name=db_name,
-                    db_path=db_path,
-                    output_path=predictions_path,
-                    agent_id="new_agent"
-                )
-
-                # Evaluation using Evaluator
-                evaluator = Evaluator(
-                    questions_file=temp_questions_path,
-                    db_root=db_root
-                )
-
-                evaluation = evaluator.evaluate(
-                    predictions=result,
-                    db_name=db_name,
-                    save_to=results_dir / "evaluation.json"
-                )
-
-                # Track results
-                db_result = {
-                    'accuracy': evaluation.get('accuracy', 0.0),
-                    'correct': evaluation.get('correct', 0),
-                    'total': evaluation.get('total_questions', 0),
-                    'phase2_cost': phase2_cost  # API cost for SQL generation
-                }
-
-                # Include tool_error if present (tool failed but agent succeeded)
-                if tool_error:
-                    db_result['tool_only_error'] = tool_error
-
-                logger.info(f"    ✓ {db_name}: {db_result['accuracy']:.1f}% "
-                          f"({db_result['correct']}/{db_result['total']})")
-
-                return db_result
-
-            finally:
-                # Clean up temp questions file
-                if temp_questions_path.exists():
-                    temp_questions_path.unlink()
-
-        except Exception as e:
-            logger.error(f"    ✗ {db_name}: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
-            return {
-                'accuracy': 0.0,
-                'correct': 0,
-                'total': 0,
-                'error': str(e)
-            }
+        return problems_by_context
 
     def _test_and_refine_round(
         self,
         round_num: int,
         test_iteration: int,
-        databases: List[str],
-        questions_per_db: int,
-        questions_file: Path,
-        db_root: Path
+        contexts: List[str],
+        problems_per_context: int,
     ):
         """
         Execute a test and refinement round.
 
         Process:
         1. Create test workspace (iteration_XXX_test/)
-        2. Run agent on test databases using existing infrastructure
+        2. Run agent on test contexts using existing infrastructure
         3. Generate standard evaluation report
         4. Generate comparison report vs historical agents
         5. Prompt Claude to refine based on results
@@ -1082,10 +881,8 @@ After completing implementation, respond with: "ROUND 2 COMPLETE"
         Args:
             round_num: Round number (3, 4, 5, ...)
             test_iteration: Iteration number to test against
-            databases: Databases to test on
-            questions_per_db: Questions per database
-            questions_file: Path to questions JSON file
-            db_root: Path to database root directory
+            contexts: Contexts to test on (databases for Text2SQL, problem_ids for CodeGen)
+            problems_per_context: Problems per context
         """
         logger.info(f"Round {round_num}: Testing against iteration {test_iteration}")
 
@@ -1128,68 +925,96 @@ After completing implementation, respond with: "ROUND 2 COMPLETE"
         else:
             logger.warning(f"Baseline iteration not found: {baseline_iter_dir}")
 
-        # Run agent testing using concurrent processing
-        logger.info(f"Running agent on {len(databases)} databases (max concurrent: {self.max_concurrent_dbs})...")
+        # Run agent testing using domain-agnostic approach
+        context_label = self.domain.context_label_plural if self.domain else "contexts"
+        logger.info(f"Running agent on {len(contexts)} {context_label} (max concurrent: {self.max_concurrent})...")
 
+        # Create agent package directory with evolved agent artifacts
+        agent_package_dir = test_workspace / "agent_package"
+        agent_package_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(agent_md, agent_package_dir / "agent.md")
+        shutil.copy2(eval_instructions_md, agent_package_dir / "eval_instructions.md")
+        if tools_dir.exists():
+            package_tools_dir = agent_package_dir / "tools"
+            if package_tools_dir.exists():
+                shutil.rmtree(package_tools_dir)
+            shutil.copytree(tools_dir, package_tools_dir)
+
+        # Load problems for each context, reusing baseline question IDs where available
+        problems_by_context = self._load_baseline_problems(
+            test_iteration=test_iteration,
+            contexts=contexts,
+            questions_per_context=problems_per_context
+        )
+
+        # Build SampledProblems (same interface as main loop in researcher.py)
+        sampled = SampledProblems(
+            contexts=contexts,
+            problems_by_context=problems_by_context
+        )
+
+        # Build config for run_evaluation (same pattern as main loop)
+        eval_config = self.config.copy()
+        eval_config.update({
+            'agent_id': agent_name,
+            'cache_manager': None,  # No caching in DeepFocus testing
+            'experiment_dir': self.experiment_dir,
+            'eval_model': self.eval_model,
+            'analysis_model': self.analysis_model,
+            'phase2_timeout': self.timeout,
+            'max_concurrent': self.max_concurrent,
+            'verification_retries': self.verification_retries,
+            'temperature_strategy': self.temperature_strategy,
+            'debug_log_probability': self.debug_log_probability,
+            'llm_call_timeout': self.llm_call_timeout,
+        })
+
+        # Single run_evaluation call (same as main loop in researcher.py)
+        # Output goes to: new_agent_dir / context_name / results / evaluation.json
+        eval_result = self.domain.run_evaluation(
+            sampled=sampled,
+            agent_path=agent_package_dir,
+            output_dir=new_agent_dir,
+            config=eval_config
+        )
+
+        # Process results from EvaluationResult into per-context format for reports
         results = {}
+        for r in eval_result.results:
+            # Get context name (db_id for Text2SQL, question_id for CodeGen)
+            context_name = r.get('db_id') or r.get('question_id')
+            if context_name not in results:
+                results[context_name] = {
+                    'accuracy': 0.0,
+                    'correct': 0,
+                    'total': 0,
+                }
+            results[context_name]['total'] += 1
+            if r.get('correct'):
+                results[context_name]['correct'] += 1
 
-        # Process databases concurrently using ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=self.max_concurrent_dbs) as executor:
-            # Submit all database processing tasks
-            futures = {}
-            for db_name in databases:
-                future = executor.submit(
-                    self._process_test_database,
-                    db_name=db_name,
-                    test_workspace=test_workspace,
-                    agent_md=agent_md,
-                    eval_instructions_md=eval_instructions_md,
-                    tools_dir=tools_dir,
-                    questions_file=questions_file,
-                    questions_per_db=questions_per_db,
-                    db_root=db_root,
-                    test_iteration=test_iteration,
-                    agent_name=agent_name
-                )
-                futures[future] = db_name
+        # Calculate per-context accuracy
+        for context_name in results:
+            r = results[context_name]
+            r['accuracy'] = (r['correct'] / r['total'] * 100) if r['total'] > 0 else 0.0
 
-            # Collect results as they complete
-            for future in as_completed(futures):
-                db_name = futures[future]
-                try:
-                    result = future.result()
-                    results[db_name] = result
+        # Accumulate Phase 2 cost
+        if eval_result.metadata.get('phase2_cost', 0) > 0:
+            if not hasattr(self, '_current_call_costs'):
+                self._current_call_costs = []
+            phase2_cost_info = {
+                'cost': eval_result.metadata.get('phase2_cost', 0),
+                'tokens_in': eval_result.metadata.get('phase2_tokens_in', 0),
+                'tokens_out': eval_result.metadata.get('phase2_tokens_out', 0),
+                'cache_created': 0,
+                'cache_read': 0,
+                'call_type': 'phase2'
+            }
+            self._current_call_costs.append(phase2_cost_info)
 
-                    # Accumulate Phase 2 cost from test database
-                    # Tag as 'phase2' to distinguish from phase1 and evolution
-                    if 'phase2_cost' in result and result['phase2_cost'] > 0:
-                        if not hasattr(self, '_current_call_costs'):
-                            self._current_call_costs = []
-                        phase2_cost_info = {
-                            'cost': result['phase2_cost'],
-                            'tokens_in': 0,  # API tokens not tracked separately in cost_info
-                            'tokens_out': 0,
-                            'cache_created': 0,
-                            'cache_read': 0,
-                            'call_type': 'phase2'
-                        }
-                        self._current_call_costs.append(phase2_cost_info)
-                except Exception as e:
-                    # This should rarely happen since _process_test_database handles exceptions
-                    logger.error(f"    ✗ {db_name}: Unexpected error: {e}")
-                    import traceback
-                    logger.error(traceback.format_exc())
-                    results[db_name] = {
-                        'accuracy': 0.0,
-                        'correct': 0,
-                        'total': 0,
-                        'error': str(e)
-                    }
-
-        # Calculate overall accuracy
-        total_correct = sum(r['correct'] for r in results.values())
-        total_questions = sum(r['total'] for r in results.values())
-        overall_accuracy = (total_correct / total_questions * 100) if total_questions > 0 else 0.0
+        overall_accuracy = eval_result.accuracy
+        total_correct = eval_result.correct
+        total_questions = eval_result.total
 
         logger.info(f"Overall accuracy: {overall_accuracy:.1f}% ({total_correct}/{total_questions})")
 
@@ -1197,18 +1022,21 @@ After completing implementation, respond with: "ROUND 2 COMPLETE"
         report_path = new_agent_dir / "agent_evaluation_report.md"
         self._generate_evaluation_report(results, overall_accuracy, report_path)
 
-        # Generate comparison report and show link
-        comparison_path = self.working_dir / f"iteration_{test_iteration:03d}_comparison.md"
+        # Generate comparison report (pass domain for domain-agnostic loading)
+        comparison_path: Optional[Path] = None
 
-        report_gen = ComparisonReportGenerator(self.experiment_dir)
-        report_gen.generate_comparison_report(
-            test_iteration=test_iteration,
-            new_agent_workspace=new_agent_dir,  # Pass agent directory instead of test workspace
-            databases=databases,
-            output_path=comparison_path
-        )
-
-        logger.info(f"📊 Comparison report: {comparison_path}")
+        if self.domain and self.domain.supports_comparison_report:
+            comparison_path = self.working_dir / f"iteration_{test_iteration:03d}_comparison.md"
+            report_gen = ComparisonReportGenerator(self.experiment_dir, domain=self.domain)
+            report_gen.generate_comparison_report(
+                test_iteration=test_iteration,
+                new_agent_workspace=new_agent_dir,
+                databases=contexts,
+                output_path=comparison_path
+            )
+            logger.info(f"📊 Comparison report: {comparison_path}")
+        else:
+            logger.info("Skipping comparison report (not supported for this domain)")
 
         # Generate new vs baseline error analysis (ALWAYS - no longer optional)
         logger.info("Generating new vs baseline error analysis...")
@@ -1246,6 +1074,9 @@ After completing implementation, respond with: "ROUND 2 COMPLETE"
             overall_accuracy: Overall accuracy percentage
             output_path: Where to save the report
         """
+        # Use domain-specific terminology
+        context_label = self.domain.context_label if self.domain else "Database"
+
         report_lines = [
             "# Agent Evaluation Report",
             "",
@@ -1253,72 +1084,76 @@ After completing implementation, respond with: "ROUND 2 COMPLETE"
             "",
             f"**Overall Accuracy**: {overall_accuracy:.1f}%",
             "",
-            "## Performance by Database",
+            f"## Performance by {context_label}",
             "",
-            "| Database | Accuracy | Correct | Total |",
+            f"| {context_label} | Accuracy | Correct | Total |",
             "|----------|----------|---------|-------|"
         ]
 
-        # Sort databases by name
+        # Sort contexts by name
         errors = {}
         tool_only_failures = {}
-        for db_name in sorted(results.keys()):
-            r = results[db_name]
+        for context_name in sorted(results.keys()):
+            r = results[context_name]
             if 'error' in r:
-                report_lines.append(f"| {db_name} | ERROR | - | - |")
-                errors[db_name] = r['error']
+                report_lines.append(f"| {context_name} | ERROR | - | - |")
+                errors[context_name] = r['error']
             else:
                 report_lines.append(
-                    f"| {db_name} | {r['accuracy']:.1f}% | {r['correct']} | {r['total']} |"
+                    f"| {context_name} | {r['accuracy']:.1f}% | {r['correct']} | {r['total']} |"
                 )
                 # Track tool-only failures (tool failed but agent succeeded)
                 if 'tool_only_error' in r:
-                    tool_only_failures[db_name] = r['tool_only_error']
+                    tool_only_failures[context_name] = r['tool_only_error']
 
         # Add errors section if there were any errors
         if errors:
+            context_label_lower = context_label.lower() + "s"  # "databases" or "contexts"
             report_lines.extend([
                 "",
                 "## Errors",
                 "",
-                "The following databases encountered errors during testing:",
+                f"The following {context_label_lower} encountered errors during testing:",
                 ""
             ])
-            for db_name in sorted(errors.keys()):
+            for context_name in sorted(errors.keys()):
                 report_lines.extend([
-                    f"### {db_name}",
+                    f"### {context_name}",
                     "```",
-                    errors[db_name],
+                    errors[context_name],
                     "```",
                     ""
                 ])
 
         # Add tool-only failures section if there were any
         if tool_only_failures:
+            context_label_lower = context_label.lower() + "s"  # "databases" or "contexts"
             report_lines.extend([
                 "",
                 "## Tool-Only Failures",
                 "",
-                "The following databases had tool-only execution failures but succeeded with agent fallback:",
+                f"The following {context_label_lower} had tool-only execution failures but succeeded with agent fallback:",
                 ""
             ])
-            for db_name in sorted(tool_only_failures.keys()):
+            for context_name in sorted(tool_only_failures.keys()):
                 report_lines.extend([
-                    f"### {db_name}",
+                    f"### {context_name}",
                     "```",
-                    tool_only_failures[db_name],
+                    tool_only_failures[context_name],
                     "```",
                     ""
                 ])
 
+        # Use domain-specific paths in documentation
+        context_path_label = "database" if (self.domain is None or self.domain.__class__.__name__ == 'Text2SQLDomain') else "context"
         report_lines.extend([
             "",
             "## Detailed Results",
             "",
-            "Review individual database results in:",
+            f"Review individual {context_path_label} results in:",
             "```",
-            "./<database>/results/evaluation.json",
-            "./<database>/output/system_prompt.txt",
+            f"./<{context_path_label}>/results/evaluation.json",
+            f"./<{context_path_label}>/output/system_prompt.txt" if context_path_label == "database" else f"./<{context_path_label}>/output/",
             "```"
         ])
 
@@ -1330,7 +1165,7 @@ After completing implementation, respond with: "ROUND 2 COMPLETE"
         round_num: int,
         test_iteration: int,
         report_path: Path,
-        comparison_path: Path
+        comparison_path: Optional[Path]
     ):
         """
         Prompt Claude Code to refine agent based on test results.
@@ -1341,14 +1176,16 @@ After completing implementation, respond with: "ROUND 2 COMPLETE"
             round_num: Current round number
             test_iteration: Iteration that was tested against
             report_path: Path to evaluation report
-            comparison_path: Path to comparison report
+            comparison_path: Path to comparison report (None if not supported)
         """
         # Read reports
         with open(report_path) as f:
             eval_report = f.read()
 
-        with open(comparison_path) as f:
-            comparison_report = f.read()
+        comparison_report = ""
+        if comparison_path and comparison_path.exists():
+            with open(comparison_path) as f:
+                comparison_report = f.read()
 
         # Check if error analysis report exists (always generated now)
         test_workspace_name = f"iteration_{test_iteration:03d}_test"
@@ -1375,6 +1212,13 @@ Use @extract_error_details tool with question_ids ['1234', '5678'] from iteratio
 The tool returns complete evaluation data including SQL queries, predicted results, ground truth, verification attempts, and error details. This is much more efficient than reading individual evaluation.json files.
 """
 
+        comparison_section = ""
+        if comparison_report:
+            comparison_section = f"""
+### Comparison Report
+{comparison_report}
+"""
+
         prompt = f"""
 ## Round {round_num}: Testing and Refinement
 
@@ -1382,10 +1226,7 @@ Your agent was tested on data from iteration {test_iteration}.
 
 ### Standard Evaluation Report
 {eval_report}
-
-### Comparison Report
-{comparison_report}
-{error_analysis_section}
+{comparison_section}{error_analysis_section}
 ### Your Task
 Review the performance results above and the generated outputs in the test workspace:
 - Evaluation results: `./iteration_{test_iteration:03d}_test/<database>/results/evaluation.json`

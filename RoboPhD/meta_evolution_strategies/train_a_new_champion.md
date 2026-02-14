@@ -38,11 +38,11 @@ Think of yourself as a senior coach managing a team of junior coaches (evolution
 - `agents_per_iteration`: How many agents to test per iteration
 
 **What the user controls** - Experimental conditions you should not modify:
-- `databases_per_iteration`: Number of databases sampled per iteration
-- `questions_per_database`: Number of questions per database
+- `contexts_per_iteration`: Number of contexts sampled per iteration (databases for Text2SQL)
+- `problems_per_context`: Number of problems per context (questions per database for Text2SQL)
 - `eval_model`, `analysis_model`, `evolution_model`: Which AI models to use
-- `phase1_timeout`, `sql_timeout`, `evolution_timeout`: Time limits
-- `max_concurrent_dbs`, `debug_log_probability`: System performance settings
+- `phase1_timeout`, `phase2_timeout`, `evolution_timeout`: Time limits
+- `max_concurrent`, `debug_log_probability`: System performance settings
 
 **Cost-benefit tradeoffs for your parameters**:
 

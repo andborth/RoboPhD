@@ -201,7 +201,7 @@ def precompute_database_ground_truth(
 def precompute_ground_truth(
     dataset: str = 'train-filtered',
     databases: Optional[List[str]] = None,
-    questions_per_database: Optional[int] = None,
+    problems_per_context: Optional[int] = None,
     max_concurrent: int = 3,
     random_seed: Optional[int] = None,
     timeout_seconds: int = 300,
@@ -210,10 +210,14 @@ def precompute_ground_truth(
     """
     Pre-compute ground truth results for selected databases.
 
+    This is a Text2SQL-specific utility that pre-computes and caches
+    ground truth query results to prevent database lock errors during
+    parallel evaluation runs.
+
     Args:
         dataset: Dataset to use (train/train-filtered/dev/test)
         databases: List of databases (None = all available)
-        questions_per_database: Questions per database (None = all questions)
+        problems_per_context: Questions per database (None = all questions)
         max_concurrent: Concurrent databases (lower = safer)
         random_seed: Random seed for reproducible sampling (only used if sampling)
         timeout_seconds: Timeout for SQL execution in seconds (default: 300)
@@ -251,10 +255,10 @@ def precompute_ground_truth(
         }
 
     if verbose:
-        if questions_per_database is None:
+        if problems_per_context is None:
             print("Mode: ALL questions (recommended for production)")
         else:
-            print(f"Mode: LIMITED sampling ({questions_per_database} questions per database)")
+            print(f"Mode: LIMITED sampling ({problems_per_context} questions per database)")
             print("      Note: Use ALL questions for production to avoid cache misses")
         print(f"Max concurrent databases: {max_concurrent}")
         if random_seed is not None:
@@ -299,11 +303,11 @@ def precompute_ground_truth(
         print(f"📊 Processing {len(databases_to_process)} databases:")
         for db_name in databases_to_process:
             num_questions = len(questions_by_db.get(db_name, []))
-            if questions_per_database is None:
+            if problems_per_context is None:
                 sampled = num_questions
                 suffix = "(ALL)"
             else:
-                sampled = min(questions_per_database, num_questions)
+                sampled = min(problems_per_context, num_questions)
                 suffix = f"(sampled from {num_questions})"
             print(f"  - {db_name}: {sampled} questions {suffix}")
         print()
@@ -332,7 +336,7 @@ def precompute_ground_truth(
                 precompute_database_ground_truth,
                 db_name,
                 questions,
-                questions_per_database,
+                problems_per_context,
                 db_root,
                 executor,
                 random_seed,
@@ -535,7 +539,7 @@ Note: Test dataset has no ground truth, so pre-computation is not needed.
         result = precompute_ground_truth(
             dataset=args.dataset,
             databases=args.databases,
-            questions_per_database=args.questions_per_database,
+            problems_per_context=args.problems_per_context,
             max_concurrent=args.max_concurrent,
             random_seed=args.random_seed,
             timeout_seconds=args.timeout,

@@ -1,0 +1,451 @@
+"""
+Base domain interface for RoboPhD research system.
+
+The architecture is isomorphic across domains - only Phase 1 input and evaluation differ:
+
+Text2SQL:
+    - Phase 1 Input: Database file (schema, tables)
+    - agent.md + tools/: Analyze schema → database-specific context
+    - eval_instructions.md: Static SQL generation principles
+    - Output: system_prompt.txt = agent_output + eval_instructions
+
+Code Generation:
+    - Phase 1 Input: Bundle {question, code_v1, approach_description}
+    - agent.md + tools/: Route approach → select/combine heuristics
+    - eval_instructions.md: Static coding principles
+    - Output: critic_prompt.txt = agent_output + eval_instructions
+"""
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from pathlib import Path
+import random
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
+
+
+@dataclass
+class SampledProblems:
+    """
+    Domain-agnostic container for sampled problems.
+
+    This opaque container is passed from sample_problems() to run_evaluation()
+    without the evolution system needing to understand its structure.
+
+    Attributes:
+        contexts: List of context identifiers (db names for Text2SQL, problem IDs for CodeGen)
+        problems_by_context: Dict mapping context_id -> list of problem dicts
+    """
+    contexts: List[str]
+    problems_by_context: Dict[str, List[Dict]]
+
+
+@dataclass
+class EvaluationResult:
+    """
+    Domain-agnostic container for evaluation results.
+
+    Returned by run_evaluation() to provide the evolution system with
+    accuracy metrics and per-question results.
+
+    Attributes:
+        accuracy: Overall accuracy as a percentage (0-100)
+        total: Total number of problems evaluated
+        correct: Number of correct solutions
+        results: List of per-question result dicts with at minimum:
+            - question_id or problem_id
+            - correct: bool
+            - Additional domain-specific details
+        metadata: Optional dict for domain-specific metadata (timing, costs, etc.)
+    """
+    accuracy: float
+    total: int
+    correct: int
+    results: List[Dict[str, Any]]
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+class DomainInterface(ABC):
+    """
+    Minimal interface for domain-specific behavior.
+
+    Domains differ only in:
+    1. What gets fed into Phase 1 (prepare_phase1_input)
+    2. How solutions are evaluated (evaluate)
+    3. How problems are loaded (load_problems, get_problems_for_context)
+
+    Everything else (evolution, ELO, checkpointing, agent selection) is domain-agnostic.
+    """
+
+    @abstractmethod
+    def prepare_phase1_input(self, workspace: Path, context: str, problem: Optional[Dict] = None) -> Path:
+        """
+        Prepare the input for Phase 1 analysis in the workspace.
+
+        This method sets up whatever the agent needs to analyze:
+        - Text2SQL: Creates symlink to database.sqlite
+        - CodeGen: Writes problem_context.json with {question, code_v1, approach}
+
+        Args:
+            workspace: The workspace directory for this analysis
+            context: Context identifier (database name for Text2SQL, problem_id for CodeGen)
+            problem: Optional problem dict (used by CodeGen to include code_v1, approach)
+
+        Returns:
+            Path to the primary input file/directory the agent will analyze
+        """
+        pass
+
+    @abstractmethod
+    def evaluate(
+        self,
+        solution: str,
+        problem: Dict,
+        context: str,
+        predictions_path: Optional[Path] = None
+    ) -> Dict[str, Any]:
+        """
+        Evaluate a solution against ground truth.
+
+        Args:
+            solution: The generated solution (SQL query or code)
+            problem: Problem dict with ground truth and metadata
+            context: Context identifier (database name or problem_id)
+            predictions_path: Optional path to save predictions
+
+        Returns:
+            Evaluation result dict with at minimum:
+            - correct: bool - whether the solution is correct
+            - details: Any - domain-specific details
+        """
+        pass
+
+    @abstractmethod
+    def load_problems(self) -> Dict[str, List[Dict]]:
+        """
+        Load all problems grouped by context.
+
+        Returns:
+            Dict mapping context_id -> list of problem dicts
+
+        For Text2SQL: Maps database_name -> list of questions for that database
+        For CodeGen: Maps problem_id -> list containing single problem dict
+        """
+        pass
+
+    @abstractmethod
+    def get_contexts(self) -> List[str]:
+        """
+        Get list of all available contexts.
+
+        Returns:
+            List of context identifiers (database names for Text2SQL,
+            problem categories or IDs for CodeGen)
+        """
+        pass
+
+    @abstractmethod
+    def sample_problems(
+        self,
+        config: Dict[str, Any],
+        rng: 'random.Random',
+        available_contexts: Optional[List[str]] = None
+    ) -> SampledProblems:
+        """
+        Sample problems for an iteration based on domain-specific config.
+
+        Sampling logic differs by domain:
+        - Text2SQL: Uses contexts_per_iteration + problems_per_context
+          (two-level hierarchy: sample databases, then questions within each)
+        - CodeGen: Uses contexts_per_iteration only
+          (flat sampling from problem pool, each context IS a problem)
+
+        Args:
+            config: Configuration dict containing sampling parameters
+            rng: Random number generator for reproducibility
+            available_contexts: Optional list of contexts to sample from.
+                              If None, uses all available contexts.
+
+        Returns:
+            SampledProblems containing:
+            - contexts: List of context identifiers selected
+            - problems_by_context: Dict mapping context_id -> list of problem dicts
+        """
+        pass
+
+    @abstractmethod
+    def run_evaluation(
+        self,
+        sampled: SampledProblems,
+        agent_path: Path,
+        output_dir: Path,
+        config: Dict[str, Any]
+    ) -> EvaluationResult:
+        """
+        Run evaluation on sampled problems with given agent.
+
+        This method orchestrates the full evaluation pipeline for the domain:
+        - Text2SQL: Phase 1 analysis, Phase 2 SQL generation, result comparison
+        - CodeGen: Critic feedback, coder revision, test execution
+
+        Args:
+            sampled: SampledProblems from sample_problems()
+            agent_path: Path to agent directory containing agent.md, eval_instructions.md, tools/
+            output_dir: Directory to write evaluation outputs
+            config: Configuration dict with eval_model, timeouts, etc.
+
+        Returns:
+            EvaluationResult with accuracy and per-question results
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def phase1_input_name(self) -> str:
+        """
+        Human-readable name for what Phase 1 analyzes.
+
+        Used in logging and prompts:
+        - Text2SQL: "database"
+        - CodeGen: "problem context"
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def solution_name(self) -> str:
+        """
+        Human-readable name for what gets generated.
+
+        Used in logging and prompts:
+        - Text2SQL: "SQL"
+        - CodeGen: "code"
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def evolution_strategies_dir(self) -> str:
+        """
+        Directory name for domain-specific evolution strategies.
+
+        Each domain has its own strategies that are evolved by meta-evolution.
+        This returns the directory name (not full path) relative to RoboPhD/:
+        - Text2SQL: "evolution_strategies"
+        - CodeGen: "evolution_strategies_codegen"
+
+        The full path is constructed as: RoboPhD/{evolution_strategies_dir}/
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def phase1_display_name(self) -> str:
+        """
+        Display name for Phase 1 in reports and logs.
+
+        Used for labels like "Phase 1 (DB Analysis - CLI)":
+        - Text2SQL: "DB Analysis"
+        - CodeGen: "Problem Analysis"
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def phase2_display_name(self) -> str:
+        """
+        Display name for Phase 2 in reports and logs.
+
+        Used for labels like "Phase 2 (SQL Generation - API)":
+        - Text2SQL: "SQL Generation"
+        - CodeGen: "Code Generation"
+        """
+        pass
+
+    @property
+    def error_analysis_tool_dir(self) -> str:
+        """
+        Directory path for domain-specific error analysis tools.
+
+        Returns the path (relative to RoboPhD/) where domain-specific
+        error analysis tools are located. This allows evolution strategies
+        to use the correct tool versions for each domain.
+
+        Default: "tools/error_analysis" (Text2SQL tools)
+        Override: "domains/{domain}/tools" for domain-specific tools
+        """
+        # Default to the shared Text2SQL error analysis tools
+        return "tools/error_analysis"
+
+    @property
+    def name(self) -> str:
+        """Domain name for identification."""
+        return self.__class__.__name__.replace('Domain', '').lower()
+
+    @property
+    @abstractmethod
+    def context_label(self) -> str:
+        """
+        Human-readable label for contexts (singular).
+
+        Used in reports and logs:
+        - Text2SQL: "Database"
+        - CodeGen: "Problem"
+        """
+        pass
+
+    @property
+    def context_label_plural(self) -> str:
+        """
+        Plural form of context_label.
+
+        Used in reports and logs:
+        - Text2SQL: "databases"
+        - CodeGen: "problems"
+        """
+        return self.context_label.lower() + "s"
+
+    @property
+    def supports_comparison_report(self) -> bool:
+        """
+        Whether domain supports per-context comparison reports.
+
+        Text2SQL generates per-database comparison tables showing
+        agent performance across databases. Other domains may not
+        have this structure.
+
+        Default: False (subclasses override if supported)
+        """
+        return False
+
+    @property
+    @abstractmethod
+    def phase1_short_label(self) -> str:
+        """
+        Short label for Phase 1 context in reports.
+
+        Used in table headers where space is limited:
+        - Text2SQL: "DB"
+        - CodeGen: "Problem"
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def is_hierarchical(self) -> bool:
+        """
+        Whether contexts have multiple problems (True) or 1:1 mapping (False).
+
+        This is the fundamental structural property of the domain:
+        - True: Contexts contain multiple problems (e.g., Text2SQL databases)
+        - False: Each context IS a problem, 1:1 mapping (e.g., CodeGen problems)
+
+        Used by sampling logic and comparison reports.
+        """
+        pass
+
+    @property
+    def sampling_style(self) -> str:
+        """
+        Sampling model label, derived from is_hierarchical.
+
+        - 'hierarchical': Two-level (contexts → problems per context)
+          Uses: contexts_per_iteration, problems_per_context
+        - 'flat': Single-level (contexts ARE problems)
+          Uses: contexts_per_iteration only (problems_per_context ignored)
+        """
+        return 'hierarchical' if self.is_hierarchical else 'flat'
+
+    @abstractmethod
+    def load_agent_results(self, agent_dir: Path, contexts: List[str]) -> Dict[str, Any]:
+        """
+        Load evaluation results from an agent's output directory.
+
+        Used by ComparisonReportGenerator to load results in a domain-agnostic way.
+
+        Args:
+            agent_dir: Path to agent's output directory (e.g., iteration_001/agent_xyz/)
+            contexts: List of context names to load results for
+
+        Returns:
+            Dict with:
+            - overall_accuracy: float (0-100)
+            - total_questions: int
+            - correct: int
+            - by_context: Dict[str, Dict] with per-context results including:
+                - accuracy: float
+                - correct: int
+                - total: int
+        """
+        pass
+
+    # === Internal workspace methods ===
+    # These are implementation details used by some domains internally.
+    # Not part of the public interface - use run_evaluation() instead.
+
+    def setup_context_workspace(
+        self,
+        workspace: Path,
+        context_name: str,
+        agent_path: Path,
+        problem: Optional[Dict] = None
+    ) -> None:
+        """
+        Set up workspace for evaluating a single context.
+
+        Creates the standard workspace structure:
+        - .claude/agents/agent.md (from agent_path)
+        - eval_instructions.md (from agent_path)
+        - tools/ (from agent_path, if exists)
+        - Context-specific input (database symlink or problem_context.json)
+        - output/, tool_output/, results/ directories
+
+        Args:
+            workspace: Directory for this context's evaluation
+            context_name: Context identifier (database name or problem_id)
+            agent_path: Path to agent directory with agent.md, eval_instructions.md, tools/
+            problem: Optional problem dict (used by CodeGen for code_v1, approach)
+
+        Note: This is an internal method used by some domains' run_evaluation()
+        implementations. External callers should use run_evaluation() directly.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not implement setup_context_workspace(). "
+            "Use run_evaluation() instead."
+        )
+
+    def run_evaluation_in_workspace(
+        self,
+        workspace: Path,
+        problems: List[Dict],
+        config: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Run Phase 1 + Phase 2 + evaluation in an existing workspace.
+
+        The workspace must already be set up via setup_context_workspace().
+        This runs the full evaluation pipeline for a single context.
+
+        Args:
+            workspace: Workspace directory (already set up)
+            problems: List of problem dicts for this context
+            config: Configuration dict with:
+                - eval_model: Model for Phase 2 generation
+                - analysis_model: Model for Phase 1 analysis
+                - timeout: Timeout for operations
+                - Additional domain-specific options
+
+        Returns:
+            Dict with:
+            - accuracy: Accuracy percentage (0-100)
+            - correct: Number of correct solutions
+            - total: Total number of problems
+            - error: Optional error message if evaluation failed
+            - phase2_cost: Optional API cost for Phase 2 (if tracked)
+
+        Note: This is an internal method used by some domains' run_evaluation()
+        implementations. External callers should use run_evaluation() directly.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not implement run_evaluation_in_workspace(). "
+            "Use run_evaluation() instead."
+        )

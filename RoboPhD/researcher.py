@@ -18,7 +18,10 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from RoboPhD.domains.base import DomainInterface
 
 # RoboPhD imports - handle both module and script execution
 try:
@@ -29,7 +32,9 @@ try:
         DEFAULT_MODEL,
         SUPPORTED_MODELS
     )
-    from .core import SQLGenerator, Evaluator, TestOutputGenerator, DatabaseManager, resolve_api_key
+    from .core import TestOutputGenerator, resolve_api_key
+    from .domains.base import SampledProblems
+    from .domains import get_domain
     from .agent_orchestrator import AgentOrchestrator
     from .evolution import EvolutionStrategySelector
     from .cache_manager import CacheManager
@@ -37,12 +42,7 @@ try:
     from .config_manager import ConfigManager, ConfigSource
     from .report_generator import ReportGenerator
     from .deep_focus_evolution_manager import DeepFocusEvolutionManager
-    from .utilities.cached_sql_executor import close_database_connections, close_all_connections as close_robophd_connections
-    from .utilities.database_compression import (
-        get_large_databases,
-        get_currently_uncompressed_large_db,
-        ensure_database_decompressed
-    )
+    from .utilities.cached_sql_executor import close_all_connections as close_robophd_connections
 except ImportError:
     # When run as a script, use absolute imports
     import sys
@@ -55,7 +55,8 @@ except ImportError:
         DEFAULT_MODEL,
         SUPPORTED_MODELS
     )
-    from RoboPhD.core import SQLGenerator, Evaluator, TestOutputGenerator, DatabaseManager, resolve_api_key
+    from RoboPhD.core import TestOutputGenerator, resolve_api_key
+    from RoboPhD.domains import get_domain
     from RoboPhD.agent_orchestrator import AgentOrchestrator
     from RoboPhD.evolution import EvolutionStrategySelector
     from RoboPhD.cache_manager import CacheManager
@@ -63,12 +64,8 @@ except ImportError:
     from RoboPhD.config_manager import ConfigManager, ConfigSource
     from RoboPhD.report_generator import ReportGenerator
     from RoboPhD.deep_focus_evolution_manager import DeepFocusEvolutionManager
-    from RoboPhD.utilities.cached_sql_executor import close_database_connections, close_all_connections as close_robophd_connections
-    from RoboPhD.utilities.database_compression import (
-        get_large_databases,
-        get_currently_uncompressed_large_db,
-        ensure_database_decompressed
-    )
+    from RoboPhD.utilities.cached_sql_executor import close_all_connections as close_robophd_connections
+    from RoboPhD.domains.base import SampledProblems
 
 # Import root-level utilities for evaluation pool cleanup
 from utilities.cached_sql_executor import close_all_connections as close_eval_connections
@@ -111,16 +108,20 @@ class MemoryMonitor:
 
 class ParallelAgentEvolver:
     """Manages agent evolution using Claude."""
-    
-    def __init__(self, experiment_dir: Path, config: Dict[str, Any]):
+
+    def __init__(self, experiment_dir: Path, config: Dict[str, Any], domain: Optional['DomainInterface'] = None):
         """Initialize the evolver with resolved config dict.
 
         Args:
             experiment_dir: Path to experiment directory
             config: Resolved configuration dict from ConfigManager
                    Contains all parameters including evolution_strategy
+            domain: Optional domain interface for domain-specific settings.
+                   Used to determine default evolution strategies directory.
         """
         self.experiment_dir = Path(experiment_dir)
+        self.domain = domain
+        self.config = config  # Store full config for DeepFocusEvolutionManager
 
         # Extract all parameters from config
         self.evolution_model = config["evolution_model"]
@@ -129,7 +130,7 @@ class ParallelAgentEvolver:
         self.agents_directory = config.get("agents_directory")
         self.strategies_directory = config.get("strategies_directory")
         self.new_agent_test_rounds = config["new_agent_test_rounds"]
-        self.max_concurrent_dbs = config["max_concurrent_dbs"]
+        self.max_concurrent = config["max_concurrent"]
         self.verification_retries = config["verification_retries"]
         self.temperature_strategy = config["temperature_strategy"]
         self.debug_log_probability = config["debug_log_probability"]
@@ -285,17 +286,20 @@ class ParallelAgentEvolver:
                     databases_map[test_iteration] = databases
 
         # Create Deep Focus Evolution Manager
+        # Pass full config so domains get all required fields (coder_model, critic_model, etc.)
         manager = DeepFocusEvolutionManager(
             test_rounds=self.new_agent_test_rounds,
             evolution_model=self.evolution_model,
             eval_model=self.eval_model,
             analysis_model=self.analysis_model,
             timeout=self.evolution_timeout,
-            max_concurrent_dbs=self.max_concurrent_dbs,
+            max_concurrent=self.max_concurrent,
             verification_retries=self.verification_retries,
             temperature_strategy=self.temperature_strategy,
             debug_log_probability=self.debug_log_probability,
-            llm_call_timeout=self.llm_call_timeout
+            llm_call_timeout=self.llm_call_timeout,
+            domain=self.domain,
+            config=self.config
         )
 
         # Run Deep Focus evolution
@@ -306,10 +310,8 @@ class ParallelAgentEvolver:
                 current_iteration=iteration,
                 evolution_strategy_name=strategy_name,
                 evolution_prompt=prompt,
-                databases=databases_map,
-                questions_per_db=self.questions_per_database,
-                questions_file=self.questions_file,
-                db_root=self.db_root
+                contexts=databases_map,
+                problems_per_context=self.problems_per_context,
             )
         except Exception as e:
             print(f"❌ Deep Focus evolution failed: {e}")
@@ -682,16 +684,17 @@ class ParallelAgentResearcher:
         config = config_manager.get_config(1)
 
         # Extract all parameters from config
+        self.domain_name = config.get("domain", "text2sql")
         self.dataset = config["dataset"]
-        self.databases_per_iteration = config["databases_per_iteration"]
-        self.questions_per_database = config["questions_per_database"]
+        self.contexts_per_iteration = config["contexts_per_iteration"]
+        self.problems_per_context = config["problems_per_context"]
         self.agents_per_iteration = config["agents_per_iteration"]
         self.eval_model = config["eval_model"]
         self.analysis_model = config["analysis_model"]
         self.evolution_model = config["evolution_model"]
-        self.max_concurrent_dbs = config["max_concurrent_dbs"]
+        self.max_concurrent = config["max_concurrent"]
         self.phase1_timeout = config["phase1_timeout"]
-        self.sql_timeout = config["sql_timeout"]
+        self.phase2_timeout = config["phase2_timeout"]
         self.evolution_timeout = config["evolution_timeout"]
         self.verification_retries = config["verification_retries"]
         self.temperature_strategy = config["temperature_strategy"]
@@ -871,34 +874,16 @@ class ParallelAgentResearcher:
         # Load data
         self._load_data()
 
+        # Update orchestrator and evolver with domain (created before _load_data)
+        self.orchestrator.domain = self.domain
+        self.evolver.domain = self.domain
+
         # Pass references to evolver for Deep Focus
         self.evolver.researcher_phase1_failures = self.phase1_failures
         self.evolver.eval_model = self.eval_model
         self.evolver.analysis_model = self.analysis_model
-        self.evolver.questions_per_database = self.questions_per_database
-        self.evolver.dataset_dir = self.questions_file.parent
-        self.evolver.questions_file = self.questions_file
-        self.evolver.db_root = self.db_root
+        self.evolver.problems_per_context = self.problems_per_context
         self.evolver.test_history = self.test_history
-
-        # Initialize SQL generator and evaluator
-        self.sql_generator = SQLGenerator(
-            eval_model=self.eval_model,
-            questions_file=self.questions_file,
-            timeout=self.sql_timeout,
-            use_evidence=True,
-            api_key=self.api_key,
-            verification_retries=self.verification_retries,
-            temperature_strategy=self.temperature_strategy,
-            debug_log_probability=self.debug_log_probability,
-            run_dir=self.experiment_dir,
-            llm_call_timeout=self.llm_call_timeout
-        )
-
-        self.evaluator = Evaluator(
-            questions_file=self.questions_file,
-            db_root=self.db_root
-        )
 
         # Initialize test output generator if needed
         if self.test_eval_mode:
@@ -912,71 +897,31 @@ class ParallelAgentResearcher:
         print(f"🎲 Random seed: {self.random_seed}")
     
     def _load_data(self):
-        """Load questions and databases."""
-        # Determine paths based on dataset
-        if self.dataset == 'train':
-            self.questions_file = Path("benchmark_resources/datasets/train/train/train.json")
-            self.db_root = Path("benchmark_resources/datasets/train/train/train_databases")
-        elif self.dataset == 'train-filtered':
-            self.questions_file = Path("benchmark_resources/datasets/train-filtered/train_filtered.json")
-            self.db_root = Path("benchmark_resources/datasets/train/train/train_databases")
-        elif self.dataset == 'train-no-evidence':
-            self.questions_file = Path("benchmark_resources/datasets/train-no-evidence/train_filtered_no_evidence.json")
-            self.db_root = Path("benchmark_resources/datasets/train/train/train_databases")
-        elif self.dataset == 'test':
-            self.questions_file = Path("benchmark_resources/datasets/test/test/test.json")
-            self.db_root = Path("benchmark_resources/datasets/test/test/test_databases")
-        elif self.dataset == 'dev-no-evidence':
-            self.questions_file = Path("benchmark_resources/datasets/dev-no-evidence/dev_no_evidence.json")
-            self.db_root = Path("benchmark_resources/datasets/dev/dev_20240627/dev_databases")
-        else:  # dev
-            self.questions_file = Path("benchmark_resources/datasets/dev/dev_20240627/dev.json")
-            self.db_root = Path("benchmark_resources/datasets/dev/dev_20240627/dev_databases")
-        
-        # Load questions
-        with open(self.questions_file, 'r') as f:
-            self.all_questions = json.load(f)
-        
-        # Group questions by database
-        # Add question_id if not present (train dataset doesn't have it)
-        self.questions_by_db = {}
-        for idx, q in enumerate(self.all_questions):
-            # Add question_id if missing (using array index)
-            if 'question_id' not in q:
-                q['question_id'] = idx
-            
-            db_name = q['db_id']
-            if db_name not in self.questions_by_db:
-                self.questions_by_db[db_name] = []
-            self.questions_by_db[db_name].append(q)
-        
-        # Get available databases (excluding problematic ones)
-        # Include both uncompressed (.sqlite) and compressed (.tar.gz) databases
-        excluded_dbs = DatabaseManager.get_blacklisted_databases(self.dataset)
-        self.databases = []
+        """Load questions and databases using domain abstraction."""
+        # Build domain config
+        domain_config = {
+            'dataset': self.dataset,
+            'api_key': self.api_key,
+            'eval_model': self.eval_model,
+            'verification_retries': self.verification_retries,
+            'temperature_strategy': self.temperature_strategy,
+            'debug_log_probability': self.debug_log_probability,
+            'llm_call_timeout': self.llm_call_timeout,
+        }
+        self.domain = get_domain(self.domain_name, domain_config)
 
-        if self.db_root.exists():
-            # Track databases we've seen (to avoid duplicates)
-            seen_dbs = set()
+        # Load problems grouped by context (database for Text2SQL, problem_id for CodeGen)
+        self.problems_by_context = self.domain.load_problems()
 
-            # Check for uncompressed databases (directories with .sqlite files)
-            for db_dir in self.db_root.iterdir():
-                if db_dir.is_dir() and db_dir.name not in excluded_dbs:
-                    db_file = db_dir / f"{db_dir.name}.sqlite"
-                    if db_file.exists():
-                        self.databases.append(db_dir.name)
-                        seen_dbs.add(db_dir.name)
+        # Flatten for all_problems (backward compatibility)
+        self.all_problems = []
+        for context_problems in self.problems_by_context.values():
+            self.all_problems.extend(context_problems)
 
-            # Check for compressed databases (.tar.gz files)
-            for item in self.db_root.iterdir():
-                if item.is_file() and item.suffix == '.gz' and item.stem.endswith('.tar'):
-                    # Extract database name (e.g., "bike_share_1.tar.gz" -> "bike_share_1")
-                    db_name = item.stem[:-4]  # Remove ".tar" from "bike_share_1.tar"
-                    if db_name not in excluded_dbs and db_name not in seen_dbs:
-                        self.databases.append(db_name)
-                        seen_dbs.add(db_name)
+        # Get available contexts (databases for Text2SQL, problem_ids for CodeGen)
+        self.contexts = self.domain.get_contexts()
 
-        print(f"📊 Loaded {len(self.all_questions)} questions from {len(self.databases)} databases")
+        print(f"📊 Loaded {len(self.all_problems)} problems from {len(self.contexts)} {self.domain.context_label_plural}")
     
     @classmethod
     def load_checkpoint(cls, experiment_dir: Path) -> Dict:
@@ -1311,8 +1256,8 @@ class ParallelAgentResearcher:
                         if total_questions == 0:
                             for r in cleaned_results:
                                 if 'accuracy' in r and 'databases' in r:
-                                    # Estimate based on questions per database
-                                    questions = r['databases'] * self.questions_per_database
+                                    # Estimate based on problems per context
+                                    questions = r['databases'] * self.problems_per_context
                                     total_questions += questions
                                     total_correct += int(questions * r['accuracy'] / 100)
 
@@ -1559,11 +1504,16 @@ class ParallelAgentResearcher:
         Args:
             strategy_list: Optional list of specific strategy names to load
         """
-        # Use custom strategies directory if specified, otherwise default to RoboPhD/evolution_strategies/
+        # Use custom strategies directory if specified, otherwise use domain's default
         if self.strategies_directory:
             strategies_dir = Path(self.strategies_directory)
+        elif self.domain is not None:
+            strategies_dir = Path(__file__).parent / self.domain.evolution_strategies_dir
         else:
-            strategies_dir = Path(__file__).parent / 'evolution_strategies'
+            raise ValueError(
+                "ParallelAgentEvolver requires a domain to be set for loading strategies. "
+                "Set evolver.domain after creation."
+            )
 
         if not strategy_list:
             # Auto-discover all strategy directories
@@ -1630,445 +1580,48 @@ class ParallelAgentResearcher:
 
         print(f"📋 Loaded {len(strategy_dirs)} initial strategies to {local_strategies_dir}")
 
-    def process_database(self,
-                        iteration: int,
-                        db_name: str,
-                        agent_id: str) -> Dict:
+    def run_iteration(self, iteration: int, selected_agents: List[str], contexts: List[str]) -> Dict:
         """
-        Process a single database with a specific agent.
-        
-        Args:
-            iteration: Current iteration number
-            db_name: Database name
-            agent_id: Agent ID to use
-            
-        Returns:
-            Dictionary with results
-        """
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        print(f"    [{timestamp}] {agent_id} | {db_name}: Starting...")
-        
-        # Get agent info
-        agent_info = self.agent_pool.get(agent_id)
-        if not agent_info:
-            return {'success': False, 'error': f'Agent not found: {agent_id}', 'database': db_name}
-        
-        agent_file = agent_info['path']
+        Run one iteration testing selected agents on contexts.
 
-        # Ensure database is decompressed (defensive check - should already be done during selection)
-        try:
-            ensure_database_decompressed(self.db_root, db_name)
-        except FileNotFoundError as e:
-            return {'success': False, 'error': f'Database not found: {e}', 'database': db_name}
-        except Exception as e:
-            return {'success': False, 'error': f'Database decompression failed: {e}', 'database': db_name}
+        All domains use a unified evaluation flow via domain.run_evaluation().
+        Parallelism is handled internally by the domain (e.g., Text2SQL parallelizes
+        across databases, CodeGen uses subprocess with internal parallelism).
 
-        # Get database path
-        db_path = self.db_root / db_name / f"{db_name}.sqlite"
-        if not db_path.exists():
-            return {'success': False, 'error': 'Database not found after decompression', 'database': db_name}
-        
-        # Setup workspace with the agent
-        # RoboPhD only needs package_dir and agent_id
-        workspace = self.orchestrator.setup_workspace(
-            iteration=iteration,
-            database_name=db_name,
-            database_path=db_path,
-            package_dir=agent_info.get('package_dir'),
-            agent_id=agent_id
-        )
-
-        try:
-            # Check Phase 1 cache before running analysis
-            cache_key = self.cache_manager.get_phase1_cache_key(agent_id, db_name, db_path)
-            cached_output = self.cache_manager.get_phase1_cache(cache_key)
-
-            phase1_cost_info = None  # Initialize for both cache hit and cache miss paths
-
-            if cached_output:
-                # Cache hit - use cached output
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                print(f"    [{timestamp}] {agent_id} | {db_name}: ⚡ Using cached Phase 1 analysis")
-
-                # Create output directory and write cached content
-                output_dir = workspace / "output"
-                output_dir.mkdir(parents=True, exist_ok=True)
-                (output_dir / "agent_output.txt").write_text(cached_output)
-
-                # Combine with eval_instructions for Phase 2
-                eval_instructions_file = workspace / "eval_instructions.md"
-                if eval_instructions_file.exists():
-                    eval_instructions = eval_instructions_file.read_text()
-                    prompt_content = f"{cached_output}\n\n---\n\n{eval_instructions}"
-
-                    # Save combined prompt
-                    (output_dir / "system_prompt.txt").write_text(prompt_content)
-                    success = True
-                else:
-                    # Shouldn't happen in three-artifact mode
-                    success = False
-                    prompt_content = None
-                # phase1_cost_info remains None (no CLI call made)
-            else:
-                # Cache miss - run Phase 1 normally
-                success, prompt_content, phase1_cost_info, tool_error = self.orchestrator.run_phase1(workspace, agent_id, db_name)
-
-                # Save to cache if successful
-                if success:
-                    output_file = workspace / "output" / "agent_output.txt"
-                    if output_file.exists():
-                        output_content = output_file.read_text()
-                        self.cache_manager.save_phase1_cache(
-                            cache_key,
-                            output_content,
-                            agent_name=agent_id,
-                            db_name=db_name
-                        )
-
-                # Close connections after Phase 1 analysis
-                # Phase 1 may have opened connections to analyze schema
-                close_database_connections(str(db_path))
-            
-            if not success:
-                # Close connections even on Phase 1 failure
-                close_database_connections(str(db_path))
-
-                # Create evaluation.json for failed Phase 1
-                # Use pre-sampled questions (guaranteed to exist from run_iteration)
-                # Bug fix: Previously sampled here → could differ from other agents
-                sampled = self.current_iteration_questions[db_name]
-
-                evaluation = {
-                    'database': db_name,
-                    'total_questions': len(sampled),
-                    'correct': 0,
-                    'accuracy': 0.0,
-                    'error': 'Phase 1 failed',
-                    'results': {}
-                }
-
-                results_dir = workspace / "results"
-                results_dir.mkdir(exist_ok=True)
-                with open(results_dir / "evaluation.json", 'w') as f:
-                    json.dump(evaluation, f, indent=2)
-
-                return {
-                    'success': False,
-                    'error': 'Phase 1 failed',
-                    'database': db_name,
-                    'correct': 0,
-                    'total': len(sampled)
-                }
-            
-            # Save results
-            results_dir = workspace / "results"
-            results_dir.mkdir(exist_ok=True)
-
-            # Generate SQL for sampled questions
-            questions = self.questions_by_db.get(db_name, [])
-            if not questions:
-                # Close connections even when no questions found
-                close_database_connections(str(db_path))
-
-                # Create evaluation.json for no questions case
-                evaluation = {
-                    'database': db_name,
-                    'total_questions': 0,
-                    'correct': 0,
-                    'accuracy': 0.0,
-                    'error': 'No questions found',
-                    'results': {}
-                }
-
-                with open(results_dir / "evaluation.json", 'w') as f:
-                    json.dump(evaluation, f, indent=2)
-
-                return {
-                    'success': False,
-                    'error': 'No questions found',
-                    'database': db_name,
-                    'correct': 0,
-                    'total': 0
-                }
-
-            # Use pre-sampled questions (guaranteed to exist from run_iteration)
-            # Bug fix: Previously sampled here in parallel threads → non-deterministic
-            sampled = self.current_iteration_questions[db_name]
-
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            print(f"    [{timestamp}] {agent_id} | {db_name}: Generating SQL for {len(sampled)} questions...")
-
-            # Generate predictions using SQLGenerator
-            # First write prompt to temp file
-            import tempfile
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
-                f.write(prompt_content)
-                prompt_file = Path(f.name)
-
-            # Create temporary questions file with just sampled questions
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-                json.dump(sampled, f)
-                temp_questions_file = Path(f.name)
-
-            try:
-                # Create a temporary SQL generator with the sampled questions
-                # Note: SQLGenerator is already imported at the top of the file
-                temp_sql_generator = SQLGenerator(
-                    eval_model=self.eval_model,
-                    questions_file=temp_questions_file,
-                    timeout=self.sql_timeout,
-                    use_evidence=True,
-                    api_key=self.api_key,
-                    verification_retries=self.verification_retries,
-                    temperature_strategy=self.temperature_strategy,
-                    debug_log_probability=self.debug_log_probability,
-                    run_dir=self.experiment_dir,
-                    agent_id=agent_id,
-                    llm_call_timeout=self.llm_call_timeout
-                )
-                
-                # Generate SQL for the database (returns tuple of (predictions_dict, cost))
-                # Pass output_path to results/ for consistency and to enable debug logs
-                predictions_path = results_dir / "predictions.json"
-                result, cost = temp_sql_generator.generate(
-                    prompt_file=prompt_file,
-                    db_name=db_name,
-                    db_path=db_path,
-                    output_path=predictions_path,
-                    agent_id=agent_id
-                )
-                
-                # Update total cost
-                self.total_cost += cost
-                
-                if result and result.get('predictions'):
-                    # predictions is a dictionary with question_id as keys and the bird sql format
-                    # which is: {predicted_sql}\t----- bird -----\t{db_name}
-                    #
-                    predictions_dict = result['predictions']
-
-                    # log out any sql validation+retries
-                    validation_stats = result.get('metadata', {}).get('validation_stats', {})
-                    timestamp = datetime.now().strftime("%H:%M:%S")
-                    print(f"    [{timestamp}] {agent_id} | {db_name}: SQL Validation Stats = {json.dumps(validation_stats)}")
-                    
-                    # Convert to list format expected by evaluator
-                    predictions = []
-                    for q in sampled:
-                        qid = str(q['question_id'])
-                        if qid in predictions_dict:
-                            predictions.append({
-                                'question_id': q['question_id'],
-                                'SQL': predictions_dict[qid],  # Keep full format with bird marker
-                                'db_id': db_name  # Include db_id for the evaluator
-                            })
-                    
-                    if not predictions:
-                        print(f"    ⚠️ No matching predictions for sampled questions")
-                else:
-                    predictions = []
-                    print(f"    ⚠️ No predictions generated for {db_name}")
-            finally:
-                # Clean up temp files
-                if prompt_file.exists():
-                    prompt_file.unlink()
-                if temp_questions_file.exists():
-                    temp_questions_file.unlink()
-
-                # CRITICAL: Close all database connections to prevent file descriptor leaks
-                # This must happen in finally block to ensure it runs even on errors
-                close_database_connections(str(db_path))
-
-            # Evaluate/generate output if we have predictions
-            if predictions:
-                if self.test_eval_mode:
-                    # Create a pseudo-evaluation structure for compatibility
-                    test_output = self.test_output_generator.generate_output(
-                        predictions_dict,
-                        sampled
-                    )
-                    evaluation = {
-                        'database': db_name,
-                        'total_questions': len(test_output),
-                        'test_output': test_output  
-                    }
-
-                    with open(results_dir / "bird_output.json", 'w') as f:
-                        json.dump(predictions_dict, f, indent=2)
-
-                else:
-                    # Normal evaluation for dev/train modes
-                    # Pass the full result which includes both predictions and detailed_results
-                    evaluation = self.evaluator.evaluate(
-                        result,  # Pass full result including detailed_results with verification info
-                        db_name
-                    )
-            else:
-                evaluation = {
-                    'database': db_name,
-                    'total_questions': len(sampled),
-                    'correct': 0,
-                    'accuracy': 0.0,
-                    'results': []
-                }
-            
-            # Get accuracy from evaluation (skip for test mode - no ground truth)
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            if self.test_eval_mode:
-                correct = 0
-                total = evaluation.get('total_questions', len(sampled))
-                accuracy = None
-                print(f"    [{timestamp}] {agent_id} | {db_name}: Generated {total} predictions")
-            else:
-                correct = evaluation.get('correct', 0)
-                total = evaluation.get('total_questions', len(sampled))
-                accuracy = evaluation.get('accuracy', 0.0)  # Already in percentage format
-                print(f"    [{timestamp}] {agent_id} | {db_name}: Accuracy = {accuracy:.1f}%")
-
-            with open(results_dir / "evaluation.json", 'w') as f:
-                json.dump(evaluation, f, indent=2)
-
-            # Extract Phase 2 cache stats from result metadata
-            phase2_cache_stats = None
-            if result and 'metadata' in result and 'phase2_cache_stats' in result['metadata']:
-                phase2_cache_stats = result['metadata']['phase2_cache_stats']
-                # Accumulate stats in the shared counters
-                self.phase2_cache_hits += phase2_cache_stats.get('hits', 0)
-                self.phase2_cache_misses += phase2_cache_stats.get('misses', 0)
-
-            return {
-                'success': True,
-                'database': db_name,
-                'agent_id': agent_id,
-                'accuracy': accuracy,  # Already in percentage format (0-100)
-                'correct': correct,
-                'total': total,
-                'evaluation': evaluation,
-                'phase1_cost_info': phase1_cost_info,  # Claude CLI cost tracking
-                'phase2_cost': cost,  # API cost for SQL generation
-                'phase2_cache_stats': phase2_cache_stats  # Cache stats from this database
-            }
-            
-        except Exception as e:
-            import traceback
-
-            error_str = str(e)
-
-            # Check if this is a rate limit error - abort run
-            if "API_RATE_LIMIT" in error_str:
-                print(f"\n❌ RATE LIMIT EXCEEDED - Aborting research run")
-                print(f"   Database: {db_name}")
-                print(f"   Error: {error_str}")
-
-                # Close connections before re-raising
-                try:
-                    close_database_connections(str(db_path))
-                except Exception as cleanup_error:
-                    print(f"  ⚠️  Connection cleanup error: {cleanup_error}")
-
-                # Re-raise to stop the entire run
-                raise
-
-            # Check if this is a critical infrastructure error - abort run
-            for infra_error in CRITICAL_INFRASTRUCTURE_ERRORS:
-                if infra_error in error_str:
-                    print(f"\n❌ CRITICAL INFRASTRUCTURE ERROR - Aborting research run")
-                    print(f"   Agent: {agent_id}")
-                    print(f"   Database: {db_name}")
-                    print(f"   Error: {error_str}")
-                    print(f"   ")
-                    print(f"   This indicates a system bug, not an agent failure.")
-                    print(f"   Fix the issue and restart the run.")
-
-                    # Close connections before re-raising
-                    try:
-                        close_database_connections(str(db_path))
-                    except Exception as cleanup_error:
-                        print(f"  ⚠️  Connection cleanup error: {cleanup_error}")
-
-                    # Re-raise to stop the entire run
-                    raise
-
-            # Log agent/unknown error but continue
-            print(f"    ❌ {agent_id} | {db_name}: Error - {e}")
-            traceback.print_exc()
-
-            # Close connections even on exception to prevent file descriptor leaks
-            try:
-                close_database_connections(str(db_path))
-            except Exception as cleanup_error:
-                print(f"  ⚠️  Connection cleanup error: {cleanup_error}")
-
-            # Create evaluation.json for exception case
-            questions = self.questions_by_db.get(db_name, [])
-            sampled_count = min(self.questions_per_database, len(questions)) if questions else 0
-
-            evaluation = {
-                'database': db_name,
-                'total_questions': sampled_count,
-                'correct': 0,
-                'accuracy': 0.0,
-                'error': str(e),
-                'results': {}
-            }
-
-            # Try to save evaluation.json if workspace exists
-            try:
-                results_dir = workspace / "results"
-                results_dir.mkdir(exist_ok=True)
-                with open(results_dir / "evaluation.json", 'w') as f:
-                    json.dump(evaluation, f, indent=2)
-            except Exception as save_error:
-                # Already in error path, but log if we can't persist error details
-                print(f"  ⚠️  Could not save error evaluation.json: {save_error}")
-
-            return {
-                'success': False,
-                'error': str(e),
-                'database': db_name,
-                'correct': 0,
-                'total': sampled_count
-            }
-    
-    
-    def run_iteration(self, iteration: int, selected_agents: List[str], databases: List[str]) -> Dict:
-        """
-        Run one iteration testing selected agents on databases.
-        
         Args:
             iteration: Iteration number
             selected_agents: List of agent IDs to test
-            databases: List of databases to test on
-            
+            contexts: List of context identifiers to test on
+
         Returns:
-            Dictionary with iteration results
+            Tuple of (iteration_results, results_by_agent)
         """
+        from datetime import datetime
+
         print(f"Agents: {', '.join(selected_agents)}")
-        print(f"Databases: {', '.join(databases)}")
+        print(f"{self.domain.context_label_plural.title()}: {', '.join(contexts)}")
 
-        # CRITICAL: Sample questions once per database for this iteration (sequential, before threading)
-        # This ensures ALL agents test IDENTICAL questions (fair comparison + deterministic)
-        # Bug fix: Previously sampled in parallel threads → non-deterministic, different questions per agent
-        self.current_iteration_questions = {}
-        for db_name in databases:
-            questions = self.questions_by_db.get(db_name, [])
-            if questions:
+        # CRITICAL: Sample problems once per context for this iteration (sequential, before threading)
+        # This ensures ALL agents test IDENTICAL problems (fair comparison + deterministic)
+        self.current_iteration_problems = {}
+        for context_name in contexts:
+            problems = self.problems_by_context.get(context_name, [])
+            if problems:
                 sampled = random.sample(
-                    questions,
-                    min(self.questions_per_database, len(questions))
+                    problems,
+                    min(self.problems_per_context, len(problems))
                 )
-                self.current_iteration_questions[db_name] = sampled
+                self.current_iteration_problems[context_name] = sampled
             else:
-                self.current_iteration_questions[db_name] = []
+                self.current_iteration_problems[context_name] = []
 
-        # Create tasks for parallel processing
-        tasks = []
-        for agent_id in selected_agents:
-            for db_name in databases:
-                tasks.append((agent_id, db_name))
+        # Build SampledProblems once (all agents test identical problems)
+        sampled = SampledProblems(
+            contexts=contexts,
+            problems_by_context=self.current_iteration_problems
+        )
 
-        # Initialize Claude CLI cost tracking for this iteration
+        # Initialize cost tracking for this iteration
         iteration_cost_dict = {
             'phase1_cost': 0.0,
             'phase1_calls': 0,
@@ -2082,164 +1635,208 @@ class ParallelAgentResearcher:
             'evolution_tokens_out': 0,
             'evolution_cache_created': 0,
             'evolution_cache_read': 0,
-            'evolution_breakdown': None  # Will be set if evolution happens
+            'evolution_breakdown': None
         }
 
-        # Process in parallel
-        results_by_agent = {agent_id: [] for agent_id in selected_agents}
-        
-        with ThreadPoolExecutor(max_workers=self.max_concurrent_dbs) as executor:
-            futures = {}
-            for agent_id, db_name in tasks:
-                future = executor.submit(
-                    self.process_database,
-                    iteration,
-                    db_name,
-                    agent_id
-                )
-                futures[future] = (agent_id, db_name)
-            
-            # Collect results
-            for future in as_completed(futures):
-                agent_id, db_name = futures[future]
-                try:
-                    result = future.result()
-                    results_by_agent[agent_id].append(result)
+        # Track results for each agent
+        results_by_agent: Dict[str, List[Dict]] = {agent_id: [] for agent_id in selected_agents}
+        iteration_results: Dict[str, Dict] = {}
 
-                    # Accumulate Phase 1 CLI costs (if cost info available)
-                    phase1_cost_info = result.get('phase1_cost_info')
-                    if phase1_cost_info:
-                        iteration_cost_dict['phase1_cost'] += phase1_cost_info.get('cost', 0.0)
-                        iteration_cost_dict['phase1_calls'] += 1
-                        iteration_cost_dict['phase1_tokens_in'] += phase1_cost_info.get('tokens_in', 0)
-                        iteration_cost_dict['phase1_tokens_out'] += phase1_cost_info.get('tokens_out', 0)
-                        iteration_cost_dict['phase1_cache_created'] += phase1_cost_info.get('cache_created', 0)
-                        iteration_cost_dict['phase1_cache_read'] += phase1_cost_info.get('cache_read', 0)
+        # Process each agent (sequential - agents are few, ~2-4)
+        # Domain handles internal parallelism (e.g., Text2SQL parallelizes across databases)
+        for agent_id in selected_agents:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"    [{timestamp}] {agent_id}: Starting evaluation on {len(contexts)} {self.domain.context_label_plural}...")
 
-                    # Track Phase 1 failures
-                    if not result.get('success') and result.get('error') == 'Phase 1 failed':
-                        self.phase1_failures.append((agent_id, db_name, iteration))
+            agent_info = self.agent_pool.get(agent_id)
+            if not agent_info:
+                print(f"    ❌ {agent_id}: Agent not found")
+                iteration_results[agent_id] = {
+                    'accuracy': 0.0,
+                    'correct': 0,
+                    'total': sum(len(p) for p in self.current_iteration_problems.values()),
+                    'databases_tested': [],
+                    'failures': len(contexts)
+                }
+                continue
 
-                    # Track zero accuracy (Phase 1 succeeded but 0% accuracy)
-                    elif result.get('success') and result.get('accuracy', -1) == 0:
-                        total_q = result.get('total', 0)
-                        if total_q > 0:  # Only track if questions were actually tested
-                            self.zero_accuracy_cases.append((agent_id, db_name, iteration, total_q))
+            # Create output directory for this agent
+            agent_output_dir = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
+            agent_output_dir.mkdir(parents=True, exist_ok=True)
 
-                    # Track all other failures with error messages (Phase 2/exception failures)
-                    elif not result.get('success') and result.get('error') and result.get('error') != 'Phase 1 failed':
-                        error_msg = result.get('error')
-                        total_q = result.get('total', 0)
-                        self.exception_failures.append((agent_id, db_name, iteration, error_msg, total_q))
-
-                except Exception as e:
-                    # Critical error - abort the entire run
-                    print(f"\n❌ CRITICAL ERROR - Aborting research run")
-                    print(f"   Agent: {agent_id}")
-                    print(f"   Database: {db_name}")
-                    print(f"   Error: {e}")
-                    raise  # Re-raise to abort the entire run
-        
-        # Calculate metrics for each agent
-        iteration_results = {}
-        for agent_id, results in results_by_agent.items():
-            successful = [r for r in results if r.get('success')]
-            failed = [r for r in results if not r.get('success')]
-
-            # For ALL results (successful and failed), sum correct and total
-            # Failed results now include correct=0 and total=<actual_question_count>
-            total_correct = sum(r.get('correct', 0) for r in results)
-            total_questions = sum(r.get('total', 0) for r in results)
-
-            accuracy = (total_correct / total_questions * 100) if total_questions > 0 else 0
-
-            iteration_results[agent_id] = {
-                'accuracy': accuracy,
-                'correct': total_correct,
-                'total': total_questions,
-                'databases_tested': [r['database'] for r in successful],
-                'failures': len(results) - len(successful)
-            }
-            
-            # Update performance records
-            perf = self.performance_records[agent_id]
-            perf['test_count'] += 1
-            perf['total_correct'] += total_correct
-            perf['total_questions'] += total_questions
-            perf['mean_accuracy'] = (perf['total_correct'] / perf['total_questions'] * 100) if perf['total_questions'] > 0 else 0
-            perf['iteration_results'].append({
-                'iteration': iteration,
-                'accuracy': accuracy,
-                'databases': len(successful)
+            # Build config for domain evaluation
+            # Pass full config directly - domains extract what they need
+            # ConfigManager resolves all defaults (fail fast if missing)
+            current_config = self.config_manager.get_config(iteration)
+            eval_config = current_config.copy()
+            eval_config.update({
+                'agent_id': agent_id,
+                'cache_manager': self.cache_manager,
+                'experiment_dir': self.experiment_dir,
+                'api_key': self.api_key,
             })
-            
-            # Accuracy is already a percentage
-            print(f"\n{agent_id}: {accuracy:.1f}% ({total_correct}/{total_questions})")
-        
+
+            try:
+                # Universal interface - domain handles internals
+                eval_result = self.domain.run_evaluation(
+                    sampled=sampled,
+                    agent_path=agent_info.get('package_dir'),
+                    output_dir=agent_output_dir,
+                    config=eval_config
+                )
+
+                # Convert EvaluationResult to per-context results for compatibility
+                for r in eval_result.results:
+                    context_name = r.get('db_id') or r.get('question_id', 'unknown')
+                    results_by_agent[agent_id].append({
+                        'success': r.get('error') is None,
+                        'context': context_name,
+                        'agent_id': agent_id,
+                        'accuracy': 100.0 if r.get('correct') else 0.0,
+                        'correct': 1 if r.get('correct') else 0,
+                        'total': 1,
+                        'error': r.get('error'),
+                        # Include phase2_cost for cost reporting
+                        'phase2_cost': r.get('phase2_cost', 0.0),
+                    })
+
+                # Calculate agent metrics
+                accuracy = eval_result.accuracy
+                total_correct = eval_result.correct
+                total_questions = eval_result.total
+
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                print(f"    [{timestamp}] {agent_id}: Accuracy = {accuracy:.1f}% ({total_correct}/{total_questions})")
+
+                # Get contexts tested successfully from metadata
+                metadata = eval_result.metadata or {}
+                phase1_failures = metadata.get('phase1_failures', [])
+                contexts_tested = [c for c in contexts if c not in phase1_failures]
+
+                iteration_results[agent_id] = {
+                    'accuracy': accuracy,
+                    'correct': total_correct,
+                    'total': total_questions,
+                    'databases_tested': contexts_tested,
+                    'failures': len(phase1_failures)
+                }
+
+                # Update performance records
+                perf = self.performance_records[agent_id]
+                perf['test_count'] += 1
+                perf['total_correct'] += total_correct
+                perf['total_questions'] += total_questions
+                perf['mean_accuracy'] = (perf['total_correct'] / perf['total_questions'] * 100) if perf['total_questions'] > 0 else 0
+                perf['iteration_results'].append({
+                    'iteration': iteration,
+                    'accuracy': accuracy,
+                    'databases': len(contexts_tested)
+                })
+
+                # Track Phase 1 failures
+                for context_name in phase1_failures:
+                    self.phase1_failures.append((agent_id, context_name, iteration))
+
+                # Track zero accuracy cases
+                if accuracy == 0 and total_questions > 0:
+                    for context_name in contexts:
+                        self.zero_accuracy_cases.append((agent_id, context_name, iteration, total_questions // len(contexts)))
+
+                # Accumulate Phase 1 costs and token counts from metadata
+                if metadata.get('phase1_cost'):
+                    iteration_cost_dict['phase1_cost'] += metadata['phase1_cost']
+                    iteration_cost_dict['phase1_calls'] += metadata.get('phase1_cache_misses', 0)
+                    iteration_cost_dict['phase1_tokens_in'] += metadata.get('phase1_tokens_in', 0)
+                    iteration_cost_dict['phase1_tokens_out'] += metadata.get('phase1_tokens_out', 0)
+                    iteration_cost_dict['phase1_cache_created'] += metadata.get('phase1_cache_created', 0)
+                    iteration_cost_dict['phase1_cache_read'] += metadata.get('phase1_cache_read', 0)
+
+                print(f"\n{agent_id}: {accuracy:.1f}% ({total_correct}/{total_questions})")
+
+            except Exception as e:
+                import traceback
+                error_str = str(e)
+
+                # Check for critical errors
+                if "API_RATE_LIMIT" in error_str:
+                    print(f"\n❌ RATE LIMIT EXCEEDED - Aborting research run")
+                    print(f"   Agent: {agent_id}")
+                    print(f"   Error: {error_str}")
+                    raise
+
+                for infra_error in CRITICAL_INFRASTRUCTURE_ERRORS:
+                    if infra_error in error_str:
+                        print(f"\n❌ CRITICAL INFRASTRUCTURE ERROR - Aborting research run")
+                        print(f"   Agent: {agent_id}")
+                        print(f"   Error: {error_str}")
+                        raise
+
+                # Log error but continue with other agents
+                print(f"    ❌ {agent_id}: Error - {e}")
+                traceback.print_exc()
+
+                total_questions = sum(len(p) for p in self.current_iteration_problems.values())
+                iteration_results[agent_id] = {
+                    'accuracy': 0.0,
+                    'correct': 0,
+                    'total': total_questions,
+                    'databases_tested': [],
+                    'failures': len(contexts)
+                }
+
+                self.exception_failures.append((agent_id, 'all', iteration, str(e), total_questions))
+
         # Determine winner(s)
-        # Check if any agents successfully completed testing
         if not iteration_results:
             error_msg = (
                 f"\n{'='*60}\n"
                 f"❌ FATAL: No agents completed testing in iteration {iteration}\n"
                 f"{'='*60}\n"
                 f"Agents attempted: {', '.join(selected_agents)}\n"
-                f"Databases attempted: {', '.join(databases)}\n"
-                f"\nCheck Phase 1 failures, agent paths, database access, and Claude CLI config\n"
+                f"{self.domain.context_label_plural.title()} attempted: {', '.join(contexts)}\n"
             )
             raise RuntimeError(error_msg)
 
-        # Find all agents with the highest accuracy
-        max_accuracy = max(iteration_results[k]['accuracy'] for k in iteration_results.keys())
-        winners = [k for k in iteration_results.keys() if iteration_results[k]['accuracy'] == max_accuracy]
+        # Find winner(s)
+        max_accuracy = max(r['accuracy'] for r in iteration_results.values())
+        winners = [k for k, v in iteration_results.items() if v['accuracy'] == max_accuracy]
 
         if len(winners) == 1:
             print(f"\n🏆 Iteration {iteration} winner: {winners[0]} ({max_accuracy:.1f}%)")
         else:
             print(f"\n🏆 Iteration {iteration} tied winners: {', '.join(winners)} ({max_accuracy:.1f}%)")
 
-        # Update last_win_iteration for ALL winners (including ties)
+        # Update last_win_iteration for ALL winners
         for winner_id in winners:
             self.performance_records[winner_id]['last_win_iteration'] = iteration
 
-        # Store results in test_history BEFORE updating ELO scores
-        # This ensures _recalculate_all_elo_scores() has complete data
+        # Store results in test_history
         self.test_history.append(iteration_results)
 
         # Update ELO scores
         self._update_elo_scores(iteration_results)
 
-        # Populate evolution costs from temporary storage (set in run() before run_iteration())
+        # Populate evolution costs from temporary storage
         if self.current_iteration_evolution_cost is not None:
             evo_cost_info = self.current_iteration_evolution_cost
             iteration_cost_dict['evolution_cost'] = evo_cost_info.get('total', 0.0)
-
-            # Count total evolution calls (sum across all rounds)
             iteration_cost_dict['evolution_calls'] = sum(
                 1 for key, phase in evo_cost_info.items()
                 if key != 'total' and isinstance(phase, dict) and phase.get('cost', 0) > 0
             )
-
-            # Aggregate tokens across all rounds
             for key, phase in evo_cost_info.items():
                 if key != 'total' and isinstance(phase, dict):
                     iteration_cost_dict['evolution_tokens_in'] += phase.get('tokens_in', 0)
                     iteration_cost_dict['evolution_tokens_out'] += phase.get('tokens_out', 0)
                     iteration_cost_dict['evolution_cache_created'] += phase.get('cache_created', 0)
                     iteration_cost_dict['evolution_cache_read'] += phase.get('cache_read', 0)
-
-            # Store breakdown
             iteration_cost_dict['evolution_breakdown'] = evo_cost_info
-
-            # Clear temporary storage
             self.current_iteration_evolution_cost = None
 
-        # Store Claude CLI costs for this iteration
+        # Store iteration costs
         self.iteration_claude_costs.append(iteration_cost_dict)
 
-        # Clean up all database connections between iterations to prevent FD accumulation
-        # This closes connections in both the RoboPhD utilities pool and the root-level
-        # utilities pool (used by evaluation)
+        # Cleanup database connections
         close_robophd_connections()
         close_eval_connections()
 
@@ -3002,15 +2599,15 @@ class ParallelAgentResearcher:
             random.seed(self.random_seed)
 
             # Update mutable parameters from config
-            self.questions_per_database = config["questions_per_database"]
-            self.databases_per_iteration = config["databases_per_iteration"]
+            self.problems_per_context = config["problems_per_context"]
+            self.contexts_per_iteration = config["contexts_per_iteration"]
             self.agents_per_iteration = config["agents_per_iteration"]
             self.eval_model = config["eval_model"]
             self.analysis_model = config["analysis_model"]
             self.evolution_model = config["evolution_model"]
-            self.max_concurrent_dbs = config["max_concurrent_dbs"]
+            self.max_concurrent = config["max_concurrent"]
             self.phase1_timeout = config["phase1_timeout"]
-            self.sql_timeout = config["sql_timeout"]
+            self.phase2_timeout = config["phase2_timeout"]
             self.evolution_timeout = config["evolution_timeout"]
             self.verification_retries = config["verification_retries"]
             self.temperature_strategy = config["temperature_strategy"]
@@ -3021,62 +2618,22 @@ class ParallelAgentResearcher:
             # Recreate evolver with current iteration's config
             self.evolver = ParallelAgentEvolver(
                 experiment_dir=self.experiment_dir,
-                config=config
+                config=config,
+                domain=self.domain
             )
             # Restore evolver references
             self.evolver.researcher_phase1_failures = self.phase1_failures
             self.evolver.eval_model = self.eval_model
             self.evolver.analysis_model = self.analysis_model
-            self.evolver.questions_per_database = self.questions_per_database
-            self.evolver.dataset_dir = self.questions_file.parent
-            self.evolver.questions_file = self.questions_file
-            self.evolver.db_root = self.db_root
+            self.evolver.problems_per_context = self.problems_per_context
             self.evolver.test_history = self.test_history
 
             # Load evolution strategies (needed after recreating evolver)
             self.evolver._load_evolution_strategies()
 
-            # Select databases for this iteration and sort alphabetically
-            databases = sorted(random.sample(self.databases,
-                                           min(self.databases_per_iteration, len(self.databases))))
-
-            # Enforce constraint: at most 1 large database per iteration
-            large_dbs = get_large_databases(self.db_root)
-            selected_large_dbs = [db for db in databases if db in large_dbs]
-
-            if len(selected_large_dbs) > 1:
-                # Keep one random large DB, replace others with random non-large DBs
-                keep_large_db = random.choice(selected_large_dbs)
-                replace_large_dbs = [db for db in selected_large_dbs if db != keep_large_db]
-
-                # Get non-large databases that weren't selected
-                non_large_dbs = [db for db in self.databases if db not in large_dbs and db not in databases]
-
-                if len(non_large_dbs) < len(replace_large_dbs):
-                    print(f"⚠️  Warning: Not enough non-large databases to replace {len(replace_large_dbs)} large databases")
-                    # Just use what we have
-                    replacements = random.sample(non_large_dbs, len(non_large_dbs))
-                else:
-                    replacements = random.sample(non_large_dbs, len(replace_large_dbs))
-
-                # Replace large databases
-                for old_db, new_db in zip(replace_large_dbs, replacements):
-                    databases = [new_db if db == old_db else db for db in databases]
-                    print(f"  Replaced large database '{old_db}' with '{new_db}' (constraint: max 1 large DB per iteration)")
-
-                # Re-sort after replacements
-                databases = sorted(databases)
-                selected_large_dbs = [keep_large_db]
-
-            # Decompress the selected large database (if any) before iteration starts
-            if selected_large_dbs:
-                large_db = selected_large_dbs[0]
-                print(f"  Ensuring large database '{large_db}' is decompressed...")
-                try:
-                    ensure_database_decompressed(self.db_root, large_db)
-                except Exception as e:
-                    print(f"❌ Failed to decompress large database '{large_db}': {e}")
-                    raise
+            # Select contexts for this iteration and sort alphabetically
+            contexts = sorted(random.sample(self.contexts,
+                                           min(self.contexts_per_iteration, len(self.contexts))))
 
             # Select agents to test
             if iteration == 1:
@@ -3282,7 +2839,7 @@ class ParallelAgentResearcher:
             iteration_start_cost = self.total_cost
             
             # Run iteration
-            iteration_results, results_by_agent = self.run_iteration(iteration, selected_agents, databases)
+            iteration_results, results_by_agent = self.run_iteration(iteration, selected_agents, contexts)
 
             # Calculate iteration metrics
             iteration_time = time.time() - iteration_start_time
@@ -3302,7 +2859,7 @@ class ParallelAgentResearcher:
                 self.report_generator._generate_agent_evaluation_report(
                     agent_id,
                     iteration,
-                    databases,
+                    contexts,
                     iteration_time / len(selected_agents),  # Estimate per-agent time
                     iteration_cost / len(selected_agents)   # Estimate per-agent cost
                 )
@@ -3844,11 +3401,11 @@ class ParallelAgentResearcher:
 
         for agent_id, results in results_by_agent.items():
             for result in results:
-                db_name = result['database']
-                all_databases.add(db_name)
+                context_name = result['context']
+                all_databases.add(context_name)
 
-                if db_name not in cost_matrix:
-                    cost_matrix[db_name] = {}
+                if context_name not in cost_matrix:
+                    cost_matrix[context_name] = {}
 
                 # Get Phase 1 cost (Claude CLI for DB analysis)
                 phase1_cost_info = result.get('phase1_cost_info')
@@ -3857,7 +3414,7 @@ class ParallelAgentResearcher:
                 # Get Phase 2 cost (API for SQL generation)
                 phase2_cost = result.get('phase2_cost', 0.0)
 
-                cost_matrix[db_name][agent_id] = {
+                cost_matrix[context_name][agent_id] = {
                     'phase1': phase1_cost,
                     'phase2': phase2_cost,
                     'total': phase1_cost + phase2_cost
@@ -3868,15 +3425,15 @@ class ParallelAgentResearcher:
 
         for agent_id, results in results_by_agent.items():
             for result in results:
-                db_name = result['database']
+                context_name = result['context']
 
                 # Extract Phase 2 cache stats if available
                 cache_stats = result.get('phase2_cache_stats')
                 if cache_stats:
-                    if db_name not in phase2_cache_matrix:
-                        phase2_cache_matrix[db_name] = {}
+                    if context_name not in phase2_cache_matrix:
+                        phase2_cache_matrix[context_name] = {}
 
-                    phase2_cache_matrix[db_name][agent_id] = {
+                    phase2_cache_matrix[context_name][agent_id] = {
                         'hits': cache_stats.get('hits', 0),
                         'misses': cache_stats.get('misses', 0)
                     }
@@ -3909,6 +3466,10 @@ class ParallelAgentResearcher:
         total_cost = total_phase1 + total_phase2
         num_tests = sum(len(results) for results in results_by_agent.values())
 
+        # Determine context label based on domain type
+        is_flat_domain = not self.domain.is_hierarchical
+        context_label = "Problems" if is_flat_domain else "Databases"
+
         # Generate markdown report
         report_lines = [
             f"# Cost Analysis - Iteration {iteration}",
@@ -3918,149 +3479,157 @@ class ParallelAgentResearcher:
             f"- Phase 2 (SQL Generation): ${total_phase2:.2f} ({total_phase2/total_cost*100:.1f}%)" if total_cost > 0 else "- Phase 2 (SQL Generation): $0.00",
             "",
             f"**Agents Tested**: {len(all_agents)} agents",
-            f"**Databases Tested**: {len(sorted_databases)} databases",
-            f"**Total Tests**: {num_tests} (agent × database pairs)",
+            f"**{context_label} Tested**: {len(sorted_databases)} {context_label.lower()}",
+            f"**Total Tests**: {num_tests} (agent × {context_label.lower()[:-1]} pairs)",
             "",
             "---",
             "",
-            "## Combined Cost Matrix (Phase 1 + Phase 2)",
-            ""
         ]
 
-        # Header row
-        header = "| Database |"
-        for agent_id in all_agents:
-            header += f" {agent_id} |"
-        header += " **Total** |"
-        report_lines.append(header)
+        if is_flat_domain:
+            # Flat domain: show consolidated agent-centric view
+            report_lines.extend(self._generate_flat_cost_table(
+                agent_totals, all_agents, total_phase1, total_phase2, total_cost
+            ))
+        else:
+            # Hierarchical domain: show full per-context matrix
+            report_lines.append("## Combined Cost Matrix (Phase 1 + Phase 2)")
+            report_lines.append("")
 
-        # Separator row
-        separator = "|----------|"
-        for _ in all_agents:
-            separator += "-----------------|"
-        separator += "-----------|"
-        report_lines.append(separator)
-
-        # Data rows
-        for db_name in sorted_databases:
-            row = f"| {db_name} |"
+            # Header row
+            header = "| Database |"
             for agent_id in all_agents:
-                if agent_id in cost_matrix[db_name]:
-                    costs = cost_matrix[db_name][agent_id]
-                    p1, p2 = costs['phase1'], costs['phase2']
-                    # Determine marker: tool-only, cache hit, or none
-                    if self._is_agent_tool_only(agent_id):
-                        marker = " 🔧"
-                    elif p1 == 0.0 and p2 > 0.0:
-                        marker = " 💾"
+                header += f" {agent_id} |"
+            header += " **Total** |"
+            report_lines.append(header)
+
+            # Separator row
+            separator = "|----------|"
+            for _ in all_agents:
+                separator += "-----------------|"
+            separator += "-----------|"
+            report_lines.append(separator)
+
+            # Data rows
+            for db_name in sorted_databases:
+                row = f"| {db_name} |"
+                for agent_id in all_agents:
+                    if agent_id in cost_matrix[db_name]:
+                        costs = cost_matrix[db_name][agent_id]
+                        p1, p2 = costs['phase1'], costs['phase2']
+                        # Determine marker: tool-only, cache hit, or none
+                        if self._is_agent_tool_only(agent_id):
+                            marker = " 🔧"
+                        elif p1 == 0.0 and p2 > 0.0:
+                            marker = " 💾"
+                        else:
+                            marker = ""
+                        row += f" ${p1:.2f} + ${p2:.2f} = **${costs['total']:.2f}**{marker} |"
                     else:
-                        marker = ""
-                    row += f" ${p1:.2f} + ${p2:.2f} = **${costs['total']:.2f}**{marker} |"
-                else:
-                    row += " - |"
-            row += f" **${db_totals[db_name]['total']:.2f}** |"
-            report_lines.append(row)
+                        row += " - |"
+                row += f" **${db_totals[db_name]['total']:.2f}** |"
+                report_lines.append(row)
 
-        # Total row
-        total_row = "| **Total** |"
-        for agent_id in all_agents:
-            at = agent_totals[agent_id]
-            # Determine marker: tool-only, cache hit, or none
-            if self._is_agent_tool_only(agent_id):
-                marker = " 🔧"
-            elif at['phase1'] == 0.0 and at['total'] > 0.0:
-                marker = " 💾"
-            else:
-                marker = ""
-            total_row += f" **${at['phase1']:.2f} + ${at['phase2']:.2f} = ${at['total']:.2f}**{marker} |"
-        total_row += f" **${total_cost:.2f}** |"
-        report_lines.append(total_row)
-
-        report_lines.extend([
-            "",
-            "🔧 = Tool-only execution (no Phase 1 cost by design)",
-            "💾 = Phase 1 cache hit (reused prior analysis)",
-            "💾 (N) = Phase 2 cache hits (N queries reused from cache, saving ~$0.01 each)",
-            "",
-            "---",
-            "",
-            "## Phase 1 Only (Database Analysis)",
-            ""
-        ])
-
-        # Phase 1 table
-        report_lines.append(header)
-        report_lines.append(separator)
-
-        for db_name in sorted_databases:
-            row = f"| {db_name} |"
+            # Total row
+            total_row = "| **Total** |"
             for agent_id in all_agents:
-                if agent_id in cost_matrix[db_name]:
-                    p1 = cost_matrix[db_name][agent_id]['phase1']
-                    # Determine marker: tool-only or cache hit
-                    if self._is_agent_tool_only(agent_id):
-                        marker = " 🔧"
-                    elif p1 == 0.0:
-                        marker = " 💾"
+                at = agent_totals[agent_id]
+                # Determine marker: tool-only, cache hit, or none
+                if self._is_agent_tool_only(agent_id):
+                    marker = " 🔧"
+                elif at['phase1'] == 0.0 and at['total'] > 0.0:
+                    marker = " 💾"
+                else:
+                    marker = ""
+                total_row += f" **${at['phase1']:.2f} + ${at['phase2']:.2f} = ${at['total']:.2f}**{marker} |"
+            total_row += f" **${total_cost:.2f}** |"
+            report_lines.append(total_row)
+
+            report_lines.extend([
+                "",
+                "🔧 = Tool-only execution (no Phase 1 cost by design)",
+                "💾 = Phase 1 cache hit (reused prior analysis)",
+                "💾 (N) = Phase 2 cache hits (N queries reused from cache, saving ~$0.01 each)",
+                "",
+                "---",
+                "",
+                "## Phase 1 Only (Database Analysis)",
+                ""
+            ])
+
+            # Phase 1 table
+            report_lines.append(header)
+            report_lines.append(separator)
+
+            for db_name in sorted_databases:
+                row = f"| {db_name} |"
+                for agent_id in all_agents:
+                    if agent_id in cost_matrix[db_name]:
+                        p1 = cost_matrix[db_name][agent_id]['phase1']
+                        # Determine marker: tool-only or cache hit
+                        if self._is_agent_tool_only(agent_id):
+                            marker = " 🔧"
+                        elif p1 == 0.0:
+                            marker = " 💾"
+                        else:
+                            marker = ""
+                        row += f" ${p1:.2f}{marker} |"
                     else:
-                        marker = ""
-                    row += f" ${p1:.2f}{marker} |"
-                else:
-                    row += " - |"
-            row += f" **${db_totals[db_name]['phase1']:.2f}** |"
-            report_lines.append(row)
+                        row += " - |"
+                row += f" **${db_totals[db_name]['phase1']:.2f}** |"
+                report_lines.append(row)
 
-        total_row = "| **Total** |"
-        for agent_id in all_agents:
-            p1 = agent_totals[agent_id]['phase1']
-            # Determine marker: tool-only or cache hit
-            if self._is_agent_tool_only(agent_id):
-                marker = " 🔧"
-            elif p1 == 0.0:
-                marker = " 💾"
-            else:
-                marker = ""
-            total_row += f" **${p1:.2f}**{marker} |"
-        total_row += f" **${total_phase1:.2f}** |"
-        report_lines.append(total_row)
-
-        report_lines.extend([
-            "",
-            "---",
-            "",
-            "## Phase 2 Only (SQL Generation)",
-            ""
-        ])
-
-        # Phase 2 table
-        report_lines.append(header)
-        report_lines.append(separator)
-
-        for db_name in sorted_databases:
-            row = f"| {db_name} |"
+            total_row = "| **Total** |"
             for agent_id in all_agents:
-                if agent_id in cost_matrix[db_name]:
-                    p2 = cost_matrix[db_name][agent_id]['phase2']
-
-                    # Check for Phase 2 cache hits
-                    cache_marker = ""
-                    if (db_name in phase2_cache_matrix and
-                        agent_id in phase2_cache_matrix[db_name]):
-                        hits = phase2_cache_matrix[db_name][agent_id]['hits']
-                        if hits > 0:
-                            cache_marker = f" 💾 ({hits})"
-
-                    row += f" ${p2:.2f}{cache_marker} |"
+                p1 = agent_totals[agent_id]['phase1']
+                # Determine marker: tool-only or cache hit
+                if self._is_agent_tool_only(agent_id):
+                    marker = " 🔧"
+                elif p1 == 0.0:
+                    marker = " 💾"
                 else:
-                    row += " - |"
-            row += f" **${db_totals[db_name]['phase2']:.2f}** |"
-            report_lines.append(row)
+                    marker = ""
+                total_row += f" **${p1:.2f}**{marker} |"
+            total_row += f" **${total_phase1:.2f}** |"
+            report_lines.append(total_row)
 
-        total_row = "| **Total** |"
-        for agent_id in all_agents:
-            total_row += f" **${agent_totals[agent_id]['phase2']:.2f}** |"
-        total_row += f" **${total_phase2:.2f}** |"
-        report_lines.append(total_row)
+            report_lines.extend([
+                "",
+                "---",
+                "",
+                "## Phase 2 Only (SQL Generation)",
+                ""
+            ])
+
+            # Phase 2 table
+            report_lines.append(header)
+            report_lines.append(separator)
+
+            for db_name in sorted_databases:
+                row = f"| {db_name} |"
+                for agent_id in all_agents:
+                    if agent_id in cost_matrix[db_name]:
+                        p2 = cost_matrix[db_name][agent_id]['phase2']
+
+                        # Check for Phase 2 cache hits
+                        cache_marker = ""
+                        if (db_name in phase2_cache_matrix and
+                            agent_id in phase2_cache_matrix[db_name]):
+                            hits = phase2_cache_matrix[db_name][agent_id]['hits']
+                            if hits > 0:
+                                cache_marker = f" 💾 ({hits})"
+
+                        row += f" ${p2:.2f}{cache_marker} |"
+                    else:
+                        row += " - |"
+                row += f" **${db_totals[db_name]['phase2']:.2f}** |"
+                report_lines.append(row)
+
+            total_row = "| **Total** |"
+            for agent_id in all_agents:
+                total_row += f" **${agent_totals[agent_id]['phase2']:.2f}** |"
+            total_row += f" **${total_phase2:.2f}** |"
+            report_lines.append(total_row)
 
         # Add insights section
         report_lines.extend([
@@ -4071,45 +3640,48 @@ class ParallelAgentResearcher:
             ""
         ])
 
-        # Most expensive combinations
-        all_combinations = []
-        for db_name in sorted_databases:
-            for agent_id in all_agents:
-                if agent_id in cost_matrix[db_name]:
-                    all_combinations.append((
-                        db_name,
-                        agent_id,
-                        cost_matrix[db_name][agent_id]['total']
-                    ))
+        # For flat domains, skip the per-context breakdowns (they're meaningless projections)
+        if not is_flat_domain:
+            # Most expensive combinations
+            all_combinations = []
+            for db_name in sorted_databases:
+                for agent_id in all_agents:
+                    if agent_id in cost_matrix[db_name]:
+                        all_combinations.append((
+                            db_name,
+                            agent_id,
+                            cost_matrix[db_name][agent_id]['total']
+                        ))
 
-        all_combinations.sort(key=lambda x: x[2], reverse=True)
+            all_combinations.sort(key=lambda x: x[2], reverse=True)
 
-        report_lines.append("### Most Expensive Combinations (Top 5)")
-        for i, (db, agent, cost) in enumerate(all_combinations[:5], 1):
-            pct = (cost / total_cost * 100) if total_cost > 0 else 0
-            report_lines.append(f"{i}. {db} × {agent}: ${cost:.2f} ({pct:.1f}% of total)")
-        report_lines.append("")
+            report_lines.append("### Most Expensive Combinations (Top 5)")
+            for i, (db, agent, cost) in enumerate(all_combinations[:5], 1):
+                pct = (cost / total_cost * 100) if total_cost > 0 else 0
+                report_lines.append(f"{i}. {db} × {agent}: ${cost:.2f} ({pct:.1f}% of total)")
+            report_lines.append("")
 
-        # Most expensive databases
-        db_costs = [(db, db_totals[db]['total']) for db in sorted_databases]
-        db_costs.sort(key=lambda x: x[1], reverse=True)
+            # Most expensive databases
+            db_costs = [(db, db_totals[db]['total']) for db in sorted_databases]
+            db_costs.sort(key=lambda x: x[1], reverse=True)
 
-        report_lines.append("### Most Expensive Databases")
-        for i, (db, cost) in enumerate(db_costs, 1):
-            pct = (cost / total_cost * 100) if total_cost > 0 else 0
-            avg = cost / len(all_agents) if all_agents else 0
-            report_lines.append(f"{i}. {db}: ${cost:.2f} ({pct:.1f}%, avg ${avg:.2f}/agent)")
-        report_lines.append("")
+            report_lines.append("### Most Expensive Databases")
+            for i, (db, cost) in enumerate(db_costs, 1):
+                pct = (cost / total_cost * 100) if total_cost > 0 else 0
+                avg = cost / len(all_agents) if all_agents else 0
+                report_lines.append(f"{i}. {db}: ${cost:.2f} ({pct:.1f}%, avg ${avg:.2f}/agent)")
+            report_lines.append("")
 
-        # Most expensive agents
+        # Most expensive agents (always shown)
         agent_costs = [(agent, agent_totals[agent]['total']) for agent in all_agents]
         agent_costs.sort(key=lambda x: x[1], reverse=True)
 
         report_lines.append("### Most Expensive Agents")
+        context_label_singular = "problem" if is_flat_domain else "db"
         for i, (agent, cost) in enumerate(agent_costs, 1):
             pct = (cost / total_cost * 100) if total_cost > 0 else 0
             avg = cost / len(sorted_databases) if sorted_databases else 0
-            report_lines.append(f"{i}. {agent}: ${cost:.2f} ({pct:.1f}%, avg ${avg:.2f}/db)")
+            report_lines.append(f"{i}. {agent}: ${cost:.2f} ({pct:.1f}%, avg ${avg:.2f}/{context_label_singular})")
         report_lines.append("")
 
         # Tool-only efficiency
@@ -4131,6 +3703,63 @@ class ParallelAgentResearcher:
             f.write('\n'.join(report_lines))
 
         print(f"✓ Generated cost report: {cost_report_path}")
+
+    def _generate_flat_cost_table(self, agent_totals: Dict, all_agents: List[str],
+                                   total_phase1: float, total_phase2: float,
+                                   total_cost: float) -> List[str]:
+        """
+        Generate a consolidated agent-centric cost table for flat domains.
+
+        For flat domains (like CodeGen), per-problem costs are just projections
+        (total / num_problems) with no actual granularity. This method generates
+        a simpler agent summary table instead of the misleading per-problem matrix.
+
+        Args:
+            agent_totals: Dict mapping agent_id to {'phase1': $, 'phase2': $, 'total': $}
+            all_agents: Sorted list of agent IDs
+            total_phase1: Total Phase 1 cost
+            total_phase2: Total Phase 2 cost
+            total_cost: Total cost (phase1 + phase2)
+
+        Returns:
+            List of markdown lines for the flat cost table
+        """
+        lines = [
+            "## Agent Cost Summary",
+            "",
+            "*Note: For flat domains, costs are tracked per-agent rather than per-problem.*",
+            "",
+            "| Agent | Phase 1 | Phase 2 | Total |",
+            "|-------|---------|---------|-------|",
+        ]
+
+        # Agent rows
+        for agent_id in all_agents:
+            at = agent_totals[agent_id]
+            # Determine marker: tool-only, cache hit, or none
+            if self._is_agent_tool_only(agent_id):
+                marker = " 🔧"
+            elif at['phase1'] == 0.0 and at['total'] > 0.0:
+                marker = " 💾"
+            else:
+                marker = ""
+            lines.append(
+                f"| {agent_id}{marker} | ${at['phase1']:.2f} | ${at['phase2']:.2f} | **${at['total']:.2f}** |"
+            )
+
+        # Total row
+        lines.append(
+            f"| **Total** | **${total_phase1:.2f}** | **${total_phase2:.2f}** | **${total_cost:.2f}** |"
+        )
+
+        lines.extend([
+            "",
+            "🔧 = Tool-only execution (no Phase 1 cost by design)",
+            "💾 = Phase 1 cache hit (reused prior analysis)",
+            "",
+        ])
+
+        return lines
 
     def _validate_checkpoint_consistency(self, iteration: int):
         """
@@ -4393,7 +4022,7 @@ def main():
     parser.add_argument('--modify-iterations', type=int,
                        help='Set num_iterations for resumed run (cannot go below last_completed+1 or --from-iteration)')
     parser.add_argument('--modify-config', type=str,
-                       help='Apply config delta when resuming. JSON dict of parameter changes. With --from-iteration: applies to iteration N. With --extend: applies to new iterations. Example: \'{"databases_per_iteration": 10, "eval_model": "sonnet-4.5"}\'')
+                       help='Apply config delta when resuming. JSON dict of parameter changes. With --from-iteration: applies to iteration N. With --extend: applies to new iterations. Example: \'{"contexts_per_iteration": 10, "eval_model": "sonnet-4.5"}\'')
 
     # Utility parameters
     parser.add_argument('--list-config-parameters', action='store_true',
@@ -4421,19 +4050,22 @@ def main():
         print("VALID CONFIGURATION PARAMETERS")
         print("=" * 70)
         print("\nAll parameters can be specified via --config (JSON) or --modify-config")
-        print("Both hyphenated (questions-per-database) and underscored (questions_per_database) work\n")
+        print("Both hyphenated (problems-per-context) and underscored (problems_per_context) work\n")
 
         # Group parameters by category
         categories = {
-            "Dataset & Sampling": ["dataset", "databases_per_iteration", "questions_per_database", "agents_per_iteration"],
-            "Models": ["eval_model", "analysis_model", "evolution_model"],
+            "Domain": ["domain"],
+            "Sampling": ["contexts_per_iteration", "agents_per_iteration"],
+            "Text2SQL Dataset & Sampling": ["dataset", "problems_per_context"],
+            "Text2SQL Models": ["eval_model", "analysis_model", "evolution_model"],
+            "CodeGen Dataset & Models": ["codegen_split", "coder_model", "critic_model"],
             "Evolution": ["evolution_strategy"],
             "Evolution Meta-Parameters": ["config_schedule", "weighted_random_configs", "use_weighted_random"],
             "Meta-Evolution": ["meta_evolution_strategy", "meta_evolution_model", "meta_evolution_budget"],
             "Deep Focus": ["new_agent_test_rounds"],
-            "SQL Generation": ["verification_retries", "temperature_strategy"],
-            "Performance": ["max_concurrent_dbs"],
-            "Timeouts": ["phase1_timeout", "sql_timeout", "evolution_timeout"],
+            "SQL Generation (Text2SQL)": ["verification_retries", "temperature_strategy"],
+            "Performance": ["max_concurrent"],
+            "Timeouts": ["phase1_timeout", "phase2_timeout", "evolution_timeout"],
             "Other": ["debug_log_probability"],
             "System-Managed (automatic, not user-modifiable)": ["num_iterations", "random_seed"],
             "Immutable (user-set once at iteration 1)": ["initial_agents", "agents_directory", "initial_strategies", "strategies_directory"]
@@ -4463,7 +4095,7 @@ def main():
             print()
 
         print("Example usage:")
-        print('  --config \'{"databases_per_iteration": 5, "questions_per_database": 20}\'')
+        print('  --config \'{"contexts_per_iteration": 5, "problems_per_context": 20}\'')
         print('  --modify-config \'{"eval_model": "sonnet-4.5", "evolution_strategy": "none"}\'')
         print()
         return
@@ -4670,7 +4302,7 @@ def main():
                     user_config = json.loads(args.config)
 
                 # Normalize keys: convert hyphens to underscores for convenience
-                # This allows users to use either "questions-per-database" or "questions_per_database"
+                # This allows users to use either "problems-per-context" or "problems_per_context"
                 user_config = {k.replace('-', '_'): v for k, v in user_config.items()}
 
             except (json.JSONDecodeError, IOError) as e:
@@ -4691,8 +4323,8 @@ def main():
             user_config.update({
                 "dataset": "dev",
                 "agents_per_iteration": 1,
-                "databases_per_iteration": 999,
-                "questions_per_database": 99999
+                "contexts_per_iteration": 999,
+                "problems_per_context": 99999
             })
             custom_experiment_name = f"dev_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         elif args.dev_no_evidence_eval:
@@ -4700,8 +4332,8 @@ def main():
             user_config.update({
                 "dataset": "dev-no-evidence",
                 "agents_per_iteration": 1,
-                "databases_per_iteration": 999,
-                "questions_per_database": 99999
+                "contexts_per_iteration": 999,
+                "problems_per_context": 99999
             })
             custom_experiment_name = f"dev_no_evidence_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         elif args.test_eval:
@@ -4709,8 +4341,8 @@ def main():
             user_config.update({
                 "dataset": "test",
                 "agents_per_iteration": 1,
-                "databases_per_iteration": 999,
-                "questions_per_database": 99999
+                "contexts_per_iteration": 999,
+                "problems_per_context": 99999
             })
             custom_experiment_name = f"test_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         else:

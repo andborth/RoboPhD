@@ -770,8 +770,8 @@ Example meta_config_schedule.json:
     ]
   }},
   "15": {{
-    "databases_per_iteration": 10,
-    "questions_per_database": 30
+    "contexts_per_iteration": 10,
+    "problems_per_context": 30
   }}
 }}
 

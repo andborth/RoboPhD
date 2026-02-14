@@ -28,6 +28,10 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
     """
     Load all evaluation results from iteration directory.
 
+    Supports both:
+    - Hierarchical domains (Text2SQL): agent_*/*/results/evaluation.json
+    - Flat domains (CodeGen): agent_*/evaluation.json
+
     Returns:
         {
             'by_question': {question_id: {agent_name: result}},
@@ -41,10 +45,16 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
     databases = set()
     agents = set()
 
-    # Find all evaluation files
+    # Find all evaluation files - try hierarchical structure first (Text2SQL)
     eval_files = list(iteration_dir.glob("agent_*/*/evaluations/evaluation.json"))
     if not eval_files:
         eval_files = list(iteration_dir.glob("agent_*/*/results/evaluation.json"))
+
+    # If no hierarchical files found, try flat structure (CodeGen)
+    is_flat_domain = False
+    if not eval_files:
+        eval_files = list(iteration_dir.glob("agent_*/evaluation.json"))
+        is_flat_domain = True
 
     for eval_file in eval_files:
         try:
@@ -62,7 +72,10 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
         for i, part in enumerate(parts):
             if part.startswith('agent_'):
                 agent_name = part
-                if i + 1 < len(parts):
+                if is_flat_domain:
+                    # Flat domains: use "all" as context name (single aggregate)
+                    db_name = "all"
+                elif i + 1 < len(parts):
                     db_name = parts[i + 1]
                 break
 
@@ -72,7 +85,7 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
         agents.add(agent_name)
         databases.add(db_name)
 
-        # Process evaluation results from "results" dict
+        # Process evaluation results
         if not isinstance(eval_data, dict):
             continue
 
@@ -80,19 +93,24 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
         if not results_dict:
             continue
 
+        # Handle both dict (standard) and list (legacy) formats
+        if isinstance(results_dict, list):
+            # Legacy list format: convert to dict
+            results_dict = {str(r.get('question_id', '')): r for r in results_dict if r.get('question_id')}
+
         for question_id, result in results_dict.items():
             question_id = str(question_id)
             if not question_id:
                 continue
 
-            # Determine status: "MATCH" if matches==true, else "ERROR"
-            is_match = result.get('matches', False)
+            # Use standard 'correct' field
+            is_match = result.get('correct', False)
             status = 'MATCH' if is_match else 'ERROR'
 
             processed_result = {
                 'question_id': question_id,
                 'status': status,
-                'matches': is_match
+                'matches': is_match,
             }
 
             by_question[question_id][agent_name] = processed_result

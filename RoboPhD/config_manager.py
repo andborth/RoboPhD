@@ -52,16 +52,24 @@ class ConfigManager:
         These defaults represent iteration 0 configuration.
         """
         return {
-            # Dataset and sampling
+            # Domain and dataset
+            "domain": "text2sql",  # Domain plugin: 'text2sql' or 'codegen'
             "dataset": "train-filtered",
-            "databases_per_iteration": 5,
-            "questions_per_database": 30,
+            "contexts_per_iteration": 5,
+            "problems_per_context": 30,
             "agents_per_iteration": 3,
 
-            # Models
+            # Models (Text2SQL)
             "eval_model": "haiku-4.5",
             "analysis_model": "haiku-4.5",
             "evolution_model": "opus-4.5",
+
+            # Models (CodeGen)
+            "coder_model": "haiku-4.5",   # Model for code generation
+            "critic_model": None,          # Model for critic (defaults to coder_model if None)
+
+            # CodeGen dataset filtering
+            "codegen_split": "evolution",  # "evolution" or "test" - which problems to use
 
             # Evolution parameters (NO LONGER SPECIAL!)
             "evolution_strategy": "cross_pollination_tool_only",
@@ -79,11 +87,11 @@ class ConfigManager:
             "temperature_strategy": "progressive",
 
             # Performance
-            "max_concurrent_dbs": 12,
+            "max_concurrent": 12,  # Parallelism limit (renamed from max_concurrent_dbs)
 
             # Timeouts
             "phase1_timeout": 1800,
-            "sql_timeout": 3600,
+            "phase2_timeout": 3600,  # Phase 2 generation timeout (renamed from sql_timeout)
             "evolution_timeout": 1800,
             "llm_call_timeout": 120,  # Per-call LLM timeout (2 min) - affects local models
 
@@ -122,7 +130,9 @@ class ConfigManager:
         # Iteration 0 = Pure defaults
         defaults = self.get_defaults()
         self.iteration_configs[0] = defaults.copy()
-        self.resolved_configs[0] = defaults.copy()
+        resolved_0 = defaults.copy()
+        self._resolve_dynamic_defaults(resolved_0)
+        self.resolved_configs[0] = resolved_0
 
         # Iteration 1 = User overrides only (delta from defaults)
         self.iteration_configs[1] = user_config.copy()
@@ -130,6 +140,7 @@ class ConfigManager:
         # Resolve iteration 1 = defaults + user overrides
         resolved = defaults.copy()
         resolved.update(user_config)
+        self._resolve_dynamic_defaults(resolved)
         self.resolved_configs[1] = resolved
 
         # Record in history
@@ -278,9 +289,9 @@ class ConfigManager:
             "meta_evolution_budget",
 
             # Performance and system settings (user-controlled)
-            "max_concurrent_dbs",
+            "max_concurrent",
             "phase1_timeout",
-            "sql_timeout",
+            "phase2_timeout",
             "evolution_timeout",
             "debug_log_probability"
         ]
@@ -304,15 +315,10 @@ class ConfigManager:
         Returns:
             Configuration dict for validation purposes
         """
-        if iteration == 0:
-            return self.get_defaults()
-
-        if iteration == 1:
-            defaults = self.get_defaults()
-            user_config = self.iteration_configs.get(1, {})
-            resolved = defaults.copy()
-            resolved.update(user_config)
-            return resolved
+        # Handle base cases (iterations 0 and 1)
+        base = self._resolve_base_config(iteration)
+        if base is not None:
+            return base
 
         # N >= 2: Inherit from N-1, apply deltas and schedules
         # But DON'T execute weighted random - just return pool for validation
@@ -337,6 +343,7 @@ class ConfigManager:
 
         # NOTE: We do NOT execute weighted random here
         # The config still contains weighted_random_configs pool for validation
+        self._resolve_dynamic_defaults(config)
         return config
 
     def set_current_iteration(self, iteration: int) -> None:
@@ -483,7 +490,7 @@ class ConfigManager:
             )
 
         # 4. Immutable parameter protection
-        immutable = ["dataset", "random_seed", "initial_agents", "agents_directory"]
+        immutable = ["domain", "dataset", "random_seed", "initial_agents", "agents_directory"]
         if 1 in self.resolved_configs:
             iter1_config = self.resolved_configs[1]
             for iter_num in range(2, iteration + 1):
@@ -566,15 +573,10 @@ class ConfigManager:
         Returns:
             Resolved configuration dict
         """
-        if iteration == 0:
-            return self.get_defaults()
-
-        if iteration == 1:
-            defaults = self.get_defaults()
-            user_config = self.iteration_configs.get(1, {})
-            resolved = defaults.copy()
-            resolved.update(user_config)
-            return resolved
+        # Handle base cases (iterations 0 and 1)
+        base = self._resolve_base_config(iteration)
+        if base is not None:
+            return base
 
         # N >= 2: Inherit from N-1, apply deltas, check schedules
         prev_config = self.get_config(iteration - 1)
@@ -641,6 +643,7 @@ class ConfigManager:
                     "rationale": f"Weighted random selection from pool of {len(pool)} configs (selected with {selected_weight}% probability)"
                 })
 
+        self._resolve_dynamic_defaults(config)
         return config
 
     def _select_from_weighted_pool(self,
@@ -686,6 +689,43 @@ class ConfigManager:
 
         # Fallback (shouldn't reach here due to weights summing to 100)
         return pool[-1][0].copy()
+
+    def _resolve_dynamic_defaults(self, config: Dict[str, Any]) -> None:
+        """
+        Resolve dynamic defaults where one field depends on another.
+
+        Modifies config in place. Called after merging user config with defaults.
+
+        Dynamic defaults:
+        - critic_model: defaults to coder_model if None
+        """
+        if config.get('critic_model') is None:
+            config['critic_model'] = config['coder_model']  # Fail fast if coder_model missing
+
+    def _resolve_base_config(self, iteration: int) -> Optional[Dict[str, Any]]:
+        """
+        Resolve config for iterations 0 or 1 (base cases with no side effects).
+
+        Args:
+            iteration: Iteration number
+
+        Returns:
+            Resolved config for iterations 0 or 1, None for iteration >= 2
+        """
+        if iteration == 0:
+            config = self.get_defaults()
+            self._resolve_dynamic_defaults(config)
+            return config
+
+        if iteration == 1:
+            defaults = self.get_defaults()
+            user_config = self.iteration_configs.get(1, {})
+            resolved = defaults.copy()
+            resolved.update(user_config)
+            self._resolve_dynamic_defaults(resolved)
+            return resolved
+
+        return None
 
     def _validate_parameters(self,
                             config: Dict[str, Any],
@@ -747,7 +787,7 @@ class ConfigManager:
         Raises:
             ValueError: If trying to modify immutable parameter after iteration 1
         """
-        immutable = ["dataset", "initial_agents", "agents_directory"]
+        immutable = ["domain", "dataset", "initial_agents", "agents_directory"]
 
         if iteration > 1:
             for param in immutable:

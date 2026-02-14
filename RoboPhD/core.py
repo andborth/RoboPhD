@@ -406,8 +406,10 @@ class Evaluator:
                         verification_info_map[detail_qid] = detail['verification_info']
 
                 # Note: question/evidence/difficulty are now added by evaluate_predictions.py
-                # We only add verification_info here if available
+                # We add verification_info and standard 'correct' field here
                 for qid, result in eval_results['results'].items():
+                    # Add standard 'correct' field for cross-domain compatibility
+                    result['correct'] = result.get('matches', False)
                     # Add verification info if available
                     if qid in verification_info_map:
                         result['verification_info'] = verification_info_map[qid]

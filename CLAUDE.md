@@ -61,7 +61,7 @@ python RoboPhD/researcher.py --num-iterations 10 --config configs/primary_produc
 # Quick test with custom config
 python RoboPhD/researcher.py \
   --num-iterations 2 \
-  --config '{"databases_per_iteration": 3, "questions_per_database": 10}'
+  --config '{"contexts_per_iteration": 3, "problems_per_context": 10}'
 ```
 
 ### Configuration via --config
@@ -77,7 +77,7 @@ python RoboPhD/researcher.py \
 python RoboPhD/researcher.py --num-iterations 10 --config configs/primary_production.json
 ```
 
-**Note**: Both `"questions-per-database"` (CLI-style) and `"questions_per_database"` (Python-style) work - hyphens are automatically converted to underscores.
+**Note**: Both `"problems-per-context"` (CLI-style) and `"problems_per_context"` (Python-style) work - hyphens are automatically converted to underscores.
 
 ### Dev Set Evaluation Mode
 ```bash
@@ -101,7 +101,7 @@ python RoboPhD/researcher.py --resume output/robophd_20251031_043607
 python RoboPhD/researcher.py \
   --resume output/robophd_20251031_043607 \
   --from-iteration 5 \
-  --modify-config '{"databases_per_iteration": 10, "eval_model": "sonnet-4.5"}'
+  --modify-config '{"contexts_per_iteration": 10, "eval_model": "sonnet-4.5"}'
 
 # Extend completed run with additional iterations
 python RoboPhD/researcher.py \
@@ -379,7 +379,7 @@ set(predicted_results) == set(ground_truth_results)
 
 ## Development Tips
 
-- **Quick Test**: Use `--config '{"databases_per_iteration": 1, "questions_per_database": 5}'`
+- **Quick Test**: Use `--config '{"contexts_per_iteration": 1, "problems_per_context": 5}'`
 - **Check Progress**: Review `checkpoint.json` and `final_report.md`
 - **Debug Phase 1**: Check `iteration_XXX/agent_YYY/DB_NAME/` for agent outputs
 - **Evolution Output**: Check `evolution_output/iteration_XXX/` for Claude's reasoning
@@ -389,11 +389,11 @@ set(predicted_results) == set(ground_truth_results)
 
 ### Memory (OOM) Errors
 - **Symptom**: Process killed with "zsh: killed"
-- **Solution**: Use `--config '{"max_concurrent_dbs": 4}'` or reduce to 2
+- **Solution**: Use `--config '{"max_concurrent": 4}'` or reduce to 2
 
 ### Evolution Failures
 - **Claude CLI not found**: Ensure Claude Code CLI is installed
-- **Context too long**: Use `--config '{"questions_per_database": 10, "databases_per_iteration": 3}'`
+- **Context too long**: Use `--config '{"problems_per_context": 10, "contexts_per_iteration": 3}'`
 - **Session errors**: Check Claude CLI authentication with `claude --version`
 
 ### Database Locks

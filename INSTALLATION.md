@@ -76,7 +76,7 @@ Run a quick test:
 ```bash
 python RoboPhD/researcher.py \
   --num-iterations 1 \
-  --config '{"databases_per_iteration": 1, "questions_per_database": 5}'
+  --config '{"contexts_per_iteration": 1, "problems_per_context": 5}'
 ```
 
 If successful, you'll see iteration progress and a final report.
@@ -110,7 +110,7 @@ python RoboPhD/tools/precompute_ground_truth.py
 Reduce concurrency:
 ```bash
 python RoboPhD/researcher.py --num-iterations 5 \
-  --config '{"max_concurrent_dbs": 2}'
+  --config '{"max_concurrent": 2}'
 ```
 
 ### Claude CLI not found

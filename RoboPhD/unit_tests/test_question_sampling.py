@@ -37,24 +37,35 @@ def create_mock_questions_db(num_dbs=2, questions_per_db=15):
     return mock_questions
 
 
-def simulate_iteration_sampling(questions_by_db, databases, questions_per_database, num_agents):
-    """Simulate the question sampling logic from run_iteration (researcher.py:2388-2401)."""
-    # This simulates what the fixed code does: sample ONCE before threading
-    current_iteration_questions = {}
-    for db_name in databases:
-        questions = questions_by_db.get(db_name, [])
-        if questions:
+def simulate_iteration_sampling(problems_by_context, contexts, problems_per_context, num_agents):
+    """Simulate the problem sampling logic from run_iteration (researcher.py).
+
+    This simulates what the fixed code does: sample ONCE before threading.
+
+    Args:
+        problems_by_context: Dict mapping context_name -> list of problem dicts
+        contexts: List of context names (databases for Text2SQL)
+        problems_per_context: Number of problems to sample per context
+        num_agents: Number of agents testing
+
+    Returns:
+        Dict mapping agent_id -> {context_name: [sampled_problems]}
+    """
+    current_iteration_problems = {}
+    for context_name in contexts:
+        problems = problems_by_context.get(context_name, [])
+        if problems:
             sampled = random.sample(
-                questions,
-                min(questions_per_database, len(questions))
+                problems,
+                min(problems_per_context, len(problems))
             )
-            current_iteration_questions[db_name] = sampled
+            current_iteration_problems[context_name] = sampled
         else:
-            current_iteration_questions[db_name] = []
+            current_iteration_problems[context_name] = []
 
     # Return what each agent would get (they all get the same)
     return {
-        f'agent_{i}': current_iteration_questions
+        f'agent_{i}': current_iteration_problems
         for i in range(num_agents)
     }
 
@@ -68,30 +79,30 @@ def test_all_agents_get_same_questions():
     print("  Testing: All agents get same questions... ", end="")
 
     try:
-        questions_by_db = create_mock_questions_db(num_dbs=2, questions_per_db=15)
-        databases = list(questions_by_db.keys())
-        questions_per_database = 5
+        problems_by_context = create_mock_questions_db(num_dbs=2, questions_per_db=15)
+        contexts = list(problems_by_context.keys())
+        problems_per_context = 5
         num_agents = 3
 
         # Set seed for determinism
         random.seed(42)
 
         # Simulate sampling
-        agent_questions = simulate_iteration_sampling(
-            questions_by_db, databases, questions_per_database, num_agents
+        agent_problems = simulate_iteration_sampling(
+            problems_by_context, contexts, problems_per_context, num_agents
         )
 
-        # Verify all agents got the same questions
-        expected_questions = agent_questions['agent_0']
+        # Verify all agents got the same problems
+        expected_problems = agent_problems['agent_0']
         for agent_id in [f'agent_{i}' for i in range(1, num_agents)]:
-            actual_questions = agent_questions[agent_id]
+            actual_problems = agent_problems[agent_id]
 
-            for db_name in databases:
-                expected_ids = [q['question_id'] for q in expected_questions[db_name]]
-                actual_ids = [q['question_id'] for q in actual_questions[db_name]]
+            for context_name in contexts:
+                expected_ids = [q['question_id'] for q in expected_problems[context_name]]
+                actual_ids = [q['question_id'] for q in actual_problems[context_name]]
 
                 assert actual_ids == expected_ids, \
-                    f"{agent_id} has different questions for {db_name}: {actual_ids} vs {expected_ids}"
+                    f"{agent_id} has different problems for {context_name}: {actual_ids} vs {expected_ids}"
 
         print("PASS")
         return True
@@ -113,16 +124,16 @@ def test_sampling_is_deterministic_databases_and_questions():
     print("  Testing: Sampling is deterministic... ", end="")
 
     try:
-        questions_by_db = create_mock_questions_db(num_dbs=5, questions_per_db=15)
-        all_databases = list(questions_by_db.keys())
-        questions_per_database = 3
+        problems_by_context = create_mock_questions_db(num_dbs=5, questions_per_db=15)
+        all_databases = list(problems_by_context.keys())
+        problems_per_context = 3
         num_agents = 2
 
         # Run 1: Sample with seed=42
         random.seed(42)
         databases1 = random.sample(all_databases, 2)  # Select 2 of 5 databases
         agent_questions1 = simulate_iteration_sampling(
-            questions_by_db, databases1, questions_per_database, num_agents
+            problems_by_context, databases1, problems_per_context, num_agents
         )
         questions_run1 = {
             db_name: [q['question_id'] for q in agent_questions1['agent_0'][db_name]]
@@ -133,7 +144,7 @@ def test_sampling_is_deterministic_databases_and_questions():
         random.seed(42)
         databases2 = random.sample(all_databases, 2)  # Select 2 of 5 databases
         agent_questions2 = simulate_iteration_sampling(
-            questions_by_db, databases2, questions_per_database, num_agents
+            problems_by_context, databases2, problems_per_context, num_agents
         )
         questions_run2 = {
             db_name: [q['question_id'] for q in agent_questions2['agent_0'][db_name]]
@@ -165,15 +176,15 @@ def test_question_samples_differ_across_iterations():
     print("  Testing: Different iterations use different samples... ", end="")
 
     try:
-        questions_by_db = create_mock_questions_db(num_dbs=3, questions_per_db=15)
-        databases = list(questions_by_db.keys())[:2]  # Use first 2 databases
-        questions_per_database = 5
+        problems_by_context = create_mock_questions_db(num_dbs=3, questions_per_db=15)
+        databases = list(problems_by_context.keys())[:2]  # Use first 2 databases
+        problems_per_context = 5
         num_agents = 2
 
         # Iteration 1: Sample questions with seed=42
         random.seed(42)
         agent_questions1 = simulate_iteration_sampling(
-            questions_by_db, databases, questions_per_database, num_agents
+            problems_by_context, databases, problems_per_context, num_agents
         )
         questions_iter1 = {
             db_name: [q['question_id'] for q in agent_questions1['agent_0'][db_name]]
@@ -184,7 +195,7 @@ def test_question_samples_differ_across_iterations():
         # In real system, seed is updated: (original_seed + iteration * 10000) % (2**32)
         random.seed(42 + 1 * 10000)
         agent_questions2 = simulate_iteration_sampling(
-            questions_by_db, databases, questions_per_database, num_agents
+            problems_by_context, databases, problems_per_context, num_agents
         )
         questions_iter2 = {
             db_name: [q['question_id'] for q in agent_questions2['agent_0'][db_name]]
@@ -212,16 +223,16 @@ def test_phase1_failure_uses_correct_questions():
     print("  Testing: Phase 1 failures record correct question count... ", end="")
 
     try:
-        questions_by_db = create_mock_questions_db(num_dbs=2, questions_per_db=20)
-        databases = list(questions_by_db.keys())
+        problems_by_context = create_mock_questions_db(num_dbs=2, questions_per_db=20)
+        databases = list(problems_by_context.keys())
         db_name = databases[0]
-        questions_per_database = 7
+        problems_per_context = 7
         num_agents = 1
 
         # Pre-sample questions (as run_iteration does)
         random.seed(42)
         agent_questions = simulate_iteration_sampling(
-            questions_by_db, databases, questions_per_database, num_agents
+            problems_by_context, databases, problems_per_context, num_agents
         )
 
         # Simulate Phase 1 failure path (from researcher.py line 2121)
@@ -236,9 +247,9 @@ def test_phase1_failure_uses_correct_questions():
             'results': {}
         }
 
-        # Verify the count is correct (should be questions_per_database, not more)
-        assert evaluation['total_questions'] == questions_per_database, \
-            f"Phase 1 failure recorded wrong count: {evaluation['total_questions']} vs {questions_per_database}"
+        # Verify the count is correct (should be problems_per_context, not more)
+        assert evaluation['total_questions'] == problems_per_context, \
+            f"Phase 1 failure recorded wrong count: {evaluation['total_questions']} vs {problems_per_context}"
 
         # Verify results is empty
         assert evaluation['results'] == {}, \
@@ -261,9 +272,9 @@ def test_current_iteration_questions_populated():
     print("  Testing: Questions pre-sampled before threading... ", end="")
 
     try:
-        questions_by_db = create_mock_questions_db(num_dbs=3, questions_per_db=30)
-        all_databases = list(questions_by_db.keys())
-        questions_per_database = 10
+        problems_by_context = create_mock_questions_db(num_dbs=3, questions_per_db=30)
+        all_databases = list(problems_by_context.keys())
+        problems_per_context = 10
         num_agents = 2
 
         # Select databases
@@ -273,11 +284,11 @@ def test_current_iteration_questions_populated():
         # Simulate what run_iteration does (researcher.py line 2388-2401)
         current_iteration_questions = {}
         for db_name in databases:
-            questions = questions_by_db.get(db_name, [])
+            questions = problems_by_context.get(db_name, [])
             if questions:
                 sampled = random.sample(
                     questions,
-                    min(questions_per_database, len(questions))
+                    min(problems_per_context, len(questions))
                 )
                 current_iteration_questions[db_name] = sampled
             else:
@@ -293,8 +304,8 @@ def test_current_iteration_questions_populated():
                 f"Missing questions for database: {db_name}"
 
             sampled = current_iteration_questions[db_name]
-            assert len(sampled) == questions_per_database, \
-                f"Wrong question count for {db_name}: {len(sampled)} vs {questions_per_database}"
+            assert len(sampled) == problems_per_context, \
+                f"Wrong question count for {db_name}: {len(sampled)} vs {problems_per_context}"
 
         print("PASS")
         return True
