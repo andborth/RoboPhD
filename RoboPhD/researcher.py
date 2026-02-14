@@ -122,6 +122,7 @@ class StuckProcessReaper:
     def __init__(self, codegen_call_timeout: int = DEFAULT_CODEGEN_TIMEOUT):
         self._stop_event = threading.Event()
         self._thread = None
+        self._stopped = False
         self._total_killed = 0
         self.process_age_threshold = codegen_call_timeout + self.THRESHOLD_BUFFER
         self.scan_interval = self.process_age_threshold // 2
@@ -133,6 +134,9 @@ class StuckProcessReaper:
                      self.process_age_threshold, self.scan_interval)
 
     def stop(self):
+        if self._stopped:
+            return
+        self._stopped = True
         self._stop_event.set()
         if self._thread is not None:
             self._thread.join(timeout=5)
