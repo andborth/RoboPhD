@@ -1,6 +1,6 @@
 # Critic Evaluation Results
 
-**Updated:** February 8, 2026
+**Updated:** February 12, 2026
 **Dataset:** Competition programming problems (288 problems, LiveCodeBench test set)
 
 ## Overview
@@ -211,11 +211,15 @@ The capability gap affects both detection AND correction ability.
 
 ### Evolution Setup
 
-Two evolved critic agents are compared, both using haiku-4.5 for coder and critic with opus-4.5 for evolution:
+Three evolved critic agents are compared, all using haiku-4.5 for coder and critic with opus-4.5 for evolution:
 
 - **`0203_i005_reflection_refined_critic`** — from RoboPhD run `robophd_20260203_154803` (14 iterations, evolution set of 767 problems). Uses tool-only execution mode — a deterministic 875-line Python analyzer (`problem_analyzer.py`) generates critic feedback without any LLM call in the analysis phase. Key innovations include calibrated anti-TLE-rationalization rules, stronger logic bug detection, and an explicit forbidden rationalizations list in `eval_instructions.md`. Source: `main_codegen_agents/0203_i005_reflection_refined_critic`.
 
 - **`0206_i013_unchanged_baseline_critic`** — from RoboPhD run `robophd_20260206_201828` (15 iterations, evolution set of 60 problems). Source: `critic_evaluations/run_20260207_230433`.
+
+- **`0211_i009_constraint_aware_critic`** — from RoboPhD run `robophd_20260211_171656` (18 iterations, evolution set of 60 problems). Tool-only execution mode with improved constraint extraction (multi-format parsing for LeetCode/AtCoder/Codeforces), critical recursion detection, and AST-based complexity analysis. Source: `main_codegen_agents/0211_i009_constraint_aware_critic`.
+
+**Note on codegen cache:** The first agent (`0203_i005`) was evaluated against an older codegen cache (`code-gen-critic/codegen_cache/haiku-4.5_v6`). The second and third agents (`0206_i013` and `0211_i009`) were evaluated against a newer, independently generated cache (`robophd_runs/codegen_cache/haiku-4.5_v6`). All three used 1200s codegen timeout. The two caches contain entirely different V1 solutions (different Haiku samples), producing different V1 baselines (~52% vs ~55%). V1 and V2 numbers are **not directly comparable** across cache boundaries.
 
 ### Skip-a-Tier Result
 
@@ -226,36 +230,39 @@ The best evolved haiku critic matches naive sonnet critic performance:
 | haiku → haiku | naive_critic | 51.7% | 51.0% | -0.7% | -2 |
 | haiku → sonnet | naive_critic | 52.1% | 56.6% | +4.5% | +13 |
 | **haiku → haiku** | **0203_i005_reflection_refined_critic** | **52.1%** | **56.6%** | **+4.5%** | **+13** |
-| haiku → haiku | 0206_i013_unchanged_baseline_critic | 54.9% | 55.6% | +0.7% | +2 |
+| haiku → haiku | 0206_i013_unchanged_baseline_critic | 54.9%† | 55.6%† | +0.7% | +2 |
+| haiku → haiku | 0211_i009_constraint_aware_critic | 54.9%† | 55.2%† | +0.3% | +1 |
 
-The first evolved agent replicates the "skip-a-tier" finding from the RoboPhD Text2SQL paper: evolution on cheaper models provides the largest gains, enabling evolved Haiku to match naive Sonnet performance. The second evolved agent, from a different evolution run, shows that not all evolved agents achieve this — evolution quality varies significantly across runs.
+†Different codegen cache; V1 baseline not directly comparable to other rows.
+
+The first evolved agent replicates the "skip-a-tier" finding from the RoboPhD Text2SQL paper: evolution on cheaper models provides the largest gains, enabling evolved Haiku to match naive Sonnet performance. The second and third evolved agents, from different evolution runs, show that not all evolved agents achieve this — evolution quality varies significantly across runs. The second and third agents were evaluated on a different codegen cache (see note above), so their absolute numbers are not directly comparable to the first agent's.
 
 ### How the Evolved Agents Differ
 
-| Metric | Naive haiku | Naive sonnet | 0203_i005 | 0206_i013 |
-|--------|-------------|--------------|-----------|-----------|
-| Flagged | 73 | 75 | **138** | 124 |
-| TP (true positives) | 57 | 66 | **108** | 92 |
-| FP (false positives) | 16 | 9 | 30 | 32 |
-| Precision | 78.1% | 88.0% | 78.3% | 74.2% |
-| Recall | 41.0% | 47.8% | **78.3%** | 70.8% |
-| Fix Rate | 2.7% | 18.7% | 10.9% | 6.5% |
-| Improved | 2 | 14 | 15 | 8 |
-| Regressed | 4 | 1 | 2 | 6 |
+| Metric | Naive haiku | Naive sonnet | 0203_i005 | 0206_i013 | 0211_i009† |
+|--------|-------------|--------------|-----------|-----------|------------|
+| Flagged | 73 | 75 | **138** | 124 | 109 |
+| TP (true positives) | 57 | 66 | **108** | 92 | 78 |
+| FP (false positives) | 16 | 9 | 30 | 32 | 31 |
+| Precision | 78.1% | 88.0% | 78.3% | 74.2% | 71.6% |
+| Recall | 41.0% | 47.8% | **78.3%** | 70.8% | 60.0% |
+| Fix Rate | 2.7% | 18.7% | 10.9% | 6.5% | 4.6% |
+| Improved | 2 | 14 | 15 | 8 | 5 |
+| Regressed | 4 | 1 | 2 | 6 | 4 |
 
-Both evolved agents are more aggressive than naive critics — flagging far more problems with higher recall. The first evolved agent (`0203_i005`) achieves the best balance: 78% recall with a 10.9% fix rate and only 2 regressions, matching naive sonnet's +4.5% delta. The second (`0206_i013`) has similar recall (71%) but a lower fix rate (6.5%) and more regressions (6), yielding only +0.7% delta.
+All three evolved agents are more aggressive than naive critics — flagging far more problems with higher recall. The first evolved agent (`0203_i005`) achieves the best balance: 78% recall with a 10.9% fix rate and only 2 regressions, matching naive sonnet's +4.5% delta. The second (`0206_i013`) has similar recall (71%) but a lower fix rate (6.5%) and more regressions (6), yielding only +0.7% delta. The third (`0211_i009`) flags fewer problems (109) with lower recall (60%) and a poor fix rate (4.6%), yielding only +0.3% delta — though direct comparison is complicated by the different codegen cache (see note above).
 
 ### Cost Analysis
 
 Deployment cost is critic + revision (codegen is fixed across configurations; acceptance is only needed during evolution). Average cost per problem:
 
-| Phase | Naive haiku→haiku | Naive haiku→sonnet | 0203_i005 | 0206_i013 |
-|-------|-------------------|--------------------|-----------|-----------|
-| critic | $0.042 | $0.123 | $0.116 | — |
-| revision | $0.033 | $0.026 | $0.078 | — |
-| **critic + revision** | **$0.075** | **$0.149** | **$0.194** | **$0.098** |
+| Phase | Naive haiku→haiku | Naive haiku→sonnet | 0203_i005 | 0206_i013 | 0211_i009 |
+|-------|-------------------|--------------------|-----------|-----------|-----------|
+| critic | $0.042 | $0.123 | $0.116 | — | — |
+| revision | $0.033 | $0.026 | $0.078 | — | — |
+| **critic + revision** | **$0.075** | **$0.149** | **$0.194** | **$0.098** | **$0.069** |
 
-*Note: Per-phase cost breakdown for `0206_i013` is not available; total evaluation cost was $28.20 for 288 problems ($0.098/problem).*
+*Note: Per-phase cost breakdown for `0206_i013` and `0211_i009` is not available. Total evaluation cost was $28.20 for 288 problems ($0.098/problem) for `0206_i013` and $19.76 for 288 problems ($0.069/problem) for `0211_i009`.*
 
 The first evolved agent's critic phase ($0.116) is actually cheaper than naive sonnet's ($0.123) despite sending a 15x larger prompt — haiku's 3x lower per-token pricing more than compensates. The cost premium comes from revision: the evolved agent flags 138 problems vs 75, so nearly twice as many go through the expensive revision pipeline.
 
@@ -269,7 +276,7 @@ Reducing `eval_instructions.md` from 294 lines to ~200 lines would bring evolved
 
 ### Key Findings
 
-1. **Evolution can break the capability gap requirement.** The naive critic results showed that same-tier critics were unreliable (haiku→haiku: -0.7%). The best evolved agent transforms haiku into an effective same-tier critic (+4.5%), but this is not guaranteed — the second evolved agent achieved only +0.7%.
+1. **Evolution can break the capability gap requirement.** The naive critic results showed that same-tier critics were unreliable (haiku→haiku: -0.7%). The best evolved agent transforms haiku into an effective same-tier critic (+4.5%), but this is not guaranteed — the other two evolved agents achieved only +0.7% and +0.3%.
 
 2. **Evolution compensates for model capability with context.** Rather than relying on a stronger model's reasoning, the evolved agent feeds haiku detailed analytical context — effectively substituting compute (larger prompts) for capability (more expensive model).
 
@@ -277,7 +284,7 @@ Reducing `eval_instructions.md` from 294 lines to ~200 lines would bring evolved
 
 4. **Cost parity is achievable.** The best evolved agent is currently 1.3x the cost of naive sonnet, driven primarily by aggressive flagging (138 vs 75 problems revised). Modest prompt trimming would bring costs below sonnet's while maintaining the same delta.
 
-5. **Evolution quality varies across runs.** Two independent evolution runs produced agents with very different effectiveness (+4.5% vs +0.7%). Both agents adopted similar high-recall strategies, but the second agent's lower fix rate (6.5% vs 10.9%) and higher regression count (6 vs 2) erased most of the gains from detection. Consistent evolution quality remains an open challenge.
+5. **Evolution quality varies across runs.** Three independent evolution runs produced agents with very different effectiveness (+4.5%, +0.7%, and +0.3%). All agents adopted high-recall strategies, but the second and third agents' lower fix rates (6.5% and 4.6% vs 10.9%) and higher regression counts erased most of the gains from detection. Consistent evolution quality remains an open challenge.
 
 ## Future Work
 

@@ -1624,7 +1624,7 @@ def main():
         "--max-concurrent",
         type=int,
         default=None,
-        help="Maximum concurrent evaluations (default: 6, or from config when resuming)",
+        help="Maximum concurrent evaluations (default: 8, or from config when resuming)",
     )
     parser.add_argument(
         "--resume",
@@ -1687,7 +1687,7 @@ def main():
         # Use explicit CLI args if provided, otherwise fall back to config (then defaults)
         codegen_timeout = args.codegen_timeout if args.codegen_timeout is not None else config.get("codegen_timeout", 1200)
         critic_timeout = args.critic_timeout if args.critic_timeout is not None else config.get("critic_timeout", 600)
-        max_concurrent = args.max_concurrent if args.max_concurrent is not None else config.get("max_concurrent", 6)
+        max_concurrent = args.max_concurrent if args.max_concurrent is not None else config.get("max_concurrent", 8)
         # lmstudio_base_url: CLI arg takes precedence, then config, then default
         args.lmstudio_base_url = args.lmstudio_base_url or config.get("lmstudio_base_url", LMSTUDIO_DEFAULT_BASE_URL)
 
@@ -1718,7 +1718,7 @@ def main():
         evolution_set = args.evolution_set
         codegen_timeout = args.codegen_timeout if args.codegen_timeout is not None else 1200
         critic_timeout = args.critic_timeout if args.critic_timeout is not None else 600
-        max_concurrent = args.max_concurrent if args.max_concurrent is not None else 6
+        max_concurrent = args.max_concurrent if args.max_concurrent is not None else 8
 
         # Derive cache dir from coder model if not specified
         if args.cache_dir:

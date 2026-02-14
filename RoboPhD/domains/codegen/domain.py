@@ -397,6 +397,216 @@ Agent source code (three-artifact packages):
             problems_by_context=problems_by_context
         )
 
+    def _find_cached_results(
+        self,
+        agent_id: str,
+        problem_ids: List[str],
+        output_dir: Path
+    ) -> Dict[str, Path]:
+        """
+        Find prior iteration results for (agent, problem) pairs.
+
+        Scans iteration directories before the current one for existing results
+        that can be reused via symlinks.
+
+        A result is cacheable only if its result.json:
+        - Exists on disk
+        - Has no "error" key
+        - Has "revision_failed_reason": null
+
+        Args:
+            agent_id: Agent identifier
+            problem_ids: List of problem IDs to look up
+            output_dir: Current iteration's agent output dir
+                (e.g., <runs_dir>/evolution/<run_name>/iteration_014/agent_iter9)
+
+        Returns:
+            Dict mapping problem_id -> resolved Path to the cached problem directory
+        """
+        # Derive iteration number and run directory from output_dir
+        # output_dir = <runs_dir>/evolution/<run_name>/iteration_XXX/agent_<agent_id>
+        iteration_dir = output_dir.parent  # iteration_XXX
+        run_dir = iteration_dir.parent     # <runs_dir>/evolution/<run_name>
+
+        iter_name = iteration_dir.name  # "iteration_014"
+        try:
+            current_iter_num = int(iter_name.split("_")[1])
+        except (IndexError, ValueError):
+            self.logger.warning(f"Cannot parse iteration number from {iter_name}")
+            return {}
+
+        # Build agent dir name for lookup (same agent_id across iterations)
+        agent_dir_name = output_dir.name  # "agent_iter9"
+
+        cached = {}
+        remaining = set(problem_ids)
+
+        # Scan prior iterations in reverse order (most recent first for freshest results)
+        for prior_iter in range(current_iter_num - 1, 0, -1):
+            if not remaining:
+                break
+
+            prior_iter_dir = run_dir / f"iteration_{prior_iter:03d}" / agent_dir_name / "problems"
+            if not prior_iter_dir.is_dir():
+                continue
+
+            for problem_id in list(remaining):
+                problem_dir = prior_iter_dir / problem_id
+                result_file = problem_dir / "result.json"
+                if not result_file.exists():
+                    continue
+
+                try:
+                    with open(result_file) as f:
+                        result_data = json.load(f)
+                except (json.JSONDecodeError, IOError):
+                    continue
+
+                # Only cache successful results (no errors, no revision failures)
+                if "error" in result_data:
+                    continue
+                if result_data.get("revision_failed_reason") is not None:
+                    continue
+
+                # Resolve to avoid symlink chains
+                cached[problem_id] = problem_dir.resolve()
+                remaining.discard(problem_id)
+
+        return cached
+
+    def _build_summary_from_results(
+        self,
+        all_results: List[Dict[str, Any]],
+        fresh_eval_data: Optional[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Compute evaluation summary from merged results (cached + fresh).
+
+        Preserves cost/timing fields from fresh_eval_data since only fresh
+        evaluations incur API cost.
+
+        Args:
+            all_results: List of per-problem result dicts
+            fresh_eval_data: The subprocess's evaluation.json data (None if all cached)
+
+        Returns:
+            Complete evaluation.json-compatible dict with summary and results
+        """
+        total = len(all_results)
+        v1_passed = sum(1 for r in all_results if r.get('v1_passed', False))
+        v2_passed = sum(1 for r in all_results if r.get('v2_passed', False))
+        improved = sum(1 for r in all_results if r.get('improved', False))
+        regressed = sum(1 for r in all_results if r.get('regressed', False))
+
+        summary = {
+            'total_problems': total,
+            'v1_passed': v1_passed,
+            'v2_passed': v2_passed,
+            'v1_pass_rate': (v1_passed / total * 100) if total else 0.0,
+            'v2_pass_rate': (v2_passed / total * 100) if total else 0.0,
+            'improvement': ((v2_passed - v1_passed) / total * 100) if total else 0.0,
+            'problems_improved': improved,
+            'problems_regressed': regressed,
+        }
+
+        # Preserve cost/timing from fresh evaluation (cached results are zero-cost)
+        if fresh_eval_data:
+            fresh_summary = fresh_eval_data.get('summary', {})
+            summary['eval_timing'] = fresh_summary.get('eval_timing', {})
+            summary['codegen_timing'] = fresh_summary.get('codegen_timing', {})
+        else:
+            summary['eval_timing'] = {}
+            summary['codegen_timing'] = {}
+
+        # Build results dict keyed by question_id
+        results_dict = {}
+        for r in all_results:
+            qid = r.get('question_id')
+            if qid:
+                results_dict[qid] = r
+
+        return {'summary': summary, 'results': results_dict}
+
+    def _build_evaluation_result(
+        self,
+        eval_data: Dict[str, Any],
+        total_sampled: int,
+        cached_count: int,
+        fresh_count: int
+    ) -> EvaluationResult:
+        """
+        Convert evaluation.json data into an EvaluationResult.
+
+        Shared by both the cached and non-cached code paths.
+
+        Args:
+            eval_data: Parsed evaluation.json dict
+            total_sampled: Total number of sampled problems
+            cached_count: Number of problems served from cache
+            fresh_count: Number of problems evaluated fresh
+
+        Returns:
+            EvaluationResult with accuracy, results, and metadata
+        """
+        summary = eval_data.get('summary', {})
+        results_raw = eval_data.get('results', {})
+
+        # Handle both dict (standard) and list (legacy) formats
+        results_iter = results_raw.values() if isinstance(results_raw, dict) else results_raw
+        results_count = len(results_raw)
+
+        v2_pass_rate = summary.get('v2_pass_rate', 0.0)
+        v2_passed = summary.get('v2_passed', 0)
+        total_problems = summary.get('total_problems', total_sampled)
+
+        eval_timing = summary.get('eval_timing', {})
+        codegen_timing = summary.get('codegen_timing', {})
+
+        # Calculate total Phase 2 cost (critic evaluation only)
+        total_phase2_cost = eval_timing.get('total_cost_usd', 0.0)
+
+        # Distribute cost evenly across fresh problems only (cached problems are zero-cost)
+        # For display, spread across all problems to match existing per-problem cost pattern
+        per_problem_cost = total_phase2_cost / results_count if results_count else 0.0
+
+        formatted_results = []
+        for r in results_iter:
+            formatted_results.append({
+                'question_id': r.get('question_id'),
+                'correct': r.get('correct', False),
+                'v1_passed': r.get('v1_passed', False),
+                'v2_passed': r.get('v2_passed', False),
+                'improved': r.get('improved', False),
+                'regressed': r.get('regressed', False),
+                'verdict_correct': r.get('verdict_correct', False),
+                'error': r.get('error'),
+                'phase2_cost': per_problem_cost,
+            })
+
+        phase2_tokens_in = eval_timing.get('input_tokens', 0)
+        phase2_tokens_out = eval_timing.get('output_tokens', 0)
+
+        return EvaluationResult(
+            accuracy=v2_pass_rate,
+            total=total_problems,
+            correct=v2_passed,
+            results=formatted_results,
+            metadata={
+                'phase2_cost': total_phase2_cost,
+                'phase2_tokens_in': phase2_tokens_in,
+                'phase2_tokens_out': phase2_tokens_out,
+                'v1_pass_rate': summary.get('v1_pass_rate', 0.0),
+                'v1_passed': summary.get('v1_passed', 0),
+                'improvement': summary.get('improvement', 0.0),
+                'problems_improved': summary.get('problems_improved', 0),
+                'problems_regressed': summary.get('problems_regressed', 0),
+                'eval_timing': eval_timing,
+                'codegen_timing': codegen_timing,
+                'cached_count': cached_count,
+                'fresh_count': fresh_count,
+            }
+        )
+
     def run_evaluation(
         self,
         sampled: SampledProblems,
@@ -429,8 +639,66 @@ Agent source code (three-artifact packages):
         critic_timeout = config['critic_call_timeout']
         max_concurrent = config['max_concurrent']
 
-        # Build problem IDs list
-        problem_ids = ','.join(sampled.contexts)
+        # --- Eval result cache: find prior (agent, problem) results ---
+        agent_id = config.get('agent_id', '')
+        cache_enabled = config.get('eval_result_cache', True)
+        cached_results_map: Dict[str, Path] = {}
+        cached_result_data: Dict[str, Dict] = {}
+
+        if cache_enabled and agent_id:
+            cached_results_map = self._find_cached_results(
+                agent_id, sampled.contexts, output_dir
+            )
+
+            if cached_results_map:
+                # Create problems/ dir and symlink cached problem dirs
+                problems_dir = output_dir / "problems"
+                problems_dir.mkdir(parents=True, exist_ok=True)
+
+                for problem_id, source_dir in list(cached_results_map.items()):
+                    # Load result.json for merging later
+                    try:
+                        with open(source_dir / "result.json") as f:
+                            cached_result_data[problem_id] = json.load(f)
+                    except (json.JSONDecodeError, IOError) as e:
+                        self.logger.warning(f"Failed to read cached result for {problem_id}: {e}")
+                        # Remove from cache — will be evaluated fresh
+                        del cached_results_map[problem_id]
+                        continue
+
+                    # Create symlink for cached problem dir
+                    symlink_target = problems_dir / problem_id
+                    if not symlink_target.exists():
+                        symlink_target.symlink_to(source_dir)
+
+        cached_count = len(cached_result_data)
+        fresh_problem_ids = [p for p in sampled.contexts if p not in cached_result_data]
+        fresh_count = len(fresh_problem_ids)
+
+        if cached_count > 0:
+            self.logger.info(
+                f"Eval cache: {cached_count} cached, {fresh_count} fresh "
+                f"(out of {len(sampled.contexts)} total)"
+            )
+
+        # --- All-cached fast path: skip subprocess entirely ---
+        if fresh_count == 0 and cached_count > 0:
+            self.logger.info("All problems cached — skipping subprocess")
+
+            merged_eval = self._build_summary_from_results(
+                list(cached_result_data.values()), None
+            )
+            # Write merged evaluation.json
+            eval_file = output_dir / "evaluation.json"
+            with open(eval_file, 'w') as f:
+                json.dump(merged_eval, f, indent=2)
+
+            return self._build_evaluation_result(
+                merged_eval, len(sampled.contexts), cached_count, fresh_count
+            )
+
+        # Build problem IDs list (only uncached problems if cache is active)
+        problem_ids = ','.join(fresh_problem_ids)
 
         # Find run_critic_evaluation.py relative to RoboPhD package
         # This file is at RoboPhD/domains/codegen/domain.py
@@ -468,7 +736,7 @@ Agent source code (three-artifact packages):
         else:
             cmd.append("--evolution-set")
 
-        self.logger.info(f"Running critic evaluation on {len(sampled.contexts)} problems")
+        self.logger.info(f"Running critic evaluation on {fresh_count} problems ({cached_count} cached)")
         self.logger.debug(f"Command: {' '.join(cmd)}")
 
         # Calculate subprocess timeout based on expected runtime
@@ -476,7 +744,7 @@ Agent source code (three-artifact packages):
         # - Problems run concurrently (max_concurrent workers)
         # - 1.5x safety margin + 10 min buffer for startup/teardown
         # This timeout guards against catastrophic hangs; normal operation completes faster
-        estimated_runtime = (len(sampled.contexts) / max_concurrent) * (2 * codegen_timeout + 2 * critic_timeout)
+        estimated_runtime = (fresh_count / max_concurrent) * (2 * codegen_timeout + 2 * critic_timeout)
         subprocess_timeout = int(estimated_runtime * 1.5) + 600
 
         try:
@@ -535,75 +803,25 @@ Agent source code (three-artifact packages):
                 metadata={'error': f'Failed to parse evaluation.json: {e}'}
             )
 
-        # Extract results
-        summary = eval_data.get('summary', {})
-        results_raw = eval_data.get('results', {})
+        # --- Merge cached results with fresh subprocess results ---
+        if cached_result_data:
+            fresh_results = eval_data.get('results', {})
+            if isinstance(fresh_results, list):
+                fresh_results = {r.get('question_id'): r for r in fresh_results if r.get('question_id')}
 
-        # Handle both dict (standard) and list (legacy) formats
-        # Dict: iterate over values; List: iterate directly
-        results_iter = results_raw.values() if isinstance(results_raw, dict) else results_raw
-        results_count = len(results_raw)
+            # Combine cached + fresh results
+            all_results = list(cached_result_data.values()) + list(fresh_results.values())
+            merged_eval = self._build_summary_from_results(all_results, eval_data)
 
-        # Use v2 pass rate as accuracy (critic's impact)
-        v2_pass_rate = summary.get('v2_pass_rate', 0.0)
-        v2_passed = summary.get('v2_passed', 0)
-        total_problems = summary.get('total_problems', len(sampled.contexts))
+            # Write merged evaluation.json (overwrites subprocess's partial version)
+            with open(eval_file, 'w') as f:
+                json.dump(merged_eval, f, indent=2)
 
-        # Extract timing/cost info from nested structures
-        # CodeGen tracks costs in eval_timing and codegen_timing
-        eval_timing = summary.get('eval_timing', {})
-        codegen_timing = summary.get('codegen_timing', {})
+            return self._build_evaluation_result(
+                merged_eval, len(sampled.contexts), cached_count, fresh_count
+            )
 
-        # Calculate total Phase 2 cost (critic evaluation only)
-        # Note: codegen_timing costs are excluded because they represent cached/one-time
-        # costs from initial code generation, not costs incurred during this evaluation.
-        # Including them would cause double-counting when multiple agents evaluate
-        # the same cached problems.
-        total_phase2_cost = eval_timing.get('total_cost_usd', 0.0)
-
-        # Distribute cost evenly across problems for per-question tracking
-        # (CodeGen doesn't have per-question costs, so we approximate)
-        per_problem_cost = total_phase2_cost / results_count if results_count else 0.0
-
-        # Convert results to standard format
-        formatted_results = []
-        for r in results_iter:
-            formatted_results.append({
-                'question_id': r.get('question_id'),
-                # Use standard 'correct' field, with fallback for legacy
-                'correct': r.get('correct', False),
-                'v1_passed': r.get('v1_passed', False),
-                'v2_passed': r.get('v2_passed', False),
-                'improved': r.get('improved', False),
-                'regressed': r.get('regressed', False),
-                'verdict_correct': r.get('verdict_correct', False),
-                'error': r.get('error'),
-                # Include phase2_cost for cost report compatibility
-                'phase2_cost': per_problem_cost,
-            })
-
-        # Only count eval tokens (codegen tokens are from cached generation, not this run)
-        phase2_tokens_in = eval_timing.get('input_tokens', 0)
-        phase2_tokens_out = eval_timing.get('output_tokens', 0)
-
-        return EvaluationResult(
-            accuracy=v2_pass_rate,
-            total=total_problems,
-            correct=v2_passed,
-            results=formatted_results,
-            metadata={
-                # Map to expected format for researcher.py cost tracking
-                'phase2_cost': total_phase2_cost,
-                'phase2_tokens_in': phase2_tokens_in,
-                'phase2_tokens_out': phase2_tokens_out,
-                # CodeGen-specific fields
-                'v1_pass_rate': summary.get('v1_pass_rate', 0.0),
-                'v1_passed': summary.get('v1_passed', 0),
-                'improvement': summary.get('improvement', 0.0),
-                'problems_improved': summary.get('problems_improved', 0),
-                'problems_regressed': summary.get('problems_regressed', 0),
-                # Preserve original timing data for detailed analysis
-                'eval_timing': eval_timing,
-                'codegen_timing': codegen_timing,
-            }
+        # No cache — use subprocess output directly
+        return self._build_evaluation_result(
+            eval_data, len(sampled.contexts), 0, len(sampled.contexts)
         )

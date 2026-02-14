@@ -83,9 +83,7 @@ class MetaEvolutionManager:
         session_id = str(uuid.uuid4())
 
         logger.info(f"\n{'=' * 60}")
-        logger.info(f"🧬 META-EVOLUTION - Iteration {iteration}")
-        logger.info(f"Strategy: {strategy_name}")
-        logger.info(f"Model: {model}")
+        logger.info(f"🧬 META-EVOLUTION (Iteration {iteration}) | Strategy: {strategy_name} | Model: {model}")
         logger.info(f"Session ID: {session_id}")
         logger.info(f"{'=' * 60}\n")
 

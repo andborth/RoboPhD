@@ -314,9 +314,7 @@ class ParallelAgentEvolver:
         """
         # Note: strategy_name is now always provided by caller from resolved config
 
-        print(f"\n🧬 DEEP FOCUS EVOLUTION (Iteration {iteration})")
-        print(f"Strategy: {strategy_name}")
-        print(f"Test Rounds: {self.new_agent_test_rounds}")
+        print(f"\n🧬 DEEP FOCUS EVOLUTION (Iteration {iteration}) | Strategy: {strategy_name} | Test Rounds: {self.new_agent_test_rounds} | Model: {self.evolution_model}")
 
         # Load evolution strategy
         if strategy_name not in self.available_strategies:
@@ -367,7 +365,7 @@ class ParallelAgentEvolver:
 
         # Run Deep Focus evolution
         try:
-            agent_md_path, eval_instructions_path, tools_path, timing_info, cost_info = manager.evolve_agent(
+            result = manager.evolve_agent(
                 working_dir=evolution_dir,
                 experiment_dir=self.experiment_dir,
                 current_iteration=iteration,
@@ -390,7 +388,7 @@ class ParallelAgentEvolver:
             'strategy': strategy_name,
             'timestamp': datetime.now().isoformat(),
             'deep_focus_rounds': 2 + len(databases_map),  # Rounds 1 & 2 + test rounds
-            'timing': timing_info  # Deep Focus timing breakdown
+            'timing': result.timing_info  # Deep Focus timing breakdown
         }
         if was_random == 'weighted':
             evolution_entry['was_weighted_random'] = True
@@ -399,7 +397,7 @@ class ParallelAgentEvolver:
         self.evolution_history.append(evolution_entry)
 
         # Read agent content and reasoning
-        agent_content = agent_md_path.read_text() if agent_md_path.exists() else ""
+        agent_content = result.agent_md_path.read_text() if result.agent_md_path.exists() else ""
         reasoning_file = evolution_dir / "reasoning.md"
         reasoning = reasoning_file.read_text() if reasoning_file.exists() else ""
 
@@ -409,19 +407,20 @@ class ParallelAgentEvolver:
         # Build package info
         package_info = {
             'type': 'three_artifact',
-            'agent_file': agent_md_path,
-            'eval_instructions_file': eval_instructions_path,
-            'tools_dir': tools_path,
+            'agent_file': result.agent_md_path,
+            'eval_instructions_file': result.eval_instructions_path,
+            'tools_dir': result.tools_path,
             'evolution_dir': evolution_dir,
-            'timing': timing_info,  # Deep Focus timing breakdown
-            'cost': cost_info  # Deep Focus cost breakdown
+            'timing': result.timing_info,
+            'cost': result.cost_info,
+            'session_id': result.session_id,
         }
 
         print(f"✅ Deep Focus evolution complete")
         print(f"   Agent ID: {agent_id}")
         print(f"   Artifacts: {evolution_dir}")
-        print(f"   Evolution time: {timing_info['total']/60:.1f} minutes")
-        print(f"   Evolution cost: ${cost_info['total']:.2f}")
+        print(f"   Evolution time: {result.timing_info['total']/60:.1f} minutes")
+        print(f"   Evolution cost: ${result.cost_info['total']:.2f}")
 
         return (agent_content, agent_id, reasoning, package_info)
     
@@ -1055,6 +1054,7 @@ class ParallelAgentResearcher:
                 'source': agent_info.get('source', 'restored'),
                 'created_iteration': agent_info.get('created_iteration', 0),
                 'evolution_strategy': agent_info.get('evolution_strategy', None),  # Restore evolution strategy
+                'session_id': agent_info.get('session_id', None),  # Restore Claude Code session ID
                 'package_dir': package_dir,
                 'package_type': 'three_artifact'  # We only support three-artifact now
             }
@@ -1637,7 +1637,7 @@ class ParallelAgentResearcher:
             contexts: List of context identifiers to test on
 
         Returns:
-            Tuple of (iteration_results, results_by_agent, costs_by_context)
+            Tuple of (iteration_results, results_by_agent, costs_by_context, eval_cache_stats)
         """
         from datetime import datetime
 
@@ -1685,6 +1685,7 @@ class ParallelAgentResearcher:
         results_by_agent: Dict[str, List[Dict]] = {agent_id: [] for agent_id in selected_agents}
         costs_by_context: Dict[str, Dict[str, Dict[str, float]]] = {}  # {agent_id: {context: {'phase1': $, 'phase2': $}}}
         iteration_results: Dict[str, Dict] = {}
+        eval_cache_stats: Dict[str, Dict[str, int]] = {}  # {agent_id: {'cached': N, 'fresh': M}}
 
         # Process each agent (sequential - agents are few, ~2-4)
         # Domain handles internal parallelism (e.g., Text2SQL parallelizes across databases)
@@ -1763,7 +1764,9 @@ class ParallelAgentResearcher:
                 total_questions = eval_result.total
 
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                print(f"    [{timestamp}] {agent_id}: Accuracy = {accuracy:.1f}% ({total_correct}/{total_questions})")
+                cache_meta_count = (eval_result.metadata or {}).get('cached_count', 0)
+                cache_suffix = f" [cached {cache_meta_count}/{total_questions}]" if cache_meta_count else ""
+                print(f"    [{timestamp}] {agent_id}: Accuracy = {accuracy:.1f}% ({total_correct}/{total_questions}){cache_suffix}")
 
                 # Get contexts tested successfully from metadata
                 metadata = eval_result.metadata or {}
@@ -1817,6 +1820,13 @@ class ParallelAgentResearcher:
                 # Extract per-context costs from metadata for cost report
                 if metadata.get('costs_by_context'):
                     costs_by_context[agent_id] = metadata['costs_by_context']
+
+                # Track eval result cache stats
+                if metadata.get('cached_count', 0) > 0:
+                    eval_cache_stats[agent_id] = {
+                        'cached': metadata['cached_count'],
+                        'fresh': metadata.get('fresh_count', total_questions),
+                    }
 
                 print(f"\n{agent_id}: {accuracy:.1f}% ({total_correct}/{total_questions})")
 
@@ -1907,7 +1917,7 @@ class ParallelAgentResearcher:
         close_robophd_connections()
         close_eval_connections()
 
-        return iteration_results, results_by_agent, costs_by_context
+        return iteration_results, results_by_agent, costs_by_context, eval_cache_stats
 
     @staticmethod
     def _calculate_elo_updates(current_elos: Dict[str, float], iteration_results: Dict, k: int = 32) -> Dict[str, float]:
@@ -2910,6 +2920,7 @@ class ParallelAgentResearcher:
                         'source': 'evolution',
                         'created_iteration': iteration,
                         'evolution_strategy': evolution_strategy,  # Track which strategy created this agent
+                        'session_id': package_info.get('session_id'),  # Claude Code session that produced this agent
                         'package_dir': package_dir,
                         'package_type': 'three_artifact',
                         'eval_instructions_file': package_dir / "eval_instructions.md",
@@ -2952,7 +2963,7 @@ class ParallelAgentResearcher:
             iteration_start_cost = self.total_cost
             
             # Run iteration
-            iteration_results, results_by_agent, costs_by_context = self.run_iteration(iteration, selected_agents, contexts)
+            iteration_results, results_by_agent, costs_by_context, eval_cache_stats = self.run_iteration(iteration, selected_agents, contexts)
 
             # Calculate iteration metrics
             iteration_time = time.time() - iteration_start_time
@@ -2981,7 +2992,7 @@ class ParallelAgentResearcher:
             self.report_generator.generate_interim_report(start_time, iteration)
 
             # Generate cost analysis report
-            self._generate_iteration_cost_report(iteration, results_by_agent, costs_by_context)
+            self._generate_iteration_cost_report(iteration, results_by_agent, costs_by_context, eval_cache_stats)
 
             # Generate comparative error analysis
             self._generate_comparative_analysis(iteration)
@@ -3479,7 +3490,9 @@ class ParallelAgentResearcher:
 
         return False
 
-    def _generate_iteration_cost_report(self, iteration: int, results_by_agent: Dict, costs_by_context: Optional[Dict] = None):
+    def _generate_iteration_cost_report(self, iteration: int, results_by_agent: Dict,
+                                         costs_by_context: Optional[Dict] = None,
+                                         eval_cache_stats: Optional[Dict] = None):
         """
         Generate cost analysis report for this iteration.
 
@@ -3491,6 +3504,8 @@ class ParallelAgentResearcher:
             results_by_agent: Dict mapping agent_id to list of result dicts
             costs_by_context: Dict mapping agent_id to {context: {'phase1': $, 'phase2': $}}
                               Used for hierarchical domains (Text2SQL) where costs are per-context
+            eval_cache_stats: Dict mapping agent_id to {'cached': N, 'fresh': M}
+                              for eval result cache reporting
         """
         iteration_dir = self.experiment_dir / f"iteration_{iteration:03d}"
         if not iteration_dir.exists():
@@ -3618,7 +3633,8 @@ class ParallelAgentResearcher:
         if is_flat_domain:
             # Flat domain: show consolidated agent-centric view
             report_lines.extend(self._generate_flat_cost_table(
-                agent_totals, all_agents, total_phase1, total_phase2, total_cost
+                agent_totals, all_agents, total_phase1, total_phase2, total_cost,
+                eval_cache_stats=eval_cache_stats
             ))
         else:
             # Hierarchical domain: show full per-context matrix
@@ -3835,7 +3851,8 @@ class ParallelAgentResearcher:
 
     def _generate_flat_cost_table(self, agent_totals: Dict, all_agents: List[str],
                                    total_phase1: float, total_phase2: float,
-                                   total_cost: float) -> List[str]:
+                                   total_cost: float,
+                                   eval_cache_stats: Optional[Dict] = None) -> List[str]:
         """
         Generate a consolidated agent-centric cost table for flat domains.
 
@@ -3849,17 +3866,30 @@ class ParallelAgentResearcher:
             total_phase1: Total Phase 1 cost
             total_phase2: Total Phase 2 cost
             total_cost: Total cost (phase1 + phase2)
+            eval_cache_stats: Optional dict mapping agent_id to {'cached': N, 'fresh': M}
 
         Returns:
             List of markdown lines for the flat cost table
         """
+        # Only show Cached column when any agent has cache hits
+        has_cache = eval_cache_stats and any(
+            s.get('cached', 0) > 0 for s in eval_cache_stats.values()
+        )
+
+        if has_cache:
+            header = "| Agent | Phase 1 | Phase 2 | Cached | Total |"
+            separator = "|-------|---------|---------|--------|-------|"
+        else:
+            header = "| Agent | Phase 1 | Phase 2 | Total |"
+            separator = "|-------|---------|---------|-------|"
+
         lines = [
             "## Agent Cost Summary",
             "",
             "*Note: For flat domains, costs are tracked per-agent rather than per-problem.*",
             "",
-            "| Agent | Phase 1 | Phase 2 | Total |",
-            "|-------|---------|---------|-------|",
+            header,
+            separator,
         ]
 
         # Agent rows
@@ -3872,14 +3902,31 @@ class ParallelAgentResearcher:
                 marker = " 💾"
             else:
                 marker = ""
-            lines.append(
-                f"| {agent_id}{marker} | ${at['phase1']:.2f} | ${at['phase2']:.2f} | **${at['total']:.2f}** |"
-            )
+
+            if has_cache:
+                cs = eval_cache_stats.get(agent_id, {})
+                cached = cs.get('cached', 0)
+                total_problems = cached + cs.get('fresh', 0)
+                cache_str = f"{cached}/{total_problems}" if cached > 0 else "-"
+                lines.append(
+                    f"| {agent_id}{marker} | ${at['phase1']:.2f} | ${at['phase2']:.2f} | {cache_str} | **${at['total']:.2f}** |"
+                )
+            else:
+                lines.append(
+                    f"| {agent_id}{marker} | ${at['phase1']:.2f} | ${at['phase2']:.2f} | **${at['total']:.2f}** |"
+                )
 
         # Total row
-        lines.append(
-            f"| **Total** | **${total_phase1:.2f}** | **${total_phase2:.2f}** | **${total_cost:.2f}** |"
-        )
+        if has_cache:
+            total_cached = sum(s.get('cached', 0) for s in eval_cache_stats.values())
+            total_all = sum(s.get('cached', 0) + s.get('fresh', 0) for s in eval_cache_stats.values())
+            lines.append(
+                f"| **Total** | **${total_phase1:.2f}** | **${total_phase2:.2f}** | **{total_cached}/{total_all}** | **${total_cost:.2f}** |"
+            )
+        else:
+            lines.append(
+                f"| **Total** | **${total_phase1:.2f}** | **${total_phase2:.2f}** | **${total_cost:.2f}** |"
+            )
 
         lines.extend([
             "",
@@ -3941,7 +3988,8 @@ class ParallelAgentResearcher:
                 'source': agent_info.get('source', 'unknown'),
                 'created_iteration': agent_info.get('created_iteration', 0),
                 'package_type': agent_info.get('package_type', 'three_artifact'),
-                'evolution_strategy': agent_info.get('evolution_strategy', None)  # Save evolution strategy
+                'evolution_strategy': agent_info.get('evolution_strategy', None),  # Save evolution strategy
+                'session_id': agent_info.get('session_id', None)  # Claude Code session ID
             }
             
             # Add three-artifact specific fields
@@ -3992,7 +4040,9 @@ class ParallelAgentResearcher:
             }
         }
 
-        # Preserve meta_evolution_session_id and meta_evolution_session_created if they exist
+        # Preserve meta_evolution_session_id and meta_evolution_session_created if they exist.
+        # Currently unused — meta-evolution creates a fresh session each iteration.
+        # This scaffolding would be needed for cross-iteration session persistence.
         checkpoint_file = self.experiment_dir / 'checkpoint.json'
         if checkpoint_file.exists():
             try:
@@ -4096,6 +4146,8 @@ def validate_argument_combinations(args):
             errors.append("--modify-iterations can only be used with --resume")
         if args.modify_config:
             errors.append("--modify-config can only be used with --resume")
+        if args.invalidate_cache:
+            errors.append("--invalidate-cache can only be used with --resume")
 
     # Mutual exclusion: --extend and --modify-iterations
     if args.extend and args.modify_iterations:
@@ -4164,6 +4216,8 @@ def main():
                        help='Dev-no-evidence set evaluation mode: one iteration and agent, all questions and databases (no evidence)')
     parser.add_argument('--test-eval', action='store_true',
                        help='Test set evaluation mode: one iteration and agent, all questions and databases')
+    parser.add_argument('--invalidate-cache', action='store_true',
+                       help='Disable eval result cache for this run (only with --resume)')
 
     args = parser.parse_args()
 
@@ -4398,6 +4452,16 @@ def main():
         # Get num_iterations from checkpoint root (not from config)
         if not args.extend and not args.modify_iterations:
             num_iterations = checkpoint_num_iterations
+
+        # Propagate --invalidate-cache: disable eval result cache for this run
+        if args.invalidate_cache:
+            config_manager.apply_delta(
+                resume_from,
+                {"eval_result_cache": False},
+                ConfigSource.USER_MODIFICATION,
+                "User disabled eval result cache via --invalidate-cache"
+            )
+            print("✓ Eval result cache disabled for this run")
 
         # Create researcher from checkpoint
         researcher = ParallelAgentResearcher(

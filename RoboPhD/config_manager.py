@@ -113,6 +113,7 @@ class ConfigManager:
 
             # Other
             "debug_log_probability": 0.02,
+            "eval_result_cache": True,  # Cache (agent, problem) results across iterations via symlinks
 
             # Meta-parameters (control config system behavior)
             "config_schedule": {},

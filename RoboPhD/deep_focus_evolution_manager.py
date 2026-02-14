@@ -21,7 +21,7 @@ import time
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from RoboPhD.domains.base import DomainInterface
@@ -32,6 +32,16 @@ from RoboPhD.config import CLAUDE_CLI_MODEL_MAP, get_lmstudio_env
 from utilities.claude_cli import call_claude_cli, RateLimitExceeded
 
 logger = logging.getLogger(__name__)
+
+
+class EvolutionResult(NamedTuple):
+    """Result of a deep focus evolution run."""
+    agent_md_path: Path
+    eval_instructions_path: Path
+    tools_path: Optional[Path]
+    timing_info: Dict[str, Any]
+    cost_info: Dict[str, Any]
+    session_id: Optional[str]
 
 
 class DeepFocusEvolutionManager:
@@ -305,8 +315,14 @@ class DeepFocusEvolutionManager:
             # Save evolution session transcript for debugging and meta-evolution
             self._save_session_transcript()
 
-            # Return 5-tuple: (agent.md, eval_instructions.md, tools/, timing_info, cost_info)
-            return (final_agent[0], final_agent[1], final_agent[2], self.timing_info, self.cost_info)
+            return EvolutionResult(
+                agent_md_path=final_agent[0],
+                eval_instructions_path=final_agent[1],
+                tools_path=final_agent[2],
+                timing_info=self.timing_info,
+                cost_info=self.cost_info,
+                session_id=self.session_id,
+            )
 
         except Exception as e:
             logger.error(f"Deep Focus evolution failed: {e}")
