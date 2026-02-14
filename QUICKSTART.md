@@ -13,12 +13,20 @@ Ensure you've completed [INSTALLATION.md](INSTALLATION.md) first.
 Test that everything works with a minimal run:
 
 ```bash
+# Text2SQL (requires BIRD dataset)
 python RoboPhD/researcher.py \
   --num-iterations 1 \
   --config '{"contexts_per_iteration": 1, "problems_per_context": 5}'
 ```
 
 This runs 1 iteration on 1 database with 5 questions - fast but verifies your setup.
+
+```bash
+# Or test CodeGen domain (no dataset needed)
+python RoboPhD/researcher.py \
+  --num-iterations 1 \
+  --config configs/codegen_small_test.json
+```
 
 ### 2. Dev Set Evaluation (10 minutes)
 
@@ -37,13 +45,19 @@ Expected accuracy: ~66%.
 Start an evolution run to improve agents:
 
 ```bash
+# Text2SQL evolution
 python RoboPhD/researcher.py \
   --num-iterations 10 \
   --config configs/primary_production.json
+
+# CodeGen evolution
+python RoboPhD/researcher.py \
+  --num-iterations 10 \
+  --config configs/codegen_with_simple_meta_evolution.json
 ```
 
 This will:
-- Test agents on random database subsets
+- Test agents on random task subsets
 - Evolve new agents using cross-pollination
 - Track performance with ELO rankings
 - Generate reports after each iteration
@@ -103,11 +117,18 @@ python RoboPhD/researcher.py \
 
 ### Models
 
-```json
+```jsonc
+// Text2SQL
 {
   "eval_model": "haiku-4.5",      // SQL generation (cheapest)
   "analysis_model": "haiku-4.5",  // Database analysis
-  "evolution_model": "opus-4.5"   // Agent evolution (best quality)
+  "evolution_model": "opus-4.6"   // Agent evolution (best quality)
+}
+// CodeGen
+{
+  "coder_model": "haiku-4.5",     // Code generation
+  "critic_model": "haiku-4.5",    // Code review critic
+  "evolution_model": "opus-4.6"   // Agent evolution (best quality)
 }
 ```
 
@@ -132,16 +153,16 @@ python RoboPhD/researcher.py \
 
 ## Tips for Best Results
 
-1. **Start with `primary_production.json`** - It's tuned for good results
-2. **Use `opus_best` as initial agent** - Our best performer, good starting point for improving BIRD accuracy. Use `naive` if you want to start fresh.
+1. **Start with `primary_production.json`** (Text2SQL) or `codegen_with_simple_meta_evolution.json` (CodeGen)
+2. **Use `opus_best` as initial agent** (Text2SQL) - Our best performer. Use `naive` to start fresh. For CodeGen, start with `naive_critic`.
 3. **Run 20+ iterations** - Evolution needs time to find improvements
-4. **Pre-compute ground truth** - Prevents database timeout errors
+4. **Pre-compute ground truth** (Text2SQL) - Prevents database timeout errors
 
 ## Next Steps
 
 - Read [CLAUDE.md](CLAUDE.md) for comprehensive documentation
-- Explore evolution strategies in `RoboPhD/evolution_strategies/`
-- Check out pre-trained agents in `RoboPhD/agents/`
+- Explore evolution strategies in `RoboPhD/evolution_strategies/` (Text2SQL) or `RoboPhD/evolution_strategies_codegen/` (CodeGen)
+- Check out pre-trained agents in `RoboPhD/agents/` (Text2SQL) or `RoboPhD/codegen_agents/` (CodeGen)
 
 ## Getting Help
 

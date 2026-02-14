@@ -4,7 +4,7 @@
 
 - Python 3.10 or higher
 - pip package manager
-- ~50GB disk space for BIRD dataset
+- ~50GB disk space for BIRD dataset (Text2SQL domain only)
 - Anthropic API key
 
 ## Step 1: Clone the Repository
@@ -22,7 +22,7 @@ pip install -r requirements.txt
 
 ## Step 3: Configure API Keys
 
-RoboPhD requires an Anthropic API key for SQL generation and evaluation.
+RoboPhD requires an Anthropic API key for task generation and evaluation.
 
 ```bash
 # Add to your shell profile (~/.bashrc, ~/.zshrc, etc.)
@@ -42,7 +42,9 @@ Verify installation:
 claude --version
 ```
 
-## Step 5: Download BIRD Dataset
+## Step 5: Download BIRD Dataset (Text2SQL Only)
+
+> **Skip this step for CodeGen domain.** No dataset download is needed for CodeGen.
 
 Run the download script:
 
@@ -57,7 +59,7 @@ This will download and extract:
 
 **Manual download**: If the script fails, download from [BIRD Benchmark](https://bird-bench.github.io/) and extract to `benchmark_resources/datasets/`.
 
-## Step 6: Pre-compute Ground Truth (Recommended)
+## Step 6: Pre-compute Ground Truth (Text2SQL Only)
 
 Pre-computing ground truth prevents "database is locked" errors during research runs:
 
@@ -74,9 +76,15 @@ python RoboPhD/tools/precompute_ground_truth.py --dataset dev
 Run a quick test:
 
 ```bash
+# Text2SQL (requires steps 5-6)
 python RoboPhD/researcher.py \
   --num-iterations 1 \
   --config '{"contexts_per_iteration": 1, "problems_per_context": 5}'
+
+# Or verify with CodeGen domain (no dataset needed)
+python RoboPhD/researcher.py \
+  --num-iterations 1 \
+  --config configs/codegen_small_test.json
 ```
 
 If successful, you'll see iteration progress and a final report.
@@ -86,16 +94,18 @@ If successful, you'll see iteration progress and a final report.
 ```
 RoboPhD/
 ├── RoboPhD/                    # Core code
-│   ├── agents/                 # Pre-trained agents
-│   ├── evolution_strategies/   # Evolution strategies
+│   ├── agents/                 # Text2SQL agents
+│   ├── codegen_agents/         # CodeGen agents
+│   ├── evolution_strategies/   # Text2SQL evolution strategies
+│   ├── evolution_strategies_codegen/  # CodeGen evolution strategies
 │   └── ...
 ├── benchmark_resources/
 │   └── datasets/
-│       ├── train/              # Training data (~40GB)
-│       ├── dev/                # Development data (~2GB)
+│       ├── train/              # Training data (~40GB, Text2SQL)
+│       ├── dev/                # Development data (~2GB, Text2SQL)
 │       └── ...
 ├── configs/                    # Configuration files
-└── output/                     # Created during runs
+└── evolution/                  # Created during runs
 ```
 
 ## Troubleshooting

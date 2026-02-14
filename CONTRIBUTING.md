@@ -28,7 +28,7 @@ Found a bug or have a feature request? Open an issue on GitHub with:
 
 ### 4. Share Results
 
-- Report your evolution results
+- Report your evolution results (Text2SQL or CodeGen)
 - Share successful agent configurations
 - Contribute new evolution strategies
 
@@ -55,7 +55,7 @@ python -m pytest tests/
 
 ## Creating New Evolution Strategies
 
-Evolution strategies live in `RoboPhD/evolution_strategies/`. Each strategy is a directory containing:
+Evolution strategies live in `RoboPhD/evolution_strategies/` (Text2SQL) or `RoboPhD/evolution_strategies_codegen/` (CodeGen). Each strategy is a directory containing:
 
 ```
 my_new_strategy/
@@ -68,14 +68,14 @@ See existing strategies for examples.
 
 ## Creating New Agents
 
-Agents live in `RoboPhD/agents/`. Each agent is a directory containing:
+Agents live in `RoboPhD/agents/` (Text2SQL) or `RoboPhD/codegen_agents/` (CodeGen). Each agent is a directory containing:
 
 ```
 my_agent/
-├── agent.md             # Database analysis instructions
-├── eval_instructions.md # SQL generation instructions
+├── agent.md             # Domain analysis instructions
+├── eval_instructions.md # Task-specific generation instructions
 └── tools/               # Optional analysis scripts
-    └── schema_analyzer.py
+    └── analyzer.py
 ```
 
 ### Tool-Only Agents

@@ -78,7 +78,7 @@ The system orchestrates three distinct AI model calls per iteration:
     │                                                             │
     │  ┌──────────────────┐         ┌────────────────────┐        │
     │  │   EVOLUTION AI   │ Creates │   3-ARTIFACT       │        │
-    │  │   (Opus-4.5)     │────────▶│   AGENT PACKAGE    │        │
+    │  │   (Opus-4.6)     │────────▶│   AGENT PACKAGE    │        │
     │  └──────────────────┘         └────────────────────┘        │
     │           ▲                            │                    │
     │           │                            ▼                    │
@@ -125,7 +125,7 @@ The system orchestrates three distinct AI model calls per iteration:
 
 ### The Three AI Calls Explained:
 
-1. **Evolution AI (Opus-4.5)** - Runs once per iteration
+1. **Evolution AI (Opus-4.6)** - Runs once per iteration
    - **Input**: Performance results from previous iteration, error analysis, agent rankings
    - **Output**: New 3-artifact agent package (agent.md, eval_instructions.md, tools/)
    - **Purpose**: Learn from failures and evolve better agents
@@ -252,7 +252,7 @@ python RoboPhD/researcher.py \
   --num-iterations 10 \
   --config '{
     "new_agent_test_rounds": 2,
-    "evolution_model": "opus-4.5",
+    "evolution_model": "opus-4.6",
     "eval_model": "haiku-4.5"
   }'
 ```

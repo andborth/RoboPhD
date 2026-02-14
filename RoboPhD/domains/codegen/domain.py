@@ -2,7 +2,7 @@
 Code Generation domain implementation.
 
 Implements the coder/critic paradigm for LiveCodeBench.
-See docs/code_generation_critic/robophd_code_generation.md for design.
+See local_docs/code_generation_critic/robophd_code_generation.md for design.
 """
 
 import json
