@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent))
-from config import CLAUDE_CLI_MODEL_MAP
+from config import CLAUDE_CLI_MODEL_MAP, get_lmstudio_env
 # Add grandparent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
 from utilities.claude_cli import find_claude_cli, call_claude_cli, RateLimitExceeded
@@ -502,11 +502,15 @@ If the Task tool invocation fails, read and follow the instructions in .claude/a
         # Execute Phase 1 with timeout
         phase1_start = time.time()
 
+        # Get LM Studio env overrides for non-Anthropic analysis models
+        extra_env = get_lmstudio_env(self.analysis_model)
+
         try:
             result = call_claude_cli(
                 cmd=cmd,
                 cwd=Path(workspace),
-                timeout=self.timeout_phase1
+                timeout=self.timeout_phase1,
+                extra_env=extra_env
             )
 
             phase1_time = time.time() - phase1_start

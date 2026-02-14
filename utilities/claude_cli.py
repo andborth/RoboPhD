@@ -12,7 +12,7 @@ import subprocess
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 from zoneinfo import ZoneInfo
 
 
@@ -142,7 +142,8 @@ def call_claude_cli(
     timeout: int,
     max_wait_hours: float = 4.0,
     update_interval_min: int = 5,
-    logger: Optional[logging.Logger] = None
+    logger: Optional[logging.Logger] = None,
+    extra_env: Optional[Dict[str, str]] = None
 ) -> subprocess.CompletedProcess:
     """
     Call Claude CLI with automatic rate limit handling.
@@ -158,6 +159,8 @@ def call_claude_cli(
         max_wait_hours: Maximum hours to wait for rate limit reset (default 4.0)
         update_interval_min: Minutes between countdown updates (default 5)
         logger: Optional logger for debug messages
+        extra_env: Optional environment variable overrides merged on top of os.environ.
+                  Used for per-subprocess routing (e.g., ANTHROPIC_BASE_URL for LM Studio).
 
     Returns:
         subprocess.CompletedProcess on success
@@ -169,13 +172,19 @@ def call_claude_cli(
     """
     log = logger or logging.getLogger(__name__)
 
+    # Build environment with optional overrides
+    env = None
+    if extra_env:
+        env = {**os.environ, **extra_env}
+
     while True:
         result = subprocess.run(
             cmd,
             cwd=cwd,
             capture_output=True,
             text=True,
-            timeout=timeout
+            timeout=timeout,
+            env=env
         )
 
         # Check for rate limit error

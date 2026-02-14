@@ -32,7 +32,7 @@ problems = [p for p in all_problems if p["contest_date"] < "2024-11-01"]
 CodeGen uses a versioned cache structure:
 
 ```
-codegen_cache/
+../robophd_runs/codegen_cache/
 ├── {model}_v6/           # Cached per model version
 │   ├── {problem_id}/
 │   │   ├── code_v1.py    # Initial solution from Coder Call 1

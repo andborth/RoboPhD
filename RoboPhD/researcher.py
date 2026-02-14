@@ -14,6 +14,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
@@ -104,6 +105,68 @@ class MemoryMonitor:
             print(f"   Available: {memory.available / (1024**3):.1f} GB")
             return False
         return True
+
+
+class StuckProcessReaper:
+    """Background daemon that kills orphaned `python solution.py` processes.
+
+    Claude CLI critic agents spawn `python solution.py` via their Bash tool.
+    When the CLI times out or is killed, these child processes become orphaned
+    and run indefinitely at 100% CPU. This reaper periodically scans for and
+    kills any such processes older than the configured threshold.
+    """
+
+    THRESHOLD_BUFFER = 100  # seconds above codegen_call_timeout
+    DEFAULT_CODEGEN_TIMEOUT = 1200  # fallback if not configured
+
+    def __init__(self, codegen_call_timeout: int = DEFAULT_CODEGEN_TIMEOUT):
+        self._stop_event = threading.Event()
+        self._thread = None
+        self._total_killed = 0
+        self.process_age_threshold = codegen_call_timeout + self.THRESHOLD_BUFFER
+        self.scan_interval = self.process_age_threshold // 2
+
+    def start(self):
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread.start()
+        logger.info("StuckProcessReaper started (threshold=%ds, interval=%ds)",
+                     self.process_age_threshold, self.scan_interval)
+
+    def stop(self):
+        self._stop_event.set()
+        if self._thread is not None:
+            self._thread.join(timeout=5)
+        if self._total_killed > 0:
+            logger.warning("StuckProcessReaper stopped — killed %d stuck processes total",
+                           self._total_killed)
+        else:
+            logger.info("StuckProcessReaper stopped — no stuck processes found")
+
+    def _run(self):
+        while not self._stop_event.is_set():
+            self._scan_and_kill()
+            self._stop_event.wait(self.scan_interval)
+
+    def _scan_and_kill(self):
+        now = time.time()
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'create_time']):
+            try:
+                cmdline = proc.info.get('cmdline') or []
+                if not cmdline:
+                    continue
+                # Match: first arg starts with "python", any arg contains solution.py or solution_v2.py
+                if not cmdline[0].startswith('python'):
+                    continue
+                if not any('solution.py' in arg or 'solution_v2.py' in arg for arg in cmdline):
+                    continue
+                age = now - (proc.info.get('create_time') or now)
+                if age > self.process_age_threshold:
+                    logger.warning("Killing stuck process pid=%d age=%.0fs cmd=%s",
+                                   proc.pid, age, ' '.join(cmdline[:3]))
+                    proc.kill()
+                    self._total_killed += 1
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
 
 
 class ParallelAgentEvolver:
@@ -606,6 +669,8 @@ class ParallelAgentEvolver:
                     name = line.replace("name:", "").strip()
                     # Clean name for filesystem
                     name = name.replace("-", "_").replace(" ", "_")
+                    # Strip any existing iter prefix (current or stale)
+                    name = re.sub(r'^iter\d+_', '', name)
                     return f"iter{iteration}_{name}"
         
         # Fallback to generic name
@@ -750,8 +815,15 @@ class ParallelAgentResearcher:
                 self.experiment_dir = Path("robophd_evaluation") / custom_experiment_name
             else:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                self.experiment_dir = Path("research") / f"robophd_{timestamp}"
+                self.experiment_dir = Path("evolution") / f"robophd_{timestamp}"
             self.experiment_dir.mkdir(parents=True, exist_ok=True)
+
+            # Initialize as git repo so evolution AI gets scoped per-run memory.
+            # Claude CLI recursive lookup will still find parent code-gen-critic/CLAUDE.md.
+            git_dir = self.experiment_dir / ".git"
+            if not git_dir.exists():
+                subprocess.run(["git", "init"], cwd=str(self.experiment_dir),
+                               capture_output=True, check=False)
 
             # Store evaluation modes
             self.dev_eval_mode = dev_eval_mode
@@ -844,6 +916,9 @@ class ParallelAgentResearcher:
             delattr(self, '_pending_evolution_reset')
 
         self.memory_monitor = MemoryMonitor()
+        self.process_reaper = StuckProcessReaper(
+            codegen_call_timeout=self.config_manager.get_config(1).get("codegen_call_timeout", 1200)
+        )
 
         # Load data
         self._load_data()
@@ -872,16 +947,10 @@ class ParallelAgentResearcher:
     
     def _load_data(self):
         """Load questions and databases using domain abstraction."""
-        # Build domain config
-        domain_config = {
-            'dataset': self.dataset,
-            'api_key': self.api_key,
-            'eval_model': self.eval_model,
-            'verification_retries': self.verification_retries,
-            'temperature_strategy': self.temperature_strategy,
-            'debug_log_probability': self.debug_log_probability,
-            'llm_call_timeout': self.llm_call_timeout,
-        }
+        # Use full resolved config so domain gets all fields (coder_model, codegen_split, etc.)
+        domain_config = dict(self.config_manager.get_config(1))
+        # Add runtime fields not managed by config_manager
+        domain_config['api_key'] = self.api_key
         self.domain = get_domain(self.domain_name, domain_config)
 
         # Load problems grouped by context (database for Text2SQL, problem_id for CodeGen)
@@ -941,7 +1010,7 @@ class ParallelAgentResearcher:
                 # If path is relative, resolve from experiment directory for portability
                 if not package_dir.is_absolute():
                     # Check if this is an old-format path (starts with experiment dir name)
-                    # Old format: "research/robophd_XXX/agents/name"
+                    # Old format: "research/robophd_XXX/agents/name" or "evolution/robophd_XXX/agents/name"
                     # New format: "agents/name"
                     experiment_dir_name = self.experiment_dir.name  # e.g., "robophd_20251119_014049"
 
@@ -972,7 +1041,7 @@ class ParallelAgentResearcher:
                     )
             else:
                 # Old format or None - reconstruct from agent path
-                # Path is like: research/robophd_20250830_223700/agents/iter3_defensive_schema_analyzer/agent.md
+                # Path is like: evolution/robophd_20250830_223700/agents/iter3_defensive_schema_analyzer/agent.md
                 package_dir = path.parent if path.name == 'agent.md' else path.parent
             
             # Check if this is a three-artifact package
@@ -1635,14 +1704,27 @@ class ParallelAgentResearcher:
                 }
                 continue
 
-            # Create output directory for this agent
-            agent_output_dir = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
-            agent_output_dir.mkdir(parents=True, exist_ok=True)
+            # Create output directory for this agent.
+            # Real directory lives outside git repo (prevents CLAUDE.md contamination for coder/critic calls).
+            # Symlink from evolution tree for easy browsing.
+            current_config = self.config_manager.get_config(iteration)
+            runs_dir = Path(current_config.get('runs_directory', '../robophd_runs'))
+            run_name = self.experiment_dir.name
+            real_dir = runs_dir / "evolution" / run_name / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
+            real_dir.mkdir(parents=True, exist_ok=True)
+
+            symlink_path = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
+            symlink_path.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                symlink_path.symlink_to(real_dir.resolve())
+            except FileExistsError:
+                pass
+
+            agent_output_dir = real_dir
 
             # Build config for domain evaluation
             # Pass full config directly - domains extract what they need
             # ConfigManager resolves all defaults (fail fast if missing)
-            current_config = self.config_manager.get_config(iteration)
             eval_config = current_config.copy()
             eval_config.update({
                 'agent_id': agent_id,
@@ -2605,6 +2687,9 @@ class ParallelAgentResearcher:
         else:
             start_iteration = 1
         
+        # Start background process reaper for stuck solution.py processes
+        self.process_reaper.start()
+
         # Main research loop (using while to allow restart)
         iteration = start_iteration
         while iteration <= self.num_iterations:
@@ -2948,6 +3033,7 @@ class ParallelAgentResearcher:
                     logger.info("Triggering graceful termination...")
 
                     # Generate final report
+                    self.process_reaper.stop()
                     self.report_generator.generate_final_report(start_time)
 
                     # Exit gracefully
@@ -2961,12 +3047,16 @@ class ParallelAgentResearcher:
             # Check budget and maybe terminate
             if self.meta_evolution_manager.check_budget_and_maybe_terminate(iteration):
                 # Budget exhausted - generate final report before terminating
+                self.process_reaper.stop()
                 self.report_generator.generate_final_report(start_time)
                 print(f"\n🏁 Ending experiment after {iteration} iterations due to budget exhaustion")
                 return
 
             # Increment iteration for next loop
             iteration += 1
+
+        # Stop background process reaper
+        self.process_reaper.stop()
 
         # Generate final report
         self.report_generator.generate_final_report(start_time)
@@ -4097,7 +4187,7 @@ def main():
             "Sampling": ["contexts_per_iteration", "agents_per_iteration"],
             "Text2SQL Dataset & Sampling": ["dataset", "problems_per_context"],
             "Text2SQL Models": ["eval_model", "analysis_model", "evolution_model"],
-            "CodeGen Dataset & Models": ["codegen_split", "coder_model", "critic_model"],
+            "CodeGen Dataset & Models": ["codegen_split", "coder_model", "coder_model_tag", "critic_model"],
             "Evolution": ["evolution_strategy"],
             "Evolution Meta-Parameters": ["config_schedule", "weighted_random_configs", "use_weighted_random"],
             "Meta-Evolution": ["meta_evolution_strategy", "meta_evolution_model", "meta_evolution_budget"],

@@ -2,10 +2,12 @@
 Configuration settings for RoboPhD Text-to-SQL Research System
 """
 
+from typing import Dict, Optional
+
 # Model configuration with pricing from official Anthropic pricing
 SUPPORTED_MODELS = {
-    'opus-4.5': {
-        'name': 'claude-opus-4-5-20251101',
+    'opus-4.6': {
+        'name': 'claude-opus-4-6',
         'pricing': {
             'input': 5.00,       # $5/MTok (base input)
             'output': 25.00,     # $25/MTok
@@ -13,13 +15,13 @@ SUPPORTED_MODELS = {
             'cache_read': 0.50    # $0.50/MTok (cache hits & refreshes)
         }
     },
-    'opus-4.1': {
-        'name': 'claude-opus-4-1-20250805',
+    'opus-4.5': {
+        'name': 'claude-opus-4-5-20251101',
         'pricing': {
-            'input': 15.00,      # $15/MTok
-            'output': 75.00,     # $75/MTok
-            'cache_write': 18.75, # $18.75/MTok
-            'cache_read': 1.50    # $1.50/MTok
+            'input': 5.00,       # $5/MTok (base input)
+            'output': 25.00,     # $25/MTok
+            'cache_write': 6.25,  # $6.25/MTok (5m cache writes)
+            'cache_read': 0.50    # $0.50/MTok (cache hits & refreshes)
         }
     },
     'sonnet-4.5': {
@@ -45,8 +47,8 @@ SUPPORTED_MODELS = {
 # Model to Claude CLI name mapping
 # Claude CLI expects simple aliases: 'opus', 'sonnet', 'haiku'
 CLAUDE_CLI_MODEL_MAP = {
-    'opus-4.5': 'opus',      # CLI expects 'opus' not 'opus-4.5'
-    'opus-4.1': 'opus',      # CLI expects 'opus' not 'opus-4.1'
+    'opus-4.6': 'opus',      # CLI expects 'opus' not 'opus-4.6'
+    'opus-4.5': 'claude-opus-4-5-20251101',  # Pin to specific version
     'sonnet-4.5': 'sonnet',  # CLI expects 'sonnet' not 'sonnet-4.5'
     'haiku-4.5': 'haiku'     # CLI expects 'haiku' not 'haiku-4.5'
 }
@@ -99,3 +101,29 @@ EVALUATION_TIMEOUT = 5  # seconds per SQL query
 # Subprocess timeout settings
 ANALYZER_TIMEOUT = 3600  # 60 minutes for database analysis (large databases need time)
 FALLBACK_SQL = "SELECT 1;"
+
+# LM Studio integration
+LMSTUDIO_DEFAULT_BASE_URL = "http://localhost:1234"
+
+
+def get_lmstudio_env(model: str, base_url: str = LMSTUDIO_DEFAULT_BASE_URL) -> Optional[Dict[str, str]]:
+    """Return env overrides for LM Studio models, or None for Anthropic models.
+
+    Anthropic models (those in CLAUDE_CLI_MODEL_MAP or SUPPORTED_MODELS) use the
+    default Anthropic API and need no env overrides. All other model names are
+    assumed to be served by LM Studio's Anthropic-compatible endpoint.
+
+    Args:
+        model: Model identifier (e.g., 'haiku-4.5' or 'qwen/qwen3-coder-30b')
+        base_url: LM Studio server URL (default: http://localhost:1234)
+
+    Returns:
+        Dict with ANTHROPIC_BASE_URL and ANTHROPIC_AUTH_TOKEN for LM Studio models,
+        or None for Anthropic models.
+    """
+    if model in CLAUDE_CLI_MODEL_MAP or model in SUPPORTED_MODELS:
+        return None
+    return {
+        "ANTHROPIC_BASE_URL": base_url,
+        "ANTHROPIC_AUTH_TOKEN": "lmstudio",
+    }

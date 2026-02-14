@@ -38,17 +38,17 @@ pip install -r requirements.txt
 ### Resume and Extend
 ```bash
 # Resume from checkpoint (auto-continues from last completed iteration)
-python RoboPhD/researcher.py --resume output/robophd_20251031_043607
+python RoboPhD/researcher.py --resume evolution/robophd_20251031_043607
 
 # Restart from specific iteration with modifications
 python RoboPhD/researcher.py \
-  --resume output/robophd_20251031_043607 \
+  --resume evolution/robophd_20251031_043607 \
   --from-iteration 5 \
   --modify-config '{"contexts_per_iteration": 10, "eval_model": "sonnet-4.5"}'
 
 # Extend completed run with additional iterations
 python RoboPhD/researcher.py \
-  --resume output/robophd_20251031_043607 \
+  --resume evolution/robophd_20251031_043607 \
   --extend 5 \
   --modify-config '{"evolution_strategy": "challenger"}'
 ```
@@ -304,8 +304,9 @@ Available meta-evolution strategies:
 - **Initial ELO**: 1500 for new agents
 
 ### Model Configuration
-- **API Models**: opus-4.5 ($5/$25/MTok), sonnet-4.5 ($3/$15/MTok), haiku-4.5 ($1/$5/MTok)
+- **API Models**: opus-4.6 ($5/$25/MTok), sonnet-4.5 ($3/$15/MTok), haiku-4.5 ($1/$5/MTok)
 - **Timeouts**: 1800s (30 minutes) default for phase1, phase2, sql, and evolution
+- **CodeGen Timeouts**: `codegen_call_timeout` (1200s) for solution generation, `critic_call_timeout` (600s) for critic/revision/acceptance
 - **API Key**: Set via `ANTHROPIC_API_KEY_FOR_ROBOPHD` environment variable
 
 ## Development Tips

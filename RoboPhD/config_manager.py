@@ -14,6 +14,16 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from RoboPhD.config import LMSTUDIO_DEFAULT_BASE_URL
+
+
+# Parameters that cannot change after iteration 1 (affect cache identity, data loading, etc.)
+IMMUTABLE_PARAMS = [
+    "domain", "dataset", "random_seed",
+    "initial_agents", "agents_directory",
+    "coder_model", "coder_model_tag", "codegen_split", "runs_directory",
+]
+
 
 class ConfigSource(Enum):
     """Source of configuration changes."""
@@ -62,10 +72,11 @@ class ConfigManager:
             # Models (Text2SQL)
             "eval_model": "haiku-4.5",
             "analysis_model": "haiku-4.5",
-            "evolution_model": "opus-4.5",
+            "evolution_model": "opus-4.6",
 
             # Models (CodeGen)
             "coder_model": "haiku-4.5",   # Model for code generation
+            "coder_model_tag": "",         # Variant tag for cache isolation (e.g., "6bit_100K")
             "critic_model": None,          # Model for critic (defaults to coder_model if None)
 
             # CodeGen dataset filtering
@@ -76,7 +87,7 @@ class ConfigManager:
 
             # Meta-evolution parameters
             "meta_evolution_strategy": None,       # Which meta-evolution strategy to use
-            "meta_evolution_model": "opus-4.5",    # Model for meta-evolution
+            "meta_evolution_model": "opus-4.6",    # Model for meta-evolution
             "meta_evolution_budget": 100.0,        # Total budget in dollars (default: $100)
 
             # Deep Focus
@@ -94,6 +105,11 @@ class ConfigManager:
             "phase2_timeout": 3600,  # Phase 2 generation timeout (renamed from sql_timeout)
             "evolution_timeout": 1800,
             "llm_call_timeout": 120,  # Per-call LLM timeout (2 min) - affects local models
+            "codegen_call_timeout": 1200,  # Per-call timeout for codegen (solution generation)
+            "critic_call_timeout": 600,    # Per-call timeout for critic/revision/acceptance
+
+            # LM Studio integration
+            "lmstudio_base_url": LMSTUDIO_DEFAULT_BASE_URL,  # LM Studio server URL
 
             # Other
             "debug_log_probability": 0.02,
@@ -293,6 +309,8 @@ class ConfigManager:
             "phase1_timeout",
             "phase2_timeout",
             "evolution_timeout",
+            "codegen_call_timeout",
+            "critic_call_timeout",
             "debug_log_probability"
         ]
 
@@ -490,7 +508,7 @@ class ConfigManager:
             )
 
         # 4. Immutable parameter protection
-        immutable = ["domain", "dataset", "random_seed", "initial_agents", "agents_directory"]
+        immutable = IMMUTABLE_PARAMS
         if 1 in self.resolved_configs:
             iter1_config = self.resolved_configs[1]
             for iter_num in range(2, iteration + 1):
@@ -787,7 +805,7 @@ class ConfigManager:
         Raises:
             ValueError: If trying to modify immutable parameter after iteration 1
         """
-        immutable = ["domain", "dataset", "initial_agents", "agents_directory"]
+        immutable = IMMUTABLE_PARAMS
 
         if iteration > 1:
             for param in immutable:

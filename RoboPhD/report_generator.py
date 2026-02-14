@@ -9,6 +9,7 @@ Handles creation of final and interim reports, including:
 - Cache performance statistics
 """
 
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -107,7 +108,7 @@ class ReportGenerator:
             report_file = iteration_dir / 'interim_report.md'
 
             if report_file.exists() and report_file.stat().st_size > 0:
-                print(f"  📊 Generated interim report: {report_file.resolve().relative_to(Path.cwd())}")
+                print(f"  📊 Generated interim report: {os.path.relpath(report_file)}")
             else:
                 print(f"  ⚠️ Warning: Interim report file not created or is empty: {report_file}")
         except Exception as e:
@@ -344,7 +345,6 @@ class ReportGenerator:
         try:
             with open(report_path, 'w') as f:
                 f.write('\n'.join(report_lines))
-            print(f"  📋 Generated evaluation report: {report_path.resolve().relative_to(Path.cwd())}")
         except Exception as e:
             print(f"  ❌ Error writing evaluation report: {e}")
 

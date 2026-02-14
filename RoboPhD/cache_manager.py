@@ -28,7 +28,7 @@ class CacheManager:
         Initialize cache manager for a research run.
 
         Args:
-            run_dir: Research run directory (e.g., research/parallel_agent_20250929_...)
+            run_dir: Research run directory (e.g., evolution/robophd_20250929_...)
         """
         self.run_dir = Path(run_dir)
         # All agents (initial and evolved) are stored in the experiment's agents directory

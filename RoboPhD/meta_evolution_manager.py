@@ -467,7 +467,7 @@ class MetaEvolutionManager:
         Raises:
             RuntimeError: If Claude Code call fails
         """
-        from RoboPhD.config import CLAUDE_CLI_MODEL_MAP
+        from RoboPhD.config import CLAUDE_CLI_MODEL_MAP, get_lmstudio_env
 
         # Build command
         claude_cli = self._get_claude_cli_path()
@@ -503,13 +503,17 @@ class MetaEvolutionManager:
 
         logger.debug(f"Calling Claude Code: {' '.join(cmd[:4])}...")
 
+        # Get LM Studio env overrides for non-Anthropic models
+        extra_env = get_lmstudio_env(model)
+
         try:
             # Run in iteration-specific working directory with rate limit handling
             result = call_claude_cli(
                 cmd=cmd,
                 cwd=working_dir,
                 timeout=1800,  # 30 minutes default
-                logger=logger
+                logger=logger,
+                extra_env=extra_env
             )
 
             if result.returncode != 0:

@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 from RoboPhD.domains.base import SampledProblems, EvaluationResult
 from RoboPhD.comparison_report_generator import ComparisonReportGenerator
-from RoboPhD.config import CLAUDE_CLI_MODEL_MAP
+from RoboPhD.config import CLAUDE_CLI_MODEL_MAP, get_lmstudio_env
 from utilities.claude_cli import call_claude_cli, RateLimitExceeded
 
 logger = logging.getLogger(__name__)
@@ -895,9 +895,20 @@ After completing implementation, respond with: "ROUND 2 COMPLETE"
         agent_name = self._extract_agent_name_from_md(agent_md)
         logger.info(f"Testing agent: {agent_name}")
 
-        # Create new agent directory in test workspace (unified structure)
-        new_agent_dir = test_workspace / agent_name
-        new_agent_dir.mkdir(parents=True, exist_ok=True)
+        # Create new agent directory outside git repo (prevents CLAUDE.md contamination for coder/critic calls).
+        # Symlink from evolution tree for easy browsing.
+        runs_dir = Path(self.config.get('runs_directory', '../robophd_runs'))
+        run_name = self.experiment_dir.name if self.experiment_dir else "unknown"
+        real_agent_dir = runs_dir / "evolution" / run_name / f"iteration_{test_iteration:03d}_test" / agent_name
+        real_agent_dir.mkdir(parents=True, exist_ok=True)
+
+        new_agent_dir_symlink = test_workspace / agent_name
+        try:
+            new_agent_dir_symlink.symlink_to(real_agent_dir.resolve())
+        except FileExistsError:
+            pass
+
+        new_agent_dir = real_agent_dir
 
         # Create symlinks to baseline agents for comparison
         # Use absolute path so symlinks work from any location
@@ -1260,12 +1271,16 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             "--permission-mode", "bypassPermissions"
         ]
 
+        # Get LM Studio env overrides for non-Anthropic evolution models
+        extra_env = get_lmstudio_env(self.evolution_model)
+
         try:
             result = call_claude_cli(
                 cmd=cmd,
                 cwd=self.working_dir,
                 timeout=600,  # 10 minutes for compact (can take a while with large sessions)
-                logger=logger
+                logger=logger,
+                extra_env=extra_env
             )
 
             if result.returncode != 0:
@@ -1338,13 +1353,17 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
 
         logger.debug(f"Calling Claude Code: {' '.join(cmd[:4])}...")
 
+        # Get LM Studio env overrides for non-Anthropic evolution models
+        extra_env = get_lmstudio_env(self.evolution_model)
+
         try:
             # Run in working directory with rate limit handling
             result = call_claude_cli(
                 cmd=cmd,
                 cwd=self.working_dir,
                 timeout=self.timeout,
-                logger=logger
+                logger=logger,
+                extra_env=extra_env
             )
 
             if result.returncode != 0:
@@ -1385,7 +1404,8 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
                             cmd=retry_cmd,
                             cwd=self.working_dir,
                             timeout=self.timeout,
-                            logger=logger
+                            logger=logger,
+                            extra_env=extra_env
                         )
 
                         if retry_result.returncode != 0:

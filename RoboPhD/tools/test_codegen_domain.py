@@ -206,7 +206,7 @@ def main():
     parser.add_argument(
         "--cache-dir",
         type=str,
-        default="codegen_cache/haiku-4.5_v6",
+        default="../robophd_runs/codegen_cache/haiku-4.5_v6",
         help="Path to codegen cache directory"
     )
     parser.add_argument(

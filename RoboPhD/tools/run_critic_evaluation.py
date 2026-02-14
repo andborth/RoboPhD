@@ -44,6 +44,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 # Reuse evaluation logic from evaluate_livecodebench
 from evaluate_livecodebench import evaluate_single, load_dataset
 from utilities.claude_cli import call_claude_cli, RateLimitExceeded
+from RoboPhD.config import LMSTUDIO_DEFAULT_BASE_URL
 
 # Setup logging
 logging.basicConfig(
@@ -88,9 +89,16 @@ def validate_model_version(model: str, param_name: str) -> None:
     """
     Validate that model name is a versioned name from MODEL_MAP.
 
-    Raises ValueError if unversioned name is used.
-    This ensures cache isolation when model versions change.
+    Raises ValueError if an Anthropic-looking model name (starts with haiku,
+    sonnet, opus, or claude) is not in MODEL_MAP. Non-Anthropic models
+    (e.g., 'qwen/qwen3-coder-30b') are accepted as-is since they already
+    have unique names for cache isolation.
     """
+    _ANTHROPIC_PREFIXES = ('haiku', 'sonnet', 'opus', 'claude')
+    # Non-Anthropic models skip validation
+    if not any(model.startswith(p) for p in _ANTHROPIC_PREFIXES):
+        return
+    # Anthropic model - must be a known versioned name
     if model not in MODEL_MAP:
         valid_names = ", ".join(sorted(MODEL_MAP.keys()))
         raise ValueError(
@@ -149,12 +157,13 @@ def parse_acceptance(acceptance_path: Path) -> Tuple[str, str]:
         "REJECTED_ALL": "rejected_all",
     }
 
-    # Scan first 5 lines for category keyword
+    # Scan first 5 lines for category keyword (anywhere in line)
     for i, line in enumerate(lines[:5]):
         line_upper = line.strip().upper()
-        if line_upper in category_map:
-            explanation = '\n'.join(lines[i+1:]).strip()
-            return category_map[line_upper], explanation
+        for keyword, category in category_map.items():
+            if keyword in line_upper:
+                explanation = '\n'.join(lines[i+1:]).strip()
+                return category, explanation
 
     return "invalid", content
 
@@ -169,14 +178,24 @@ class CriticEvaluator:
         output_dir: Path,
         coder_model: str,
         critic_model: str,
-        timeout: int = 300,
+        codegen_timeout: int = 1200,
+        critic_timeout: int = 600,
+        lmstudio_base_url: str = LMSTUDIO_DEFAULT_BASE_URL,
     ):
         self.cache_dir = cache_dir
         self.critic_agent_dir = critic_agent_dir
         self.output_dir = output_dir
         self.coder_model = get_cli_model(coder_model)
         self.critic_model = get_cli_model(critic_model)
-        self.timeout = timeout
+        self.codegen_timeout = codegen_timeout
+        self.critic_timeout = critic_timeout
+        self.lmstudio_base_url = lmstudio_base_url
+
+        # Precompute LM Studio env overrides for coder and critic models
+        # None means the model uses standard Anthropic API (no overrides needed)
+        from RoboPhD.config import get_lmstudio_env
+        self.coder_extra_env = get_lmstudio_env(coder_model, lmstudio_base_url)
+        self.critic_extra_env = get_lmstudio_env(critic_model, lmstudio_base_url)
 
         # Find Claude CLI
         self.claude_path = self._find_claude_cli()
@@ -224,11 +243,13 @@ class CriticEvaluator:
         prompt: str,
         working_dir: Path,
         model: str,
+        timeout: Optional[int] = None,
         session_id: Optional[str] = None,
         fork_session: bool = False,
         extra_dirs: Optional[List[Path]] = None,
         deny_edit_paths: Optional[List[Path]] = None,
         context: str = "",
+        extra_env: Optional[Dict[str, str]] = None,
     ) -> Tuple[Dict, str, Dict]:
         """
         Run Claude Code CLI.
@@ -239,6 +260,8 @@ class CriticEvaluator:
                          branching from the original (preserves original session).
             extra_dirs: Additional directories to add via --add-dir (for file access).
             deny_edit_paths: Directories to deny Edit tool access to (protects cache).
+            extra_env: Optional environment variable overrides for the subprocess
+                      (e.g., ANTHROPIC_BASE_URL for LM Studio models).
 
         Returns (result_dict, session_id, cost_info).
             cost_info contains: cost_usd, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens
@@ -260,6 +283,7 @@ class CriticEvaluator:
 
         cmd = [
             self.claude_path, "--print", "--output-format", "json",
+            "--append-system-prompt", "Do not read or write MEMORY.md files.",
             "--permission-mode", permission_mode,
             "--settings", json.dumps(settings),
             "--add-dir", str(working_dir.resolve()),
@@ -278,12 +302,15 @@ class CriticEvaluator:
 
         cmd.extend(["-p", prompt])
 
+        effective_timeout = timeout if timeout is not None else self.codegen_timeout
+
         try:
             result = call_claude_cli(
                 cmd=cmd,
                 cwd=working_dir,
-                timeout=self.timeout,
-                logger=logger
+                timeout=effective_timeout,
+                logger=logger,
+                extra_env=extra_env
             )
 
             # Try to parse JSON even on non-zero return code
@@ -316,7 +343,7 @@ class CriticEvaluator:
             return output, output.get("session_id", ""), cost_info
 
         except subprocess.TimeoutExpired:
-            logger.warning(f"Claude CLI timed out after {self.timeout}s{ctx}")
+            logger.warning(f"Claude CLI timed out after {effective_timeout}s{ctx}")
             return {}, "", {}
         except RateLimitExceeded:
             # Let rate limit exceeded propagate for checkpoint/exit handling
@@ -342,9 +369,11 @@ class CriticEvaluator:
             "Say 'ok'",  # Minimal prompt
             working_dir=working_dir,
             model=self.coder_model,
+            timeout=self.codegen_timeout,
             session_id=session_id,
             fork_session=True,  # Don't pollute original session
             context="session-check",
+            extra_env=self.coder_extra_env,
         )
 
         # If we got an empty result, check if it's due to session expiry
@@ -367,7 +396,9 @@ class CriticEvaluator:
             CALL_1_PROMPT,
             working_dir=workspace,
             model=self.coder_model,
+            timeout=self.codegen_timeout,
             context=f"regen-call1:{question_id}",
+            extra_env=self.coder_extra_env,
         )
 
         if not session_id:
@@ -380,8 +411,10 @@ class CriticEvaluator:
             CALL_1_5_PROMPT,
             working_dir=workspace,
             model=self.coder_model,
+            timeout=self.codegen_timeout,
             session_id=session_id,
             context=f"regen-call1.5:{question_id}",
+            extra_env=self.coder_extra_env,
         )
 
         # Verify files were created
@@ -466,7 +499,9 @@ class CriticEvaluator:
             prompt,
             working_dir=output_problem_dir,
             model=self.critic_model,
+            timeout=self.critic_timeout,
             context=f"critic:{question_id}",
+            extra_env=self.critic_extra_env,
         )
         total_cost = cost_info.copy()
 
@@ -490,8 +525,10 @@ class CriticEvaluator:
                 fix_prompt,
                 working_dir=output_problem_dir,
                 model=self.critic_model,
+                timeout=self.critic_timeout,
                 session_id=session_id,
                 context=f"critic-retry:{question_id}",
+                extra_env=self.critic_extra_env,
             )
             # Accumulate retry cost
             for key in ['cost_usd', 'input_tokens', 'output_tokens', 'cache_creation_tokens', 'cache_read_tokens']:
@@ -512,13 +549,18 @@ class CriticEvaluator:
         return feedback_path, timing_info
 
     def _build_critic_prompt(self, agent_analysis: str) -> str:
-        """Build the prompt for the critic."""
+        """Build the prompt for the critic.
+
+        Instructions come first so they form a cacheable prefix (Anthropic's
+        prompt cache is prefix-based).  The variable per-problem analysis
+        follows as the suffix.
+        """
         parts = []
+
+        parts.append(f"## Instructions\n\n{self.eval_instructions}")
 
         if agent_analysis:
             parts.append(f"## Analysis\n\n{agent_analysis}")
-
-        parts.append(f"## Instructions\n\n{self.eval_instructions}")
 
         parts.append(
             "## Task\n\n"
@@ -571,19 +613,24 @@ If no changes needed, confirm the code is correct."""
         prompt_path.write_text(prompt)
 
         # Run revision from cache_problem_dir (for session) with cache protected
+        # Uses coder_model (required: resumes coder's session) with critic_timeout
+        # (intentional: revision responsiveness reflects critic quality)
         result, forked_session_id, cost_info = self._run_claude_code(
             prompt,
             working_dir=cache_problem_dir,
             model=self.coder_model,
+            timeout=self.critic_timeout,
             session_id=session_id,
             fork_session=True,  # Fork to preserve original cached session
             extra_dirs=[output_problem_dir],  # Allow writes to output dir
             deny_edit_paths=[cache_problem_dir],  # Protect entire cache dir
             context=f"revision:{question_id}",
+            extra_env=self.coder_extra_env,
         )
 
-        # If no solution_v2.py was created (no changes needed), copy original
-        if not solution_v2_path.exists():
+        # If Claude completed but no solution_v2.py was created (no changes needed), copy original
+        # On timeout (empty forked_session_id), do NOT fallback — let it be an error
+        if forked_session_id and not solution_v2_path.exists():
             cache_solution = cache_problem_dir / "solution.py"
             if cache_solution.exists():
                 shutil.copy(cache_solution, solution_v2_path)
@@ -638,10 +685,12 @@ Then explain briefly what you accepted or rejected and why."""
             prompt,
             working_dir=cache_problem_dir,
             model=self.coder_model,
+            timeout=self.critic_timeout,
             session_id=session_id,
             extra_dirs=[output_problem_dir],  # Allow writes to output dir
             deny_edit_paths=[cache_problem_dir],  # Protect entire cache dir
             context=f"acceptance:{question_id}",
+            extra_env=self.coder_extra_env,
         )
 
         category, explanation = parse_acceptance(acceptance_path)
@@ -1532,7 +1581,7 @@ def main():
         "--cache-dir",
         type=str,
         default=None,
-        help="Override cache directory (default: codegen_cache/{coder_model}_v6)",
+        help="Override cache directory (default: ../robophd_runs/codegen_cache/{coder_model}_v6)",
     )
     parser.add_argument(
         "--critic-agent",
@@ -1560,10 +1609,16 @@ def main():
         help="Limit number of problems to evaluate",
     )
     parser.add_argument(
-        "--timeout",
+        "--codegen-timeout",
         type=int,
         default=None,
-        help="Timeout per Claude call in seconds (default: 300, or from config when resuming)",
+        help="Timeout per codegen Claude call in seconds (default: 1200, or from config when resuming)",
+    )
+    parser.add_argument(
+        "--critic-timeout",
+        type=int,
+        default=None,
+        help="Timeout per critic/revision/acceptance Claude call in seconds (default: 600, or from config when resuming)",
     )
     parser.add_argument(
         "--max-concurrent",
@@ -1585,6 +1640,12 @@ def main():
         "--problem-ids",
         type=str,
         help="Comma-separated list of problem IDs to evaluate. Only these problems will be processed.",
+    )
+    parser.add_argument(
+        "--lmstudio-base-url",
+        type=str,
+        default=LMSTUDIO_DEFAULT_BASE_URL,
+        help=f"LM Studio server URL for non-Anthropic models (default: {LMSTUDIO_DEFAULT_BASE_URL})",
     )
 
     args = parser.parse_args()
@@ -1624,8 +1685,11 @@ def main():
         test_set = config.get("test_set", False)
         evolution_set = config.get("evolution_set", False)
         # Use explicit CLI args if provided, otherwise fall back to config (then defaults)
-        timeout = args.timeout if args.timeout is not None else config.get("timeout", 300)
+        codegen_timeout = args.codegen_timeout if args.codegen_timeout is not None else config.get("codegen_timeout", 1200)
+        critic_timeout = args.critic_timeout if args.critic_timeout is not None else config.get("critic_timeout", 600)
         max_concurrent = args.max_concurrent if args.max_concurrent is not None else config.get("max_concurrent", 6)
+        # lmstudio_base_url: CLI arg takes precedence, then config, then default
+        args.lmstudio_base_url = args.lmstudio_base_url or config.get("lmstudio_base_url", LMSTUDIO_DEFAULT_BASE_URL)
 
         logger.info(f"Resuming run: {resume_dir}")
 
@@ -1652,14 +1716,15 @@ def main():
         critic_model = args.critic_model or coder_model
         test_set = args.test_set
         evolution_set = args.evolution_set
-        timeout = args.timeout if args.timeout is not None else 300
+        codegen_timeout = args.codegen_timeout if args.codegen_timeout is not None else 1200
+        critic_timeout = args.critic_timeout if args.critic_timeout is not None else 600
         max_concurrent = args.max_concurrent if args.max_concurrent is not None else 6
 
         # Derive cache dir from coder model if not specified
         if args.cache_dir:
             cache_dir = Path(args.cache_dir)
         else:
-            cache_dir = Path(f"codegen_cache/{coder_model}_v6")
+            cache_dir = Path(f"../robophd_runs/codegen_cache/{coder_model}_v6")
 
         critic_agent_dir = Path(args.critic_agent)
 
@@ -1668,7 +1733,7 @@ def main():
             output_dir = Path(args.output_dir)
         else:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_dir = Path("critic_evaluations") / f"run_{timestamp}"
+            output_dir = Path("../robophd_runs/critic_evaluations") / f"run_{timestamp}"
 
         output_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Output directory: {output_dir}")
@@ -1683,8 +1748,10 @@ def main():
             "test_set": test_set,
             "evolution_set": evolution_set,
             "limit": args.limit,
-            "timeout": timeout,
+            "codegen_timeout": codegen_timeout,
+            "critic_timeout": critic_timeout,
             "max_concurrent": max_concurrent,
+            "lmstudio_base_url": args.lmstudio_base_url,
             "timestamp": datetime.now().isoformat(),
         }
         config_file = output_dir / "config.json"
@@ -1775,13 +1842,16 @@ def main():
         return 1
 
     # Create evaluator
+    lmstudio_base_url = args.lmstudio_base_url
     evaluator = CriticEvaluator(
         cache_dir=cache_dir,
         critic_agent_dir=critic_agent_dir,
         output_dir=output_dir,
         coder_model=coder_model,
         critic_model=critic_model,
-        timeout=timeout,
+        codegen_timeout=codegen_timeout,
+        critic_timeout=critic_timeout,
+        lmstudio_base_url=lmstudio_base_url,
     )
 
     # Run evaluations

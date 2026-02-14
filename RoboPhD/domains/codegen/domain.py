@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ..base import DomainInterface, SampledProblems, EvaluationResult
+from RoboPhD.config import LMSTUDIO_DEFAULT_BASE_URL
 
 
 class CodeGenDomain(DomainInterface):
@@ -60,12 +61,19 @@ class CodeGenDomain(DomainInterface):
         self.config = config
         self.logger = logging.getLogger(__name__)
 
-        # Configure cache directory
+        # Configure cache directory (default: outside git repo to avoid CLAUDE.md contamination)
         coder_model = config.get('coder_model', 'haiku-4.5')
         if 'cache_dir' in config:
             self.cache_dir = Path(config['cache_dir'])
         else:
-            self.cache_dir = Path(f"codegen_cache/{coder_model}_v6")
+            # Sanitize model name for filesystem (e.g., 'qwen/qwen3-coder-30b' -> 'qwen--qwen3-coder-30b')
+            cache_model_name = coder_model.replace("/", "--")
+            # Append variant tag for cache isolation across quantization/context settings
+            tag = config.get('coder_model_tag', '')
+            if tag:
+                cache_model_name = f"{cache_model_name}_{tag}"
+            runs_dir = Path(config.get('runs_directory', '../robophd_runs'))
+            self.cache_dir = runs_dir / "codegen_cache" / f"{cache_model_name}_v6"
 
         # Date filtering options
         self.codegen_split = config.get('codegen_split', 'evolution')
@@ -417,7 +425,8 @@ Agent source code (three-artifact packages):
         # Extract config (dynamic defaults resolved by ConfigManager - fail fast if missing)
         coder_model = config['coder_model']
         critic_model = config['critic_model']
-        timeout = config['phase2_timeout']
+        codegen_timeout = config['codegen_call_timeout']
+        critic_timeout = config['critic_call_timeout']
         max_concurrent = config['max_concurrent']
 
         # Build problem IDs list
@@ -437,6 +446,7 @@ Agent source code (three-artifact packages):
             )
 
         # Build command
+        lmstudio_base_url = config.get('lmstudio_base_url', LMSTUDIO_DEFAULT_BASE_URL)
         cmd = [
             sys.executable,
             str(script_path),
@@ -446,8 +456,10 @@ Agent source code (three-artifact packages):
             "--output-dir", str(output_dir),
             "--cache-dir", str(self.cache_dir),
             "--problem-ids", problem_ids,
-            "--timeout", str(timeout),
+            "--codegen-timeout", str(codegen_timeout),
+            "--critic-timeout", str(critic_timeout),
             "--max-concurrent", str(max_concurrent),
+            "--lmstudio-base-url", lmstudio_base_url,
         ]
 
         # Add test-set or evolution-set flags based on codegen_split
@@ -460,12 +472,11 @@ Agent source code (three-artifact packages):
         self.logger.debug(f"Command: {' '.join(cmd)}")
 
         # Calculate subprocess timeout based on expected runtime
-        # - Each problem may have up to 4 Claude calls (critic, revision, acceptance, regen)
+        # - Each problem uses codegen calls (regen, session check) + critic calls (critic, revision, acceptance)
         # - Problems run concurrently (max_concurrent workers)
         # - 1.5x safety margin + 10 min buffer for startup/teardown
         # This timeout guards against catastrophic hangs; normal operation completes faster
-        calls_per_problem = 4
-        estimated_runtime = (len(sampled.contexts) / max_concurrent) * calls_per_problem * timeout
+        estimated_runtime = (len(sampled.contexts) / max_concurrent) * (2 * codegen_timeout + 2 * critic_timeout)
         subprocess_timeout = int(estimated_runtime * 1.5) + 600
 
         try:

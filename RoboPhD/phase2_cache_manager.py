@@ -29,7 +29,7 @@ class Phase2CacheManager:
         Initialize cache manager for a research run and specific agent.
 
         Args:
-            run_dir: Research run directory (e.g., research/robophd_20251111_141236)
+            run_dir: Research run directory (e.g., evolution/robophd_20251111_141236)
             agent_id: Agent identifier (e.g., "iter31_agent_name")
         """
         self.run_dir = Path(run_dir)

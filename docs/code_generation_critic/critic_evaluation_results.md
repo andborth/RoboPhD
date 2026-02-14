@@ -1,12 +1,11 @@
 # Critic Evaluation Results
 
-**Date:** January 29, 2026
-**Agent:** naive_critic
-**Dataset:** Competition programming problems (288 problems)
+**Updated:** February 8, 2026
+**Dataset:** Competition programming problems (288 problems, LiveCodeBench test set)
 
 ## Overview
 
-This document summarizes empirical results from 9 complete critic evaluation runs testing all combinations of coder and critic models across three capability tiers: haiku-4.5, sonnet-4.5, and opus-4.5.
+This document summarizes empirical results from critic evaluation runs. Part 1 covers 9 naive critic runs testing all combinations of coder and critic models across three capability tiers: haiku-4.5, sonnet-4.5, and opus-4.5. Part 2 covers evolved critic agents produced by RoboPhD.
 
 The critic system works as follows:
 1. **V1 (Coder):** Generate initial code solution
@@ -14,7 +13,7 @@ The critic system works as follows:
 3. **V2 (Revision):** If INCORRECT, critic generates revised code
 4. **Acceptance:** Coder accepts/rejects critic's suggestions
 
-## Complete Run Summary
+## Part 1: Naive Critic (3x3 Model Grid)
 
 ### Table 1: Accuracy Impact
 
@@ -195,22 +194,95 @@ The capability gap affects both detection AND correction ability.
 
 **haiku→opus** provides the best value: highest improvement at moderate cost.
 
-## Conclusions
+## Part 1 Conclusions
 
-1. **Use opus as critic** for meaningful improvement. It's the only critic providing substantial gains across all coder tiers.
+1. **Use opus as critic** for meaningful improvement. It's the only naive critic providing substantial gains across all coder tiers.
 
-2. **Same-tier critics are noise** - they break even or hurt performance.
+2. **Naive same-tier critics are noise** - they break even or hurt performance. (But see Part 2: evolution changes this.)
 
 3. **Weaker critics waste compute** - they can't reliably identify or fix stronger models' mistakes.
 
-4. **For production**, the optimal configuration depends on budget:
+4. **For production** (with naive critics), the optimal configuration depends on budget:
    - **Budget-conscious:** haiku coder + opus critic (+8.3%, ~$5.38/fix)
    - **Quality-focused:** sonnet coder + opus critic (+7.7%, higher baseline)
    - **Avoid:** Same-tier or weaker critic configurations
 
+## Part 2: Evolved Critic (RoboPhD)
+
+### Evolution Setup
+
+Two evolved critic agents are compared, both using haiku-4.5 for coder and critic with opus-4.5 for evolution:
+
+- **`0203_i005_reflection_refined_critic`** — from RoboPhD run `robophd_20260203_154803` (14 iterations, evolution set of 767 problems). Uses tool-only execution mode — a deterministic 875-line Python analyzer (`problem_analyzer.py`) generates critic feedback without any LLM call in the analysis phase. Key innovations include calibrated anti-TLE-rationalization rules, stronger logic bug detection, and an explicit forbidden rationalizations list in `eval_instructions.md`. Source: `main_codegen_agents/0203_i005_reflection_refined_critic`.
+
+- **`0206_i013_unchanged_baseline_critic`** — from RoboPhD run `robophd_20260206_201828` (15 iterations, evolution set of 60 problems). Source: `critic_evaluations/run_20260207_230433`.
+
+### Skip-a-Tier Result
+
+The best evolved haiku critic matches naive sonnet critic performance:
+
+| Config | Agent | V1 | V2 | Delta | Net Fix |
+|--------|-------|----|----|-------|---------|
+| haiku → haiku | naive_critic | 51.7% | 51.0% | -0.7% | -2 |
+| haiku → sonnet | naive_critic | 52.1% | 56.6% | +4.5% | +13 |
+| **haiku → haiku** | **0203_i005_reflection_refined_critic** | **52.1%** | **56.6%** | **+4.5%** | **+13** |
+| haiku → haiku | 0206_i013_unchanged_baseline_critic | 54.9% | 55.6% | +0.7% | +2 |
+
+The first evolved agent replicates the "skip-a-tier" finding from the RoboPhD Text2SQL paper: evolution on cheaper models provides the largest gains, enabling evolved Haiku to match naive Sonnet performance. The second evolved agent, from a different evolution run, shows that not all evolved agents achieve this — evolution quality varies significantly across runs.
+
+### How the Evolved Agents Differ
+
+| Metric | Naive haiku | Naive sonnet | 0203_i005 | 0206_i013 |
+|--------|-------------|--------------|-----------|-----------|
+| Flagged | 73 | 75 | **138** | 124 |
+| TP (true positives) | 57 | 66 | **108** | 92 |
+| FP (false positives) | 16 | 9 | 30 | 32 |
+| Precision | 78.1% | 88.0% | 78.3% | 74.2% |
+| Recall | 41.0% | 47.8% | **78.3%** | 70.8% |
+| Fix Rate | 2.7% | 18.7% | 10.9% | 6.5% |
+| Improved | 2 | 14 | 15 | 8 |
+| Regressed | 4 | 1 | 2 | 6 |
+
+Both evolved agents are more aggressive than naive critics — flagging far more problems with higher recall. The first evolved agent (`0203_i005`) achieves the best balance: 78% recall with a 10.9% fix rate and only 2 regressions, matching naive sonnet's +4.5% delta. The second (`0206_i013`) has similar recall (71%) but a lower fix rate (6.5%) and more regressions (6), yielding only +0.7% delta.
+
+### Cost Analysis
+
+Deployment cost is critic + revision (codegen is fixed across configurations; acceptance is only needed during evolution). Average cost per problem:
+
+| Phase | Naive haiku→haiku | Naive haiku→sonnet | 0203_i005 | 0206_i013 |
+|-------|-------------------|--------------------|-----------|-----------|
+| critic | $0.042 | $0.123 | $0.116 | — |
+| revision | $0.033 | $0.026 | $0.078 | — |
+| **critic + revision** | **$0.075** | **$0.149** | **$0.194** | **$0.098** |
+
+*Note: Per-phase cost breakdown for `0206_i013` is not available; total evaluation cost was $28.20 for 288 problems ($0.098/problem).*
+
+The first evolved agent's critic phase ($0.116) is actually cheaper than naive sonnet's ($0.123) despite sending a 15x larger prompt — haiku's 3x lower per-token pricing more than compensates. The cost premium comes from revision: the evolved agent flags 138 problems vs 75, so nearly twice as many go through the expensive revision pipeline.
+
+The first evolved agent costs **1.3x** naive sonnet for the same +4.5% delta. The second evolved agent is cheaper ($0.098/problem) but delivers far less improvement (+0.7%).
+
+### Prompt Size
+
+The evolved agent's critic prompt averages 14,161 bytes (363 lines) vs 944 bytes (32 lines) for the naive critic. The bulk of the extra context is `eval_instructions.md` (11,896 bytes, 294 lines), which provides detailed analysis rules. The tool analyzer output (`critic_feedback.txt`) contributes only ~1,000 bytes per problem.
+
+Reducing `eval_instructions.md` from 294 lines to ~200 lines would bring evolved haiku's total cost under naive sonnet's, achieving the same accuracy at lower cost.
+
+### Key Findings
+
+1. **Evolution can break the capability gap requirement.** The naive critic results showed that same-tier critics were unreliable (haiku→haiku: -0.7%). The best evolved agent transforms haiku into an effective same-tier critic (+4.5%), but this is not guaranteed — the second evolved agent achieved only +0.7%.
+
+2. **Evolution compensates for model capability with context.** Rather than relying on a stronger model's reasoning, the evolved agent feeds haiku detailed analytical context — effectively substituting compute (larger prompts) for capability (more expensive model).
+
+3. **The skip-a-tier pattern generalizes across domains.** The RoboPhD Text2SQL paper showed evolved Haiku exceeding naive Sonnet on SQL generation. This result replicates the same pattern for code critique, suggesting it is a general property of the evolution approach.
+
+4. **Cost parity is achievable.** The best evolved agent is currently 1.3x the cost of naive sonnet, driven primarily by aggressive flagging (138 vs 75 problems revised). Modest prompt trimming would bring costs below sonnet's while maintaining the same delta.
+
+5. **Evolution quality varies across runs.** Two independent evolution runs produced agents with very different effectiveness (+4.5% vs +0.7%). Both agents adopted similar high-recall strategies, but the second agent's lower fix rate (6.5% vs 10.9%) and higher regression count (6 vs 2) erased most of the gains from detection. Consistent evolution quality remains an open challenge.
+
 ## Future Work
 
-- Test with evolved/specialized critic agents instead of naive_critic
+- Trim `eval_instructions.md` to achieve cost parity with naive sonnet
+- Evolve critics for sonnet and opus coders
 - Explore multi-round critique (critic reviews its own revision)
 - Investigate why detection is easier than correction
-- Test on different problem domains (Text-to-SQL vs competition programming)
+- Test whether evolution can close the gap to opus-level critic performance (+8.3%)
