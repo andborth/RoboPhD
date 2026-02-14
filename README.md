@@ -26,12 +26,13 @@ The system uses ELO-based evolutionary selection to continuously improve agents 
 ## Quick Start
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/yourusername/RoboPhD.git
+# 1. Clone and install (requires conda)
+git clone https://github.com/andborth/RoboPhD.git
 cd RoboPhD
+./setup.sh
 
-# 2. Install dependencies
-pip install -r requirements.txt
+# 2. Activate environment
+conda activate robophd
 
 # 3. Set your API key
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"

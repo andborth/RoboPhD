@@ -1,0 +1,69 @@
+{
+  "comment": "CodeGen domain test with meta-evolution. Uses cross_pollination and refinement strategies, starts meta-evolution at iteration 4.",
+  "domain": "codegen",
+  "coder_model": "haiku-4.5",
+  "critic_model": "haiku-4.5",
+  "evolution_model": "opus-4.5",
+  "meta_evolution_model": "opus-4.5",
+  "meta_evolution_budget": 450.0,
+  "contexts_per_iteration": 60,
+  "agents_directory": "RoboPhD/codegen_agents",
+  "strategies_directory": "RoboPhD/evolution_strategies_codegen",
+  "initial_agents": [
+    "naive_critic"
+  ],
+  "initial_strategies": [
+    "cross_pollination_tool_only",
+    "refinement_tool_only"
+  ],
+  "config_schedule": {
+    "2": {
+      "evolution_strategy": "refinement_tool_only"
+    },
+    "3": {
+      "evolution_strategy": "cross_pollination_tool_only"
+    },
+    "4": {
+      "meta_evolution_strategy": "train_a_new_winner"
+    },
+    "5": {
+      "meta_evolution_strategy": null
+    },
+    "8": {
+      "meta_evolution_strategy": "train_a_new_winner"
+    },
+    "9": {
+      "meta_evolution_strategy": null
+    },
+    "12": {
+      "meta_evolution_strategy": "train_a_new_winner"
+    },
+    "13": {
+      "meta_evolution_strategy": null
+    },
+    "16": {
+      "meta_evolution_strategy": "train_a_new_winner"
+    },
+    "17": {
+      "meta_evolution_strategy": null
+    },
+    "20": {
+      "meta_evolution_strategy": "train_a_new_winner"
+    },
+    "21": {
+      "meta_evolution_strategy": null
+    },
+    "24": {
+      "meta_evolution_strategy": "train_a_new_winner"
+    },
+    "25": {
+      "meta_evolution_strategy": null
+    },
+    "28": {
+      "meta_evolution_strategy": "train_a_new_winner"
+    },
+    "29": {
+      "meta_evolution_strategy": null
+    }
+  }
+}

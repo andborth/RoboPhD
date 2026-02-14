@@ -783,6 +783,8 @@ class Text2SQLDomain(DomainInterface):
         phase1_cache_hits = 0
         phase1_cache_misses = 0
         phase1_failures = []
+        # Per-context cost tracking for cost report
+        costs_by_context: Dict[str, Dict[str, float]] = {}
         # Token-level tracking
         total_phase1_tokens_in = 0
         total_phase1_tokens_out = 0
@@ -913,6 +915,12 @@ class Text2SQLDomain(DomainInterface):
                     if result['error']:
                         phase1_failures.append(db_name)
 
+                    # Track per-context costs for cost report
+                    costs_by_context[db_name] = {
+                        'phase1': result['phase1_cost'],
+                        'phase2': result['phase2_cost'],
+                    }
+
                 except Exception as e:
                     self.logger.error(f"Failed to process database {db_name}: {e}")
                     # Add failed results for all questions in this database
@@ -948,5 +956,7 @@ class Text2SQLDomain(DomainInterface):
                 'phase1_tokens_out': total_phase1_tokens_out,
                 'phase1_cache_created': total_phase1_cache_created,
                 'phase1_cache_read': total_phase1_cache_read,
+                # Per-context cost breakdown for cost report
+                'costs_by_context': costs_by_context,
             }
         )

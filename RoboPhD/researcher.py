@@ -1594,7 +1594,7 @@ class ParallelAgentResearcher:
             contexts: List of context identifiers to test on
 
         Returns:
-            Tuple of (iteration_results, results_by_agent)
+            Tuple of (iteration_results, results_by_agent, costs_by_context)
         """
         from datetime import datetime
 
@@ -1640,6 +1640,7 @@ class ParallelAgentResearcher:
 
         # Track results for each agent
         results_by_agent: Dict[str, List[Dict]] = {agent_id: [] for agent_id in selected_agents}
+        costs_by_context: Dict[str, Dict[str, Dict[str, float]]] = {}  # {agent_id: {context: {'phase1': $, 'phase2': $}}}
         iteration_results: Dict[str, Dict] = {}
 
         # Process each agent (sequential - agents are few, ~2-4)
@@ -1751,6 +1752,10 @@ class ParallelAgentResearcher:
                     iteration_cost_dict['phase1_cache_created'] += metadata.get('phase1_cache_created', 0)
                     iteration_cost_dict['phase1_cache_read'] += metadata.get('phase1_cache_read', 0)
 
+                # Extract per-context costs from metadata for cost report
+                if metadata.get('costs_by_context'):
+                    costs_by_context[agent_id] = metadata['costs_by_context']
+
                 print(f"\n{agent_id}: {accuracy:.1f}% ({total_correct}/{total_questions})")
 
             except Exception as e:
@@ -1840,8 +1845,8 @@ class ParallelAgentResearcher:
         close_robophd_connections()
         close_eval_connections()
 
-        return iteration_results, results_by_agent
-    
+        return iteration_results, results_by_agent, costs_by_context
+
     @staticmethod
     def _calculate_elo_updates(current_elos: Dict[str, float], iteration_results: Dict, k: int = 32) -> Dict[str, float]:
         """
@@ -2839,7 +2844,7 @@ class ParallelAgentResearcher:
             iteration_start_cost = self.total_cost
             
             # Run iteration
-            iteration_results, results_by_agent = self.run_iteration(iteration, selected_agents, contexts)
+            iteration_results, results_by_agent, costs_by_context = self.run_iteration(iteration, selected_agents, contexts)
 
             # Calculate iteration metrics
             iteration_time = time.time() - iteration_start_time
@@ -2868,7 +2873,7 @@ class ParallelAgentResearcher:
             self.report_generator.generate_interim_report(start_time, iteration)
 
             # Generate cost analysis report
-            self._generate_iteration_cost_report(iteration, results_by_agent)
+            self._generate_iteration_cost_report(iteration, results_by_agent, costs_by_context)
 
             # Generate comparative error analysis
             self._generate_comparative_analysis(iteration)
@@ -3366,7 +3371,7 @@ class ParallelAgentResearcher:
 
         return False
 
-    def _generate_iteration_cost_report(self, iteration: int, results_by_agent: Dict):
+    def _generate_iteration_cost_report(self, iteration: int, results_by_agent: Dict, costs_by_context: Optional[Dict] = None):
         """
         Generate cost analysis report for this iteration.
 
@@ -3376,6 +3381,8 @@ class ParallelAgentResearcher:
         Args:
             iteration: Current iteration number
             results_by_agent: Dict mapping agent_id to list of result dicts
+            costs_by_context: Dict mapping agent_id to {context: {'phase1': $, 'phase2': $}}
+                              Used for hierarchical domains (Text2SQL) where costs are per-context
         """
         iteration_dir = self.experiment_dir / f"iteration_{iteration:03d}"
         if not iteration_dir.exists():
@@ -3396,29 +3403,43 @@ class ParallelAgentResearcher:
         all_databases = set()
         all_agents = sorted(results_by_agent.keys())
 
-        # Build cost matrix
+        # Build cost matrix - prefer costs_by_context (context-level) over results (question-level)
         cost_matrix = {}  # {db_name: {agent_id: {'phase1': $, 'phase2': $}}}
 
-        for agent_id, results in results_by_agent.items():
-            for result in results:
-                context_name = result['context']
-                all_databases.add(context_name)
+        for agent_id in all_agents:
+            if costs_by_context and agent_id in costs_by_context:
+                # Use context-level costs from metadata (for hierarchical domains like Text2SQL)
+                for context_name, costs in costs_by_context[agent_id].items():
+                    all_databases.add(context_name)
+                    if context_name not in cost_matrix:
+                        cost_matrix[context_name] = {}
 
-                if context_name not in cost_matrix:
-                    cost_matrix[context_name] = {}
+                    cost_matrix[context_name][agent_id] = {
+                        'phase1': costs.get('phase1', 0.0),
+                        'phase2': costs.get('phase2', 0.0),
+                        'total': costs.get('phase1', 0.0) + costs.get('phase2', 0.0)
+                    }
+            else:
+                # Fallback for flat domains (CodeGen) - use existing per-result approach
+                for result in results_by_agent.get(agent_id, []):
+                    context_name = result['context']
+                    all_databases.add(context_name)
 
-                # Get Phase 1 cost (Claude CLI for DB analysis)
-                phase1_cost_info = result.get('phase1_cost_info')
-                phase1_cost = phase1_cost_info.get('cost', 0.0) if phase1_cost_info else 0.0
+                    if context_name not in cost_matrix:
+                        cost_matrix[context_name] = {}
 
-                # Get Phase 2 cost (API for SQL generation)
-                phase2_cost = result.get('phase2_cost', 0.0)
+                    # Get Phase 1 cost (Claude CLI for DB analysis)
+                    phase1_cost_info = result.get('phase1_cost_info')
+                    phase1_cost = phase1_cost_info.get('cost', 0.0) if phase1_cost_info else 0.0
 
-                cost_matrix[context_name][agent_id] = {
-                    'phase1': phase1_cost,
-                    'phase2': phase2_cost,
-                    'total': phase1_cost + phase2_cost
-                }
+                    # Get Phase 2 cost (API for SQL generation)
+                    phase2_cost = result.get('phase2_cost', 0.0)
+
+                    cost_matrix[context_name][agent_id] = {
+                        'phase1': phase1_cost,
+                        'phase2': phase2_cost,
+                        'total': phase1_cost + phase2_cost
+                    }
 
         # Build Phase 2 cache stats matrix
         phase2_cache_matrix = {}  # {db_name: {agent_id: {'hits': N, 'misses': M}}}
