@@ -1,4 +1,4 @@
-# RoboPhD: Self-Improving Text-to-SQL Through Autonomous Agent Evolution
+# RoboPhD: Evolving AI Agents Without Human Domain Knowledge
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![arXiv](https://img.shields.io/badge/arXiv-2601.01126-b31b1b.svg)](https://arxiv.org/abs/2601.01126)
