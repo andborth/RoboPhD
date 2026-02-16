@@ -5,8 +5,8 @@ Orchestrates meta-evolution process that analyzes research system performance
 and creates new evolution strategies while adjusting configuration parameters.
 
 Architecture:
-- Single persistent Claude Code session across entire experiment
-- Four-phase execution: Planning → Validation → Implementation → Validation
+- Single Claude Code session per meta-evolution call
+- Three-phase execution: Planning & Implementation → Validation → Installation
 - Budget tracking across all phases (Phase 1 + Phase 2 + Evolution + Meta-evolution)
 - Automatic termination when budget exhausted
 """
@@ -101,12 +101,12 @@ class MetaEvolutionManager:
             'cache_read': 0
         }
 
-        # PHASE 1: Planning (Round 1)
-        logger.info("📋 Phase 1: Planning and reasoning...")
+        # PHASE 1: Planning and Implementation
+        logger.info("📋 Phase 1: Planning, reasoning, and implementation...")
         context = self._gather_context(iteration, config)
         strategy = self._load_meta_strategy(strategy_name)
 
-        cost_data = self._execute_round_1(
+        cost_data = self._execute_planning_and_implementation(
             strategy=strategy,
             context=context,
             iteration=iteration,
@@ -124,7 +124,7 @@ class MetaEvolutionManager:
             cost_data = self._prompt_for_correction(
                 iteration=iteration,
                 model=model,
-                error_message="reasoning.md is missing. Please create it as specified in Round 1 instructions.",
+                error_message="reasoning.md is missing. Please create it as specified in Step 1.",
                 session_id=session_id,
                 working_dir=iteration_output
             )
@@ -132,22 +132,12 @@ class MetaEvolutionManager:
 
             # Re-check after correction
             if not reasoning_path.exists():
-                raise RuntimeError("Phase 1 failed to create reasoning.md even after correction attempt")
+                raise RuntimeError("Planning failed to create reasoning.md even after correction attempt")
 
         logger.info(f"✓ reasoning.md created ({reasoning_path.stat().st_size} bytes)")
 
-        # PHASE 3: Implementation (Round 2)
-        logger.info("🔨 Phase 3: Creating strategies and configuration...")
-        cost_data = self._execute_round_2(
-            iteration=iteration,
-            iteration_output=iteration_output,
-            model=model,
-            session_id=session_id
-        )
-        self._accumulate_costs(total_cost_data, cost_data)
-
-        # PHASE 4: Validation and installation
-        logger.info("✅ Phase 4: Validating and installing outputs...")
+        # PHASE 3: Validation and installation
+        logger.info("✅ Phase 3: Validating and installing outputs...")
         meta_config_schedule = self._parse_and_validate_outputs(
             iteration=iteration,
             model=model,
@@ -156,17 +146,15 @@ class MetaEvolutionManager:
             working_dir=iteration_output
         )
 
-        # PHASE 5: Champion viability assessment (optional)
-        if config.get('enable_champion_viability_assessment', False):
-            logger.info("🤔 Phase 5: Assessing champion viability...")
-            cost_data = self._assess_champion_viability(
-                iteration=iteration,
-                model=model,
-                session_id=session_id,
-                working_dir=iteration_output,
-                total_cost_data=total_cost_data
-            )
-            self._accumulate_costs(total_cost_data, cost_data)
+        # PHASE 4: Reflection
+        logger.info("💭 Phase 4: Requesting meta-evolution reflection...")
+        cost_data = self._request_reflection(
+            iteration=iteration,
+            model=model,
+            session_id=session_id,
+            working_dir=iteration_output,
+        )
+        self._accumulate_costs(total_cost_data, cost_data)
 
         logger.info(f"\n{'=' * 60}")
         logger.info(f"✓ Meta-evolution complete for iteration {iteration}")
@@ -604,7 +592,7 @@ Remember:
             session_created=True  # Always a continuation when correcting
         )
 
-    def _execute_round_1(
+    def _execute_planning_and_implementation(
         self,
         strategy: str,
         context: Dict,
@@ -614,18 +602,22 @@ Remember:
         session_id: str
     ) -> Dict[str, Any]:
         """
-        Execute Round 1: Planning and reasoning.
+        Execute planning and implementation in a single round.
 
-        With fresh sessions, always includes full strategy text since every
-        session starts from scratch with no prior context.
+        Sends full context, asks Claude to create reasoning.md with analysis,
+        then implement new strategies and configuration changes.
 
         Args:
+            strategy: Meta-evolution strategy text
+            context: Gathered context (rankings, reports, budget)
+            iteration: Current iteration number
+            iteration_output: Output directory for this iteration
+            model: Model to use
             session_id: Session ID for this meta-evolution call
 
         Returns:
             Cost data dictionary
         """
-        # Always include full strategy text for fresh sessions
         budget_info = self._format_budget_status(context["budget"], iteration)
         strategy_with_budget = strategy.replace(
             "**Budget Status**:",
@@ -633,10 +625,6 @@ Remember:
         )
 
         prompt = f"""
-## Performance Rankings Across All Iterations
-
-{context['ranking_table']}
-
 {strategy_with_budget}
 
 ## Current State (Iteration {iteration})
@@ -685,19 +673,11 @@ In your `reasoning.md`, be specific:
   - Consider: specialized error analysis, state tracking across iterations
 - **Expected Benefits**: Why this will improve evolution outcomes
 
-### Implementation Details (for Round 2)
+## Your Task
 
-If you decide to create new strategies, in Round 2 you will put them in:
-`new_strategies/strategy_name/`
+Complete both steps below.
 
-- Put ALL new strategies in the `new_strategies/` directory
-- Each subdirectory under `new_strategies/` represents one strategy
-- Each strategy needs: `strategy.md` with YAML frontmatter (name, description fields)
-- Optional: `strategy_tools/` directory with Python/shell scripts
-- You can create 0, 1, or multiple strategies
-- Review `../../evolution_strategies/` for examples and patterns
-
-## Your Task - Round 1: Planning and Reasoning
+### Step 1: Planning and Reasoning
 
 Analyze the system's evolution performance and document your reasoning.
 
@@ -712,42 +692,9 @@ Include:
    - Configuration changes to make
    - Expected impact and rationale
 
-**Do not create strategy files or meta_config_schedule.json yet** - this round is for planning only.
-"""
+### Step 2: Implementation
 
-        # First call in this meta-evolution session
-        return self._call_claude_code(
-            prompt=prompt,
-            model=model,
-            session_id=session_id,
-            working_dir=iteration_output,
-            session_created=False  # First call
-        )
-
-    def _execute_round_2(
-        self,
-        iteration: int,
-        iteration_output: Path,
-        model: str,
-        session_id: str
-    ) -> Dict[str, Any]:
-        """
-        Execute Round 2: Implementation.
-
-        Args:
-            session_id: Session ID for this meta-evolution call
-
-        Returns:
-            Cost data dictionary
-        """
-        prompt = f"""
-## Meta-Evolution Implementation - Iteration {iteration} (Round 2)
-
-You previously created reasoning.md with your analysis and proposed actions.
-
-## Your Task - Round 2: Implementation
-
-Implement the plan from reasoning.md:
+Implement the plan from your reasoning.md:
 
 1. **New Evolution Strategies** (if proposed): Create strategy packages in:
    `new_strategies/strategy_name/`
@@ -809,20 +756,20 @@ Framework will:
 - Integrate meta_config_schedule via ConfigManager
 """
 
-        # Resume session from Round 1
+        # Single call for planning and implementation
         return self._call_claude_code(
             prompt=prompt,
             model=model,
             session_id=session_id,
             working_dir=iteration_output,
-            session_created=True  # Continuation from Round 1
+            session_created=False  # First call
         )
 
     def _gather_context(self, iteration: int, config: Dict[str, Any]) -> Dict:
         """
         Gather information for meta-evolution analysis.
 
-        Returns dictionary with interim reports, ranking table, and budget.
+        Returns dictionary with interim reports and budget.
         """
         # Get budget information
         budget = config.get("meta_evolution_budget")
@@ -853,20 +800,6 @@ Framework will:
                 break
 
         context["interim_reports"] = [latest_report] if latest_report else []
-
-        # Generate performance rankings table
-        checkpoint = self._load_checkpoint()
-        if checkpoint:
-            from RoboPhD.ranking_table import generate_ranking_table
-
-            ranking_table = generate_ranking_table(
-                test_history=checkpoint.get('test_history', []),
-                performance_records=checkpoint.get('performance_records', {}),
-                for_evolution=True  # Use simplified format like regular evolution
-            )
-            context["ranking_table"] = ranking_table
-        else:
-            context["ranking_table"] = "(No performance data available yet)"
 
         return context
 
@@ -1438,201 +1371,71 @@ This report is cumulative and includes performance data across all iterations.""
 
         return meta_config_schedule
 
-    def _assess_champion_viability(
+    def _request_reflection(
         self,
         iteration: int,
         model: str,
         session_id: str,
         working_dir: Path,
-        total_cost_data: Dict
     ) -> Dict[str, Any]:
         """
-        Query meta-evolution agent about champion viability for early termination.
+        Request reflection from Claude about meta-evolution process.
 
-        This is a self-assessment where meta-evolution evaluates its own proposed
-        changes - asking: "Will the changes YOU just made help beat the current champion?"
+        Asks Claude to provide advice for future meta-evolution sessions based on
+        the completed work. This reflection captures insights about what worked,
+        what didn't, and suggestions for process improvement.
+
+        The reflection is saved to meta_evolution_reflection.md.
 
         Args:
             iteration: Current iteration number
-            model: Model to use for the query
+            model: Model to use for the reflection
             session_id: Session ID for this meta-evolution call
             working_dir: Working directory for Claude Code
-            total_cost_data: Cost accumulator (updated if corrections needed)
 
         Returns:
             Cost data dictionary
 
-        Raises:
-            RuntimeError: If validation fails after retry
+        Note:
+            Errors are logged but do not raise exceptions - reflection should
+            never break the research run.
         """
-        # Get current champion info from checkpoint
-        checkpoint = self._load_checkpoint()
-        performance_records = checkpoint.get('performance_records', {})
+        prompt = """Thanks for your help with this project. Looking back at the entire process so far, is there advice you could offer to future instances working on this task?
 
-        if not performance_records:
-            logger.warning("No performance records available for champion assessment")
-            # Create empty assessment file and return
-            assessment_path = working_dir / "champion_viability_assessment.md"
-            assessment_path.write_text(
-                "# Champion Viability Assessment\n\n"
-                "(No performance records available yet)\n"
-            )
-            return {'total_cost': 0.0, 'calls': 0}
+This might lead to changes in the prompt which will make future meta-evolution sessions more efficient or help them better achieve their objectives.
 
-        # Find current ELO leader
-        champion = max(performance_records.keys(),
-                      key=lambda a: performance_records[a]['elo'])
-        champion_elo = performance_records[champion]['elo']
-        champion_accuracy = performance_records[champion]['mean_accuracy']
+Please consider:
+- What approaches worked well?
+- What was challenging or time-consuming?
+- Were the provided tools helpful? Did you encounter difficulties using them?
+- Is any tool missing that would have helped? This could either be a script you wish you had or a library that you wish was installed.
+- What would you do differently?
+- Any suggestions for improving the instructions you were given?
 
-        prompt = f"""## Champion Viability Assessment - Iteration {iteration}
+**Keep your reflection concise - 300 lines or less.**
 
-You have just completed meta-evolution for iteration {iteration}. You analyzed the system's
-performance and created `meta_config_schedule.json` with proposed configuration changes.
+Save your reflection to a file called `meta_evolution_reflection.md`.
 
-**Current Champion**: {champion}
-- ELO Score: {champion_elo:.0f}
-- Mean Accuracy: {champion_accuracy:.1f}%
-
-**Your Configuration Changes**: See `meta_config_schedule.json`
-
-## Self-Assessment Question
-
-This is a self-assessment of YOUR OWN WORK. You just proposed changes in `meta_config_schedule.json`.
-
-**Question**: Do you think it is likely that in the next four iterations we will produce an
-agent which would be able to exceed the current champion in ELO if they were repeatedly tested
-head to head over many iterations, or do you think it more likely that the current champion
-would win?
-
-Consider:
-1. The configuration changes YOU just proposed
-2. Recent evolution trends and strategy effectiveness
-3. Whether the champion's approach has been thoroughly explored
-4. Potential for breakthrough innovations with your proposed changes
-
-Please provide your analysis and prediction.
-
-Save your assessment to: `champion_viability_assessment.md`
-
-Include:
-1. **Analysis** (2-3 paragraphs):
-   - Assessment of your proposed changes
-   - Recent trends in agent evolution
-   - Champion's strengths and potential vulnerabilities
-   - Likelihood of breakthrough innovations
-
-2. **Prediction** (must include EXACTLY ONE of these phrases):
-   - "A NEW AGENT MORE LIKELY TO WIN" - if you believe your changes will likely produce a superior agent
-   - "CURRENT CHAMPION MORE LIKELY TO DEFEAT ALL NEW AGENTS" - if you believe the champion would likely remain dominant
-
-After saving, respond with: "ASSESSMENT COMPLETE"
+After saving the reflection, respond with: "REFLECTION COMPLETE"
 """
 
-        # Resume existing session for this query
-        cost_data = self._call_claude_code(
-            prompt=prompt,
-            model=model,
-            session_id=session_id,
-            working_dir=working_dir,
-            session_created=True  # Continuation
-        )
-
-        # Validate the assessment
-        assessment_path = working_dir / "champion_viability_assessment.md"
-
-        # Check 1: File exists
-        if not assessment_path.exists():
-            logger.warning("⚠️  champion_viability_assessment.md not found, prompting for correction...")
-            correction_cost = self._prompt_for_correction(
-                iteration=iteration,
+        try:
+            cost_data = self._call_claude_code(
+                prompt=prompt,
                 model=model,
-                error_message=(
-                    "champion_viability_assessment.md is missing. Please create it with:\n"
-                    "1. Analysis section (2-3 paragraphs)\n"
-                    "2. Prediction with EXACTLY ONE of: 'A NEW AGENT MORE LIKELY TO WIN' or 'CURRENT CHAMPION MORE LIKELY TO DEFEAT ALL NEW AGENTS'"
-                ),
                 session_id=session_id,
-                working_dir=working_dir
+                working_dir=working_dir,
+                session_created=True  # Continuation
             )
-            self._accumulate_costs(total_cost_data, correction_cost)
 
-            # Re-check after correction
-            if not assessment_path.exists():
-                raise RuntimeError(
-                    "champion_viability_assessment.md still missing after correction attempt"
-                )
+            reflection_file = working_dir / "meta_evolution_reflection.md"
+            if reflection_file.exists():
+                logger.info(f"✓ Meta-evolution reflection saved: {reflection_file.name}")
+            else:
+                logger.warning("Reflection completed but meta_evolution_reflection.md not found")
 
-        # Check 2: File contains required prediction
-        assessment_text = assessment_path.read_text()
-        has_new_agent = "A NEW AGENT MORE LIKELY TO WIN" in assessment_text
-        has_champion = "CURRENT CHAMPION MORE LIKELY TO DEFEAT ALL NEW AGENTS" in assessment_text
+            return cost_data
 
-        if not (has_new_agent or has_champion):
-            logger.warning("⚠️  Assessment missing required prediction, prompting for correction...")
-            correction_cost = self._prompt_for_correction(
-                iteration=iteration,
-                model=model,
-                error_message=(
-                    "champion_viability_assessment.md is missing the required prediction.\n"
-                    "You must include EXACTLY ONE of these phrases:\n"
-                    "  - 'A NEW AGENT MORE LIKELY TO WIN'\n"
-                    "  - 'CURRENT CHAMPION MORE LIKELY TO DEFEAT ALL NEW AGENTS'\n\n"
-                    "Please update the file to include your prediction."
-                ),
-                session_id=session_id,
-                working_dir=working_dir
-            )
-            self._accumulate_costs(total_cost_data, correction_cost)
-
-            # Re-check after correction
-            assessment_text = assessment_path.read_text()
-            has_new_agent = "A NEW AGENT MORE LIKELY TO WIN" in assessment_text
-            has_champion = "CURRENT CHAMPION MORE LIKELY TO DEFEAT ALL NEW AGENTS" in assessment_text
-
-            if not (has_new_agent or has_champion):
-                raise RuntimeError(
-                    "champion_viability_assessment.md still missing required prediction after correction. "
-                    "Must include 'A NEW AGENT MORE LIKELY TO WIN' or 'CURRENT CHAMPION MORE LIKELY TO DEFEAT ALL NEW AGENTS'."
-                )
-
-        # Check 3: File contains both predictions (ambiguous)
-        if has_new_agent and has_champion:
-            logger.warning("⚠️  Assessment contains both predictions (ambiguous), prompting for correction...")
-            correction_cost = self._prompt_for_correction(
-                iteration=iteration,
-                model=model,
-                error_message=(
-                    "champion_viability_assessment.md contains BOTH predictions, making it ambiguous.\n"
-                    "You must include EXACTLY ONE of:\n"
-                    "  - 'A NEW AGENT MORE LIKELY TO WIN'\n"
-                    "  - 'CURRENT CHAMPION MORE LIKELY TO DEFEAT ALL NEW AGENTS'\n\n"
-                    "Please update to include only your final prediction."
-                ),
-                session_id=session_id,
-                working_dir=working_dir
-            )
-            self._accumulate_costs(total_cost_data, correction_cost)
-
-            # Re-check after correction
-            assessment_text = assessment_path.read_text()
-            has_new_agent = "A NEW AGENT MORE LIKELY TO WIN" in assessment_text
-            has_champion = "CURRENT CHAMPION MORE LIKELY TO DEFEAT ALL NEW AGENTS" in assessment_text
-
-            if has_new_agent and has_champion:
-                raise RuntimeError(
-                    "champion_viability_assessment.md still contains both predictions after correction. "
-                    "Must include EXACTLY ONE of: 'A NEW AGENT MORE LIKELY TO WIN' or 'CURRENT CHAMPION MORE LIKELY TO DEFEAT ALL NEW AGENTS'."
-                )
-            if not (has_new_agent or has_champion):
-                raise RuntimeError(
-                    "champion_viability_assessment.md missing prediction after correction. "
-                    "Must include EXACTLY ONE of: 'A NEW AGENT MORE LIKELY TO WIN' or 'CURRENT CHAMPION MORE LIKELY TO DEFEAT ALL NEW AGENTS'."
-                )
-
-        # Validation passed
-        prediction = "A NEW AGENT MORE LIKELY TO WIN" if has_new_agent else "CURRENT CHAMPION MORE LIKELY TO DEFEAT ALL NEW AGENTS"
-        logger.info(f"✓ Champion viability assessment complete: {prediction}")
-        logger.info(f"  Assessment saved: {assessment_path.name}")
-
-        return cost_data
+        except Exception as e:
+            logger.warning(f"Failed to request meta-evolution reflection: {e}")
+            return {'total_cost': 0.0, 'calls': 0}

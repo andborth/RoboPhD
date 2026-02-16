@@ -673,8 +673,7 @@ class ReportGenerator:
 
             # Calculate phase averages for fixed phases
             avg_error_analyzer = sum(t.get('error_analyzer', 0) for t in evolution_timings) / num_evolutions
-            avg_planning = sum(t.get('planning', 0) for t in evolution_timings) / num_evolutions
-            avg_implementation = sum(t.get('implementation', 0) for t in evolution_timings) / num_evolutions
+            avg_first_draft = sum(t.get('first_draft', 0) for t in evolution_timings) / num_evolutions
 
             # Dynamically calculate test round averages (excluding zeros for optional phases)
             test_round_averages = {}
@@ -690,13 +689,12 @@ class ReportGenerator:
             avg_reflection = sum(reflection_values) / len(reflection_values) if reflection_values else 0
 
             # Recalculate total evolution time including all dynamic test rounds and reflection
-            avg_evo_time = (avg_error_analyzer + avg_planning + avg_implementation +
+            avg_evo_time = (avg_error_analyzer + avg_first_draft +
                            sum(test_round_averages.values()) + avg_reflection)
 
             # Calculate percentages of total evolution time
             pct_error_analyzer = (avg_error_analyzer / avg_evo_time * 100) if avg_evo_time > 0 else 0
-            pct_planning = (avg_planning / avg_evo_time * 100) if avg_evo_time > 0 else 0
-            pct_implementation = (avg_implementation / avg_evo_time * 100) if avg_evo_time > 0 else 0
+            pct_first_draft = (avg_first_draft / avg_evo_time * 100) if avg_evo_time > 0 else 0
             pct_reflection = (avg_reflection / avg_evo_time * 100) if avg_evo_time > 0 else 0
 
             # Calculate percentages for each test round
@@ -714,14 +712,13 @@ class ReportGenerator:
             report_lines.append("| Phase | Avg Time | % of Evolution |")
             report_lines.append("|-------|----------|----------------|")
             report_lines.append(f"| Error Analyzer | {avg_error_analyzer/60:.1f}m | {pct_error_analyzer:.1f}% |")
-            report_lines.append(f"| Planning (Round 1) | {avg_planning/60:.1f}m | {pct_planning:.1f}% |")
-            report_lines.append(f"| Implementation (Round 2) | {avg_implementation/60:.1f}m | {pct_implementation:.1f}% |")
+            report_lines.append(f"| First Draft (Round 1) | {avg_first_draft/60:.1f}m | {pct_first_draft:.1f}% |")
 
             # Dynamic test round rows
             for i, key in enumerate(sorted(test_round_averages.keys()), start=1):
                 avg_time = test_round_averages[key]
                 pct = test_round_percentages[key]
-                round_num = i + 2  # Rounds start at 3 (after planning=1, implementation=2)
+                round_num = i + 1  # Rounds start at 2 (after first_draft=1)
                 report_lines.append(f"| Test & Refine {i} (Round {round_num})* | {avg_time/60:.1f}m | {pct:.1f}% |")
 
             # Reflection row (always shown now that we track it)
@@ -941,8 +938,8 @@ class ReportGenerator:
             phase1_short = domain.phase1_short_label if domain else "DB"
             phase2_short = solution if domain else "SQL"  # "SQL" or "code"
             report_lines.append("\n### Detailed Per-Iteration Costs\n")
-            report_lines.append(f"| Iter | Total | **{phase1_display}** | P1 | Test {phase1_short} | **{phase2_short.title()} Gen** | P2 | Test {phase2_short.title()} | **Evolution** | Plan | Impl | Test Evo | Refl | Meta | Strategy | Meta-strategy |")
-            report_lines.append("|------|-------|-----------------|----|---------|-----------|----|----------|---------------|------|------|----------|------|------|----------|---------------|")
+            report_lines.append(f"| Iter | Total | **{phase1_display}** | P1 | Test {phase1_short} | **{phase2_short.title()} Gen** | P2 | Test {phase2_short.title()} | **Evolution** | 1st Draft | Test Evo | Refl | Meta | Strategy | Meta-strategy |")
+            report_lines.append("|------|-------|-----------------|----|---------|-----------|----|----------|---------------|-----------|----------|------|------|----------|---------------|")
 
             # Accumulators for totals
             totals = {
@@ -954,8 +951,7 @@ class ReportGenerator:
                 'phase2_base': 0.0,
                 'test_sql': 0.0,
                 'total_evolution': 0.0,
-                'planning': 0.0,
-                'implementation': 0.0,
+                'first_draft': 0.0,
                 'test_evo': 0.0,
                 'reflection': 0.0,
                 'meta_evolution': 0.0
@@ -998,29 +994,27 @@ class ReportGenerator:
                 test_db = 0.0
                 test_sql = 0.0
                 test_evo = 0.0
-                planning = 0.0
-                implementation = 0.0
+                first_draft = 0.0
                 reflection = 0.0
 
                 if evolution_breakdown:
-                    # Planning and Implementation
-                    planning = (evolution_breakdown or {}).get('planning', {}).get('cost', 0.0)
-                    implementation = (evolution_breakdown or {}).get('implementation', {}).get('cost', 0.0)
+                    # First Draft (Round 1)
+                    first_draft = evolution_breakdown.get('first_draft', {}).get('cost', 0.0)
 
-                    # Test & Refine 1 (Round 3)
-                    test_refine_1 = (evolution_breakdown or {}).get('test_refine_1', {})
+                    # Test & Refine 1 (Round 2)
+                    test_refine_1 = evolution_breakdown.get('test_refine_1', {})
                     test_db += test_refine_1.get('phase1', {}).get('cost', 0.0)
                     test_sql += test_refine_1.get('phase2', {}).get('cost', 0.0)
                     test_evo += test_refine_1.get('evolution', {}).get('cost', 0.0)
 
-                    # Test & Refine 2 (Round 4)
-                    test_refine_2 = (evolution_breakdown or {}).get('test_refine_2', {})
+                    # Test & Refine 2 (Round 3)
+                    test_refine_2 = evolution_breakdown.get('test_refine_2', {})
                     test_db += test_refine_2.get('phase1', {}).get('cost', 0.0)
                     test_sql += test_refine_2.get('phase2', {}).get('cost', 0.0)
                     test_evo += test_refine_2.get('evolution', {}).get('cost', 0.0)
 
                     # Reflection
-                    reflection = (evolution_breakdown or {}).get('reflection', {}).get('cost', 0.0)
+                    reflection = evolution_breakdown.get('reflection', {}).get('cost', 0.0)
 
                 # Get meta-evolution cost
                 meta_evolution_cost = cost_dict.get('meta_evolution_cost', 0.0)
@@ -1028,7 +1022,7 @@ class ReportGenerator:
                 # Calculate subtotals
                 total_db_analysis = phase1_base + test_db
                 total_sql_gen = phase2_base + test_sql
-                total_evolution = planning + implementation + test_evo + reflection
+                total_evolution = first_draft + test_evo + reflection
                 total_cost = total_db_analysis + total_sql_gen + total_evolution + meta_evolution_cost
 
                 # Accumulate totals
@@ -1040,8 +1034,7 @@ class ReportGenerator:
                 totals['phase2_base'] += phase2_base
                 totals['test_sql'] += test_sql
                 totals['total_evolution'] += total_evolution
-                totals['planning'] += planning
-                totals['implementation'] += implementation
+                totals['first_draft'] += first_draft
                 totals['test_evo'] += test_evo
                 totals['reflection'] += reflection
                 totals['meta_evolution'] += meta_evolution_cost
@@ -1055,19 +1048,19 @@ class ReportGenerator:
                     f"| **{iter_num}** | ${total_cost:.2f} | "
                     f"**{fmt(total_db_analysis)}** | {fmt(phase1_base)} | {fmt(test_db)} | "
                     f"**{fmt(total_sql_gen)}** | {fmt(phase2_base)} | {fmt(test_sql)} | "
-                    f"**{fmt(total_evolution)}** | {fmt(planning)} | {fmt(implementation)} | {fmt(test_evo)} | {fmt(reflection)} | "
+                    f"**{fmt(total_evolution)}** | {fmt(first_draft)} | {fmt(test_evo)} | {fmt(reflection)} | "
                     f"{fmt(meta_evolution_cost)} | "
                     f"{strategy_display} | {meta_strategy_display} |"
                 )
 
             # Add separator and totals row
             num_iterations = len(self.researcher.iteration_claude_costs)
-            report_lines.append("|------|-------|-----------------|----|---------|-----------|----|----------|---------------|------|------|----------|------|------|----------|---------------|")
+            report_lines.append("|------|-------|-----------------|----|---------|-----------|----|----------|---------------|-----------|----------|------|------|----------|---------------|")
             report_lines.append(
                 f"| **TOTAL** | **${totals['total_cost']:.2f}** | "
                 f"**${totals['total_db_analysis']:.2f}** | ${totals['phase1_base']:.2f} | ${totals['test_db']:.2f} | "
                 f"**${totals['total_sql_gen']:.2f}** | ${totals['phase2_base']:.2f} | ${totals['test_sql']:.2f} | "
-                f"**${totals['total_evolution']:.2f}** | ${totals['planning']:.2f} | ${totals['implementation']:.2f} | ${totals['test_evo']:.2f} | ${totals['reflection']:.2f} | "
+                f"**${totals['total_evolution']:.2f}** | ${totals['first_draft']:.2f} | ${totals['test_evo']:.2f} | ${totals['reflection']:.2f} | "
                 f"${totals['meta_evolution']:.2f} | "
                 f"- | - |"
             )
@@ -1082,13 +1075,8 @@ class ReportGenerator:
                 num_evolutions_with_cost = sum(1 for ic in self.researcher.iteration_claude_costs if ic.get('evolution_breakdown'))
 
                 if num_evolutions_with_cost > 0:
-                    avg_planning_cost = sum(
-                        (ic.get('evolution_breakdown') or {}).get('planning', {}).get('cost', 0.0)
-                        for ic in self.researcher.iteration_claude_costs
-                    ) / num_evolutions_with_cost
-
-                    avg_implementation_cost = sum(
-                        (ic.get('evolution_breakdown') or {}).get('implementation', {}).get('cost', 0.0)
+                    avg_first_draft_cost = sum(
+                        (ic.get('evolution_breakdown') or {}).get('first_draft', {}).get('cost', 0.0)
                         for ic in self.researcher.iteration_claude_costs
                     ) / num_evolutions_with_cost
 
@@ -1121,13 +1109,8 @@ class ReportGenerator:
                     avg_total_evo_cost = total_evolution_cost / num_evolutions_with_cost
 
                     # Tokens
-                    avg_planning_tokens_in = sum(
-                        (ic.get('evolution_breakdown') or {}).get('planning', {}).get('tokens_in', 0)
-                        for ic in self.researcher.iteration_claude_costs
-                    ) / num_evolutions_with_cost
-
-                    avg_implementation_tokens_in = sum(
-                        (ic.get('evolution_breakdown') or {}).get('implementation', {}).get('tokens_in', 0)
+                    avg_first_draft_tokens_in = sum(
+                        (ic.get('evolution_breakdown') or {}).get('first_draft', {}).get('tokens_in', 0)
                         for ic in self.researcher.iteration_claude_costs
                     ) / num_evolutions_with_cost
 
@@ -1148,13 +1131,8 @@ class ReportGenerator:
                             for ic in self.researcher.iteration_claude_costs
                         ) / num_evolutions_with_cost
 
-                    avg_planning_tokens_out = sum(
-                        (ic.get('evolution_breakdown') or {}).get('planning', {}).get('tokens_out', 0)
-                        for ic in self.researcher.iteration_claude_costs
-                    ) / num_evolutions_with_cost
-
-                    avg_implementation_tokens_out = sum(
-                        (ic.get('evolution_breakdown') or {}).get('implementation', {}).get('tokens_out', 0)
+                    avg_first_draft_tokens_out = sum(
+                        (ic.get('evolution_breakdown') or {}).get('first_draft', {}).get('tokens_out', 0)
                         for ic in self.researcher.iteration_claude_costs
                     ) / num_evolutions_with_cost
 
@@ -1192,8 +1170,7 @@ class ReportGenerator:
                     ) / num_evolutions_with_cost
 
                     # Percentages
-                    pct_planning = (avg_planning_cost / avg_total_evo_cost * 100) if avg_total_evo_cost > 0 else 0
-                    pct_implementation = (avg_implementation_cost / avg_total_evo_cost * 100) if avg_total_evo_cost > 0 else 0
+                    pct_first_draft = (avg_first_draft_cost / avg_total_evo_cost * 100) if avg_total_evo_cost > 0 else 0
                     pct_reflection = (avg_reflection_cost / avg_total_evo_cost * 100) if avg_total_evo_cost > 0 else 0
 
                     # Calculate percentages for each test round
@@ -1203,18 +1180,14 @@ class ReportGenerator:
                         test_round_stats[key]['pct_evolution'] = (test_round_stats[key]['evolution_cost'] / test_round_stats[key]['cost'] * 100) if test_round_stats[key]['cost'] > 0 else 0
 
                     report_lines.append(
-                        f"| Planning (Round 1) | ${avg_planning_cost:.2f} | {pct_planning:.1f}% | "
-                        f"{avg_planning_tokens_in:.0f} | {avg_planning_tokens_out:.0f} |"
-                    )
-                    report_lines.append(
-                        f"| Implementation (Round 2) | ${avg_implementation_cost:.2f} | {pct_implementation:.1f}% | "
-                        f"{avg_implementation_tokens_in:.0f} | {avg_implementation_tokens_out:.0f} |"
+                        f"| First Draft (Round 1) | ${avg_first_draft_cost:.2f} | {pct_first_draft:.1f}% | "
+                        f"{avg_first_draft_tokens_in:.0f} | {avg_first_draft_tokens_out:.0f} |"
                     )
 
                     # Dynamic test round rows
                     for i, key in enumerate(sorted(test_round_keys), start=1):
                         stats = test_round_stats[key]
-                        round_num = i + 2  # Rounds start at 3 (after planning=1, implementation=2)
+                        round_num = i + 1  # Rounds start at 2 (after first_draft=1)
 
                         # Total row
                         report_lines.append(
@@ -1244,8 +1217,8 @@ class ReportGenerator:
                         )
 
                     # Calculate total tokens (dynamically including all test rounds)
-                    total_tokens_in = avg_planning_tokens_in + avg_implementation_tokens_in + avg_reflection_tokens_in
-                    total_tokens_out = avg_planning_tokens_out + avg_implementation_tokens_out + avg_reflection_tokens_out
+                    total_tokens_in = avg_first_draft_tokens_in + avg_reflection_tokens_in
+                    total_tokens_out = avg_first_draft_tokens_out + avg_reflection_tokens_out
                     for stats in test_round_stats.values():
                         total_tokens_in += stats['tokens_in']
                         total_tokens_out += stats['tokens_out']

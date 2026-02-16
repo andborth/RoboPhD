@@ -2,10 +2,8 @@
 Deep Focus Evolution Manager for RoboPhD Phase 2.
 
 Orchestrates multi-round agent evolution within a single Claude Code session:
-- Error Analyzer (optional): Analyzes errors from previous iteration
-- Round 1: Strategy-guided analysis and planning (reasoning.md)
-- Round 2: Implementation of agent artifacts (agent.md, eval_instructions.md, tools/)
-- Rounds 3+: Test against prior iterations and refine based on performance
+- Round 1: Strategy-guided analysis, planning, and implementation (reasoning.md + artifacts)
+- Rounds 2+: Test against prior iterations and refine based on performance
 
 Each round uses explicit session ID management (--session-id and --resume) to maintain
 context while preventing interference from concurrent Claude Code sessions.
@@ -49,10 +47,8 @@ class DeepFocusEvolutionManager:
     Manages multi-round Deep Focus evolution process.
 
     Architecture:
-    - Error Analyzer (optional): Analyze previous iteration errors
-    - Round 1: Planning (reasoning.md) - strategy-guided
-    - Round 2: Implementation (artifacts) - data-driven
-    - Rounds 3+: Test and refine loop - data-driven
+    - Round 1: Analysis, planning, and implementation (reasoning.md + artifacts) - strategy-guided
+    - Rounds 2+: Test and refine loop - data-driven
 
     Each round maintains context via explicit session ID management
     (--session-id for first call, --resume for subsequent calls).
@@ -78,9 +74,9 @@ class DeepFocusEvolutionManager:
 
         Args:
             test_rounds: Number of prior iterations to test against (default 2)
-                        0 = Rounds 1 & 2 only (no testing)
-                        1 = Rounds 1, 2, 3 (test against 1 iteration)
-                        2 = Rounds 1, 2, 3, 4 (test against 2 iterations) [DEFAULT]
+                        0 = Round 1 only (no testing)
+                        1 = Rounds 1, 2 (test against 1 iteration)
+                        2 = Rounds 1, 2, 3 (test against 2 iterations) [DEFAULT]
             evolution_model: Model for evolution/planning (default opus-4.5)
             eval_model: Model for SQL generation (default haiku-4.5)
             analysis_model: Model for database analysis (default haiku-4.5)
@@ -142,7 +138,7 @@ class DeepFocusEvolutionManager:
 
         Returns:
             Tuple of (agent.md path, eval_instructions.md path, tools/ path, timing_info dict, cost_info dict)
-            timing_info contains: error_analyzer, planning, implementation, test_refine_1,
+            timing_info contains: error_analyzer, planning, test_refine_1,
                                  test_refine_2, total (all in seconds)
             cost_info contains: cost and token breakdown for each phase
 
@@ -170,8 +166,7 @@ class DeepFocusEvolutionManager:
         # Reset cost info for this evolution
         # Test rounds have nested structure to separate phase1 (DB analysis), phase2 (SQL gen), and evolution (refinement)
         self.cost_info = {
-            'planning': {'cost': 0.0, 'tokens_in': 0, 'tokens_out': 0, 'cache_created': 0, 'cache_read': 0},
-            'implementation': {'cost': 0.0, 'tokens_in': 0, 'tokens_out': 0, 'cache_created': 0, 'cache_read': 0},
+            'first_draft': {'cost': 0.0, 'tokens_in': 0, 'tokens_out': 0, 'cache_created': 0, 'cache_read': 0},
             'reflection': {'cost': 0.0, 'tokens_in': 0, 'tokens_out': 0, 'cache_created': 0, 'cache_read': 0},
             'total': 0.0
         }
@@ -216,32 +211,21 @@ class DeepFocusEvolutionManager:
             # Evolution will reference it directly from ../../iteration_XXX/
             self.timing_info['error_analyzer'] = 0.0
 
-            # Round 1: Analysis and Planning (ALWAYS)
+            # Round 1: Analysis, Planning, and Implementation (ALWAYS)
             logger.info("=" * 60)
-            logger.info("ROUND 1: Analysis and Planning")
-            logger.info("=" * 60)
-            start_time = time.time()
-            self._current_call_costs = []  # Reset for this round
-            self._round1_analysis_planning(evolution_prompt, continue_from_analyzer=False)
-            self.timing_info['planning'] = time.time() - start_time
-            self._aggregate_round_costs('planning')
-            logger.info(f"Planning time: {self.timing_info['planning']/60:.1f} minutes")
-
-            # Round 2: Implementation (ALWAYS)
-            logger.info("=" * 60)
-            logger.info("ROUND 2: Implementation")
+            logger.info("ROUND 1: Analysis, Planning, and Implementation")
             logger.info("=" * 60)
             start_time = time.time()
             self._current_call_costs = []  # Reset for this round
-            self._round2_implementation()
-            self.timing_info['implementation'] = time.time() - start_time
-            self._aggregate_round_costs('implementation')
-            logger.info(f"Implementation time: {self.timing_info['implementation']/60:.1f} minutes")
+            self._round1_analysis_and_implementation(evolution_prompt, continue_from_analyzer=False)
+            self.timing_info['first_draft'] = time.time() - start_time
+            self._aggregate_round_costs('first_draft')
+            logger.info(f"Planning and implementation time: {self.timing_info['first_draft']/60:.1f} minutes")
 
-            # Rounds 3+: Test and Refine (OPTIONAL - based on test_rounds)
+            # Rounds 2+: Test and Refine (OPTIONAL - based on test_rounds)
             test_round_count = 0
             for test_round in range(self.test_rounds):
-                round_num = 3 + test_round
+                round_num = 2 + test_round
                 test_iteration = current_iteration - 1 - test_round
 
                 if test_iteration < 1:
@@ -293,7 +277,7 @@ class DeepFocusEvolutionManager:
             )
 
             logger.info(f"Deep Focus evolution complete for iteration {current_iteration}")
-            logger.info(f"Total rounds executed: {2 + min(self.test_rounds, current_iteration - 1)}")
+            logger.info(f"Total rounds executed: {1 + test_round_count}")
             logger.info(f"Total evolution time: {self.timing_info['total']/60:.1f} minutes")
             logger.info(f"Total evolution cost: ${self.cost_info['total']:.2f}")
 
@@ -674,26 +658,32 @@ class DeepFocusEvolutionManager:
         except Exception as e:
             logger.error(f"Failed to generate error analysis: {e}")
 
-    def _round1_analysis_planning(self, evolution_prompt: str, continue_from_analyzer: bool = False):
+    def _round1_analysis_and_implementation(self, evolution_prompt: str, continue_from_analyzer: bool = False):
         """
-        Round 1: Strategy-guided analysis and planning.
+        Round 1: Strategy-guided analysis, planning, and implementation.
 
-        Creates reasoning.md with strategic analysis and improvement plan.
-        Evolution strategy guides this initial planning phase.
+        Creates reasoning.md with strategic analysis and improvement plan,
+        then implements the 3-artifact agent package:
+        - agent.md (database analysis agent)
+        - eval_instructions.md (SQL generation instructions)
+        - tools/ (optional analysis scripts)
+
+        Saves snapshot after completion.
 
         Args:
             evolution_prompt: Strategy-specific prompt from evolution strategy
             continue_from_analyzer: Whether to use --continue (if error analyzer ran)
         """
-        logger.info("Executing Round 1: Strategy-guided planning")
+        logger.info("Executing Round 1: Analysis, planning, and implementation")
 
-        # Build prompt for Round 1
         prompt = f"""
 {evolution_prompt}
 
-## Round 1: Analysis and Planning
+## Round 1: Analysis, Planning, and Implementation
 
-Based on the evolution strategy guidance above, please:
+Based on the evolution strategy guidance above, please complete both steps below.
+
+### Step 1: Analysis and Planning
 
 1. Analyze the provided data (agent performance, errors, patterns)
 2. Develop a strategic improvement plan
@@ -715,7 +705,17 @@ verification attempts, and error details for each question across all agents.
 
 Create a file called `reasoning.md` with your analysis and plan.
 
-After completing your analysis, respond with: "ROUND 1 COMPLETE"
+### Step 2: Implementation
+
+Based on your analysis and plan in `reasoning.md`, create the agent artifacts:
+
+1. `agent.md` - Database analysis agent with model configuration
+2. `eval_instructions.md` - Direct SQL generation instructions for eval model
+3. `tools/` - Optional Python/shell analysis scripts (if needed)
+
+Create these artifacts in the current directory.
+
+After completing both steps, respond with: "ROUND 1 COMPLETE"
 """
 
         # Call Claude Code for Round 1
@@ -726,70 +726,32 @@ After completing your analysis, respond with: "ROUND 1 COMPLETE"
         )
 
         if not success:
-            raise RuntimeError("Round 1 (analysis and planning) failed")
+            raise RuntimeError("Round 1 (analysis, planning, and implementation) failed")
 
         # Verify reasoning.md was created
         reasoning_file = self.working_dir / "reasoning.md"
         if not reasoning_file.exists():
-            description = "This file should contain your analysis and planning from Round 1."
+            description = "This file should contain your analysis and planning from Step 1."
             if not self._recover_missing_file(reasoning_file, "reasoning.md", description):
                 raise RuntimeError("Round 1 did not create reasoning.md")
 
-        logger.info(f"✓ Round 1 complete: reasoning.md created ({reasoning_file.stat().st_size} bytes)")
+        logger.info(f"✓ reasoning.md created ({reasoning_file.stat().st_size} bytes)")
 
-    def _round2_implementation(self):
-        """
-        Round 2: Implementation of agent artifacts.
-
-        Uses --continue to maintain context from Round 1.
-        Creates the 3-artifact agent package:
-        - agent.md (database analysis agent)
-        - eval_instructions.md (SQL generation instructions)
-        - tools/ (optional analysis scripts)
-
-        Saves snapshot after completion.
-        """
-        logger.info("Executing Round 2: Implementation")
-
-        prompt = """
-## Round 2: Implementation
-
-Based on your Round 1 analysis and plan in `reasoning.md`, please now create the agent artifacts:
-
-1. `agent.md` - Database analysis agent with model configuration
-2. `eval_instructions.md` - Direct SQL generation instructions for eval model
-3. `tools/` - Optional Python/shell analysis scripts (if needed)
-
-Create these artifacts in the current directory.
-
-After completing implementation, respond with: "ROUND 2 COMPLETE"
-"""
-
-        # Call Claude Code for Round 2 (continue from Round 1)
-        success = self._call_claude_code(
-            prompt=prompt,
-            continue_session=True,  # Continue from Round 1
-            expected_completion="ROUND 2 COMPLETE"
-        )
-
-        if not success:
-            raise RuntimeError("Round 2 (implementation) failed")
-
-        # Verify artifacts were created
+        # Verify agent artifacts were created
         agent_md = self.working_dir / "agent.md"
         eval_instructions_md = self.working_dir / "eval_instructions.md"
 
         if not agent_md.exists():
             description = "This file should contain the database analysis agent instructions."
             if not self._recover_missing_file(agent_md, "agent.md", description):
-                raise RuntimeError("Round 2 did not create agent.md")
+                raise RuntimeError("Round 1 did not create agent.md")
 
         if not eval_instructions_md.exists():
             description = "This file should contain the SQL generation instructions for the eval model."
             if not self._recover_missing_file(eval_instructions_md, "eval_instructions.md", description):
-                raise RuntimeError("Round 2 did not create eval_instructions.md")
+                raise RuntimeError("Round 1 did not create eval_instructions.md")
 
-        logger.info(f"✓ Round 2 complete: agent artifacts created")
+        logger.info(f"✓ Round 1 complete: reasoning.md and agent artifacts created")
         logger.info(f"  - agent.md: {agent_md.stat().st_size} bytes")
         logger.info(f"  - eval_instructions.md: {eval_instructions_md.stat().st_size} bytes")
 
@@ -798,8 +760,8 @@ After completing implementation, respond with: "ROUND 2 COMPLETE"
             tool_count = len(list(tools_dir.iterdir()))
             logger.info(f"  - tools/: {tool_count} files")
 
-        # Save Round 2 snapshot
-        self._save_snapshot(round_num=2)
+        # Save Round 1 snapshot
+        self._save_snapshot(round_num=1)
 
     def _load_baseline_problems(
         self,
@@ -1489,7 +1451,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
         For test rounds, separates phase1 (DB analysis), phase2 (SQL generation), and evolution (refinement) costs.
 
         Args:
-            round_key: Key in cost_info dict ('planning', 'implementation', 'test_refine_1', etc.)
+            round_key: Key in cost_info dict ('first_draft', 'test_refine_1', etc.)
         """
         if not hasattr(self, '_current_call_costs') or not self._current_call_costs:
             return
