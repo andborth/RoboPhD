@@ -234,10 +234,12 @@ You have full read access to:
 - Error analysis reports in `../../iteration_XXX/error_analysis_report.md`
 - Evolution planning in `../../evolution_output/iteration_XXX/reasoning.md`
 - Evolution reflections in `../../evolution_output/iteration_XXX/evolution_reflection.md`
-- Evolution session transcripts in `../../evolution_output/iteration_XXX/session_transcript.jsonl.gz` (detailed Claude Code session logs - optional but valuable for understanding how a strategy actually behaved during agent creation)
+- Evolution session summaries in `../../evolution_output/iteration_XXX/session_summary.md` (readable markdown summary of the evolution session — assistant reasoning and tool call summaries)
 - Checkpoint data in `../../checkpoint.json`
 - Configuration history in checkpoint's `config_change_history`
 - Evolution strategies for this experiment: `../../evolution_strategies/` (contains strategies used in this run)
+
+**Bash tools**: You have full bash access — use `diff` to compare strategy files, `jq` to query JSON, and standard Unix tools as needed.
 
 **Understanding evolution artifacts** - three levels of detail for analyzing what an evolution strategy did:
 
@@ -254,11 +256,11 @@ You have full read access to:
    - Rationale for the approach taken
    - **Use this** to understand why the strategy made specific choices
 
-3. **session_transcript.jsonl.gz** (Complete execution):
-   - Full Claude Code session with all tool calls and responses
+3. **session_summary.md** (Complete execution):
+   - Readable markdown summary of the full evolution session
+   - Includes all assistant reasoning verbatim and one-line tool call summaries
    - Shows how the strategy actually executed (not just what it planned)
-   - Large files in JSON Lines format - use Read tool with offset/limit to sample sections
-   - **Use this selectively** when you need to debug strategy behavior or understand execution details that aren't clear from reflection/reasoning
+   - **Use this** when you need to understand execution details that aren't clear from reflection/reasoning
 
 ### Key Questions
 
@@ -296,7 +298,7 @@ You have full read access to:
 
 ## Output Requirements
 
-### 1. reasoning.md (Round 1 - Required)
+### 1. reasoning.md (Step 1 — Required)
 
 Document your strategy-focused analysis:
 
@@ -358,7 +360,7 @@ Document your strategy-focused analysis:
 [How will this new strategy help produce agents that dethrone the current champion and advance the state of the art?]
 ```
 
-### 2. New Evolution Strategy (Round 2 - Required)
+### 2. New Evolution Strategy (Step 2 — Required)
 
 You **must** create exactly one new evolution strategy in:
 `new_strategies/strategy_name/`
@@ -376,7 +378,7 @@ python strategy_tools/analysis_tool.py --input ../../evolution_output/ --output 
 
 **Alternative approach**: Create an entirely new strategy if current approaches have fundamental gaps that refinement cannot address.
 
-### 3. meta_config_schedule.json (Round 2 - Required)
+### 3. meta_config_schedule.json (Step 2 — Required)
 
 Configuration changes for upcoming iterations.
 
@@ -421,9 +423,7 @@ Configuration changes for upcoming iterations.
 
 **Parameter persistence**: Once set, parameters remain in effect until explicitly changed. In the example above, `new_agent_test_rounds: 2` (set at iteration 12) remains active through iterations 12, 13, and 14 until changed to `1` at iteration 15. Similarly, `use_weighted_random: true` (enabled at iteration 13) stays enabled through iteration 14 until disabled at iteration 15.
 
-**Note**: The above outputs are created across two rounds:
-- **Round 1**: Creates `reasoning.md` (strategy analysis and planning)
-- **Round 2**: Creates exactly one new evolution strategy (required) and `meta_config_schedule.json` (required)
+**Note**: All outputs are created in a single session. Step 1 (reasoning.md) is completed first, then Step 2 (strategy + config).
 
 ## Guiding Principles
 

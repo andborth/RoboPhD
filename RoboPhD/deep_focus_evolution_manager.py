@@ -143,9 +143,8 @@ class DeepFocusEvolutionManager:
             cost_info contains: cost and token breakdown for each phase
 
         Side Effects:
-            - Creates session_transcript.jsonl in working_dir (raw JSONL format)
-            - Creates session_transcript.json in working_dir (human-readable format)
-            These transcripts enable debugging and future meta-evolution analysis
+            - Creates session_summary.md in working_dir (readable markdown summary)
+            This summary enables debugging and future meta-evolution analysis
 
         Raises:
             RuntimeError: If any round fails
@@ -1587,21 +1586,14 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
 
     def _save_session_transcript(self):
         """
-        Save Claude Code session transcript to evolution output directory.
+        Summarize Claude Code session transcript and save to evolution output directory.
 
-        Copies the session chat.jsonl file from ~/.claude/projects/[session_id]/
-        and saves it in compressed JSONL format (.jsonl.gz).
-
-        This enables:
-        - Debugging evolution failures
-        - Analyzing evolution decision-making
-        - Future meta-evolution analysis of strategy effectiveness
-
-        The compressed format significantly reduces file size (typically 5-10x compression)
-        while remaining easy to read programmatically using Python's gzip module.
+        Reads the session chat.jsonl file from ~/.claude/projects/[session_id]/
+        and produces a human/LLM-readable session_summary.md with the full
+        narrative of assistant reasoning and one-line tool call summaries.
 
         Side effects:
-            - Creates session_transcript.jsonl.gz in working_dir (compressed JSONL)
+            - Creates session_summary.md in working_dir
 
         Errors are logged but do not raise exceptions - transcript saving
         should never break the research run.
@@ -1619,26 +1611,14 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             return
 
         try:
-            import gzip
+            from RoboPhD.utilities.transcript_summarizer import summarize_transcript
 
-            # Save compressed JSONL format
-            transcript_gz = self.working_dir / "session_transcript.jsonl.gz"
-
-            # Read source file and write compressed
-            with open(chat_file, 'rb') as f_in:
-                with gzip.open(transcript_gz, 'wb') as f_out:
-                    f_out.writelines(f_in)
-
-            # Log size reduction
-            original_size = chat_file.stat().st_size
-            compressed_size = transcript_gz.stat().st_size
-            compression_ratio = (1 - compressed_size / original_size) * 100
-
-            logger.info(f"Saved session transcript: {transcript_gz.name}")
-            logger.info(f"  Original: {original_size/1024:.1f} KB → Compressed: {compressed_size/1024:.1f} KB ({compression_ratio:.1f}% reduction)")
+            summary_path = summarize_transcript(chat_file, self.working_dir / "session_summary.md")
+            summary_size = summary_path.stat().st_size
+            logger.info(f"Saved session summary: {summary_path.name} ({summary_size/1024:.1f} KB)")
 
         except Exception as e:
-            logger.warning(f"Failed to save session transcript: {e}")
+            logger.warning(f"Failed to save session summary: {e}")
             # Don't raise - transcript saving should never break the research run
 
     def _request_evolution_reflection(self):

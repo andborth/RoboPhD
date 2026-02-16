@@ -32,7 +32,11 @@ As competition strengthens over the run, first-round wins become harder. Focus o
 
 You must create exactly one new evolution strategy each time you run.
 
-Ignore budget — focus entirely on producing the best possible agents.
+## Budget and Horizon
+
+The run may be extended beyond the current iteration count. Don't treat any
+iteration as "final" or optimize for a specific end point. Make decisions based
+on strategy performance trends, not iteration numbers.
 
 ## Understanding Model Choice
 
@@ -51,6 +55,15 @@ Use your judgment to create strategies that produce first-round winners. Four ar
 4. **Information source usage** — Are strategies using all available sources (reflections, reasoning, transcripts)? Are they looking at the right iterations? Are they building modular, evolvable agents?
 
 You have full autonomy — radically change strategy selection, abandon underperformers, create disruptive new strategies, or synthesize insights from multiple strategies.
+
+## What Makes Strategies Succeed vs Fail
+
+**Successful strategies**: Produce agents that win immediately, effectively
+incorporate learnings from recent errors, introduce genuinely new capabilities.
+
+**Failing strategies**: Produce incremental refinements that don't beat the
+incumbent, repeat similar approaches without innovation, fail to incorporate
+recent error patterns.
 
 ## Understanding the Metrics
 
@@ -80,9 +93,11 @@ You have full read access to:
 - Error analysis: `../../iteration_XXX/error_analysis_report.md`
 - Evolution planning: `../../evolution_output/iteration_XXX/reasoning.md`
 - Evolution reflections: `../../evolution_output/iteration_XXX/evolution_reflection.md`
-- Session transcripts: `../../evolution_output/iteration_XXX/session_transcript.jsonl.gz` (detailed Claude Code session logs — optional but valuable)
+- Session summaries: `../../evolution_output/iteration_XXX/session_summary.md` (readable markdown summary of the evolution session — assistant reasoning and tool call summaries)
 - Checkpoint: `../../checkpoint.json` (includes `config_change_history`)
 - Evolution strategies for this experiment: `../../evolution_strategies/`
+
+**Bash tools**: You have full bash access — use `diff` to compare strategy files, `jq` to query JSON, and standard Unix tools as needed.
 
 **Understanding evolution artifacts** — each evolution iteration produces these in order:
 
@@ -92,11 +107,11 @@ You have full read access to:
 
 3. **evolution_reflection.md**: Written after the agent is created and tested in a deep focus round (tested against prior agents on a set of questions). Contains self-assessment, what worked, what was challenging, and suggestions for improvement. **Start here** — it's the most informative single document.
 
-4. **session_transcript.jsonl.gz** (optional): Full Claude Code session with all tool calls. Large JSON Lines files — use Read with offset/limit to sample. **Use selectively** when reflection/reasoning aren't enough.
+4. **session_summary.md** (optional): Readable markdown summary of the full evolution session — includes all assistant reasoning verbatim and one-line tool call summaries. **Use this** when reflection/reasoning aren't enough and you need to see the full narrative of what the AI thought and did.
 
 ## Output Requirements
 
-### 1. reasoning.md (Round 1 — Required)
+### 1. reasoning.md (Step 1 — Required)
 
 Document your strategy-focused analysis:
 
@@ -147,7 +162,7 @@ Document your strategy-focused analysis:
 [How will this strategy improve first-round win rate?]
 ```
 
-### 2. New Evolution Strategy (Round 2 — Required)
+### 2. New Evolution Strategy (Step 2 — Required)
 
 You **must** create exactly one new evolution strategy in:
 `new_strategies/strategy_name/`
@@ -161,7 +176,7 @@ Each strategy package includes:
 python strategy_tools/analysis_tool.py --input ../../evolution_output/ --output my_analysis.json
 ```
 
-### 3. meta_config_schedule.json (Round 2 — Required)
+### 3. meta_config_schedule.json (Step 2 — Required)
 
 Configuration changes for the next 3 iterations. You will be called again after those 3 iterations to reassess.
 
@@ -187,6 +202,4 @@ Configuration changes for the next 3 iterations. You will be called again after 
 - Do not use `challenger`, `greedy`, `none`, or `use_weighted_random`
 - Parameter persistence: once set, `evolution_strategy` remains in effect until explicitly changed
 
-**Note**: Outputs are created across two rounds:
-- **Round 1**: Creates `reasoning.md` (strategy analysis and planning)
-- **Round 2**: Creates the new evolution strategy and `meta_config_schedule.json`
+**Note**: All outputs are created in a single session. Step 1 (reasoning.md) is completed first, then Step 2 (strategy + config).
