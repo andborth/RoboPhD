@@ -151,7 +151,7 @@ class ReportGenerator:
         return '\n'.join(lines)
 
     def _generate_agent_evaluation_report(self, agent_id: str, iteration: int, databases: list,
-                                         agent_time: float, agent_cost: float) -> None:
+                                         agent_time: float) -> None:
         """
         Generate an evaluation report for a specific agent in a specific iteration.
 
@@ -160,7 +160,6 @@ class ReportGenerator:
             iteration: Iteration number
             databases: List of databases/contexts tested
             agent_time: Estimated time spent on this agent (in seconds)
-            agent_cost: Estimated cost for this agent
         """
         from datetime import datetime
         import json
@@ -296,7 +295,6 @@ class ReportGenerator:
         report_lines.append(f"- **{self.researcher.domain.context_label_plural.title()} tested**: {len(databases)}")
         report_lines.append(f"- **Problems per {self.researcher.domain.context_label.lower()}**: {self.researcher.problems_per_context}")
         report_lines.append(f"- **Total time**: {agent_time/60:.1f} minutes")
-        report_lines.append(f"- **Total cost**: ${agent_cost:.2f}")
 
         # Overall results
         report_lines.append("\n## Overall Results")
@@ -800,7 +798,7 @@ class ReportGenerator:
             total_meta_evolution_tokens_out = sum(ic.get('meta_evolution_tokens_out', 0) for ic in self.researcher.iteration_claude_costs)
 
             # Calculate API costs (Phase 2 SQL generation)
-            total_api_cost = sum(self.researcher.iteration_costs) if self.researcher.iteration_costs else 0.0
+            total_api_cost = sum(ic.get('phase2_cost', 0.0) for ic in self.researcher.iteration_claude_costs)
 
             total_cli_cost = total_phase1_cost + total_evolution_cost + total_meta_evolution_cost
             total_cli_calls = total_phase1_calls + total_evolution_calls + total_meta_evolution_calls
@@ -908,7 +906,7 @@ class ReportGenerator:
                 phase1_tokens_out = cost_dict.get('phase1_tokens_out', 0)
 
                 # Get API cost for this iteration (Phase 2 SQL generation)
-                api_cost = self.researcher.iteration_costs[idx] if idx < len(self.researcher.iteration_costs) else 0.0
+                api_cost = cost_dict.get('phase2_cost', 0.0)
 
                 evo_cost = cost_dict.get('evolution_cost', 0.0)
                 evo_calls = cost_dict.get('evolution_calls', 0)
@@ -985,7 +983,7 @@ class ReportGenerator:
 
                 # Get base costs
                 phase1_base = cost_dict.get('phase1_cost', 0.0)
-                phase2_base = self.researcher.iteration_costs[idx] if idx < len(self.researcher.iteration_costs) else 0.0
+                phase2_base = cost_dict.get('phase2_cost', 0.0)
 
                 # Get evolution breakdown
                 evolution_breakdown = cost_dict.get('evolution_breakdown')

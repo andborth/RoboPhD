@@ -765,8 +765,6 @@ class ParallelAgentResearcher:
                     perf['last_test_iteration'] = None
 
             self.test_history = resume_checkpoint['test_history']
-            self.total_cost = resume_checkpoint.get('total_cost', 0.0)
-            self.iteration_costs = resume_checkpoint.get('iteration_costs', [])
             self.iteration_times = resume_checkpoint.get('iteration_times', [])
             self.iteration_claude_costs = resume_checkpoint.get('iteration_claude_costs', [])
             self.evolution_times = resume_checkpoint.get('evolution_times', [])
@@ -845,8 +843,6 @@ class ParallelAgentResearcher:
             self.agent_pool = {}
             self.performance_records = {}
             self.test_history = []
-            self.total_cost = 0.0
-            self.iteration_costs = []
             self.iteration_times = []
             self.iteration_claude_costs = []
             self.current_iteration_evolution_cost = None
@@ -1330,7 +1326,6 @@ class ParallelAgentResearcher:
             self._recalculate_all_elo_scores()
 
             # Always truncate evolution_times to prevent duplicates when restarting
-            # This must happen regardless of whether iteration_costs have been recorded
             if len(self.evolution_times) >= from_iteration:
                 self.evolution_times = self.evolution_times[:from_iteration - 1]
 
@@ -1338,17 +1333,12 @@ class ParallelAgentResearcher:
             if len(self.meta_evolution_times) >= from_iteration:
                 self.meta_evolution_times = self.meta_evolution_times[:from_iteration - 1]
 
-            # Subtract cost/time of archived iterations from totals
-            if len(self.iteration_costs) >= from_iteration:
-                archived_cost = sum(self.iteration_costs[from_iteration - 1:])
+            # Truncate time/cost arrays for archived iterations
+            if len(self.iteration_times) >= from_iteration:
                 archived_time = sum(self.iteration_times[from_iteration - 1:])
-
-                self.total_cost -= archived_cost
-                self.iteration_costs = self.iteration_costs[:from_iteration - 1]
                 self.iteration_times = self.iteration_times[:from_iteration - 1]
                 self.iteration_claude_costs = self.iteration_claude_costs[:from_iteration - 1]
 
-                print(f"  💰 Subtracted archived cost: ${archived_cost:.2f}")
                 print(f"  ⏱️  Subtracted archived time: {archived_time/60:.1f} minutes")
             
             # Clear failure records for archived iterations
@@ -1682,7 +1672,10 @@ class ParallelAgentResearcher:
             'evolution_tokens_out': 0,
             'evolution_cache_created': 0,
             'evolution_cache_read': 0,
-            'evolution_breakdown': None
+            'evolution_breakdown': None,
+            'phase2_cost': 0.0,
+            'phase2_tokens_in': 0,
+            'phase2_tokens_out': 0,
         }
 
         # Track results for each agent
@@ -1820,6 +1813,12 @@ class ParallelAgentResearcher:
                     iteration_cost_dict['phase1_tokens_out'] += metadata.get('phase1_tokens_out', 0)
                     iteration_cost_dict['phase1_cache_created'] += metadata.get('phase1_cache_created', 0)
                     iteration_cost_dict['phase1_cache_read'] += metadata.get('phase1_cache_read', 0)
+
+                # Accumulate Phase 2 costs and token counts from metadata
+                if metadata.get('phase2_cost'):
+                    iteration_cost_dict['phase2_cost'] += metadata['phase2_cost']
+                    iteration_cost_dict['phase2_tokens_in'] += metadata.get('phase2_tokens_in', 0)
+                    iteration_cost_dict['phase2_tokens_out'] += metadata.get('phase2_tokens_out', 0)
 
                 # Extract per-context costs from metadata for cost report
                 if metadata.get('costs_by_context'):
@@ -2962,20 +2961,17 @@ class ParallelAgentResearcher:
                     skip_evolution=skip_evolution
                 )
             
-            # Track iteration timing and cost
+            # Track iteration timing
             iteration_start_time = time.time()
-            iteration_start_cost = self.total_cost
             
             # Run iteration
             iteration_results, results_by_agent, costs_by_context, eval_cache_stats = self.run_iteration(iteration, selected_agents, contexts)
 
             # Calculate iteration metrics
             iteration_time = time.time() - iteration_start_time
-            iteration_cost = self.total_cost - iteration_start_cost
 
             # Store per-iteration metrics
             self.iteration_times.append(iteration_time)
-            self.iteration_costs.append(iteration_cost)
 
             # Initialize meta-evolution time to 0 (will be updated if meta-evolution runs)
             self.meta_evolution_times.append(0)
@@ -2988,8 +2984,7 @@ class ParallelAgentResearcher:
                     agent_id,
                     iteration,
                     contexts,
-                    iteration_time / len(selected_agents),  # Estimate per-agent time
-                    iteration_cost / len(selected_agents)   # Estimate per-agent cost
+                    iteration_time / len(selected_agents)  # Estimate per-agent time
                 )
 
             # Generate interim report after this iteration
@@ -3955,7 +3950,6 @@ class ParallelAgentResearcher:
 
         # All these arrays should have exactly 'iteration' entries
         arrays_to_check = {
-            'iteration_costs': self.iteration_costs,
             'iteration_times': self.iteration_times,
             'test_history': self.test_history,
             'evolution_times': self.evolution_times,
@@ -4023,8 +4017,6 @@ class ParallelAgentResearcher:
             'agent_pool': serializable_pool,
             'performance_records': self.performance_records,
             'test_history': self.test_history,
-            'total_cost': self.total_cost,
-            'iteration_costs': self.iteration_costs,
             'iteration_times': self.iteration_times,
             'iteration_claude_costs': self.iteration_claude_costs,
             'evolution_times': self.evolution_times,

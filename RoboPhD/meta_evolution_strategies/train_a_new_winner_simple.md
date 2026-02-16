@@ -107,7 +107,7 @@ You have full read access to:
 
 3. **evolution_reflection.md**: Written after the agent is created and tested in a deep focus round (tested against prior agents on a set of questions). Contains self-assessment, what worked, what was challenging, and suggestions for improvement. **Start here** — it's the most informative single document.
 
-4. **session_summary.md** (optional): Readable markdown summary of the full evolution session — includes all assistant reasoning verbatim and one-line tool call summaries. **Use this** when reflection/reasoning aren't enough and you need to see the full narrative of what the AI thought and did.
+4. **session_summary.md**: Readable markdown summary of the full evolution session — includes all assistant reasoning verbatim and one-line tool call summaries. **Use this** when reflection/reasoning aren't enough and you need to see the full narrative of what the AI thought and did.
 
 ## Output Requirements
 

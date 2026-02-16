@@ -134,13 +134,15 @@ def summarize_transcript(transcript_path, output_path=None):
         if msg.get('type') == 'queue-operation':
             continue
 
+        # Track wall-clock timestamps from all message types
+        ts = _parse_timestamp(msg.get('timestamp'))
+        if ts:
+            if first_ts is None:
+                first_ts = ts
+            last_ts = ts
+
         if msg.get('type') == 'assistant':
             assistant_count += 1
-            ts = _parse_timestamp(msg.get('timestamp'))
-            if ts:
-                if first_ts is None:
-                    first_ts = ts
-                last_ts = ts
 
             m = msg.get('message', {})
             if not model and isinstance(m, dict):
@@ -257,7 +259,7 @@ def summarize_transcript(transcript_path, output_path=None):
 
                 elif block.get('type') == 'tool_use':
                     one_liner = _tool_one_liner(block['name'], block.get('input', {}))
-                    if one_liner:
+                    if one_liner is not None:
                         lines.append(f"  {one_liner}\n")
 
     # Write output
