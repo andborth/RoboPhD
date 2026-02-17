@@ -268,16 +268,16 @@ Meta-evolution allows evolving the evolution strategies themselves:
 python RoboPhD/researcher.py \
   --num-iterations 20 \
   --config '{
-    "meta_evolution_strategy": "train_a_new_winner",
+    "meta_evolution_strategy": "train_a_winner",
     "config_schedule": {
-      "10": {"meta_evolution_strategy": "train_a_new_winner"},
+      "10": {"meta_evolution_strategy": "train_a_winner"},
       "11": {"meta_evolution_strategy": null}
     }
   }'
 ```
 
 Available meta-evolution strategies:
-- `train_a_new_winner`: Evolve strategies to beat current best agent
+- `train_a_winner`: Evolve strategies that produce winning agents
 - `train_a_new_champion`: Evolve strategies for consistent top performance
 
 ## Key Classes and Files
