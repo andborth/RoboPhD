@@ -35,21 +35,22 @@ CodeGen uses a versioned cache structure:
 ../robophd_runs/codegen_cache/
 ├── {model}_v6/           # Cached per model version
 │   ├── {problem_id}/
-│   │   ├── code_v1.py    # Initial solution from Coder Call 1
-│   │   ├── approach.txt  # Self-reported approach from Call 1.5
-│   │   └── session.json  # Session ID for resumption
+│   │   ├── problem.md    # Problem statement (from dataset)
+│   │   ├── meta.json     # Metadata: question_id, contest_date, difficulty, session_id
+│   │   ├── solution.py   # Initial solution from Coder Call 1
+│   │   └── reflection.md # Approach description + categories from Call 1.5
 │   └── ...
 └── ...
 ```
 
 ## Coder/Critic Architecture
 
-The CodeGen domain uses a 5-phase workflow:
+The CodeGen domain uses a 6-phase workflow with verdict branching:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Evolution AI (Opus)                       │
-│  Evolves critic prompts based on binary pass/fail outcomes  │
+│  Evolves critic agents based on binary pass/fail outcomes   │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -61,26 +62,42 @@ The CodeGen domain uses a 5-phase workflow:
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │             Coder AI (Call 1.5 — same session)               │
-│  Query: "Describe the algorithmic approach you used"        │
+│  Creates reflection.md: approach description + categories   │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   Critic AI (Evolved)                        │
-│  Reviews Code v1, produces structured feedback               │
+│          Critic AI (Evolved — tool-only + eval LLM)         │
+│  Tool analyzes code → eval LLM produces verdict + feedback  │
 └─────────────────────────────────────────────────────────────┘
                               │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  Coder AI (Call 2)                           │
-│  Receives feedback, has discretion to accept/reject          │
-│  Produces revised solution (Code v2)                        │
-└─────────────────────────────────────────────────────────────┘
+                    ┌─────────┴─────────┐
+                    │                   │
+             VERDICT: CORRECT    VERDICT: INCORRECT
+                    │                   │
+                    │                   ▼
+                    │    ┌──────────────────────────────────┐
+                    │    │     Coder AI (Call 2 — fork)     │
+                    │    │  Receives feedback, revises code │
+                    │    │  Produces Code v2                │
+                    │    └──────────────────────────────────┘
+                    │                   │
+                    │                   ▼
+                    │    ┌──────────────────────────────────┐
+                    │    │    Coder AI (Call 3 — same fork) │
+                    │    │  Categorizes acceptance:         │
+                    │    │  ACCEPTED_ALL / SOME / REJECTED  │
+                    │    └──────────────────────────────────┘
+                    │                   │
+          v2 = symlink to v1            │
+                    │                   │
+                    └─────────┬─────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                   Evaluation (Ground Truth)                  │
-│  Runs Code v2 against hidden test suite                     │
+│  Tests both v1 and v2 against hidden test suite             │
+│  6-second timeout per test, one retry on timeout            │
 │  Binary outcome: pass (all tests) / fail (any test fails)   │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -89,27 +106,37 @@ The CodeGen domain uses a 5-phase workflow:
 
 **Phase 1: Initial Generation (Coder AI — Call 1)**
 - Receives problem statement with examples
-- Writes initial solution (Code v1)
+- Writes initial solution (`solution.py`)
 - Can execute code on visible examples
 - Observes: "Example 1 ✓, Example 2 ✓, Example 3 ✓"
 
-**Phase 1.5: Approach Query (same session)**
-- Query: "Briefly describe the algorithmic approach you used"
-- Returns free-form description (e.g., "DP with binary search optimization")
+**Phase 1.5: Reflection (same session)**
+- Prompt: "Create reflection.md describing your solution approach. Include a 'Categories' section listing one or more problem categories that apply."
+- Output: `reflection.md` with approach description and a **Categories** section (free-form, e.g., "Greedy Algorithm", "Dynamic Programming", "String Manipulation")
 
 **Phase 2: Critic Review**
-- Critic prompt constructed based on parsed approach
-- Receives: Problem + Code v1 + approach description
-- Produces: Structured feedback with specific suggestions
+- Evolved critics typically use **tool-only execution mode**: a Python script performs automated static analysis of the solution, producing `tool_output/critic_feedback.txt`
+- An eval LLM receives the tool output + `eval_instructions.md` and produces `feedback.md`
+- `feedback.md` starts with `VERDICT: CORRECT` or `VERDICT: INCORRECT`, followed by analysis
+- If the verdict line is missing, the critic is re-prompted once to fix it
 
 **Phase 3: Revision (Coder AI — Call 2)**
-- Receives: Problem + Code v1 + Critic feedback
-- Has discretion to accept all, some, or none
-- Produces: Code v2
+- **Only runs if verdict is INCORRECT** (CORRECT → `solution_v2.py` is symlink to `solution.py`, no revision)
+- Forks the coder's original session (preserves original for future iterations)
+- Receives critic feedback; has discretion to accept all, some, or none
+- Writes `solution_v2.py`
+
+**Phase 3.5: Acceptance Query (Coder AI — Call 3)**
+- Only runs if revision was attempted and completed
+- Post-hoc query on the forked revision session
+- Coder categorizes: `ACCEPTED_ALL` / `ACCEPTED_SOME` / `REJECTED_ALL`
+- Produces `acceptance.md`
 
 **Phase 4: Evaluation**
-- Runs Code v2 against hidden test suite
+- Tests both v1 and v2 against hidden test suite
+- 6-second timeout per test with one retry on timeout
 - Binary pass/fail (all tests pass = pass)
+- Measures improvement (v1 fail → v2 pass) and regression (v1 pass → v2 fail)
 
 ## Basic Usage
 
@@ -147,66 +174,82 @@ python RoboPhD/researcher.py \
 
 ## Critic Agent Structure
 
+A typical evolved critic is a **monolithic tool-only analyzer** — a single Python script that performs comprehensive static analysis:
+
+```
+agents/<agent_name>/
+├── agent.md                   # YAML config: tool_only execution mode
+├── eval_instructions.md       # Decision framework for verdict + feedback
+└── tools/
+    └── analyzer.py            # Static analysis script
+```
+
+The `agent.md` YAML frontmatter configures tool-only execution:
+
+```yaml
+---
+name: <agent_name>
+description: <one-line summary of critic approach>
+execution_mode: tool_only
+tool_command: python tools/analyzer.py
+tool_output_file: tool_output/critic_feedback.txt
+---
+```
+
+The analyzer script reads `solution.py`, `reflection.md`, and `problem.md` from its working directory, performs whatever analysis the evolution strategy designed, and writes structured findings to `tool_output/critic_feedback.txt`. The eval LLM then uses this analysis (along with `eval_instructions.md`) to render a verdict. Common analysis techniques include constraint extraction, complexity estimation, test execution against visible examples, and pattern-specific heuristics.
+
+An alternative structure uses **modular heuristics routing** (approach-based selection of specialized analysis):
+
 ```
 agents/dp_critic/
 ├── agent.md                    # Lightweight routing logic
 ├── eval_instructions.md        # Static coding principles
 └── tools/
     ├── route_approach.py       # Parse approach → select heuristics
-    └── heuristics/             # Substantial evolved content
+    └── heuristics/
         ├── dp_patterns.md
         ├── graph_patterns.md
-        ├── binary_search.md
         └── ...
 ```
 
-The `route_approach.py` script parses the coder's approach description and combines relevant heuristics:
+## Per-Problem Output Files
 
-```python
-def main():
-    context = json.load(open("problem_context.json"))
-    approach = context["approach"].lower()
+Each problem directory contains the full audit trail:
 
-    heuristics = []
-    if "dp" in approach or "dynamic programming" in approach:
-        heuristics.append(Path("tools/heuristics/dp_patterns.md").read_text())
-    if "binary search" in approach:
-        heuristics.append(Path("tools/heuristics/binary_search.md").read_text())
-
-    print("\n\n".join(heuristics))
 ```
-
-## Common Algorithmic Patterns
-
-Patterns that critics can specialize on:
-
-1. **Dynamic Programming**: Memoization, state transitions, optimal substructure
-2. **Graph Algorithms**: BFS/DFS, shortest path, connectivity
-3. **Greedy**: Local optimum choices, sorting-based approaches
-4. **Binary Search**: Search space reduction, monotonic predicates
-5. **Data Structures**: Heaps, segment trees, hash maps
-6. **Math/Number Theory**: Modular arithmetic, combinatorics
-7. **String Processing**: Pattern matching, parsing
-8. **Simulation**: Direct implementation, state tracking
-9. **Two Pointers/Sliding Window**: Array traversal patterns
-10. **Divide and Conquer**: Recursive decomposition
+problems/<problem_id>/
+├── problem.md            # Symlink to cache (problem statement)
+├── solution.py           # Code v1 (copied from cache)
+├── reflection.md         # Coder's approach description + categories
+├── tools/                # Critic's analysis scripts (copied from agent)
+├── tool_output/          # Static analysis output (used by critic LLM)
+│   └── critic_feedback.txt
+├── critic_prompt.md      # Full prompt sent to critic LLM
+├── feedback.md           # Critic verdict (CORRECT/INCORRECT) + analysis
+├── revision_prompt.md    # [If revised] Feedback formatted as revision request
+├── solution_v2.py        # Revised code, or symlink to solution.py if CORRECT
+├── acceptance_prompt.md  # [If revised] Acceptance query prompt
+├── acceptance.md         # [If revised] ACCEPTED_ALL/SOME/REJECTED_ALL + explanation
+└── result.json           # Evaluation result with v1/v2 pass, timing, cost data
+```
 
 ## Metrics
 
-- **Pass@1**: Fraction of problems solved on first attempt
-- **Pass@1 (with critic)**: Fraction solved after critic review cycle
-- **Critic Precision**: Helpful suggestions / Total suggestions
-- **Critic Recall**: Helpful suggestions / Problems that needed help
-- **Acceptance Rate**: Suggestions accepted / Total suggestions
+- **V1 Pass@1**: Fraction of problems solved before critic review
+- **V2 Pass@1**: Fraction of problems solved after critic review cycle
+- **Improved**: v1 fail → v2 pass (critic helped)
+- **Regressed**: v1 pass → v2 fail (critic hurt)
+- **Verdict Classification**: TP (INCORRECT + v1 wrong), FP (INCORRECT + v1 right), TN (CORRECT + v1 right), FN (CORRECT + v1 wrong)
+- **Acceptance Effectiveness**: Per category (accepted_all / accepted_some / rejected_all), tracks improved / no_help / no_harm / regressed
 
 ## Key Differences from Text2SQL
 
 | Component | Text2SQL | CodeGen |
 |-----------|----------|---------|
-| **Phase 1 Input** | Database file | Bundle: {question, code_v1, approach} |
-| **Phase 1 Output** | system_prompt.txt | critic_prompt.txt |
-| **Phase 2 Mechanism** | Fresh API call | Resume Claude Code session |
-| **Phase 2 Context** | Generated by Phase 1 | Original coder reasoning preserved |
+| **Phase 1 Input** | Database file | Problem context (problem + code_v1 + reflection) |
+| **Phase 1 Output** | system_prompt.txt | feedback.md (critic verdict + analysis) |
+| **Phase 2 Mechanism** | Fresh API call | Phase 2 (critic) is a fresh call; Phase 3 (revision) forks the coder's session |
+| **Phase 2 Context** | Generated by Phase 1 | Original coder reasoning preserved via session fork |
 
 ## Troubleshooting
 
@@ -216,14 +259,8 @@ Patterns that critics can specialize on:
 
 ### Session Resumption Failures
 - **Symptom**: "Session not found" errors
-- **Solution**: Ensure session IDs are properly cached and not expired
+- **Solution**: Sessions expire; the system auto-regenerates (solution.py + reflection.md) with a fresh session when this happens
 
-### Missing Approach Description
-- **Symptom**: Critic routing fails
-- **Solution**: Verify Call 1.5 completed and approach.txt was cached
-
-## Further Reading
-
-- [Full design document](../code_generation_critic/robophd_code_generation.md)
-- [Domain abstraction design](../code_generation_critic/domain_abstraction_design.md)
-- [Critic evaluation results](../code_generation_critic/critic_evaluation_results.md)
+### Missing Reflection
+- **Symptom**: Critic receives incomplete context
+- **Solution**: Verify Call 1.5 completed and reflection.md exists in cache
