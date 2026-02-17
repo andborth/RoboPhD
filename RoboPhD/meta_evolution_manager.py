@@ -32,16 +32,18 @@ class MetaEvolutionManager:
     and proposing configuration changes for K+1 and beyond.
     """
 
-    def __init__(self, experiment_dir: Path, config_manager: ConfigManager):
+    def __init__(self, experiment_dir: Path, config_manager: ConfigManager, domain_name: str):
         """
         Initialize Meta-Evolution Manager.
 
         Args:
             experiment_dir: Root directory of research experiment
             config_manager: Configuration manager for the experiment
+            domain_name: Domain identifier (e.g., "codegen", "text2sql")
         """
         self.experiment_dir = experiment_dir
         self.config_manager = config_manager
+        self.domain_name = domain_name
         self.strategies_dir = Path("RoboPhD/meta_evolution_strategies")  # Source directory
         self.output_dir = experiment_dir / "meta_evolution_output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -284,6 +286,26 @@ class MetaEvolutionManager:
                 content = parts[2]  # Instructions without frontmatter
 
         return content
+
+    def _load_domain_header(self) -> str:
+        """
+        Load domain header for injection into meta-evolution prompt.
+
+        Returns:
+            Domain header text
+
+        Raises:
+            ValueError: If domain header file not found
+        """
+        header_path = self.strategies_dir / "domain_headers" / f"{self.domain_name}.md"
+
+        if not header_path.exists():
+            raise ValueError(
+                f"Domain header for '{self.domain_name}' not found at {header_path}. "
+                f"Every domain must have a header file."
+            )
+
+        return header_path.read_text().strip()
 
     def _validate_strategy_package(self, strategy_dir: Path) -> List[str]:
         """
@@ -624,7 +646,11 @@ Remember:
             budget_info
         )
 
+        domain_header = self._load_domain_header()
+
         prompt = f"""
+{domain_header}
+
 {strategy_with_budget}
 
 ## Current State (Iteration {iteration})

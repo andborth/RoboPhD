@@ -906,7 +906,8 @@ class ParallelAgentResearcher:
         from RoboPhD.meta_evolution_manager import MetaEvolutionManager
         self.meta_evolution_manager = MetaEvolutionManager(
             experiment_dir=self.experiment_dir,
-            config_manager=self.config_manager
+            config_manager=self.config_manager,
+            domain_name=self.domain_name
         )
 
         # Apply pending evolution reset if needed
