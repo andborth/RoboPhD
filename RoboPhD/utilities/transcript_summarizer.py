@@ -5,7 +5,7 @@ Usage:
     python RoboPhD/utilities/transcript_summarizer.py <transcript_path> [output_path]
 
 Also importable:
-    from RoboPhD.utilities.transcript_summarizer import summarize_transcript
+    from RoboPhD.utilities.transcript_summarizer import summarize_transcript, find_transcript
 """
 
 import gzip
@@ -81,6 +81,25 @@ def _tool_one_liner(name, inp):
         return None
     # Fallback for unknown tools
     return f"→ {name}"
+
+
+def find_transcript(working_dir, session_id):
+    """
+    Locate a Claude Code session transcript JSONL file.
+
+    Claude CLI stores transcripts at ~/.claude/projects/[sanitized_path]/[session_id].jsonl
+    where the path is sanitized by replacing / and _ with -.
+
+    Args:
+        working_dir: The working directory used when launching Claude CLI.
+        session_id: The Claude Code session ID.
+
+    Returns:
+        Path to the transcript file, or None if not found.
+    """
+    project_dir_name = str(Path(working_dir).resolve()).replace('/', '-').replace('_', '-')
+    chat_file = Path.home() / ".claude" / "projects" / project_dir_name / f"{session_id}.jsonl"
+    return chat_file if chat_file.exists() else None
 
 
 def _read_jsonl(path):
@@ -231,12 +250,20 @@ def summarize_transcript(transcript_path, output_path=None):
     # --- Second pass: session flow ---
     lines.append("\n## Session Flow\n")
 
+    turn_number = 0  # Track turn boundaries from new user prompts
+
     for msg in messages:
         if msg.get('type') == 'queue-operation':
             continue
 
-        # Skip user messages (tool results / system prompts)
+        # Detect new user prompts (str content = new turn; list content = tool results)
         if msg.get('type') == 'user':
+            content = msg.get('message', {}).get('content') if isinstance(msg.get('message'), dict) else None
+            if isinstance(content, str):
+                turn_number += 1
+                if turn_number > 1:
+                    lines.append(f"---\n")
+                    lines.append(f"**Turn {turn_number}**\n")
             continue
 
         if msg.get('type') == 'assistant':

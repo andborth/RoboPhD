@@ -1588,30 +1588,19 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
         """
         Summarize Claude Code session transcript and save to evolution output directory.
 
-        Reads the session chat.jsonl file from ~/.claude/projects/[session_id]/
-        and produces a human/LLM-readable session_summary.md with the full
-        narrative of assistant reasoning and one-line tool call summaries.
-
         Side effects:
             - Creates session_summary.md in working_dir
 
         Errors are logged but do not raise exceptions - transcript saving
         should never break the research run.
         """
-        # Derive project directory name from working directory
-        # Claude CLI sanitizes path: /foo/bar_baz → -foo-bar-baz (both / and _ become -)
-        project_dir_name = str(self.working_dir.resolve()).replace('/', '-').replace('_', '-')
-
-        session_dir = Path.home() / ".claude" / "projects" / project_dir_name
-        chat_file = session_dir / f"{self.session_id}.jsonl"
-
-        if not chat_file.exists():
-            logger.warning(f"Session transcript not found: {chat_file}")
-            logger.warning(f"Session ID: {self.session_id}")
-            return
-
         try:
-            from RoboPhD.utilities.transcript_summarizer import summarize_transcript
+            from RoboPhD.utilities.transcript_summarizer import find_transcript, summarize_transcript
+
+            chat_file = find_transcript(self.working_dir, self.session_id)
+            if not chat_file:
+                logger.warning(f"Session transcript not found for session {self.session_id}")
+                return
 
             summary_path = summarize_transcript(chat_file, self.working_dir / "session_summary.md")
             summary_size = summary_path.stat().st_size
@@ -1619,7 +1608,6 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
 
         except Exception as e:
             logger.warning(f"Failed to save session summary: {e}")
-            # Don't raise - transcript saving should never break the research run
 
     def _request_evolution_reflection(self):
         """

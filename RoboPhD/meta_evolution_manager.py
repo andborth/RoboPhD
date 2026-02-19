@@ -158,6 +158,9 @@ class MetaEvolutionManager:
         )
         self._accumulate_costs(total_cost_data, cost_data)
 
+        # Save session transcript summary
+        self._save_session_transcript(session_id, iteration_output)
+
         logger.info(f"\n{'=' * 60}")
         logger.info(f"✓ Meta-evolution complete for iteration {iteration}")
         logger.info(f"Cost: ${total_cost_data['total_cost']:.4f}")
@@ -1465,3 +1468,29 @@ After saving the reflection, respond with: "REFLECTION COMPLETE"
         except Exception as e:
             logger.warning(f"Failed to request meta-evolution reflection: {e}")
             return {'total_cost': 0.0, 'calls': 0}
+
+    def _save_session_transcript(self, session_id: str, working_dir: Path):
+        """
+        Summarize Claude Code session transcript and save to meta-evolution output directory.
+
+        Args:
+            session_id: Claude Code session ID
+            working_dir: Iteration output directory (used as Claude CLI working dir)
+
+        Errors are logged but do not raise exceptions - transcript saving
+        should never break the research run.
+        """
+        try:
+            from RoboPhD.utilities.transcript_summarizer import find_transcript, summarize_transcript
+
+            chat_file = find_transcript(working_dir, session_id)
+            if not chat_file:
+                logger.warning(f"Session transcript not found for session {session_id}")
+                return
+
+            summary_path = summarize_transcript(chat_file, working_dir / "session_summary.md")
+            summary_size = summary_path.stat().st_size
+            logger.info(f"Saved session summary: {summary_path.name} ({summary_size/1024:.1f} KB)")
+
+        except Exception as e:
+            logger.warning(f"Failed to save session summary: {e}")
