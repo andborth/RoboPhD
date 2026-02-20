@@ -77,6 +77,7 @@ MODEL_MAP = {
     "haiku-4.5": "claude-haiku-4-5-20251001",
     "sonnet-4.5": "claude-sonnet-4-5-20250929",
     "opus-4.5": "claude-opus-4-5-20251101",
+    "opus-4.6": "claude-opus-4-6",
 }
 
 
