@@ -30,8 +30,11 @@ def get_domain(domain_name: str, config: dict) -> DomainInterface:
     elif domain_name == 'codegen':
         from .codegen.domain import CodeGenDomain
         return CodeGenDomain(config)
+    elif domain_name == 'external':
+        from .external.domain import ExternalEvaluatorDomain
+        return ExternalEvaluatorDomain(config)
     else:
         raise ValueError(
             f"Unknown domain: {domain_name}. "
-            f"Available domains: text2sql, codegen"
+            f"Available domains: text2sql, codegen, external"
         )
