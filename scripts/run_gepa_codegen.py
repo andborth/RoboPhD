@@ -255,9 +255,15 @@ def main():
     )
 
     # --- 6. Save results ---
-    best_candidate = getattr(result, "best_candidate", seed_candidate)
-    val_scores = getattr(result, "val_aggregate_scores", [])
-    candidates = getattr(result, "candidates", [])
+    best_candidate = result.best_candidate
+    val_scores = getattr(result, "val_aggregate_scores", None)
+    if val_scores is None:
+        logger.warning("GEPA result missing val_aggregate_scores")
+        val_scores = []
+    candidates = getattr(result, "candidates", None)
+    if candidates is None:
+        logger.warning("GEPA result missing candidates")
+        candidates = []
 
     best_val = max(val_scores) if val_scores else 0.0
     logger.info(f"Optimization complete. Best validation score: {best_val:.3f}")
