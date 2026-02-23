@@ -174,6 +174,9 @@ def run_robophd(args, cache_dir: Path, output_dir: Path) -> dict:
     num_iterations = max(1, args.evaluation_budget // evals_per_iter)
 
     # Build RoboPhD config
+    # Point agents_directory at the seed agent's parent so RoboPhD starts
+    # from the same seed as GEPA (matched comparison).
+    seed_agent_dir = args.seed_agent.resolve()
     robophd_config = {
         "domain": "codegen",
         "coder_model": args.coder_model,
@@ -184,6 +187,8 @@ def run_robophd(args, cache_dir: Path, output_dir: Path) -> dict:
         "evaluation_budget": args.evaluation_budget,
         "random_seed": args.seed,
         "runs_directory": str(args.runs_dir),
+        "agents_directory": str(seed_agent_dir.parent),
+        "initial_agents": [seed_agent_dir.name],
     }
 
     # Merge user config
@@ -434,12 +439,15 @@ def _find_robophd_best_agent(robophd_dir: Path) -> Path | None:
     except (json.JSONDecodeError, IOError):
         return None
 
-    # Find agent with highest ELO
-    elo_ratings = checkpoint.get("elo_ratings", {})
-    if not elo_ratings:
+    # Find agent with highest ELO from performance_records
+    performance_records = checkpoint.get("performance_records", {})
+    if not performance_records:
         return None
 
-    best_agent_id = max(elo_ratings, key=elo_ratings.get)
+    best_agent_id = max(
+        performance_records,
+        key=lambda a: performance_records[a].get("elo", 1500),
+    )
 
     # Find agent package directory
     agents_dir = exp_dir / "agents"

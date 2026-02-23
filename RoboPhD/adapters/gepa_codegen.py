@@ -268,13 +268,25 @@ class RoboPhDCodeGenEvaluator:
         self._evaluator = None  # CriticEvaluator instance
         self._eval_count = 0
 
+        # One-time sys.path setup for tools imports
+        self._paths_configured = False
+
+    def _ensure_paths(self) -> None:
+        """Add tools directories to sys.path once."""
+        if self._paths_configured:
+            return
+        tools_dir = str(Path(__file__).parent.parent / "tools")
+        project_root = str(Path(__file__).parent.parent.parent)
+        if tools_dir not in sys.path:
+            sys.path.insert(0, tools_dir)
+        if project_root not in sys.path:
+            sys.path.insert(0, project_root)
+        self._paths_configured = True
+
     def _load_hf_dataset(self) -> Dict:
         """Lazy-load HuggingFace dataset (for test evaluation)."""
         if self._hf_dataset is None:
-            # Import from the tools module
-            tools_dir = Path(__file__).parent.parent / "tools"
-            if str(tools_dir) not in sys.path:
-                sys.path.insert(0, str(tools_dir))
+            self._ensure_paths()
             from evaluate_livecodebench import load_dataset
             self._hf_dataset = load_dataset()
         return self._hf_dataset
@@ -310,13 +322,7 @@ class RoboPhDCodeGenEvaluator:
         if self._evaluator is not None:
             return self._evaluator
 
-        # Import CriticEvaluator from tools
-        tools_dir = Path(__file__).parent.parent / "tools"
-        if str(tools_dir) not in sys.path:
-            sys.path.insert(0, str(tools_dir))
-        if str(tools_dir.parent.parent) not in sys.path:
-            sys.path.insert(0, str(tools_dir.parent.parent))
-
+        self._ensure_paths()
         from run_critic_evaluation import CriticEvaluator
 
         output_dir = self.work_dir / "eval_output"
