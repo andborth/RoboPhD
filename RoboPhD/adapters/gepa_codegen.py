@@ -38,15 +38,6 @@ CODEGEN_FILE_MAPPING = {
     "tool_code": "tools/problem_analyzer.py",
 }
 
-TEXT2SQL_FILE_MAPPING = {
-    "eval_instructions": "eval_instructions.md",
-    "tool_code": "tools/schema_analyzer.py",
-}
-
-AIME_FILE_MAPPING = {
-    "system_prompt": "eval_instructions.md",
-}
-
 # ---------------------------------------------------------------------------
 # Candidate <-> Agent Directory conversion
 # ---------------------------------------------------------------------------
