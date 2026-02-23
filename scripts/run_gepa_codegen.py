@@ -90,7 +90,7 @@ def parse_args():
         "--max-metric-calls",
         type=int,
         default=100,
-        help="Maximum evaluations (GEPA stopping condition)",
+        help="GEPA optimization budget (checked between rounds, actual evaluator calls will be higher)",
     )
     parser.add_argument(
         "--val-ratio",
