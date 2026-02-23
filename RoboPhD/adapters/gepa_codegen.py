@@ -268,10 +268,8 @@ class RoboPhDCodeGenEvaluator:
             return
         tools_dir = str(Path(__file__).parent.parent / "tools")
         project_root = str(Path(__file__).parent.parent.parent)
-        if tools_dir not in sys.path:
-            sys.path.insert(0, tools_dir)
-        if project_root not in sys.path:
-            sys.path.insert(0, project_root)
+        sys.path.insert(0, tools_dir)
+        sys.path.insert(0, project_root)
         self._paths_configured = True
 
     def _load_hf_dataset(self) -> Dict:
