@@ -182,12 +182,13 @@ def main():
     logger.info(f"Using cache directory: {cache_dir}")
 
     # --- 3. Build datasets ---
+    import random
+    rng = random.Random(args.seed)
+
     all_evolution = build_codegen_dataset(cache_dir, split="evolution")
     logger.info(f"Evolution set: {len(all_evolution)} problems")
 
     if args.train_size and args.train_size < len(all_evolution):
-        import random
-        rng = random.Random(args.seed)
         all_evolution = rng.sample(all_evolution, args.train_size)
         logger.info(f"Subsampled to {len(all_evolution)} problems")
 
@@ -197,8 +198,6 @@ def main():
         valset = None
         logger.info(f"Training set: {len(trainset)} (no validation split)")
     else:
-        import random
-        rng = random.Random(args.seed)
         shuffled = list(all_evolution)
         rng.shuffle(shuffled)
         split_idx = max(1, int(len(shuffled) * (1 - args.val_ratio)))
@@ -256,8 +255,12 @@ def main():
     )
 
     # --- 6. Save results ---
-    best_candidate = result.best_candidate
-    logger.info(f"Optimization complete. Best validation score: {max(result.val_aggregate_scores):.3f}")
+    best_candidate = getattr(result, "best_candidate", seed_candidate)
+    val_scores = getattr(result, "val_aggregate_scores", [])
+    candidates = getattr(result, "candidates", [])
+
+    best_val = max(val_scores) if val_scores else 0.0
+    logger.info(f"Optimization complete. Best validation score: {best_val:.3f}")
 
     # Save best candidate
     with open(args.output_dir / "best_candidate.json", "w") as f:
@@ -277,9 +280,9 @@ def main():
         "total_evaluations": evaluator.total_evaluations,
         "train_size": len(trainset),
         "val_size": len(valset) if valset else 0,
-        "num_candidates_explored": len(result.candidates),
-        "best_val_score": max(result.val_aggregate_scores),
-        "val_scores": result.val_aggregate_scores,
+        "num_candidates_explored": len(candidates),
+        "best_val_score": best_val,
+        "val_scores": val_scores,
     }
     with open(args.output_dir / "optimization_summary.json", "w") as f:
         json.dump(summary, f, indent=2)
