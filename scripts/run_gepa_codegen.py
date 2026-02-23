@@ -6,11 +6,10 @@ Extracts a seed candidate from a RoboPhD agent directory, builds train/val
 datasets from the codegen cache, and runs GEPA optimization.
 
 Usage:
-    # Smoke test (10 evaluations on 5 problems)
+    # Smoke test (10 evaluations)
     python scripts/run_gepa_codegen.py \
-        --seed-agent RoboPhD/codegen_agents/naive_critic \
-        --max-metric-calls 10 \
-        --train-size 5
+        --seed-agent RoboPhD/codegen_agents/codegen_haiku_best \
+        --max-metric-calls 10
 
     # Full run
     python scripts/run_gepa_codegen.py \
@@ -94,21 +93,10 @@ def parse_args():
         help="Maximum evaluations (GEPA stopping condition)",
     )
     parser.add_argument(
-        "--train-size",
-        type=int,
-        default=None,
-        help="Limit training set size (default: use all evolution problems)",
-    )
-    parser.add_argument(
         "--val-ratio",
         type=float,
         default=0.2,
         help="Fraction of evolution set to hold out for validation (default: 0.2)",
-    )
-    parser.add_argument(
-        "--no-val-split",
-        action="store_true",
-        help="Don't split train/val (validate against training set, matching RoboPhD)",
     )
     parser.add_argument(
         "--reflection-model",
@@ -188,22 +176,13 @@ def main():
     all_evolution = build_codegen_dataset(cache_dir, split="evolution")
     logger.info(f"Evolution set: {len(all_evolution)} problems")
 
-    if args.train_size and args.train_size < len(all_evolution):
-        all_evolution = rng.sample(all_evolution, args.train_size)
-        logger.info(f"Subsampled to {len(all_evolution)} problems")
-
-    # Train/val split
-    if args.no_val_split:
-        trainset = all_evolution
-        valset = None
-        logger.info(f"Training set: {len(trainset)} (no validation split)")
-    else:
-        shuffled = list(all_evolution)
-        rng.shuffle(shuffled)
-        split_idx = max(1, int(len(shuffled) * (1 - args.val_ratio)))
-        trainset = shuffled[:split_idx]
-        valset = shuffled[split_idx:]
-        logger.info(f"Training set: {len(trainset)}, Validation set: {len(valset)}")
+    # Train/val split (GEPA optimizes on train, validates on held-out val)
+    shuffled = list(all_evolution)
+    rng.shuffle(shuffled)
+    split_idx = max(1, int(len(shuffled) * (1 - args.val_ratio)))
+    trainset = shuffled[:split_idx]
+    valset = shuffled[split_idx:]
+    logger.info(f"Training set: {len(trainset)}, Validation set: {len(valset)}")
 
     # --- 4. Create evaluator ---
     evaluator = RoboPhDCodeGenEvaluator(
