@@ -68,8 +68,8 @@ def parse_args():
     )
 
     # Models
-    parser.add_argument("--coder-model", default="haiku-4.5", help="Coder model")
-    parser.add_argument("--critic-model", default="haiku-4.5", help="Critic model")
+    parser.add_argument("--coder-model", default="haiku-4.5", help="Coder model (default: haiku-4.5)")
+    parser.add_argument("--critic-model", default="haiku-4.5", help="Critic model (default: haiku-4.5)")
 
     # Cache / data
     parser.add_argument(
@@ -101,7 +101,7 @@ def parse_args():
     parser.add_argument(
         "--reflection-model",
         default=None,
-        help="LLM for GEPA reflection/mutation (default: GEPA's default)",
+        help="LLM for GEPA reflection/mutation (default: GEPA's built-in default)",
     )
     parser.add_argument(
         "--seed",
