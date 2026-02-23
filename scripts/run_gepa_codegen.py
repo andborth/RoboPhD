@@ -13,14 +13,14 @@ Usage:
 
     # Full run
     python scripts/run_gepa_codegen.py \
-        --seed-agent RoboPhD/codegen_agents/codegen_haiku_best \
+        --seed-agent RoboPhD/codegen_agents/naive_critic \
         --max-metric-calls 600 \
         --coder-model haiku-4.5 \
         --critic-model haiku-4.5
 
     # With test-set evaluation of best candidate
     python scripts/run_gepa_codegen.py \
-        --seed-agent RoboPhD/codegen_agents/codegen_haiku_best \
+        --seed-agent RoboPhD/codegen_agents/naive_critic \
         --max-metric-calls 600 \
         --eval-test-set
 
