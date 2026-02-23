@@ -8,7 +8,7 @@ datasets from the codegen cache, and runs GEPA optimization.
 Usage:
     # Smoke test (10 evaluations)
     python scripts/run_gepa_codegen.py \
-        --seed-agent RoboPhD/codegen_agents/codegen_haiku_best \
+        --seed-agent RoboPhD/codegen_agents/naive_critic \
         --max-metric-calls 10
 
     # Full run
