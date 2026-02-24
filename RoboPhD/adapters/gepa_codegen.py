@@ -361,10 +361,10 @@ class RoboPhDCodeGenEvaluator:
                 except Exception:
                     pass
             elif filepath.is_symlink():
-                # For symlinks (e.g., solution_v2.py -> solution.py when CORRECT),
-                # note the link target
+                # Resolve symlinks and read the actual content so GEPA's
+                # reflection model sees the real data (not a placeholder).
                 try:
-                    diagnostics[key] = f"[symlink to {filepath.resolve().name}]"
+                    diagnostics[key] = filepath.resolve().read_text()
                 except Exception:
                     pass
 

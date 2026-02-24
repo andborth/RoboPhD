@@ -130,8 +130,8 @@ def parse_args():
     parser.add_argument(
         "--max-workers",
         type=int,
-        default=8,
-        help="Max parallel evaluator threads for GEPA val sweeps (default: 8)",
+        default=12,
+        help="Max parallel evaluator threads for GEPA val sweeps (default: 12)",
     )
 
     # Timeouts
@@ -232,6 +232,7 @@ def main():
         "run_dir": str(args.output_dir / "gepa_run"),
         "parallel": args.max_workers > 1,
         "max_workers": args.max_workers,
+        "track_best_outputs": True,
     }
 
     engine_config = EngineConfig(**config_kwargs)
@@ -281,12 +282,30 @@ def main():
     materialize_candidate(best_candidate, best_agent_dir, CODEGEN_FILE_MAPPING, name="gepa_best")
     logger.info(f"Best agent materialized at: {best_agent_dir}")
 
+    # Materialize all candidates for inspection
+    all_candidates_dir = args.output_dir / "all_candidates"
+    for idx, cand in enumerate(candidates):
+        cand_dir = all_candidates_dir / f"candidate_{idx}"
+        score = val_scores[idx] if idx < len(val_scores) else None
+        name = f"candidate_{idx}"
+        if score is not None:
+            name += f"_val{score:.3f}"
+        materialize_candidate(cand, cand_dir, CODEGEN_FILE_MAPPING, name=name)
+    if candidates:
+        logger.info(f"All {len(candidates)} candidates materialized at: {all_candidates_dir}")
+
     # Save optimization summary
     summary = {
         "seed_agent": str(args.seed_agent),
         "coder_model": args.coder_model,
         "critic_model": args.critic_model,
+        "reflection_model": args.reflection_model,
         "max_metric_calls": args.max_metric_calls,
+        "val_ratio": args.val_ratio,
+        "seed": args.seed,
+        "max_workers": args.max_workers,
+        "codegen_timeout": args.codegen_timeout,
+        "critic_timeout": args.critic_timeout,
         "total_evaluations": evaluator.total_evaluations,
         "train_size": len(trainset),
         "val_size": len(valset) if valset else 0,
