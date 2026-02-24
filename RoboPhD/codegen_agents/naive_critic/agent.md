@@ -2,7 +2,7 @@
 name: naive_critic
 description: Baseline critic that provides generic code review
 execution_mode: tool_only
-tool_command: python tools/analyze_problem.py
+tool_command: python tools/problem_analyzer.py
 tool_output_file: tool_output/analysis.txt
 ---
 
@@ -14,7 +14,7 @@ This agent uses tool-only execution to analyze the problem context.
 
 1. **Run Analysis Tool**
    ```bash
-   python tools/analyze_problem.py
+   python tools/problem_analyzer.py
    ```
 
 2. **Read and Output Results**

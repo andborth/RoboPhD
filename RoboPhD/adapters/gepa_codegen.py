@@ -110,34 +110,6 @@ def materialize_candidate(
     return target_dir
 
 
-def _parse_tool_path_from_agent_md(agent_dir: Path) -> Optional[str]:
-    """
-    Parse the actual tool script path from agent.md YAML frontmatter.
-
-    Extracts the script path from tool_command (e.g., "python tools/analyze_problem.py"
-    -> "tools/analyze_problem.py"). Returns None if not found.
-    """
-    import re
-    agent_md_path = agent_dir / "agent.md"
-    if not agent_md_path.exists():
-        return None
-    content = agent_md_path.read_text()
-    match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
-    if not match:
-        return None
-    try:
-        import yaml
-        frontmatter = yaml.safe_load(match.group(1)) or {}
-    except Exception:
-        return None
-    tool_command = frontmatter.get("tool_command", "")
-    # Extract script path from "python tools/foo.py" or "python3 tools/foo.py"
-    cmd_match = re.match(r'python[3]?\s+(.+\.py)', tool_command)
-    if cmd_match:
-        return cmd_match.group(1)
-    return None
-
-
 def extract_candidate(
     agent_dir: Path,
     file_mapping: Dict[str, str],
@@ -146,9 +118,7 @@ def extract_candidate(
     Read a RoboPhD agent directory into a GEPA candidate dict.
 
     For each (key, filepath) in file_mapping, reads agent_dir/filepath
-    into candidate[key]. If the mapped path for "tool_code" doesn't exist,
-    falls back to discovering the actual tool path from agent.md's
-    tool_command frontmatter.
+    into candidate[key], returning "" if the file is missing.
 
     Args:
         agent_dir: Path to agent directory.
@@ -160,21 +130,7 @@ def extract_candidate(
     candidate = {}
     for key, filepath in file_mapping.items():
         src = agent_dir / filepath
-        if src.exists():
-            candidate[key] = src.read_text()
-        elif key == "tool_code":
-            # Fall back to agent.md frontmatter to find actual tool path
-            actual_path = _parse_tool_path_from_agent_md(agent_dir)
-            if actual_path:
-                actual_src = agent_dir / actual_path
-                if actual_src.exists():
-                    candidate[key] = actual_src.read_text()
-                else:
-                    candidate[key] = ""
-            else:
-                candidate[key] = ""
-        else:
-            candidate[key] = ""
+        candidate[key] = src.read_text() if src.exists() else ""
     return candidate
 
 
