@@ -853,6 +853,7 @@ class ParallelAgentResearcher:
             self.iteration_times = []
             self.iteration_claude_costs = []
             self.iteration_fresh_evals = []
+            self._current_deep_focus_fresh_evals = 0
             self.current_iteration_evolution_cost = None
             self.evolution_times = []
             self.meta_evolution_times = []
@@ -2993,7 +2994,7 @@ class ParallelAgentResearcher:
                 eval_cache_stats.get(aid, {}).get('fresh', iteration_results[aid]['total'])
                 for aid in iteration_results
             )
-            iteration_fresh += getattr(self, '_current_deep_focus_fresh_evals', 0) or 0
+            iteration_fresh += self._current_deep_focus_fresh_evals
             self._current_deep_focus_fresh_evals = 0
             self.iteration_fresh_evals.append(iteration_fresh)
 
