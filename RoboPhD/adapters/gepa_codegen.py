@@ -24,6 +24,7 @@ import json
 import logging
 import shutil
 import sys
+import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -256,6 +257,10 @@ class RoboPhDCodeGenEvaluator:
         self._evaluator = None  # CriticEvaluator instance
         self._eval_count = 0
 
+        # Thread safety for concurrent __call__ from GEPA's ThreadPoolExecutor
+        self._lock = threading.Lock()
+        self._hf_lock = threading.Lock()
+
         # One-time sys.path setup for tools imports
         self._paths_configured = False
 
@@ -271,10 +276,13 @@ class RoboPhDCodeGenEvaluator:
 
     def _load_hf_dataset(self) -> Dict:
         """Lazy-load HuggingFace dataset (for test evaluation)."""
-        if self._hf_dataset is None:
-            self._ensure_paths()
-            from evaluate_livecodebench import load_dataset
-            self._hf_dataset = load_dataset()
+        if self._hf_dataset is not None:
+            return self._hf_dataset
+        with self._hf_lock:
+            if self._hf_dataset is None:
+                self._ensure_paths()
+                from evaluate_livecodebench import load_dataset
+                self._hf_dataset = load_dataset()
         return self._hf_dataset
 
     def _candidate_fingerprint(self, candidate: Dict[str, str]) -> str:
@@ -380,11 +388,17 @@ class RoboPhDCodeGenEvaluator:
             (score, diagnostics) where score is 1.0 if v2 passed, 0.0 otherwise.
         """
         question_id = example["question_id"]
-        self._eval_count += 1
 
-        # Materialize candidate if changed
-        agent_dir = self._ensure_agent_materialized(candidate)
-        evaluator = self._get_evaluator(agent_dir)
+        # Lock guards shared mutable state so concurrent threads don't race on
+        # agent materialization. evaluate_problem() runs outside the lock since
+        # it uses per-problem output dirs. NOTE: this assumes all concurrent
+        # callers pass the same candidate (GEPA val sweeps). If callers ever
+        # pass different candidates concurrently, the shared agent dir would be
+        # overwritten mid-evaluation — that would need per-candidate dirs.
+        with self._lock:
+            self._eval_count += 1
+            agent_dir = self._ensure_agent_materialized(candidate)
+            evaluator = self._get_evaluator(agent_dir)
 
         # Resolve problem data from cache
         cache_problem_dir = self.cache_dir / question_id

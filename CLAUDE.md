@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Available CLI Tools**: `jq` and `tree` are installed and available
 - **Text2SQL domain**: See [docs/claude/text2sql.md](docs/claude/text2sql.md)
 - **CodeGen domain**: See [docs/claude/codegen.md](docs/claude/codegen.md)
+- **GEPA integration**: See [docs/claude/gepa.md](docs/claude/gepa.md)
 
 ## Project Overview
 
@@ -34,6 +35,27 @@ pip install -r requirements.txt
 # Install Claude Code CLI (required for evolution)
 # See: https://docs.anthropic.com/en/docs/claude-code
 ```
+
+### GEPA Optimization (CodeGen)
+```bash
+# Smoke test (~5 mutation cycles)
+python scripts/run_gepa_codegen.py \
+  --seed-agent RoboPhD/codegen_agents/naive_critic \
+  --max-metric-calls 200 --val-ratio 0.05
+
+# Full run
+python scripts/run_gepa_codegen.py \
+  --seed-agent RoboPhD/codegen_agents/naive_critic \
+  --max-metric-calls 600 --val-ratio 0.05 \
+  --reflection-model opus-4.6
+
+# Sequential (easier debugging, no ThreadPoolExecutor)
+python scripts/run_gepa_codegen.py \
+  --seed-agent RoboPhD/codegen_agents/naive_critic \
+  --max-metric-calls 200 --max-workers 1
+```
+
+**Budget math**: Each mutation cycle costs ~minibatch (3) + val sweep (val_size). With `--val-ratio 0.05` (~39 val examples), each cycle ≈ 42 calls. Keep val small to maximize exploration within the budget.
 
 ### Resume and Extend
 ```bash

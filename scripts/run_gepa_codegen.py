@@ -216,7 +216,7 @@ def main():
         "max_metric_calls": args.max_metric_calls,
         "seed": args.seed,
         "run_dir": str(args.output_dir / "gepa_run"),
-        "parallel": True,
+        "parallel": args.max_workers > 1,
         "max_workers": args.max_workers,
     }
 
