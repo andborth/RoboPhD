@@ -31,6 +31,7 @@ Dependencies:
 import argparse
 import json
 import logging
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -46,7 +47,7 @@ from RoboPhD.adapters.gepa_codegen import (
     extract_candidate,
     materialize_candidate,
 )
-from RoboPhD.config import SUPPORTED_MODELS
+from RoboPhD.config import API_KEY_ENV_VAR, SUPPORTED_MODELS
 
 
 def to_litellm_model(name: str) -> str:
@@ -150,6 +151,11 @@ def parse_args():
 
 def main():
     args = parse_args()
+
+    # Ensure litellm (used by GEPA reflection) can find the API key
+    api_key = os.environ.get(API_KEY_ENV_VAR)
+    if api_key and "ANTHROPIC_API_KEY" not in os.environ:
+        os.environ["ANTHROPIC_API_KEY"] = api_key
 
     # Setup output directory
     if args.output_dir is None:
