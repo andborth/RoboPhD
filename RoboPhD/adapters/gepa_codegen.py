@@ -256,6 +256,7 @@ class RoboPhDCodeGenEvaluator:
         self._agent_dir: Optional[Path] = None
         self._evaluator = None  # CriticEvaluator instance
         self._eval_count = 0
+        self._total_eval_cost = 0.0
 
         # Thread safety for concurrent __call__ from GEPA's ThreadPoolExecutor
         self._lock = threading.Lock()
@@ -431,6 +432,11 @@ class RoboPhDCodeGenEvaluator:
             logger.error(f"evaluate_problem failed for {question_id}: {e}")
             return 0.0, {"error": str(e), "question_id": question_id}
 
+        # Accumulate cost
+        eval_cost = result.get("timing", {}).get("total_cost_usd", 0.0)
+        with self._lock:
+            self._total_eval_cost += eval_cost
+
         # Score: 1.0 if v2 passed, 0.0 otherwise
         score = 1.0 if result.get("v2_passed", False) else 0.0
 
@@ -450,3 +456,8 @@ class RoboPhDCodeGenEvaluator:
     def total_evaluations(self) -> int:
         """Total number of evaluations performed."""
         return self._eval_count
+
+    @property
+    def total_eval_cost(self) -> float:
+        """Total evaluation cost in USD."""
+        return self._total_eval_cost

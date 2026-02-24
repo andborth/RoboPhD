@@ -33,8 +33,10 @@ import json
 import logging
 import os
 import sys
+import threading
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -55,6 +57,42 @@ def to_litellm_model(name: str) -> str:
     if name in SUPPORTED_MODELS:
         return SUPPORTED_MODELS[name]["name"]
     return name  # already a full model name
+
+
+class CostTrackingLM:
+    """Wraps litellm.completion to track token usage and cost for GEPA reflection calls."""
+
+    def __init__(self, model_name: str):
+        self.model_name = model_name
+        self.total_cost = 0.0
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
+        self.call_count = 0
+        self._lock = threading.Lock()
+
+    def __call__(self, prompt: str | list[dict[str, Any]]) -> str:
+        import litellm
+
+        if isinstance(prompt, str):
+            messages: list[dict[str, Any]] = [{"role": "user", "content": prompt}]
+        else:
+            messages = prompt
+
+        completion = litellm.completion(model=self.model_name, messages=messages)
+
+        # Extract usage from litellm response
+        usage = getattr(completion, "usage", None)
+        cost = litellm.completion_cost(completion_response=completion)
+
+        with self._lock:
+            self.call_count += 1
+            self.total_cost += cost
+            if usage:
+                self.total_input_tokens += getattr(usage, "prompt_tokens", 0)
+                self.total_output_tokens += getattr(usage, "completion_tokens", 0)
+
+        return completion.choices[0].message.content
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -238,10 +276,12 @@ def main():
     engine_config = EngineConfig(**config_kwargs)
     gepa_config = GEPAConfig(engine=engine_config)
 
+    reflection_lm = None
     if args.reflection_model:
         from gepa.optimize_anything import ReflectionConfig
         litellm_model = to_litellm_model(args.reflection_model)
-        gepa_config.reflection = ReflectionConfig(reflection_lm=litellm_model)
+        reflection_lm = CostTrackingLM(litellm_model)
+        gepa_config.reflection = ReflectionConfig(reflection_lm=reflection_lm)
 
     logger.info(f"Starting GEPA optimization with max_metric_calls={args.max_metric_calls}")
 
@@ -271,7 +311,13 @@ def main():
         candidates = []
 
     best_val = max(val_scores) if val_scores else 0.0
+    reflection_cost = reflection_lm.total_cost if reflection_lm else 0.0
+    total_cost = evaluator.total_eval_cost + reflection_cost
     logger.info(f"Optimization complete. Best validation score: {best_val:.3f}")
+    logger.info(
+        f"Cost: ${total_cost:.2f} total "
+        f"(eval: ${evaluator.total_eval_cost:.2f}, reflection: ${reflection_cost:.2f})"
+    )
 
     # Save best candidate
     with open(args.output_dir / "best_candidate.json", "w") as f:
@@ -312,6 +358,14 @@ def main():
         "num_candidates_explored": len(candidates),
         "best_val_score": best_val,
         "val_scores": val_scores,
+        "cost": {
+            "eval_cost_usd": evaluator.total_eval_cost,
+            "reflection_cost_usd": reflection_cost,
+            "reflection_calls": reflection_lm.call_count if reflection_lm else 0,
+            "reflection_input_tokens": reflection_lm.total_input_tokens if reflection_lm else 0,
+            "reflection_output_tokens": reflection_lm.total_output_tokens if reflection_lm else 0,
+            "total_cost_usd": total_cost,
+        },
     }
     with open(args.output_dir / "optimization_summary.json", "w") as f:
         json.dump(summary, f, indent=2)
