@@ -46,6 +46,14 @@ from RoboPhD.adapters.gepa_codegen import (
     extract_candidate,
     materialize_candidate,
 )
+from RoboPhD.config import SUPPORTED_MODELS
+
+
+def to_litellm_model(name: str) -> str:
+    """Translate RoboPhD model shorthand (e.g. 'opus-4.6') to litellm name ('claude-opus-4-6')."""
+    if name in SUPPORTED_MODELS:
+        return SUPPORTED_MODELS[name]["name"]
+    return name  # already a full model name
 
 logging.basicConfig(
     level=logging.INFO,
@@ -225,7 +233,8 @@ def main():
 
     if args.reflection_model:
         from gepa.optimize_anything import ReflectionConfig
-        gepa_config.reflection = ReflectionConfig(reflection_lm=args.reflection_model)
+        litellm_model = to_litellm_model(args.reflection_model)
+        gepa_config.reflection = ReflectionConfig(reflection_lm=litellm_model)
 
     logger.info(f"Starting GEPA optimization with max_metric_calls={args.max_metric_calls}")
 
