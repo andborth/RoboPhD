@@ -350,6 +350,12 @@ class ParallelAgentEvolver:
                 if databases:
                     databases_map[test_iteration] = databases
 
+        # Deep focus test rounds don't cache, so all evals are fresh
+        # Each test round evaluates len(contexts) × problems_per_context problems
+        self._current_deep_focus_fresh_evals = sum(
+            len(dbs) * self.problems_per_context for dbs in databases_map.values()
+        )
+
         # Create Deep Focus Evolution Manager
         # Pass full config so domains get all required fields (coder_model, critic_model, etc.)
         manager = DeepFocusEvolutionManager(
@@ -767,6 +773,7 @@ class ParallelAgentResearcher:
             self.test_history = resume_checkpoint['test_history']
             self.iteration_times = resume_checkpoint.get('iteration_times', [])
             self.iteration_claude_costs = resume_checkpoint.get('iteration_claude_costs', [])
+            self.iteration_fresh_evals = resume_checkpoint.get('iteration_fresh_evals', [])
             self.evolution_times = resume_checkpoint.get('evolution_times', [])
             self.meta_evolution_times = resume_checkpoint.get('meta_evolution_times', [])
             self.phase1_failures = resume_checkpoint.get('phase1_failures', [])
@@ -845,6 +852,7 @@ class ParallelAgentResearcher:
             self.test_history = []
             self.iteration_times = []
             self.iteration_claude_costs = []
+            self.iteration_fresh_evals = []
             self.current_iteration_evolution_cost = None
             self.evolution_times = []
             self.meta_evolution_times = []
@@ -1339,6 +1347,7 @@ class ParallelAgentResearcher:
                 archived_time = sum(self.iteration_times[from_iteration - 1:])
                 self.iteration_times = self.iteration_times[:from_iteration - 1]
                 self.iteration_claude_costs = self.iteration_claude_costs[:from_iteration - 1]
+                self.iteration_fresh_evals = self.iteration_fresh_evals[:from_iteration - 1]
 
                 print(f"  ⏱️  Subtracted archived time: {archived_time/60:.1f} minutes")
             
@@ -2773,6 +2782,7 @@ class ParallelAgentResearcher:
 
                 # No evolution in iteration 1
                 self.evolution_times.append(None)
+                self._current_deep_focus_fresh_evals = 0
             else:
                 # Get evolution strategy and analyzer from config
                 evolution_strategy = config["evolution_strategy"]
@@ -2881,6 +2891,9 @@ class ParallelAgentResearcher:
                     else:
                         self.current_iteration_evolution_cost = None
 
+                    # Stash deep focus fresh eval count (computed in create_new_agent)
+                    self._current_deep_focus_fresh_evals = getattr(self.evolver, '_current_deep_focus_fresh_evals', 0)
+
                     # Install package based on type
                     if package_info['type'] == 'three_artifact':
                         # Three-artifact structure - install complete package
@@ -2954,7 +2967,8 @@ class ParallelAgentResearcher:
                     })
                     # No evolution timing for skipped evolution
                     self.evolution_times.append(None)
-                
+                    self._current_deep_focus_fresh_evals = 0
+
                 # Select agents for this iteration
                 selected_agents = self.select_agents_for_iteration(
                     iteration, 
@@ -2973,6 +2987,15 @@ class ParallelAgentResearcher:
 
             # Store per-iteration metrics
             self.iteration_times.append(iteration_time)
+
+            # Track fresh (non-cached) evaluations for evaluation_budget
+            iteration_fresh = sum(
+                eval_cache_stats.get(aid, {}).get('fresh', iteration_results[aid]['total'])
+                for aid in iteration_results
+            )
+            iteration_fresh += getattr(self, '_current_deep_focus_fresh_evals', 0) or 0
+            self._current_deep_focus_fresh_evals = 0
+            self.iteration_fresh_evals.append(iteration_fresh)
 
             # Initialize meta-evolution time to 0 (will be updated if meta-evolution runs)
             self.meta_evolution_times.append(0)
@@ -3062,6 +3085,17 @@ class ParallelAgentResearcher:
                 self.report_generator.generate_final_report(start_time)
                 print(f"\n🏁 Ending experiment after {iteration} iterations due to budget exhaustion")
                 return
+
+            # Check evaluation budget
+            evaluation_budget = config.get('evaluation_budget')
+            if evaluation_budget is not None:
+                total_fresh = sum(self.iteration_fresh_evals)
+                logger.info(f"Evaluation budget: {total_fresh}/{evaluation_budget} fresh evals")
+                if total_fresh >= evaluation_budget:
+                    self.process_reaper.stop()
+                    self.report_generator.generate_final_report(start_time)
+                    print(f"\n🏁 Ending experiment after {iteration} iterations: evaluation budget exhausted ({total_fresh}/{evaluation_budget} fresh evals)")
+                    return
 
             # Increment iteration for next loop
             iteration += 1
@@ -3955,7 +3989,8 @@ class ParallelAgentResearcher:
             'test_history': self.test_history,
             'evolution_times': self.evolution_times,
             'meta_evolution_times': self.meta_evolution_times,
-            'iteration_claude_costs': self.iteration_claude_costs
+            'iteration_claude_costs': self.iteration_claude_costs,
+            'iteration_fresh_evals': self.iteration_fresh_evals
         }
 
         for name, array in arrays_to_check.items():
@@ -4020,6 +4055,7 @@ class ParallelAgentResearcher:
             'test_history': self.test_history,
             'iteration_times': self.iteration_times,
             'iteration_claude_costs': self.iteration_claude_costs,
+            'iteration_fresh_evals': self.iteration_fresh_evals,
             'evolution_times': self.evolution_times,
             'meta_evolution_times': self.meta_evolution_times,
             'phase1_failures': self.phase1_failures,

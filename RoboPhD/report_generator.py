@@ -73,7 +73,8 @@ class ReportGenerator:
             ],
             "Meta-Evolution": [
                 "meta_evolution_strategy",
-                "meta_evolution_budget"
+                "meta_evolution_budget",
+                "evaluation_budget"
             ],
             "SQL Generation": [
                 "verification_retries",
