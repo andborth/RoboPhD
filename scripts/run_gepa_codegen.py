@@ -117,6 +117,14 @@ def parse_args():
         help="Evaluate best candidate on the held-out test set after optimization",
     )
 
+    # Parallelism
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=8,
+        help="Max parallel evaluator threads for GEPA val sweeps (default: 8)",
+    )
+
     # Timeouts
     parser.add_argument("--codegen-timeout", type=int, default=1200)
     parser.add_argument("--critic-timeout", type=int, default=600)
@@ -208,6 +216,8 @@ def main():
         "max_metric_calls": args.max_metric_calls,
         "seed": args.seed,
         "run_dir": str(args.output_dir / "gepa_run"),
+        "parallel": True,
+        "max_workers": args.max_workers,
     }
 
     engine_config = EngineConfig(**config_kwargs)
