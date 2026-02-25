@@ -19,6 +19,7 @@ class TaskDefinition:
         evaluator_factory: (config) -> evaluator_fn.
             The returned evaluator has signature:
             evaluator(candidate: dict, example: dict, *, problem_dir: Path = None) -> (float, dict)
+            Must be thread-safe: RoboPhD calls it concurrently from a ThreadPoolExecutor.
         dataset_builder: (config) -> [examples].
             Returns a flat list of example dicts (e.g. [{"question_id": "abc314_c"}, ...]).
         file_mapping: Candidate key -> agent file path.

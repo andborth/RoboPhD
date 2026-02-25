@@ -249,45 +249,55 @@ class ExternalEvaluatorDomain(DomainInterface):
         max_concurrent = config.get("max_concurrent", 12)
 
         def _evaluate_one(problem_id: str) -> dict:
-            examples = sampled.problems_by_context.get(problem_id, [])
-            example = examples[0] if examples else {"id": problem_id}
-
-            problem_dir = problems_dir / problem_id
-            problem_dir.mkdir(parents=True, exist_ok=True)
-
             try:
-                score, diagnostics = self._evaluator_fn(
-                    candidate, example, problem_dir=problem_dir
-                )
-                is_correct = score >= 0.5
-            except Exception as e:
-                self.logger.error(f"Evaluator failed on {problem_id}: {e}")
-                score = 0.0
-                diagnostics = {"error": str(e)}
-                is_correct = False
+                examples = sampled.problems_by_context.get(problem_id, [])
+                example = examples[0] if examples else {"id": problem_id}
 
-            eid = (
-                example.get("question_id")
-                or example.get("id")
-                or problem_id
-            )
+                problem_dir = problems_dir / problem_id
+                problem_dir.mkdir(parents=True, exist_ok=True)
 
-            result_entry = {
-                "question_id": eid,
-                "correct": is_correct,
-                "score": score,
-                "error": diagnostics.get("error"),
-            }
-
-            # Write result.json for future caching
-            if not diagnostics.get("error"):
-                with open(problem_dir / "result.json", "w") as f:
-                    json.dump(
-                        {k: v for k, v in result_entry.items() if k != "error"},
-                        f, indent=2,
+                try:
+                    score, diagnostics = self._evaluator_fn(
+                        candidate, example, problem_dir=problem_dir
                     )
+                    is_correct = score >= 0.5
+                except Exception as e:
+                    self.logger.error(f"Evaluator failed on {problem_id}: {e}")
+                    score = 0.0
+                    diagnostics = {"error": str(e)}
+                    is_correct = False
 
-            return result_entry
+                eid = (
+                    example.get("question_id")
+                    or example.get("id")
+                    or problem_id
+                )
+
+                result_entry = {
+                    "question_id": eid,
+                    "correct": is_correct,
+                    "score": score,
+                    "error": diagnostics.get("error"),
+                }
+
+                # Write result.json for future caching
+                if not diagnostics.get("error"):
+                    with open(problem_dir / "result.json", "w") as f:
+                        json.dump(
+                            {k: v for k, v in result_entry.items() if k != "error"},
+                            f, indent=2,
+                        )
+
+                return result_entry
+
+            except Exception as e:
+                self.logger.error(f"Unexpected error for {problem_id}: {e}")
+                return {
+                    "question_id": problem_id,
+                    "correct": False,
+                    "score": 0.0,
+                    "error": str(e),
+                }
 
         with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
             futures = {
