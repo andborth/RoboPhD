@@ -35,7 +35,7 @@ sys.path.insert(0, str(project_root))
 
 from RoboPhD.config import API_KEY_ENV_VAR
 from RoboPhD.adapters.candidate_utils import extract_candidate, materialize_candidate
-from RoboPhD.adapters.runner_utils import to_litellm_model, CostTrackingLM, parse_config_arg
+from RoboPhD.adapters.runner_utils import to_litellm_model, CostTrackingLM, parse_config_arg, print_task_params, _fmt_val
 from RoboPhD.tasks import get_task, list_tasks
 
 logging.basicConfig(
@@ -54,6 +54,11 @@ def parse_args():
         "--task",
         required=True,
         help=f"Task to optimize. Available: {', '.join(list_tasks())}",
+    )
+    parser.add_argument(
+        "--list-params",
+        action="store_true",
+        help="List all valid config parameters for the task and engine, then exit",
     )
     parser.add_argument(
         "--config",
@@ -80,8 +85,49 @@ def parse_args():
     return parser.parse_args()
 
 
+def _list_params(task):
+    """Print all valid parameters for run_gepa.py and exit."""
+    print("=" * 70)
+    print("VALID CONFIGURATION PARAMETERS — run_gepa.py")
+    print("=" * 70)
+    print("\nConfig merge order: task defaults -> --config -> --engine-config")
+
+    # Task params
+    print_task_params(task)
+
+    # GEPA engine params
+    gepa_params = {
+        "evaluation_budget": ("100", "Max evaluator calls (maps to max_metric_calls)"),
+        "max_workers": ("12", "Thread pool size for parallel evaluation"),
+        "seed": ("42", "Random seed for reproducibility"),
+        "val_ratio": ("0.2", "Fraction of dataset held out for validation"),
+        "reflection_model": ('"opus-4.6"', "Model for GEPA reflection (mutation proposals)"),
+    }
+
+    print("GEPA engine parameters (--engine-config):")
+    for k, (default, desc) in gepa_params.items():
+        print(f"  - {k}: {default}  — {desc}")
+    print()
+
+    print("CLI-only arguments (not in config):")
+    print("  --eval-test-set        Evaluate best candidate on held-out test set")
+    print("  --output-dir PATH      Output directory (default: gepa_runs/<task>_<timestamp>)")
+    print()
+
+    print("Example:")
+    print("  python scripts/run_gepa.py --task codegen \\")
+    print('    --config \'{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 200}\' \\')
+    print('    --engine-config \'{"val_ratio": 0.05, "reflection_model": "opus-4.6"}\'')
+
+
 def main():
     args = parse_args()
+
+    # --- Handle --list-params ---
+    if args.list_params:
+        task = get_task(args.task)
+        _list_params(task)
+        sys.exit(0)
 
     # Ensure litellm can find the API key
     api_key = os.environ.get(API_KEY_ENV_VAR)

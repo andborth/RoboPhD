@@ -37,7 +37,7 @@ sys.path.insert(0, str(project_root))
 
 from RoboPhD.config import API_KEY_ENV_VAR
 from RoboPhD.config_manager import ConfigManager, ConfigSource
-from RoboPhD.adapters.runner_utils import parse_config_arg
+from RoboPhD.adapters.runner_utils import parse_config_arg, print_task_params, _fmt_val
 from RoboPhD.tasks import get_task, list_tasks
 
 logging.basicConfig(
@@ -57,6 +57,11 @@ def parse_args():
         "--task",
         required=True,
         help=f"Task to optimize. Available: {', '.join(list_tasks())}",
+    )
+    parser.add_argument(
+        "--list-params",
+        action="store_true",
+        help="List all valid config parameters for the task and engine, then exit",
     )
     parser.add_argument(
         "--config",
@@ -132,8 +137,96 @@ def resolve_api_key() -> str:
 
 
 
+def _list_params(task):
+    """Print all valid parameters for run_robophd.py and exit."""
+    print("=" * 70)
+    print("VALID CONFIGURATION PARAMETERS — run_robophd.py")
+    print("=" * 70)
+    print("\nConfig merge order: task defaults -> --config -> --engine-config")
+
+    # Task params
+    print_task_params(task)
+
+    # Task-only keys (accepted in --config, not forwarded to engine)
+    print("Task-only keys (--config, consumed by evaluator/dataset factories):")
+    for k in sorted(_TASK_ONLY_KEYS):
+        default = task.config_defaults.get(k)
+        suffix = f" (default: {_fmt_val(default)})" if default is not None else ""
+        print(f"  - {k}{suffix}")
+    print()
+
+    # Shared keys
+    print("Shared keys (accepted in --config, translated for engine):")
+    for src, dst in sorted(_SHARED_KEY_MAP.items()):
+        print(f"  - {src}  ->  {dst}")
+    print()
+
+    # Engine params from ConfigManager
+    defaults = ConfigManager().get_defaults()
+    categories = {
+        "Sampling": ["contexts_per_iteration", "agents_per_iteration"],
+        "Evolution": ["evolution_strategy"],
+        "Evolution Schedule": ["config_schedule", "weighted_random_configs", "use_weighted_random"],
+        "Meta-Evolution": ["meta_evolution_strategy", "meta_evolution_model", "dollar_budget"],
+        "Deep Focus": ["new_agent_test_rounds"],
+        "Stopping Conditions": ["evaluation_budget"],
+        "Performance": ["max_concurrent"],
+        "Timeouts": ["phase1_timeout", "phase2_timeout", "evolution_timeout"],
+        "Caching": ["eval_result_cache"],
+        "Other": ["debug_log_probability"],
+    }
+
+    print("Engine parameters (--engine-config, forwarded to ConfigManager):")
+    shown = set()
+    for category, params in categories.items():
+        print(f"  {category}:")
+        for p in params:
+            if p in defaults:
+                print(f"    - {p}: {_fmt_val(defaults[p])}")
+                shown.add(p)
+    # Show any defaults not yet listed
+    remaining = sorted(k for k in defaults if k not in shown
+                       and k not in _TASK_ONLY_KEYS
+                       and k not in {"domain", "dataset", "num_iterations", "random_seed",
+                                     "initial_agents", "agents_directory",
+                                     "initial_strategies", "strategies_directory",
+                                     "eval_model", "analysis_model", "evolution_model",
+                                     "problems_per_context",
+                                     "verification_retries", "temperature_strategy",
+                                     "llm_call_timeout", "codegen_call_timeout",
+                                     "critic_call_timeout", "lmstudio_base_url",
+                                     "meta_config_schedule",
+                                     "coder_model", "coder_model_tag", "critic_model",
+                                     "codegen_split"})
+    if remaining:
+        print(f"  Other engine defaults:")
+        for p in remaining:
+            print(f"    - {p}: {_fmt_val(defaults[p])}")
+    print()
+
+    print("CLI-only arguments (not in config):")
+    print("  --num-iterations N     Number of evolution iterations (default: 10)")
+    print("  --resume PATH          Resume from experiment directory")
+    print("  --extend N             Add N more iterations to a resumed run")
+    print("  --from-iteration N     Restart from specific iteration")
+    print("  --random-seed N        Random seed")
+    print()
+
+    print("Example:")
+    print("  python scripts/run_robophd.py --task codegen \\")
+    print("    --num-iterations 5 \\")
+    print('    --config \'{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 50}\' \\')
+    print('    --engine-config \'{"contexts_per_iteration": 12, "evolution_strategy": "refinement_tool_only"}\'')
+
+
 def main():
     args = parse_args()
+
+    # --- Handle --list-params ---
+    if args.list_params:
+        task = get_task(args.task)
+        _list_params(task)
+        sys.exit(0)
 
     # --- 1. Load task and merge config ---
     task = get_task(args.task)

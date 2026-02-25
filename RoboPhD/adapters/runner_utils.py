@@ -52,6 +52,32 @@ class CostTrackingLM:
         return completion.choices[0].message.content
 
 
+def _fmt_val(val: Any) -> str:
+    """Format a config value for display."""
+    if isinstance(val, str):
+        return f'"{val}"'
+    if val is None:
+        return "null"
+    if isinstance(val, dict) and not val:
+        return "{}"
+    if isinstance(val, list) and not val:
+        return "[]"
+    return str(val)
+
+
+def print_task_params(task) -> None:
+    """Print task-specific config parameters."""
+    print(f"\nTask: {task.name} — {task.description}")
+    print(f"  Default seed agent: {task.default_seed_agent}")
+    print(f"  File mapping: {task.file_mapping}")
+
+    if task.config_defaults:
+        print(f"\n  Task defaults (overridable via --config):")
+        for k, v in sorted(task.config_defaults.items()):
+            print(f"    {k}: {_fmt_val(v)}")
+    print()
+
+
 def parse_config_arg(value: str) -> dict:
     """Parse a config argument: either a JSON file path or an inline JSON string."""
     if value is None:
