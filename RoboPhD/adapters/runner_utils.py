@@ -52,7 +52,7 @@ class CostTrackingLM:
         return completion.choices[0].message.content
 
 
-def _fmt_val(val: Any) -> str:
+def fmt_val(val: Any) -> str:
     """Format a config value for display."""
     if isinstance(val, str):
         return f'"{val}"'
@@ -74,7 +74,7 @@ def print_task_params(task) -> None:
     if task.config_defaults:
         print(f"\n  Task defaults (overridable via --config):")
         for k, v in sorted(task.config_defaults.items()):
-            print(f"    {k}: {_fmt_val(v)}")
+            print(f"    {k}: {fmt_val(v)}")
     print()
 
 

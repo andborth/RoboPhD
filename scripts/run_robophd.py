@@ -37,7 +37,7 @@ sys.path.insert(0, str(project_root))
 
 from RoboPhD.config import API_KEY_ENV_VAR
 from RoboPhD.config_manager import ConfigManager, ConfigSource
-from RoboPhD.adapters.runner_utils import parse_config_arg, print_task_params, _fmt_val
+from RoboPhD.adapters.runner_utils import parse_config_arg, print_task_params, fmt_val
 from RoboPhD.tasks import get_task, list_tasks
 
 logging.basicConfig(
@@ -151,7 +151,7 @@ def _list_params(task):
     print("Task-only keys (--config, consumed by evaluator/dataset factories):")
     for k in sorted(_TASK_ONLY_KEYS):
         default = task.config_defaults.get(k)
-        suffix = f" (default: {_fmt_val(default)})" if default is not None else ""
+        suffix = f" (default: {fmt_val(default)})" if default is not None else ""
         print(f"  - {k}{suffix}")
     print()
 
@@ -177,31 +177,12 @@ def _list_params(task):
     }
 
     print("Engine parameters (--engine-config, forwarded to ConfigManager):")
-    shown = set()
     for category, params in categories.items():
         print(f"  {category}:")
         for p in params:
             if p in defaults:
-                print(f"    - {p}: {_fmt_val(defaults[p])}")
-                shown.add(p)
-    # Show any defaults not yet listed
-    remaining = sorted(k for k in defaults if k not in shown
-                       and k not in _TASK_ONLY_KEYS
-                       and k not in {"domain", "dataset", "num_iterations", "random_seed",
-                                     "initial_agents", "agents_directory",
-                                     "initial_strategies", "strategies_directory",
-                                     "eval_model", "analysis_model", "evolution_model",
-                                     "problems_per_context",
-                                     "verification_retries", "temperature_strategy",
-                                     "llm_call_timeout", "codegen_call_timeout",
-                                     "critic_call_timeout", "lmstudio_base_url",
-                                     "meta_config_schedule",
-                                     "coder_model", "coder_model_tag", "critic_model",
-                                     "codegen_split"})
-    if remaining:
-        print(f"  Other engine defaults:")
-        for p in remaining:
-            print(f"    - {p}: {_fmt_val(defaults[p])}")
+                print(f"    - {p}: {fmt_val(defaults[p])}")
+    print(f"\n  See also: python RoboPhD/researcher.py --list-config-parameters")
     print()
 
     print("CLI-only arguments (not in config):")

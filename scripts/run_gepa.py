@@ -35,7 +35,7 @@ sys.path.insert(0, str(project_root))
 
 from RoboPhD.config import API_KEY_ENV_VAR
 from RoboPhD.adapters.candidate_utils import extract_candidate, materialize_candidate
-from RoboPhD.adapters.runner_utils import to_litellm_model, CostTrackingLM, parse_config_arg, print_task_params, _fmt_val
+from RoboPhD.adapters.runner_utils import to_litellm_model, CostTrackingLM, parse_config_arg, print_task_params
 from RoboPhD.tasks import get_task, list_tasks
 
 logging.basicConfig(
@@ -43,6 +43,16 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# GEPA engine defaults — single source of truth for both _list_params and main().
+# Each entry: key -> (default, description)
+_GEPA_DEFAULTS = {
+    "evaluation_budget": (100, "Max evaluator calls (maps to max_metric_calls)"),
+    "max_workers": (12, "Thread pool size for parallel evaluation"),
+    "seed": (42, "Random seed for reproducibility"),
+    "val_ratio": (0.2, "Fraction of dataset held out for validation"),
+    "reflection_model": ("opus-4.6", "Model for GEPA reflection (mutation proposals)"),
+}
 
 
 def parse_args():
@@ -95,18 +105,9 @@ def _list_params(task):
     # Task params
     print_task_params(task)
 
-    # GEPA engine params
-    gepa_params = {
-        "evaluation_budget": ("100", "Max evaluator calls (maps to max_metric_calls)"),
-        "max_workers": ("12", "Thread pool size for parallel evaluation"),
-        "seed": ("42", "Random seed for reproducibility"),
-        "val_ratio": ("0.2", "Fraction of dataset held out for validation"),
-        "reflection_model": ('"opus-4.6"', "Model for GEPA reflection (mutation proposals)"),
-    }
-
     print("GEPA engine parameters (--engine-config):")
-    for k, (default, desc) in gepa_params.items():
-        print(f"  - {k}: {default}  — {desc}")
+    for k, (default, desc) in _GEPA_DEFAULTS.items():
+        print(f"  - {k}: {default!r}  — {desc}")
     print()
 
     print("CLI-only arguments (not in config):")
@@ -166,7 +167,7 @@ def main():
     # --- 3. Build datasets ---
     import random
 
-    seed = config.get("seed", 42)
+    seed = config.get("seed", _GEPA_DEFAULTS["seed"][0])
     rng = random.Random(seed)
 
     dataset = task.dataset_builder(config)
@@ -177,7 +178,7 @@ def main():
         sys.exit(1)
 
     # Train/val split
-    val_ratio = config.get("val_ratio", 0.2)
+    val_ratio = config.get("val_ratio", _GEPA_DEFAULTS["val_ratio"][0])
     shuffled = list(dataset)
     rng.shuffle(shuffled)
     split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
@@ -199,8 +200,8 @@ def main():
         )
         sys.exit(1)
 
-    evaluation_budget = config.get("evaluation_budget", 100)
-    max_workers = config.get("max_workers", 12)
+    evaluation_budget = config.get("evaluation_budget", _GEPA_DEFAULTS["evaluation_budget"][0])
+    max_workers = config.get("max_workers", _GEPA_DEFAULTS["max_workers"][0])
 
     config_kwargs = {
         "max_metric_calls": evaluation_budget,
@@ -214,7 +215,7 @@ def main():
     engine_cfg = EngineConfig(**config_kwargs)
     gepa_config = GEPAConfig(engine=engine_cfg)
 
-    reflection_model = config.get("reflection_model", "opus-4.6")
+    reflection_model = config.get("reflection_model", _GEPA_DEFAULTS["reflection_model"][0])
     from gepa.optimize_anything import ReflectionConfig
     litellm_model = to_litellm_model(reflection_model)
     reflection_lm = CostTrackingLM(litellm_model)
