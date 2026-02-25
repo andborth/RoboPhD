@@ -13,6 +13,7 @@ import random
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -2693,10 +2694,9 @@ class ParallelAgentResearcher:
         if not self.resume_mode:
             self.load_initial_agents(initial_agents)
 
-            # Load initial strategies
+            # Load initial strategies (auto-discover all if not specified)
             initial_strategies = self.config_manager.get_config(1).get("initial_strategies")
-            if initial_strategies:
-                self.load_initial_strategies(initial_strategies)
+            self.load_initial_strategies(initial_strategies or None)
 
             # Load evolution strategies from experiment directory
             self.evolver._load_evolution_strategies()
