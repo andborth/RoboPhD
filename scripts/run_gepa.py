@@ -1,0 +1,285 @@
+#!/usr/bin/env python3
+"""
+Generic GEPA runner: optimize any registered task with optimize_anything().
+
+Replaces task-specific scripts (run_gepa_codegen.py) with a unified interface.
+
+Usage:
+    # Smoke test
+    python scripts/run_gepa.py --task codegen \
+        --config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 10}'
+
+    # Full run with engine tuning
+    python scripts/run_gepa.py --task codegen \
+        --config task.json \
+        --engine-config '{"val_ratio": 0.05, "reflection_model": "opus-4.6"}'
+
+    # With test-set evaluation
+    python scripts/run_gepa.py --task codegen \
+        --config task.json --eval-test-set
+
+Config merge order: task defaults -> --config -> --engine-config
+"""
+
+import argparse
+import json
+import logging
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+
+# Add project root to path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from RoboPhD.config import API_KEY_ENV_VAR
+from RoboPhD.adapters.candidate_utils import extract_candidate, materialize_candidate
+from RoboPhD.adapters.runner_utils import to_litellm_model, CostTrackingLM, parse_config_arg
+from RoboPhD.tasks import get_task, list_tasks
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run GEPA optimize_anything() on a registered task"
+    )
+
+    parser.add_argument(
+        "--task",
+        required=True,
+        help=f"Task to optimize. Available: {', '.join(list_tasks())}",
+    )
+    parser.add_argument(
+        "--config",
+        default=None,
+        help="Task config: JSON file path or inline JSON string (shared with run_robophd.py)",
+    )
+    parser.add_argument(
+        "--engine-config",
+        default=None,
+        help="GEPA engine config: JSON file path or inline JSON string",
+    )
+    parser.add_argument(
+        "--eval-test-set",
+        action="store_true",
+        help="Evaluate best candidate on the held-out test set after optimization",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Output directory (default: gepa_runs/<task>_<timestamp>)",
+    )
+
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    # Ensure litellm can find the API key
+    api_key = os.environ.get(API_KEY_ENV_VAR)
+    if api_key and "ANTHROPIC_API_KEY" not in os.environ:
+        os.environ["ANTHROPIC_API_KEY"] = api_key
+
+    # --- 1. Load task and merge config ---
+    task = get_task(args.task)
+    task_config = parse_config_arg(args.config)
+    engine_config = parse_config_arg(args.engine_config)
+    config = {**task.config_defaults, **task_config, **engine_config}
+
+    logger.info(f"Task: {task.name} — {task.description}")
+
+    # Setup output directory
+    if args.output_dir is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        args.output_dir = Path("gepa_runs") / f"{task.name}_{timestamp}"
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    config["output_dir"] = str(args.output_dir)
+
+    logger.info(f"Output directory: {args.output_dir}")
+
+    # --- 2. Extract seed candidate ---
+    seed_agent = Path(config.get("seed_agent", task.default_seed_agent))
+    logger.info(f"Extracting seed candidate from {seed_agent}")
+    seed_candidate = extract_candidate(seed_agent, task.file_mapping)
+    logger.info(
+        f"Seed candidate keys: {list(seed_candidate.keys())}, "
+        f"sizes: { {k: len(v) for k, v in seed_candidate.items()} }"
+    )
+
+    with open(args.output_dir / "seed_candidate.json", "w") as f:
+        json.dump(seed_candidate, f, indent=2)
+
+    # --- 3. Build datasets ---
+    import random
+
+    seed = config.get("seed", 42)
+    rng = random.Random(seed)
+
+    dataset = task.dataset_builder(config)
+    logger.info(f"Dataset: {len(dataset)} examples")
+
+    if not dataset:
+        logger.error("Empty dataset — check cache directory and task configuration.")
+        sys.exit(1)
+
+    # Train/val split
+    val_ratio = config.get("val_ratio", 0.2)
+    shuffled = list(dataset)
+    rng.shuffle(shuffled)
+    split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
+    trainset = shuffled[:split_idx]
+    valset = shuffled[split_idx:]
+    logger.info(f"Training set: {len(trainset)}, Validation set: {len(valset)}")
+
+    # --- 4. Create evaluator ---
+    config["work_dir"] = str(args.output_dir / "work")
+    evaluator = task.evaluator_factory(config)
+
+    # --- 5. Run GEPA optimization ---
+    try:
+        from gepa.optimize_anything import optimize_anything, GEPAConfig, EngineConfig
+    except ImportError:
+        logger.error(
+            "GEPA not installed. Install with: pip install gepa\n"
+            "See: https://github.com/gepa-ai/gepa"
+        )
+        sys.exit(1)
+
+    evaluation_budget = config.get("evaluation_budget", 100)
+    max_workers = config.get("max_workers", 12)
+
+    config_kwargs = {
+        "max_metric_calls": evaluation_budget,
+        "seed": seed,
+        "run_dir": str(args.output_dir / "gepa_run"),
+        "parallel": max_workers > 1,
+        "max_workers": max_workers,
+        "track_best_outputs": True,
+    }
+
+    engine_cfg = EngineConfig(**config_kwargs)
+    gepa_config = GEPAConfig(engine=engine_cfg)
+
+    reflection_model = config.get("reflection_model", "opus-4.6")
+    from gepa.optimize_anything import ReflectionConfig
+    litellm_model = to_litellm_model(reflection_model)
+    reflection_lm = CostTrackingLM(litellm_model)
+    gepa_config.reflection = ReflectionConfig(reflection_lm=reflection_lm)
+
+    logger.info(
+        f"Starting GEPA optimization with evaluation_budget={evaluation_budget}, "
+        f"reflection_model={reflection_model}"
+    )
+
+    result = optimize_anything(
+        seed_candidate=seed_candidate,
+        evaluator=evaluator,
+        dataset=trainset,
+        valset=valset,
+        objective=task.objective,
+        config=gepa_config,
+    )
+
+    # --- 6. Save results ---
+    best_candidate = result.best_candidate
+    val_scores = getattr(result, "val_aggregate_scores", None) or []
+    candidates = getattr(result, "candidates", None) or []
+
+    best_val = max(val_scores) if val_scores else 0.0
+    reflection_cost = reflection_lm.total_cost if reflection_lm else 0.0
+    total_cost = evaluator.total_eval_cost + reflection_cost
+    logger.info(f"Optimization complete. Best validation score: {best_val:.3f}")
+    logger.info(
+        f"Cost: ${total_cost:.2f} total "
+        f"(eval: ${evaluator.total_eval_cost:.2f}, reflection: ${reflection_cost:.2f})"
+    )
+
+    with open(args.output_dir / "best_candidate.json", "w") as f:
+        json.dump(best_candidate, f, indent=2)
+
+    best_agent_dir = args.output_dir / "best_agent"
+    materialize_candidate(best_candidate, best_agent_dir, task.file_mapping, name="gepa_best")
+    logger.info(f"Best agent materialized at: {best_agent_dir}")
+
+    all_candidates_dir = args.output_dir / "all_candidates"
+    for idx, cand in enumerate(candidates):
+        cand_dir = all_candidates_dir / f"candidate_{idx}"
+        score = val_scores[idx] if idx < len(val_scores) else None
+        name = f"candidate_{idx}"
+        if score is not None:
+            name += f"_val{score:.3f}"
+        materialize_candidate(cand, cand_dir, task.file_mapping, name=name)
+    if candidates:
+        logger.info(f"All {len(candidates)} candidates materialized at: {all_candidates_dir}")
+
+    summary = {
+        "task": task.name,
+        "seed_agent": str(seed_agent),
+        "evaluation_budget": evaluation_budget,
+        "val_ratio": val_ratio,
+        "seed": seed,
+        "max_workers": max_workers,
+        "reflection_model": reflection_model,
+        "total_evaluations": evaluator.total_evaluations,
+        "train_size": len(trainset),
+        "val_size": len(valset),
+        "num_candidates_explored": len(candidates),
+        "best_val_score": best_val,
+        "val_scores": val_scores,
+        "config": {k: v for k, v in config.items() if isinstance(v, (str, int, float, bool, type(None)))},
+        "cost": {
+            "eval_cost_usd": evaluator.total_eval_cost,
+            "reflection_cost_usd": reflection_cost,
+            "reflection_calls": reflection_lm.call_count if reflection_lm else 0,
+            "reflection_input_tokens": reflection_lm.total_input_tokens if reflection_lm else 0,
+            "reflection_output_tokens": reflection_lm.total_output_tokens if reflection_lm else 0,
+            "total_cost_usd": total_cost,
+        },
+    }
+    with open(args.output_dir / "optimization_summary.json", "w") as f:
+        json.dump(summary, f, indent=2)
+
+    # --- 7. Optional test-set evaluation ---
+    if args.eval_test_set:
+        logger.info("Evaluating best candidate on test set...")
+        test_config = {**config, "codegen_split": "test"}
+        test_examples = task.dataset_builder(test_config)
+        logger.info(f"Test set: {len(test_examples)} problems")
+
+        test_config["work_dir"] = str(args.output_dir / "test_work")
+        test_evaluator = task.evaluator_factory(test_config)
+
+        scores = []
+        for i, example in enumerate(test_examples):
+            score, diag = test_evaluator(best_candidate, example)
+            scores.append(score)
+            if (i + 1) % 10 == 0:
+                logger.info(
+                    f"Test progress: {i+1}/{len(test_examples)}, "
+                    f"running accuracy: {sum(scores)/len(scores)*100:.1f}%"
+                )
+
+        test_accuracy = sum(scores) / len(scores) * 100 if scores else 0.0
+        logger.info(f"Test set accuracy: {test_accuracy:.1f}% ({sum(scores):.0f}/{len(scores)})")
+
+        test_results = {
+            "test_accuracy": test_accuracy,
+            "test_total": len(scores),
+            "test_correct": sum(scores),
+        }
+        with open(args.output_dir / "test_results.json", "w") as f:
+            json.dump(test_results, f, indent=2)
+
+    logger.info(f"Done. Results saved to {args.output_dir}")
+
+
+if __name__ == "__main__":
+    main()

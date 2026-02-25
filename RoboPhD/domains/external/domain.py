@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ..base import DomainInterface, EvaluationResult, SampledProblems
-from RoboPhD.adapters.gepa_codegen import extract_candidate, materialize_candidate
+from RoboPhD.adapters.candidate_utils import extract_candidate, materialize_candidate
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,19 @@ class ExternalEvaluatorDomain(DomainInterface):
         self.config = config
         self.logger = logging.getLogger(__name__)
 
-        # Required: evaluator function and dataset
+        # Required: evaluator function, dataset, and file mapping.
+        # These are non-serializable — passed via runtime_config in
+        # ParallelAgentResearcher, not stored in checkpoints. If resuming
+        # an external-domain run, the caller must reconstruct them
+        # (run_robophd.py does this; bare researcher.py --resume does not).
+        for key in ("evaluator_fn", "dataset", "file_mapping"):
+            if key not in config:
+                raise ValueError(
+                    f"ExternalEvaluatorDomain requires '{key}' in config. "
+                    f"External-domain runs must be resumed via run_robophd.py "
+                    f"(which reconstructs runtime_config from --task + --config), "
+                    f"not via researcher.py --resume directly."
+                )
         self._evaluator_fn: Callable = config["evaluator_fn"]
         self._dataset: List[Dict] = config["dataset"]
         self._file_mapping: Dict[str, str] = config["file_mapping"]
@@ -148,46 +160,134 @@ class ExternalEvaluatorDomain(DomainInterface):
         """
         Run evaluation by calling the external evaluator function.
 
-        Extracts a candidate dict from the agent directory, then evaluates
-        each sampled example through the evaluator function.
+        Creates per-problem directories, supports eval result caching via
+        symlinks (same pattern as CodeGenDomain), and passes problem_dir
+        to the evaluator so it can write artifacts there.
         """
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Extract candidate from agent directory
         candidate = extract_candidate(agent_path, self._file_mapping)
 
+        # --- Eval result cache: find prior (agent, problem) results ---
+        agent_id = config.get('agent_id', '')
+        cache_enabled = config.get('eval_result_cache', True)
+        cached_results: Dict[str, Dict] = {}  # problem_id -> result_data
+
+        if cache_enabled and agent_id:
+            cached_map = self._find_cached_results(
+                agent_id, sampled.contexts, output_dir
+            )
+
+            if cached_map:
+                problems_dir = output_dir / "problems"
+                problems_dir.mkdir(parents=True, exist_ok=True)
+
+                for problem_id, source_dir in list(cached_map.items()):
+                    try:
+                        with open(source_dir / "result.json") as f:
+                            cached_results[problem_id] = json.load(f)
+                    except (json.JSONDecodeError, IOError) as e:
+                        self.logger.warning(
+                            f"Failed to read cached result for {problem_id}: {e}"
+                        )
+                        continue
+
+                    symlink = problems_dir / problem_id
+                    if not symlink.exists():
+                        symlink.symlink_to(source_dir)
+
+        cached_count = len(cached_results)
+        fresh_problem_ids = [p for p in sampled.contexts if p not in cached_results]
+        fresh_count = len(fresh_problem_ids)
+
+        if cached_count > 0:
+            self.logger.info(
+                f"Eval cache: {cached_count} cached, {fresh_count} fresh "
+                f"(out of {len(sampled.contexts)} total)"
+            )
+
+        # --- Build results from cached entries ---
         results = []
         correct_count = 0
-        total = 0
 
-        for context_id in sampled.contexts:
-            examples = sampled.problems_by_context.get(context_id, [])
-            for example in examples:
-                total += 1
-                try:
-                    score, diagnostics = self._evaluator_fn(candidate, example)
-                    is_correct = score >= 0.5
-                except Exception as e:
-                    self.logger.error(f"Evaluator failed on {context_id}: {e}")
-                    score = 0.0
-                    diagnostics = {"error": str(e)}
-                    is_correct = False
+        for problem_id, result_data in cached_results.items():
+            is_correct = result_data.get("correct", result_data.get("score", 0) >= 0.5)
+            score = result_data.get("score", 1.0 if is_correct else 0.0)
+            if is_correct:
+                correct_count += 1
+            results.append({
+                "question_id": problem_id,
+                "correct": is_correct,
+                "score": score,
+                "error": result_data.get("error"),
+                "cached": True,
+            })
 
-                if is_correct:
-                    correct_count += 1
+        # --- All-cached fast path ---
+        if fresh_count == 0 and cached_count > 0:
+            self.logger.info("All problems cached — skipping evaluator")
+            total = cached_count
+            accuracy = (correct_count / total * 100) if total else 0.0
+            eval_data = {
+                "summary": {"total_problems": total, "correct": correct_count, "accuracy": accuracy},
+                "results": {r["question_id"]: r for r in results},
+            }
+            with open(output_dir / "evaluation.json", "w") as f:
+                json.dump(eval_data, f, indent=2)
+            return EvaluationResult(
+                accuracy=accuracy, total=total, correct=correct_count,
+                results=results,
+                metadata={"fresh_count": 0, "cached_count": cached_count},
+            )
 
-                eid = (
-                    example.get("question_id")
-                    or example.get("id")
-                    or context_id
+        # --- Evaluate fresh problems ---
+        problems_dir = output_dir / "problems"
+        problems_dir.mkdir(parents=True, exist_ok=True)
+
+        for problem_id in fresh_problem_ids:
+            examples = sampled.problems_by_context.get(problem_id, [])
+            example = examples[0] if examples else {"id": problem_id}
+
+            problem_dir = problems_dir / problem_id
+            problem_dir.mkdir(parents=True, exist_ok=True)
+
+            try:
+                score, diagnostics = self._evaluator_fn(
+                    candidate, example, problem_dir=problem_dir
                 )
-                results.append({
-                    "question_id": eid,
-                    "correct": is_correct,
-                    "score": score,
-                    "error": diagnostics.get("error"),
-                })
+                is_correct = score >= 0.5
+            except Exception as e:
+                self.logger.error(f"Evaluator failed on {problem_id}: {e}")
+                score = 0.0
+                diagnostics = {"error": str(e)}
+                is_correct = False
 
+            if is_correct:
+                correct_count += 1
+
+            eid = (
+                example.get("question_id")
+                or example.get("id")
+                or problem_id
+            )
+
+            result_entry = {
+                "question_id": eid,
+                "correct": is_correct,
+                "score": score,
+                "error": diagnostics.get("error"),
+            }
+            results.append(result_entry)
+
+            # Write result.json for future caching
+            result_json = {**result_entry}
+            result_json.pop("error", None)  # only cache clean results
+            if not diagnostics.get("error"):
+                with open(problem_dir / "result.json", "w") as f:
+                    json.dump(result_json, f, indent=2)
+
+        total = cached_count + fresh_count
         accuracy = (correct_count / total * 100) if total else 0.0
 
         # Write evaluation.json for compatibility
@@ -207,7 +307,7 @@ class ExternalEvaluatorDomain(DomainInterface):
             total=total,
             correct=correct_count,
             results=results,
-            metadata={"fresh_count": total, "cached_count": 0},
+            metadata={"fresh_count": fresh_count, "cached_count": cached_count},
         )
 
     def load_agent_results(
@@ -289,6 +389,9 @@ class ExternalEvaluatorDomain(DomainInterface):
   agent_<AGENT_NAME>/
     evaluation.json                ← Summary metrics for all examples
     report.md                      ← Human-readable evaluation report
+    problems/
+      <problem_id>/               ← Per-problem directory (symlink if cached)
+        result.json               ← Score and metadata for caching
 
 Agent source code (three-artifact packages):
   ../../agents/
@@ -301,6 +404,70 @@ Agent source code (three-artifact packages):
     # -----------------------------------------------------------------
     # Helpers
     # -----------------------------------------------------------------
+
+    def _find_cached_results(
+        self,
+        agent_id: str,
+        problem_ids: List[str],
+        output_dir: Path,
+    ) -> Dict[str, Path]:
+        """
+        Find prior iteration results for (agent, problem) pairs.
+
+        Scans iteration directories before the current one for existing results
+        that can be reused via symlinks. Same pattern as CodeGenDomain.
+
+        A result is cacheable if its result.json exists and has no "error" key.
+
+        Returns:
+            Dict mapping problem_id -> resolved Path to the cached problem directory
+        """
+        # output_dir = <run_dir>/iteration_XXX/agent_<agent_id>
+        iteration_dir = output_dir.parent
+        run_dir = iteration_dir.parent
+
+        iter_name = iteration_dir.name
+        try:
+            current_iter_num = int(iter_name.split("_")[1])
+        except (IndexError, ValueError):
+            self.logger.warning(f"Cannot parse iteration number from {iter_name}")
+            return {}
+
+        agent_dir_name = output_dir.name
+
+        cached = {}
+        remaining = set(problem_ids)
+
+        for prior_iter in range(current_iter_num - 1, 0, -1):
+            if not remaining:
+                break
+
+            prior_problems_dir = (
+                run_dir / f"iteration_{prior_iter:03d}" / agent_dir_name / "problems"
+            )
+            if not prior_problems_dir.is_dir():
+                continue
+
+            for problem_id in list(remaining):
+                problem_dir = prior_problems_dir / problem_id
+                result_file = problem_dir / "result.json"
+                if not result_file.exists():
+                    continue
+
+                try:
+                    with open(result_file) as f:
+                        result_data = json.load(f)
+                except (json.JSONDecodeError, IOError):
+                    continue
+
+                if "error" in result_data:
+                    continue
+
+                # Resolve to avoid symlink chains
+                cached[problem_id] = problem_dir.resolve()
+                remaining.discard(problem_id)
+
+        return cached
 
     def _get_example(self, context_id: str) -> Dict:
         """Look up example by context ID."""

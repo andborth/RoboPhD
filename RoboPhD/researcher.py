@@ -702,7 +702,8 @@ class ParallelAgentResearcher:
                  dev_eval_mode: bool = False,
                  test_eval_mode: bool = False,
                  custom_experiment_name: Optional[str] = None,
-                 api_key: Optional[str] = None):
+                 api_key: Optional[str] = None,
+                 runtime_config: Optional[Dict] = None):
         """
         Initialize the parallel agent researcher.
 
@@ -717,12 +718,16 @@ class ParallelAgentResearcher:
             test_eval_mode: Whether running test evaluation
             custom_experiment_name: Custom name for experiment
             api_key: API key for SQL generation
+            runtime_config: Non-serializable domain config (e.g. evaluator_fn,
+                dataset, file_mapping). Merged into domain config in _load_data().
+                Never serialized to checkpoint — reconstructed on resume.
         """
         # Store config manager and CLI-only params
         self.config_manager = config_manager
         self.num_iterations = num_iterations
         self.resume_mode = resume_mode
         self.resume_from_iteration = resume_from_iteration
+        self.runtime_config = runtime_config or {}
 
         if not api_key:
             raise Exception("must pass api key to use for sql generation")
@@ -960,6 +965,8 @@ class ParallelAgentResearcher:
         domain_config = dict(self.config_manager.get_config(1))
         # Add runtime fields not managed by config_manager
         domain_config['api_key'] = self.api_key
+        # Merge non-serializable runtime config (evaluator_fn, dataset, file_mapping, etc.)
+        domain_config.update(self.runtime_config)
         self.domain = get_domain(self.domain_name, domain_config)
 
         # Load problems grouped by context (database for Text2SQL, problem_id for CodeGen)

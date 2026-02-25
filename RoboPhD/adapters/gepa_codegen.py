@@ -28,6 +28,9 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+# Re-export generic candidate utils for backwards compatibility
+from RoboPhD.adapters.candidate_utils import extract_candidate, materialize_candidate  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -38,101 +41,6 @@ CODEGEN_FILE_MAPPING = {
     "eval_instructions": "eval_instructions.md",
     "tool_code": "tools/problem_analyzer.py",
 }
-
-# ---------------------------------------------------------------------------
-# Candidate <-> Agent Directory conversion
-# ---------------------------------------------------------------------------
-
-_TOOL_ONLY_AGENT_MD_TEMPLATE = """\
----
-name: {name}
-description: GEPA-evolved agent
-execution_mode: tool_only
-tool_command: python tools/problem_analyzer.py
-tool_output_file: tool_output/critic_feedback.txt
----
-
-# {name}
-
-GEPA-evolved critic agent.
-"""
-
-_AGENT_ONLY_AGENT_MD_TEMPLATE = """\
----
-name: {name}
-description: GEPA-evolved agent (no tool)
----
-
-# {name}
-
-GEPA-evolved critic agent (no tool component).
-"""
-
-
-def materialize_candidate(
-    candidate: Dict[str, str],
-    target_dir: Path,
-    file_mapping: Dict[str, str],
-    name: str = "gepa_agent",
-) -> Path:
-    """
-    Write a GEPA candidate dict to a RoboPhD agent directory.
-
-    For each (key, filepath) in file_mapping, writes candidate[key] to
-    target_dir/filepath. Generates agent.md with appropriate YAML frontmatter.
-
-    Args:
-        candidate: Dict mapping component names to text content.
-        target_dir: Directory to write agent files into.
-        file_mapping: Maps candidate keys to relative file paths within the agent dir.
-        name: Agent name for the generated agent.md.
-
-    Returns:
-        target_dir (for chaining).
-    """
-    target_dir.mkdir(parents=True, exist_ok=True)
-
-    has_tool = "tool_code" in candidate and candidate["tool_code"].strip()
-
-    for key, filepath in file_mapping.items():
-        if key not in candidate:
-            continue
-        dest = target_dir / filepath
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(candidate[key])
-
-    # Generate agent.md
-    agent_md_path = target_dir / "agent.md"
-    if has_tool:
-        agent_md_path.write_text(_TOOL_ONLY_AGENT_MD_TEMPLATE.format(name=name))
-    else:
-        agent_md_path.write_text(_AGENT_ONLY_AGENT_MD_TEMPLATE.format(name=name))
-
-    return target_dir
-
-
-def extract_candidate(
-    agent_dir: Path,
-    file_mapping: Dict[str, str],
-) -> Dict[str, str]:
-    """
-    Read a RoboPhD agent directory into a GEPA candidate dict.
-
-    For each (key, filepath) in file_mapping, reads agent_dir/filepath
-    into candidate[key], returning "" if the file is missing.
-
-    Args:
-        agent_dir: Path to agent directory.
-        file_mapping: Maps candidate keys to relative file paths within the agent dir.
-
-    Returns:
-        Dict mapping component names to text content.
-    """
-    candidate = {}
-    for key, filepath in file_mapping.items():
-        src = agent_dir / filepath
-        candidate[key] = src.read_text() if src.exists() else ""
-    return candidate
 
 
 # ---------------------------------------------------------------------------
@@ -375,15 +283,20 @@ class RoboPhDCodeGenEvaluator:
         self,
         candidate: Dict[str, str],
         example: Dict[str, str],
+        *,
+        problem_dir: Optional[Path] = None,
     ) -> Tuple[float, Dict[str, Any]]:
         """
         Evaluate a candidate on a single example.
 
         GEPA calls this as: evaluator(candidate, example) -> (score, diagnostics)
+        RoboPhD calls with: evaluator(candidate, example, problem_dir=path)
 
         Args:
             candidate: Dict with "eval_instructions" and optionally "tool_code".
             example: Dict with "question_id".
+            problem_dir: When provided (RoboPhD path), write per-problem artifacts
+                and result.json here. When None (GEPA path), use internal work_dir.
 
         Returns:
             (score, diagnostics) where score is 1.0 if v2 passed, 0.0 otherwise.
@@ -414,11 +327,15 @@ class RoboPhDCodeGenEvaluator:
             logger.warning(f"Problem {question_id} not found in HF dataset")
             return 0.0, {"error": f"hf_dataset_missing: {question_id}"}
 
-        # Create per-problem output directory (unique per eval count to avoid collisions)
-        output_problem_dir = self.work_dir / "eval_output" / "problems" / question_id
-        if output_problem_dir.exists():
-            shutil.rmtree(output_problem_dir)
-        output_problem_dir.mkdir(parents=True, exist_ok=True)
+        # Determine output directory
+        if problem_dir is not None:
+            output_problem_dir = Path(problem_dir)
+            output_problem_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            output_problem_dir = self.work_dir / "eval_output" / "problems" / question_id
+            if output_problem_dir.exists():
+                shutil.rmtree(output_problem_dir)
+            output_problem_dir.mkdir(parents=True, exist_ok=True)
 
         # Run evaluation
         try:
@@ -439,6 +356,20 @@ class RoboPhDCodeGenEvaluator:
 
         # Score: 1.0 if v2 passed, 0.0 otherwise
         score = 1.0 if result.get("v2_passed", False) else 0.0
+
+        # Write result.json for RoboPhD eval cache
+        if problem_dir is not None:
+            result_entry = {
+                "question_id": question_id,
+                "correct": score >= 0.5,
+                "score": score,
+                "v1_passed": result.get("v1_passed", False),
+                "v2_passed": result.get("v2_passed", False),
+                "improved": result.get("improved", False),
+                "regressed": result.get("regressed", False),
+            }
+            with open(output_problem_dir / "result.json", "w") as f:
+                json.dump(result_entry, f, indent=2)
 
         # Collect diagnostics (ASI)
         diagnostics = self._collect_diagnostics(output_problem_dir)
