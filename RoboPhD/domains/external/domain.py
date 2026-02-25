@@ -18,6 +18,7 @@ import json
 import logging
 import random
 import shutil
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -245,7 +246,9 @@ class ExternalEvaluatorDomain(DomainInterface):
         problems_dir = output_dir / "problems"
         problems_dir.mkdir(parents=True, exist_ok=True)
 
-        for problem_id in fresh_problem_ids:
+        max_concurrent = config.get("max_concurrent", 12)
+
+        def _evaluate_one(problem_id: str) -> dict:
             examples = sampled.problems_by_context.get(problem_id, [])
             example = examples[0] if examples else {"id": problem_id}
 
@@ -263,9 +266,6 @@ class ExternalEvaluatorDomain(DomainInterface):
                 diagnostics = {"error": str(e)}
                 is_correct = False
 
-            if is_correct:
-                correct_count += 1
-
             eid = (
                 example.get("question_id")
                 or example.get("id")
@@ -278,14 +278,27 @@ class ExternalEvaluatorDomain(DomainInterface):
                 "score": score,
                 "error": diagnostics.get("error"),
             }
-            results.append(result_entry)
 
             # Write result.json for future caching
-            result_json = {**result_entry}
-            result_json.pop("error", None)  # only cache clean results
             if not diagnostics.get("error"):
                 with open(problem_dir / "result.json", "w") as f:
-                    json.dump(result_json, f, indent=2)
+                    json.dump(
+                        {k: v for k, v in result_entry.items() if k != "error"},
+                        f, indent=2,
+                    )
+
+            return result_entry
+
+        with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
+            futures = {
+                executor.submit(_evaluate_one, pid): pid
+                for pid in fresh_problem_ids
+            }
+            for future in as_completed(futures):
+                result_entry = future.result()
+                results.append(result_entry)
+                if result_entry["correct"]:
+                    correct_count += 1
 
         total = cached_count + fresh_count
         accuracy = (correct_count / total * 100) if total else 0.0
