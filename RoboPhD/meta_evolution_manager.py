@@ -188,7 +188,7 @@ class MetaEvolutionManager:
             - If budget exhausted: creates final_report.md and triggers reflection
         """
         config = self.config_manager.get_config(iteration)
-        budget = config.get("meta_evolution_budget")
+        budget = config.get("dollar_budget")
 
         if budget is None:
             return False  # No budget limit
@@ -760,7 +760,7 @@ Example meta_config_schedule.json:
 **Forbidden Parameters** (do NOT include in meta_config_schedule.json):
 - Initial config: `initial_agents`, `agents_directory`, `initial_strategies`, `strategies_directory`
 - Dataset: `dataset`
-- Meta-evolution self-reference: `meta_evolution_strategy`, `meta_evolution_model`, `meta_evolution_budget`
+- Meta-evolution self-reference: `meta_evolution_strategy`, `meta_evolution_model`, `dollar_budget`
 
 These create circular dependencies or modify immutable system state.
 
@@ -801,7 +801,7 @@ Framework will:
         Returns dictionary with interim reports and budget.
         """
         # Get budget information
-        budget = config.get("meta_evolution_budget")
+        budget = config.get("dollar_budget")
         total_cost = self._calculate_total_cost(iteration)
         budget_remaining = (budget - total_cost) if budget else None
 

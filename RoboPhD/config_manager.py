@@ -88,7 +88,7 @@ class ConfigManager:
             # Meta-evolution parameters
             "meta_evolution_strategy": None,       # Which meta-evolution strategy to use
             "meta_evolution_model": "opus-4.6",    # Model for meta-evolution
-            "meta_evolution_budget": None,         # Total budget in dollars (default: no limit)
+            "dollar_budget": None,         # Total budget in dollars (default: no limit)
             "evaluation_budget": None,             # Max fresh evaluations across all iterations (default: no limit)
 
             # Deep Focus
@@ -304,7 +304,7 @@ class ConfigManager:
             # Meta-evolution self-reference (circular dependency)
             "meta_evolution_strategy",
             "meta_evolution_model",
-            "meta_evolution_budget",
+            "dollar_budget",
             "evaluation_budget",
 
             # Performance and system settings (user-controlled)

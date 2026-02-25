@@ -4278,7 +4278,7 @@ def main():
             "CodeGen Dataset & Models": ["codegen_split", "coder_model", "coder_model_tag", "critic_model"],
             "Evolution": ["evolution_strategy"],
             "Evolution Meta-Parameters": ["config_schedule", "weighted_random_configs", "use_weighted_random"],
-            "Meta-Evolution": ["meta_evolution_strategy", "meta_evolution_model", "meta_evolution_budget"],
+            "Meta-Evolution": ["meta_evolution_strategy", "meta_evolution_model", "dollar_budget"],
             "Deep Focus": ["new_agent_test_rounds"],
             "SQL Generation (Text2SQL)": ["verification_retries", "temperature_strategy"],
             "Performance": ["max_concurrent"],
