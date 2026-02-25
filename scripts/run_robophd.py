@@ -28,7 +28,6 @@ import argparse
 import logging
 import os
 import random
-import shutil
 import sys
 from pathlib import Path
 
@@ -132,25 +131,6 @@ def resolve_api_key() -> str:
     return api_key
 
 
-def copy_seed_agent(seed_agent_path: Path, experiment_dir: Path) -> str:
-    """
-    Copy seed agent into experiment's agents directory.
-
-    Returns the agent name (directory name) for initial_agents list.
-    """
-    agents_dir = experiment_dir / "agents"
-    agents_dir.mkdir(parents=True, exist_ok=True)
-
-    agent_name = seed_agent_path.name
-    dest = agents_dir / agent_name
-
-    if dest.exists():
-        shutil.rmtree(dest)
-    shutil.copytree(seed_agent_path, dest, symlinks=True)
-
-    logger.info(f"Copied seed agent {agent_name} to {dest}")
-    return agent_name
-
 
 def main():
     args = parse_args()
@@ -191,11 +171,13 @@ def main():
     # Force external domain
     researcher_config["domain"] = "external"
 
-    # Seed agent path
+    # Seed agent: set agents_directory so load_initial_agents can find it
     seed_agent = Path(full_config.get("seed_agent", task.default_seed_agent))
     if not seed_agent.exists():
         print(f"Error: Seed agent not found: {seed_agent}")
         sys.exit(1)
+    researcher_config["agents_directory"] = str(seed_agent.parent)
+    researcher_config["initial_agents"] = [seed_agent.name]
 
     # --- 4. Fresh vs Resume ---
     from RoboPhD.researcher import ParallelAgentResearcher
@@ -261,9 +243,8 @@ def main():
             runtime_config=runtime_config,
         )
 
-        # Copy seed agent and start
-        agent_name = copy_seed_agent(seed_agent, researcher.experiment_dir)
-        researcher.run(initial_agents=[agent_name])
+        # load_initial_agents will find the seed in agents_directory and copy it
+        researcher.run(initial_agents=researcher_config["initial_agents"])
 
     logger.info("Done.")
 
