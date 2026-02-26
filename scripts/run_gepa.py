@@ -51,6 +51,7 @@ _GEPA_DEFAULTS = {
     "max_workers": (12, "Thread pool size for parallel evaluation"),
     "seed": (42, "Random seed for reproducibility"),
     "val_ratio": (0.2, "Fraction of dataset held out for validation"),
+    "val_size": (None, "Exact validation set size (overrides val_ratio)"),
     "reflection_model": ("opus-4.6", "Model for GEPA reflection (mutation proposals)"),
 }
 
@@ -180,9 +181,23 @@ def main():
 
     # Train/val split
     val_ratio = config.get("val_ratio", _GEPA_DEFAULTS["val_ratio"][0])
+    val_size = config.get("val_size", _GEPA_DEFAULTS["val_size"][0])
+
+    if val_size is not None and val_ratio != _GEPA_DEFAULTS["val_ratio"][0]:
+        logger.error("Cannot specify both val_ratio and val_size")
+        sys.exit(1)
+
     shuffled = list(dataset)
     rng.shuffle(shuffled)
-    split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
+
+    if val_size is not None:
+        if val_size >= len(shuffled):
+            logger.error(f"val_size ({val_size}) must be less than dataset size ({len(shuffled)})")
+            sys.exit(1)
+        split_idx = len(shuffled) - val_size
+    else:
+        split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
+
     trainset = shuffled[:split_idx]
     valset = shuffled[split_idx:]
     logger.info(f"Training set: {len(trainset)}, Validation set: {len(valset)}")
@@ -272,7 +287,8 @@ def main():
         "task": task.name,
         "seed_agent": str(seed_agent),
         "evaluation_budget": evaluation_budget,
-        "val_ratio": val_ratio,
+        "val_ratio": val_ratio if val_size is None else None,
+        "val_size": val_size,
         "seed": seed,
         "max_workers": max_workers,
         "reflection_model": reflection_model,
