@@ -25,7 +25,6 @@ This agent uses tool-only execution to analyze the problem context.
 
 If the tool fails:
 
-1. Check `reflection.md` exists
-2. Verify Python environment
-3. Examine any error messages in `tool_output/`
-4. Fall back to reading reflection.md directly and outputting the categories section
+1. Verify Python environment
+2. Examine any error messages in `tool_output/`
+3. Check that `problem.md` and `solution.py` exist in the working directory

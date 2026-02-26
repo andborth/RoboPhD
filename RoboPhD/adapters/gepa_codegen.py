@@ -254,7 +254,7 @@ class RoboPhDCodeGenEvaluator:
         files_to_collect = [
             ("problem_statement", "problem.md"),
             ("solution_v1", "solution.py"),
-            ("tool_analysis", "tool_output/critic_feedback.txt"),
+            ("tool_analysis", "tool_output/analysis.txt"),
             ("critic_feedback", "feedback.md"),
             ("solution_v2", "solution_v2.py"),
             ("acceptance", "acceptance.md"),
