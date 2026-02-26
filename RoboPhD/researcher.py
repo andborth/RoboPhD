@@ -352,9 +352,11 @@ class ParallelAgentEvolver:
                     databases_map[test_iteration] = databases
 
         # Deep focus test rounds don't cache, so all evals are fresh
-        # Each test round evaluates len(contexts) × problems_per_context problems
+        # Hierarchical domains (Text2SQL): each context has problems_per_context problems
+        # Flat domains (CodeGen): each context IS one problem
+        problems_per_ctx = self.problems_per_context if self.domain.is_hierarchical else 1
         self._current_deep_focus_fresh_evals = sum(
-            len(dbs) * self.problems_per_context for dbs in databases_map.values()
+            len(dbs) * problems_per_ctx for dbs in databases_map.values()
         )
 
         # Create Deep Focus Evolution Manager
