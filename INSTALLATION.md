@@ -79,7 +79,7 @@ Run a quick test:
 # Text2SQL (requires steps 5-6)
 python RoboPhD/researcher.py \
   --num-iterations 1 \
-  --config '{"contexts_per_iteration": 1, "problems_per_context": 5}'
+  --config '{"examples_per_iteration": 1, "problems_per_context": 5}'
 
 # Or verify with CodeGen domain (no dataset needed)
 python RoboPhD/researcher.py \

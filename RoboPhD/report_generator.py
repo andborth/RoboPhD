@@ -57,7 +57,7 @@ class ReportGenerator:
         return {
             "Dataset & Sampling": [
                 "dataset",
-                "contexts_per_iteration",
+                "examples_per_iteration",
                 "problems_per_context",
                 "agents_per_iteration"
             ],

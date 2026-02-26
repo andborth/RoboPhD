@@ -65,7 +65,7 @@ python RoboPhD/researcher.py --resume evolution/robophd_20251031_043607
 python RoboPhD/researcher.py \
   --resume evolution/robophd_20251031_043607 \
   --from-iteration 5 \
-  --modify-config '{"contexts_per_iteration": 10, "eval_model": "sonnet-4.5"}'
+  --modify-config '{"examples_per_iteration": 10, "eval_model": "sonnet-4.5"}'
 
 # Extend completed run with additional iterations
 python RoboPhD/researcher.py \
@@ -332,7 +332,7 @@ Available meta-evolution strategies:
 
 ## Development Tips
 
-- **Quick Test**: Use `--config '{"contexts_per_iteration": 1, "problems_per_context": 5}'`
+- **Quick Test**: Use `--config '{"examples_per_iteration": 1, "problems_per_context": 5}'`
 - **Check Progress**: Review `checkpoint.json` and `final_report.md`
 - **Debug Phase 1**: Check `iteration_XXX/agent_YYY/CONTEXT_NAME/` for agent outputs
 - **Evolution Output**: Check `evolution_output/iteration_XXX/` for Claude's reasoning
@@ -346,7 +346,7 @@ Available meta-evolution strategies:
 
 ### Evolution Failures
 - **Claude CLI not found**: Ensure Claude Code CLI is installed
-- **Context too long**: Use `--config '{"problems_per_context": 10, "contexts_per_iteration": 3}'`
+- **Context too long**: Use `--config '{"problems_per_context": 10, "examples_per_iteration": 3}'`
 - **Session errors**: Check Claude CLI authentication with `claude --version`
 
 ### Domain-Specific Issues

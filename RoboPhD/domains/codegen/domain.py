@@ -356,28 +356,28 @@ Agent source code (three-artifact packages):
         """
         Sample problems for an iteration.
 
-        CodeGen uses flat sampling: contexts_per_iteration problems
+        CodeGen uses flat sampling: examples_per_iteration problems
         from the problem pool. Each problem is its own context (1:1 mapping).
 
         Args:
-            config: Configuration with contexts_per_iteration
+            config: Configuration with examples_per_iteration
             rng: Random number generator for reproducibility
             available_contexts: Optional list of problem IDs to sample from
 
         Returns:
             SampledProblems with sampled problem IDs and problem dicts
         """
-        contexts_per_iteration = config.get("contexts_per_iteration", 50)
+        examples_per_iteration = config.get("examples_per_iteration", 50)
 
         # Get available problem IDs
         if available_contexts is None:
             available_contexts = self.get_contexts()
 
         # Sample problem IDs
-        if len(available_contexts) <= contexts_per_iteration:
+        if len(available_contexts) <= examples_per_iteration:
             sampled_ids = list(available_contexts)
         else:
-            sampled_ids = rng.sample(available_contexts, contexts_per_iteration)
+            sampled_ids = rng.sample(available_contexts, examples_per_iteration)
 
         # Sort for reproducibility
         sampled_ids = sorted(sampled_ids)

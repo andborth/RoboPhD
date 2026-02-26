@@ -742,7 +742,7 @@ class ParallelAgentResearcher:
         # Extract all parameters from config
         self.domain_name = config.get("domain", "text2sql")
         self.dataset = config["dataset"]
-        self.contexts_per_iteration = config["contexts_per_iteration"]
+        self.examples_per_iteration = config["examples_per_iteration"]
         self.problems_per_context = config["problems_per_context"]
         self.agents_per_iteration = config["agents_per_iteration"]
         self.eval_model = config["eval_model"]
@@ -2746,7 +2746,7 @@ class ParallelAgentResearcher:
 
             # Update mutable parameters from config
             self.problems_per_context = config["problems_per_context"]
-            self.contexts_per_iteration = config["contexts_per_iteration"]
+            self.examples_per_iteration = config["examples_per_iteration"]
             self.agents_per_iteration = config["agents_per_iteration"]
             self.eval_model = config["eval_model"]
             self.analysis_model = config["analysis_model"]
@@ -2779,7 +2779,7 @@ class ParallelAgentResearcher:
 
             # Select contexts for this iteration and sort alphabetically
             contexts = sorted(random.sample(self.contexts,
-                                           min(self.contexts_per_iteration, len(self.contexts))))
+                                           min(self.examples_per_iteration, len(self.contexts))))
 
             # Select agents to test
             if iteration == 1:
@@ -4246,7 +4246,7 @@ def main():
     parser.add_argument('--modify-iterations', type=int,
                        help='Set num_iterations for resumed run (cannot go below last_completed+1 or --from-iteration)')
     parser.add_argument('--modify-config', type=str,
-                       help='Apply config delta when resuming. JSON dict of parameter changes. With --from-iteration: applies to iteration N. With --extend: applies to new iterations. Example: \'{"contexts_per_iteration": 10, "eval_model": "sonnet-4.5"}\'')
+                       help='Apply config delta when resuming. JSON dict of parameter changes. With --from-iteration: applies to iteration N. With --extend: applies to new iterations. Example: \'{"examples_per_iteration": 10, "eval_model": "sonnet-4.5"}\'')
 
     # Utility parameters
     parser.add_argument('--list-config-parameters', action='store_true',
@@ -4281,7 +4281,7 @@ def main():
         # Group parameters by category
         categories = {
             "Domain": ["domain"],
-            "Sampling": ["contexts_per_iteration", "agents_per_iteration"],
+            "Sampling": ["examples_per_iteration", "agents_per_iteration"],
             "Text2SQL Dataset & Sampling": ["dataset", "problems_per_context"],
             "Text2SQL Models": ["eval_model", "analysis_model", "evolution_model"],
             "CodeGen Dataset & Models": ["codegen_split", "coder_model", "coder_model_tag", "critic_model"],
@@ -4321,7 +4321,7 @@ def main():
             print()
 
         print("Example usage:")
-        print('  --config \'{"contexts_per_iteration": 5, "problems_per_context": 20}\'')
+        print('  --config \'{"examples_per_iteration": 5, "problems_per_context": 20}\'')
         print('  --modify-config \'{"eval_model": "sonnet-4.5", "evolution_strategy": "none"}\'')
         print()
         return
@@ -4559,7 +4559,7 @@ def main():
             user_config.update({
                 "dataset": "dev",
                 "agents_per_iteration": 1,
-                "contexts_per_iteration": 999,
+                "examples_per_iteration": 999,
                 "problems_per_context": 99999
             })
             custom_experiment_name = f"dev_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -4568,7 +4568,7 @@ def main():
             user_config.update({
                 "dataset": "dev-no-evidence",
                 "agents_per_iteration": 1,
-                "contexts_per_iteration": 999,
+                "examples_per_iteration": 999,
                 "problems_per_context": 99999
             })
             custom_experiment_name = f"dev_no_evidence_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -4577,7 +4577,7 @@ def main():
             user_config.update({
                 "dataset": "test",
                 "agents_per_iteration": 1,
-                "contexts_per_iteration": 999,
+                "examples_per_iteration": 999,
                 "problems_per_context": 99999
             })
             custom_experiment_name = f"test_{datetime.now().strftime('%Y%m%d_%H%M%S')}"

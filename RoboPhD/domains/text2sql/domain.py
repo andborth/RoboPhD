@@ -662,18 +662,18 @@ Agent source code (three-artifact packages):
         Sample databases and questions for an iteration.
 
         Uses two-level hierarchy:
-        1. Sample contexts_per_iteration databases
+        1. Sample examples_per_iteration databases
         2. Sample problems_per_context questions from each
 
         Args:
-            config: Configuration with contexts_per_iteration, problems_per_context
+            config: Configuration with examples_per_iteration, problems_per_context
             rng: Random number generator for reproducibility
             available_contexts: Optional list of database names to sample from
 
         Returns:
             SampledProblems with sampled databases and questions
         """
-        contexts_per_iteration = config.get("contexts_per_iteration", 5)
+        examples_per_iteration = config.get("examples_per_iteration", 5)
         problems_per_context = config.get("problems_per_context", 30)
 
         # Get available databases
@@ -681,10 +681,10 @@ Agent source code (three-artifact packages):
             available_contexts = self.get_contexts()
 
         # Sample databases
-        if len(available_contexts) <= contexts_per_iteration:
+        if len(available_contexts) <= examples_per_iteration:
             sampled_databases = list(available_contexts)
         else:
-            sampled_databases = rng.sample(available_contexts, contexts_per_iteration)
+            sampled_databases = rng.sample(available_contexts, examples_per_iteration)
 
         # Sort alphabetically for reproducibility (matching researcher.py behavior)
         sampled_databases = sorted(sampled_databases)

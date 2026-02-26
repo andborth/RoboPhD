@@ -46,7 +46,7 @@ python RoboPhD/researcher.py --num-iterations 10 --config configs/primary_produc
 # Quick test with custom config
 python RoboPhD/researcher.py \
   --num-iterations 2 \
-  --config '{"contexts_per_iteration": 3, "problems_per_context": 10}'
+  --config '{"examples_per_iteration": 3, "problems_per_context": 10}'
 ```
 
 ### Configuration via --config

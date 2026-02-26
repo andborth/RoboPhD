@@ -73,7 +73,7 @@ python RoboPhD/tools/precompute_ground_truth.py
 # 6. Run a quick test
 python RoboPhD/researcher.py \
   --num-iterations 2 \
-  --config '{"contexts_per_iteration": 2, "problems_per_context": 10}'
+  --config '{"examples_per_iteration": 2, "problems_per_context": 10}'
 ```
 
 ### CodeGen Domain

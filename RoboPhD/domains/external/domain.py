@@ -130,15 +130,15 @@ class ExternalEvaluatorDomain(DomainInterface):
         available_contexts: Optional[List[str]] = None,
     ) -> SampledProblems:
         """Flat sampling: each example is its own context."""
-        contexts_per_iteration = config.get("contexts_per_iteration", 50)
+        examples_per_iteration = config.get("examples_per_iteration", 50)
 
         if available_contexts is None:
             available_contexts = self.get_contexts()
 
-        if len(available_contexts) <= contexts_per_iteration:
+        if len(available_contexts) <= examples_per_iteration:
             sampled_ids = list(available_contexts)
         else:
-            sampled_ids = rng.sample(available_contexts, contexts_per_iteration)
+            sampled_ids = rng.sample(available_contexts, examples_per_iteration)
 
         sampled_ids = sorted(sampled_ids)
         all_problems = self.load_problems()

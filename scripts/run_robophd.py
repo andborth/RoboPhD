@@ -9,7 +9,7 @@ Usage:
     python scripts/run_robophd.py --task codegen \
         --num-iterations 5 \
         --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 50}' \
-        --engine-config '{"contexts_per_iteration": 3}'
+        --engine-config '{"examples_per_iteration": 3}'
 
     # Resume
     python scripts/run_robophd.py --task codegen \
@@ -153,7 +153,7 @@ def _list_params(task):
     # Engine params from ConfigManager
     defaults = ConfigManager().get_defaults()
     categories = {
-        "Sampling": ["contexts_per_iteration", "agents_per_iteration"],
+        "Sampling": ["examples_per_iteration", "agents_per_iteration"],
         "Evolution": ["evolution_strategy"],
         "Evolution Schedule": ["config_schedule", "weighted_random_configs", "use_weighted_random"],
         "Meta-Evolution": ["meta_evolution_strategy", "meta_evolution_model", "dollar_budget"],
@@ -186,7 +186,7 @@ def _list_params(task):
     print("  python scripts/run_robophd.py --task codegen \\")
     print("    --num-iterations 5 \\")
     print('    --task-config \'{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 50}\' \\')
-    print('    --engine-config \'{"contexts_per_iteration": 12, "evolution_strategy": "refinement_tool_only"}\'')
+    print('    --engine-config \'{"examples_per_iteration": 12, "evolution_strategy": "refinement_tool_only"}\'')
 
 
 def main():

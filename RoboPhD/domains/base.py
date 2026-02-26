@@ -154,9 +154,9 @@ class DomainInterface(ABC):
         Sample problems for an iteration based on domain-specific config.
 
         Sampling logic differs by domain:
-        - Text2SQL: Uses contexts_per_iteration + problems_per_context
+        - Text2SQL: Uses examples_per_iteration + problems_per_context
           (two-level hierarchy: sample databases, then questions within each)
-        - CodeGen: Uses contexts_per_iteration only
+        - CodeGen: Uses examples_per_iteration only
           (flat sampling from problem pool, each context IS a problem)
 
         Args:
@@ -361,9 +361,9 @@ class DomainInterface(ABC):
         Sampling model label, derived from is_hierarchical.
 
         - 'hierarchical': Two-level (contexts → problems per context)
-          Uses: contexts_per_iteration, problems_per_context
+          Uses: examples_per_iteration, problems_per_context
         - 'flat': Single-level (contexts ARE problems)
-          Uses: contexts_per_iteration only (problems_per_context ignored)
+          Uses: examples_per_iteration only (problems_per_context ignored)
         """
         return 'hierarchical' if self.is_hierarchical else 'flat'
 

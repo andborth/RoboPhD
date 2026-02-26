@@ -16,7 +16,7 @@ Test that everything works with a minimal run:
 # Text2SQL (requires BIRD dataset)
 python RoboPhD/researcher.py \
   --num-iterations 1 \
-  --config '{"contexts_per_iteration": 1, "problems_per_context": 5}'
+  --config '{"examples_per_iteration": 1, "problems_per_context": 5}'
 ```
 
 This runs 1 iteration on 1 database with 5 questions - fast but verifies your setup.
@@ -136,7 +136,7 @@ python RoboPhD/researcher.py \
 
 ```json
 {
-  "contexts_per_iteration": 8,     // More = better signal, slower (databases for Text2SQL)
+  "examples_per_iteration": 8,     // More = better signal, slower (databases for Text2SQL)
   "problems_per_context": 40,      // More = better signal, more API cost (questions per DB)
   "agents_per_iteration": 3        // Agents tested per iteration
 }

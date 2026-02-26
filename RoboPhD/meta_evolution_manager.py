@@ -752,7 +752,7 @@ Example meta_config_schedule.json:
     ]
   }},
   "15": {{
-    "contexts_per_iteration": 10,
+    "examples_per_iteration": 10,
     "problems_per_context": 30
   }}
 }}

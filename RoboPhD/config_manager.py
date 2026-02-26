@@ -65,7 +65,7 @@ class ConfigManager:
             # Domain and dataset
             "domain": "text2sql",  # Domain plugin: 'text2sql' or 'codegen'
             "dataset": "train-filtered",
-            "contexts_per_iteration": 5,
+            "examples_per_iteration": 5,
             "problems_per_context": 30,
             "agents_per_iteration": 3,
 
@@ -749,6 +749,22 @@ class ConfigManager:
 
         return None
 
+    # Deprecated parameter aliases: old_name -> new_name
+    _DEPRECATED_ALIASES = {
+        "contexts_per_iteration": "examples_per_iteration",
+    }
+
+    def _apply_deprecated_aliases(self, config: Dict[str, Any]) -> None:
+        """Convert deprecated parameter names to their current equivalents (in-place)."""
+        for old_name, new_name in self._DEPRECATED_ALIASES.items():
+            if old_name in config:
+                if new_name in config:
+                    raise ValueError(
+                        f"Cannot specify both '{old_name}' (deprecated) and '{new_name}'. "
+                        f"Use '{new_name}' only."
+                    )
+                config[new_name] = config.pop(old_name)
+
     def _validate_parameters(self,
                             config: Dict[str, Any],
                             context: str,
@@ -768,6 +784,9 @@ class ConfigManager:
             The 'comment' field is allowed in any config for documentation purposes.
             It is preserved in checkpoint and config history but has no effect on execution.
         """
+        # Apply deprecated aliases before validation
+        self._apply_deprecated_aliases(config)
+
         # Check for common mistakes first (provide helpful error messages)
         # Only block meta_config_schedule if it's NOT from meta-evolution
         if 'meta_config_schedule' in config and source != ConfigSource.META_EVOLUTION:

@@ -92,7 +92,7 @@ def test_sample_problems(domain):
     print("\n=== Testing sample_problems() ===")
 
     rng = random.Random(42)
-    config = {'contexts_per_iteration': 5}
+    config = {'examples_per_iteration': 5}
 
     sampled = domain.sample_problems(config, rng)
 
@@ -152,7 +152,7 @@ def test_run_evaluation(domain, agent_path: Path, num_problems: int = 3):
 
     # Sample a few problems
     rng = random.Random(42)
-    config = {'contexts_per_iteration': num_problems}
+    config = {'examples_per_iteration': num_problems}
     sampled = domain.sample_problems(config, rng)
 
     print(f"Testing with {len(sampled.contexts)} problems: {sampled.contexts}")

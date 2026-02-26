@@ -140,7 +140,7 @@ python RoboPhD/researcher.py --config '{"domain": "codegen", "eval_model": "haik
 python RoboPhD/researcher.py \
   --domain codegen \
   --num-iterations 2 \
-  --config '{"contexts_per_iteration": 3, "problems_per_context": 10}'
+  --config '{"examples_per_iteration": 3, "problems_per_context": 10}'
 ```
 
 ## Test Execution Methodology
