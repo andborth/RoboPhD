@@ -220,6 +220,9 @@ def main():
         "evaluator_fn": evaluator,
         "dataset": dataset,
         "file_mapping": task.file_mapping,
+        "task_objective": task.objective,
+        "task_description": task.description,
+        "task_name": task.name,
     }
 
     # --- 3. Split config for ConfigManager vs task-only ---

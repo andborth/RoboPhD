@@ -315,7 +315,7 @@ class ParallelAgentEvolver:
             was_random: Whether strategy was randomly selected
 
         Returns:
-            Tuple of (agent_content, agent_id, reasoning, package_info) or None if evolution failed
+            Tuple of (content, agent_id, reasoning, package_info) or None if evolution failed
         """
         # Note: strategy_name is now always provided by caller from resolved config
 
@@ -409,20 +409,17 @@ class ParallelAgentEvolver:
             evolution_entry['was_random'] = True
         self.evolution_history.append(evolution_entry)
 
-        # Read agent content and reasoning
-        agent_content = result.agent_md_path.read_text() if result.agent_md_path.exists() else ""
+        # Read reasoning.md for agent naming and context
         reasoning_file = evolution_dir / "reasoning.md"
         reasoning = reasoning_file.read_text() if reasoning_file.exists() else ""
 
-        # Generate agent ID from the content
-        agent_id = self._generate_agent_id(agent_content, iteration)
+        # Generate agent ID from reasoning.md content
+        agent_id = self._generate_agent_id(reasoning, iteration)
 
         # Build package info
         package_info = {
             'type': 'three_artifact',
-            'agent_file': result.agent_md_path,
-            'eval_instructions_file': result.eval_instructions_path,
-            'tools_dir': result.tools_path,
+            'artifact_paths': result.artifact_paths,
             'evolution_dir': evolution_dir,
             'timing': result.timing_info,
             'cost': result.cost_info,
@@ -435,7 +432,7 @@ class ParallelAgentEvolver:
         print(f"   Evolution time: {result.timing_info['total']/60:.1f} minutes")
         print(f"   Evolution cost: ${result.cost_info['total']:.2f}")
 
-        return (agent_content, agent_id, reasoning, package_info)
+        return (reasoning, agent_id, reasoning, package_info)
     
     def _substitute_template_variables(self, text: str, iteration: int) -> str:
         """
@@ -516,22 +513,23 @@ class ParallelAgentEvolver:
         lines.append("\n## Evolution Strategy: " + strategy_with_vars.split('\n')[0].strip('#').strip())
         lines.append("\n" + strategy_with_vars)
         
-        # Add output requirements for file creation
+        # Add output requirements for file creation (driven by domain file_mapping)
         lines.append("\n## OUTPUT REQUIREMENTS\n")
         lines.append(f"Create the following files in evolution_output/iteration_{iteration:03d}/:\n")
         lines.append("1. **reasoning.md** - Your analysis and improvement strategy")
-        lines.append("2. **eval_instructions.md** - SQL generation instructions for the eval model")
-        lines.append("3. **agent.md** - Database analysis agent with YAML frontmatter")
-        lines.append("4. **tools/*.py** (optional, but recommended) - Python analysis tools\n")
-        lines.append("Required agent.md frontmatter:")
-        lines.append("```yaml")
-        lines.append("---")
-        lines.append("name: your-unique-agent-name")
-        lines.append("description: Brief description")
-        lines.append("---")
-        lines.append("```\n")
-        lines.append("The agent must write its output to: ./output/agent_output.txt")
-        lines.append("Final system prompt will be: [agent_output] + [eval_instructions]")
+        lines.append("   Must include a `Name:` line (e.g. `Name: my-agent-name`) for agent identification.\n")
+
+        # List required artifacts from file_mapping
+        file_mapping = getattr(self.domain, 'file_mapping', {})
+        task_objective = getattr(self.domain, 'task_objective', '')
+        artifact_num = 2
+        for key, path in sorted(file_mapping.items()):
+            description = key.replace("_", " ")
+            lines.append(f"{artifact_num}. **{path}** - {description}")
+            artifact_num += 1
+
+        if task_objective:
+            lines.append(f"\n**Task objective**: {task_objective}")
         
         return "\n".join(lines)
     
@@ -575,91 +573,114 @@ class ParallelAgentEvolver:
         return "\n".join(lines)
     
     def _get_previous_iteration_summary(self, iteration: int, test_history: List) -> str:
-        """Get performance breakdown for the previous iteration by database."""
+        """Get performance breakdown for the previous iteration."""
         if iteration < 1 or not test_history or iteration > len(test_history):
             return "## Previous Iteration Results\n\nNo previous iteration data available yet."
-        
-        # Get the previous iteration's results
+
         prev_results = test_history[iteration - 1]  # test_history is 0-indexed
-        
+
         lines = [f"## Previous Iteration Results (Iteration {iteration})"]
         lines.append("")
-        
-        # Get all databases tested in this iteration
-        databases = set()
-        for agent_id, agent_data in prev_results.items():
-            databases.update(agent_data.get('databases_tested', []))
-        
-        if not databases:
-            lines.append("No database results available.")
+
+        if not prev_results:
+            lines.append("No results available.")
             return "\n".join(lines)
-        
-        databases = sorted(databases)
+
         agents = sorted(prev_results.keys())
-        
-        # Create performance table
-        lines.append("### Agent Performance by Database")
+
+        # Agent accuracy table
+        lines.append("### Agent Accuracy")
         lines.append("")
-        
-        # Build header
-        header = "| Agent |"
-        for db in databases:
-            # Truncate long database names
-            db_display = db[:15] + "..." if len(db) > 15 else db
-            header += f" {db_display} |"
-        header += " Overall |"
-        lines.append(header)
-        
-        # Build separator
-        separator = "|-------|"
-        for _ in databases:
-            separator += "-------|"
-        separator += "--------|"
-        lines.append(separator)
-        
-        # Build rows for each agent
+        lines.append("| Agent | Accuracy | Correct / Total |")
+        lines.append("|-------|----------|-----------------|")
+
         for agent_id in agents:
             agent_data = prev_results[agent_id]
-            # Truncate long agent names
-            agent_display = agent_id[:25] + "..." if len(agent_id) > 25 else agent_id
-            row = f"| {agent_display} |"
-            
-            # Get per-database performance from the iteration directory
-            iter_dir = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
-            
-            for db in databases:
-                db_eval_file = iter_dir / db / "results" / "evaluation.json"
-                if db_eval_file.exists():
+            accuracy = agent_data.get('accuracy', 0.0)
+            correct = agent_data.get('correct', 0)
+            total = agent_data.get('total', 0)
+            agent_display = agent_id[:30] + "..." if len(agent_id) > 30 else agent_id
+            lines.append(f"| {agent_display} | {accuracy:.1f}% | {correct}/{total} |")
+
+        lines.append("")
+
+        # Per-database breakdown (only for hierarchical domains)
+        if self.domain and self.domain.is_hierarchical:
+            databases = set()
+            for agent_id, agent_data in prev_results.items():
+                databases.update(agent_data.get('databases_tested', []))
+
+            if databases:
+                databases = sorted(databases)
+                lines.append("### Per-Database Breakdown")
+                lines.append("")
+
+                header = "| Agent |"
+                for db in databases:
+                    db_display = db[:15] + "..." if len(db) > 15 else db
+                    header += f" {db_display} |"
+                header += " Overall |"
+                lines.append(header)
+
+                separator = "|-------|"
+                for _ in databases:
+                    separator += "-------|"
+                separator += "--------|"
+                lines.append(separator)
+
+                for agent_id in agents:
+                    agent_data = prev_results[agent_id]
+                    agent_display = agent_id[:25] + "..." if len(agent_id) > 25 else agent_id
+                    row = f"| {agent_display} |"
+
+                    iter_dir = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
+
+                    for db in databases:
+                        db_eval_file = iter_dir / db / "results" / "evaluation.json"
+                        if db_eval_file.exists():
+                            try:
+                                import json
+                                with open(db_eval_file, 'r') as f:
+                                    eval_data = json.load(f)
+                                accuracy = eval_data.get('accuracy', 0.0)
+                                row += f" {accuracy:.1f}% |"
+                            except Exception:
+                                row += " - |"
+                        else:
+                            row += " - |"
+
+                    overall = agent_data.get('accuracy', 0.0)
+                    row += f" {overall:.1f}% |"
+                    lines.append(row)
+
+                lines.append("")
+
+        # Failed problem IDs from evaluation.json (flat domains)
+        if self.domain and not self.domain.is_hierarchical:
+            for agent_id in agents:
+                eval_file = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}" / "evaluation.json"
+                if eval_file.exists():
                     try:
                         import json
-                        with open(db_eval_file, 'r') as f:
+                        with open(eval_file, 'r') as f:
                             eval_data = json.load(f)
-                        accuracy = eval_data.get('accuracy', 0.0)  # Already in percentage
-                        row += f" {accuracy:.1f}% |"
-                    except FileNotFoundError:
-                        row += " - |"  # Expected for databases not yet evaluated
-                    except json.JSONDecodeError as e:
-                        print(f"  ⚠️  Corrupted evaluation JSON for {db_name}: {e}")
-                        row += " ERR |"
-                    except Exception as e:
-                        print(f"  ⚠️  Failed to load evaluation for {db_name}: {e}")
-                        row += " - |"
-                else:
-                    row += " - |"
-            
-            # Overall accuracy
-            overall = agent_data.get('accuracy', 0.0)
-            row += f" {overall:.1f}% |"
-            lines.append(row)
-        
-        lines.append("")
-        
-        # Add insights section
+                        failed = [
+                            pid for pid, r in eval_data.get('results', {}).items()
+                            if not r.get('correct', False)
+                        ]
+                        if failed:
+                            lines.append(f"**{agent_id}** failed problems ({len(failed)}): {', '.join(failed[:20])}")
+                            if len(failed) > 20:
+                                lines.append(f"  ... and {len(failed) - 20} more")
+                    except Exception:
+                        pass
+
+            lines.append("")
+
         lines.append("### Key Insights for Analysis")
-        lines.append("- Compare agent performance across databases to identify strengths/weaknesses")
-        lines.append("- Focus on databases where agents show significant performance differences")
-        lines.append("- Review evaluation.json files for detailed error patterns in challenging databases")
-        
+        lines.append("- Review evaluation.json files for detailed error patterns")
+        lines.append("- Focus on problems where agents show significant performance differences")
+
         return "\n".join(lines)
     
     def _format_agent_pool_summary(self, agent_pool: Dict, performance_records: Dict) -> str:
@@ -671,20 +692,28 @@ class ParallelAgentEvolver:
             lines.append(f"- {agent_id}: {perf.get('mean_accuracy', 0):.1f}% (ELO: {elo_score:.0f})")
         return "\n".join(lines)
 
-    def _generate_agent_id(self, agent_content: str, iteration: int) -> str:
-        """Generate ID for agent based on content."""
-        # Try to extract name from frontmatter
-        if "name:" in agent_content:
-            lines = agent_content.split('\n')
-            for line in lines:
-                if line.startswith("name:"):
-                    name = line.replace("name:", "").strip()
-                    # Clean name for filesystem
-                    name = name.replace("-", "_").replace(" ", "_")
-                    # Strip any existing iter prefix (current or stale)
-                    name = re.sub(r'^iter\d+_', '', name)
+    def _generate_agent_id(self, content: str, iteration: int) -> str:
+        """
+        Generate ID for agent based on reasoning.md content.
+
+        Looks for a line like:
+            Name: my-agent-name
+            ## Agent Name: my-agent-name
+            name: my-agent-name  (legacy YAML frontmatter)
+        """
+        for line in content.split('\n'):
+            stripped = line.strip().lstrip('#').strip()
+            # Match "Name: value" or "Agent Name: value" (case-insensitive)
+            match = re.match(r'^(?:agent\s+)?name:\s*(.+)', stripped, re.IGNORECASE)
+            if match:
+                name = match.group(1).strip()
+                # Clean name for filesystem
+                name = name.replace("-", "_").replace(" ", "_")
+                # Strip any existing iter prefix (current or stale)
+                name = re.sub(r'^iter\d+_', '', name)
+                if name:
                     return f"iter{iteration}_{name}"
-        
+
         # Fallback to generic name
         return f"iter{iteration}_evolved_{int(time.time() % 10000)}"
 
@@ -1014,12 +1043,6 @@ class ParallelAgentResearcher:
                 if created_iteration >= from_iteration:
                     # Skip this agent - it was created in an iteration we're redoing
                     continue
-            # Convert path string back to Path object
-            path = Path(agent_info['path']) if isinstance(agent_info['path'], str) else agent_info['path']
-            
-            # Read current content from file
-            content = path.read_text() if path.exists() else agent_info.get('content', '')
-            
             # Determine package directory (handle both old and new checkpoint formats)
             if 'package_dir' in agent_info and agent_info['package_dir'] is not None:
                 # New format - has package_dir saved (as experiment-relative path)
@@ -1059,33 +1082,26 @@ class ParallelAgentResearcher:
                         f"Original path in checkpoint: {package_dir_str}"
                     )
             else:
-                # Old format or None - reconstruct from agent path
-                # Path is like: evolution/robophd_20250830_223700/agents/iter3_defensive_schema_analyzer/agent.md
-                package_dir = path.parent if path.name == 'agent.md' else path.parent
-            
-            # Check if this is a three-artifact package
-            eval_instructions_file = package_dir / 'eval_instructions.md'
-            tools_dir = package_dir / 'tools'
-            
-            # Build the restored agent info with three-artifact structure
+                # Old format or None - reconstruct from agent 'path' key
+                old_path = agent_info.get('path', '')
+                if old_path:
+                    p = Path(old_path)
+                    package_dir = p.parent if p.name == 'agent.md' else p.parent
+                    if not package_dir.is_absolute():
+                        package_dir = (self.experiment_dir / package_dir).resolve()
+                else:
+                    # Can't determine package_dir — skip this agent
+                    print(f"  ⚠️ Skipping agent {agent_id}: no package_dir or path in checkpoint")
+                    continue
+
             restored_agent = {
-                'path': path,
-                'content': content,
                 'source': agent_info.get('source', 'restored'),
                 'created_iteration': agent_info.get('created_iteration', 0),
-                'evolution_strategy': agent_info.get('evolution_strategy', None),  # Restore evolution strategy
-                'session_id': agent_info.get('session_id', None),  # Restore Claude Code session ID
+                'evolution_strategy': agent_info.get('evolution_strategy', None),
+                'session_id': agent_info.get('session_id', None),
                 'package_dir': package_dir,
-                'package_type': 'three_artifact'  # We only support three-artifact now
             }
-            
-            # Add three-artifact specific fields if they exist
-            if eval_instructions_file.exists():
-                restored_agent['eval_instructions_file'] = eval_instructions_file
-            
-            if tools_dir.exists() and tools_dir.is_dir():
-                restored_agent['tools_dir'] = tools_dir
-            
+
             restored_pool[agent_id] = restored_agent
         
         return restored_pool
@@ -1466,10 +1482,23 @@ class ParallelAgentResearcher:
         print(f"     Evolution history entries: {len(self.evolver.evolution_history)}")
         print(f"     First evolution call: {self.evolver.is_first_evolution_call}")
     
+    def _is_valid_agent_dir(self, agent_dir: Path) -> bool:
+        """Check if a directory is a valid agent by looking for file_mapping files or agent.md."""
+        # Check for any file_mapping file
+        file_mapping = getattr(self.domain, 'file_mapping', {}) if self.domain else {}
+        for rel_path in file_mapping.values():
+            if (agent_dir / rel_path).exists():
+                return True
+        # Legacy fallback: agent.md
+        return (agent_dir / 'agent.md').exists()
+
     def load_initial_agents(self, agent_list: Optional[List[str]] = None):
         """
-        Load initial three-artifact agents from agents directory.
-        
+        Load initial agents from agents directory.
+
+        Discovers agents by checking for any file from file_mapping
+        (falls back to agent.md for legacy agents).
+
         Args:
             agent_list: Optional list of specific agent names to load
         """
@@ -1478,64 +1507,43 @@ class ParallelAgentResearcher:
             agents_dir = Path(self.agents_directory)
         else:
             agents_dir = Path(__file__).parent / 'agents'
-        
+
         if not agent_list:
-            # Auto-discover all three-artifact agent directories
-            agent_dirs = [d for d in agents_dir.iterdir() if d.is_dir() and (d / 'agent.md').exists()]
+            # Auto-discover agent directories
+            agent_dirs = [d for d in agents_dir.iterdir()
+                          if d.is_dir() and self._is_valid_agent_dir(d)]
         else:
             # Load specific agents
             agent_dirs = []
             for name in agent_list:
                 agent_dir = agents_dir / name
                 if agent_dir.exists() and agent_dir.is_dir():
-                    if (agent_dir / 'agent.md').exists():
+                    if self._is_valid_agent_dir(agent_dir):
                         agent_dirs.append(agent_dir)
                     else:
-                        print(f"  ⚠️ Agent directory missing agent.md: {name}")
+                        print(f"  ⚠️ Agent directory has no recognized artifacts: {name}")
                 else:
                     print(f"  ⚠️ Agent not found: {name}")
-        
+
         for agent_dir in agent_dirs:
             agent_id = agent_dir.name
-            
+
             # Copy entire agent directory to local agents directory
             local_agents_dir = self.experiment_dir / "agents"
             local_agents_dir.mkdir(exist_ok=True)
             local_agent_dir = local_agents_dir / agent_id
-            
-            # Remove existing directory if it exists
+
             if local_agent_dir.exists():
                 shutil.rmtree(local_agent_dir)
-            
-            # Copy the entire directory
+
             shutil.copytree(agent_dir, local_agent_dir, symlinks=True)
-            
-            # Load agent.md content
-            agent_file = local_agent_dir / 'agent.md'
-            agent_content = agent_file.read_text()
-            
-            # Check for three-artifact structure
-            eval_instructions_file = local_agent_dir / 'eval_instructions.md'
-            tools_dir = local_agent_dir / 'tools'
-            
-            agent_info = {
-                'path': agent_file,
-                'content': agent_content,
+
+            self.agent_pool[agent_id] = {
                 'source': 'initial',
                 'created_iteration': 0,
-                'evolved_tools': None,
                 'package_dir': local_agent_dir,
-                'package_type': 'three_artifact'
             }
-            
-            # Add three-artifact specific paths if they exist
-            if eval_instructions_file.exists():
-                agent_info['eval_instructions_file'] = eval_instructions_file
-            if tools_dir.exists() and tools_dir.is_dir():
-                agent_info['tools_dir'] = tools_dir
-            
-            self.agent_pool[agent_id] = agent_info
-            
+
             # Initialize performance record
             self.performance_records[agent_id] = {
                 'test_count': 0,
@@ -1544,11 +1552,11 @@ class ParallelAgentResearcher:
                 'mean_accuracy': 0.0,
                 'elo': 1500,
                 'iteration_results': [],
-                'last_win_iteration': None,  # Track when agent last won
-                'last_test_iteration': None  # Track when agent was last tested
+                'last_win_iteration': None,
+                'last_test_iteration': None
             }
 
-            print(f"  🤖 Loaded three-artifact agent: {agent_id}")
+            print(f"  🤖 Loaded agent: {agent_id}")
 
         print(f"\n✅ Loaded {len(self.agent_pool)} initial agents")
 
@@ -2906,52 +2914,37 @@ class ParallelAgentResearcher:
 
                     # Install package based on type
                     if package_info['type'] == 'three_artifact':
-                        # Three-artifact structure - install complete package
+                        # File-mapping-driven package — install complete
                         package_dir = self._install_three_artifact_package(
                             new_agent_id, package_info, iteration
                         )
-                        new_agent_path = package_dir / "agent.md"
                     elif package_info['type'] in ['parsed', 'single_artifact']:
-                        # Parsed from response or single artifact - create simple agent file
+                        # Parsed from response or single artifact — create from file_mapping
                         if package_info['type'] == 'parsed':
                             print(f"  📝 Creating agent from parsed response")
                         else:
                             print(f"  📝 Creating agent from single artifact")
                         package_dir = self.experiment_dir / "agents" / new_agent_id
                         package_dir.mkdir(parents=True, exist_ok=True)
-                        new_agent_path = package_dir / "agent.md"
-                        with open(new_agent_path, 'w') as f:
-                            f.write(new_agent_content)
-                        # Create placeholder eval_instructions.md
-                        eval_instructions_path = package_dir / "eval_instructions.md"
-                        with open(eval_instructions_path, 'w') as f:
-                            f.write("# SQL Generation Instructions\n\nGenerate accurate SQL queries based on the database analysis provided.\n")
-                        # Copy tools if they exist (for single_artifact that might have tools)
-                        if package_info.get('tools_dir') and package_info['tools_dir'].exists():
-                            tools_dst = package_dir / "tools"
-                            if tools_dst.exists():
-                                shutil.rmtree(tools_dst)
-                            shutil.copytree(package_info['tools_dir'], tools_dst, symlinks=True)
+                        # Write content to first file_mapping entry as fallback
+                        file_mapping = getattr(self.domain, 'file_mapping', {})
+                        if file_mapping:
+                            first_path = next(iter(file_mapping.values()))
+                            dest = package_dir / first_path
+                            dest.parent.mkdir(parents=True, exist_ok=True)
+                            dest.write_text(new_agent_content)
                     else:
                         print(f"  ⚠️ Unexpected package type: {package_info['type']}")
                         package_dir = self.experiment_dir / "agents" / new_agent_id
                         package_dir.mkdir(parents=True, exist_ok=True)
-                        new_agent_path = package_dir / "agent.md"
-                        with open(new_agent_path, 'w') as f:
-                            f.write(new_agent_content)
-                    
+
                     # Add to pool with package info
                     self.agent_pool[new_agent_id] = {
-                        'path': new_agent_path,
-                        'content': new_agent_content,
                         'source': 'evolution',
                         'created_iteration': iteration,
-                        'evolution_strategy': evolution_strategy,  # Track which strategy created this agent
-                        'session_id': package_info.get('session_id'),  # Claude Code session that produced this agent
+                        'evolution_strategy': evolution_strategy,
+                        'session_id': package_info.get('session_id'),
                         'package_dir': package_dir,
-                        'package_type': 'three_artifact',
-                        'eval_instructions_file': package_dir / "eval_instructions.md",
-                        'tools_dir': package_dir / "tools" if package_info.get('tools_dir') else None
                     }
                     
                     # Initialize performance record
@@ -3177,47 +3170,42 @@ class ParallelAgentResearcher:
 
     def _install_three_artifact_package(self, agent_id: str, package_info: Dict, iteration: int) -> Path:
         """
-        Install a three-artifact package to the experiment agents directory.
-        
+        Install an agent package to the experiment agents directory.
+
+        Copies artifacts listed in package_info['artifact_paths'] (from
+        file_mapping) to the agent directory.
+
         Args:
             agent_id: ID for the agent
             package_info: Package information from evolution
             iteration: Current iteration number
-            
+
         Returns:
             Path to the installed package directory
         """
-        # Create package directory in agents folder
         package_dir = self.experiment_dir / "agents" / agent_id
         package_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Copy artifacts
-        evolution_dir = package_info['evolution_dir']
-        
-        # Copy agent.md
-        agent_src = package_info['agent_file']
-        if not agent_src.exists():
-            raise FileNotFoundError(f"Source agent.md not found: {agent_src}")
-        shutil.copy(agent_src, package_dir / "agent.md")
-        
-        # Copy eval_instructions.md
-        eval_src = package_info['eval_instructions_file']
-        if not eval_src.exists():
-            raise FileNotFoundError(f"Source eval_instructions.md not found: {eval_src}")
-        shutil.copy(eval_src, package_dir / "eval_instructions.md")
-        
-        # Copy tools if present
-        if package_info.get('tools_dir'):
-            tools_src = package_info['tools_dir']
-            tools_dst = package_dir / "tools"
-            if tools_dst.exists():
-                shutil.rmtree(tools_dst)
-            shutil.copytree(tools_src, tools_dst, symlinks=True)
-        
+
+        artifact_paths = package_info.get('artifact_paths', {})
+
+        for rel_path, src_path in artifact_paths.items():
+            src = Path(src_path)
+            if not src.exists():
+                print(f"  ⚠️  Artifact not found: {src}")
+                continue
+            dst = package_dir / rel_path
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            if src.is_dir():
+                if dst.exists():
+                    shutil.rmtree(dst)
+                shutil.copytree(src, dst, symlinks=True)
+            else:
+                shutil.copy2(src, dst)
+
         # Create tool_output directory for runtime
         (package_dir / "tool_output").mkdir(exist_ok=True)
-        
-        print(f"  📦 Installed three-artifact package to {package_dir.name}")
+
+        print(f"  📦 Installed agent package to {package_dir.name}")
 
         return package_dir
 
@@ -4028,32 +4016,21 @@ class ParallelAgentResearcher:
         serializable_pool = {}
         for agent_id, agent_info in self.agent_pool.items():
             serializable_agent = {
-                'path': str(agent_info['path']),
                 'source': agent_info.get('source', 'unknown'),
                 'created_iteration': agent_info.get('created_iteration', 0),
-                'package_type': agent_info.get('package_type', 'three_artifact'),
-                'evolution_strategy': agent_info.get('evolution_strategy', None),  # Save evolution strategy
-                'session_id': agent_info.get('session_id', None)  # Claude Code session ID
+                'evolution_strategy': agent_info.get('evolution_strategy', None),
+                'session_id': agent_info.get('session_id', None),
             }
-            
-            # Add three-artifact specific fields
+
+            # Save package_dir as relative path from experiment directory for portability
             if 'package_dir' in agent_info:
-                # Save package_dir as relative path from experiment directory for portability
                 package_dir_path = Path(agent_info['package_dir'])
                 try:
-                    # Convert to path relative to experiment directory
                     relative_path = package_dir_path.relative_to(self.experiment_dir)
                     serializable_agent['package_dir'] = str(relative_path)
                 except ValueError:
-                    # If path is not under experiment_dir, save as-is (shouldn't happen in normal operation)
                     serializable_agent['package_dir'] = str(package_dir_path)
-            
-            if 'eval_instructions_file' in agent_info:
-                serializable_agent['eval_instructions_file'] = str(agent_info['eval_instructions_file'])
-            
-            if 'tools_dir' in agent_info and agent_info['tools_dir']:
-                serializable_agent['tools_dir'] = str(agent_info['tools_dir'])
-            
+
             serializable_pool[agent_id] = serializable_agent
         
         checkpoint = {

@@ -34,9 +34,7 @@ logger = logging.getLogger(__name__)
 
 class EvolutionResult(NamedTuple):
     """Result of a deep focus evolution run."""
-    agent_md_path: Path
-    eval_instructions_path: Path
-    tools_path: Optional[Path]
+    artifact_paths: Dict[str, Path]  # rel_path -> abs_path for each file_mapping artifact
     timing_info: Dict[str, Any]
     cost_info: Dict[str, Any]
     session_id: Optional[str]
@@ -104,6 +102,8 @@ class DeepFocusEvolutionManager:
         self.llm_call_timeout = llm_call_timeout
         self.domain = domain
         self.config = config or {}
+        self._file_mapping = getattr(domain, 'file_mapping', {}) if domain else {}
+        self._task_objective = getattr(domain, 'task_objective', '') if domain else ''
 
         # Set during evolve_agent() call
         self.working_dir: Optional[Path] = None
@@ -137,7 +137,7 @@ class DeepFocusEvolutionManager:
             problems_per_context: Problems per context for testing
 
         Returns:
-            Tuple of (agent.md path, eval_instructions.md path, tools/ path, timing_info dict, cost_info dict)
+            EvolutionResult with artifact_paths, timing_info, cost_info, session_id
             timing_info contains: error_analyzer, planning, test_refine_1,
                                  test_refine_2, total (all in seconds)
             cost_info contains: cost and token breakdown for each phase
@@ -299,9 +299,7 @@ class DeepFocusEvolutionManager:
             self._save_session_transcript()
 
             return EvolutionResult(
-                agent_md_path=final_agent[0],
-                eval_instructions_path=final_agent[1],
-                tools_path=final_agent[2],
+                artifact_paths=final_agent,
                 timing_info=self.timing_info,
                 cost_info=self.cost_info,
                 session_id=self.session_id,
@@ -311,48 +309,40 @@ class DeepFocusEvolutionManager:
             logger.error(f"Deep Focus evolution failed: {e}")
             raise RuntimeError(f"Deep Focus evolution failed: {e}") from e
 
-    def _extract_agent_name_from_md(self, agent_md_path: Path) -> str:
+    def _extract_agent_name_from_reasoning(self, reasoning_path: Path) -> str:
         """
-        Extract agent name from YAML header in agent.md.
+        Extract agent name from reasoning.md.
 
-        Looks for:
-            ---
-            name: agent_name
-            ---
+        Looks for a line like:
+            Name: my-agent-name
+            ## Agent Name: my-agent-name
 
         Args:
-            agent_md_path: Path to agent.md file
+            reasoning_path: Path to reasoning.md file
 
         Returns:
             Agent name with 'agent_' prefix (defaults to 'agent_new' if not found)
         """
-        if not agent_md_path.exists():
-            logger.warning(f"Agent file not found: {agent_md_path}, using default 'agent_new'")
+        import re
+
+        if not reasoning_path.exists():
+            logger.warning(f"Reasoning file not found: {reasoning_path}, using default 'agent_new'")
             return 'agent_new'
 
         try:
-            with open(agent_md_path, 'r') as f:
-                in_header = False
+            with open(reasoning_path, 'r') as f:
                 for line in f:
-                    line = line.strip()
-                    if line == '---':
-                        if not in_header:
-                            in_header = True
-                        else:
-                            # End of header, name not found
-                            break
-                    elif in_header and line.startswith('name:'):
-                        # Extract name after 'name:'
-                        name = line.split('name:', 1)[1].strip()
-                        # Add agent_ prefix if not present
+                    stripped = line.strip().lstrip('#').strip()
+                    match = re.match(r'^(?:agent\s+)?name:\s*(.+)', stripped, re.IGNORECASE)
+                    if match:
+                        name = match.group(1).strip().replace('-', '_').replace(' ', '_')
                         if not name.startswith('agent_'):
                             name = f'agent_{name}'
                         return name
         except Exception as e:
-            logger.warning(f"Error extracting agent name from {agent_md_path}: {e}")
+            logger.warning(f"Error extracting agent name from {reasoning_path}: {e}")
 
-        # Default if name not found
-        logger.warning("Agent name not found in YAML header, using default 'agent_new'")
+        logger.warning("Agent name not found in reasoning.md, using default 'agent_new'")
         return 'agent_new'
 
     def _generate_new_vs_baseline_analysis(self, test_workspace: Path, test_iteration: int, new_agent_name: str):
@@ -663,9 +653,9 @@ class DeepFocusEvolutionManager:
 
         Creates reasoning.md with strategic analysis and improvement plan,
         then implements the 3-artifact agent package:
-        - agent.md (database analysis agent)
-        - eval_instructions.md (SQL generation instructions)
-        - tools/ (optional analysis scripts)
+        - agent artifacts (from file_mapping)
+        - eval_instructions.md (evaluation instructions)
+        - tools/ (optional analysis scripts, if in file_mapping)
 
         Saves snapshot after completion.
 
@@ -674,6 +664,16 @@ class DeepFocusEvolutionManager:
             continue_from_analyzer: Whether to use --continue (if error analyzer ran)
         """
         logger.info("Executing Round 1: Analysis, planning, and implementation")
+
+        # Build artifact listing from file_mapping
+        artifact_lines = []
+        for idx, (key, path) in enumerate(sorted(self._file_mapping.items()), 1):
+            artifact_lines.append(f"{idx}. `{path}` - {key.replace('_', ' ')}")
+        artifact_listing = "\n".join(artifact_lines)
+
+        task_objective_line = ""
+        if self._task_objective:
+            task_objective_line = f"\n**Task objective**: {self._task_objective}\n"
 
         prompt = f"""
 {evolution_prompt}
@@ -691,27 +691,15 @@ Based on the evolution strategy guidance above, please complete both steps below
 **Error Analysis Available:**
 - Previous iteration error analysis: `../../iteration_{self.current_iteration-1:03d}/error_analysis_report.md`
 
-**For detailed question analysis, use the CLI tool:**
-
-```bash
-python RoboPhD/tools/error_analysis/extract_error_details.py \\
-  --question-ids '1234,5678,9012' \\
-  --iteration-dir '../../iteration_{self.current_iteration-1:03d}'
-```
-
-The tool returns complete evaluation data including SQL queries, predicted results, ground truth,
-verification attempts, and error details for each question across all agents.
-
 Create a file called `reasoning.md` with your analysis and plan.
+Include a `Name:` line (e.g. `Name: my-agent-name`) for agent identification.
 
 ### Step 2: Implementation
 
 Based on your analysis and plan in `reasoning.md`, create the agent artifacts:
 
-1. `agent.md` - Database analysis agent with model configuration
-2. `eval_instructions.md` - Direct SQL generation instructions for eval model
-3. `tools/` - Optional Python/shell analysis scripts (if needed)
-
+{artifact_listing}
+{task_objective_line}
 Create these artifacts in the current directory.
 
 After completing both steps, respond with: "ROUND 1 COMPLETE"
@@ -736,28 +724,19 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
 
         logger.info(f"✓ reasoning.md created ({reasoning_file.stat().st_size} bytes)")
 
-        # Verify agent artifacts were created
-        agent_md = self.working_dir / "agent.md"
-        eval_instructions_md = self.working_dir / "eval_instructions.md"
-
-        if not agent_md.exists():
-            description = "This file should contain the database analysis agent instructions."
-            if not self._recover_missing_file(agent_md, "agent.md", description):
-                raise RuntimeError("Round 1 did not create agent.md")
-
-        if not eval_instructions_md.exists():
-            description = "This file should contain the SQL generation instructions for the eval model."
-            if not self._recover_missing_file(eval_instructions_md, "eval_instructions.md", description):
-                raise RuntimeError("Round 1 did not create eval_instructions.md")
+        # Verify artifacts from file_mapping were created
+        for key, rel_path in self._file_mapping.items():
+            artifact = self.working_dir / rel_path
+            if not artifact.exists():
+                description = f"This file should contain the {key.replace('_', ' ')}."
+                if not self._recover_missing_file(artifact, rel_path, description):
+                    raise RuntimeError(f"Round 1 did not create {rel_path}")
 
         logger.info(f"✓ Round 1 complete: reasoning.md and agent artifacts created")
-        logger.info(f"  - agent.md: {agent_md.stat().st_size} bytes")
-        logger.info(f"  - eval_instructions.md: {eval_instructions_md.stat().st_size} bytes")
-
-        tools_dir = self.working_dir / "tools"
-        if tools_dir.exists():
-            tool_count = len(list(tools_dir.iterdir()))
-            logger.info(f"  - tools/: {tool_count} files")
+        for key, rel_path in self._file_mapping.items():
+            artifact = self.working_dir / rel_path
+            if artifact.exists():
+                logger.info(f"  - {rel_path}: {artifact.stat().st_size} bytes")
 
         # Save Round 1 snapshot
         self._save_snapshot(round_num=1)
@@ -860,16 +839,14 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
 
         logger.info(f"Test workspace: {test_workspace}")
 
-        # Load current agent artifacts (from working_dir top level)
-        agent_md = self.working_dir / "agent.md"
-        eval_instructions_md = self.working_dir / "eval_instructions.md"
-        tools_dir = self.working_dir / "tools"
+        # Verify current agent artifacts exist (from working_dir top level)
+        for key, rel_path in self._file_mapping.items():
+            if not (self.working_dir / rel_path).exists():
+                raise RuntimeError(f"Agent artifact {rel_path} not found for Round {round_num}")
 
-        if not agent_md.exists() or not eval_instructions_md.exists():
-            raise RuntimeError(f"Agent artifacts not found for Round {round_num}")
-
-        # Extract agent name from agent.md
-        agent_name = self._extract_agent_name_from_md(agent_md)
+        # Extract agent name from reasoning.md
+        reasoning_path = self.working_dir / "reasoning.md"
+        agent_name = self._extract_agent_name_from_reasoning(reasoning_path)
         logger.info(f"Testing agent: {agent_name}")
 
         # Create new agent directory outside git repo (prevents CLAUDE.md contamination for coder/critic calls).
@@ -911,13 +888,17 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         # Create agent package directory with evolved agent artifacts
         agent_package_dir = test_workspace / "agent_package"
         agent_package_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(agent_md, agent_package_dir / "agent.md")
-        shutil.copy2(eval_instructions_md, agent_package_dir / "eval_instructions.md")
-        if tools_dir.exists():
-            package_tools_dir = agent_package_dir / "tools"
-            if package_tools_dir.exists():
-                shutil.rmtree(package_tools_dir)
-            shutil.copytree(tools_dir, package_tools_dir)
+        for key, rel_path in self._file_mapping.items():
+            src = self.working_dir / rel_path
+            if src.exists():
+                dst = agent_package_dir / rel_path
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                if src.is_dir():
+                    if dst.exists():
+                        shutil.rmtree(dst)
+                    shutil.copytree(src, dst)
+                else:
+                    shutil.copy2(src, dst)
 
         # Load problems for each context, reusing baseline question IDs where available
         problems_by_context = self._load_baseline_problems(
@@ -1210,8 +1191,7 @@ Review the performance results above and the generated outputs in the test works
 - Evaluation results: `./iteration_{test_iteration:03d}_test/<database>/results/evaluation.json`
 - Database analysis outputs: `./iteration_{test_iteration:03d}_test/<database>/output/agent_output.txt`
 
-Based on what you observe, provide updated versions of any artifacts that need changes
-(agent.md, eval_instructions.md, or tools/).
+Based on what you observe, provide updated versions of any artifacts that need changes.
 
 After refinements, respond with: "ROUND {round_num} COMPLETE"
 """
@@ -1529,60 +1509,53 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
         snapshot_dir = self.working_dir / f"round{round_num}_snapshot"
         snapshot_dir.mkdir(parents=True, exist_ok=True)
 
-        # Copy artifacts from top level to snapshot
-        agent_md = self.working_dir / "agent.md"
-        eval_instructions_md = self.working_dir / "eval_instructions.md"
-        tools_dir = self.working_dir / "tools"
-
-        if agent_md.exists():
-            shutil.copy2(agent_md, snapshot_dir / "agent.md")
-
-        if eval_instructions_md.exists():
-            shutil.copy2(eval_instructions_md, snapshot_dir / "eval_instructions.md")
-
-        if tools_dir.exists() and tools_dir.is_dir():
-            tools_snapshot = snapshot_dir / "tools"
-            if tools_snapshot.exists():
-                shutil.rmtree(tools_snapshot)
-            shutil.copytree(tools_dir, tools_snapshot)
+        # Copy artifacts from file_mapping to snapshot
+        for key, rel_path in self._file_mapping.items():
+            src = self.working_dir / rel_path
+            if src.exists():
+                dst = snapshot_dir / rel_path
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                if src.is_dir():
+                    if dst.exists():
+                        shutil.rmtree(dst)
+                    shutil.copytree(src, dst)
+                else:
+                    shutil.copy2(src, dst)
 
         logger.info(f"Saved Round {round_num} snapshot to {snapshot_dir}")
 
-    def _save_final_artifacts(self) -> Tuple[Path, Path, Optional[Path]]:
+    def _save_final_artifacts(self) -> Dict[str, Path]:
         """
         Save final version of artifacts at top level.
 
-        Final artifacts are copies of the last snapshot.
-
         Returns:
-            Tuple of (agent.md path, eval_instructions.md path, tools/ path)
+            Dict mapping relative path -> absolute path for each artifact.
         """
-        # Artifacts should already be at top level from last round
-        # This method just verifies they exist and returns their paths
+        artifact_paths = {}
 
-        agent_md = self.working_dir / "agent.md"
-        eval_instructions_md = self.working_dir / "eval_instructions.md"
+        # Collect artifacts from file_mapping
+        for key, rel_path in self._file_mapping.items():
+            src = self.working_dir / rel_path
+            if src.exists():
+                artifact_paths[rel_path] = src
+                logger.info(f"  - {rel_path}: {src}")
+            else:
+                description = f"This file should contain the {key.replace('_', ' ')}."
+                if self._recover_missing_file(src, rel_path, description):
+                    artifact_paths[rel_path] = src
+                    logger.info(f"  - {rel_path}: {src} (recovered)")
+                else:
+                    logger.warning(f"  ⚠️ Artifact not found: {rel_path}")
+
+        # Also collect any tools/ directory even if not in file_mapping
         tools_dir = self.working_dir / "tools"
+        if tools_dir.exists() and tools_dir.is_dir():
+            if "tools" not in {p.split("/")[0] for p in artifact_paths}:
+                artifact_paths["tools"] = tools_dir
 
-        if not agent_md.exists():
-            description = "This is the final database analysis agent file."
-            if not self._recover_missing_file(agent_md, "agent.md", description):
-                raise RuntimeError("Final agent.md not found")
+        logger.info(f"Final artifacts verified: {len(artifact_paths)} files")
 
-        if not eval_instructions_md.exists():
-            description = "This is the final SQL generation instructions file."
-            if not self._recover_missing_file(eval_instructions_md, "eval_instructions.md", description):
-                raise RuntimeError("Final eval_instructions.md not found")
-
-        tools_path = tools_dir if tools_dir.exists() else None
-
-        logger.info("Final artifacts verified:")
-        logger.info(f"  - agent.md: {agent_md}")
-        logger.info(f"  - eval_instructions.md: {eval_instructions_md}")
-        if tools_path:
-            logger.info(f"  - tools/: {tools_path}")
-
-        return (agent_md, eval_instructions_md, tools_path)
+        return artifact_paths
 
     def _save_session_transcript(self):
         """

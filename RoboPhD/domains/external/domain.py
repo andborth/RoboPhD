@@ -406,8 +406,26 @@ class ExternalEvaluatorDomain(DomainInterface):
         return False
 
     @property
+    def file_mapping(self) -> Dict[str, str]:
+        return self._file_mapping
+
+    @property
+    def task_objective(self) -> str:
+        return self.config.get("task_objective", "")
+
+    @property
+    def task_name(self) -> str:
+        return self.config.get("task_name", "external")
+
+    @property
     def experiment_structure_docs(self) -> str:
-        return """```
+        # Build agent file listing from file_mapping
+        file_lines = []
+        for key, path in sorted(self._file_mapping.items()):
+            file_lines.append(f"      {path:<30s} ← {key}")
+        file_listing = "\n".join(file_lines)
+
+        return f"""```
 ../../iteration_XXX/
   agent_<AGENT_NAME>/
     evaluation.json                ← Summary metrics for all examples
@@ -416,12 +434,10 @@ class ExternalEvaluatorDomain(DomainInterface):
       <problem_id>/               ← Per-problem directory (symlink if cached)
         result.json               ← Score and metadata for caching
 
-Agent source code (three-artifact packages):
+Agent source code:
   ../../agents/
     <agent_name>/
-      agent.md              ← Agent definition
-      eval_instructions.md  ← Evaluation instructions
-      tools/                ← Analysis scripts (optional)
+{file_listing}
 ```"""
 
     # -----------------------------------------------------------------
