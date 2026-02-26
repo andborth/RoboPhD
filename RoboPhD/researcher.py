@@ -730,7 +730,9 @@ class ParallelAgentResearcher:
         self.resume_from_iteration = resume_from_iteration
         self.runtime_config = runtime_config or {}
 
-        self.api_key = api_key  # Required for Text2SQL, optional for external domain
+        # Required for Text2SQL (SQL generation via API), optional for external domain
+        # (which uses Claude Code CLI subprocesses instead).
+        self.api_key = api_key
 
         # Get iteration 1 config for initialization
         config = config_manager.get_config(1)
