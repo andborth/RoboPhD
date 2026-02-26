@@ -136,6 +136,8 @@ def build_codegen_dataset(
     if not examples:
         _bootstrap_cache(cache_dir)
         examples = _enumerate_cache(cache_dir, split)
+        if not examples:
+            logger.warning("No %s examples found after bootstrap (%s)", split, cache_dir)
     return examples
 
 
