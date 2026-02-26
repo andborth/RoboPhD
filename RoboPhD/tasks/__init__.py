@@ -32,6 +32,9 @@ def _ensure_builtins():
     from .codegen import make_codegen_task
     register_task(make_codegen_task())
 
+    from .aime import make_aime_task
+    register_task(make_aime_task())
+
 
 def get_task(name: str) -> TaskDefinition:
     """Look up a task by name. Raises KeyError if not found."""
