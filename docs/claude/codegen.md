@@ -37,8 +37,7 @@ CodeGen uses a versioned cache structure:
 │   ├── {problem_id}/
 │   │   ├── problem.md    # Problem statement (from dataset)
 │   │   ├── meta.json     # Metadata: question_id, contest_date, difficulty, session_id
-│   │   ├── solution.py   # Initial solution from Phase 1
-│   │   └── reflection.md # Approach description + categories from Phase 1.5
+│   │   └── solution.py   # Initial solution from Phase 1
 │   └── ...
 └── ...
 ```
@@ -57,12 +56,6 @@ The CodeGen domain uses a 6-phase workflow with verdict branching:
 ┌─────────────────────────────────────────────────────────────┐
 │              Phase 1: Initial Generation (Coder)            │
 │  Receives problem, generates initial solution (Code v1)     │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│            Phase 1.5: Reflection (same session)              │
-│  Creates reflection.md: approach description + categories   │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -109,10 +102,6 @@ The CodeGen domain uses a 6-phase workflow with verdict branching:
 - Writes initial solution (`solution.py`)
 - Can execute code on visible examples
 - Observes: "Example 1 ✓, Example 2 ✓, Example 3 ✓"
-
-**Phase 1.5: Reflection (same session)**
-- Prompt: "Create reflection.md describing your solution approach. Include a 'Categories' section listing one or more problem categories that apply."
-- Output: `reflection.md` with approach description and a **Categories** section (free-form, e.g., "Greedy Algorithm", "Dynamic Programming", "String Manipulation")
 
 **Phase 2: Critic Review**
 - Evolved critics typically use **tool-only execution mode**: a Python script performs automated static analysis of the solution, producing `tool_output/critic_feedback.txt`
@@ -196,21 +185,7 @@ tool_output_file: tool_output/critic_feedback.txt
 ---
 ```
 
-The analyzer script reads `solution.py`, `reflection.md`, and `problem.md` from its working directory, performs whatever analysis the evolution strategy designed, and writes structured findings to `tool_output/critic_feedback.txt`. The eval LLM then uses this analysis (along with `eval_instructions.md`) to render a verdict. Common analysis techniques include constraint extraction, complexity estimation, test execution against visible examples, and pattern-specific heuristics.
-
-An alternative structure uses **modular heuristics routing** (approach-based selection of specialized analysis):
-
-```
-agents/dp_critic/
-├── agent.md                    # Lightweight routing logic
-├── eval_instructions.md        # Static coding principles
-└── tools/
-    ├── route_approach.py       # Parse approach → select heuristics
-    └── heuristics/
-        ├── dp_patterns.md
-        ├── graph_patterns.md
-        └── ...
-```
+The analyzer script reads `solution.py` and `problem.md` from its working directory, performs whatever analysis the evolution strategy designed, and writes structured findings to `tool_output/critic_feedback.txt`. The eval LLM then uses this analysis (along with `eval_instructions.md`) to render a verdict. Common analysis techniques include constraint extraction, complexity estimation, test execution against visible examples, and pattern-specific heuristics.
 
 ## Per-Problem Output Files
 
@@ -220,7 +195,6 @@ Each problem directory contains the full audit trail:
 problems/<problem_id>/
 ├── problem.md            # Symlink to cache (problem statement)
 ├── solution.py           # Code v1 (copied from cache)
-├── reflection.md         # Coder's approach description + categories
 ├── tools/                # Critic's analysis scripts (copied from agent)
 ├── tool_output/          # Static analysis output (used by critic LLM)
 │   └── critic_feedback.txt
@@ -246,7 +220,7 @@ problems/<problem_id>/
 
 | Component | Text2SQL | CodeGen |
 |-----------|----------|---------|
-| **Phase 1 Input** | Database file | Problem context (problem + code_v1 + reflection) |
+| **Phase 1 Input** | Database file | Problem context (problem + code_v1) |
 | **Phase 1 Output** | system_prompt.txt | feedback.md (critic verdict + analysis) |
 | **Eval Mechanism** | Fresh API call with system prompt | Fresh API call with tool output + eval_instructions |
 | **Revision** | Verification retries with progressive temperature | Critic-driven session fork; coder accepts/rejects feedback |
@@ -259,8 +233,4 @@ problems/<problem_id>/
 
 ### Session Resumption Failures
 - **Symptom**: "Session not found" errors
-- **Solution**: Sessions expire; the system auto-regenerates (solution.py + reflection.md) with a fresh session when this happens
-
-### Missing Reflection
-- **Symptom**: Critic receives incomplete context
-- **Solution**: Verify Phase 1.5 completed and reflection.md exists in cache
+- **Solution**: Sessions expire; the system auto-regenerates solution.py with a fresh session when this happens

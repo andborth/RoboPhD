@@ -3,7 +3,7 @@
 Run critic evaluation on preprocessed LiveCodeBench problems.
 
 Evaluates a critic agent by:
-1. Running critic on solution.py + reflection.md → feedback.md
+1. Running critic on solution.py → feedback.md
 2. Running coder revision with feedback → solution_v2.py
 3. Comparing Pass@1 before/after critic
 
@@ -66,9 +66,6 @@ Requirements:
   Create a standalone script that reads from stdin and writes to stdout
 - Code must run in under 6 seconds on every test case
 - Include brief comments explaining your approach"""
-
-CALL_1_5_PROMPT = """Create reflection.md describing your solution approach.
-Include a "Categories" section listing one or more problem categories that apply."""
 
 # Model version mapping (short name -> full pinned model ID)
 # Using full IDs ensures actual version pinning (aliases like "haiku" auto-update)
@@ -383,7 +380,7 @@ class CriticEvaluator:
 
     def regenerate_coder(self, workspace: Path, question_id: str) -> Tuple[str, Dict]:
         """
-        Regenerate solution.py and reflection.md with fresh session.
+        Regenerate solution.py with fresh session.
 
         Workspace must already have problem.md symlinked.
         Returns (session_id, codegen_timing). Raises RuntimeError on failure.
@@ -405,33 +402,18 @@ class CriticEvaluator:
         if not session_id:
             raise RuntimeError(f"Call 1 failed for {question_id}: no session_id returned")
 
-        logger.info(f"  [regen-call1.5:{question_id}] generating reflection.md")
-
-        # Call 1.5: Generate reflection (same session)
-        _, _, cost2 = self._run_claude_code(
-            CALL_1_5_PROMPT,
-            working_dir=workspace,
-            model=self.coder_model,
-            timeout=self.codegen_timeout,
-            session_id=session_id,
-            context=f"regen-call1.5:{question_id}",
-            extra_env=self.coder_extra_env,
-        )
-
         # Verify files were created
         if not (workspace / "solution.py").exists():
             raise RuntimeError(f"solution.py not created for {question_id}")
-        if not (workspace / "reflection.md").exists():
-            raise RuntimeError(f"reflection.md not created for {question_id}")
 
         elapsed = time.time() - start
         codegen_timing = {
             'elapsed_seconds': elapsed,
-            'cost_usd': cost1.get('cost_usd', 0) + cost2.get('cost_usd', 0),
-            'input_tokens': cost1.get('input_tokens', 0) + cost2.get('input_tokens', 0),
-            'output_tokens': cost1.get('output_tokens', 0) + cost2.get('output_tokens', 0),
-            'cache_creation_tokens': cost1.get('cache_creation_tokens', 0) + cost2.get('cache_creation_tokens', 0),
-            'cache_read_tokens': cost1.get('cache_read_tokens', 0) + cost2.get('cache_read_tokens', 0),
+            'cost_usd': cost1.get('cost_usd', 0),
+            'input_tokens': cost1.get('input_tokens', 0),
+            'output_tokens': cost1.get('output_tokens', 0),
+            'cache_creation_tokens': cost1.get('cache_creation_tokens', 0),
+            'cache_read_tokens': cost1.get('cache_read_tokens', 0),
         }
 
         return session_id, codegen_timing
@@ -446,7 +428,7 @@ class CriticEvaluator:
         Run critic agent on a problem.
 
         Runs directly from output_problem_dir (no workspace subdirectory).
-        Expects problem.md, solution.py, reflection.md already present.
+        Expects problem.md and solution.py already present.
 
         Returns (path to feedback.md, timing_info), or (None, timing_info) on failure.
         """
@@ -565,7 +547,7 @@ class CriticEvaluator:
 
         parts.append(
             "## Task\n\n"
-            "Review solution.py and reflection.md. "
+            "Review solution.py against problem.md. "
             "Create feedback.md in the current working directory (not the scratchpad) "
             "starting with VERDICT: CORRECT or VERDICT: INCORRECT "
             "on the first line, followed by your analysis."
@@ -756,16 +738,11 @@ Then explain briefly what you accepted or rejected and why."""
         if problem_src.exists() and not problem_dest.exists():
             problem_dest.symlink_to(problem_src.resolve())
 
-        # Copy solution.py and reflection.md (generated, may change if cache rebuilt)
+        # Copy solution.py (generated, may change if cache rebuilt)
         solution_v1_path = output_problem_dir / "solution.py"
         cache_solution = cache_problem_dir / "solution.py"
         if cache_solution.exists():
             shutil.copy(cache_solution, solution_v1_path)
-
-        reflection_path = output_problem_dir / "reflection.md"
-        cache_reflection = cache_problem_dir / "reflection.md"
-        if cache_reflection.exists():
-            shutil.copy(cache_reflection, reflection_path)
 
         # Step 2: Run critic
         logger.info(f"Running critic on {question_id}")

@@ -1,6 +1,6 @@
 # Code Review Instructions
 
-You will receive solution.py and reflection.md. The reflection contains the coder's rationale for the solution, including approach categories. Review the code for correctness given the problem statement.
+You will receive solution.py and problem.md. Review the code for correctness given the problem statement.
 
 ## Core Requirements
 

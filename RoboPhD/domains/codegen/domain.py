@@ -22,8 +22,8 @@ class CodeGenDomain(DomainInterface):
     """
     Code Generation domain with evolved critics.
 
-    Phase 1 Input: Bundle {question, code_v1, approach_description}
-    Phase 1 Output: Approach-specific critic feedback
+    Phase 1 Input: Bundle {question, code_v1}
+    Phase 1 Output: Critic feedback
     Phase 2 Output: Revised code (Code v2) via session resumption
     Evaluation: Binary pass/fail on hidden tests
 
@@ -31,14 +31,13 @@ class CodeGenDomain(DomainInterface):
     - Text2SQL Phase 2: Fresh API call with generated system prompt
     - CodeGen Phase 2: Resume coder's session with critic feedback
 
-    The session_id is part of the cached problem data (alongside code_v1
-    and approach_description). This enables the coder to evaluate critic
-    feedback against its original reasoning, preserved in session context.
+    The session_id is part of the cached problem data (alongside code_v1).
+    This enables the coder to evaluate critic feedback against its original
+    reasoning, preserved in session context.
 
     Cached problem data (from preprocessing):
     - question: Problem statement from LiveCodeBench
     - code_v1: Initial solution from Coder Call 1
-    - approach_description: Self-reported approach from Coder Call 1.5
     - session_id: Claude Code session ID for resumption in Call 2
 
     NOT YET IMPLEMENTED - This is a stub for the domain abstraction.
@@ -267,7 +266,6 @@ class CodeGenDomain(DomainInterface):
     problems/
       <problem_id>/
         solution.py                ← Original code (v1)
-        reflection.md              ← Coder's self-reflection on their approach
         tool_output/
           critic_feedback.txt      ← Tool-generated analysis
         critic_prompt.md           ← Full prompt sent to critic (includes eval_instructions)
