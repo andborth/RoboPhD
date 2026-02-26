@@ -19,10 +19,16 @@ def to_litellm_model(name: str) -> str:
 
 
 class CostTrackingLM:
-    """Wraps litellm.completion to track token usage and cost for GEPA reflection calls."""
+    """Wraps litellm.completion to track token usage and cost for GEPA reflection calls.
 
-    def __init__(self, model_name: str):
+    Accepts an explicit api_key so callers don't need to set ANTHROPIC_API_KEY
+    in the environment (which would cause Claude Code CLI subprocesses to bill
+    through the API account instead of Claude Max).
+    """
+
+    def __init__(self, model_name: str, api_key: str | None = None):
         self.model_name = model_name
+        self._api_key = api_key
         self.total_cost = 0.0
         self.total_input_tokens = 0
         self.total_output_tokens = 0
@@ -37,7 +43,11 @@ class CostTrackingLM:
         else:
             messages = prompt
 
-        completion = litellm.completion(model=self.model_name, messages=messages)
+        kwargs: dict[str, Any] = {"model": self.model_name, "messages": messages}
+        if self._api_key:
+            kwargs["api_key"] = self._api_key
+
+        completion = litellm.completion(**kwargs)
 
         usage = getattr(completion, "usage", None)
         cost = litellm.completion_cost(completion_response=completion)

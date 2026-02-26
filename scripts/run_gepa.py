@@ -130,10 +130,11 @@ def main():
         _list_params(task)
         sys.exit(0)
 
-    # Ensure litellm can find the API key
-    api_key = os.environ.get(API_KEY_ENV_VAR)
-    if api_key and "ANTHROPIC_API_KEY" not in os.environ:
-        os.environ["ANTHROPIC_API_KEY"] = api_key
+    # Resolve API key for reflection model (litellm).
+    # Do NOT set ANTHROPIC_API_KEY in the environment — that would cause
+    # Claude Code CLI subprocesses (evaluator) to bill through the API
+    # account instead of the Claude Max plan.
+    api_key = os.environ.get(API_KEY_ENV_VAR) or os.environ.get("ANTHROPIC_API_KEY")
 
     # --- 1. Load task and merge config ---
     task = get_task(args.task)
@@ -218,7 +219,7 @@ def main():
     reflection_model = config.get("reflection_model", _GEPA_DEFAULTS["reflection_model"][0])
     from gepa.optimize_anything import ReflectionConfig
     litellm_model = to_litellm_model(reflection_model)
-    reflection_lm = CostTrackingLM(litellm_model)
+    reflection_lm = CostTrackingLM(litellm_model, api_key=api_key)
     gepa_config.reflection = ReflectionConfig(reflection_lm=reflection_lm)
 
     logger.info(

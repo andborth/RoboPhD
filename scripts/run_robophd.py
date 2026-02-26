@@ -26,7 +26,6 @@ Config merge order: task defaults -> --config -> --engine-config
 
 import argparse
 import logging
-import os
 import random
 import sys
 from pathlib import Path
@@ -35,7 +34,6 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from RoboPhD.config import API_KEY_ENV_VAR
 from RoboPhD.config_manager import ConfigManager, ConfigSource
 from RoboPhD.adapters.runner_utils import parse_config_arg, print_task_params, fmt_val
 from RoboPhD.tasks import get_task, list_tasks
@@ -126,15 +124,6 @@ def split_config(full_config: dict) -> tuple[dict, dict]:
     return researcher_config, task_config
 
 
-def resolve_api_key() -> str:
-    """Resolve API key from environment."""
-    api_key = os.environ.get(API_KEY_ENV_VAR)
-    if not api_key:
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if api_key and "ANTHROPIC_API_KEY" not in os.environ:
-        os.environ["ANTHROPIC_API_KEY"] = api_key
-    return api_key
-
 
 
 def _list_params(task):
@@ -217,12 +206,6 @@ def main():
 
     logger.info(f"Task: {task.name} — {task.description}")
 
-    # Resolve API key
-    api_key = resolve_api_key()
-    if not api_key:
-        print(f"Error: API key required. Set {API_KEY_ENV_VAR} environment variable.")
-        sys.exit(1)
-
     # --- 2. Build evaluator and dataset ---
     evaluator = task.evaluator_factory(full_config)
     dataset = task.dataset_builder(full_config)
@@ -298,7 +281,6 @@ def main():
             resume_from_iteration=resume_from,
             resume_checkpoint=checkpoint,
             resume_experiment_dir=experiment_dir,
-            api_key=api_key,
             runtime_config=runtime_config,
         )
 
@@ -316,7 +298,6 @@ def main():
             config_manager=config_manager,
             num_iterations=num_iterations,
             random_seed=random_seed,
-            api_key=api_key,
             runtime_config=runtime_config,
         )
 

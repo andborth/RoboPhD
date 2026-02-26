@@ -730,9 +730,7 @@ class ParallelAgentResearcher:
         self.resume_from_iteration = resume_from_iteration
         self.runtime_config = runtime_config or {}
 
-        if not api_key:
-            raise Exception("must pass api key to use for sql generation")
-        self.api_key = api_key
+        self.api_key = api_key  # Required for Text2SQL, optional for external domain
 
         # Get iteration 1 config for initialization
         config = config_manager.get_config(1)
