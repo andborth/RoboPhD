@@ -51,28 +51,36 @@ CODEGEN_FILE_MAPPING = {
 TEST_SET_CUTOFF = "2024-11-01"
 
 
-def build_codegen_dataset(
-    cache_dir: Path,
-    split: str = "evolution",
-) -> List[Dict[str, str]]:
+def _bootstrap_cache(cache_dir: Path) -> None:
     """
-    Build a flat list of example dicts from the codegen cache.
+    Bootstrap cache from HuggingFace dataset (problem.md + meta.json only).
 
-    Each example is lightweight: {"question_id": "abc314_c"}.
-    Hidden test data is NOT included — the evaluator resolves it internally
-    by question_id, preventing leakage to GEPA's reflection LM.
-
-    Args:
-        cache_dir: Path to codegen_cache/<model>_v6/ directory.
-        split: "evolution" (before cutoff) or "test" (on/after cutoff).
-
-    Returns:
-        List of example dicts sorted by question_id.
+    Called lazily when build_codegen_dataset() finds an empty cache.
+    Solution.py is NOT created here — it's generated on demand by
+    regenerate_coder() when the problem is first evaluated.
     """
-    if not cache_dir.exists():
-        logger.warning(f"Cache directory does not exist: {cache_dir}")
-        return []
+    tools_dir = str(Path(__file__).parent.parent / "tools")
+    project_root = str(Path(__file__).parent.parent.parent)
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
 
+    from evaluate_livecodebench import load_dataset
+    from run_critic_evaluation import ensure_cache_entry
+
+    dataset = load_dataset()
+    logger.info(f"Bootstrapping cache with {len(dataset)} problems from HuggingFace")
+
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    for question_id, problem_data in sorted(dataset.items()):
+        ensure_cache_entry(cache_dir, question_id, problem_data)
+
+    logger.info(f"Cache bootstrapped: {len(dataset)} entries in {cache_dir}")
+
+
+def _enumerate_cache(cache_dir: Path, split: str) -> List[Dict[str, str]]:
+    """Enumerate cache entries matching the requested split."""
     examples = []
     for problem_dir in sorted(cache_dir.iterdir()):
         if not problem_dir.is_dir():
@@ -98,6 +106,36 @@ def build_codegen_dataset(
 
         examples.append({"question_id": meta.get("question_id", problem_dir.name)})
 
+    return examples
+
+
+def build_codegen_dataset(
+    cache_dir: Path,
+    split: str = "evolution",
+) -> List[Dict[str, str]]:
+    """
+    Build a flat list of example dicts from the codegen cache.
+
+    Each example is lightweight: {"question_id": "abc314_c"}.
+    Hidden test data is NOT included — the evaluator resolves it internally
+    by question_id, preventing leakage to GEPA's reflection LM.
+
+    Bootstraps the cache from HuggingFace if no entries match the requested
+    split (creates problem.md + meta.json only; solution.py is generated on
+    demand during evaluation).
+
+    Args:
+        cache_dir: Path to codegen_cache/<model>_v6/ directory.
+        split: "evolution" (before cutoff) or "test" (on/after cutoff).
+
+    Returns:
+        List of example dicts sorted by question_id.
+    """
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    examples = _enumerate_cache(cache_dir, split)
+    if not examples:
+        _bootstrap_cache(cache_dir)
+        examples = _enumerate_cache(cache_dir, split)
     return examples
 
 
