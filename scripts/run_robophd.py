@@ -225,8 +225,10 @@ def main():
     # --- 3. Split config for ConfigManager vs task-only ---
     researcher_config, _ = split_config(full_config)
 
-    # Force external domain
+    # Force external domain (ExternalEvaluatorDomain wraps the task's evaluator)
     researcher_config["domain"] = "external"
+    # Meta-evolution needs the real domain name for its domain header prompts
+    researcher_config["meta_evolution_domain"] = task.name
 
     # Seed agent: set agents_directory so load_initial_agents can find it
     seed_agent = Path(full_config.get("seed_agent", task.default_seed_agent))

@@ -924,7 +924,7 @@ class ParallelAgentResearcher:
         self.meta_evolution_manager = MetaEvolutionManager(
             experiment_dir=self.experiment_dir,
             config_manager=self.config_manager,
-            domain_name=self.domain_name
+            domain_name=config.get("meta_evolution_domain", self.domain_name)
         )
 
         # Apply pending evolution reset if needed
