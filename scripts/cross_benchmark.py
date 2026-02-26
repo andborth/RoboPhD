@@ -131,13 +131,18 @@ def run_gepa(args, cache_dir: Path, output_dir: Path) -> dict:
     # Build command
     cmd = [
         sys.executable,
-        str(project_root / "scripts" / "run_gepa_codegen.py"),
-        "--seed-agent", str(args.seed_agent),
-        "--coder-model", args.coder_model,
-        "--critic-model", args.critic_model,
-        "--cache-dir", str(cache_dir),
-        "--max-metric-calls", str(args.evaluation_budget),
-        "--seed", str(args.seed),
+        str(project_root / "scripts" / "run_gepa.py"),
+        "--task", "codegen",
+        "--task-config", json.dumps({
+            "seed_agent": str(args.seed_agent),
+            "coder_model": args.coder_model,
+            "critic_model": args.critic_model,
+            "cache_dir": str(cache_dir),
+        }),
+        "--engine-config", json.dumps({
+            "evaluation_budget": args.evaluation_budget,
+            "seed": args.seed,
+        }),
         "--output-dir", str(output_dir),
     ]
 

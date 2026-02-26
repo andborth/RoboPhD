@@ -2,7 +2,7 @@
 """
 Generic GEPA runner: optimize any registered task with optimize_anything().
 
-Replaces task-specific scripts (run_gepa_codegen.py) with a unified interface.
+Generic GEPA runner for any registered task.
 
 Usage:
     # Smoke test

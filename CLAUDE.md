@@ -39,20 +39,19 @@ pip install -r requirements.txt
 ### GEPA Optimization (CodeGen)
 ```bash
 # Smoke test (~5 mutation cycles)
-python scripts/run_gepa_codegen.py \
-  --seed-agent RoboPhD/codegen_agents/naive_critic \
-  --max-metric-calls 200 --val-ratio 0.05
+python scripts/run_gepa.py --task codegen \
+  --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic"}' \
+  --engine-config '{"evaluation_budget": 200, "val_ratio": 0.05}'
 
 # Full run
-python scripts/run_gepa_codegen.py \
-  --seed-agent RoboPhD/codegen_agents/naive_critic \
-  --max-metric-calls 600 --val-ratio 0.05 \
-  --reflection-model opus-4.6
+python scripts/run_gepa.py --task codegen \
+  --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic"}' \
+  --engine-config '{"evaluation_budget": 600, "val_ratio": 0.05, "reflection_model": "opus-4.6"}'
 
 # Sequential (easier debugging, no ThreadPoolExecutor)
-python scripts/run_gepa_codegen.py \
-  --seed-agent RoboPhD/codegen_agents/naive_critic \
-  --max-metric-calls 200 --max-workers 1
+python scripts/run_gepa.py --task codegen \
+  --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic"}' \
+  --engine-config '{"evaluation_budget": 200, "max_workers": 1}'
 ```
 
 **Budget math**: Each mutation cycle costs ~minibatch (3) + val sweep (val_size). With `--val-ratio 0.05` (~39 val examples), each cycle ≈ 42 calls. Keep val small to maximize exploration within the budget.

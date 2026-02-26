@@ -53,25 +53,25 @@ Each mutation cycle costs: minibatch (~3) + val sweep (val_size). With `--val-ra
 
 ```bash
 # Smoke test (~5 mutation cycles)
-python scripts/run_gepa_codegen.py \
-    --seed-agent RoboPhD/codegen_agents/naive_critic \
-    --max-metric-calls 200 --val-ratio 0.05
+python scripts/run_gepa.py --task codegen \
+    --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic"}' \
+    --engine-config '{"evaluation_budget": 200, "val_ratio": 0.05}'
 
 # Full run with Opus reflection
-python scripts/run_gepa_codegen.py \
-    --seed-agent RoboPhD/codegen_agents/naive_critic \
-    --max-metric-calls 600 --val-ratio 0.05 \
-    --reflection-model opus-4.6
+python scripts/run_gepa.py --task codegen \
+    --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic"}' \
+    --engine-config '{"evaluation_budget": 600, "val_ratio": 0.05, "reflection_model": "opus-4.6"}'
 
 # Sequential execution (cleaner stack traces for debugging)
-python scripts/run_gepa_codegen.py \
-    --seed-agent RoboPhD/codegen_agents/naive_critic \
-    --max-metric-calls 200 --max-workers 1
+python scripts/run_gepa.py --task codegen \
+    --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic"}' \
+    --engine-config '{"evaluation_budget": 200, "max_workers": 1}'
 
 # With held-out test set evaluation
-python scripts/run_gepa_codegen.py \
-    --seed-agent RoboPhD/codegen_agents/naive_critic \
-    --max-metric-calls 600 --val-ratio 0.05 --eval-test-set
+python scripts/run_gepa.py --task codegen \
+    --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic"}' \
+    --engine-config '{"evaluation_budget": 600, "val_ratio": 0.05}' \
+    --eval-test-set
 ```
 
 ### Cross-Benchmarking
@@ -95,9 +95,9 @@ Core adapter with four pieces:
 - **`build_codegen_dataset()`** — Builds lightweight example dicts from codegen cache. Each example is just `{"question_id": "abc314_c"}` — no test data included, preventing leakage to GEPA's reflection LM.
 - **`RoboPhDCodeGenEvaluator`** — GEPA-compatible evaluator wrapping `CriticEvaluator.evaluate_problem()`. Thread-safe for concurrent val sweeps via `threading.Lock`.
 
-### `scripts/run_gepa_codegen.py`
+### `scripts/run_gepa.py`
 
-Entry point for running GEPA on codegen. Extracts seed candidate, builds train/val split from 767 evolution problems, runs `optimize_anything()`, materializes best candidate back to an agent directory.
+Generic entry point for running GEPA on any registered task. Extracts seed candidate, builds train/val split, runs `optimize_anything()`, materializes best candidate back to an agent directory.
 
 ### `scripts/cross_benchmark.py`
 
