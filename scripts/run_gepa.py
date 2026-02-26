@@ -51,7 +51,7 @@ _GEPA_DEFAULTS = {
     "max_workers": (12, "Thread pool size for parallel evaluation"),
     "seed": (42, "Random seed for reproducibility"),
     "val_ratio": (0.2, "Fraction of dataset held out for validation"),
-    "val_size": (None, "Exact validation set size (overrides val_ratio)"),
+    "val_size": (None, "Exact validation set size (mutually exclusive with val_ratio)"),
     "reflection_model": ("opus-4.6", "Model for GEPA reflection (mutation proposals)"),
 }
 
@@ -191,6 +191,9 @@ def main():
     rng.shuffle(shuffled)
 
     if val_size is not None:
+        if val_size < 1:
+            logger.error(f"val_size ({val_size}) must be >= 1")
+            sys.exit(1)
         if val_size >= len(shuffled):
             logger.error(f"val_size ({val_size}) must be less than dataset size ({len(shuffled)})")
             sys.exit(1)
