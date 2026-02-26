@@ -194,6 +194,7 @@ def main():
     api_key = os.environ.get(API_KEY_ENV_VAR)
     if api_key and "ANTHROPIC_API_KEY" not in os.environ:
         os.environ["ANTHROPIC_API_KEY"] = api_key
+    os.environ["LITELLM_TELEMETRY"] = "False"
 
     # Setup output directory
     if args.output_dir is None:
