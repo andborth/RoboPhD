@@ -20,7 +20,6 @@ def _evaluator_factory(config: Dict[str, Any]):
 
     return AIMEEvaluator(
         solver_model=config.get("solver_model", "gpt-4.1-mini"),
-        api_key=config.get("openai_api_key"),
         work_dir=work_dir,
     )
 

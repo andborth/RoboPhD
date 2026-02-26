@@ -17,7 +17,6 @@ Usage:
 
 import json
 import logging
-import os
 import re
 import threading
 from pathlib import Path
@@ -80,6 +79,9 @@ def build_aime_dataset(split: str = "train") -> List[Dict[str, Any]]:
     """
     from datasets import load_dataset
 
+    if split not in ("train", "test"):
+        raise ValueError(f"Unknown AIME split: {split!r}. Use 'train' or 'test'.")
+
     if split == "test":
         ds = load_dataset("MathArena/aime_2025")["train"]
         examples = []
@@ -123,11 +125,9 @@ class AIMEEvaluator:
     def __init__(
         self,
         solver_model: str = "gpt-4.1-mini",
-        api_key: Optional[str] = None,
         work_dir: Optional[Path] = None,
     ):
         self.solver_model = solver_model
-        self._api_key = api_key or os.environ.get("OPENAI_API_KEY")
         self.work_dir = Path(work_dir) if work_dir else Path("gepa_aime_work")
 
         self._eval_count = 0
@@ -164,12 +164,8 @@ class AIMEEvaluator:
             {"role": "user", "content": problem_text},
         ]
 
-        kwargs: Dict[str, Any] = {"model": self.solver_model, "messages": messages}
-        if self._api_key:
-            kwargs["api_key"] = self._api_key
-
         try:
-            completion = litellm.completion(**kwargs)
+            completion = litellm.completion(model=self.solver_model, messages=messages)
             response = completion.choices[0].message.content or ""
             cost = litellm.completion_cost(completion_response=completion)
         except Exception as e:
