@@ -8,20 +8,20 @@ Usage:
     # Fresh run
     python scripts/run_robophd.py --task codegen \
         --num-iterations 5 \
-        --config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 50}' \
+        --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 50}' \
         --engine-config '{"contexts_per_iteration": 3}'
 
     # Resume
     python scripts/run_robophd.py --task codegen \
         --resume evolution/robophd_20260225_120000 \
-        --config task.json --engine-config robophd.json
+        --task-config task.json --engine-config robophd.json
 
     # Extend
     python scripts/run_robophd.py --task codegen \
         --resume evolution/robophd_20260225_120000 --extend 5 \
-        --config task.json --engine-config robophd.json
+        --task-config task.json --engine-config robophd.json
 
-Config merge order: task defaults -> --config -> --engine-config
+Config merge order: task defaults -> --task-config -> --engine-config
 """
 
 import argparse
@@ -62,7 +62,7 @@ def parse_args():
         help="List all valid config parameters for the task and engine, then exit",
     )
     parser.add_argument(
-        "--config",
+        "--task-config",
         default=None,
         help="Task config: JSON file path or inline JSON string (shared with run_gepa.py)",
     )
@@ -131,13 +131,13 @@ def _list_params(task):
     print("=" * 70)
     print("VALID CONFIGURATION PARAMETERS — run_robophd.py")
     print("=" * 70)
-    print("\nConfig merge order: task defaults -> --config -> --engine-config")
+    print("\nConfig merge order: task defaults -> --task-config -> --engine-config")
 
     # Task params
     print_task_params(task)
 
     # Task-only keys (accepted in --config, not forwarded to engine)
-    print("Task-only keys (--config, consumed by evaluator/dataset factories):")
+    print("Task-only keys (--task-config, consumed by evaluator/dataset factories):")
     for k in sorted(_TASK_ONLY_KEYS):
         default = task.config_defaults.get(k)
         suffix = f" (default: {fmt_val(default)})" if default is not None else ""
@@ -145,7 +145,7 @@ def _list_params(task):
     print()
 
     # Shared keys
-    print("Shared keys (accepted in --config, translated for engine):")
+    print("Shared keys (accepted in --task-config, translated for engine):")
     for src, dst in sorted(_SHARED_KEY_MAP.items()):
         print(f"  - {src}  ->  {dst}")
     print()
@@ -185,7 +185,7 @@ def _list_params(task):
     print("Example:")
     print("  python scripts/run_robophd.py --task codegen \\")
     print("    --num-iterations 5 \\")
-    print('    --config \'{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 50}\' \\')
+    print('    --task-config \'{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 50}\' \\')
     print('    --engine-config \'{"contexts_per_iteration": 12, "evolution_strategy": "refinement_tool_only"}\'')
 
 
@@ -200,7 +200,7 @@ def main():
 
     # --- 1. Load task and merge config ---
     task = get_task(args.task)
-    task_config = parse_config_arg(args.config)
+    task_config = parse_config_arg(args.task_config)
     engine_config = parse_config_arg(args.engine_config)
     full_config = {**task.config_defaults, **task_config, **engine_config}
 

@@ -7,18 +7,18 @@ Replaces task-specific scripts (run_gepa_codegen.py) with a unified interface.
 Usage:
     # Smoke test
     python scripts/run_gepa.py --task codegen \
-        --config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 10}'
+        --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 10}'
 
     # Full run with engine tuning
     python scripts/run_gepa.py --task codegen \
-        --config task.json \
+        --task-config task.json \
         --engine-config '{"val_ratio": 0.05, "reflection_model": "opus-4.6"}'
 
     # With test-set evaluation
     python scripts/run_gepa.py --task codegen \
-        --config task.json --eval-test-set
+        --task-config task.json --eval-test-set
 
-Config merge order: task defaults -> --config -> --engine-config
+Config merge order: task defaults -> --task-config -> --engine-config
 """
 
 import argparse
@@ -72,7 +72,7 @@ def parse_args():
         help="List all valid config parameters for the task and engine, then exit",
     )
     parser.add_argument(
-        "--config",
+        "--task-config",
         default=None,
         help="Task config: JSON file path or inline JSON string (shared with run_robophd.py)",
     )
@@ -101,7 +101,7 @@ def _list_params(task):
     print("=" * 70)
     print("VALID CONFIGURATION PARAMETERS — run_gepa.py")
     print("=" * 70)
-    print("\nConfig merge order: task defaults -> --config -> --engine-config")
+    print("\nConfig merge order: task defaults -> --task-config -> --engine-config")
 
     # Task params
     print_task_params(task)
@@ -118,7 +118,7 @@ def _list_params(task):
 
     print("Example:")
     print("  python scripts/run_gepa.py --task codegen \\")
-    print('    --config \'{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 200}\' \\')
+    print('    --task-config \'{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 200}\' \\')
     print('    --engine-config \'{"val_ratio": 0.05, "reflection_model": "opus-4.6"}\'')
 
 
@@ -139,7 +139,7 @@ def main():
 
     # --- 1. Load task and merge config ---
     task = get_task(args.task)
-    task_config = parse_config_arg(args.config)
+    task_config = parse_config_arg(args.task_config)
     engine_config = parse_config_arg(args.engine_config)
     config = {**task.config_defaults, **task_config, **engine_config}
 
