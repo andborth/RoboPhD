@@ -18,9 +18,28 @@ Usage:
 
 import argparse
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
+
+# Resolve default relative to repo root, not CWD
+_PROJECT_ROOT = Path(__file__).parent.parent
+
+
+def safe_rmtree(path: Path) -> None:
+    """Remove directory tree, unlinking symlinks first to avoid following them."""
+    for root, dirs, files in os.walk(path, topdown=False):
+        root_path = Path(root)
+        for name in files:
+            p = root_path / name
+            if p.is_symlink():
+                p.unlink()
+        for name in dirs:
+            p = root_path / name
+            if p.is_symlink():
+                p.unlink()
+    shutil.rmtree(path)
 
 
 def get_dir_size(path: Path) -> int:
@@ -129,8 +148,8 @@ def main():
     parser.add_argument(
         "--runs-dir",
         type=Path,
-        default=Path("../robophd_runs"),
-        help="Root directory for experiment outputs (default: ../robophd_runs)",
+        default=None,
+        help="Root directory for experiment outputs (default: ../robophd_runs relative to repo root)",
     )
     parser.add_argument(
         "--min-iterations",
@@ -151,6 +170,8 @@ def main():
     )
     args = parser.parse_args()
 
+    if args.runs_dir is None:
+        args.runs_dir = _PROJECT_ROOT.parent / "robophd_runs"
     runs_dir = args.runs_dir.resolve()
     if not runs_dir.exists():
         print(f"Runs directory not found: {runs_dir}")
@@ -207,12 +228,15 @@ def main():
         print("Done.")
 
     elif args.delete:
-        print(f"\nPermanently deleting {len(all_targets)} run(s)...")
+        total_size = sum(t["size"] for t in all_targets)
+        answer = input(f"\nPermanently delete {len(all_targets)} run(s) totaling {fmt_size(total_size)}? [y/N] ")
+        if answer.strip().lower() != "y":
+            print("Aborted.")
+            return
         for t in all_targets:
             rel = t["path"].relative_to(runs_dir)
-            shutil.rmtree(t["path"])
+            safe_rmtree(t["path"])
             print(f"  Deleted {rel}")
-        total_size = sum(t["size"] for t in all_targets)
         print(f"Freed {fmt_size(total_size)}.")
 
     else:

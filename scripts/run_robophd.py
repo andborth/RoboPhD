@@ -81,11 +81,14 @@ def parse_args():
     parser.add_argument(
         "--runs-dir",
         type=Path,
-        default=Path("../robophd_runs"),
-        help="Root directory for experiment outputs (default: ../robophd_runs)",
+        default=None,
+        help="Root directory for experiment outputs (default: ../robophd_runs relative to repo root)",
     )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.runs_dir is None:
+        args.runs_dir = project_root.parent / "robophd_runs"
+    return args
 
 
 # Keys consumed by evaluator/dataset factories only — never enter ConfigManager.
@@ -239,14 +242,13 @@ def main():
     # --- 3. Split config for ConfigManager vs task-only ---
     # Only validate user-provided keys (task defaults are always valid)
     user_config = {**task_config, **engine_config}
+    user_config["runs_directory"] = str(args.runs_dir)  # CLI arg always wins
     researcher_config, _ = split_config(user_config)
 
     # Force external domain (ExternalEvaluatorDomain wraps the task's evaluator)
     researcher_config["domain"] = "external"
     # Meta-evolution needs the real domain name for its domain header prompts
     researcher_config["meta_evolution_domain"] = task.name
-    # Runs directory (experiment_dir root)
-    researcher_config["runs_directory"] = str(args.runs_dir)
 
     # Seed agent: set agents_directory so load_initial_agents can find it
     seed_agent = Path(full_config.get("seed_agent", task.default_seed_agent))

@@ -95,11 +95,14 @@ def parse_args():
     parser.add_argument(
         "--runs-dir",
         type=Path,
-        default=Path("../robophd_runs"),
-        help="Root directory for experiment outputs (default: ../robophd_runs)",
+        default=None,
+        help="Root directory for experiment outputs (default: ../robophd_runs relative to repo root)",
     )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.runs_dir is None:
+        args.runs_dir = project_root.parent / "robophd_runs"
+    return args
 
 
 def _list_params(task):
