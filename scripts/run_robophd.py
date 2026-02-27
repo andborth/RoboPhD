@@ -104,11 +104,17 @@ def split_config(full_config: dict) -> tuple[dict, dict]:
     task_config: keys consumed by evaluator/dataset factories only.
     """
     defaults = ConfigManager().get_defaults()
+    valid_keys = set(defaults) | _TASK_ONLY_KEYS | set(_SHARED_KEY_MAP)
 
     researcher_config = {}
     task_config = {}
 
     for key, value in full_config.items():
+        if key not in valid_keys:
+            raise SystemExit(
+                f"Unknown config key: {key!r}\n"
+                f"Use --list-params to see valid parameters."
+            )
         if key in _TASK_ONLY_KEYS:
             task_config[key] = value
         elif key in _SHARED_KEY_MAP:
@@ -117,9 +123,6 @@ def split_config(full_config: dict) -> tuple[dict, dict]:
             task_config[key] = value  # also keep for evaluator factory
         elif key in defaults:
             researcher_config[key] = value
-        else:
-            # Unknown key — put in task_config (factory might use it)
-            task_config[key] = value
 
     return researcher_config, task_config
 

@@ -750,9 +750,7 @@ class ConfigManager:
         return None
 
     # Deprecated parameter aliases: old_name -> new_name
-    _DEPRECATED_ALIASES = {
-        "contexts_per_iteration": "examples_per_iteration",
-    }
+    _DEPRECATED_ALIASES = {}
 
     def _apply_deprecated_aliases(self, config: Dict[str, Any]) -> None:
         """Convert deprecated parameter names to their current equivalents (in-place)."""
