@@ -315,7 +315,7 @@ class ParallelAgentEvolver:
             was_random: Whether strategy was randomly selected
 
         Returns:
-            Tuple of (content, agent_id, reasoning, package_info) or None if evolution failed
+            Tuple of (agent_id, reasoning, package_info) or None if evolution failed
         """
         # Note: strategy_name is now always provided by caller from resolved config
 
@@ -432,7 +432,7 @@ class ParallelAgentEvolver:
         print(f"   Evolution time: {result.timing_info['total']/60:.1f} minutes")
         print(f"   Evolution cost: ${result.cost_info['total']:.2f}")
 
-        return (reasoning, agent_id, reasoning, package_info)
+        return (agent_id, reasoning, package_info)
     
     def _substitute_template_variables(self, text: str, iteration: int) -> str:
         """
@@ -2893,7 +2893,7 @@ class ParallelAgentResearcher:
                             break
                     
                     # Unpack the result
-                    new_agent_content, new_agent_id, reasoning, package_info = result
+                    new_agent_id, reasoning, package_info = result
                     evolved_agent_id = new_agent_id
 
                     # Extract and store evolution timing if available
@@ -2919,20 +2919,10 @@ class ParallelAgentResearcher:
                             new_agent_id, package_info, iteration
                         )
                     elif package_info['type'] in ['parsed', 'single_artifact']:
-                        # Parsed from response or single artifact — create from file_mapping
-                        if package_info['type'] == 'parsed':
-                            print(f"  📝 Creating agent from parsed response")
-                        else:
-                            print(f"  📝 Creating agent from single artifact")
+                        # Fallback: create empty agent directory
+                        print(f"  📝 Creating agent from {package_info['type']} (no artifacts to copy)")
                         package_dir = self.experiment_dir / "agents" / new_agent_id
                         package_dir.mkdir(parents=True, exist_ok=True)
-                        # Write content to first file_mapping entry as fallback
-                        file_mapping = getattr(self.domain, 'file_mapping', {})
-                        if file_mapping:
-                            first_path = next(iter(file_mapping.values()))
-                            dest = package_dir / first_path
-                            dest.parent.mkdir(parents=True, exist_ok=True)
-                            dest.write_text(new_agent_content)
                     else:
                         print(f"  ⚠️ Unexpected package type: {package_info['type']}")
                         package_dir = self.experiment_dir / "agents" / new_agent_id
