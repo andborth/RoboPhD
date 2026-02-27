@@ -246,7 +246,6 @@ python scripts/run_robophd.py --task codegen --num-iterations 20 \
 
 Available meta-evolution strategies:
 - `train_a_winner`: Evolve strategies that produce winning agents
-- `train_a_new_champion`: Evolve strategies for consistent top performance
 
 ## Key Classes and Files
 
