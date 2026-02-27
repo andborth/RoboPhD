@@ -83,7 +83,7 @@ class ConfigManager:
             "codegen_split": "evolution",  # "evolution" or "test" - which problems to use
 
             # Evolution parameters (NO LONGER SPECIAL!)
-            "evolution_strategy": "cross_pollination_tool_only",
+            "evolution_strategy": "cross_pollination",
 
             # Meta-evolution parameters
             "meta_evolution_strategy": None,       # Which meta-evolution strategy to use
@@ -126,7 +126,7 @@ class ConfigManager:
             # Immutable parameters (user-set once at iteration 1, cannot change after)
             "initial_agents": ["naive"],
             "agents_directory": None,
-            "initial_strategies": ["cross_pollination_tool_only"],
+            "initial_strategies": ["cross_pollination"],
             "strategies_directory": None
         }
 

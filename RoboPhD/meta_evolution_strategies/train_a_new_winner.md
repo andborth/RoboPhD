@@ -94,9 +94,9 @@ Think of yourself as a senior coach managing a team of junior coaches (evolution
 
 | Agent | ELO | Mean Accuracy | Tests | Created By |
 |-------|-----|---------------|-------|------------|
-| iter5_advanced_agent | 1620 | 77.5% | 8 | refinement_tool_only |
+| iter5_advanced_agent | 1620 | 77.5% | 8 | refinement |
 | iter8_new_contender | 1555 | 83.5% | 2 | cross_pollination_neutral |
-| iter7_another_agent | 1503 | 76.3% | 3 | research_driven_tool_only |
+| iter7_another_agent | 1503 | 76.3% | 3 | refinement |
 ```
 
 **Understanding First-Round Wins**:
@@ -456,12 +456,12 @@ Configuration changes for upcoming iterations.
     "use_weighted_random": true,
     "weighted_random_configs": [
       [{"evolution_strategy": "new_strategy_name"}, 60],
-      [{"evolution_strategy": "cross_pollination_tool_only"}, 40]
+      [{"evolution_strategy": "cross_pollination"}, 40]
     ]
   },
   "15": {
     "use_weighted_random": false,
-    "evolution_strategy": "refinement_tool_only",
+    "evolution_strategy": "refinement",
     "new_agent_test_rounds": 1
   }
 }

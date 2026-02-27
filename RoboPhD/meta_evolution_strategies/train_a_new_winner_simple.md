@@ -190,10 +190,10 @@ Configuration changes for the next 3 iterations. You will be called again after 
     "evolution_strategy": "new_strategy_name"
   },
   "13": {
-    "evolution_strategy": "cross_pollination_tool_only"
+    "evolution_strategy": "cross_pollination"
   },
   "14": {
-    "evolution_strategy": "refinement_tool_only"
+    "evolution_strategy": "refinement"
   }
 }
 ```
