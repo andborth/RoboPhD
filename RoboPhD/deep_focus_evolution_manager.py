@@ -849,20 +849,11 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         agent_name = self._extract_agent_name_from_reasoning(reasoning_path)
         logger.info(f"Testing agent: {agent_name}")
 
-        # Create new agent directory outside git repo (prevents CLAUDE.md contamination for coder/critic calls).
-        # Symlink from evolution tree for easy browsing.
-        runs_dir = Path(self.config.get('runs_directory', '../robophd_runs'))
-        run_name = self.experiment_dir.name if self.experiment_dir else "unknown"
-        real_agent_dir = runs_dir / "evolution" / run_name / f"iteration_{test_iteration:03d}_test" / agent_name
-        real_agent_dir.mkdir(parents=True, exist_ok=True)
-
-        new_agent_dir_symlink = test_workspace / agent_name
-        try:
-            new_agent_dir_symlink.symlink_to(real_agent_dir.resolve())
-        except FileExistsError:
-            pass
-
-        new_agent_dir = real_agent_dir
+        # Create new agent directory directly in test_workspace.
+        # experiment_dir is already outside the RoboPhD repo (in robophd_runs/),
+        # so no symlink split needed — CLAUDE.md contamination is avoided.
+        new_agent_dir = test_workspace / agent_name
+        new_agent_dir.mkdir(parents=True, exist_ok=True)
 
         # Create symlinks to baseline agents for comparison
         # Use absolute path so symlinks work from any location

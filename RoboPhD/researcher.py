@@ -858,8 +858,10 @@ class ParallelAgentResearcher:
             elif test_eval_mode and custom_experiment_name:
                 self.experiment_dir = Path("robophd_evaluation") / custom_experiment_name
             else:
+                runs_dir = Path(config_manager.get_config(0).get("runs_directory", "../robophd_runs"))
+                task_name = runtime_config.get("task_name", "unknown") if runtime_config else "unknown"
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                self.experiment_dir = Path("evolution") / f"robophd_{timestamp}"
+                self.experiment_dir = runs_dir / "robophd" / f"{task_name}_{timestamp}"
             self.experiment_dir.mkdir(parents=True, exist_ok=True)
 
             # Initialize as git repo so evolution AI gets scoped per-run memory.
@@ -1696,22 +1698,10 @@ class ParallelAgentResearcher:
                 continue
 
             # Create output directory for this agent.
-            # Real directory lives outside git repo (prevents CLAUDE.md contamination for coder/critic calls).
-            # Symlink from evolution tree for easy browsing.
-            current_config = self.config_manager.get_config(iteration)
-            runs_dir = Path(current_config.get('runs_directory', '../robophd_runs'))
-            run_name = self.experiment_dir.name
-            real_dir = runs_dir / "evolution" / run_name / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
-            real_dir.mkdir(parents=True, exist_ok=True)
-
-            symlink_path = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
-            symlink_path.parent.mkdir(parents=True, exist_ok=True)
-            try:
-                symlink_path.symlink_to(real_dir.resolve())
-            except FileExistsError:
-                pass
-
-            agent_output_dir = real_dir
+            # experiment_dir is already outside the RoboPhD repo (in robophd_runs/),
+            # so no symlink split needed — CLAUDE.md contamination is avoided.
+            agent_output_dir = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
+            agent_output_dir.mkdir(parents=True, exist_ok=True)
 
             # Build config for domain evaluation
             # Pass full config directly - domains extract what they need

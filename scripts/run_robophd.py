@@ -13,12 +13,12 @@ Usage:
 
     # Resume
     python scripts/run_robophd.py --task codegen \
-        --resume evolution/robophd_20260225_120000 \
+        --resume ../robophd_runs/robophd/codegen_20260225_120000 \
         --task-config task.json --engine-config robophd.json
 
     # Extend
     python scripts/run_robophd.py --task codegen \
-        --resume evolution/robophd_20260225_120000 --extend 5 \
+        --resume ../robophd_runs/robophd/codegen_20260225_120000 --extend 5 \
         --task-config task.json --engine-config robophd.json
 
 Config merge order: task defaults -> --task-config -> --engine-config
@@ -78,6 +78,12 @@ def parse_args():
     parser.add_argument("--extend", type=int, default=None, help="Add N more iterations to a resumed run")
     parser.add_argument("--from-iteration", type=int, default=None, help="Restart from specific iteration")
     parser.add_argument("--random-seed", type=int, default=None)
+    parser.add_argument(
+        "--runs-dir",
+        type=Path,
+        default=Path("../robophd_runs"),
+        help="Root directory for experiment outputs (default: ../robophd_runs)",
+    )
 
     return parser.parse_args()
 
@@ -183,6 +189,7 @@ def _list_params(task):
     print("  --extend N             Add N more iterations to a resumed run")
     print("  --from-iteration N     Restart from specific iteration")
     print("  --random-seed N        Random seed")
+    print("  --runs-dir PATH        Root directory for outputs (default: ../robophd_runs)")
     print()
 
     print("Example:")
@@ -206,6 +213,7 @@ def main():
     task_config = parse_config_arg(args.task_config)
     engine_config = parse_config_arg(args.engine_config)
     full_config = {**task.config_defaults, **task_config, **engine_config}
+    full_config["runs_directory"] = str(args.runs_dir)
 
     logger.info(f"Task: {task.name} — {task.description}")
 
@@ -237,6 +245,8 @@ def main():
     researcher_config["domain"] = "external"
     # Meta-evolution needs the real domain name for its domain header prompts
     researcher_config["meta_evolution_domain"] = task.name
+    # Runs directory (experiment_dir root)
+    researcher_config["runs_directory"] = str(args.runs_dir)
 
     # Seed agent: set agents_directory so load_initial_agents can find it
     seed_agent = Path(full_config.get("seed_agent", task.default_seed_agent))

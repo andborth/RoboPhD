@@ -127,7 +127,10 @@ class ConfigManager:
             "initial_agents": ["naive"],
             "agents_directory": None,
             "initial_strategies": ["cross_pollination"],
-            "strategies_directory": None
+            "strategies_directory": None,
+
+            # Runs directory (where experiment_dir lives)
+            "runs_directory": "../robophd_runs",
         }
 
     def set_initial_config(self,

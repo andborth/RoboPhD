@@ -90,7 +90,13 @@ def parse_args():
         "--output-dir",
         type=Path,
         default=None,
-        help="Output directory (default: gepa_runs/<task>_<timestamp>)",
+        help="Output directory (overrides --runs-dir; default: <runs-dir>/gepa/<task>_<timestamp>)",
+    )
+    parser.add_argument(
+        "--runs-dir",
+        type=Path,
+        default=Path("../robophd_runs"),
+        help="Root directory for experiment outputs (default: ../robophd_runs)",
     )
 
     return parser.parse_args()
@@ -113,7 +119,8 @@ def _list_params(task):
 
     print("CLI-only arguments (not in config):")
     print("  --eval-test-set        Evaluate best candidate on held-out test set")
-    print("  --output-dir PATH      Output directory (default: gepa_runs/<task>_<timestamp>)")
+    print("  --output-dir PATH      Output directory (overrides --runs-dir)")
+    print("  --runs-dir PATH        Root directory for outputs (default: ../robophd_runs)")
     print()
 
     print("Example:")
@@ -148,7 +155,7 @@ def main():
     # Setup output directory
     if args.output_dir is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        args.output_dir = Path("gepa_runs") / f"{task.name}_{timestamp}"
+        args.output_dir = args.runs_dir / "gepa" / f"{task.name}_{timestamp}"
     args.output_dir.mkdir(parents=True, exist_ok=True)
     config["output_dir"] = str(args.output_dir)
 
