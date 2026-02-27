@@ -318,9 +318,11 @@ def main():
     # --- 7. Optional test-set evaluation ---
     if args.eval_test_set:
         logger.info("Evaluating best candidate on test set...")
-        test_config = {**config, "codegen_split": "test"}
+        test_config = {**config, "codegen_split": "test", "aime_split": "test"}
         test_examples = task.dataset_builder(test_config)
-        logger.info(f"Test set: {len(test_examples)} problems")
+        test_repeats = config.get("test_repeats", 5)
+        test_examples = test_examples * test_repeats
+        logger.info(f"Test set: {len(test_examples)} problems ({len(test_examples) // test_repeats} unique × {test_repeats})")
 
         test_config["work_dir"] = str(args.output_dir / "test_work")
         test_evaluator = task.evaluator_factory(test_config)
