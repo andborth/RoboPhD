@@ -216,7 +216,7 @@ def main():
     task_config = parse_config_arg(args.task_config)
     engine_config = parse_config_arg(args.engine_config)
     full_config = {**task.config_defaults, **task_config, **engine_config}
-    full_config["runs_directory"] = str(args.runs_dir)
+    full_config["runs_directory"] = str(args.runs_dir)  # for evaluator/dataset factories (e.g., codegen cache dir)
 
     logger.info(f"Task: {task.name} — {task.description}")
 
