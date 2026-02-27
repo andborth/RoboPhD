@@ -229,7 +229,9 @@ def main():
     }
 
     # --- 3. Split config for ConfigManager vs task-only ---
-    researcher_config, _ = split_config(full_config)
+    # Only validate user-provided keys (task defaults are always valid)
+    user_config = {**task_config, **engine_config}
+    researcher_config, _ = split_config(user_config)
 
     # Force external domain (ExternalEvaluatorDomain wraps the task's evaluator)
     researcher_config["domain"] = "external"
