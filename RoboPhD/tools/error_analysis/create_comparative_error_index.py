@@ -51,6 +51,11 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
     if not eval_files:
         eval_files = list(iteration_dir.glob("agent_*/*/results/evaluation.json"))
 
+    if eval_files:
+        print(f"Warning: Found hierarchical evaluation files. "
+              f"Per-database granularity will not be preserved in the error index.",
+              file=sys.stderr)
+
     # If no hierarchical files found, try flat structure (CodeGen, AIME)
     if not eval_files:
         eval_files = list(iteration_dir.glob("agent_*/evaluation.json"))

@@ -23,7 +23,29 @@ def strip_agent_prefix(agent_name: str) -> str:
     return agent_name.replace('agent_', '', 1) if agent_name.startswith('agent_') else agent_name
 
 
-def detect_newest_agent(iteration_dirs: List[Path], agents_dir: Path, new_agent: Optional[str] = None, is_flat_domain: bool = False) -> Tuple[str, List[str]]:
+def _find_eval_files(iteration_dir: Path) -> List[Path]:
+    """
+    Auto-detect evaluation files in an iteration directory.
+
+    Tries hierarchical structure first (Text2SQL), falls back to flat (CodeGen, AIME).
+    Warns when hierarchical files are found since per-database granularity is not preserved.
+    """
+    # Try hierarchical structure first (Text2SQL)
+    eval_files = list(iteration_dir.glob("agent_*/*/evaluations/evaluation.json"))
+    if not eval_files:
+        eval_files = list(iteration_dir.glob("agent_*/*/results/evaluation.json"))
+
+    if eval_files:
+        print(f"Warning: Found hierarchical evaluation files in {iteration_dir}. "
+              f"Per-database granularity will not be preserved in the error index.",
+              file=sys.stderr)
+        return eval_files
+
+    # Flat structure (CodeGen, AIME)
+    return list(iteration_dir.glob("agent_*/evaluation.json"))
+
+
+def detect_newest_agent(iteration_dirs: List[Path], agents_dir: Path, new_agent: Optional[str] = None) -> Tuple[str, List[str]]:
     """
     Detect newest agent and baseline agents.
 
@@ -31,7 +53,6 @@ def detect_newest_agent(iteration_dirs: List[Path], agents_dir: Path, new_agent:
         iteration_dirs: List of iteration directories to search
         agents_dir: Path to agents directory
         new_agent: Optional agent name to use as newest (if provided)
-        is_flat_domain: If True, use flat structure (agent_*/evaluation.json)
 
     Returns:
         (newest_agent, baseline_agents)
@@ -40,14 +61,7 @@ def detect_newest_agent(iteration_dirs: List[Path], agents_dir: Path, new_agent:
     tested_agents = set()
 
     for iteration_dir in iteration_dirs:
-        if is_flat_domain:
-            # Flat structure (CodeGen): agent_*/evaluation.json
-            eval_files = list(iteration_dir.glob("agent_*/evaluation.json"))
-        else:
-            # Hierarchical structure (Text2SQL): agent_*/db_name/results/evaluation.json
-            eval_files = list(iteration_dir.glob("agent_*/*/evaluations/evaluation.json"))
-            if not eval_files:
-                eval_files = list(iteration_dir.glob("agent_*/*/results/evaluation.json"))
+        eval_files = _find_eval_files(iteration_dir)
 
         for eval_file in eval_files:
             agent_name = None
@@ -112,7 +126,7 @@ def detect_newest_agent(iteration_dirs: List[Path], agents_dir: Path, new_agent:
     return newest_agent, baseline_agents
 
 
-def load_evaluation_results(iteration_dirs: List[Path], is_flat_domain: bool = False) -> Dict:
+def load_evaluation_results(iteration_dirs: List[Path]) -> Dict:
     """
     Load all evaluation results from iteration directories.
 
@@ -121,7 +135,6 @@ def load_evaluation_results(iteration_dirs: List[Path], is_flat_domain: bool = F
 
     Args:
         iteration_dirs: List of iteration directories to process
-        is_flat_domain: If True, use flat structure (agent_*/evaluation.json)
 
     Returns:
         {
@@ -133,14 +146,7 @@ def load_evaluation_results(iteration_dirs: List[Path], is_flat_domain: bool = F
     by_agent = defaultdict(dict)
 
     for iteration_dir in iteration_dirs:
-        if is_flat_domain:
-            # Flat structure (CodeGen): agent_*/evaluation.json
-            eval_files = list(iteration_dir.glob("agent_*/evaluation.json"))
-        else:
-            # Hierarchical structure (Text2SQL): agent_*/db_name/results/evaluation.json
-            eval_files = list(iteration_dir.glob("agent_*/*/evaluations/evaluation.json"))
-            if not eval_files:
-                eval_files = list(iteration_dir.glob("agent_*/*/results/evaluation.json"))
+        eval_files = _find_eval_files(iteration_dir)
 
         for eval_file in eval_files:
             try:
@@ -307,14 +313,13 @@ def build_cross_agent_analysis(newest_agent: str, baseline_agents: List[str],
     return analysis
 
 
-def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = None, is_flat_domain: bool = False) -> Dict:
+def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = None) -> Dict:
     """
     Build complete error index.
 
     Args:
         iteration_dirs: List of iteration directories to process
         new_agent: Optional name of new agent being tested
-        is_flat_domain: If True, use flat structure (agent_*/evaluation.json)
     """
     # Determine agents directory (look in most recent iteration dir)
     agents_dir = None
@@ -341,10 +346,10 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
         sys.exit(1)
 
     # Detect newest agent
-    newest_agent, baseline_agents = detect_newest_agent(iteration_dirs, agents_dir, new_agent, is_flat_domain)
+    newest_agent, baseline_agents = detect_newest_agent(iteration_dirs, agents_dir, new_agent)
 
     # Load all results
-    results = load_evaluation_results(iteration_dirs, is_flat_domain)
+    results = load_evaluation_results(iteration_dirs)
 
     # Build by_agent summary
     by_agent = {}
@@ -457,12 +462,6 @@ def main():
         help='Name of new agent being tested (optional, auto-detected if not specified)'
     )
 
-    parser.add_argument(
-        '--flat-domain',
-        action='store_true',
-        help='Use flat domain structure (agent_*/evaluation.json) instead of hierarchical'
-    )
-
     args = parser.parse_args()
 
     # Parse iteration directories
@@ -484,7 +483,7 @@ def main():
     print(f"Building error index from {len(iteration_dirs)} iteration(s)", file=sys.stderr)
 
     # Build index
-    index = build_error_index(iteration_dirs, args.new_agent, args.flat_domain)
+    index = build_error_index(iteration_dirs, args.new_agent)
 
     # Write output
     output_file = Path(args.output)

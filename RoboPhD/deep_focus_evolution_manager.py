@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 import uuid
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, TYPE_CHECKING
@@ -376,9 +377,6 @@ class DeepFocusEvolutionManager:
                 "--output", str(error_index_path),
                 "--new-agent", new_agent_name
             ]
-            # Add --flat-domain for non-hierarchical domains (e.g., CodeGen)
-            if self.domain and not self.domain.is_hierarchical:
-                cmd.append("--flat-domain")
 
             result = subprocess.run(
                 cmd,
@@ -504,7 +502,6 @@ class DeepFocusEvolutionManager:
                         ""
                     ])
 
-                    from collections import defaultdict
                     # Group by pattern (new_agent_correct, correct baselines, wrong baselines)
                     pattern_groups = defaultdict(list)
 

@@ -18,6 +18,7 @@ import tempfile
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
@@ -2168,7 +2169,6 @@ class ParallelAgentResearcher:
                 challengers.append((agent_id, elo, test_count))
 
         # Group challengers by test count for display
-        from collections import defaultdict
         by_test_count = defaultdict(list)
         for agent_id, elo, test_count in challengers:
             by_test_count[test_count].append((agent_id, elo))
@@ -3304,7 +3304,6 @@ class ParallelAgentResearcher:
                     ])
 
                     # Group split decisions by pattern (correct agents, wrong agents)
-                    from collections import defaultdict
                     pattern_groups = defaultdict(list)
 
                     for question_id, split_info in split_decisions.items():
