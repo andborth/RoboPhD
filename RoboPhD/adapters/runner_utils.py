@@ -92,13 +92,20 @@ def parse_config_arg(value: str) -> dict:
     """Parse a config argument: either a JSON file path or an inline JSON string."""
     if value is None:
         return {}
+    stripped = value.strip()
+    # If it looks like JSON (starts with {), parse directly
+    if stripped.startswith("{"):
+        try:
+            return json.loads(stripped)
+        except json.JSONDecodeError:
+            raise argparse.ArgumentTypeError(
+                f"Config must be a path to a JSON file or an inline JSON string, got: {value!r}"
+            )
+    # Otherwise treat as file path
     path = Path(value)
     if path.exists() and path.is_file():
         with open(path) as f:
             return json.load(f)
-    try:
-        return json.loads(value)
-    except json.JSONDecodeError:
-        raise argparse.ArgumentTypeError(
-            f"Config must be a path to a JSON file or an inline JSON string, got: {value!r}"
-        )
+    raise argparse.ArgumentTypeError(
+        f"Config must be a path to a JSON file or an inline JSON string, got: {value!r}"
+    )

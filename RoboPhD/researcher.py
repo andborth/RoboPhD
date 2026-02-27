@@ -657,7 +657,8 @@ class ParallelAgentEvolver:
         # Failed problem IDs from evaluation.json (flat domains)
         if self.domain and not self.domain.is_hierarchical:
             for agent_id in agents:
-                eval_file = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}" / "evaluation.json"
+                iter_agent_dir = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
+                eval_file = iter_agent_dir / "evaluation.json"
                 if eval_file.exists():
                     try:
                         with open(eval_file, 'r') as f:
@@ -676,8 +677,8 @@ class ParallelAgentEvolver:
             lines.append("")
 
         lines.append("### Key Insights for Analysis")
-        lines.append("- Review evaluation.json files for detailed error patterns")
-        lines.append("- Focus on problems where agents show significant performance differences")
+        lines.append("- Each problem directory contains readable artifacts: `problem.md`, `response.md`, `result.json`, and domain-specific files (e.g., `feedback.md`, `solution.py`)")
+        lines.append("- Read these files to understand failure patterns before designing improvements")
 
         return "\n".join(lines)
     

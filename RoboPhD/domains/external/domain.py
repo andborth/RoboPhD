@@ -280,13 +280,25 @@ class ExternalEvaluatorDomain(DomainInterface):
                     "error": diagnostics.get("error"),
                 }
 
-                # Write result.json for future caching
-                if not diagnostics.get("error"):
-                    with open(problem_dir / "result.json", "w") as f:
+                # Write result.json for future caching (don't overwrite
+                # a richer one the evaluator may have already written)
+                result_path = problem_dir / "result.json"
+                if not diagnostics.get("error") and not result_path.exists():
+                    with open(result_path, "w") as f:
                         json.dump(
                             {k: v for k, v in result_entry.items() if k != "error"},
                             f, indent=2,
                         )
+
+                # Write diagnostics as readable files for evolution.
+                # String values → {key}.md, skipping keys already on disk.
+                if diagnostics:
+                    for key, val in diagnostics.items():
+                        if not isinstance(val, str) or not val:
+                            continue
+                        out_path = problem_dir / f"{key}.md"
+                        if not out_path.exists():
+                            out_path.write_text(val)
 
                 return result_entry
 

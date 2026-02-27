@@ -197,7 +197,8 @@ class AIMEEvaluator:
         if "solution" in example and example["solution"]:
             diagnostics["reference_solution"] = example["solution"]
 
-        # Write artifacts if problem_dir provided (RoboPhD path)
+        # Write result.json if problem_dir provided (RoboPhD path)
+        # String diagnostics are written as files by ExternalEvaluatorDomain
         if problem_dir is not None:
             problem_dir = Path(problem_dir)
             problem_dir.mkdir(parents=True, exist_ok=True)
