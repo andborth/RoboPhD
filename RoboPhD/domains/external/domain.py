@@ -14,6 +14,7 @@ Where:
     - diagnostics is a dict of execution trace data (ASI)
 """
 
+import hashlib
 import json
 import logging
 import random
@@ -115,7 +116,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                 or example.get("problem_id")
                 or example.get("id")
                 or example.get("example_id")
-                or json.dumps(example, sort_keys=True)
+                or hashlib.sha256(json.dumps(example, sort_keys=True).encode()).hexdigest()[:12]
             )
             problems[eid] = [example]
 
