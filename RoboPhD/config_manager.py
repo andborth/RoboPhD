@@ -100,7 +100,7 @@ class ConfigManager:
             "temperature_strategy": "progressive",
 
             # Performance
-            "max_concurrent": 12,  # Parallelism limit (renamed from max_concurrent_dbs)
+            "max_concurrent": None,  # None = Python default: min(32, cpu_count+4)
 
             # Timeouts
             "phase1_timeout": 1800,

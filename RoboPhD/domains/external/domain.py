@@ -249,7 +249,7 @@ class ExternalEvaluatorDomain(DomainInterface):
         problems_dir = output_dir / "problems"
         problems_dir.mkdir(parents=True, exist_ok=True)
 
-        max_concurrent = config.get("max_concurrent", 12)
+        max_concurrent = config.get("max_concurrent")
 
         def _evaluate_one(problem_id: str) -> dict:
             try:

@@ -56,8 +56,8 @@ def parse_args():
 
     parser.add_argument(
         "--task",
-        required=True,
-        help=f"Task to optimize. Available: {', '.join(list_tasks())}",
+        default=None,
+        help=f"Task to optimize. Available: {', '.join(list_tasks())}. Inferred from checkpoint on --resume.",
     )
     parser.add_argument(
         "--list-params",
@@ -141,6 +141,40 @@ def split_config(full_config: dict) -> tuple[dict, dict]:
 
 
 
+def _infer_task_from_resume(resume_path: str) -> str:
+    """Infer task name from checkpoint config or directory name."""
+    import json
+    experiment_dir = Path(resume_path)
+    available = list_tasks()
+
+    # Try checkpoint's meta_evolution_domain (set by run_robophd.py on new runs)
+    checkpoint_file = experiment_dir / "checkpoint.json"
+    if checkpoint_file.exists():
+        try:
+            with open(checkpoint_file) as f:
+                checkpoint = json.load(f)
+            configs = checkpoint.get("config_manager", {}).get("iteration_configs", {})
+            if configs:
+                first_config = next(iter(configs.values()))
+                task_name = first_config.get("meta_evolution_domain")
+                if task_name and task_name in available:
+                    return task_name
+        except (json.JSONDecodeError, IOError):
+            pass
+
+    # Fall back to directory name pattern: <task>_<timestamp>
+    dir_name = experiment_dir.name
+    for task_name in available:
+        if dir_name.startswith(f"{task_name}_"):
+            return task_name
+
+    print(
+        f"Error: Cannot infer task from {resume_path}. "
+        f"Use --task to specify (available: {', '.join(available)})"
+    )
+    sys.exit(1)
+
+
 def _list_params(task):
     """Print all valid parameters for run_robophd.py and exit."""
     print("=" * 70)
@@ -199,10 +233,9 @@ def _list_params(task):
     print()
 
     print("Example:")
-    print("  python scripts/run_robophd.py --task codegen \\")
+    print("  python scripts/run_robophd.py --task aime \\")
     print("    --num-iterations 5 \\")
-    print('    --task-config \'{"seed_agent": "RoboPhD/codegen_agents/naive_critic", "evaluation_budget": 50}\' \\')
-    print('    --engine-config \'{"examples_per_iteration": 12, "evolution_strategy": "refinement_tool_only"}\'')
+    print('    --engine-config \'{"examples_per_iteration": 12, "evolution_strategy": "refinement"}\'')
 
 
 def main():
@@ -210,9 +243,19 @@ def main():
 
     # --- Handle --list-params ---
     if args.list_params:
+        if not args.task:
+            print("Error: --list-params requires --task")
+            sys.exit(1)
         task = get_task(args.task)
         _list_params(task)
         sys.exit(0)
+
+    # --- Infer task on --resume if not provided ---
+    if not args.task:
+        if not args.resume:
+            print(f"Error: --task is required (available: {', '.join(list_tasks())})")
+            sys.exit(1)
+        args.task = _infer_task_from_resume(args.resume)
 
     # --- 1. Load task and merge config ---
     task = get_task(args.task)

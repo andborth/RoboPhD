@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 # Each entry: key -> (default, description)
 _GEPA_DEFAULTS = {
     "evaluation_budget": (100, "Max evaluator calls (maps to max_metric_calls)"),
-    "max_workers": (12, "Thread pool size for parallel evaluation"),
+    "max_workers": (None, "Thread pool size (None = Python default: min(32, cpu_count+4))"),
     "seed": (0, "Random seed for reproducibility (matches GEPA default)"),
     "val_ratio": (0.2, "Fraction of dataset held out for validation"),
     "val_size": (None, "Exact validation set size (mutually exclusive with val_ratio)"),
@@ -239,7 +239,7 @@ def main():
         "max_metric_calls": evaluation_budget,
         "seed": seed,
         "run_dir": str(args.output_dir / "gepa_run"),
-        "parallel": max_workers > 1,
+        "parallel": max_workers is None or max_workers > 1,
         "max_workers": max_workers,
         "track_best_outputs": True,
     }

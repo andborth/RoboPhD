@@ -59,7 +59,7 @@ class DeepFocusEvolutionManager:
         eval_model: str = "haiku-4.5",
         analysis_model: str = "haiku-4.5",
         timeout: int = 1800,
-        max_concurrent: int = 8,
+        max_concurrent: int | None = None,
         verification_retries: int = 2,
         temperature_strategy: str = "progressive",
         debug_log_probability: float = 0.02,
@@ -79,7 +79,7 @@ class DeepFocusEvolutionManager:
             eval_model: Model for SQL generation (default haiku-4.5)
             analysis_model: Model for database analysis (default haiku-4.5)
             timeout: Timeout in seconds for Claude CLI calls (default 1800)
-            max_concurrent: Maximum concurrent context processing (default 8)
+            max_concurrent: Maximum concurrent context processing (None = Python default)
             verification_retries: Number of SQL verification attempts (default 2)
             temperature_strategy: Temperature strategy for SQL generation (default "progressive")
             debug_log_probability: Probability (0.0-1.0) of logging API calls for debugging (default 0.02)
