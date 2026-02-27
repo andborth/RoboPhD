@@ -410,6 +410,10 @@ class ExternalEvaluatorDomain(DomainInterface):
         return self._file_mapping
 
     @property
+    def task_description(self) -> str:
+        return self.config.get("task_description", "")
+
+    @property
     def task_objective(self) -> str:
         return self.config.get("task_objective", "")
 

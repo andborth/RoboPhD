@@ -32,7 +32,7 @@ class MetaEvolutionManager:
     and proposing configuration changes for K+1 and beyond.
     """
 
-    def __init__(self, experiment_dir: Path, config_manager: ConfigManager, domain_name: str):
+    def __init__(self, experiment_dir: Path, config_manager: ConfigManager, domain_name: str, domain=None):
         """
         Initialize Meta-Evolution Manager.
 
@@ -40,10 +40,12 @@ class MetaEvolutionManager:
             experiment_dir: Root directory of research experiment
             config_manager: Configuration manager for the experiment
             domain_name: Domain identifier (e.g., "codegen", "text2sql")
+            domain: Optional domain object for deriving header from task metadata
         """
         self.experiment_dir = experiment_dir
         self.config_manager = config_manager
         self.domain_name = domain_name
+        self._domain = domain
         self.strategies_dir = Path("RoboPhD/meta_evolution_strategies")  # Source directory
         self.output_dir = experiment_dir / "meta_evolution_output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -294,21 +296,36 @@ class MetaEvolutionManager:
         """
         Load domain header for injection into meta-evolution prompt.
 
+        Tries the header file first, then falls back to deriving a header
+        from the domain's task_description and task_objective properties.
+
         Returns:
             Domain header text
 
         Raises:
-            ValueError: If domain header file not found
+            ValueError: If no header file and no domain metadata available
         """
         header_path = self.strategies_dir / "domain_headers" / f"{self.domain_name}.md"
 
-        if not header_path.exists():
-            raise ValueError(
-                f"Domain header for '{self.domain_name}' not found at {header_path}. "
-                f"Every domain must have a header file."
-            )
+        if header_path.exists():
+            return header_path.read_text().strip()
 
-        return header_path.read_text().strip()
+        # Derive from task metadata (background + objective)
+        if self._domain is not None:
+            description = getattr(self._domain, 'task_description', '') or ''
+            objective = getattr(self._domain, 'task_objective', '') or ''
+            if description or objective:
+                lines = [f"## Domain: {self.domain_name}"]
+                if description:
+                    lines.append(f"\n{description}")
+                if objective:
+                    lines.append(f"\n**Objective**: {objective}")
+                return "\n".join(lines)
+
+        raise ValueError(
+            f"Domain header for '{self.domain_name}' not found at {header_path} "
+            f"and no domain metadata available to derive one."
+        )
 
     def _validate_strategy_package(self, strategy_dir: Path) -> List[str]:
         """

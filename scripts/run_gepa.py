@@ -251,6 +251,7 @@ def main():
         dataset=trainset,
         valset=valset,
         objective=task.objective,
+        background=task.description,
         config=gepa_config,
     )
 
