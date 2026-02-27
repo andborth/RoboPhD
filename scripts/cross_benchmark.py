@@ -173,9 +173,9 @@ def run_robophd(args, cache_dir: Path, output_dir: Path) -> dict:
     # Calculate iterations from budget
     # Default: 50 problems per iteration, 3 agents per iteration
     # Fresh evals per iteration ≈ examples_per_iteration * agents_per_iteration
-    contexts_per_iter = 50
+    examples_per_iter = 50
     agents_per_iter = 3
-    evals_per_iter = contexts_per_iter * agents_per_iter
+    evals_per_iter = examples_per_iter * agents_per_iter
     num_iterations = max(1, args.evaluation_budget // evals_per_iter)
 
     # Build RoboPhD config
@@ -187,7 +187,7 @@ def run_robophd(args, cache_dir: Path, output_dir: Path) -> dict:
         "coder_model": args.coder_model,
         "critic_model": args.critic_model,
         "codegen_split": "evolution",
-        "examples_per_iteration": contexts_per_iter,
+        "examples_per_iteration": examples_per_iter,
         "agents_per_iteration": agents_per_iter,
         "evaluation_budget": args.evaluation_budget,
         "random_seed": args.seed,
