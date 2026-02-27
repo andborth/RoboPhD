@@ -1706,6 +1706,7 @@ class ParallelAgentResearcher:
             # Build config for domain evaluation
             # Pass full config directly - domains extract what they need
             # ConfigManager resolves all defaults (fail fast if missing)
+            current_config = self.config_manager.get_config(iteration)
             eval_config = current_config.copy()
             eval_config.update({
                 'agent_id': agent_id,
