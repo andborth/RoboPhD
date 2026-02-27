@@ -1547,12 +1547,6 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
                 else:
                     logger.warning(f"  ⚠️ Artifact not found: {rel_path}")
 
-        # Also collect any tools/ directory even if not in file_mapping
-        tools_dir = self.working_dir / "tools"
-        if tools_dir.exists() and tools_dir.is_dir():
-            if "tools" not in {p.split("/")[0] for p in artifact_paths}:
-                artifact_paths["tools"] = tools_dir
-
         logger.info(f"Final artifacts verified: {len(artifact_paths)} files")
 
         return artifact_paths
