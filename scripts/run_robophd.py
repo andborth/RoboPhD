@@ -43,6 +43,9 @@ logging.basicConfig(
     format="[%(asctime)s] %(name)s: %(message)s",
     datefmt="%H:%M:%S",
 )
+logging.getLogger("LiteLLM").setLevel(logging.WARNING)
+logging.getLogger("litellm").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
