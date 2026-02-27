@@ -95,12 +95,17 @@ def parse_args():
 
 
 # Keys consumed by evaluator/dataset factories only — never enter ConfigManager.
-_TASK_ONLY_KEYS = {
-    "coder_model", "coder_model_tag", "critic_model", "cache_dir",
-    "seed_agent", "codegen_split", "runs_dir", "work_dir",
-    "codegen_timeout", "critic_timeout", "output_dir", "seed",
+# Universal: accepted by all tasks.  Domain: shown in --list-params only when
+# present in the task's config_defaults.
+_UNIVERSAL_TASK_KEYS = {
+    "seed_agent", "seed", "output_dir", "work_dir", "runs_dir",
     "val_ratio", "reflection_model",
 }
+_DOMAIN_TASK_KEYS = {
+    "coder_model", "coder_model_tag", "critic_model", "cache_dir",
+    "codegen_split", "codegen_timeout", "critic_timeout",
+}
+_TASK_ONLY_KEYS = _UNIVERSAL_TASK_KEYS | _DOMAIN_TASK_KEYS
 
 # Shared keys that need translation for ConfigManager.
 _SHARED_KEY_MAP = {
@@ -186,8 +191,13 @@ def _list_params(task):
     print_task_params(task)
 
     # Task-only keys (accepted in --config, not forwarded to engine)
+    # Show universal keys always; domain keys only when in this task's config_defaults.
+    relevant = sorted(
+        k for k in _TASK_ONLY_KEYS
+        if k in _UNIVERSAL_TASK_KEYS or k in task.config_defaults
+    )
     print("Task-only keys (--task-config, consumed by evaluator/dataset factories):")
-    for k in sorted(_TASK_ONLY_KEYS):
+    for k in relevant:
         default = task.config_defaults.get(k)
         suffix = f" (default: {fmt_val(default)})" if default is not None else ""
         print(f"  - {k}{suffix}")
