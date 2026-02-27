@@ -30,19 +30,20 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
 
     Supports both:
     - Hierarchical domains (Text2SQL): agent_*/*/results/evaluation.json
-    - Flat domains (CodeGen): agent_*/evaluation.json
+    - Flat domains (CodeGen, AIME): agent_*/evaluation.json
+
+    Results are flattened: the intermediate grouping layer (database name)
+    is discarded since all active domains are flat.
 
     Returns:
         {
             'by_question': {question_id: {agent_name: result}},
-            'by_agent_db': {agent_name: {db_name: {question_id: result}}},
-            'databases': set of database names,
+            'by_agent': {agent_name: {question_id: result}},
             'agents': set of agent names
         }
     """
     by_question = defaultdict(dict)
-    by_agent_db = defaultdict(lambda: defaultdict(dict))
-    databases = set()
+    by_agent = defaultdict(dict)
     agents = set()
 
     # Find all evaluation files - try hierarchical structure first (Text2SQL)
@@ -50,11 +51,9 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
     if not eval_files:
         eval_files = list(iteration_dir.glob("agent_*/*/results/evaluation.json"))
 
-    # If no hierarchical files found, try flat structure (CodeGen)
-    is_flat_domain = False
+    # If no hierarchical files found, try flat structure (CodeGen, AIME)
     if not eval_files:
         eval_files = list(iteration_dir.glob("agent_*/evaluation.json"))
-        is_flat_domain = True
 
     for eval_file in eval_files:
         try:
@@ -64,26 +63,17 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
             print(f"Warning: Failed to load {eval_file}: {e}", file=sys.stderr)
             continue
 
-        # Extract agent name and database name from path
-        parts = eval_file.parts
+        # Extract agent name from path
         agent_name = None
-        db_name = None
-
-        for i, part in enumerate(parts):
+        for part in eval_file.parts:
             if part.startswith('agent_'):
                 agent_name = part
-                if is_flat_domain:
-                    # Flat domains: use "all" as context name (single aggregate)
-                    db_name = "all"
-                elif i + 1 < len(parts):
-                    db_name = parts[i + 1]
                 break
 
-        if not agent_name or not db_name:
+        if not agent_name:
             continue
 
         agents.add(agent_name)
-        databases.add(db_name)
 
         # Process evaluation results
         if not isinstance(eval_data, dict):
@@ -114,12 +104,11 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
             }
 
             by_question[question_id][agent_name] = processed_result
-            by_agent_db[agent_name][db_name][question_id] = processed_result
+            by_agent[agent_name][question_id] = processed_result
 
     return {
         'by_question': dict(by_question),
-        'by_agent_db': dict(by_agent_db),
-        'databases': databases,
+        'by_agent': dict(by_agent),
         'agents': agents
     }
 
@@ -183,50 +172,49 @@ def build_agent_stats(agent: str, agents: Set[str], results: Dict) -> Dict:
     """
     total_correct = 0
     total_questions = 0
-    errors_by_database = defaultdict(list)
+    error_ids = []
     unique_successes = []
     unique_failures = []
 
     # Check if agent has any results (may have failed Phase 1)
-    if agent not in results['by_agent_db']:
+    if agent not in results['by_agent']:
         return {
             'total_correct': 0,
             'total_questions': 0,
             'accuracy': 0.0,
-            'errors_by_database': {},
+            'error_ids': [],
             'unique_successes': [],
             'unique_failures': []
         }
 
     # Collect all questions this agent was tested on
-    for db_name, questions in results['by_agent_db'][agent].items():
-        for question_id, result in questions.items():
-            total_questions += 1
+    for question_id, result in results['by_agent'][agent].items():
+        total_questions += 1
 
-            if result.get('status') == 'MATCH':
-                total_correct += 1
+        if result.get('status') == 'MATCH':
+            total_correct += 1
 
-                # Check if this is a unique success
-                other_agents_results = results['by_question'][question_id]
-                if len(other_agents_results) == len(agents):
-                    all_others_wrong = all(
-                        other_agents_results[other].get('status') != 'MATCH'
-                        for other in agents if other != agent
-                    )
-                    if all_others_wrong:
-                        unique_successes.append(question_id)
-            else:
-                errors_by_database[db_name].append(question_id)
+            # Check if this is a unique success
+            other_agents_results = results['by_question'][question_id]
+            if len(other_agents_results) == len(agents):
+                all_others_wrong = all(
+                    other_agents_results[other].get('status') != 'MATCH'
+                    for other in agents if other != agent
+                )
+                if all_others_wrong:
+                    unique_successes.append(question_id)
+        else:
+            error_ids.append(question_id)
 
-                # Check if this is a unique failure
-                other_agents_results = results['by_question'][question_id]
-                if len(other_agents_results) == len(agents):
-                    all_others_correct = all(
-                        other_agents_results[other].get('status') == 'MATCH'
-                        for other in agents if other != agent
-                    )
-                    if all_others_correct:
-                        unique_failures.append(question_id)
+            # Check if this is a unique failure
+            other_agents_results = results['by_question'][question_id]
+            if len(other_agents_results) == len(agents):
+                all_others_correct = all(
+                    other_agents_results[other].get('status') == 'MATCH'
+                    for other in agents if other != agent
+                )
+                if all_others_correct:
+                    unique_failures.append(question_id)
 
     accuracy = (total_correct / total_questions * 100) if total_questions > 0 else 0
 
@@ -237,129 +225,7 @@ def build_agent_stats(agent: str, agents: Set[str], results: Dict) -> Dict:
         'accuracy': round(accuracy, 1),
         'unique_successes': unique_successes,
         'unique_failures': unique_failures,
-        'errors_by_database': dict(errors_by_database)
-    }
-
-
-def build_database_stats(db_name: str, agents: Set[str], results: Dict) -> Dict:
-    """
-    Build statistics for a specific database.
-
-    Returns per-agent stats and unique patterns.
-    """
-    agent_stats = {}
-    questions = set()
-
-    # Collect stats per agent
-    for agent in agents:
-        if agent not in results['by_agent_db']:
-            continue
-
-        if db_name not in results['by_agent_db'][agent]:
-            continue
-
-        db_questions = results['by_agent_db'][agent][db_name]
-        questions.update(db_questions.keys())
-
-        correct = sum(1 for r in db_questions.values() if r.get('status') == 'MATCH')
-        total = len(db_questions)
-
-        agent_stats[agent] = {
-            'correct': correct,
-            'errors': total - correct,
-            'accuracy': round(correct / total * 100, 1) if total > 0 else 0
-        }
-
-    # Find consensus errors for this database
-    consensus_errors = []
-    for question_id in questions:
-        all_wrong = True
-        for agent in agents:
-            if agent in results['by_agent_db'] and db_name in results['by_agent_db'][agent]:
-                result = results['by_agent_db'][agent][db_name].get(question_id)
-                if result and result.get('status') == 'MATCH':
-                    all_wrong = False
-                    break
-
-        if all_wrong:
-            consensus_errors.append(question_id)
-
-    # Find split decisions for this database
-    split_decisions = {}
-    for question_id in questions:
-        # Get results for all agents on this question
-        agent_results = {}
-        for agent in agents:
-            if agent in results['by_agent_db'] and db_name in results['by_agent_db'][agent]:
-                if question_id in results['by_agent_db'][agent][db_name]:
-                    agent_results[agent] = results['by_agent_db'][agent][db_name][question_id]
-
-        # Skip if not all agents tested this question
-        if len(agent_results) != len(agents):
-            continue
-
-        # Already counted as consensus error
-        if question_id in consensus_errors:
-            continue
-
-        # Check if consensus correct (all agents right)
-        all_correct = all(r.get('status') == 'MATCH' for r in agent_results.values())
-        if all_correct:
-            continue
-
-        # Must be split decision - some right, some wrong
-        correct_agents = [a for a, r in agent_results.items() if r.get('status') == 'MATCH']
-        wrong_agents = [a for a, r in agent_results.items() if r.get('status') != 'MATCH']
-
-        split_decisions[question_id] = {
-            'correct': sorted(correct_agents),
-            'wrong': sorted(wrong_agents)
-        }
-
-    # Build unique patterns per agent
-    unique_to_agent = {}
-    for agent in agents:
-        only_this_wrong = []
-        only_this_right = []
-
-        for question_id in questions:
-            # Get results for all agents on this question
-            agent_results = {}
-            for a in agents:
-                if a in results['by_agent_db'] and db_name in results['by_agent_db'][a]:
-                    if question_id in results['by_agent_db'][a][db_name]:
-                        agent_results[a] = results['by_agent_db'][a][db_name][question_id]
-
-            # Skip if not all agents tested this question
-            if len(agent_results) != len(agents):
-                continue
-
-            this_agent_correct = agent_results[agent].get('status') == 'MATCH'
-            others_all_correct = all(
-                agent_results[a].get('status') == 'MATCH'
-                for a in agents if a != agent
-            )
-            others_all_wrong = all(
-                agent_results[a].get('status') != 'MATCH'
-                for a in agents if a != agent
-            )
-
-            if not this_agent_correct and others_all_correct:
-                only_this_wrong.append(question_id)
-            elif this_agent_correct and others_all_wrong:
-                only_this_right.append(question_id)
-
-        unique_to_agent[agent] = {
-            'only_this_wrong': only_this_wrong,
-            'only_this_right': only_this_right
-        }
-
-    return {
-        'total_questions': len(questions),
-        'agent_stats': agent_stats,
-        'consensus_errors': consensus_errors,
-        'split_decisions': split_decisions,
-        'unique_to_agent': unique_to_agent
+        'error_ids': error_ids
     }
 
 
@@ -376,7 +242,6 @@ def build_error_index(iteration_dir: Path) -> Dict:
 
     agents = results['agents']
     print(f"Found {len(agents)} agents: {', '.join(sorted(agents))}", file=sys.stderr)
-    print(f"Found {len(results['databases'])} databases", file=sys.stderr)
 
     # Build consensus patterns
     cross_agent_patterns = build_consensus_patterns(agents, results)
@@ -385,11 +250,6 @@ def build_error_index(iteration_dir: Path) -> Dict:
     by_agent = {}
     for agent in sorted(agents):
         by_agent[agent] = build_agent_stats(agent, agents, results)
-
-    # Build per-database stats
-    by_database = {}
-    for db_name in sorted(results['databases']):
-        by_database[db_name] = build_database_stats(db_name, agents, results)
 
     # Build summary
     agent_accuracies = {
@@ -437,34 +297,16 @@ def build_error_index(iteration_dir: Path) -> Dict:
     }
 
     # Transform agent names: strip 'agent_' prefix for cleaner display
-    # This makes output consistent with how agents are conceptually named
-    # (e.g., "naive" instead of "agent_naive")
-
-    # Transform summary
     summary['agents'] = [strip_agent_prefix(a) for a in summary['agents']]
     summary['agent_accuracies'] = {
         strip_agent_prefix(agent): acc
         for agent, acc in agent_accuracies.items()
     }
 
-    # Transform by_agent
     by_agent = {
         strip_agent_prefix(agent): stats
         for agent, stats in by_agent.items()
     }
-
-    # Transform by_database (agent names in unique_to_agent and agent_stats)
-    for db_name, db_stats in by_database.items():
-        # Transform agent_stats keys
-        db_stats['agent_stats'] = {
-            strip_agent_prefix(agent): stats
-            for agent, stats in db_stats['agent_stats'].items()
-        }
-        # Transform unique_to_agent keys
-        db_stats['unique_to_agent'] = {
-            strip_agent_prefix(agent): patterns
-            for agent, patterns in db_stats['unique_to_agent'].items()
-        }
 
     # Transform cross_agent_patterns (agent names in split_decisions)
     for qid, split_info in cross_agent_patterns['split_decisions'].items():
@@ -473,7 +315,6 @@ def build_error_index(iteration_dir: Path) -> Dict:
 
     return {
         'summary': summary,
-        'by_database': by_database,
         'by_agent': by_agent,
         'cross_agent_patterns': cross_agent_patterns
     }

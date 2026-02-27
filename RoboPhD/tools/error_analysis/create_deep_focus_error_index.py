@@ -5,8 +5,7 @@ Build fast error index comparing newest agent vs baseline agents.
 This tool:
 1. Auto-detects the newest agent (by created_iteration or alphabetically)
 2. Compares it against all other tested agents (baseline)
-3. Builds per-database cross-agent analysis
-4. Builds global cross-agent analysis
+3. Builds global cross-agent analysis (new vs baseline)
 
 Designed for efficiency - focuses on newest agent only.
 """
@@ -93,7 +92,6 @@ def detect_newest_agent(iteration_dirs: List[Path], agents_dir: Path, new_agent:
                 pass
 
         # Fallback: Try to extract iteration number from directory name
-        # Examples: agent_iter5_..., iter5_..., agent_naive (no iter number)
         if created_iter == -1:
             import re
             match = re.search(r'iter(\d+)', agent_id)
@@ -103,8 +101,6 @@ def detect_newest_agent(iteration_dirs: List[Path], agents_dir: Path, new_agent:
         agents_with_metadata.append((agent_id, created_iter))
 
     # Sort by (iter, name) descending
-    # Agents with iterX numbers (highest iter wins)
-    # Then agents without iterX (alphabetically last wins)
     agents_with_metadata.sort(key=lambda x: (x[1], x[0]), reverse=True)
 
     newest_agent = agents_with_metadata[0][0]
@@ -120,6 +116,9 @@ def load_evaluation_results(iteration_dirs: List[Path], is_flat_domain: bool = F
     """
     Load all evaluation results from iteration directories.
 
+    Results are flattened: the intermediate grouping layer (database name)
+    is discarded since all active domains are flat.
+
     Args:
         iteration_dirs: List of iteration directories to process
         is_flat_domain: If True, use flat structure (agent_*/evaluation.json)
@@ -127,13 +126,11 @@ def load_evaluation_results(iteration_dirs: List[Path], is_flat_domain: bool = F
     Returns:
         {
             'by_question': {question_id: {agent_name: result}},
-            'by_agent_db': {agent_name: {db_name: {question_id: result}}},
-            'databases': set of database names
+            'by_agent': {agent_name: {question_id: result}}
         }
     """
     by_question = defaultdict(dict)
-    by_agent_db = defaultdict(lambda: defaultdict(dict))
-    databases = set()
+    by_agent = defaultdict(dict)
 
     for iteration_dir in iteration_dirs:
         if is_flat_domain:
@@ -163,28 +160,17 @@ def load_evaluation_results(iteration_dirs: List[Path], is_flat_domain: bool = F
             if not agent_name:
                 continue
 
-            # For flat domains, use "all" as context name (single aggregate)
-            if is_flat_domain:
-                db_name = "all"
-            else:
-                db_name = eval_data.get('database', 'unknown')
-            databases.add(db_name)
-
             results = eval_data.get('results', {})
             # Handle case where results is a list (e.g., timeout with no predictions)
             if not isinstance(results, dict):
                 continue
             for question_id, result in results.items():
-                # Store by question
                 by_question[question_id][agent_name] = result
-
-                # Store by agent + database
-                by_agent_db[agent_name][db_name][question_id] = result
+                by_agent[agent_name][question_id] = result
 
     return {
         'by_question': dict(by_question),
-        'by_agent_db': dict(by_agent_db),
-        'databases': databases
+        'by_agent': dict(by_agent)
     }
 
 
@@ -197,7 +183,7 @@ def build_cross_agent_analysis(newest_agent: str, baseline_agents: List[str],
         newest_agent: Name of newest agent
         baseline_agents: List of baseline agent names
         results: Results dict from load_evaluation_results
-        question_ids: Optional set to filter questions (for per-database analysis)
+        question_ids: Optional set to filter questions
 
     Returns:
         {
@@ -363,20 +349,19 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
     # Build by_agent summary
     by_agent = {}
     for agent in [newest_agent] + baseline_agents:
-        if agent not in results['by_agent_db']:
+        if agent not in results['by_agent']:
             continue
 
         total_correct = 0
         total_questions = 0
-        errors_by_database = defaultdict(list)
+        error_ids = []
 
-        for db_name, questions in results['by_agent_db'][agent].items():
-            for question_id, result in questions.items():
-                total_questions += 1
-                if result.get('correct', False):
-                    total_correct += 1
-                else:
-                    errors_by_database[db_name].append(question_id)
+        for question_id, result in results['by_agent'][agent].items():
+            total_questions += 1
+            if result.get('correct', False):
+                total_correct += 1
+            else:
+                error_ids.append(question_id)
 
         accuracy = (total_correct / total_questions * 100) if total_questions > 0 else 0
 
@@ -384,50 +369,7 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
             'total_correct': total_correct,
             'total_errors': total_questions - total_correct,
             'accuracy': round(accuracy, 1),
-            'errors_by_database': dict(errors_by_database)
-        }
-
-    # Build by_database with cross-agent analysis
-    by_database = {}
-    for db_name in sorted(results['databases']):
-        # Get questions in this database (from newest agent)
-        if newest_agent not in results['by_agent_db']:
-            continue
-
-        db_questions = results['by_agent_db'][newest_agent].get(db_name, {})
-        total_questions = len(db_questions)
-
-        new_correct = sum(1 for r in db_questions.values() if r.get('correct', False))
-        new_errors = total_questions - new_correct
-        error_question_ids = [qid for qid, r in db_questions.items() if not r.get('correct', False)]
-
-        # Build cross-agent analysis for this database
-        db_question_ids = set(db_questions.keys())
-        cross_agent_analysis = build_cross_agent_analysis(
-            newest_agent, baseline_agents, results, db_question_ids
-        )
-
-        # Build agent_stats for this database (for accuracy table)
-        agent_stats = {}
-        all_agents = [newest_agent] + baseline_agents
-        for agent in all_agents:
-            if agent in results['by_agent_db'] and db_name in results['by_agent_db'][agent]:
-                agent_db_questions = results['by_agent_db'][agent][db_name]
-                correct = sum(1 for r in agent_db_questions.values() if r.get('correct', False))
-                total = len(agent_db_questions)
-                agent_stats[agent] = {
-                    'correct': correct,
-                    'errors': total - correct,
-                    'accuracy': round(correct / total * 100, 1) if total > 0 else 0.0
-                }
-
-        by_database[db_name] = {
-            'total_questions': total_questions,
-            'new_agent_correct': new_correct,
-            'new_agent_errors': new_errors,
-            'error_question_ids': error_question_ids,
-            'agent_stats': agent_stats,
-            'cross_agent_analysis': cross_agent_analysis
+            'error_ids': error_ids
         }
 
     # Build global cross-agent analysis
@@ -441,26 +383,6 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
     unique_successes = len(global_cross_agent['new_vs_baseline']['unique_successes'])
     consensus_errors = len(global_cross_agent['new_vs_baseline']['consensus_errors'])
     mixed_results = len(global_cross_agent['new_vs_baseline']['mixed_results'])
-
-    # Shared errors: newest wrong + all baseline wrong
-    shared_errors = 0
-    for question_id, agents_results in results['by_question'].items():
-        if newest_agent not in agents_results:
-            continue
-        new_correct = agents_results[newest_agent].get('correct', False)
-        if new_correct:
-            continue
-
-        # Check if all baseline also wrong
-        all_baseline_wrong = True
-        for baseline in baseline_agents:
-            if baseline in agents_results:
-                if agents_results[baseline].get('correct', False):
-                    all_baseline_wrong = False
-                    break
-
-        if all_baseline_wrong and len([b for b in baseline_agents if b in agents_results]) > 0:
-            shared_errors += 1
 
     summary = {
         'new_agent': newest_agent,
@@ -477,10 +399,6 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
     }
 
     # Transform agent names: strip 'agent_' prefix for cleaner display
-    # This makes output consistent with how agents are conceptually named
-    # (e.g., "naive" instead of "agent_naive")
-
-    # Transform summary
     summary['new_agent'] = strip_agent_prefix(summary['new_agent'])
     summary['baseline_agents'] = [strip_agent_prefix(a) for a in summary['baseline_agents']]
 
@@ -489,29 +407,6 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
         strip_agent_prefix(agent): stats
         for agent, stats in by_agent.items()
     }
-
-    # Transform by_database (agent names in cross_agent_analysis)
-    for db_name, db_stats in by_database.items():
-        # Transform agent_stats keys
-        if 'agent_stats' in db_stats:
-            db_stats['agent_stats'] = {
-                strip_agent_prefix(agent): stats
-                for agent, stats in db_stats['agent_stats'].items()
-            }
-
-        # Transform cross_agent_analysis agent references
-        if 'cross_agent_analysis' in db_stats:
-            for comparison_name, comparison_data in db_stats['cross_agent_analysis'].items():
-                if isinstance(comparison_data, dict) and 'mixed_results' in comparison_data:
-                    # Transform agent names in mixed_results
-                    transformed_mixed = {}
-                    for qid, result_data in comparison_data['mixed_results'].items():
-                        if 'baseline_correct' in result_data:
-                            result_data['baseline_correct'] = [strip_agent_prefix(a) for a in result_data['baseline_correct']]
-                        if 'baseline_wrong' in result_data:
-                            result_data['baseline_wrong'] = [strip_agent_prefix(a) for a in result_data['baseline_wrong']]
-                        transformed_mixed[qid] = result_data
-                    comparison_data['mixed_results'] = transformed_mixed
 
     # Transform global_cross_agent (agent names in mixed_results)
     for comparison_name, comparison_data in global_cross_agent.items():
@@ -527,7 +422,6 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
 
     return {
         'summary': summary,
-        'by_database': by_database,
         'by_agent': by_agent,
         'cross_agent_analysis': global_cross_agent
     }

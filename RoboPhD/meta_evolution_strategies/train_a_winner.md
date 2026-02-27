@@ -169,7 +169,7 @@ You **must** create exactly one new evolution strategy in:
 `new_strategies/strategy_name/`
 
 Each strategy package includes:
-- `strategy.md` — Main strategy prompt with YAML frontmatter (name, description)
+- `strategy.md` — Main strategy prompt (instructions given to the evolution AI)
 - Optional: `strategy_tools/` — Helper scripts to improve evolution decisions
 
 **If your strategy includes tools**: They will be available locally during execution in `strategy_tools/`. The evolution working directory is `../../evolution_output/iteration_XXX/`, so evolution can reference tools with relative paths:

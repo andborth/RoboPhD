@@ -3260,137 +3260,72 @@ class ParallelAgentResearcher:
                     ""
                 ])
 
-                # Accuracy by Database by Agent (matrix table)
-                by_database = index.get('by_database', {})
-                if by_database and agents:
+                # Per-agent accuracy table
+                by_agent = index.get('by_agent', {})
+                if by_agent and agents:
                     report_lines.extend([
-                        "## Accuracy by Database and Agent",
+                        "## Agent Accuracy",
+                        "",
+                        "| Agent | Correct | Errors | Accuracy |",
+                        "|-------|---------|--------|----------|"
+                    ])
+                    for agent in agents:
+                        stats = by_agent.get(agent, {})
+                        correct = stats.get('total_correct', 0)
+                        errors = stats.get('total_errors', 0)
+                        accuracy = stats.get('accuracy', 0.0)
+                        report_lines.append(f"| {agent} | {correct} | {errors} | {accuracy:.1f}% |")
+                    report_lines.append("")
+
+                # Consensus errors (all agents failed)
+                cross_patterns = index.get('cross_agent_patterns', {})
+                consensus_errors = cross_patterns.get('consensus_errors', [])
+                if consensus_errors:
+                    error_count = len(consensus_errors)
+                    if error_count <= 10:
+                        id_str = ', '.join(consensus_errors)
+                    else:
+                        id_str = ', '.join(consensus_errors[:10]) + ', ...'
+                    report_lines.extend([
+                        "## Consensus Errors",
+                        "",
+                        f"All agents failed on {error_count} questions: {id_str}",
                         ""
                     ])
 
-                    # Create matrix: databases as rows, agents as columns
-                    # Header row
-                    header = "| Database |"
-                    separator = "|----------|"
-                    for agent in agents:
-                        header += f" {agent} |"
-                        separator += "--------|"
-
-                    report_lines.append(header)
-                    report_lines.append(separator)
-
-                    # Sort databases alphabetically for consistent display
-                    sorted_databases = sorted(by_database.keys())
-
-                    # Data rows
-                    for db_name in sorted_databases:
-                        db_stats = by_database[db_name]
-                        agent_stats = db_stats.get('agent_stats', {})
-
-                        row = f"| {db_name} |"
-                        for agent in agents:
-                            if agent in agent_stats:
-                                accuracy = agent_stats[agent].get('accuracy', 0.0)
-                                row += f" {accuracy:.1f}% |"
-                            else:
-                                row += " - |"
-
-                        report_lines.append(row)
-
-                    report_lines.append("")
-
-                # Per-database consensus errors
-                if by_database:
+                # Split decisions
+                split_decisions = cross_patterns.get('split_decisions', {})
+                if split_decisions:
                     report_lines.extend([
-                        "## Consensus Errors by Database",
+                        "## Split Decisions",
                         "",
-                        "| Database | Questions | Consensus Errors | % Failed |",
-                        "|----------|-----------|------------------|----------|"
+                        f"Total split decisions: {len(split_decisions)}",
+                        ""
                     ])
 
-                    # Sort databases by number of consensus errors (descending)
-                    db_error_counts = []
-                    for db_name, db_stats in by_database.items():
-                        consensus_errors = db_stats.get('consensus_errors', [])
-                        total_questions = db_stats.get('total_questions', 0)
-                        db_error_counts.append((db_name, len(consensus_errors), total_questions, consensus_errors))
+                    # Group split decisions by pattern (correct agents, wrong agents)
+                    from collections import defaultdict
+                    pattern_groups = defaultdict(list)
 
-                    db_error_counts.sort(key=lambda x: x[1], reverse=True)
+                    for question_id, split_info in split_decisions.items():
+                        correct_agents = tuple(sorted(split_info.get('correct', [])))
+                        wrong_agents = tuple(sorted(split_info.get('wrong', [])))
+                        pattern = (correct_agents, wrong_agents)
+                        pattern_groups[pattern].append(question_id)
 
-                    for db_name, error_count, total_questions, error_ids in db_error_counts:
-                        pct = (error_count / total_questions * 100) if total_questions > 0 else 0
+                    # Sort patterns by number of questions (most common first), then alphabetically
+                    sorted_patterns = sorted(
+                        pattern_groups.items(),
+                        key=lambda x: (-len(x[1]), x[0])
+                    )
 
-                        # Show question IDs inline (truncate if more than 10)
-                        if error_count > 0:
-                            if error_count <= 10:
-                                id_str = f"{error_count} (IDs: {', '.join(error_ids)})"
-                            else:
-                                id_str = f"{error_count} (IDs: {', '.join(error_ids[:10])}, ...)"
-                        else:
-                            id_str = "0"
-
-                        report_lines.append(f"| {db_name} | {total_questions} | {id_str} | {pct:.1f}% |")
+                    for (correct_agents, wrong_agents), question_ids in sorted_patterns:
+                        correct_str = ', '.join(correct_agents)
+                        wrong_str = ', '.join(wrong_agents)
+                        question_ids_str = ', '.join(f"**{qid}**" for qid in sorted(question_ids))
+                        report_lines.append(f"- ✓ {correct_str} | ✗ {wrong_str}: {question_ids_str}")
 
                     report_lines.append("")
-
-                # Split decisions by database
-                if by_database:
-                    # Count total split decisions across all databases
-                    total_splits = sum(len(db_stats.get('split_decisions', {})) for db_stats in by_database.values())
-
-                    if total_splits > 0:
-                        report_lines.extend([
-                            "## Split Decisions by Database",
-                            "",
-                            f"Total split decisions: {total_splits}",
-                            ""
-                        ])
-
-                        # Sort databases by number of split decisions (descending)
-                        db_split_counts = []
-                        for db_name, db_stats in by_database.items():
-                            split_decisions = db_stats.get('split_decisions', {})
-                            if split_decisions:
-                                db_split_counts.append((db_name, split_decisions))
-
-                        db_split_counts.sort(key=lambda x: len(x[1]), reverse=True)
-
-                        for db_name, split_decisions in db_split_counts:
-                            report_lines.extend([
-                                f"### {db_name} ({len(split_decisions)} split decisions)",
-                                ""
-                            ])
-
-                            # Group split decisions by pattern (correct agents, wrong agents)
-                            from collections import defaultdict
-                            pattern_groups = defaultdict(list)
-
-                            for question_id in split_decisions.keys():
-                                split_info = split_decisions[question_id]
-                                correct_agents = tuple(sorted(split_info.get('correct', [])))
-                                wrong_agents = tuple(sorted(split_info.get('wrong', [])))
-
-                                # Use pattern as key
-                                pattern = (correct_agents, wrong_agents)
-                                pattern_groups[pattern].append(question_id)
-
-                            # Sort patterns by number of questions (most common first), then alphabetically
-                            sorted_patterns = sorted(
-                                pattern_groups.items(),
-                                key=lambda x: (-len(x[1]), x[0])  # Sort by count desc, then pattern
-                            )
-
-                            for (correct_agents, wrong_agents), question_ids in sorted_patterns:
-                                # Format: "- ✓ agent1, agent2 | ✗ agent3: **Q1**, **Q2**, **Q3**"
-                                correct_str = ', '.join(correct_agents)
-                                wrong_str = ', '.join(wrong_agents)
-
-                                # Sort question IDs and format with bold
-                                question_ids_str = ', '.join(f"**{qid}**" for qid in sorted(question_ids))
-
-                                report_lines.append(f"- ✓ {correct_str} | ✗ {wrong_str}: {question_ids_str}")
-
-                            report_lines.append("")
 
                 report_lines.extend([
                     "## Extract Details",

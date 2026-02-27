@@ -434,191 +434,103 @@ class DeepFocusEvolutionManager:
                     ""
                 ])
 
-                # Per-database breakdown
-                by_database = index.get('by_database', {})
-
-                # Accuracy by Database and Agent table
-                if by_database:
+                # Per-agent accuracy table
+                by_agent = index.get('by_agent', {})
+                if by_agent:
                     all_agents = [newest_agent] + baseline_agents
 
                     report_lines.extend([
-                        "## Accuracy by Database and Agent",
+                        "## Agent Accuracy",
+                        "",
+                        "| Agent | Correct | Errors | Accuracy |",
+                        "|-------|---------|--------|----------|"
+                    ])
+                    for agent in all_agents:
+                        stats = by_agent.get(agent, {})
+                        correct = stats.get('total_correct', 0)
+                        errors = stats.get('total_errors', 0)
+                        accuracy = stats.get('accuracy', 0.0)
+                        report_lines.append(f"| {agent} | {correct} | {errors} | {accuracy:.1f}% |")
+                    report_lines.append("")
+
+                # Unique Successes (new succeeded, baselines failed)
+                if unique_successes:
+                    count = len(unique_successes)
+                    if count <= 10:
+                        id_str = ', '.join(unique_successes)
+                    else:
+                        id_str = ', '.join(unique_successes[:10]) + ', ...'
+                    report_lines.extend([
+                        "## Unique Successes",
+                        "",
+                        f"New agent succeeded but all baselines failed ({count}): {id_str}",
                         ""
                     ])
 
-                    # Header row
-                    header = "| Database |"
-                    separator = "|----------|"
-                    for agent in all_agents:
-                        header += f" {agent} |"
-                        separator += "--------|"
+                # Unique Errors (new failed, baselines succeeded)
+                if unique_errors:
+                    count = len(unique_errors)
+                    if count <= 10:
+                        id_str = ', '.join(unique_errors)
+                    else:
+                        id_str = ', '.join(unique_errors[:10]) + ', ...'
+                    report_lines.extend([
+                        "## Unique Errors",
+                        "",
+                        f"New agent failed but all baselines succeeded ({count}): {id_str}",
+                        ""
+                    ])
 
-                    report_lines.append(header)
-                    report_lines.append(separator)
+                # Consensus errors (all failed including new)
+                if consensus_errors:
+                    count = len(consensus_errors)
+                    if count <= 10:
+                        id_str = ', '.join(consensus_errors)
+                    else:
+                        id_str = ', '.join(consensus_errors[:10]) + ', ...'
+                    report_lines.extend([
+                        "## Consensus Errors",
+                        "",
+                        f"New agent AND all baselines failed ({count}): {id_str}",
+                        ""
+                    ])
 
-                    # Data rows (sorted alphabetically by database)
-                    for db_name in sorted(by_database.keys()):
-                        db_stats = by_database[db_name]
-                        agent_stats = db_stats.get('agent_stats', {})
+                # Mixed results
+                if mixed:
+                    report_lines.extend([
+                        "## Mixed Results",
+                        "",
+                        f"Total mixed results: {len(mixed)}",
+                        ""
+                    ])
 
-                        row = f"| {db_name} |"
-                        for agent in all_agents:
-                            if agent in agent_stats:
-                                accuracy = agent_stats[agent].get('accuracy', 0.0)
-                                row += f" {accuracy:.1f}% |"
-                            else:
-                                row += " - |"
+                    from collections import defaultdict
+                    # Group by pattern (new_agent_correct, correct baselines, wrong baselines)
+                    pattern_groups = defaultdict(list)
 
-                        report_lines.append(row)
+                    mixed_data = cross_agent.get('mixed_results', {})
+                    for question_id, split_info in mixed_data.items():
+                        new_agent_correct = split_info.get('new_agent_correct', None)
+                        correct_baselines = tuple(sorted(split_info.get('baseline_correct', [])))
+                        wrong_baselines = tuple(sorted(split_info.get('baseline_wrong', [])))
+
+                        pattern = (new_agent_correct, correct_baselines, wrong_baselines)
+                        pattern_groups[pattern].append(question_id)
+
+                    sorted_patterns = sorted(
+                        pattern_groups.items(),
+                        key=lambda x: (-len(x[1]), x[0])
+                    )
+
+                    for (new_agent_correct, correct_baselines, wrong_baselines), question_ids in sorted_patterns:
+                        new_agent_status = "✅ NEW" if new_agent_correct else "❌ NEW"
+                        correct_str = ', '.join(correct_baselines)
+                        wrong_str = ', '.join(wrong_baselines)
+                        question_ids_str = ', '.join(f"**{qid}**" for qid in sorted(question_ids))
+
+                        report_lines.append(f"- {new_agent_status} | ✓ {correct_str} | ✗ {wrong_str}: {question_ids_str}")
 
                     report_lines.append("")
-
-                # 1. Unique Successes by database (new succeeded, baselines failed)
-                if by_database:
-                    db_unique_successes = []
-                    for db_name, db_stats in by_database.items():
-                        cross_analysis = db_stats.get('cross_agent_analysis', {}).get('new_vs_baseline', {})
-                        success_ids = cross_analysis.get('unique_successes', [])
-                        if success_ids:
-                            db_unique_successes.append((db_name, success_ids))
-
-                    if db_unique_successes:
-                        db_unique_successes.sort(key=lambda x: len(x[1]), reverse=True)
-
-                        report_lines.extend([
-                            "## Unique Successes by Database",
-                            "",
-                            "New agent succeeded but all baselines failed:",
-                            "",
-                            "| Database | Count | Question IDs |",
-                            "|----------|-------|--------------|"
-                        ])
-
-                        for db_name, success_ids in db_unique_successes:
-                            count = len(success_ids)
-                            if count <= 10:
-                                id_str = ', '.join(success_ids)
-                            else:
-                                id_str = ', '.join(success_ids[:10]) + ', ...'
-                            report_lines.append(f"| {db_name} | {count} | {id_str} |")
-
-                        report_lines.append("")
-
-                # 2. Unique Errors by database (new failed, baselines succeeded)
-                if by_database:
-                    db_unique_errors = []
-                    for db_name, db_stats in by_database.items():
-                        cross_analysis = db_stats.get('cross_agent_analysis', {}).get('new_vs_baseline', {})
-                        error_ids = cross_analysis.get('unique_errors', [])
-                        if error_ids:
-                            db_unique_errors.append((db_name, error_ids))
-
-                    if db_unique_errors:
-                        db_unique_errors.sort(key=lambda x: len(x[1]), reverse=True)
-
-                        report_lines.extend([
-                            "## Unique Errors by Database",
-                            "",
-                            "New agent failed but all baselines succeeded:",
-                            "",
-                            "| Database | Count | Question IDs |",
-                            "|----------|-------|--------------|"
-                        ])
-
-                        for db_name, error_ids in db_unique_errors:
-                            count = len(error_ids)
-                            if count <= 10:
-                                id_str = ', '.join(error_ids)
-                            else:
-                                id_str = ', '.join(error_ids[:10]) + ', ...'
-                            report_lines.append(f"| {db_name} | {count} | {id_str} |")
-
-                        report_lines.append("")
-
-                # 3. Consensus errors by database (all failed including new)
-                if by_database:
-                    db_consensus_errors = []
-                    for db_name, db_stats in by_database.items():
-                        cross_analysis = db_stats.get('cross_agent_analysis', {}).get('new_vs_baseline', {})
-                        consensus_ids = cross_analysis.get('consensus_errors', [])
-                        if consensus_ids:
-                            db_consensus_errors.append((db_name, consensus_ids))
-
-                    if db_consensus_errors:
-                        db_consensus_errors.sort(key=lambda x: len(x[1]), reverse=True)
-
-                        report_lines.extend([
-                            "## Consensus Errors by Database",
-                            "",
-                            "New agent AND all baselines failed:",
-                            "",
-                            "| Database | Count | Question IDs |",
-                            "|----------|-------|--------------|"
-                        ])
-
-                        for db_name, error_ids in db_consensus_errors:
-                            count = len(error_ids)
-                            if count <= 10:
-                                id_str = ', '.join(error_ids)
-                            else:
-                                id_str = ', '.join(error_ids[:10]) + ', ...'
-                            report_lines.append(f"| {db_name} | {count} | {id_str} |")
-
-                        report_lines.append("")
-
-                # Mixed results by database
-                if by_database:
-                    db_mixed = []
-                    for db_name, db_stats in by_database.items():
-                        cross_analysis = db_stats.get('cross_agent_analysis', {}).get('new_vs_baseline', {})
-                        mixed_results = cross_analysis.get('mixed_results', {})
-                        if mixed_results:
-                            db_mixed.append((db_name, mixed_results))
-
-                    if db_mixed:
-                        total_mixed = sum(len(mixed_results) for _, mixed_results in db_mixed)
-                        db_mixed.sort(key=lambda x: len(x[1]), reverse=True)
-
-                        report_lines.extend([
-                            "## Mixed Results by Database",
-                            "",
-                            f"Total mixed results: {total_mixed}",
-                            ""
-                        ])
-
-                        from collections import defaultdict
-                        for db_name, mixed_results in db_mixed:
-                            report_lines.extend([
-                                f"### {db_name} ({len(mixed_results)} mixed results)",
-                                ""
-                            ])
-
-                            # Group by pattern (new_agent_correct, correct baselines, wrong baselines)
-                            pattern_groups = defaultdict(list)
-
-                            for question_id, split_info in mixed_results.items():
-                                new_agent_correct = split_info.get('new_agent_correct', None)
-                                correct_baselines = tuple(sorted(split_info.get('baseline_correct', [])))
-                                wrong_baselines = tuple(sorted(split_info.get('baseline_wrong', [])))
-
-                                pattern = (new_agent_correct, correct_baselines, wrong_baselines)
-                                pattern_groups[pattern].append(question_id)
-
-                            # Sort patterns by count (most common first), then alphabetically
-                            sorted_patterns = sorted(
-                                pattern_groups.items(),
-                                key=lambda x: (-len(x[1]), x[0])
-                            )
-
-                            for (new_agent_correct, correct_baselines, wrong_baselines), question_ids in sorted_patterns:
-                                new_agent_status = "✅ NEW" if new_agent_correct else "❌ NEW"
-                                correct_str = ', '.join(correct_baselines)
-                                wrong_str = ', '.join(wrong_baselines)
-                                question_ids_str = ', '.join(f"**{qid}**" for qid in sorted(question_ids))
-
-                                report_lines.append(f"- {new_agent_status} | ✓ {correct_str} | ✗ {wrong_str}: {question_ids_str}")
-
-                            report_lines.append("")
 
                 report_lines.extend([
                     "## Extract Details",

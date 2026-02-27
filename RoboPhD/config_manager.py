@@ -63,7 +63,7 @@ class ConfigManager:
         """
         return {
             # Domain and dataset
-            "domain": "text2sql",  # Domain plugin: 'text2sql' or 'codegen'
+            "domain": "external",  # Domain plugin: 'external' for all task-registry domains
             "dataset": "train-filtered",
             "examples_per_iteration": 5,
             "problems_per_context": 30,
