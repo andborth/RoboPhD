@@ -639,7 +639,6 @@ class ParallelAgentEvolver:
                         db_eval_file = iter_dir / db / "results" / "evaluation.json"
                         if db_eval_file.exists():
                             try:
-                                import json
                                 with open(db_eval_file, 'r') as f:
                                     eval_data = json.load(f)
                                 accuracy = eval_data.get('accuracy', 0.0)
@@ -661,7 +660,6 @@ class ParallelAgentEvolver:
                 eval_file = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}" / "evaluation.json"
                 if eval_file.exists():
                     try:
-                        import json
                         with open(eval_file, 'r') as f:
                             eval_data = json.load(f)
                         failed = [
@@ -1484,11 +1482,10 @@ class ParallelAgentResearcher:
     
     def _is_valid_agent_dir(self, agent_dir: Path) -> bool:
         """Check if a directory is a valid agent by looking for file_mapping files or agent.md."""
-        # Check for any file_mapping file
         file_mapping = getattr(self.domain, 'file_mapping', {}) if self.domain else {}
-        for rel_path in file_mapping.values():
-            if (agent_dir / rel_path).exists():
-                return True
+        if file_mapping:
+            # All file_mapping files must exist
+            return all((agent_dir / rel_path).exists() for rel_path in file_mapping.values())
         # Legacy fallback: agent.md
         return (agent_dir / 'agent.md').exists()
 
@@ -1617,7 +1614,6 @@ class ParallelAgentResearcher:
             if 'research_driven' in strategy_id:
                 papers_pool_path = local_strategy_dir / 'tools' / 'papers_pool.json'
                 if papers_pool_path.exists():
-                    import json
                     with open(papers_pool_path, 'r') as f:
                         pool = json.load(f)
 
@@ -3191,9 +3187,6 @@ class ParallelAgentResearcher:
                 shutil.copytree(src, dst, symlinks=True)
             else:
                 shutil.copy2(src, dst)
-
-        # Create tool_output directory for runtime
-        (package_dir / "tool_output").mkdir(exist_ok=True)
 
         print(f"  📦 Installed agent package to {package_dir.name}")
 
