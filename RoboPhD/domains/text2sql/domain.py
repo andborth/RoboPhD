@@ -234,7 +234,7 @@ class Text2SQLDomain(DomainInterface):
     @property
     def evolution_strategies_dir(self) -> str:
         """Directory name for Text2SQL evolution strategies."""
-        return "evolution_strategies"
+        return "evolution_strategies_text2sql"
 
     @property
     def phase1_display_name(self) -> str:
