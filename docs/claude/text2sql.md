@@ -2,6 +2,138 @@
 
 Domain-specific documentation for the BIRD benchmark Text2SQL task.
 
+## Architecture (Legacy)
+
+> **Note**: This architecture predates the `file_mapping` system used by CodeGen and AIME. Text2SQL will be migrated to `ExternalEvaluatorDomain` + `TaskDefinition`. See [Migration Notes](#migration-notes) below.
+
+### The Three AI Calls
+
+The Text2SQL system orchestrates three distinct AI model calls per iteration:
+
+```
+                            ITERATION CYCLE
+    ┌─────────────────────────────────────────────────────────────┐
+    │                                                             │
+    │  ┌──────────────────┐         ┌────────────────────┐        │
+    │  │   EVOLUTION AI   │ Creates │   3-ARTIFACT       │        │
+    │  │   (Opus-4.6)     │────────▶│   AGENT PACKAGE    │        │
+    │  └──────────────────┘         └────────────────────┘        │
+    │           ▲                            │                    │
+    │           │                            ▼                    │
+    │           │                   ┌────────────────────┐        │
+    │           │                   │ • agent.md         │        │
+    │   Analyzes│                   │ • eval_instructions.md      │
+    │   Results │                   │ • tools/           │        │
+    │           │                   └────────┬───────────┘        │
+    │           │                            │                    │
+    │           │                            ▼                    │
+    │  ┌───────────────────┐       ┌────────────────────┐         │
+    │  │   EVALUATION      │       │  DOMAIN ANALYSIS   │         │
+    │  │   RESULTS         │       │  (Tool-only or LLM)│         │
+    │  │ • Successes       │       └────────────────────┘         │
+    │  │ • Failures        │                │                     │
+    │  │ • Error Patterns  │                │ Analyzes            │
+    │  └────────┬──────────┘                │ Context             │
+    │           │                           ▼                     │
+    │           │                   ┌────────────────────┐        │
+    │           │                   │ DOMAIN-SPECIFIC    │        │
+    │           │                   │ ANALYSIS           │        │
+    │           │                   └────────┬───────────┘        │
+    │           │                            │                    │
+    │           │                            │ Combined with      │
+    │           │                            │ eval_instructions  │
+    │           │                            ▼                    │
+    │           │                   ┌────────────────────┐        │
+    │           │                   │  EVAL AI           │        │
+    │           │                   │  (Haiku or Sonnet) │        │
+    │           │                   └────────┬───────────┘        │
+    │           │                            │                    │
+    │           │                            │ Generates          │
+    │           │                            ▼                    │
+    │           │                   ┌────────────────────┐        │
+    │           │                   │   SQL OUTPUT       │        │
+    │           │                   └────────┬───────────┘        │
+    │           │                            │                    │
+    │           │                            │ Evaluated          │
+    │           │                            ▼                    │
+    │           └────────────────────────────┘                    │
+    │                                                             │
+    └─────────────────────────────────────────────────────────────┘
+```
+
+1. **Evolution AI (Opus-4.6)** — Runs once per iteration
+   - **Input**: Performance results from previous iteration, error analysis, agent rankings
+   - **Output**: New 3-artifact agent package (agent.md, eval_instructions.md, tools/)
+   - **Purpose**: Learn from failures and evolve better agents
+
+2. **Domain Analysis AI** — Runs once per database context
+   - **What it does**: Analyze database schema and produce comprehensive documentation
+   - **How**: Three strategy patterns:
+     - **Tool-only**: Deterministic Python scripts do all analysis ($0.00, fast, consistent)
+     - **Agent-centric**: Agent uses natural language reasoning
+     - **Hybrid approach**: Agent provides high-level analysis while tools handle specifics
+   - **Input**: agent.md instructions + database context (NO questions)
+   - **Output**: Domain-specific schema analysis
+   - **Orchestrator**: `AgentOrchestrator` (`agent_orchestrator.py`)
+
+3. **Eval AI (usually Haiku-4.5 or Sonnet-4.5)** — Runs once per problem
+   - **Input**: Domain analysis + eval_instructions.md + question
+   - **Output**: SQL query
+   - **Purpose**: Generate accurate SQL based on the provided context
+
+### Three-Artifact Agent Format
+
+Text2SQL agents are self-contained directories with three artifacts:
+- `agent.md`: Domain analysis agent with model configuration and YAML frontmatter
+- `eval_instructions.md`: Direct SQL generation instructions for eval model
+- `tools/`: Optional Python/shell analysis scripts
+
+### Tool-Only Execution Mode
+
+Agents can use **tool-only execution mode** where a Python/shell script generates complete analysis output, bypassing the AI agent entirely.
+
+**Benefits**: Speed (1-5s vs 30-60s), cost ($0.00 for Phase 1), consistency (deterministic output), debuggability (clear code vs AI reasoning).
+
+**YAML Frontmatter Configuration** (in `agent.md`):
+```yaml
+---
+name: hybrid-comprehensive-analyzer
+description: Cross-pollinated tool combining techniques from top agents
+execution_mode: tool_only
+tool_command: python tools/comprehensive_analyzer.py
+tool_output_file: tool_output/analysis.txt
+---
+```
+
+| Field | Description |
+|-------|-------------|
+| `name` | Short identifier for the agent |
+| `description` | One-line summary of the agent's approach |
+| `execution_mode` | Set to `tool_only` to bypass LLM agent |
+| `tool_command` | Command to execute (runs from agent directory) |
+| `tool_output_file` | Path where tool writes output (relative to agent directory) |
+
+**Execution**: System runs tool command (300s timeout), verifies output (exit 0, file exists, ≥200 bytes), copies to `output/agent_output.txt`. Falls back to normal agent execution on any failure.
+
+### Key Legacy Components
+- **`agent_orchestrator.py`**: Phase 1 analysis orchestration
+- **`core.py`**: `SQLGenerator`, `Evaluator`, `DatabaseManager`
+- **`utilities/cached_sql_executor.py`**: SQL execution with caching
+
+### Migration Notes
+
+To migrate Text2SQL to the current architecture:
+
+1. **Create `tasks/text2sql.py`** with a `TaskDefinition` containing:
+   - `evaluator_factory`: Wrap SQL generation + evaluation in a `(candidate, example) -> (score, diagnostics)` function
+   - `dataset_builder`: Load BIRD questions as flat example dicts
+   - `file_mapping`: Likely `{"agent_instructions": "agent.md", "eval_instructions": "eval_instructions.md", "tool_code": "tools/..."}` or similar
+2. **Wrap `AgentOrchestrator`** functionality inside the evaluator function
+3. **Register the task** so `run_robophd.py --task text2sql` and `run_gepa.py --task text2sql` work
+4. **Text2SQL evolution strategies** (`evolution_strategies_text2sql/`) would continue to work via the `evolution_strategies_directory` config
+
+---
+
 ## Dataset Overview
 
 | Dataset | Total Questions | Usable Questions | Databases | Notes |

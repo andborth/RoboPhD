@@ -104,7 +104,7 @@ The CodeGen domain uses a 6-phase workflow with verdict branching:
 - Observes: "Example 1 ✓, Example 2 ✓, Example 3 ✓"
 
 **Phase 2: Critic Review**
-- Evolved critics typically use **tool-only execution mode**: a Python script performs automated static analysis of the solution, producing `tool_output/critic_feedback.txt`
+- Evolved critics typically use a Python script that performs automated static analysis of the solution, producing `tool_output/analysis.txt`
 - An eval LLM receives the tool output + `eval_instructions.md` and produces `feedback.md`
 - `feedback.md` starts with `VERDICT: CORRECT` or `VERDICT: INCORRECT`, followed by analysis
 - If the verdict line is missing, the critic is re-prompted once to fix it
@@ -130,17 +130,25 @@ The CodeGen domain uses a 6-phase workflow with verdict branching:
 ## Basic Usage
 
 ```bash
-# Run CodeGen evolution
-python RoboPhD/researcher.py --num-iterations 10 --domain codegen
+# Run CodeGen evolution (ELO competition)
+python scripts/run_robophd.py --task codegen --num-iterations 10
 
-# Or via config
-python RoboPhD/researcher.py --config '{"domain": "codegen", "eval_model": "haiku-4.5"}'
+# Run CodeGen via GEPA (reflective text evolution)
+python scripts/run_gepa.py --task codegen \
+  --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic"}' \
+  --engine-config '{"evaluation_budget": 200, "val_ratio": 0.05}'
 
 # Quick test
-python RoboPhD/researcher.py \
-  --domain codegen \
-  --num-iterations 2 \
-  --config '{"examples_per_iteration": 3, "problems_per_context": 10}'
+python scripts/run_robophd.py --task codegen --num-iterations 2 \
+  --engine-config '{"examples_per_iteration": 3}'
+
+# List all valid parameters
+python scripts/run_robophd.py --task codegen --list-params
+```
+
+The `file_mapping` for CodeGen is:
+```python
+{"eval_instructions": "eval_instructions.md", "tool_code": "tools/problem_analyzer.py"}
 ```
 
 ## Test Execution Methodology
@@ -163,29 +171,16 @@ python RoboPhD/researcher.py \
 
 ## Critic Agent Structure
 
-A typical evolved critic is a **monolithic tool-only analyzer** — a single Python script that performs comprehensive static analysis:
+A typical evolved critic consists of two files matching the CodeGen `file_mapping`:
 
 ```
-agents/<agent_name>/
-├── agent.md                   # YAML config: tool_only execution mode
+codegen_agents/<agent_name>/
 ├── eval_instructions.md       # Decision framework for verdict + feedback
 └── tools/
-    └── analyzer.py            # Static analysis script
+    └── problem_analyzer.py    # Static analysis script
 ```
 
-The `agent.md` YAML frontmatter configures tool-only execution:
-
-```yaml
----
-name: <agent_name>
-description: <one-line summary of critic approach>
-execution_mode: tool_only
-tool_command: python tools/analyzer.py
-tool_output_file: tool_output/critic_feedback.txt
----
-```
-
-The analyzer script reads `solution.py` and `problem.md` from its working directory, performs whatever analysis the evolution strategy designed, and writes structured findings to `tool_output/critic_feedback.txt`. The eval LLM then uses this analysis (along with `eval_instructions.md`) to render a verdict. Common analysis techniques include constraint extraction, complexity estimation, test execution against visible examples, and pattern-specific heuristics.
+The analyzer script reads `solution.py` and `problem.md` from its working directory, performs whatever analysis the evolution strategy designed, and writes structured findings to `tool_output/analysis.txt`. The eval LLM then uses this analysis (along with `eval_instructions.md`) to render a verdict. Common analysis techniques include constraint extraction, complexity estimation, test execution against visible examples, and pattern-specific heuristics.
 
 ## Per-Problem Output Files
 
@@ -197,7 +192,7 @@ problems/<problem_id>/
 ├── solution.py           # Code v1 (copied from cache)
 ├── tools/                # Critic's analysis scripts (copied from agent)
 ├── tool_output/          # Static analysis output (used by critic LLM)
-│   └── critic_feedback.txt
+│   └── analysis.txt
 ├── critic_prompt.md      # Full prompt sent to critic LLM
 ├── feedback.md           # Critic verdict (CORRECT/INCORRECT) + analysis
 ├── revision_prompt.md    # [If revised] Feedback formatted as revision request
@@ -215,15 +210,6 @@ problems/<problem_id>/
 - **Regressed**: v1 pass → v2 fail (critic hurt)
 - **Verdict Classification**: TP (INCORRECT + v1 wrong), FP (INCORRECT + v1 right), TN (CORRECT + v1 right), FN (CORRECT + v1 wrong)
 - **Acceptance Effectiveness**: Per category (accepted_all / accepted_some / rejected_all), tracks improved / no_help / no_harm / regressed
-
-## Key Differences from Text2SQL
-
-| Component | Text2SQL | CodeGen |
-|-----------|----------|---------|
-| **Phase 1 Input** | Database file | Problem context (problem + code_v1) |
-| **Phase 1 Output** | system_prompt.txt | feedback.md (critic verdict + analysis) |
-| **Eval Mechanism** | Fresh API call with system prompt | Fresh API call with tool output + eval_instructions |
-| **Revision** | Verification retries with progressive temperature | Critic-driven session fork; coder accepts/rejects feedback |
 
 ## Troubleshooting
 

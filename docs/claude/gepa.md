@@ -17,7 +17,7 @@ Both systems optimize the same thing — text that guides an LLM — but use dif
 | System | Candidate Format | Evolution Method |
 |--------|-----------------|------------------|
 | GEPA | `dict[str, str]` of named text components | Reflective text evolution with Pareto selection |
-| RoboPhD | Agent directory (agent.md + eval_instructions.md + tools/) | Multi-strategy evolution with ELO ranking |
+| RoboPhD | Agent directory (files per task `file_mapping`) | Multi-strategy evolution with ELO ranking |
 
 The adapter layer translates between these via a **file mapping**:
 
@@ -90,7 +90,7 @@ python scripts/cross_benchmark.py \
 
 Core adapter with four pieces:
 
-- **`materialize_candidate()`** — Writes a candidate dict to an agent directory. Generates `agent.md` with tool-only YAML frontmatter when `tool_code` is present.
+- **`materialize_candidate()`** — Writes candidate dict entries to files per `file_mapping`.
 - **`extract_candidate()`** — Reads an agent directory back into a candidate dict.
 - **`build_codegen_dataset()`** — Builds lightweight example dicts from codegen cache. Each example is just `{"question_id": "abc314_c"}` — no test data included, preventing leakage to GEPA's reflection LM.
 - **`RoboPhDCodeGenEvaluator`** — GEPA-compatible evaluator wrapping `CriticEvaluator.evaluate_problem()`. Thread-safe for concurrent val sweeps via `threading.Lock`.
@@ -125,5 +125,4 @@ Both are included in `requirements.txt`. Also requires: codegen cache (`../robop
 
 - **Text2SQL adapter**: Add `RoboPhDText2SQLEvaluator` following the same pattern.
 - **Unified interface**: Have both codegen and text2sql runnable under `optimize_anything()`.
-- **AIME/external benchmarks**: Use `ExternalEvaluatorDomain` to run RoboPhD evolution on GEPA's existing benchmarks.
 - **`evaluation_budget` in researcher.py**: Count fresh evaluations across iterations for truly matched budget comparisons.
