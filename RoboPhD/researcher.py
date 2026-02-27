@@ -1041,56 +1041,22 @@ class ParallelAgentResearcher:
                 if created_iteration >= from_iteration:
                     # Skip this agent - it was created in an iteration we're redoing
                     continue
-            # Determine package directory (handle both old and new checkpoint formats)
-            if 'package_dir' in agent_info and agent_info['package_dir'] is not None:
-                # New format - has package_dir saved (as experiment-relative path)
-                package_dir_str = agent_info['package_dir']
-                package_dir = Path(package_dir_str) if isinstance(package_dir_str, str) else package_dir_str
+            # Resolve package_dir (stored as experiment-relative path)
+            package_dir_str = agent_info.get('package_dir')
+            if not package_dir_str:
+                print(f"  ⚠️ Skipping agent {agent_id}: no package_dir in checkpoint")
+                continue
 
-                # If path is relative, resolve from experiment directory for portability
-                if not package_dir.is_absolute():
-                    # Check if this is an old-format path (starts with experiment dir name)
-                    # Old format: "research/robophd_XXX/agents/name" or "evolution/robophd_XXX/agents/name"
-                    # New format: "agents/name"
-                    experiment_dir_name = self.experiment_dir.name  # e.g., "robophd_20251119_014049"
+            package_dir = Path(package_dir_str)
+            if not package_dir.is_absolute():
+                package_dir = (self.experiment_dir / package_dir).resolve()
 
-                    # Try to detect old format by checking if path contains the experiment directory
-                    path_parts = package_dir.parts
-                    if len(path_parts) > 2 and experiment_dir_name in path_parts:
-                        # Old format - extract the part after experiment directory
-                        # Find where the experiment directory appears in the path
-                        try:
-                            exp_dir_index = path_parts.index(experiment_dir_name)
-                            # Get everything after the experiment directory name
-                            relative_parts = path_parts[exp_dir_index + 1:]
-                            package_dir = Path(*relative_parts)
-                        except (ValueError, IndexError):
-                            # If we can't parse it, just use the original path
-                            pass
-
-                    # Resolve from experiment directory
-                    package_dir = (self.experiment_dir / package_dir).resolve()
-
-                # Validate the path exists
-                if not package_dir.exists():
-                    raise FileNotFoundError(
-                        f"Agent package directory not found: {package_dir}\n"
-                        f"Agent: {agent_id}\n"
-                        f"This may indicate a corrupted checkpoint or missing agent files.\n"
-                        f"Original path in checkpoint: {package_dir_str}"
-                    )
-            else:
-                # Old format or None - reconstruct from agent 'path' key
-                old_path = agent_info.get('path', '')
-                if old_path:
-                    p = Path(old_path)
-                    package_dir = p.parent if p.name == 'agent.md' else p.parent
-                    if not package_dir.is_absolute():
-                        package_dir = (self.experiment_dir / package_dir).resolve()
-                else:
-                    # Can't determine package_dir — skip this agent
-                    print(f"  ⚠️ Skipping agent {agent_id}: no package_dir or path in checkpoint")
-                    continue
+            if not package_dir.exists():
+                raise FileNotFoundError(
+                    f"Agent package directory not found: {package_dir}\n"
+                    f"Agent: {agent_id}\n"
+                    f"Original path in checkpoint: {package_dir_str}"
+                )
 
             restored_agent = {
                 'source': agent_info.get('source', 'restored'),
