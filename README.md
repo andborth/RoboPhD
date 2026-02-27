@@ -126,7 +126,7 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed setup instructions and [QUIC
 - `refinement_neutral`
 - `research_driven_neutral`
 
-Strategies are loaded from `RoboPhD/evolution_strategies/` (Text2SQL) or `RoboPhD/evolution_strategies_codegen/` (CodeGen).
+Strategies are loaded from `RoboPhD/evolution_strategies/` (generic), `RoboPhD/evolution_strategies_text2sql/` (Text2SQL), or `RoboPhD/evolution_strategies_codegen/` (CodeGen).
 
 ## Configuration
 

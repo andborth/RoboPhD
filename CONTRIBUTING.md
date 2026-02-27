@@ -55,7 +55,7 @@ python -m pytest tests/
 
 ## Creating New Evolution Strategies
 
-Evolution strategies live in `RoboPhD/evolution_strategies/` (Text2SQL) or `RoboPhD/evolution_strategies_codegen/` (CodeGen). Each strategy is a directory containing:
+Evolution strategies live in `RoboPhD/evolution_strategies/` (generic), `RoboPhD/evolution_strategies_text2sql/` (Text2SQL), or `RoboPhD/evolution_strategies_codegen/` (CodeGen). Each strategy is a directory containing:
 
 ```
 my_new_strategy/

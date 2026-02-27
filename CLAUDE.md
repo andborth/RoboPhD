@@ -82,7 +82,7 @@ Claude Code writes and maintains the entire research system through natural lang
 ### Level 2: Research Layer
 RoboPhD agents conduct autonomous prompt/agent engineering research:
 - **Parallel Agent Researcher**: Tests self-contained agents with embedded instructions
-- **Evolution Strategies**: Dynamically loaded from `RoboPhD/evolution_strategies/`
+- **Evolution Strategies**: Dynamically loaded from `RoboPhD/evolution_strategies/` (generic) or domain-specific directories
 - **Checkpoint System**: Full state preservation for fault tolerance
 - **Evolution Schedule**: Fine-grained per-iteration control of evolution strategies
 
@@ -211,17 +211,11 @@ tool_output_file: tool_output/analysis.txt
 ## Evolution System
 
 ### Evolution Strategies
-Evolution strategies are loaded from `RoboPhD/evolution_strategies/`:
+Evolution strategies are organized by domain:
 
-**Tool-only variants** (deterministic, no LLM in analysis):
-- `cross_pollination_tool_only`: Cross-pollination with emphasis on combining tool-only patterns
-- `refinement_tool_only`: Refinement with emphasis on tool-only execution
-- `research_driven_tool_only`: Research-driven with emphasis on implementing insights as tool-only
-
-**Neutral variants** (allow LLM in analysis):
-- `cross_pollination_neutral`: Cross-pollination presenting multiple approaches with equal weight
-- `refinement_neutral`: Refinement presenting multiple approaches with equal weight
-- `research_driven_neutral`: Research-driven presenting multiple approaches with equal weight
+- `RoboPhD/evolution_strategies/` — **Generic** (used by external domains like AIME): `cross_pollination`, `refinement`
+- `RoboPhD/evolution_strategies_text2sql/` — **Text2SQL**: `cross_pollination_tool_only`, `refinement_tool_only`, `research_driven_tool_only` (+ `_neutral` variants)
+- `RoboPhD/evolution_strategies_codegen/` — **CodeGen**: `cross_pollination_tool_only`, `refinement_tool_only`
 
 **Note**: Meta-evolution can generate additional strategies beyond these built-in options.
 
