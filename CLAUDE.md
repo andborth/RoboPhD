@@ -84,17 +84,17 @@ python scripts/run_gepa.py --task codegen \
 ```bash
 # Resume from checkpoint (auto-continues from last completed iteration)
 python scripts/run_robophd.py --task codegen \
-  --resume evolution/robophd_20251031_043607
+  --resume ../robophd_runs/robophd/codegen_20251031_043607
 
 # Restart from specific iteration with modifications
 python scripts/run_robophd.py --task codegen \
-  --resume evolution/robophd_20251031_043607 \
+  --resume ../robophd_runs/robophd/codegen_20251031_043607 \
   --from-iteration 5 \
   --engine-config '{"examples_per_iteration": 10, "eval_model": "sonnet-4.5"}'
 
 # Extend completed run with additional iterations
 python scripts/run_robophd.py --task codegen \
-  --resume evolution/robophd_20251031_043607 \
+  --resume ../robophd_runs/robophd/codegen_20251031_043607 \
   --extend 5 \
   --engine-config '{"evolution_strategy": "challenger"}'
 ```
@@ -294,9 +294,11 @@ Available meta-evolution strategies:
 
 - **Quick Test**: `python scripts/run_robophd.py --task codegen --num-iterations 2 --engine-config '{"examples_per_iteration": 1}'`
 - **List Parameters**: `python scripts/run_robophd.py --task codegen --list-params`
-- **Check Progress**: Review `checkpoint.json` and `final_report.md`
-- **Debug Evaluation**: Check `iteration_XXX/agent_YYY/problems/` and `evaluation.json`
-- **Evolution Output**: Check `evolution_output/iteration_XXX/` for Claude's reasoning
+- **Check Progress**: Review `checkpoint.json` and `final_report.md` in the experiment dir
+- **Debug Evaluation**: Check `iteration_XXX/agent_YYY/problems/` and `evaluation.json` in the experiment dir
+- **Evolution Output**: Check `evolution_output/iteration_XXX/` in the experiment dir for Claude's reasoning
+- **Run Outputs**: All runs land in `../robophd_runs/` (`robophd/` for ELO, `gepa/` for GEPA)
+- **Cleanup**: `python scripts/cleanup_runs.py` to find and remove short/experimental runs
 - **Config Files**: Save common configs to JSON files and use `--engine-config path/to/config.json`
 
 ## Troubleshooting
