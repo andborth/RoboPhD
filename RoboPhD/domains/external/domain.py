@@ -291,12 +291,14 @@ class ExternalEvaluatorDomain(DomainInterface):
                         )
 
                 # Write diagnostics as readable files for evolution.
-                # String values → {key}.md, skipping keys already on disk.
+                # String values → {key}.md (or {key} if it already has an
+                # extension), skipping keys already on disk.
                 if diagnostics:
                     for key, val in diagnostics.items():
                         if not isinstance(val, str) or not val:
                             continue
-                        out_path = problem_dir / f"{key}.md"
+                        fname = key if "." in key else f"{key}.md"
+                        out_path = problem_dir / fname
                         if not out_path.exists():
                             out_path.write_text(val)
 
@@ -449,6 +451,7 @@ class ExternalEvaluatorDomain(DomainInterface):
     problems/
       <problem_id>/               ← Per-problem directory (symlink if cached)
         result.json               ← Score and metadata for caching
+        {key}.md / {key.ext}      ← Diagnostics from evaluator (problem text, model response, etc.)
 
 Agent source code:
   ../../agents/
