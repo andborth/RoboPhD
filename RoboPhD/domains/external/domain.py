@@ -108,12 +108,14 @@ class ExternalEvaluatorDomain(DomainInterface):
 
         problems = {}
         for example in self._dataset:
-            # Try common ID fields
+            # Try common ID fields (must be deterministic across processes —
+            # hash() is randomized per PYTHONHASHSEED and breaks on --resume)
             eid = (
                 example.get("question_id")
+                or example.get("problem_id")
                 or example.get("id")
                 or example.get("example_id")
-                or str(hash(json.dumps(example, sort_keys=True)))
+                or json.dumps(example, sort_keys=True)
             )
             problems[eid] = [example]
 
@@ -269,6 +271,7 @@ class ExternalEvaluatorDomain(DomainInterface):
 
                 eid = (
                     example.get("question_id")
+                    or example.get("problem_id")
                     or example.get("id")
                     or problem_id
                 )

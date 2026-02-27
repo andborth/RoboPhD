@@ -899,6 +899,14 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         )
 
         # Build SampledProblems (same interface as main loop in researcher.py)
+        missing = [c for c in contexts if c not in problems_by_context]
+        if missing:
+            available_keys = list(problems_by_context.keys())[:5]
+            logger.warning(
+                f"Deep focus: {len(missing)}/{len(contexts)} contexts missing from problems_by_context. "
+                f"First missing: {missing[0]!r}, "
+                f"available keys (first 5): {available_keys}"
+            )
         sampled = SampledProblems(
             contexts=contexts,
             problems_by_context=problems_by_context
