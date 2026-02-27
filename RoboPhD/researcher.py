@@ -946,15 +946,6 @@ class ParallelAgentResearcher:
             # We'll preserve this for now to avoid breaking resume
             pass
 
-        # Initialize meta-evolution manager
-        from RoboPhD.meta_evolution_manager import MetaEvolutionManager
-        self.meta_evolution_manager = MetaEvolutionManager(
-            experiment_dir=self.experiment_dir,
-            config_manager=self.config_manager,
-            domain_name=config.get("meta_evolution_domain", self.domain_name),
-            domain=self.domain,
-        )
-
         # Apply pending evolution reset if needed
         if hasattr(self, '_pending_evolution_reset'):
             self._reset_evolution_tracking_for_iteration(self._pending_evolution_reset)
@@ -971,6 +962,15 @@ class ParallelAgentResearcher:
         # Update orchestrator and evolver with domain (created before _load_data)
         self.orchestrator.domain = self.domain
         self.evolver.domain = self.domain
+
+        # Initialize meta-evolution manager (after _load_data so self.domain exists)
+        from RoboPhD.meta_evolution_manager import MetaEvolutionManager
+        self.meta_evolution_manager = MetaEvolutionManager(
+            experiment_dir=self.experiment_dir,
+            config_manager=self.config_manager,
+            domain_name=config.get("meta_evolution_domain", self.domain_name),
+            domain=self.domain,
+        )
 
         # Pass references to evolver for Deep Focus
         self.evolver.researcher_phase1_failures = self.phase1_failures
