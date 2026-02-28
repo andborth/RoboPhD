@@ -277,11 +277,22 @@ class ExternalEvaluatorDomain(DomainInterface):
                     or problem_id
                 )
 
+                # Extract cost from diagnostics (e.g., AIME evaluator
+                # returns cost_usd from litellm.completion_cost)
+                cost_usd = 0.0
+                if isinstance(diagnostics, dict):
+                    raw = diagnostics.get("cost_usd", 0.0)
+                    try:
+                        cost_usd = float(raw)
+                    except (TypeError, ValueError):
+                        pass
+
                 result_entry = {
                     "question_id": eid,
                     "correct": is_correct,
                     "score": score,
                     "error": diagnostics.get("error"),
+                    "phase2_cost": cost_usd,
                 }
 
                 # Write result.json for future caching (don't overwrite
@@ -331,6 +342,11 @@ class ExternalEvaluatorDomain(DomainInterface):
         total = cached_count + fresh_count
         accuracy = (correct_count / total * 100) if total else 0.0
 
+        # Aggregate evaluation costs from fresh results
+        total_phase2_cost = sum(
+            r.get("phase2_cost", 0.0) for r in results if not r.get("cached")
+        )
+
         # Write evaluation.json for compatibility
         eval_data = {
             "summary": {
@@ -348,7 +364,11 @@ class ExternalEvaluatorDomain(DomainInterface):
             total=total,
             correct=correct_count,
             results=results,
-            metadata={"fresh_count": fresh_count, "cached_count": cached_count},
+            metadata={
+                "fresh_count": fresh_count,
+                "cached_count": cached_count,
+                "phase2_cost": total_phase2_cost,
+            },
         )
 
     def load_agent_results(
