@@ -171,10 +171,12 @@ def main():
     logger.info(f"Test set accuracy: {test_accuracy:.1f}% ({sum(scores):.0f}/{len(scores)})")
 
     # Write results
+    test_eval_cost = getattr(test_evaluator, 'total_eval_cost', 0.0)
     test_results = {
         "test_accuracy": test_accuracy,
         "test_total": len(scores),
         "test_correct": sum(scores),
+        "test_eval_cost_usd": test_eval_cost,
         "agent_name": agent_name,
         "agent_dir": str(agent_dir),
         "task": task.name,

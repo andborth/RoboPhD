@@ -353,10 +353,12 @@ def main():
         test_accuracy = sum(scores) / len(scores) * 100 if scores else 0.0
         logger.info(f"Test set accuracy: {test_accuracy:.1f}% ({sum(scores):.0f}/{len(scores)})")
 
+        test_eval_cost = getattr(test_evaluator, 'total_eval_cost', 0.0)
         test_results = {
             "test_accuracy": test_accuracy,
             "test_total": len(scores),
             "test_correct": sum(scores),
+            "test_eval_cost_usd": test_eval_cost,
         }
         with open(args.output_dir / "test_results.json", "w") as f:
             json.dump(test_results, f, indent=2)
