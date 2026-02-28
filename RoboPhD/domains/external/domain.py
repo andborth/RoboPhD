@@ -242,7 +242,7 @@ class ExternalEvaluatorDomain(DomainInterface):
             return EvaluationResult(
                 accuracy=accuracy, total=total, correct=correct_count,
                 results=results,
-                metadata={"fresh_count": 0, "cached_count": cached_count},
+                metadata={"fresh_count": 0, "cached_count": cached_count, "phase2_cost": 0.0},
             )
 
         # --- Evaluate fresh problems ---
