@@ -103,7 +103,7 @@ def main():
     )
 
     parser.add_argument(
-        "--test-repeats", type=int, default=5, help="Number of test repetitions (default: 5)"
+        "--test-repeats", type=int, default=5, help="Number of test repetitions (default: 5, min: 1)",
     )
     parser.add_argument(
         "--task-config", type=str, default=None, help="JSON string or file for task config overrides"
@@ -112,6 +112,9 @@ def main():
         "--output", type=Path, default=None, help="Output path for test_results.json"
     )
     args = parser.parse_args()
+
+    if args.test_repeats < 1:
+        parser.error("--test-repeats must be at least 1")
 
     # Resolve agent
     if args.run_dir:
