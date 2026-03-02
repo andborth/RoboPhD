@@ -713,14 +713,14 @@ Include:
 
 Implement the plan from your reasoning.md:
 
-1. **New Evolution Strategies** (if proposed): Create strategy packages in:
+1. **New Evolution Strategies** (as directed by the strategy above): Create strategy packages in:
    `new_strategies/strategy_name/`
    - Put ALL new strategies in the `new_strategies/` directory
    - Each subdirectory under `new_strategies/` represents one strategy
    - Each strategy needs: `strategy.md` with YAML frontmatter (name, description fields)
    - Optional: `strategy_tools/` directory with Python/shell scripts for complex workflows
    - Review `../../evolution_strategies/` for examples and patterns (especially research_driven* for strategy_tools usage)
-   - You can create 0, 1, or multiple strategies
+   - The meta-evolution strategy above specifies how many strategies to create
 
 2. **Configuration Changes** (required): Create:
    `meta_config_schedule.json`
