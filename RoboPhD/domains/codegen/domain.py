@@ -262,7 +262,6 @@ class CodeGenDomain(DomainInterface):
 ../../iteration_XXX/
   agent_<AGENT_NAME>/
     evaluation.json                ← Summary metrics for all problems
-    report.md                      ← Human-readable evaluation report
     problems/
       <problem_id>/
         solution.py                ← Original code (v1)
@@ -274,12 +273,12 @@ class CodeGenDomain(DomainInterface):
         acceptance.md              ← Coder's explanation of changes (if revised)
         result.json                ← Per-problem evaluation result
 
-Agent source code (three-artifact packages):
+Agent source code:
   ../../agents/
     <agent_name>/
-      agent.md              ← Problem analysis agent definition
-      eval_instructions.md  ← Code generation instructions
-      tools/                ← Analysis scripts (optional)
+      eval_instructions.md  ← Code review instructions
+      tools/
+        problem_analyzer.py ← Analysis tool
 ```'''
 
     def load_agent_results(self, agent_dir: Path, contexts: List[str]) -> Dict[str, Any]:

@@ -896,10 +896,6 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
 
         logger.info(f"Overall accuracy: {overall_accuracy:.1f}% ({total_correct}/{total_questions})")
 
-        # Generate standard evaluation report inside agent directory
-        report_path = new_agent_dir / "agent_evaluation_report.md"
-        self._generate_evaluation_report(results, overall_accuracy, report_path)
-
         # Generate comparison report (pass domain for domain-agnostic loading)
         comparison_path: Optional[Path] = None
 
@@ -937,106 +933,6 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         self._save_snapshot(round_num=round_num)
 
         logger.info(f"✓ Round {round_num} complete")
-
-    def _generate_evaluation_report(
-        self,
-        results: Dict[str, Dict],
-        overall_accuracy: float,
-        output_path: Path
-    ):
-        """
-        Generate standard evaluation report.
-
-        Args:
-            results: Dictionary mapping db_name -> results dict
-            overall_accuracy: Overall accuracy percentage
-            output_path: Where to save the report
-        """
-        # Use domain-specific terminology
-        context_label = self.domain.context_label if self.domain else "Database"
-
-        report_lines = [
-            "# Agent Evaluation Report",
-            "",
-            "## Overall Performance",
-            "",
-            f"**Overall Accuracy**: {overall_accuracy:.1f}%",
-            "",
-            f"## Performance by {context_label}",
-            "",
-            f"| {context_label} | Accuracy | Correct | Total |",
-            "|----------|----------|---------|-------|"
-        ]
-
-        # Sort contexts by name
-        errors = {}
-        tool_only_failures = {}
-        for context_name in sorted(results.keys()):
-            r = results[context_name]
-            if 'error' in r:
-                report_lines.append(f"| {context_name} | ERROR | - | - |")
-                errors[context_name] = r['error']
-            else:
-                report_lines.append(
-                    f"| {context_name} | {r['accuracy']:.1f}% | {r['correct']} | {r['total']} |"
-                )
-                # Track tool-only failures (tool failed but agent succeeded)
-                if 'tool_only_error' in r:
-                    tool_only_failures[context_name] = r['tool_only_error']
-
-        # Add errors section if there were any errors
-        if errors:
-            context_label_lower = context_label.lower() + "s"  # "databases" or "contexts"
-            report_lines.extend([
-                "",
-                "## Errors",
-                "",
-                f"The following {context_label_lower} encountered errors during testing:",
-                ""
-            ])
-            for context_name in sorted(errors.keys()):
-                report_lines.extend([
-                    f"### {context_name}",
-                    "```",
-                    errors[context_name],
-                    "```",
-                    ""
-                ])
-
-        # Add tool-only failures section if there were any
-        if tool_only_failures:
-            context_label_lower = context_label.lower() + "s"  # "databases" or "contexts"
-            report_lines.extend([
-                "",
-                "## Tool-Only Failures",
-                "",
-                f"The following {context_label_lower} had tool-only execution failures but succeeded with agent fallback:",
-                ""
-            ])
-            for context_name in sorted(tool_only_failures.keys()):
-                report_lines.extend([
-                    f"### {context_name}",
-                    "```",
-                    tool_only_failures[context_name],
-                    "```",
-                    ""
-                ])
-
-        # Use domain-specific paths in documentation
-        context_path_label = "database" if (self.domain is None or self.domain.__class__.__name__ == 'Text2SQLDomain') else "context"
-        report_lines.extend([
-            "",
-            "## Detailed Results",
-            "",
-            f"Review individual {context_path_label} results in:",
-            "```",
-            f"./<{context_path_label}>/results/evaluation.json",
-            f"./<{context_path_label}>/output/system_prompt.txt" if context_path_label == "database" else f"./<{context_path_label}>/output/",
-            "```"
-        ])
-
-        with open(output_path, 'w') as f:
-            f.write('\n'.join(report_lines))
 
     def _prompt_for_refinement(
         self,

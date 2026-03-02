@@ -475,7 +475,6 @@ class ExternalEvaluatorDomain(DomainInterface):
 ../../iteration_XXX/
   agent_<AGENT_NAME>/
     evaluation.json                ← Summary metrics for all examples
-    report.md                      ← Human-readable evaluation report
     problems/
       <problem_id>/               ← Per-problem directory (symlink if cached)
         result.json               ← Score and metadata for caching

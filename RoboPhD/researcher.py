@@ -2930,15 +2930,6 @@ class ParallelAgentResearcher:
 
             # Store results (already done in run_iteration before ELO calculation)
 
-            # Generate agent evaluation reports for this iteration
-            for agent_id in selected_agents:
-                self.report_generator._generate_agent_evaluation_report(
-                    agent_id,
-                    iteration,
-                    contexts,
-                    iteration_time / len(selected_agents)  # Estimate per-agent time
-                )
-
             # Generate interim report after this iteration
             self.report_generator.generate_interim_report(start_time, iteration)
 
