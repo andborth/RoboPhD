@@ -110,7 +110,7 @@ python RoboPhD/researcher.py \
 python RoboPhD/researcher.py \
   --resume output/robophd_20251031_043607 \
   --from-iteration 5 \
-  --modify-config '{"evolution_strategy": "refinement_tool_only"}'
+  --modify-config '{"evolution_strategy": "refinement"}'
 ```
 
 ## Configuration Options
@@ -146,7 +146,7 @@ python RoboPhD/researcher.py \
 
 ```json
 {
-  "evolution_strategy": "cross_pollination_tool_only",
+  "evolution_strategy": "cross_pollination",
   "new_agent_test_rounds": 2       // Deep focus refinement rounds
 }
 ```
@@ -161,7 +161,7 @@ python RoboPhD/researcher.py \
 ## Next Steps
 
 - Read [CLAUDE.md](CLAUDE.md) for comprehensive documentation
-- Explore evolution strategies in `RoboPhD/evolution_strategies/` (Text2SQL) or `RoboPhD/evolution_strategies_codegen/` (CodeGen)
+- Explore evolution strategies in `RoboPhD/evolution_strategies/`
 - Check out pre-trained agents in `RoboPhD/agents/` (Text2SQL) or `RoboPhD/codegen_agents/` (CodeGen)
 
 ## Getting Help

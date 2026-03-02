@@ -116,17 +116,11 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed setup instructions and [QUIC
 
 ## Evolution Strategies
 
-**Tool-only variants** (deterministic, recommended):
-- `cross_pollination_tool_only` - Combines patterns from multiple successful agents
-- `refinement_tool_only` - Iteratively improves a single agent
-- `research_driven_tool_only` - Incorporates insights from academic papers
+Built-in strategies:
+- `cross_pollination` - Combines patterns from multiple successful agents
+- `refinement` - Iteratively improves a single agent
 
-**Neutral variants** (allow LLM in analysis):
-- `cross_pollination_neutral`
-- `refinement_neutral`
-- `research_driven_neutral`
-
-Strategies are loaded from `RoboPhD/evolution_strategies/` (generic), `RoboPhD/evolution_strategies_text2sql/` (Text2SQL), or `RoboPhD/evolution_strategies_codegen/` (CodeGen).
+Strategies are loaded from `RoboPhD/evolution_strategies/` (all domains) or `RoboPhD/evolution_strategies_text2sql/` (Text2SQL legacy).
 
 ## Configuration
 

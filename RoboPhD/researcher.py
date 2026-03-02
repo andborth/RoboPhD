@@ -450,7 +450,6 @@ class ParallelAgentEvolver:
         variables = {
             'iteration': str(iteration),
             'previous_iteration': str(iteration - 1),
-            'error_analyzer_agent': 'none',  # Error analyzer functionality is stubbed
             'experiment_dir': str(self.experiment_dir),
         }
 
@@ -458,22 +457,6 @@ class ParallelAgentEvolver:
         result = text
         for var_name, var_value in variables.items():
             result = result.replace(f'{{{var_name}}}', var_value)
-
-        # Conditional processing for {if error_analyzer} ... {else} ... {endif}
-        import re
-
-        # IMPORTANT: Process pattern WITH {else} FIRST, otherwise the simpler pattern
-        # will greedily match and consume the {else} tag
-
-        # Process {if error_analyzer} ... {else} ... {endif}
-        # Since error analyzer is always 'none', always take the else path
-        pattern_else = r'\{if error_analyzer\}(.*?)\{else\}(.*?)\{endif\}'
-        result = re.sub(pattern_else, r'\2', result, flags=re.DOTALL)
-
-        # Process {if error_analyzer} ... {endif} (without {else})
-        # Since error analyzer is always 'none', always remove the if block
-        pattern = r'\{if error_analyzer\}(.*?)\{endif\}'
-        result = re.sub(pattern, '', result, flags=re.DOTALL)
 
         return result
 
@@ -1452,20 +1435,17 @@ class ParallelAgentResearcher:
         print(f"     First evolution call: {self.evolver.is_first_evolution_call}")
     
     def _is_valid_agent_dir(self, agent_dir: Path) -> bool:
-        """Check if a directory is a valid agent by looking for file_mapping files or agent.md."""
+        """Check if a directory is a valid agent by looking for file_mapping files."""
         file_mapping = getattr(self.domain, 'file_mapping', {}) if self.domain else {}
-        if file_mapping:
-            # All file_mapping files must exist
-            return all((agent_dir / rel_path).exists() for rel_path in file_mapping.values())
-        # Legacy fallback: agent.md
-        return (agent_dir / 'agent.md').exists()
+        if not file_mapping:
+            return False
+        return all((agent_dir / rel_path).exists() for rel_path in file_mapping.values())
 
     def load_initial_agents(self, agent_list: Optional[List[str]] = None):
         """
         Load initial agents from agents directory.
 
-        Discovers agents by checking for any file from file_mapping
-        (falls back to agent.md for legacy agents).
+        Discovers agents by checking for all files from file_mapping.
 
         Args:
             agent_list: Optional list of specific agent names to load

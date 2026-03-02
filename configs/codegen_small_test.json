@@ -7,20 +7,19 @@
   "meta_evolution_model": "haiku-4.5",
   "examples_per_iteration": 15,
   "agents_directory": "RoboPhD/codegen_agents",
-  "strategies_directory": "RoboPhD/evolution_strategies_codegen",
   "initial_agents": [
     "naive_critic"
   ],
   "initial_strategies": [
-    "cross_pollination_tool_only",
-    "refinement_tool_only"
+    "cross_pollination",
+    "refinement"
   ],
   "config_schedule": {
     "2": {
-      "evolution_strategy": "refinement_tool_only"
+      "evolution_strategy": "refinement"
     },
     "3": {
-      "evolution_strategy": "cross_pollination_tool_only",
+      "evolution_strategy": "cross_pollination",
       "meta_evolution_strategy": "train_a_winner"
     },
     "4": {

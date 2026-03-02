@@ -223,7 +223,7 @@ class CodeGenDomain(DomainInterface):
     @property
     def evolution_strategies_dir(self) -> str:
         """Directory name for CodeGen evolution strategies."""
-        return "evolution_strategies_codegen"
+        return "evolution_strategies"
 
     @property
     def phase1_display_name(self) -> str:

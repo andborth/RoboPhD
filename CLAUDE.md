@@ -171,8 +171,7 @@ Conversion between agent directories and flat candidate dicts is handled by `can
 ### Evolution Strategies
 Evolution strategies are organized by domain:
 
-- `RoboPhD/evolution_strategies/` — **Generic** (used by domains like AIME): `cross_pollination`, `refinement`
-- `RoboPhD/evolution_strategies_codegen/` — **CodeGen**: `cross_pollination_tool_only`, `refinement_tool_only`
+- `RoboPhD/evolution_strategies/` — `cross_pollination`, `refinement` (used by all domains)
 
 **Note**: Meta-evolution can generate additional strategies beyond these built-in options.
 
@@ -190,10 +189,10 @@ Evolution strategies can be controlled per-iteration using the `config_schedule`
 ```bash
 python scripts/run_robophd.py --task codegen --num-iterations 10 \
   --engine-config '{
-    "evolution_strategy": "cross_pollination_tool_only",
+    "evolution_strategy": "cross_pollination",
     "config_schedule": {
       "3": {"evolution_strategy": "none"},
-      "5": {"evolution_strategy": "refinement_tool_only"},
+      "5": {"evolution_strategy": "refinement"},
       "7": {"evolution_strategy": "challenger"}
     }
   }'
@@ -207,8 +206,8 @@ python scripts/run_robophd.py --task codegen --num-iterations 10 \
   --engine-config '{
     "use_weighted_random": true,
     "weighted_random_configs": [
-      [{"evolution_strategy": "cross_pollination_tool_only"}, 50],
-      [{"evolution_strategy": "refinement_tool_only"}, 30],
+      [{"evolution_strategy": "cross_pollination"}, 50],
+      [{"evolution_strategy": "refinement"}, 30],
       [{"evolution_strategy": "none"}, 20]
     ]
   }'

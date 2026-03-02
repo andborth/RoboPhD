@@ -96,9 +96,8 @@ RoboPhD/
 ├── RoboPhD/                    # Core code
 │   ├── agents/                 # Text2SQL agents
 │   ├── codegen_agents/         # CodeGen agents
-│   ├── evolution_strategies/          # Generic evolution strategies
-│   ├── evolution_strategies_text2sql/ # Text2SQL evolution strategies
-│   ├── evolution_strategies_codegen/  # CodeGen evolution strategies
+│   ├── evolution_strategies/          # Evolution strategies (all domains)
+│   ├── evolution_strategies_text2sql/ # Text2SQL evolution strategies (legacy)
 │   └── ...
 ├── benchmark_resources/
 │   └── datasets/

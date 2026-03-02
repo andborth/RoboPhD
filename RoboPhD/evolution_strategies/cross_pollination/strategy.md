@@ -52,11 +52,8 @@ The following should also be included in your reasoning:
 - Identification of strengths and weaknesses
 
 #### Error Analysis
-{if error_analyzer}- Summary of key findings from error_analysis_report.md
-- How analyzer findings influenced your design decisions
-{else}- Analysis of error patterns from available analysis artifacts
+- Analysis of error patterns from available analysis artifacts
 - How your analysis of error patterns influenced your design decisions
-{endif}
 
 ### 2. The artifacts listed in OUTPUT REQUIREMENTS
 Create the artifacts specified in the evolution prompt above, combining the best patterns from multiple agents. Focus on:
@@ -64,11 +61,6 @@ Create the artifacts specified in the evolution prompt above, combining the best
 - Combining complementary approaches
 - Unifying successful techniques
 - Integrating proven strategies
-
-### 3. tools/ (if applicable)
-If the task benefits from analysis tools, create Python (.py) or shell (.sh) scripts:
-- Incorporate proven techniques from top-performing agents' tools
-- Add error handling with meaningful exit codes
 
 ## Success Metrics
 

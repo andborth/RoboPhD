@@ -104,7 +104,7 @@ You have full read access to:
 
 1. **reasoning.md**: Planning document written before agent creation. Contains error analysis, strategic decisions, and rationale for the approach.
 
-2. **Agent artifacts** (agent.md, eval_instructions.md, tools/): The three-artifact agent package, created based on the reasoning.
+2. **Agent artifacts** (per the task's file_mapping): The agent files created based on the reasoning.
 
 3. **evolution_reflection.md**: Written after the agent is created and tested in a deep focus round (tested against prior agents on a set of questions). Contains self-assessment, what worked, what was challenging, and suggestions for improvement. **Start here** — it's the most informative single document.
 

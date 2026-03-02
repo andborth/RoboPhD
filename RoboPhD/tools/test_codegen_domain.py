@@ -127,7 +127,7 @@ def test_properties(domain):
     props = [
         ('phase1_input_name', 'problem context'),
         ('solution_name', 'code'),
-        ('evolution_strategies_dir', 'evolution_strategies_codegen'),
+        ('evolution_strategies_dir', 'evolution_strategies'),
         ('context_label', 'Problem'),
         ('sampling_style', 'flat'),
     ]

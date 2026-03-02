@@ -226,12 +226,10 @@ class DomainInterface(ABC):
     @abstractmethod
     def evolution_strategies_dir(self) -> str:
         """
-        Directory name for domain-specific evolution strategies.
+        Directory name for evolution strategies.
 
-        Each domain has its own strategies that are evolved by meta-evolution.
-        This returns the directory name (not full path) relative to RoboPhD/:
-        - Text2SQL: "evolution_strategies"
-        - CodeGen: "evolution_strategies_codegen"
+        Returns the directory name (not full path) relative to RoboPhD/.
+        All domains use "evolution_strategies".
 
         The full path is constructed as: RoboPhD/{evolution_strategies_dir}/
         """
