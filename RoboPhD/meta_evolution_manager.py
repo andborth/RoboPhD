@@ -665,8 +665,7 @@ Each strategy is a package in `evolution_strategies/strategy_name/`:
 
 **Optional but Powerful:**
 - `strategy_tools/` - Helper scripts for complex workflows
-  - **Example 1**: Research paper selection with state tracking (used by research_driven strategies)
-  - **Example 2**: Custom error analysis scripts that generate specialized reports
+  - **Example**: Custom error analysis scripts that generate specialized reports
   - Evolution AI calls these via bash commands in the strategy
   - Can maintain state across iterations via JSON files
 
@@ -719,7 +718,7 @@ Implement the plan from your reasoning.md:
    - Each subdirectory under `new_strategies/` represents one strategy
    - Each strategy needs: `strategy.md` with YAML frontmatter (name, description fields)
    - Optional: `strategy_tools/` directory with Python/shell scripts for complex workflows
-   - Review `../../evolution_strategies/` for examples and patterns (especially research_driven* for strategy_tools usage)
+   - Review `../../evolution_strategies/` for examples and patterns
    - The meta-evolution strategy above specifies how many strategies to create
 
 2. **Configuration Changes** (required): Create:
