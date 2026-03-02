@@ -201,7 +201,7 @@ def main():
                 detail = f"{t['iterations']} iterations"
             else:
                 detail = f"{t['candidates']} candidates"
-            print(f"  {rel:<50s}  {detail:<20s}  {fmt_size(t['size'])}")
+            print(f"  {str(rel):<50s}  {detail:<20s}  {fmt_size(t['size'])}")
 
         print(f"\nTotal: {fmt_size(total_size)}")
 
