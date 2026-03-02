@@ -166,8 +166,7 @@ def main():
     test_workers = max(1, (args.max_workers or os.cpu_count() or 4) // 2)
     logger.info(f"Test evaluation: {len(test_examples)} problems, {test_workers} workers")
 
-    scores = [None] * len(test_examples)
-    completed = 0
+    score_map: dict[int, float] = {}
     with ThreadPoolExecutor(max_workers=test_workers) as executor:
         futures = {
             executor.submit(test_evaluator, candidate, ex): i
@@ -176,14 +175,13 @@ def main():
         for future in as_completed(futures):
             idx = futures[future]
             score, diag = future.result()
-            scores[idx] = score
-            completed += 1
-            if completed % 10 == 0:
-                done_scores = [s for s in scores if s is not None]
+            score_map[idx] = score
+            if len(score_map) % 10 == 0:
                 logger.info(
-                    f"Test progress: {completed}/{len(test_examples)}, "
-                    f"running accuracy: {sum(done_scores)/len(done_scores)*100:.1f}%"
+                    f"Test progress: {len(score_map)}/{len(test_examples)}, "
+                    f"running accuracy: {sum(score_map.values())/len(score_map)*100:.1f}%"
                 )
+    scores = [score_map[i] for i in range(len(test_examples))]
 
     test_accuracy = sum(scores) / len(scores) * 100 if scores else 0.0
     logger.info(f"Test set accuracy: {test_accuracy:.1f}% ({sum(scores):.0f}/{len(scores)})")
