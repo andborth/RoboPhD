@@ -43,6 +43,13 @@ def make_aime_task() -> TaskDefinition:
         dataset_builder=_dataset_builder,
         file_mapping=AIME_FILE_MAPPING,
         default_seed_agent="RoboPhD/aime_agents/baseline",
+        diagnostic_files={
+            "problem.md": "Problem statement",
+            "response.md": "Model's full response",
+            "expected_answer.md": "Ground-truth answer",
+            "reference_solution.md": "Reference solution (when available)",
+            "system_prompt.md": "System prompt sent to the solver",
+        },
         config_defaults={
             "solver_model": "gpt-4.1-mini",
             "aime_split": "train",

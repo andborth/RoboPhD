@@ -294,6 +294,7 @@ def main():
         "task_description": task.description,
         "task_background": task.background,
         "task_name": task.name,
+        "diagnostic_files": task.diagnostic_files,
     }
 
     # --- 3. Split config for ConfigManager vs task-only ---

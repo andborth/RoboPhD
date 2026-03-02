@@ -29,6 +29,9 @@ class TaskDefinition:
         background: Rich domain documentation for evolution context (multi-paragraph).
             Written as CLAUDE.md into evolution working directories for Claude Code.
             Passed as `background` param to GEPA. Empty string means no background.
+        diagnostic_files: Per-problem diagnostic files written by the evaluator.
+            Maps filename -> description (e.g. {"problem.md": "Problem statement"}).
+            Used in evolution prompts to tell the AI what files are available.
         config_defaults: Merged into config for both engines (lowest priority).
     """
 
@@ -40,4 +43,5 @@ class TaskDefinition:
     default_seed_agent: str
     objective: str = ""
     background: str = ""
+    diagnostic_files: Dict[str, str] = field(default_factory=dict)
     config_defaults: Dict[str, Any] = field(default_factory=dict)

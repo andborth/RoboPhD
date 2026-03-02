@@ -471,6 +471,16 @@ class ExternalEvaluatorDomain(DomainInterface):
             file_lines.append(f"      {path:<30s} ← {key}")
         file_listing = "\n".join(file_lines)
 
+        # Build diagnostic file listing
+        diagnostic_files = self.config.get("diagnostic_files", {})
+        if diagnostic_files:
+            diag_lines = []
+            for fname, desc in diagnostic_files.items():
+                diag_lines.append(f"        {fname:<30s} ← {desc}")
+            diag_listing = "\n".join(diag_lines)
+        else:
+            diag_listing = "        {key}.md                 ← Diagnostics from evaluator"
+
         return f"""```
 ../../iteration_XXX/
   agent_<AGENT_NAME>/
@@ -478,7 +488,7 @@ class ExternalEvaluatorDomain(DomainInterface):
     problems/
       <problem_id>/               ← Per-problem directory (symlink if cached)
         result.json               ← Score and metadata for caching
-        {{key}}.md                 ← Diagnostics from evaluator (problem text, model response, etc.)
+{diag_listing}
 
 Agent source code:
   ../../agents/

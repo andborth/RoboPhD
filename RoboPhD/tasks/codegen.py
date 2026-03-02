@@ -156,6 +156,14 @@ def make_codegen_task() -> TaskDefinition:
             "The tool_code performs static analysis before the critic reviews the code."
         ),
         background=_CODEGEN_BACKGROUND,
+        diagnostic_files={
+            "problem.md": "Problem statement with examples",
+            "solution.py": "Initial code solution (v1)",
+            "feedback.md": "Critic's verdict (CORRECT/INCORRECT) and feedback",
+            "solution_v2.py": "Revised code after critic feedback (or symlink to v1 if CORRECT)",
+            "acceptance.md": "Coder's explanation of changes",
+            "tool_output/analysis.txt": "Tool-generated static analysis",
+        },
         config_defaults={
             "coder_model": "haiku-4.5",
             "critic_model": "haiku-4.5",

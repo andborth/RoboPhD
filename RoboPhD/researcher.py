@@ -660,10 +660,6 @@ class ParallelAgentEvolver:
 
             lines.append("")
 
-        lines.append("### Key Insights for Analysis")
-        lines.append("- Each problem directory contains readable artifacts: `problem.md`, `response.md`, `result.json`, and domain-specific files (e.g., `feedback.md`, `solution.py`)")
-        lines.append("- Read these files to understand failure patterns before designing improvements")
-
         return "\n".join(lines)
     
     def _format_agent_pool_summary(self, agent_pool: Dict, performance_records: Dict) -> str:
