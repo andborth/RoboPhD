@@ -105,6 +105,7 @@ class DeepFocusEvolutionManager:
         self.config = config or {}
         self._file_mapping = getattr(domain, 'file_mapping', {}) if domain else {}
         self._task_objective = getattr(domain, 'task_objective', '') if domain else ''
+        self._task_background = getattr(domain, 'task_background', '') if domain else ''
 
         # Set during evolve_agent() call
         self.working_dir: Optional[Path] = None
@@ -190,6 +191,15 @@ class DeepFocusEvolutionManager:
         evolution_prompt_file = working_dir / "evolution_prompt.md"
         evolution_prompt_file.write_text(evolution_prompt)
         logger.info(f"Evolution prompt saved to: {evolution_prompt_file}")
+
+        # Write CLAUDE.md with domain background to evolution_output/.
+        # Claude Code traverses up to find it, so all iteration subdirs inherit it.
+        if self._task_background:
+            evolution_output_dir = self.experiment_dir / "evolution_output"
+            claude_md_path = evolution_output_dir / "CLAUDE.md"
+            if not claude_md_path.exists():
+                claude_md_path.write_text(f"# Domain Background\n\n{self._task_background}")
+                logger.info(f"Domain background written to: {claude_md_path}")
 
         # Create symlink to strategy tools for state persistence
         # This allows research-driven strategies to maintain state (e.g., papers_pool.json)

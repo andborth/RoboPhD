@@ -292,6 +292,7 @@ def main():
         "file_mapping": task.file_mapping,
         "task_objective": task.objective,
         "task_description": task.description,
+        "task_background": task.background,
         "task_name": task.name,
     }
 

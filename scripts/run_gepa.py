@@ -22,6 +22,7 @@ Config merge order: task defaults -> --task-config -> --engine-config
 """
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -264,7 +265,7 @@ def main():
         dataset=trainset,
         valset=valset,
         objective=task.objective,
-        background=task.description,
+        background=task.background,
         config=gepa_config,
     )
 
@@ -302,6 +303,9 @@ def main():
 
     summary = {
         "task": task.name,
+        "objective": task.objective,
+        "background": (task.background[:500] + "...") if len(task.background) > 500 else task.background,
+        "background_sha256": hashlib.sha256(task.background.encode()).hexdigest()[:16] if task.background else None,
         "seed_agent": str(seed_agent),
         "evaluation_budget": evaluation_budget,
         "val_ratio": val_ratio if val_size is None else None,

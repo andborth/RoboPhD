@@ -456,6 +456,10 @@ class ExternalEvaluatorDomain(DomainInterface):
         return self.config.get("task_objective", "")
 
     @property
+    def task_background(self) -> str:
+        return self.config.get("task_background", "")
+
+    @property
     def task_name(self) -> str:
         return self.config.get("task_name", "external")
 

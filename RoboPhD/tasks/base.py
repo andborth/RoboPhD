@@ -25,7 +25,10 @@ class TaskDefinition:
         file_mapping: Candidate key -> agent file path.
             Maps flat candidate dict keys to relative paths inside agent directories.
         default_seed_agent: Path from project root to the default seed agent directory.
-        objective: Text describing what GEPA should optimize for.
+        objective: Concise optimization goal (1-2 sentences).
+        background: Rich domain documentation for evolution context (multi-paragraph).
+            Written as CLAUDE.md into evolution working directories for Claude Code.
+            Passed as `background` param to GEPA. Empty string means no background.
         config_defaults: Merged into config for both engines (lowest priority).
     """
 
@@ -35,5 +38,6 @@ class TaskDefinition:
     dataset_builder: Callable[..., List[Dict]]
     file_mapping: Dict[str, str]
     default_seed_agent: str
-    objective: str
+    objective: str = ""
+    background: str = ""
     config_defaults: Dict[str, Any] = field(default_factory=dict)

@@ -46,6 +46,7 @@ class MetaEvolutionManager:
         self.config_manager = config_manager
         self.domain_name = domain_name
         self._domain = domain
+        self._task_background = getattr(domain, 'task_background', '') if domain else ''
         self.strategies_dir = Path("RoboPhD/meta_evolution_strategies")  # Source directory
         self.output_dir = experiment_dir / "meta_evolution_output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -291,41 +292,6 @@ class MetaEvolutionManager:
                 content = parts[2]  # Instructions without frontmatter
 
         return content
-
-    def _load_domain_header(self) -> str:
-        """
-        Load domain header for injection into meta-evolution prompt.
-
-        Tries the header file first, then falls back to deriving a header
-        from the domain's task_description and task_objective properties.
-
-        Returns:
-            Domain header text
-
-        Raises:
-            ValueError: If no header file and no domain metadata available
-        """
-        header_path = self.strategies_dir / "domain_headers" / f"{self.domain_name}.md"
-
-        if header_path.exists():
-            return header_path.read_text().strip()
-
-        # Derive from task metadata (background + objective)
-        if self._domain is not None:
-            description = getattr(self._domain, 'task_description', '') or ''
-            objective = getattr(self._domain, 'task_objective', '') or ''
-            if description or objective:
-                lines = [f"## Domain: {self.domain_name}"]
-                if description:
-                    lines.append(f"\n{description}")
-                if objective:
-                    lines.append(f"\n**Objective**: {objective}")
-                return "\n".join(lines)
-
-        raise ValueError(
-            f"Domain header for '{self.domain_name}' not found at {header_path} "
-            f"and no domain metadata available to derive one."
-        )
 
     def _validate_strategy_package(self, strategy_dir: Path) -> List[str]:
         """
@@ -666,11 +632,15 @@ Remember:
             budget_info
         )
 
-        domain_header = self._load_domain_header()
+        # Write CLAUDE.md with domain background to parent (meta_evolution_output/).
+        # Claude Code traverses up to find it, so all iteration subdirs inherit it.
+        if self._task_background:
+            claude_md_path = self.output_dir / "CLAUDE.md"
+            if not claude_md_path.exists():
+                claude_md_path.write_text(f"# Domain Background\n\n{self._task_background}")
+                logger.info(f"Domain background written to: {claude_md_path}")
 
         prompt = f"""
-{domain_header}
-
 {strategy_with_budget}
 
 ## Current State (Iteration {iteration})

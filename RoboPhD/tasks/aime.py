@@ -43,11 +43,6 @@ def make_aime_task() -> TaskDefinition:
         dataset_builder=_dataset_builder,
         file_mapping=AIME_FILE_MAPPING,
         default_seed_agent="RoboPhD/aime_agents/baseline",
-        objective=(
-            "Optimize the system prompt to maximize accuracy on AIME math competition problems. "
-            "The prompt should guide the model to break down problems systematically, show clear "
-            "reasoning, and provide the final answer as a single integer on its own line."
-        ),
         config_defaults={
             "solver_model": "gpt-4.1-mini",
             "aime_split": "train",
