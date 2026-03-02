@@ -127,18 +127,14 @@ Strategies are loaded from `RoboPhD/evolution_strategies/` (all domains) or `Rob
 Use production configs for best results:
 
 ```bash
-# Text2SQL: Primary production config (Opus evolution, Haiku eval)
-python RoboPhD/researcher.py --num-iterations 20 \
-  --config configs/primary_production.json
-
-# Text2SQL: Experimental config with research-driven evolution and meta-evolution
-python RoboPhD/researcher.py --num-iterations 30 \
-  --config configs/experimental_using_research_driven_and_meta_evolution.json
-
 # CodeGen: Evolution with meta-evolution
-python RoboPhD/researcher.py --num-iterations 15 \
-  --config configs/codegen_with_simple_meta_evolution.json
+python scripts/run_robophd.py --task codegen --num-iterations 15 \
+  --engine-config configs/codegen_with_meta_evolution.json
 ```
+
+<!-- TODO: Clean up Text2SQL references in README, QUICKSTART, and docs/claude/text2sql.md
+     once Text2SQL is migrated to the external domain / task registry architecture.
+     Legacy Text2SQL configs are in configs/deprecated/. -->
 
 ## Documentation
 
