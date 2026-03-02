@@ -171,7 +171,7 @@ Conversion between agent directories and flat candidate dicts is handled by `can
 ### Evolution Strategies
 Evolution strategies are organized by domain:
 
-- `RoboPhD/evolution_strategies/` — `cross_pollination`, `refinement` (used by all domains)
+- `RoboPhD/evolution_strategies/` — `cross_pollination`, `refinement`, `use_your_judgment` (used by all domains)
 
 **Note**: Meta-evolution can generate additional strategies beyond these built-in options.
 
