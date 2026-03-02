@@ -13,6 +13,7 @@ Architecture:
 
 import json
 import logging
+import os
 import subprocess
 import uuid
 from pathlib import Path
@@ -139,7 +140,7 @@ class MetaEvolutionManager:
             if not reasoning_path.exists():
                 raise RuntimeError("Planning failed to create reasoning.md even after correction attempt")
 
-        logger.info(f"✓ reasoning.md created ({reasoning_path.stat().st_size} bytes)")
+        logger.info(f"✓ reasoning.md created ({reasoning_path.stat().st_size} bytes): {os.path.relpath(reasoning_path)}")
 
         # PHASE 3: Validation and installation
         logger.info("✅ Phase 3: Validating and installing outputs...")
@@ -1446,7 +1447,7 @@ After saving the reflection, respond with: "REFLECTION COMPLETE"
 
             reflection_file = working_dir / "meta_evolution_reflection.md"
             if reflection_file.exists():
-                logger.info(f"✓ Meta-evolution reflection saved: {reflection_file.name}")
+                logger.info(f"✓ Meta-evolution reflection saved: {os.path.relpath(reflection_file)}")
             else:
                 logger.warning("Reflection completed but meta_evolution_reflection.md not found")
 
@@ -1477,7 +1478,7 @@ After saving the reflection, respond with: "REFLECTION COMPLETE"
 
             summary_path = summarize_transcript(chat_file, working_dir / "session_summary.md")
             summary_size = summary_path.stat().st_size
-            logger.info(f"Saved session summary: {summary_path.name} ({summary_size/1024:.1f} KB)")
+            logger.info(f"Saved session summary: {os.path.relpath(summary_path)} ({summary_size/1024:.1f} KB)")
 
         except Exception as e:
             logger.warning(f"Failed to save session summary: {e}")
