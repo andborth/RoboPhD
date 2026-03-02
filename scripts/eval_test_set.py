@@ -22,7 +22,9 @@ Usage:
 import argparse
 import json
 import logging
+import os
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 # Add project root to path
@@ -111,6 +113,10 @@ def main():
     parser.add_argument(
         "--output", type=Path, default=None, help="Output path for test_results.json"
     )
+    parser.add_argument(
+        "--max-workers", type=int, default=None,
+        help="Max parallel workers for evaluation (default: cpu_count // 2)",
+    )
     args = parser.parse_args()
 
     if args.test_repeats < 1:
@@ -156,16 +162,28 @@ def main():
     test_config["work_dir"] = str(output_dir / "test_work")
     test_evaluator = task.evaluator_factory(test_config)
 
-    # Sequential eval loop (matching run_gepa.py)
-    scores = []
-    for i, example in enumerate(test_examples):
-        score, diag = test_evaluator(candidate, example)
-        scores.append(score)
-        if (i + 1) % 10 == 0:
-            logger.info(
-                f"Test progress: {i+1}/{len(test_examples)}, "
-                f"running accuracy: {sum(scores)/len(scores)*100:.1f}%"
-            )
+    # Parallel eval loop
+    test_workers = max(1, (args.max_workers or os.cpu_count() or 4) // 2)
+    logger.info(f"Test evaluation: {len(test_examples)} problems, {test_workers} workers")
+
+    scores = [None] * len(test_examples)
+    completed = 0
+    with ThreadPoolExecutor(max_workers=test_workers) as executor:
+        futures = {
+            executor.submit(test_evaluator, candidate, ex): i
+            for i, ex in enumerate(test_examples)
+        }
+        for future in as_completed(futures):
+            idx = futures[future]
+            score, diag = future.result()
+            scores[idx] = score
+            completed += 1
+            if completed % 10 == 0:
+                done_scores = [s for s in scores if s is not None]
+                logger.info(
+                    f"Test progress: {completed}/{len(test_examples)}, "
+                    f"running accuracy: {sum(done_scores)/len(done_scores)*100:.1f}%"
+                )
 
     test_accuracy = sum(scores) / len(scores) * 100 if scores else 0.0
     logger.info(f"Test set accuracy: {test_accuracy:.1f}% ({sum(scores):.0f}/{len(scores)})")
