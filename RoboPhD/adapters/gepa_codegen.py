@@ -413,6 +413,7 @@ class RoboPhDCodeGenEvaluator:
         # Collect diagnostics (ASI)
         diagnostics = self._collect_diagnostics(output_problem_dir)
         diagnostics["result_json"] = json.dumps(result, indent=2)
+        diagnostics["cost_usd"] = eval_cost
         diagnostics["question_id"] = question_id
         diagnostics["score"] = score
         diagnostics["v1_passed"] = result.get("v1_passed", False)
