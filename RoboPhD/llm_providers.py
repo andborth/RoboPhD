@@ -73,8 +73,8 @@ class LLMProvider(ABC):
     @abstractmethod
     def generate(
         self,
-        system_prompt: str,
-        user_prompt: str,
+        system_prompt: str = "",
+        user_prompt: str = "",
         temperature: float = 0,
         max_tokens: int = 1000,
         cached_blocks: Optional[List[str]] = None,
@@ -82,8 +82,9 @@ class LLMProvider(ABC):
         """Generate a response given system and user prompts.
 
         Args:
-            system_prompt: System/instruction prompt (used as single cached block
-                when cached_blocks is not provided).
+            system_prompt: System/instruction prompt. Used as a single cached
+                block when cached_blocks is not provided. Ignored when
+                cached_blocks is provided.
             user_prompt: User prompt (always uncached).
             temperature: Sampling temperature.
             max_tokens: Maximum tokens in response.
@@ -153,8 +154,8 @@ class AnthropicProvider(LLMProvider):
 
     def generate(
         self,
-        system_prompt: str,
-        user_prompt: str,
+        system_prompt: str = "",
+        user_prompt: str = "",
         temperature: float = 0,
         max_tokens: int = 1000,
         use_cache: bool = True,
@@ -164,7 +165,7 @@ class AnthropicProvider(LLMProvider):
         Generate response using Anthropic API with optional prompt caching.
 
         Args:
-            system_prompt: System/database analysis prompt (used when cached_blocks is None)
+            system_prompt: System prompt. Ignored when cached_blocks is provided.
             user_prompt: User question prompt (always uncached)
             temperature: Sampling temperature (default 0 for deterministic)
             max_tokens: Maximum tokens in response
@@ -264,8 +265,8 @@ class LiteLLMProvider(LLMProvider):
 
     def generate(
         self,
-        system_prompt: str,
-        user_prompt: str,
+        system_prompt: str = "",
+        user_prompt: str = "",
         temperature: float = 0,
         max_tokens: int = 1000,
         timeout: Optional[int] = None,
@@ -277,7 +278,7 @@ class LiteLLMProvider(LLMProvider):
         Uses standard OpenAI-compatible message format.
 
         Args:
-            system_prompt: System prompt (used when cached_blocks is None)
+            system_prompt: System prompt. Ignored when cached_blocks is provided.
             user_prompt: User prompt
             temperature: Sampling temperature (default 0)
             max_tokens: Max tokens in response (default 1000)

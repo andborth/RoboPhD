@@ -321,7 +321,6 @@ class Text2SQLEvaluator:
         user_prompt = "\n".join(user_parts)
 
         response = provider.generate(
-            system_prompt=eval_instructions,
             user_prompt=user_prompt,
             temperature=0.0,
             max_tokens=1000,
@@ -405,7 +404,6 @@ Respond with EXACTLY one of the following:
 Do not include explanations, prefixes, or combine both responses."""
 
         response = provider.generate(
-            system_prompt=eval_instructions,
             user_prompt=user_prompt,
             temperature=temperature,
             max_tokens=1000,
@@ -570,9 +568,9 @@ Do not include explanations, prefixes, or combine both responses."""
         }
 
         if comparison.get("predicted_error"):
-            diagnostics["error"] = comparison["predicted_error"]
+            diagnostics["predicted_error"] = comparison["predicted_error"]
         if comparison.get("ground_truth_error"):
-            diagnostics["error"] = f"Ground truth error: {comparison['ground_truth_error']}"
+            diagnostics["ground_truth_error"] = comparison["ground_truth_error"]
 
         # Write result.json if problem_dir provided (RoboPhD path)
         if problem_dir is not None:

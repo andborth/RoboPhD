@@ -95,19 +95,11 @@ def parse_args():
 
 
 # Keys consumed by evaluator/dataset factories only — never enter ConfigManager.
-# Universal: accepted by all tasks.  Domain: shown in --list-params only when
-# present in the task's config_defaults.
+# Accepted by all tasks regardless of domain.
 _UNIVERSAL_TASK_KEYS = {
     "seed_agent", "seed", "output_dir", "work_dir", "runs_dir",
     "val_ratio", "reflection_model",
 }
-_DOMAIN_TASK_KEYS = {
-    "coder_model", "coder_model_tag", "critic_model", "cache_dir",
-    "codegen_split", "codegen_timeout", "critic_timeout",
-    "dataset", "eval_model", "use_evidence", "verification_retries",
-    "temperature_strategy",
-}
-_TASK_ONLY_KEYS = _UNIVERSAL_TASK_KEYS | _DOMAIN_TASK_KEYS
 
 # Shared keys that need translation for ConfigManager.
 _SHARED_KEY_MAP = {
@@ -115,15 +107,20 @@ _SHARED_KEY_MAP = {
 }
 
 
-def split_config(full_config: dict) -> tuple[dict, dict]:
+def split_config(full_config: dict, task: "TaskDefinition") -> tuple[dict, dict]:
     """
     Split merged config into (researcher_config, task_config).
 
     researcher_config: keys that ConfigManager validates (engine + shared operational).
     task_config: keys consumed by evaluator/dataset factories only.
+
+    Valid task keys are derived from the task's config_defaults plus universal
+    keys shared by all tasks. Each task owns its own key validation — no
+    central domain key registry needed.
     """
     defaults = ConfigManager().get_defaults()
-    valid_keys = set(defaults) | _TASK_ONLY_KEYS | set(_SHARED_KEY_MAP)
+    task_only_keys = _UNIVERSAL_TASK_KEYS | set(task.config_defaults)
+    valid_keys = set(defaults) | task_only_keys | set(_SHARED_KEY_MAP)
 
     researcher_config = {}
     task_config = {}
@@ -134,7 +131,7 @@ def split_config(full_config: dict) -> tuple[dict, dict]:
                 f"Unknown config key: {key!r}\n"
                 f"Use --list-params to see valid parameters."
             )
-        if key in _TASK_ONLY_KEYS:
+        if key in task_only_keys:
             task_config[key] = value
         elif key in _SHARED_KEY_MAP:
             # Translate to RoboPhD equivalent
@@ -193,11 +190,7 @@ def _list_params(task):
     print_task_params(task)
 
     # Task-only keys (accepted in --config, not forwarded to engine)
-    # Show universal keys always; domain keys only when in this task's config_defaults.
-    relevant = sorted(
-        k for k in _TASK_ONLY_KEYS
-        if k in _UNIVERSAL_TASK_KEYS or k in task.config_defaults
-    )
+    relevant = sorted(_UNIVERSAL_TASK_KEYS | set(task.config_defaults))
     print("Task-only keys (--task-config, consumed by evaluator/dataset factories):")
     for k in relevant:
         default = task.config_defaults.get(k)
@@ -303,7 +296,7 @@ def main():
     # Only validate user-provided keys (task defaults are always valid)
     user_config = {**task_config, **engine_config}
     user_config["runs_directory"] = str(args.runs_dir)  # CLI arg always wins
-    researcher_config, _ = split_config(user_config)
+    researcher_config, _ = split_config(user_config, task)
 
     # Force external domain (ExternalEvaluatorDomain wraps the task's evaluator)
     researcher_config["domain"] = "external"
