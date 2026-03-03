@@ -291,28 +291,29 @@ class RoboPhDCodeGenEvaluator:
         providing the full input -> analysis -> decision -> outcome chain.
         """
         diagnostics = {}
+        # Keys are filenames — ExternalEvaluatorDomain writes them as-is
         files_to_collect = [
-            ("problem_statement", "problem.md"),
-            ("solution_v1", "solution.py"),
-            ("tool_analysis", "tool_output/analysis.txt"),
-            ("critic_feedback", "feedback.md"),
-            ("solution_v2", "solution_v2.py"),
-            ("acceptance", "acceptance.md"),
-            ("result", "result.json"),
+            "problem.md",
+            "solution.py",
+            "tool_output/analysis.txt",
+            "feedback.md",
+            "solution_v2.py",
+            "acceptance.md",
+            "result.json",
         ]
 
-        for key, filename in files_to_collect:
+        for filename in files_to_collect:
             filepath = problem_dir / filename
-            if filepath.exists() and not filepath.is_symlink():
-                try:
-                    diagnostics[key] = filepath.read_text()
-                except Exception:
-                    pass
-            elif filepath.is_symlink():
+            if filepath.is_symlink():
                 # Resolve symlinks and read the actual content so GEPA's
                 # reflection model sees the real data (not a placeholder).
                 try:
-                    diagnostics[key] = filepath.resolve().read_text()
+                    diagnostics[filename] = filepath.resolve().read_text()
+                except Exception:
+                    pass
+            elif filepath.exists():
+                try:
+                    diagnostics[filename] = filepath.read_text()
                 except Exception:
                     pass
 

@@ -550,14 +550,14 @@ Do not include explanations, prefixes, or combine both responses."""
             "db_id": db_id,
             "score": score,
             "cost_usd": cost,
-            # String diagnostics — ExternalEvaluatorDomain writes these as files
-            "question": f"# Question\n\n{question}\n\n## Evidence\n\n{evidence or '(none)'}",
-            "analysis": f"# Database Analysis ({db_id})\n\n{analysis}",
-            "predicted_sql": f"```sql\n{predicted_sql}\n```",
-            "expected_sql": f"```sql\n{ground_truth_sql}\n```",
-            "predicted_results": str(comparison.get("predicted_results", "(error)")),
-            "ground_truth_results": str(comparison.get("ground_truth_results", "(error)")),
-            "result_comparison": (
+            # String diagnostics — keys are filenames written by ExternalEvaluatorDomain
+            "question.md": f"# Question\n\n{question}\n\n## Evidence\n\n{evidence or '(none)'}",
+            "analysis.md": f"# Database Analysis ({db_id})\n\n{analysis}",
+            "predicted_sql.md": f"```sql\n{predicted_sql}\n```",
+            "expected_sql.md": f"```sql\n{ground_truth_sql}\n```",
+            "predicted_results.md": str(comparison.get("predicted_results", "(error)")),
+            "ground_truth_results.md": str(comparison.get("ground_truth_results", "(error)")),
+            "result_comparison.md": (
                 f"Match: {comparison['matches']}\n"
                 f"Status: {comparison['status']}\n"
                 f"Predicted truncated: {comparison.get('predicted_results_truncated', False)}\n"
@@ -568,9 +568,9 @@ Do not include explanations, prefixes, or combine both responses."""
         }
 
         if comparison.get("predicted_error"):
-            diagnostics["predicted_error"] = comparison["predicted_error"]
+            diagnostics["predicted_error.md"] = comparison["predicted_error"]
         if comparison.get("ground_truth_error"):
-            diagnostics["ground_truth_error"] = comparison["ground_truth_error"]
+            diagnostics["ground_truth_error.md"] = comparison["ground_truth_error"]
 
         # Write result.json if problem_dir provided (RoboPhD path)
         if problem_dir is not None:

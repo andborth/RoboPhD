@@ -186,16 +186,17 @@ class AIMEEvaluator:
         diagnostics = {
             "problem_id": example["problem_id"],
             "score": score,
-            "problem": problem_text,
-            "system_prompt": system_prompt,
-            "response": response,
-            "predicted_answer": predicted,
-            "expected_answer": example["answer"],
             "cost_usd": cost,
+            # String diagnostics — keys are filenames written by ExternalEvaluatorDomain
+            "problem.md": problem_text,
+            "system_prompt.md": system_prompt,
+            "response.md": response,
+            "predicted_answer": predicted,
+            "expected_answer.md": str(example["answer"]),
         }
 
         if "solution" in example and example["solution"]:
-            diagnostics["reference_solution"] = example["solution"]
+            diagnostics["reference_solution.md"] = example["solution"]
 
         # Write result.json if problem_dir provided (RoboPhD path)
         # String diagnostics are written as files by ExternalEvaluatorDomain

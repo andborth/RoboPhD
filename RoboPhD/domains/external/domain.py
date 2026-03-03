@@ -311,7 +311,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                     for key, val in diagnostics.items():
                         if not isinstance(val, str) or not val:
                             continue
-                        fname = key if "." in key else f"{key}.md"
+                        fname = key
                         out_path = problem_dir / fname
                         if not out_path.exists():
                             out_path.write_text(val)
