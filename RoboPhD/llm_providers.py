@@ -24,7 +24,7 @@ Usage:
 """
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, Dict, Any
+from typing import List, Optional, Tuple, Dict, Any
 import os
 import logging
 
@@ -76,9 +76,21 @@ class LLMProvider(ABC):
         system_prompt: str,
         user_prompt: str,
         temperature: float = 0,
-        max_tokens: int = 1000
+        max_tokens: int = 1000,
+        cached_blocks: Optional[List[str]] = None,
     ) -> LLMResponse:
-        """Generate a response given system and user prompts."""
+        """Generate a response given system and user prompts.
+
+        Args:
+            system_prompt: System/instruction prompt (used as single cached block
+                when cached_blocks is not provided).
+            user_prompt: User prompt (always uncached).
+            temperature: Sampling temperature.
+            max_tokens: Maximum tokens in response.
+            cached_blocks: Optional list of text blocks, each cached separately.
+                When provided, replaces system_prompt as the cached content.
+                Each element becomes a content block with cache_control.
+        """
         pass
 
     @property
@@ -145,20 +157,33 @@ class AnthropicProvider(LLMProvider):
         user_prompt: str,
         temperature: float = 0,
         max_tokens: int = 1000,
-        use_cache: bool = True
+        use_cache: bool = True,
+        cached_blocks: Optional[List[str]] = None,
     ) -> LLMResponse:
         """
-        Generate SQL using Anthropic API with optional prompt caching.
+        Generate response using Anthropic API with optional prompt caching.
 
         Args:
-            system_prompt: System/database analysis prompt
-            user_prompt: User question prompt
+            system_prompt: System/database analysis prompt (used when cached_blocks is None)
+            user_prompt: User question prompt (always uncached)
             temperature: Sampling temperature (default 0 for deterministic)
             max_tokens: Maximum tokens in response
             use_cache: Whether to use prompt caching (default True)
+            cached_blocks: Optional list of text blocks, each cached with a
+                separate breakpoint. When provided, replaces system_prompt.
+                Ordered by stability (most stable first) for optimal prefix hits.
         """
         # Build message content with optional caching
-        if use_cache:
+        if cached_blocks and use_cache:
+            content = []
+            for block_text in cached_blocks:
+                content.append({
+                    "type": "text",
+                    "text": block_text,
+                    "cache_control": {"type": "ephemeral"},
+                })
+            content.append({"type": "text", "text": user_prompt})
+        elif use_cache:
             content = [
                 {
                     "type": "text",
@@ -171,10 +196,9 @@ class AnthropicProvider(LLMProvider):
                 }
             ]
         else:
-            content = [
-                {"type": "text", "text": system_prompt},
-                {"type": "text", "text": user_prompt}
-            ]
+            blocks = cached_blocks if cached_blocks else [system_prompt]
+            content = [{"type": "text", "text": b} for b in blocks]
+            content.append({"type": "text", "text": user_prompt})
 
         response = self.client.messages.create(
             model=self._model_name,
@@ -244,7 +268,8 @@ class LiteLLMProvider(LLMProvider):
         user_prompt: str,
         temperature: float = 0,
         max_tokens: int = 1000,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
+        cached_blocks: Optional[List[str]] = None,
     ) -> LLMResponse:
         """
         Generate response using litellm.
@@ -252,16 +277,20 @@ class LiteLLMProvider(LLMProvider):
         Uses standard OpenAI-compatible message format.
 
         Args:
-            system_prompt: System prompt
+            system_prompt: System prompt (used when cached_blocks is None)
             user_prompt: User prompt
             temperature: Sampling temperature (default 0)
             max_tokens: Max tokens in response (default 1000)
             timeout: Per-call timeout in seconds (defaults to self.default_timeout)
+            cached_blocks: Optional list of text blocks. Concatenated into a
+                single system message (LiteLLM/OpenAI doesn't support
+                multi-breakpoint caching).
         """
         import litellm
 
+        system_content = "\n\n".join(cached_blocks) if cached_blocks else system_prompt
         messages = [
-            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": system_content},
             {"role": "user", "content": user_prompt}
         ]
 

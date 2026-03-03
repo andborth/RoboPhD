@@ -104,6 +104,8 @@ _UNIVERSAL_TASK_KEYS = {
 _DOMAIN_TASK_KEYS = {
     "coder_model", "coder_model_tag", "critic_model", "cache_dir",
     "codegen_split", "codegen_timeout", "critic_timeout",
+    "dataset", "eval_model", "use_evidence", "verification_retries",
+    "temperature_strategy",
 }
 _TASK_ONLY_KEYS = _UNIVERSAL_TASK_KEYS | _DOMAIN_TASK_KEYS
 

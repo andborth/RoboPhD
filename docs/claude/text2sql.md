@@ -120,17 +120,68 @@ tool_output_file: tool_output/analysis.txt
 - **`core.py`**: `SQLGenerator`, `Evaluator`, `DatabaseManager`
 - **`utilities/cached_sql_executor.py`**: SQL execution with caching
 
-### Migration Notes
+### Task Registry Integration
 
-To migrate Text2SQL to the current architecture:
+Text2SQL is registered in the task registry and works with both `run_robophd.py` and `run_gepa.py`:
 
-1. **Create `tasks/text2sql.py`** with a `TaskDefinition` containing:
-   - `evaluator_factory`: Wrap SQL generation + evaluation in a `(candidate, example) -> (score, diagnostics)` function
-   - `dataset_builder`: Load BIRD questions as flat example dicts
-   - `file_mapping`: Likely `{"agent_instructions": "agent.md", "eval_instructions": "eval_instructions.md", "tool_code": "tools/..."}` or similar
-2. **Wrap `AgentOrchestrator`** functionality inside the evaluator function
-3. **Register the task** so `run_robophd.py --task text2sql` and `run_gepa.py --task text2sql` work
-4. **Text2SQL evolution strategies** (`evolution_strategies_text2sql/`) would continue to work via the `evolution_strategies_directory` config
+```bash
+# List available tasks
+python scripts/run_robophd.py --task text2sql --list-params
+
+# Quick smoke test (2 iterations, 2 examples each)
+python scripts/run_robophd.py --task text2sql --num-iterations 2 \
+  --engine-config '{"examples_per_iteration": 2}'
+
+# Full evolution run
+python scripts/run_robophd.py --task text2sql --num-iterations 10
+
+# GEPA optimization
+python scripts/run_gepa.py --task text2sql \
+  --engine-config '{"evaluation_budget": 200, "val_ratio": 0.05}'
+
+# Custom eval model and dataset
+python scripts/run_robophd.py --task text2sql --num-iterations 10 \
+  --task-config '{"eval_model": "sonnet-4.5", "dataset": "dev"}'
+```
+
+#### Agent Artifacts (`file_mapping`)
+
+| Candidate Key | File Path | Description |
+|--------------|-----------|-------------|
+| `eval_instructions` | `eval_instructions.md` | System prompt for SQL generation LLM |
+| `database_analysis_code` | `tools/analyze_db.py` | Python script analyzing database.sqlite |
+| `verify_prompt` | `verify_prompt.md` | Evolvable verification prompt |
+
+#### Architecture
+
+```
+Phase 1 (Tool): analyze_db.py examines database.sqlite
+  -> Produces schema analysis text (cached per code+database)
+
+Phase 2 (LLM): eval_instructions.md + analysis + question
+  -> Generates initial SQL query
+
+Verification Loop (up to k retries):
+  Execute SQL -> Summarize results -> verify_prompt -> CORRECT or new SQL
+
+Scoring: set(predicted_results) == set(ground_truth_results)
+```
+
+Phase 1 results are cached on disk at `{output_dir}/cache/phase1_tool_analysis/` keyed by `hash(analyze_db.py)_{db_id}`, so identical tool code is never re-run against the same database.
+
+#### Config Defaults
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `dataset` | `train-filtered` | BIRD dataset split |
+| `eval_model` | `haiku-4.5` | Model for SQL generation + verification |
+| `use_evidence` | `true` | Include evidence hints in prompts |
+| `verification_retries` | `2` | Number of verify-and-improve cycles |
+| `temperature_strategy` | `progressive` | Temperature schedule: `[0.0, 0.2, 0.3]` |
+
+#### Legacy Architecture
+
+The original `Text2SQLDomain` class and `AgentOrchestrator` remain in the codebase but are not used by the task registry integration. The new architecture replaces `agent.md` (LLM-based Phase 1) with tool-only analysis via `analyze_db.py`
 
 ---
 

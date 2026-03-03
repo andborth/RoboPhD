@@ -35,6 +35,9 @@ def _ensure_builtins():
     from .aime import make_aime_task
     register_task(make_aime_task())
 
+    from .text2sql import make_text2sql_task
+    register_task(make_text2sql_task())
+
 
 def get_task(name: str) -> TaskDefinition:
     """Look up a task by name. Raises KeyError if not found."""

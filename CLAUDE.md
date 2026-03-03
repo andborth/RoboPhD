@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Available CLI Tools**: `jq` and `tree` are installed and available
 - **CodeGen domain**: See [docs/claude/codegen.md](docs/claude/codegen.md)
 - **GEPA integration**: See [docs/claude/gepa.md](docs/claude/gepa.md)
-- **Text2SQL domain (legacy, pending migration)**: See [docs/claude/text2sql.md](docs/claude/text2sql.md)
+- **Text2SQL domain**: See [docs/claude/text2sql.md](docs/claude/text2sql.md)
 
 ## Project Overview
 
@@ -16,11 +16,12 @@ RoboPhD is a multi-domain evolution system that implements a three-level AI hier
 **Active domains**:
 - **CodeGen**: Evolving critic agents for code review on LiveCodeBench
 - **AIME**: Evolving math reasoning prompts on AIME 2022-2024
+- **Text2SQL**: Evolving database analysis agents for BIRD benchmark SQL generation
 
 New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `TaskDefinition` with an evaluator function, dataset builder, and file mapping.
 
 **Paper**: [RoboPhD: Self-Improving Text-to-SQL Through Autonomous Agent Evolution](https://arxiv.org/abs/2601.01126)
-(Text2SQL achieved **73.67% accuracy** on BIRD benchmark test set. Not yet migrated to the current architecture.)
+(Text2SQL achieved **73.67% accuracy** on BIRD benchmark test set.)
 
 ## Domains
 
@@ -28,6 +29,7 @@ New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `
 |--------|-----------|-------------------------------|
 | CodeGen | LiveCodeBench | `eval_instructions.md` + `tools/problem_analyzer.py` |
 | AIME | AIME 2022-2024 | `system_prompt.md` |
+| Text2SQL | BIRD | `eval_instructions.md` + `tools/analyze_db.py` + `verify_prompt.md` |
 
 ## Key Commands
 
@@ -47,6 +49,9 @@ python scripts/run_robophd.py --task codegen --num-iterations 10
 
 # AIME evolution
 python scripts/run_robophd.py --task aime --num-iterations 10
+
+# Text2SQL evolution
+python scripts/run_robophd.py --task text2sql --num-iterations 10
 
 # Quick test
 python scripts/run_robophd.py --task codegen --num-iterations 2 \
@@ -163,6 +168,7 @@ Agents are directories containing text files declared by the task's `file_mappin
 |--------|---------------|------------|
 | CodeGen | `{"eval_instructions": "eval_instructions.md", "tool_code": "tools/problem_analyzer.py"}` | `RoboPhD/codegen_agents/naive_critic/` |
 | AIME | `{"system_prompt": "system_prompt.md"}` | `RoboPhD/aime_agents/baseline/` |
+| Text2SQL | `{"eval_instructions": "eval_instructions.md", "database_analysis_code": "tools/analyze_db.py", "verify_prompt": "verify_prompt.md"}` | `RoboPhD/text2sql_agents/naive/` |
 
 Conversion between agent directories and flat candidate dicts is handled by `candidate_utils.py` (`extract_candidate`, `materialize_candidate`).
 
@@ -256,6 +262,7 @@ Available meta-evolution strategies:
 - **`tasks/base.py`**: `TaskDefinition` dataclass (name, evaluator_factory, dataset_builder, file_mapping, objective)
 - **`tasks/codegen.py`**: CodeGen task — LiveCodeBench critic evolution
 - **`tasks/aime.py`**: AIME task — math reasoning prompt evolution
+- **`tasks/text2sql.py`**: Text2SQL task — BIRD benchmark SQL generation
 
 ### Core
 - **`researcher.py`**: Evolution loop orchestrator (called by `run_robophd.py`)
@@ -313,6 +320,7 @@ Available meta-evolution strategies:
 
 ### Domain-Specific Issues
 - **CodeGen**: See [docs/claude/codegen.md](docs/claude/codegen.md) for test execution issues
+- **Text2SQL**: See [docs/claude/text2sql.md](docs/claude/text2sql.md) for database-related issues
 
 ## License
 
