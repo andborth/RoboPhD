@@ -154,7 +154,7 @@ class Text2SQLEvaluator:
         dataset: str = "train-filtered",
         use_evidence: bool = True,
         verification_retries: int = 2,
-        temperature_strategy: str = "progressive",
+        temperature_strategy: str = "fixed",
         output_dir: Optional[str] = None,
         work_dir: Optional[Path] = None,
     ):

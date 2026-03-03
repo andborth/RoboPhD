@@ -41,7 +41,7 @@ class SQLGenerator:
                  use_evidence: bool = True,
                  sql_validation_timeout: int = 30,
                  verification_retries: int = 2,
-                 temperature_strategy: str = "progressive",
+                 temperature_strategy: str = "fixed",
                  debug_log_probability: float = 0.02,
                  logger: Optional[logging.Logger] = None,
                  api_key: str = None,
@@ -58,7 +58,7 @@ class SQLGenerator:
             use_evidence: Whether to include evidence in prompts (default True)
             sql_validation_timeout: Timeout in seconds for SQL validation (default 30)
             verification_retries: Number of verification attempts (default 2, 0 = current behavior)
-            temperature_strategy: Temperature strategy for verification retries (default: progressive)
+            temperature_strategy: Temperature strategy for verification retries (default: fixed)
             debug_log_probability: Probability (0.0-1.0) of logging API calls for debugging (default 0.02)
             logger: Logger instance (creates one if not provided)
             api_key: API key for Anthropic API

@@ -439,7 +439,7 @@ Agent source code (three-artifact packages):
         analysis_model = config.get('analysis_model', 'haiku-4.5')
         timeout = config.get('timeout', 1800)
         verification_retries = config.get('verification_retries', 2)
-        temperature_strategy = config.get('temperature_strategy', 'progressive')
+        temperature_strategy = config.get('temperature_strategy', 'fixed')
         debug_log_probability = config.get('debug_log_probability', 0.02)
         llm_call_timeout = config.get('llm_call_timeout', 120)
         agent_id = config.get('agent_id', 'agent')
@@ -724,7 +724,7 @@ Agent source code (three-artifact packages):
             use_evidence=kwargs.get('use_evidence', self.config.get('use_evidence', True)),
             sql_validation_timeout=kwargs.get('sql_validation_timeout', self.config.get('sql_validation_timeout', 30)),
             verification_retries=kwargs.get('verification_retries', self.config.get('verification_retries', 2)),
-            temperature_strategy=kwargs.get('temperature_strategy', self.config.get('temperature_strategy', 'progressive')),
+            temperature_strategy=kwargs.get('temperature_strategy', self.config.get('temperature_strategy', 'fixed')),
             debug_log_probability=kwargs.get('debug_log_probability', self.config.get('debug_log_probability', 0.02)),
             logger=self.logger,
             api_key=kwargs.get('api_key', self.config.get('api_key')),
@@ -847,7 +847,7 @@ Agent source code (three-artifact packages):
                 'agent_id': agent_id,
                 'cache_manager': config.get('cache_manager'),
                 'verification_retries': config.get('verification_retries', 2),
-                'temperature_strategy': config.get('temperature_strategy', 'progressive'),
+                'temperature_strategy': config.get('temperature_strategy', 'fixed'),
                 'debug_log_probability': config.get('debug_log_probability', 0.02),
                 'llm_call_timeout': config.get('llm_call_timeout', 120),
                 'api_key': config.get('api_key'),

@@ -97,7 +97,7 @@ class ConfigManager:
 
             # SQL generation
             "verification_retries": 2,
-            "temperature_strategy": "progressive",
+            "temperature_strategy": "fixed",
 
             # Performance
             "max_concurrent": None,  # None = Python default: min(32, cpu_count+4)

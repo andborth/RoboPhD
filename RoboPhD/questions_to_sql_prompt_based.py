@@ -54,7 +54,7 @@ except ImportError:
     )
 
 class PromptBasedSQLGenerator:
-    def __init__(self, prompt_path: str, model: str = DEFAULT_MODEL, api_key: Optional[str] = None, use_evidence: bool = True, db_path: Optional[str] = None, sql_validation_timeout: int = 30, verification_retries: int = 2, temperature_strategy: str = "progressive", debug_log_probability: float = 0.0, debug_log_dir: Optional[Path] = None, cache_manager: Optional[Phase2CacheManager] = None, llm_call_timeout: int = 120):
+    def __init__(self, prompt_path: str, model: str = DEFAULT_MODEL, api_key: Optional[str] = None, use_evidence: bool = True, db_path: Optional[str] = None, sql_validation_timeout: int = 30, verification_retries: int = 2, temperature_strategy: str = "fixed", debug_log_probability: float = 0.0, debug_log_dir: Optional[Path] = None, cache_manager: Optional[Phase2CacheManager] = None, llm_call_timeout: int = 120):
         """
         Initialize SQL generator with a pre-generated system prompt.
 
@@ -1147,8 +1147,8 @@ def main():
     parser.add_argument('--verification_retries', type=int, default=2,
                        help='Number of verification attempts (default: 2, 0 = current behavior)')
     parser.add_argument('--temperature_strategy', choices=['progressive', 'fixed', 'adaptive'],
-                       default='progressive',
-                       help='Temperature strategy for verification retries (default: progressive)')
+                       default='fixed',
+                       help='Temperature strategy for verification retries (default: fixed)')
     parser.add_argument('--debug-log-probability', type=float, default=0.02,
                        help='Probability (0.0-1.0) of logging API calls for debugging (default: 0.02)')
     parser.add_argument('--debug-log-dir', type=str,
