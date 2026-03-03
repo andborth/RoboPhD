@@ -1608,7 +1608,7 @@ class ParallelAgentResearcher:
         from datetime import datetime
 
         print(f"Agents: {', '.join(selected_agents)}")
-        print(f"{self.domain.context_label_plural.title()}: {', '.join(contexts)}")
+        print(f"{self.domain.context_label_plural.title()}: {', '.join(str(c) for c in contexts)}")
 
         # CRITICAL: Sample problems once per context for this iteration (sequential, before threading)
         # This ensures ALL agents test IDENTICAL problems (fair comparison + deterministic)
@@ -1834,7 +1834,7 @@ class ParallelAgentResearcher:
                 f"❌ FATAL: No agents completed testing in iteration {iteration}\n"
                 f"{'='*60}\n"
                 f"Agents attempted: {', '.join(selected_agents)}\n"
-                f"{self.domain.context_label_plural.title()} attempted: {', '.join(contexts)}\n"
+                f"{self.domain.context_label_plural.title()} attempted: {', '.join(str(c) for c in contexts)}\n"
             )
             raise RuntimeError(error_msg)
 
