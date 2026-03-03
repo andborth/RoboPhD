@@ -192,7 +192,7 @@ class AIMEEvaluator:
             "system_prompt.md": system_prompt,
             "response.md": response,
             "predicted_answer": predicted,
-            "expected_answer.md": str(example["answer"]),
+            "expected_answer": example["answer"],
         }
 
         if "solution" in example and example["solution"]:
