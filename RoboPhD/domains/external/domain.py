@@ -111,14 +111,13 @@ class ExternalEvaluatorDomain(DomainInterface):
         for example in self._dataset:
             # Try common ID fields (must be deterministic across processes —
             # hash() is randomized per PYTHONHASHSEED and breaks on --resume)
-            eid = (
-                example.get("question_id")
-                or example.get("problem_id")
-                or example.get("id")
-                or example.get("example_id")
-                or hashlib.sha256(json.dumps(example, sort_keys=True).encode()).hexdigest()[:12]
-            )
-            problems[eid] = [example]
+            for key in ("question_id", "problem_id", "id", "example_id"):
+                if key in example:
+                    eid = example[key]
+                    break
+            else:
+                eid = hashlib.sha256(json.dumps(example, sort_keys=True).encode()).hexdigest()[:12]
+            problems[str(eid)] = [example]
 
         self._problems_cache = problems
         return problems
@@ -270,12 +269,12 @@ class ExternalEvaluatorDomain(DomainInterface):
                     diagnostics = {"error": str(e)}
                     is_correct = False
 
-                eid = (
-                    example.get("question_id")
-                    or example.get("problem_id")
-                    or example.get("id")
-                    or problem_id
-                )
+                for key in ("question_id", "problem_id", "id", "example_id"):
+                    if key in example:
+                        eid = str(example[key])
+                        break
+                else:
+                    eid = problem_id
 
                 # Extract cost from diagnostics (e.g., AIME evaluator
                 # returns cost_usd from litellm.completion_cost)
