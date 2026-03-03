@@ -118,6 +118,7 @@ def make_text2sql_task() -> TaskDefinition:
             "predicted_results.md": "Result set from predicted SQL",
             "ground_truth_results.md": "Result set from ground truth SQL",
             "result_comparison.md": "Truncated/deduplicated flags and match status",
+            "verification_attempts.md": "Per-attempt SQL, results, and verifier decisions",
             "error.md": "SQL execution error (if any)",
         },
         config_defaults={

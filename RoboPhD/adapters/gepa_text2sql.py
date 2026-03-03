@@ -567,6 +567,17 @@ Do not include explanations, prefixes, or combine both responses."""
             ),
         }
 
+        rejected_attempts = [att for att in attempts if not att["is_correct"]]
+        if rejected_attempts:
+            parts = []
+            for i, att in enumerate(rejected_attempts, 1):
+                parts.append(
+                    f"## Rejected Attempt {i}\n\n"
+                    f"### SQL\n```sql\n{att['sql']}\n```\n\n"
+                    f"### Results\n{att['summary']}"
+                )
+            diagnostics["verification_attempts.md"] = "\n\n".join(parts)
+
         if comparison.get("predicted_error"):
             diagnostics["predicted_error.md"] = comparison["predicted_error"]
         if comparison.get("ground_truth_error"):
