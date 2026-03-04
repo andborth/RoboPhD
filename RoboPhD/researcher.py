@@ -5,7 +5,6 @@ This file contains the full researcher.py implementation for RoboPhD.
 Due to size constraints, this will replace the partial researcher.py file.
 """
 
-import argparse
 import json
 import logging
 import os
@@ -35,13 +34,9 @@ try:
         DEFAULT_MODEL,
         SUPPORTED_MODELS
     )
-    from .core import TestOutputGenerator, resolve_api_key
     from .domains.base import SampledProblems
     from .domains import get_domain
-    from .agent_orchestrator import AgentOrchestrator
     from .evolution import EvolutionStrategySelector
-    from .cache_manager import CacheManager
-    from .phase2_cache_manager import Phase2CacheManager
     from .config_manager import ConfigManager, ConfigSource
     from .report_generator import ReportGenerator
     from .deep_focus_evolution_manager import DeepFocusEvolutionManager
@@ -58,12 +53,8 @@ except ImportError:
         DEFAULT_MODEL,
         SUPPORTED_MODELS
     )
-    from RoboPhD.core import TestOutputGenerator, resolve_api_key
     from RoboPhD.domains import get_domain
-    from RoboPhD.agent_orchestrator import AgentOrchestrator
     from RoboPhD.evolution import EvolutionStrategySelector
-    from RoboPhD.cache_manager import CacheManager
-    from RoboPhD.phase2_cache_manager import Phase2CacheManager
     from RoboPhD.config_manager import ConfigManager, ConfigSource
     from RoboPhD.report_generator import ReportGenerator
     from RoboPhD.deep_focus_evolution_manager import DeepFocusEvolutionManager
@@ -711,7 +702,6 @@ class ParallelAgentResearcher:
                  resume_checkpoint: Optional[Dict] = None,
                  resume_experiment_dir: Optional[Path] = None,
                  dev_eval_mode: bool = False,
-                 test_eval_mode: bool = False,
                  custom_experiment_name: Optional[str] = None,
                  api_key: Optional[str] = None,
                  runtime_config: Optional[Dict] = None):
@@ -726,7 +716,6 @@ class ParallelAgentResearcher:
             resume_checkpoint: Checkpoint data if resuming
             resume_experiment_dir: Experiment directory if resuming
             dev_eval_mode: Whether running dev evaluation
-            test_eval_mode: Whether running test evaluation
             custom_experiment_name: Custom name for experiment
             api_key: API key for SQL generation
             runtime_config: Non-serializable domain config (e.g. evaluator_fn,
@@ -748,7 +737,7 @@ class ParallelAgentResearcher:
         config = config_manager.get_config(1)
 
         # Extract all parameters from config
-        self.domain_name = config.get("domain", "text2sql")
+        self.domain_name = config.get("domain", "external")
         self.dataset = config["dataset"]
         self.examples_per_iteration = config["examples_per_iteration"]
         self.problems_per_context = config["problems_per_context"]
@@ -835,8 +824,6 @@ class ParallelAgentResearcher:
             # Setup experiment directory
             if dev_eval_mode and custom_experiment_name:
                 self.experiment_dir = Path("robophd_evaluation") / custom_experiment_name
-            elif test_eval_mode and custom_experiment_name:
-                self.experiment_dir = Path("robophd_evaluation") / custom_experiment_name
             else:
                 runs_dir = Path(config_manager.get_config(0).get("runs_directory", "../robophd_runs"))
                 task_name = runtime_config.get("task_name", "unknown") if runtime_config else "unknown"
@@ -853,7 +840,6 @@ class ParallelAgentResearcher:
 
             # Store evaluation modes
             self.dev_eval_mode = dev_eval_mode
-            self.test_eval_mode = test_eval_mode
 
             # Create symlink to papers directory
             papers_source = Path(__file__).parent.parent / "papers"
@@ -882,39 +868,9 @@ class ParallelAgentResearcher:
 
         self.debug = False
 
-        # Ensure eval modes are always set
-        if not hasattr(self, 'test_eval_mode'):
-            self.test_eval_mode = test_eval_mode
+        # Ensure eval mode is always set
         if not hasattr(self, 'dev_eval_mode'):
             self.dev_eval_mode = dev_eval_mode
-
-        # Initialize components
-        self.orchestrator = AgentOrchestrator(
-            base_experiment_dir=self.experiment_dir,
-            analysis_model=self.analysis_model,
-            timeout_phase1=self.phase1_timeout
-        )
-
-        self.cache_manager = CacheManager(self.experiment_dir)
-
-        # Phase 2 cache stats (aggregate across all agents)
-        # Individual agent cache managers are created in SQLGenerator
-        self.phase2_cache_hits = 0
-        self.phase2_cache_misses = 0
-
-        # Restore cache stats if resuming
-        if resume_mode and resume_checkpoint and 'cache_stats' in resume_checkpoint:
-            cache_stats = resume_checkpoint['cache_stats']
-            self.cache_manager.hits = cache_stats.get('hits', 0)
-            self.cache_manager.misses = cache_stats.get('misses', 0)
-            print(f"📊 Restored Phase 1 cache stats: {self.cache_manager.hits} hits, {self.cache_manager.misses} misses")
-
-        # Restore Phase 2 cache stats if resuming
-        if resume_mode and resume_checkpoint and 'phase2_cache_stats' in resume_checkpoint:
-            phase2_cache_stats = resume_checkpoint['phase2_cache_stats']
-            self.phase2_cache_hits = phase2_cache_stats.get('hits', 0)
-            self.phase2_cache_misses = phase2_cache_stats.get('misses', 0)
-            print(f"📊 Restored Phase 2 cache stats: {self.phase2_cache_hits} hits, {self.phase2_cache_misses} misses")
 
         # Initialize evolver (will be recreated per iteration with current config)
         # For now, create with iteration 1 config - run() will recreate per iteration
@@ -942,8 +898,7 @@ class ParallelAgentResearcher:
         # Load data
         self._load_data()
 
-        # Update orchestrator and evolver with domain (created before _load_data)
-        self.orchestrator.domain = self.domain
+        # Update evolver with domain (created before _load_data)
         self.evolver.domain = self.domain
 
         # Initialize meta-evolution manager (after _load_data so self.domain exists)
@@ -962,9 +917,8 @@ class ParallelAgentResearcher:
         self.evolver.problems_per_context = self.problems_per_context
         self.evolver.test_history = self.test_history
 
-        # Initialize test output generator if needed
-        if self.test_eval_mode:
-            self.test_output_generator = TestOutputGenerator()
+        # Legacy test_eval_mode for BIRD benchmark test set evaluation was
+        # removed in the external architecture migration. See git history if needed.
 
         # Initialize report generator
         self.report_generator = ReportGenerator(self)
@@ -1687,7 +1641,6 @@ class ParallelAgentResearcher:
             eval_config = current_config.copy()
             eval_config.update({
                 'agent_id': agent_id,
-                'cache_manager': self.cache_manager,
                 'experiment_dir': self.experiment_dir,
                 'api_key': self.api_key,
             })
@@ -3021,64 +2974,10 @@ class ParallelAgentResearcher:
         # Generate final report
         self.report_generator.generate_final_report(start_time)
 
-        # Generate test_predictions.json for test-eval mode
-        if self.test_eval_mode:
-            test_predictions_path = self.experiment_dir / 'test_predictions.json'
-            self._generate_test_predictions_file(test_predictions_path)
-
         total_time = time.time() - start_time
         print(f"\n✅ Research complete!")
         print(f"Total time: {total_time/60:.1f} minutes")
         print(f"Results saved to: {self.experiment_dir}")
-
-        if self.test_eval_mode:
-            print(f"📁 Test predictions saved to: {test_predictions_path}")
-
-    def _generate_test_predictions_file(self, output_file: Path):
-        """Generate consolidated bird prediction file for test-eval mode."""
-        if not self.test_eval_mode:
-            return
-
-        print("\n📝 Generating test_predictions.json file...")
-
-        # Collect all test output from the latest iteration; note that bird organizers
-        # want a single json dict of question_id -> predicted "bird style" sql
-        all_predictions = {}
-
-        # Find the latest (and only) iteration directory
-        latest_iteration = max([int(d.name.split('_')[-1])
-                               for d in self.experiment_dir.iterdir()
-                               if d.is_dir() and d.name.startswith('iteration_')])
-
-        iteration_dir = self.experiment_dir / f"iteration_{latest_iteration:03d}"
-
-        # Collect predictions from all agents in the iteration
-        for agent_dir in iteration_dir.iterdir():
-            if not agent_dir.is_dir() or not agent_dir.name.startswith('agent_'):
-                continue
-
-            # Check each database subdirectory for test output
-            for db_dir in agent_dir.iterdir():
-                if not db_dir.is_dir():
-                    continue
-
-                # Look for evaluation.json files and extract test_output
-                eval_file = db_dir / "results" / "bird_output.json"
-                if eval_file.exists():
-                    try:
-                        with open(eval_file, 'r') as f:
-                            data = json.load(f)
-
-                        # Extract test output from evaluation structure
-                        all_predictions.update(data)
-                    except:
-                        continue
-
-        # Save consolidated test predictions
-        with open(output_file, 'w') as f:
-            json.dump(all_predictions, f, indent=2)
-
-        print(f"✅ Generated {output_file} with {len(all_predictions)} predictions")
 
     def _install_three_artifact_package(self, agent_id: str, package_info: Dict, iteration: int) -> Path:
         """
@@ -3439,24 +3338,6 @@ class ParallelAgentResearcher:
                         'total': phase1_cost + phase2_cost
                     }
 
-        # Build Phase 2 cache stats matrix
-        phase2_cache_matrix = {}  # {db_name: {agent_id: {'hits': N, 'misses': M}}}
-
-        for agent_id, results in results_by_agent.items():
-            for result in results:
-                context_name = result['context']
-
-                # Extract Phase 2 cache stats if available
-                cache_stats = result.get('phase2_cache_stats')
-                if cache_stats:
-                    if context_name not in phase2_cache_matrix:
-                        phase2_cache_matrix[context_name] = {}
-
-                    phase2_cache_matrix[context_name][agent_id] = {
-                        'hits': cache_stats.get('hits', 0),
-                        'misses': cache_stats.get('misses', 0)
-                    }
-
         sorted_databases = sorted(all_databases)
 
         # Calculate totals
@@ -3631,15 +3512,7 @@ class ParallelAgentResearcher:
                     if agent_id in cost_matrix[db_name]:
                         p2 = cost_matrix[db_name][agent_id]['phase2']
 
-                        # Check for Phase 2 cache hits
-                        cache_marker = ""
-                        if (db_name in phase2_cache_matrix and
-                            agent_id in phase2_cache_matrix[db_name]):
-                            hits = phase2_cache_matrix[db_name][agent_id]['hits']
-                            if hits > 0:
-                                cache_marker = f" 💾 ({hits})"
-
-                        row += f" ${p2:.2f}{cache_marker} |"
+                        row += f" ${p2:.2f} |"
                     else:
                         row += " - |"
                 row += f" **${db_totals[db_name]['phase2']:.2f}** |"
@@ -3893,14 +3766,6 @@ class ParallelAgentResearcher:
             'exception_failures': self.exception_failures,
             'five_hour_limit_incidents': self.five_hour_limit_incidents,
             'config_manager': self.config_manager.to_checkpoint(),
-            'cache_stats': {
-                'hits': self.cache_manager.hits,
-                'misses': self.cache_manager.misses
-            },
-            'phase2_cache_stats': {
-                'hits': self.phase2_cache_hits,
-                'misses': self.phase2_cache_misses
-            }
         }
 
         # Preserve meta_evolution_session_id and meta_evolution_session_created if they exist.
@@ -3922,527 +3787,4 @@ class ParallelAgentResearcher:
             json.dump(checkpoint, f, indent=2, default=str)
 
 
-def validate_all_strategies(config_manager, strategies_dir):
-    """
-    Validate all strategy references fail fast if invalid.
 
-    Args:
-        config_manager: ConfigManager instance with loaded config
-        strategies_dir: Path to evolution_strategies directory
-
-    Raises:
-        SystemExit: If any invalid strategy references are found
-    """
-    # Discover available strategies from source directory
-    available = set()
-    if strategies_dir.exists():
-        for d in strategies_dir.iterdir():
-            if d.is_dir() and not d.name.startswith('.') and (d / "strategy.md").exists():
-                available.add(d.name)
-
-    # Add special strategies
-    special = {"none", "challenger", "greedy", "weighted_random", "random"}
-
-    errors = []
-
-    # Check all iterations' configs for strategy references
-    # We check up to num_iterations (from iteration 1 config)
-    num_iterations = config_manager.get_config(1).get("num_iterations", 10)
-
-    for iteration in range(1, num_iterations + 1):
-        # Use validation-only method to avoid executing weighted random selection
-        config = config_manager.get_config_for_validation(iteration)
-
-        # Validate evolution_strategy
-        strategy = config.get("evolution_strategy")
-        if strategy and strategy not in available and strategy not in special:
-            errors.append(f"Iteration {iteration}: evolution_strategy='{strategy}' not found")
-
-        # Validate initial_strategies (only iteration 1)
-        if iteration == 1:
-            for init_strategy in config.get("initial_strategies", []):
-                if init_strategy not in available:
-                    errors.append(f"initial_strategies contains '{init_strategy}' not found")
-
-        # Validate weighted_random_configs
-        for config_entry, weight in config.get("weighted_random_configs", []):
-            if isinstance(config_entry, dict):
-                wrs = config_entry.get("evolution_strategy")
-                if wrs and wrs not in available and wrs not in special:
-                    errors.append(f"Iteration {iteration}: weighted_random uses '{wrs}' not found")
-
-    if errors:
-        print("\n" + "=" * 70)
-        print("❌ STRATEGY CONFIGURATION ERROR")
-        print("=" * 70)
-        for error in errors:
-            print(f"  • {error}")
-        print("\n📋 Available strategies:")
-        for s in sorted(available):
-            print(f"  • {s}")
-        print("\n⚙️  Special strategies:")
-        for s in sorted(special):
-            print(f"  • {s}")
-        print("=" * 70)
-        sys.exit(1)
-
-
-def validate_argument_combinations(args):
-    """
-    Fail fast if incompatible command-line arguments are provided.
-
-    Args:
-        args: Parsed command-line arguments from argparse
-
-    Raises:
-        SystemExit: If incompatible arguments are detected
-    """
-    errors = []
-
-    # Resume-only arguments (require --resume)
-    if not args.resume:
-        if args.from_iteration:
-            errors.append("--from-iteration can only be used with --resume")
-        if args.extend:
-            errors.append("--extend can only be used with --resume")
-        if args.modify_iterations:
-            errors.append("--modify-iterations can only be used with --resume")
-        if args.modify_config:
-            errors.append("--modify-config can only be used with --resume")
-        if args.invalidate_cache:
-            errors.append("--invalidate-cache can only be used with --resume")
-
-    # Mutual exclusion: --extend and --modify-iterations
-    if args.extend and args.modify_iterations:
-        errors.append("--extend and --modify-iterations cannot be used together")
-
-    # Fresh-start-only arguments (cannot be used with --resume)
-    if args.resume:
-        if args.config:
-            errors.append("--config can only be used for fresh starts (not with --resume)")
-            errors.append("  Use --modify-config instead to change config during resume")
-        if args.dev_eval:
-            errors.append("--dev-eval can only be used for fresh starts (not with --resume)")
-        if args.dev_no_evidence_eval:
-            errors.append("--dev-no-evidence-eval can only be used for fresh starts (not with --resume)")
-        if args.test_eval:
-            errors.append("--test-eval can only be used for fresh starts (not with --resume)")
-
-    # Print errors and exit if any incompatibilities found
-    if errors:
-        print("=" * 70)
-        print("ERROR: Incompatible command-line arguments")
-        print("=" * 70)
-        print()
-        for error in errors:
-            print(f"  • {error}")
-        print()
-        print("Run with --help for usage information")
-        print("=" * 70)
-        sys.exit(1)
-
-
-def main():
-    """Main entry point for the parallel agent researcher."""
-    parser = argparse.ArgumentParser(description='RoboPhD Parallel Agent Research System')
-
-    # Core parameters
-    parser.add_argument('--num-iterations', type=int, default=5,
-                       help='Number of research iterations (default: 5)')
-    parser.add_argument('--random-seed', type=int,
-                       help='Random seed for reproducibility (default: random)')
-
-    # Configuration (JSON string or file path)
-    parser.add_argument('--config', type=str,
-                       help='Configuration as JSON string or path to JSON file. Overrides system defaults.')
-
-    # Resume/extend parameters
-    parser.add_argument('--resume', type=str,
-                       help='Resume from experiment directory')
-    parser.add_argument('--from-iteration', type=int,
-                       help='Restart from specific iteration N (clears state for iterations >= N)')
-    parser.add_argument('--extend', type=int,
-                       help='Extend a completed run with additional iterations')
-    parser.add_argument('--modify-iterations', type=int,
-                       help='Set num_iterations for resumed run (cannot go below last_completed+1 or --from-iteration)')
-    parser.add_argument('--modify-config', type=str,
-                       help='Apply config delta when resuming. JSON dict of parameter changes. With --from-iteration: applies to iteration N. With --extend: applies to new iterations. Example: \'{"examples_per_iteration": 10, "eval_model": "sonnet-4.5"}\'')
-
-    # Utility parameters
-    parser.add_argument('--list-config-parameters', action='store_true',
-                       help='List all valid configuration parameters with their defaults and exit')
-
-    # Dev/test evaluation mode
-    parser.add_argument('--dev-eval', action='store_true',
-                       help='Dev set evaluation mode: one iteration and agent, all questions and databases')
-    parser.add_argument('--dev-no-evidence-eval', action='store_true',
-                       help='Dev-no-evidence set evaluation mode: one iteration and agent, all questions and databases (no evidence)')
-    parser.add_argument('--test-eval', action='store_true',
-                       help='Test set evaluation mode: one iteration and agent, all questions and databases')
-    parser.add_argument('--invalidate-cache', action='store_true',
-                       help='Disable eval result cache for this run (only with --resume)')
-
-    args = parser.parse_args()
-
-    # Validate argument combinations (fail fast on incompatible args)
-    validate_argument_combinations(args)
-
-    # Handle --list-config-parameters
-    if args.list_config_parameters:
-        config_manager = ConfigManager()
-        defaults = config_manager.get_defaults()
-
-        print("=" * 70)
-        print("VALID CONFIGURATION PARAMETERS")
-        print("=" * 70)
-        print("\nAll parameters can be specified via --config (JSON) or --modify-config")
-        print("Both hyphenated (problems-per-context) and underscored (problems_per_context) work\n")
-
-        # Group parameters by category
-        categories = {
-            "Domain": ["domain"],
-            "Sampling": ["examples_per_iteration", "agents_per_iteration"],
-            "Text2SQL Dataset & Sampling": ["dataset", "problems_per_context"],
-            "Text2SQL Models": ["eval_model", "analysis_model", "evolution_model"],
-            "CodeGen Dataset & Models": ["codegen_split", "coder_model", "coder_model_tag", "critic_model"],
-            "Evolution": ["evolution_strategy"],
-            "Evolution Meta-Parameters": ["config_schedule", "weighted_random_configs", "use_weighted_random"],
-            "Meta-Evolution": ["meta_evolution_strategy", "meta_evolution_model", "dollar_budget"],
-            "Deep Focus": ["new_agent_test_rounds"],
-            "SQL Generation (Text2SQL)": ["max_verification_retries", "temperature_strategy"],
-            "Performance": ["max_concurrent"],
-            "Timeouts": ["phase1_timeout", "phase2_timeout", "evolution_timeout"],
-            "Other": ["debug_log_probability"],
-            "System-Managed (automatic, not user-modifiable)": ["num_iterations", "random_seed"],
-            "Immutable (user-set once at iteration 1)": ["initial_agents", "agents_directory", "initial_strategies", "strategies_directory"]
-        }
-
-        for category, params in categories.items():
-            print(f"{category}:")
-            for param in params:
-                if param in defaults:
-                    default_val = defaults[param]
-                    # Format the default value nicely
-                    if param == "agents_directory" and default_val is None:
-                        val_str = "null (defaults to RoboPhD/agents/)"
-                    elif param == "strategies_directory" and default_val is None:
-                        val_str = "null (defaults to RoboPhD/evolution_strategies/)"
-                    elif isinstance(default_val, str):
-                        val_str = f'"{default_val}"'
-                    elif default_val is None:
-                        val_str = "null"
-                    elif isinstance(default_val, dict) and not default_val:
-                        val_str = "{}"
-                    elif isinstance(default_val, list) and not default_val:
-                        val_str = "[]"
-                    else:
-                        val_str = str(default_val)
-                    print(f"  - {param}: {val_str}")
-            print()
-
-        print("Example usage:")
-        print('  --config \'{"examples_per_iteration": 5, "problems_per_context": 20}\'')
-        print('  --modify-config \'{"eval_model": "sonnet-4.5", "evolution_strategy": "none"}\'')
-        print()
-        return
-
-    # Resolve and set the API key in environment
-    resolved_api_key = resolve_api_key()
-    if not resolved_api_key:
-        print("Error: API key required. Either:")
-        print("  1. Create .anthropic_key file in project root with your key")
-        print(f"  2. Set {API_KEY_ENV_VAR} environment variable")
-        return
-
-    # Check if resuming from checkpoint
-    if args.resume:
-        print("📂 Resuming from checkpoint")
-        experiment_dir = Path(args.resume)
-        if not experiment_dir.exists():
-            print(f"Error: Experiment directory not found: {experiment_dir}")
-            return
-
-        try:
-            checkpoint = ParallelAgentResearcher.load_checkpoint(experiment_dir)
-        except FileNotFoundError:
-            print(f"Error: No checkpoint found in {experiment_dir}")
-            return
-
-        # Load ConfigManager from checkpoint
-        if 'config_manager' not in checkpoint:
-            print("Error: Checkpoint missing ConfigManager data (old checkpoint format not supported)")
-            return
-
-        config_manager = ConfigManager.from_checkpoint(checkpoint['config_manager'])
-        last_completed = checkpoint['last_completed_iteration']
-
-        # Load num_iterations from checkpoint (not from ConfigManager)
-        # Fallback to last_completed for old checkpoints
-        checkpoint_num_iterations = checkpoint.get('num_iterations', last_completed)
-
-        # Validate --modify-iterations minimum value
-        if args.modify_iterations:
-            if args.from_iteration:
-                min_iterations = args.from_iteration
-                if args.modify_iterations < min_iterations:
-                    print(f"❌ Error: --modify-iterations ({args.modify_iterations}) cannot be less than --from-iteration ({min_iterations})")
-                    sys.exit(1)
-            else:
-                min_iterations = last_completed + 1
-                if args.modify_iterations < min_iterations:
-                    print(f"❌ Error: --modify-iterations ({args.modify_iterations}) cannot be less than last_completed+1 ({min_iterations})")
-                    sys.exit(1)
-
-        # Determine resume point
-        if args.from_iteration:
-            resume_from = args.from_iteration
-            print(f"Restarting from iteration {resume_from}")
-            # Clear config state for iterations >= from_iteration
-            config_manager.clear_from_iteration(resume_from)
-
-            # Set num_iterations based on whether --extend or --modify-iterations is used
-            if args.extend:
-                num_iterations = checkpoint['num_iterations'] + args.extend
-                checkpoint['num_iterations'] = num_iterations
-                print(f"Extending by {args.extend} iterations (to {num_iterations} total)")
-            elif args.modify_iterations:
-                num_iterations = args.modify_iterations
-                checkpoint['num_iterations'] = num_iterations
-                print(f"Modifying num_iterations to {num_iterations} (from {checkpoint_num_iterations})")
-            else:
-                num_iterations = checkpoint_num_iterations
-
-            # Apply --modify-config if provided
-            if args.modify_config:
-                try:
-                    # Check if it's a file path or JSON string
-                    modify_config_path = Path(args.modify_config)
-                    if modify_config_path.exists() and modify_config_path.is_file():
-                        # It's a file - read and parse it
-                        with open(modify_config_path, 'r') as f:
-                            delta = json.load(f)
-                    else:
-                        # It's a JSON string - parse directly
-                        delta = json.loads(args.modify_config)
-
-                    # Normalize keys: convert hyphens to underscores
-                    delta = {k.replace('-', '_'): v for k, v in delta.items()}
-                    config_manager.apply_delta(
-                        resume_from,
-                        delta,
-                        ConfigSource.USER_MODIFICATION,
-                        f"User modification via --modify-config at iteration {resume_from}"
-                    )
-                    print(f"✓ Applied config modifications to iteration {resume_from}")
-                except json.JSONDecodeError as e:
-                    print(f"Error: Invalid --modify-config JSON: {e}")
-                    return
-        elif args.extend or args.modify_iterations:
-            resume_from = last_completed + 1
-
-            # Get current num_iterations from checkpoint root
-            current_num_iterations = checkpoint['num_iterations']
-
-            # Calculate new num_iterations
-            if args.extend:
-                new_num_iterations = current_num_iterations + args.extend
-                print(f"Extending by {args.extend} iterations (from {current_num_iterations} to {new_num_iterations})")
-            elif args.modify_iterations:
-                new_num_iterations = args.modify_iterations
-                print(f"Modifying num_iterations to {new_num_iterations} (from {current_num_iterations})")
-
-            # Store directly in checkpoint root (not in iteration configs)
-            checkpoint['num_iterations'] = new_num_iterations
-
-            num_iterations = new_num_iterations
-
-            # Apply --modify-config to new iterations if provided
-            if args.modify_config:
-                try:
-                    # Check if it's a file path or JSON string
-                    modify_config_path = Path(args.modify_config)
-                    if modify_config_path.exists() and modify_config_path.is_file():
-                        # It's a file - read and parse it
-                        with open(modify_config_path, 'r') as f:
-                            delta = json.load(f)
-                    else:
-                        # It's a JSON string - parse directly
-                        delta = json.loads(args.modify_config)
-
-                    # Normalize keys: convert hyphens to underscores
-                    delta = {k.replace('-', '_'): v for k, v in delta.items()}
-                    for iter_num in range(resume_from, num_iterations + 1):
-                        config_manager.apply_delta(
-                            iter_num,
-                            delta,
-                            ConfigSource.USER_MODIFICATION,
-                            f"User modification via --modify-config for extended iteration {iter_num}"
-                        )
-                    print(f"✓ Applied config modifications to iterations {resume_from}-{num_iterations}")
-                except json.JSONDecodeError as e:
-                    print(f"Error: Invalid --modify-config JSON: {e}")
-                    return
-        else:
-            resume_from = last_completed + 1
-            print(f"Auto-resuming from iteration {resume_from}")
-
-            # Apply --modify-config if provided
-            if args.modify_config:
-                try:
-                    # Check if it's a file path or JSON string
-                    modify_config_path = Path(args.modify_config)
-                    if modify_config_path.exists() and modify_config_path.is_file():
-                        # It's a file - read and parse it
-                        with open(modify_config_path, 'r') as f:
-                            delta = json.load(f)
-                    else:
-                        # It's a JSON string - parse directly
-                        delta = json.loads(args.modify_config)
-
-                    # Normalize keys: convert hyphens to underscores
-                    delta = {k.replace('-', '_'): v for k, v in delta.items()}
-                    config_manager.apply_delta(
-                        resume_from,
-                        delta,
-                        ConfigSource.USER_MODIFICATION,
-                        f"User modification via --modify-config at iteration {resume_from}"
-                    )
-                    print(f"✓ Applied config modifications to iteration {resume_from}")
-                except json.JSONDecodeError as e:
-                    print(f"Error: Invalid --modify-config JSON: {e}")
-                    return
-
-        # Get num_iterations from checkpoint root (not from config)
-        if not args.extend and not args.modify_iterations:
-            num_iterations = checkpoint_num_iterations
-
-        # Propagate --invalidate-cache: disable eval result cache for this run
-        if args.invalidate_cache:
-            config_manager.apply_delta(
-                resume_from,
-                {"eval_result_cache": False},
-                ConfigSource.USER_MODIFICATION,
-                "User disabled eval result cache via --invalidate-cache"
-            )
-            print("✓ Eval result cache disabled for this run")
-
-        # Create researcher from checkpoint
-        researcher = ParallelAgentResearcher(
-            config_manager=config_manager,
-            num_iterations=num_iterations,
-            random_seed=None,  # Will be loaded from ConfigManager
-            resume_mode=True,
-            resume_from_iteration=resume_from,
-            resume_checkpoint=checkpoint,
-            resume_experiment_dir=experiment_dir,
-            api_key=resolved_api_key
-        )
-
-        researcher.run()
-
-    else:
-        # Fresh start - create ConfigManager
-        config_manager = ConfigManager()
-
-        # Parse user config from --config if provided
-        user_config = {}
-        if args.config:
-            try:
-                # Check if it's a file path
-                config_path = Path(args.config)
-                if config_path.exists():
-                    with open(config_path) as f:
-                        user_config = json.load(f)
-                else:
-                    # Treat as JSON string
-                    user_config = json.loads(args.config)
-
-                # Normalize keys: convert hyphens to underscores for convenience
-                # This allows users to use either "problems-per-context" or "problems_per_context"
-                user_config = {k.replace('-', '_'): v for k, v in user_config.items()}
-
-            except (json.JSONDecodeError, IOError) as e:
-                print(f"Error: Invalid --config: {e}")
-                return
-
-        # Extract CLI-only parameters before ConfigManager
-        # (System-managed params: num_iterations, random_seed)
-        cli_random_seed = args.random_seed  # May be None
-        if args.dev_eval or args.dev_no_evidence_eval or args.test_eval:
-            cli_num_iterations = 1
-        else:
-            cli_num_iterations = args.num_iterations
-
-        # Handle dev-eval and test-eval modes
-        if args.dev_eval:
-            print("🔍 Dev Evaluation Mode")
-            user_config.update({
-                "dataset": "dev",
-                "agents_per_iteration": 1,
-                "examples_per_iteration": 999,
-                "problems_per_context": 99999
-            })
-            custom_experiment_name = f"dev_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        elif args.dev_no_evidence_eval:
-            print("🔍 Dev-No-Evidence Evaluation Mode")
-            user_config.update({
-                "dataset": "dev-no-evidence",
-                "agents_per_iteration": 1,
-                "examples_per_iteration": 999,
-                "problems_per_context": 99999
-            })
-            custom_experiment_name = f"dev_no_evidence_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        elif args.test_eval:
-            print("🔍 Test Evaluation Mode")
-            user_config.update({
-                "dataset": "test",
-                "agents_per_iteration": 1,
-                "examples_per_iteration": 999,
-                "problems_per_context": 99999
-            })
-            custom_experiment_name = f"test_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        else:
-            custom_experiment_name = None
-
-        # Initialize ConfigManager with user config
-        # Note: initial_agents and agents_directory are now config-only (no CLI args)
-        config_manager.set_initial_config(user_config, ConfigSource.CLI)
-
-        # Set run-level parameters (stored at checkpoint root, not in iteration configs)
-        # 1. num_iterations
-        num_iterations = cli_num_iterations
-
-        # 2. random_seed (user-provided or generated)
-        if cli_random_seed is not None:
-            final_random_seed = cli_random_seed
-        else:
-            final_random_seed = random.randint(0, 10000)
-
-        # Validate all strategy references early
-        config = config_manager.get_config(1)
-        strategies_dir = Path(config.get("strategies_directory") or "RoboPhD/evolution_strategies")
-        validate_all_strategies(config_manager, strategies_dir)
-
-        # Create researcher
-        researcher = ParallelAgentResearcher(
-            config_manager=config_manager,
-            num_iterations=num_iterations,
-            random_seed=final_random_seed,
-            dev_eval_mode=args.dev_eval,
-            test_eval_mode=args.test_eval,
-            custom_experiment_name=custom_experiment_name,
-            api_key=resolved_api_key
-        )
-
-        # Get initial_agents from config (uses default ["naive"] if not specified)
-        config = config_manager.get_config(1)
-        researcher.run(initial_agents=config["initial_agents"])
-
-
-if __name__ == '__main__':
-    logging.basicConfig(
-        level=logging.INFO,
-        format='[%(asctime)s] %(name)s: %(message)s',
-        datefmt='%H:%M:%S'
-    )
-    main()
