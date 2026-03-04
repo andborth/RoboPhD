@@ -179,6 +179,8 @@ Phase 1 results are cached on disk at `{output_dir}/cache/phase1_tool_analysis/`
 | `max_verification_retries` | `2` | Maximum number of verify-and-improve retries |
 | `temperature_strategy` | `fixed` | Temperature schedule: `fixed` = 0.0 always, `progressive` = `[0.0, 0.2, 0.3]` |
 
+**Test phase**: GEPA and `eval_test_set.py` automatically switch to the `dev` dataset (1,534 questions) for test evaluation via `test_overrides`.
+
 #### Legacy Architecture
 
 The original `Text2SQLDomain` class and `AgentOrchestrator` remain in the codebase but are not used by the task registry integration. The new architecture replaces `agent.md` (LLM-based Phase 1) with tool-only analysis via `analyze_db.py`

@@ -58,6 +58,8 @@ _GEPA_DEFAULTS = {
     "val_ratio": (0.2, "Fraction of dataset held out for validation"),
     "val_size": (None, "Exact validation set size (mutually exclusive with val_ratio)"),
     "reflection_model": ("opus-4.6", "Model for GEPA reflection (mutation proposals)"),
+    "test_repeats": (1, "Number of test set repetitions (task test_overrides may increase)"),
+    "max_test_workers": (None, "Test eval thread pool size (default: max_workers // 2)"),
 }
 
 
@@ -336,16 +338,16 @@ def main():
     # --- 7. Optional test-set evaluation ---
     if args.eval_test_set:
         logger.info("Evaluating best candidate on test set...")
-        test_config = {**config, "codegen_split": "test", "aime_split": "test"}
+        test_config = {**config, **task.test_overrides}
         test_examples = task.dataset_builder(test_config)
-        test_repeats = config.get("test_repeats", 5)
+        test_repeats = test_config.get("test_repeats", 1)
         test_examples = test_examples * test_repeats
         logger.info(f"Test set: {len(test_examples)} problems ({len(test_examples) // test_repeats} unique × {test_repeats})")
 
         test_config["work_dir"] = str(args.output_dir / "test_work")
         test_evaluator = task.evaluator_factory(test_config)
 
-        test_workers = max(1, (max_workers or os.cpu_count() or 4) // 2)
+        test_workers = test_config.get("max_test_workers") or max(1, (max_workers or os.cpu_count() or 4) // 2)
         logger.info(f"Test evaluation: {len(test_examples)} problems, {test_workers} workers")
 
         score_map: dict[int, float] = {}

@@ -105,7 +105,7 @@ def main():
     )
 
     parser.add_argument(
-        "--test-repeats", type=int, default=5, help="Number of test repetitions (default: 5, min: 1)",
+        "--test-repeats", type=int, default=1, help="Number of test repetitions (default: 1)",
     )
     parser.add_argument(
         "--task-config", type=str, default=None, help="JSON string or file for task config overrides"
@@ -148,7 +148,7 @@ def main():
     candidate = extract_candidate(agent_dir, task.file_mapping)
 
     # Build test dataset (matching run_gepa.py protocol)
-    test_config = {**config, "codegen_split": "test", "aime_split": "test"}
+    test_config = {**config, **task.test_overrides}
     test_examples = task.dataset_builder(test_config)
     test_repeats = args.test_repeats
     test_examples = test_examples * test_repeats
@@ -163,7 +163,7 @@ def main():
     test_evaluator = task.evaluator_factory(test_config)
 
     # Parallel eval loop
-    test_workers = max(1, (args.max_workers or os.cpu_count() or 4) // 2)
+    test_workers = test_config.get("max_test_workers") or max(1, (args.max_workers or os.cpu_count() or 4) // 2)
     logger.info(f"Test evaluation: {len(test_examples)} problems, {test_workers} workers")
 
     score_map: dict[int, float] = {}

@@ -53,4 +53,5 @@ def make_aime_task() -> TaskDefinition:
             "solver_model": "gpt-4.1-mini",
             "aime_split": "train",
         },
+        test_overrides={"aime_split": "test", "test_repeats": 5},
     )

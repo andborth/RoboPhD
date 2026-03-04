@@ -128,4 +128,5 @@ def make_text2sql_task() -> TaskDefinition:
             "max_verification_retries": 2,
             "temperature_strategy": "fixed",
         },
+        test_overrides={"dataset": "dev", "max_test_workers": 4},
     )

@@ -45,3 +45,5 @@ class TaskDefinition:
     background: str = ""
     diagnostic_files: Dict[str, str] = field(default_factory=dict)
     config_defaults: Dict[str, Any] = field(default_factory=dict)
+    test_overrides: Dict[str, Any] = field(default_factory=dict)
+    """Config overrides applied when building the test dataset (e.g. switching split)."""

@@ -85,6 +85,11 @@ def print_task_params(task) -> None:
         print(f"\n  Task defaults (overridable via --config):")
         for k, v in sorted(task.config_defaults.items()):
             print(f"    {k}: {fmt_val(v)}")
+
+    if task.test_overrides:
+        print(f"\n  Test overrides (applied during test evaluation):")
+        for k, v in sorted(task.test_overrides.items()):
+            print(f"    {k}: {fmt_val(v)}")
     print()
 
 
