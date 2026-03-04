@@ -432,33 +432,6 @@ class ReportGenerator:
         elo_leadership_section = self._generate_elo_leadership_section()
         report_lines.append(elo_leadership_section)
 
-        # Phase 1 Cache Performance section
-        report_lines.append("\n## Phase 1 Cache Performance")
-        cache_stats = self.researcher.cache_manager.get_cache_stats()
-        if cache_stats['total'] > 0:
-            report_lines.append(f"- **Total Phase 1 calls**: {cache_stats['total']}")
-            report_lines.append(f"- **Cache hits**: {cache_stats['hits']} ({cache_stats['hit_rate']:.1f}%)")
-            report_lines.append(f"- **Cache misses**: {cache_stats['misses']}")
-            report_lines.append(f"- **Estimated savings**: ${cache_stats['estimated_savings']:.2f}")
-        else:
-            report_lines.append("No Phase 1 analyses performed in this run")
-
-        # Phase 2 Cache Performance section
-        report_lines.append("\n## Phase 2 Cache Performance")
-        # Calculate stats from aggregate counters
-        phase2_hits = self.researcher.phase2_cache_hits
-        phase2_misses = self.researcher.phase2_cache_misses
-        phase2_total = phase2_hits + phase2_misses
-        if phase2_total > 0:
-            phase2_hit_rate = (phase2_hits / phase2_total * 100)
-            phase2_savings = phase2_hits * 0.01  # ~$0.01 per cached call
-            report_lines.append(f"- **Total Phase 2 SQL generation calls**: {phase2_total}")
-            report_lines.append(f"- **Cache hits**: {phase2_hits} ({phase2_hit_rate:.1f}%)")
-            report_lines.append(f"- **Cache misses**: {phase2_misses}")
-            report_lines.append(f"- **Estimated savings**: ${phase2_savings:.2f}")
-        else:
-            report_lines.append("No Phase 2 SQL generation performed in this run")
-
         # Deep Focus Timing Analysis section
         report_lines.append("\n## Deep Focus Evolution Timing Analysis")
 

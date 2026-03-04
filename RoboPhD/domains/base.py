@@ -260,21 +260,6 @@ class DomainInterface(ABC):
         pass
 
     @property
-    def error_analysis_tool_dir(self) -> str:
-        """
-        Directory path for domain-specific error analysis tools.
-
-        Returns the path (relative to RoboPhD/) where domain-specific
-        error analysis tools are located. This allows evolution strategies
-        to use the correct tool versions for each domain.
-
-        Default: "tools/error_analysis" (Text2SQL tools)
-        Override: "domains/{domain}/tools" for domain-specific tools
-        """
-        # Default to the shared Text2SQL error analysis tools
-        return "tools/error_analysis"
-
-    @property
     def name(self) -> str:
         """Domain name for identification."""
         return self.__class__.__name__.replace('Domain', '').lower()
