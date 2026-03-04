@@ -200,7 +200,7 @@ class ParallelAgentEvolver:
         self.strategies_directory = config.get("strategies_directory")
         self.new_agent_test_rounds = config["new_agent_test_rounds"]
         self.max_concurrent = config["max_concurrent"]
-        self.verification_retries = config["verification_retries"]
+        self.max_verification_retries = config["max_verification_retries"]
         self.temperature_strategy = config["temperature_strategy"]
         self.debug_log_probability = config["debug_log_probability"]
         self.llm_call_timeout = config["llm_call_timeout"]
@@ -369,7 +369,7 @@ class ParallelAgentEvolver:
             analysis_model=self.analysis_model,
             timeout=self.evolution_timeout,
             max_concurrent=self.max_concurrent,
-            verification_retries=self.verification_retries,
+            max_verification_retries=self.max_verification_retries,
             temperature_strategy=self.temperature_strategy,
             debug_log_probability=self.debug_log_probability,
             llm_call_timeout=self.llm_call_timeout,
@@ -760,7 +760,7 @@ class ParallelAgentResearcher:
         self.phase1_timeout = config["phase1_timeout"]
         self.phase2_timeout = config["phase2_timeout"]
         self.evolution_timeout = config["evolution_timeout"]
-        self.verification_retries = config["verification_retries"]
+        self.max_verification_retries = config["max_verification_retries"]
         self.temperature_strategy = config["temperature_strategy"]
         self.debug_log_probability = config["debug_log_probability"]
         self.llm_call_timeout = config["llm_call_timeout"]
@@ -2694,7 +2694,7 @@ class ParallelAgentResearcher:
             self.phase1_timeout = config["phase1_timeout"]
             self.phase2_timeout = config["phase2_timeout"]
             self.evolution_timeout = config["evolution_timeout"]
-            self.verification_retries = config["verification_retries"]
+            self.max_verification_retries = config["max_verification_retries"]
             self.temperature_strategy = config["temperature_strategy"]
             self.debug_log_probability = config["debug_log_probability"]
             self.llm_call_timeout = config["llm_call_timeout"]
@@ -4109,7 +4109,7 @@ def main():
             "Evolution Meta-Parameters": ["config_schedule", "weighted_random_configs", "use_weighted_random"],
             "Meta-Evolution": ["meta_evolution_strategy", "meta_evolution_model", "dollar_budget"],
             "Deep Focus": ["new_agent_test_rounds"],
-            "SQL Generation (Text2SQL)": ["verification_retries", "temperature_strategy"],
+            "SQL Generation (Text2SQL)": ["max_verification_retries", "temperature_strategy"],
             "Performance": ["max_concurrent"],
             "Timeouts": ["phase1_timeout", "phase2_timeout", "evolution_timeout"],
             "Other": ["debug_log_probability"],

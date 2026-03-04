@@ -3,7 +3,7 @@
 Extract full error details for specific question IDs.
 
 This tool reads evaluation.json files and extracts complete question nodes,
-including verification_info when verification_attempts > 1.
+including verification_info when verification_retries > 0.
 """
 
 import argparse

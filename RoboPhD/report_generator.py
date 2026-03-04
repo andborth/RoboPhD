@@ -77,7 +77,7 @@ class ReportGenerator:
                 "evaluation_budget"
             ],
             "SQL Generation": [
-                "verification_retries",
+                "max_verification_retries",
                 "temperature_strategy"
             ],
             "Performance": [

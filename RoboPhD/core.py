@@ -40,7 +40,7 @@ class SQLGenerator:
                  timeout: int = 3600,
                  use_evidence: bool = True,
                  sql_validation_timeout: int = 30,
-                 verification_retries: int = 2,
+                 max_verification_retries: int = 2,
                  temperature_strategy: str = "fixed",
                  debug_log_probability: float = 0.02,
                  logger: Optional[logging.Logger] = None,
@@ -57,7 +57,7 @@ class SQLGenerator:
             timeout: Timeout in seconds for SQL generation
             use_evidence: Whether to include evidence in prompts (default True)
             sql_validation_timeout: Timeout in seconds for SQL validation (default 30)
-            verification_retries: Number of verification attempts (default 2, 0 = current behavior)
+            max_verification_retries: Maximum number of verification retries (default 2, 0 = disable verification)
             temperature_strategy: Temperature strategy for verification retries (default: fixed)
             debug_log_probability: Probability (0.0-1.0) of logging API calls for debugging (default 0.02)
             logger: Logger instance (creates one if not provided)
@@ -71,7 +71,7 @@ class SQLGenerator:
         self.timeout = timeout
         self.use_evidence = use_evidence
         self.sql_validation_timeout = sql_validation_timeout
-        self.verification_retries = verification_retries
+        self.max_verification_retries = max_verification_retries
         self.temperature_strategy = temperature_strategy
         self.debug_log_probability = debug_log_probability
         self.logger = logger or logging.getLogger(__name__)
@@ -170,7 +170,7 @@ class SQLGenerator:
                 '--model', self.eval_model,
                 '--api_key', self.api_key,
                 '--sql_validation_timeout', str(self.sql_validation_timeout),
-                '--verification_retries', str(self.verification_retries),
+                '--max_verification_retries', str(self.max_verification_retries),
                 '--temperature_strategy', self.temperature_strategy,
                 '--llm-call-timeout', str(self.llm_call_timeout)
             ]

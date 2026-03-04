@@ -438,7 +438,7 @@ Agent source code (three-artifact packages):
         eval_model = config.get('eval_model', 'haiku-4.5')
         analysis_model = config.get('analysis_model', 'haiku-4.5')
         timeout = config.get('timeout', 1800)
-        verification_retries = config.get('verification_retries', 2)
+        verification_retries = config.get('max_verification_retries', 2)
         temperature_strategy = config.get('temperature_strategy', 'fixed')
         debug_log_probability = config.get('debug_log_probability', 0.02)
         llm_call_timeout = config.get('llm_call_timeout', 120)
@@ -590,7 +590,7 @@ Agent source code (three-artifact packages):
                     timeout=timeout,
                     use_evidence=self.config.get('use_evidence', True),
                     api_key=api_key,
-                    verification_retries=verification_retries,
+                    max_verification_retries=verification_retries,
                     temperature_strategy=temperature_strategy,
                     debug_log_probability=debug_log_probability,
                     llm_call_timeout=llm_call_timeout,
@@ -723,7 +723,7 @@ Agent source code (three-artifact packages):
             timeout=kwargs.get('timeout', self.config.get('timeout', 3600)),
             use_evidence=kwargs.get('use_evidence', self.config.get('use_evidence', True)),
             sql_validation_timeout=kwargs.get('sql_validation_timeout', self.config.get('sql_validation_timeout', 30)),
-            verification_retries=kwargs.get('verification_retries', self.config.get('verification_retries', 2)),
+            max_verification_retries=kwargs.get('max_verification_retries', self.config.get('max_verification_retries', 2)),
             temperature_strategy=kwargs.get('temperature_strategy', self.config.get('temperature_strategy', 'fixed')),
             debug_log_probability=kwargs.get('debug_log_probability', self.config.get('debug_log_probability', 0.02)),
             logger=self.logger,
@@ -846,7 +846,7 @@ Agent source code (three-artifact packages):
                 'timeout': config.get('phase2_timeout', 1800),
                 'agent_id': agent_id,
                 'cache_manager': config.get('cache_manager'),
-                'verification_retries': config.get('verification_retries', 2),
+                'max_verification_retries': config.get('max_verification_retries', 2),
                 'temperature_strategy': config.get('temperature_strategy', 'fixed'),
                 'debug_log_probability': config.get('debug_log_probability', 0.02),
                 'llm_call_timeout': config.get('llm_call_timeout', 120),

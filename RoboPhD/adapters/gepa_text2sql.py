@@ -153,7 +153,7 @@ class Text2SQLEvaluator:
         eval_model: str = "haiku-4.5",
         dataset: str = "train-filtered",
         use_evidence: bool = True,
-        verification_retries: int = 2,
+        max_verification_retries: int = 2,
         temperature_strategy: str = "fixed",
         output_dir: Optional[str] = None,
         work_dir: Optional[Path] = None,
@@ -162,7 +162,7 @@ class Text2SQLEvaluator:
 
         self.eval_model = eval_model
         self.use_evidence = use_evidence
-        self.verification_retries = verification_retries
+        self.max_verification_retries = max_verification_retries
         self.temperature_strategy = temperature_strategy
 
         paths = DATASET_PATHS[dataset]
@@ -443,7 +443,7 @@ Do not include explanations, prefixes, or combine both responses."""
         executor = self._get_sql_executor()
         db_path = str(self.db_root / db_id / f"{db_id}.sqlite")
 
-        for attempt_num in range(self.verification_retries):
+        for attempt_num in range(self.max_verification_retries):
             # Execute current SQL
             try:
                 results = executor.execute_sql(sql, db_path, is_ground_truth=False, timeout_seconds=30)
@@ -518,7 +518,7 @@ Do not include explanations, prefixes, or combine both responses."""
 
         # Phase 2 + Verification
         try:
-            if self.verification_retries > 0:
+            if self.max_verification_retries > 0:
                 predicted_sql, cost, attempts = self._generate_with_verification(
                     eval_instructions, analysis, question, evidence, verify_prompt, db_id,
                 )
@@ -597,7 +597,7 @@ Do not include explanations, prefixes, or combine both responses."""
                 "correct": score >= 0.5,
                 "score": score,
                 "status": comparison["status"],
-                "verification_attempts": len(attempts),
+                "verification_retries": len([a for a in attempts if not a["is_correct"]]),
             }
             with open(problem_dir / "result.json", "w") as f:
                 json.dump(result_entry, f, indent=2)

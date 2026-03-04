@@ -176,7 +176,7 @@ Phase 1 results are cached on disk at `{output_dir}/cache/phase1_tool_analysis/`
 | `dataset` | `train-filtered` | BIRD dataset split |
 | `eval_model` | `haiku-4.5` | Model for SQL generation + verification |
 | `use_evidence` | `true` | Include evidence hints in prompts |
-| `verification_retries` | `2` | Number of verify-and-improve cycles |
+| `max_verification_retries` | `2` | Maximum number of verify-and-improve retries |
 | `temperature_strategy` | `fixed` | Temperature schedule: `fixed` = 0.0 always, `progressive` = `[0.0, 0.2, 0.3]` |
 
 #### Legacy Architecture

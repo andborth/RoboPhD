@@ -96,7 +96,7 @@ class ConfigManager:
             "new_agent_test_rounds": 1,
 
             # SQL generation
-            "verification_retries": 2,
+            "max_verification_retries": 2,
             "temperature_strategy": "fixed",
 
             # Performance
@@ -753,7 +753,9 @@ class ConfigManager:
         return None
 
     # Deprecated parameter aliases: old_name -> new_name
-    _DEPRECATED_ALIASES = {}
+    _DEPRECATED_ALIASES = {
+        "verification_retries": "max_verification_retries",
+    }
 
     def _apply_deprecated_aliases(self, config: Dict[str, Any]) -> None:
         """Convert deprecated parameter names to their current equivalents (in-place)."""

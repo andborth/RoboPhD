@@ -23,7 +23,7 @@ def _evaluator_factory(config: Dict[str, Any]):
         eval_model=config.get("eval_model", "haiku-4.5"),
         dataset=config.get("dataset", "train-filtered"),
         use_evidence=config.get("use_evidence", True),
-        verification_retries=config.get("verification_retries", 2),
+        max_verification_retries=config.get("max_verification_retries", 2),
         temperature_strategy=config.get("temperature_strategy", "fixed"),
         output_dir=config.get("output_dir"),
         work_dir=work_dir,
@@ -125,7 +125,7 @@ def make_text2sql_task() -> TaskDefinition:
             "dataset": "train-filtered",
             "eval_model": "haiku-4.5",
             "use_evidence": True,
-            "verification_retries": 2,
+            "max_verification_retries": 2,
             "temperature_strategy": "fixed",
         },
     )

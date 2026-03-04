@@ -54,7 +54,7 @@ except ImportError:
     )
 
 class PromptBasedSQLGenerator:
-    def __init__(self, prompt_path: str, model: str = DEFAULT_MODEL, api_key: Optional[str] = None, use_evidence: bool = True, db_path: Optional[str] = None, sql_validation_timeout: int = 30, verification_retries: int = 2, temperature_strategy: str = "fixed", debug_log_probability: float = 0.0, debug_log_dir: Optional[Path] = None, cache_manager: Optional[Phase2CacheManager] = None, llm_call_timeout: int = 120):
+    def __init__(self, prompt_path: str, model: str = DEFAULT_MODEL, api_key: Optional[str] = None, use_evidence: bool = True, db_path: Optional[str] = None, sql_validation_timeout: int = 30, max_verification_retries: int = 2, temperature_strategy: str = "fixed", debug_log_probability: float = 0.0, debug_log_dir: Optional[Path] = None, cache_manager: Optional[Phase2CacheManager] = None, llm_call_timeout: int = 120):
         """
         Initialize SQL generator with a pre-generated system prompt.
 
@@ -65,7 +65,7 @@ class PromptBasedSQLGenerator:
             use_evidence: Whether to include evidence in prompts (default True)
             db_path: Path to database file for SQL validation (optional)
             sql_validation_timeout: Timeout in seconds for SQL validation (default 30)
-            verification_retries: Number of verification attempts (default 2, 0 = current behavior)
+            max_verification_retries: Maximum number of verification retries (default 2, 0 = disable verification)
             temperature_strategy: Temperature strategy for retries ("progressive", "fixed", "adaptive")
             debug_log_probability: Probability (0.0-1.0) of logging API calls for debugging (default 0.0)
             debug_log_dir: Directory to write debug logs (optional)
@@ -110,7 +110,7 @@ class PromptBasedSQLGenerator:
         self.sql_executor = CachedSQLExecutor() if db_path else None
 
         # Verification settings
-        self.verification_retries = verification_retries
+        self.max_verification_retries = max_verification_retries
         self.temperature_strategy = temperature_strategy
 
         # Debug logging settings
@@ -131,7 +131,7 @@ class PromptBasedSQLGenerator:
             'verification_attempted': 0,
             'verification_succeeded': 0,
             'verification_failed': 0,
-            'verification_attempts_total': 0,
+            'verification_retries_total': 0,
             # Enhanced tracking
             'verification_passed_immediately': 0,
             'verification_improved': 0,
@@ -332,9 +332,9 @@ class PromptBasedSQLGenerator:
                 'validation_stats': self.validation_stats,
                 'sql_validation_enabled': self.db_path is not None,
                 'verification_settings': {
-                    'verification_retries': self.verification_retries,
+                    'max_verification_retries': self.max_verification_retries,
                     'temperature_strategy': self.temperature_strategy,
-                    'verification_enabled': self.verification_retries > 0
+                    'verification_enabled': self.max_verification_retries > 0
                 },
                 'phase2_cache_stats': self.cache_manager.get_cache_stats() if self.cache_manager else {'hits': 0, 'misses': 0, 'total': 0},
                 'timestamp': str(datetime.now()),
@@ -674,8 +674,8 @@ Your response:"""
         self.validation_stats['total_api_calls'] += 1
 
         # Verification loop for k attempts
-        for attempt_num in range(self.verification_retries):
-            self.validation_stats['verification_attempts_total'] += 1
+        for attempt_num in range(self.max_verification_retries):
+            self.validation_stats['verification_retries_total'] += 1
 
             # Execute SQL to get results for verification
             if self.sql_executor and self.db_path:
@@ -693,7 +693,7 @@ Your response:"""
                 # If no validation available, just proceed to next iteration
                 summary = "SQL validation not available (no database path provided)"
 
-            print(f"    Verification attempt {attempt_num + 1}/{self.verification_retries}: {summary[:100]}...")
+            print(f"    Verification attempt {attempt_num + 1}/{self.max_verification_retries}: {summary[:100]}...")
 
             # Verify and potentially improve (counts as an API call, with rate limit retry)
             is_correct, new_sql, feedback = self._verify_and_improve_with_rate_limit_retry(question, sql, summary, attempts)
@@ -724,7 +724,7 @@ Your response:"""
 
                 # Build verification info and return
                 verification_info = {
-                    'verification_attempts': attempt_num + 1,
+                    'verification_retries': attempt_num,
                     'verification_outcome': verification_outcome,
                     'final_retry_used': False,
                     'verification_details': attempts
@@ -769,7 +769,7 @@ Your response:"""
 
         # Build verification info for failed case
         verification_info = {
-            'verification_attempts': self.verification_retries,
+            'verification_retries': len([a for a in attempts if not a['is_correct']]),
             'verification_outcome': 'failed',
             'final_retry_used': final_retry_used,
             'final_retry_outcome': final_retry_outcome,
@@ -786,8 +786,8 @@ Your response:"""
         """
         self.validation_stats['total_generated'] += 1
 
-        # Use verification if enabled (verification_retries > 0)
-        if self.verification_retries > 0:
+        # Use verification if enabled (max_verification_retries > 0)
+        if self.max_verification_retries > 0:
             return self._generate_with_verification(question)
 
         # Otherwise, use current validation and retry logic
@@ -798,7 +798,7 @@ Your response:"""
 
         # Initialize verification info for legacy path
         verification_info = {
-            'verification_attempts': 0,
+            'verification_retries': 0,
             'verification_outcome': 'no_verification',
             'legacy_retry_used': False,
             'verification_details': []
@@ -1151,8 +1151,8 @@ def main():
     parser.add_argument('--db_path', help='Path to database file for SQL validation (enables validation)')
     parser.add_argument('--sql_validation_timeout', type=int, default=30,
                        help='Timeout in seconds for SQL validation (default: 30)')
-    parser.add_argument('--verification_retries', type=int, default=2,
-                       help='Number of verification attempts (default: 2, 0 = current behavior)')
+    parser.add_argument('--max_verification_retries', type=int, default=2,
+                       help='Maximum number of verification retries (default: 2, 0 = disable verification)')
     parser.add_argument('--temperature_strategy', choices=['progressive', 'fixed', 'adaptive'],
                        default='fixed',
                        help='Temperature strategy for verification retries (default: fixed)')
@@ -1197,8 +1197,8 @@ def main():
         print(f"SQL validation timeout: {args.sql_validation_timeout} seconds")
 
     # Show verification settings
-    if args.verification_retries > 0:
-        print(f"Universal verification enabled: {args.verification_retries} retries with {args.temperature_strategy} temperature strategy")
+    if args.max_verification_retries > 0:
+        print(f"Universal verification enabled: {args.max_verification_retries} retries with {args.temperature_strategy} temperature strategy")
     else:
         print("Verification disabled (using current validation/retry behavior)")
     
@@ -1211,7 +1211,7 @@ def main():
         use_evidence=use_evidence,
         db_path=args.db_path,
         sql_validation_timeout=args.sql_validation_timeout,
-        verification_retries=args.verification_retries,
+        max_verification_retries=args.max_verification_retries,
         temperature_strategy=args.temperature_strategy,
         debug_log_probability=args.debug_log_probability,
         debug_log_dir=Path(args.debug_log_dir) if args.debug_log_dir else None,

@@ -61,7 +61,7 @@ class DeepFocusEvolutionManager:
         analysis_model: str = "haiku-4.5",
         timeout: int = 1800,
         max_concurrent: int | None = None,
-        verification_retries: int = 2,
+        max_verification_retries: int = 2,
         temperature_strategy: str = "fixed",
         debug_log_probability: float = 0.02,
         llm_call_timeout: int = 120,
@@ -81,7 +81,7 @@ class DeepFocusEvolutionManager:
             analysis_model: Model for database analysis (default haiku-4.5)
             timeout: Timeout in seconds for Claude CLI calls (default 1800)
             max_concurrent: Maximum concurrent context processing (None = Python default)
-            verification_retries: Number of SQL verification attempts (default 2)
+            max_verification_retries: Maximum number of SQL verification retries (default 2)
             temperature_strategy: Temperature strategy for SQL generation (default "fixed")
             debug_log_probability: Probability (0.0-1.0) of logging API calls for debugging (default 0.02)
             llm_call_timeout: Per-call LLM timeout in seconds (default 120, for local models)
@@ -97,7 +97,7 @@ class DeepFocusEvolutionManager:
         self.analysis_model = analysis_model
         self.timeout = timeout
         self.max_concurrent = max_concurrent
-        self.verification_retries = verification_retries
+        self.max_verification_retries = max_verification_retries
         self.temperature_strategy = temperature_strategy
         self.debug_log_probability = debug_log_probability
         self.llm_call_timeout = llm_call_timeout
@@ -841,7 +841,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             'analysis_model': self.analysis_model,
             'phase2_timeout': self.timeout,
             'max_concurrent': self.max_concurrent,
-            'verification_retries': self.verification_retries,
+            'max_verification_retries': self.max_verification_retries,
             'temperature_strategy': self.temperature_strategy,
             'debug_log_probability': self.debug_log_probability,
             'llm_call_timeout': self.llm_call_timeout,
