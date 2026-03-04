@@ -518,7 +518,10 @@ def _truncate_results(results: List[Tuple], max_rows: int = 50, max_size_mb: flo
     # Deduplicate using set (matches BIRD evaluation logic), then sort for consistency
     import json
     original_count = len(results)
-    deduplicated = sorted(set(results))  # set removes duplicates, sorted ensures consistency
+    # set removes duplicates; sort with None/mixed-type-safe key for consistency
+    def _sort_key(row):
+        return tuple((0, "", "") if v is None else (1, type(v).__name__, str(v)) for v in row)
+    deduplicated = sorted(set(results), key=_sort_key)
     deduplicated_count = len(deduplicated)
     deduplicated_flag = deduplicated_count < original_count
 
