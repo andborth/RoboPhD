@@ -508,6 +508,11 @@ Your response:"""
                         if new_sql.startswith(':'):
                             new_sql = new_sql[1:].strip()
                         new_sql = self._clean_sql(new_sql)
+                    if new_sql.upper().endswith("CORRECT"):
+                        stripped = new_sql[:-7].strip()
+                        if stripped:
+                            return True, stripped, "Model confirmed SQL is correct (cached)"
+                        return True, sql, "Model confirmed SQL is correct (cached)"
                     return False, new_sql, "Model provided improved SQL (cached)"
 
         try:
@@ -575,6 +580,11 @@ Your response:"""
                     if new_sql.startswith(':'):
                         new_sql = new_sql[1:].strip()  # Remove colon
                     new_sql = self._clean_sql(new_sql)  # Clean again
+
+                # Handle edge case: "SELECT ... \n\nCORRECT"
+                if new_sql.upper().endswith("CORRECT"):
+                    stripped = new_sql[:-7].strip()
+                    return True, stripped if stripped else sql, "Model confirmed SQL is correct"
 
                 # Debug log this verification API call with improved SQL response
                 self._maybe_debug_log_api_call(
