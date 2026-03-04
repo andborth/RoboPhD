@@ -114,9 +114,14 @@ def split_config(full_config: dict, task: "TaskDefinition") -> tuple[dict, dict]
     researcher_config: keys that ConfigManager validates (engine + shared operational).
     task_config: keys consumed by evaluator/dataset factories only.
 
-    Valid task keys are derived from the task's config_defaults plus universal
-    keys shared by all tasks. Each task owns its own key validation — no
-    central domain key registry needed.
+    Routing priority (first match wins):
+      1. _SHARED_KEY_MAP  → both (translated key to researcher, original to task)
+         e.g. max_workers → max_concurrent in researcher, max_workers in task
+      2. task_only_keys   → task_config (+ researcher_config if key also exists
+         in ConfigManager defaults, e.g. evaluation_budget)
+      3. ConfigManager defaults → researcher_config only
+
+    Valid keys: union of all three sets. Unknown keys raise SystemExit.
     """
     defaults = ConfigManager().get_defaults()
     task_only_keys = _UNIVERSAL_TASK_KEYS | set(task.config_defaults)
@@ -132,8 +137,6 @@ def split_config(full_config: dict, task: "TaskDefinition") -> tuple[dict, dict]
                 f"Use --list-params to see valid parameters."
             )
         if key in _SHARED_KEY_MAP:
-            # Translate to RoboPhD equivalent (check first — shared keys
-            # may also appear in task_only_keys via config_defaults)
             researcher_config[_SHARED_KEY_MAP[key]] = value
             task_config[key] = value
         elif key in task_only_keys:
