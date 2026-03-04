@@ -420,13 +420,10 @@ Do not include explanations, prefixes, or combine both responses."""
         if new_sql.upper().startswith("CORRECT"):
             new_sql = new_sql[7:].strip().lstrip(":").strip()
             new_sql = _clean_sql(new_sql)
-
-        # Handle edge case: "SELECT ... \n\nCORRECT"
-        if new_sql.upper().endswith("CORRECT"):
-            stripped = new_sql[:-7].strip()
-            if stripped:
-                return True, stripped, cost
-            return True, sql, cost
+        # Handle edge case: "SELECT ...\nCORRECT" (CORRECT on its own line)
+        elif new_sql.strip().split("\n")[-1].strip().upper() == "CORRECT":
+            stripped = "\n".join(new_sql.strip().split("\n")[:-1]).strip()
+            return True, stripped if stripped else sql, cost
 
         return False, new_sql, cost
 
