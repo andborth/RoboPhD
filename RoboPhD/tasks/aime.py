@@ -52,6 +52,7 @@ def make_aime_task() -> TaskDefinition:
         config_defaults={
             "solver_model": "gpt-4.1-mini",
             "aime_split": "train",
+            "evaluation_budget": 600,
         },
         test_overrides={"aime_split": "test", "test_repeats": 5},
     )

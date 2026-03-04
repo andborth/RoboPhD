@@ -127,6 +127,7 @@ def make_text2sql_task() -> TaskDefinition:
             "use_evidence": True,
             "max_verification_retries": 2,
             "temperature_strategy": "fixed",
+            "evaluation_budget": 1600,
         },
         test_overrides={"dataset": "dev", "max_test_workers": 4},
     )

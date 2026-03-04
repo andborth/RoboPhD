@@ -133,6 +133,8 @@ def split_config(full_config: dict, task: "TaskDefinition") -> tuple[dict, dict]
             )
         if key in task_only_keys:
             task_config[key] = value
+            if key in defaults:
+                researcher_config[key] = value
         elif key in _SHARED_KEY_MAP:
             # Translate to RoboPhD equivalent
             researcher_config[_SHARED_KEY_MAP[key]] = value
