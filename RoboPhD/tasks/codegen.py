@@ -171,6 +171,7 @@ def make_codegen_task() -> TaskDefinition:
             "critic_timeout": 600,
             "runs_dir": "../robophd_runs",
             "evaluation_budget": 1600,
+            "max_workers": 12,
         },
         test_overrides={"codegen_split": "test"},
     )

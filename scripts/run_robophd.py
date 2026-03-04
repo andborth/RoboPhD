@@ -131,14 +131,15 @@ def split_config(full_config: dict, task: "TaskDefinition") -> tuple[dict, dict]
                 f"Unknown config key: {key!r}\n"
                 f"Use --list-params to see valid parameters."
             )
-        if key in task_only_keys:
+        if key in _SHARED_KEY_MAP:
+            # Translate to RoboPhD equivalent (check first — shared keys
+            # may also appear in task_only_keys via config_defaults)
+            researcher_config[_SHARED_KEY_MAP[key]] = value
+            task_config[key] = value
+        elif key in task_only_keys:
             task_config[key] = value
             if key in defaults:
                 researcher_config[key] = value
-        elif key in _SHARED_KEY_MAP:
-            # Translate to RoboPhD equivalent
-            researcher_config[_SHARED_KEY_MAP[key]] = value
-            task_config[key] = value  # also keep for evaluator factory
         elif key in defaults:
             researcher_config[key] = value
 
