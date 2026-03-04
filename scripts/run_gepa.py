@@ -338,7 +338,7 @@ def main():
     # --- 7. Optional test-set evaluation ---
     if args.eval_test_set:
         logger.info("Evaluating best candidate on test set...")
-        test_config = {**config, **task.test_overrides}
+        test_config = {**task.test_overrides, **config}
         test_examples = task.dataset_builder(test_config)
         test_repeats = test_config.get("test_repeats", 1)
         test_examples = test_examples * test_repeats
