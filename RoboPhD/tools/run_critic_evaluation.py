@@ -857,7 +857,6 @@ Then explain briefly what you accepted or rejected and why."""
 
         result = {
             "question_id": question_id,
-            "correct": v2_result["passed"],  # Standard field for cross-domain compatibility
             "v1_passed": v1_result["passed"],
             "v2_passed": v2_result["passed"],
             "v1_reason": v1_result.get("reason", ""),
@@ -1866,7 +1865,7 @@ def main():
                 results.append(result)
             except Exception as e:
                 logger.error(f"Evaluation failed for {question_id}: {e}")
-                results.append({"question_id": question_id, "correct": False, "error": str(e)})
+                results.append({"question_id": question_id, "score": 0.0, "error": str(e)})
 
             # Progress - log at reasonable intervals (~10 updates total)
             log_interval = max(1, len(problems) // 10)

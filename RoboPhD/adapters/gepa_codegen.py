@@ -410,7 +410,6 @@ class RoboPhDCodeGenEvaluator:
         if problem_dir is not None:
             result_entry = {
                 "question_id": question_id,
-                "correct": score >= 0.5,
                 "score": score,
                 "v1_passed": result.get("v1_passed", False),
                 "v2_passed": result.get("v2_passed", False),
@@ -426,7 +425,6 @@ class RoboPhDCodeGenEvaluator:
         diagnostics["cost_usd"] = eval_cost
         diagnostics["question_id"] = question_id
         diagnostics["score"] = score
-        diagnostics["correct"] = score >= 0.5
         diagnostics["v1_passed"] = result.get("v1_passed", False)
         diagnostics["v2_passed"] = result.get("v2_passed", False)
         diagnostics["improved"] = result.get("improved", False)

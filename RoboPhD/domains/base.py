@@ -42,7 +42,7 @@ class EvaluationResult:
         correct: Number of correct solutions
         results: List of per-question result dicts with at minimum:
             - question_id or problem_id
-            - correct: bool
+            - score: float (>= 0.5 counts as correct)
             - Additional domain-specific details
         metadata: Optional dict for domain-specific metadata (timing, costs, etc.)
     """

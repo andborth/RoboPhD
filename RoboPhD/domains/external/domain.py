@@ -215,15 +215,12 @@ class ExternalEvaluatorDomain(DomainInterface):
         correct_count = 0
 
         for problem_id, result_data in cached_results.items():
-            is_correct = result_data.get("correct", result_data.get("score", 0) >= 0.5)
-            score = result_data.get("score", 1.0 if is_correct else 0.0)
-            if is_correct:
+            score = result_data.get("score", 0.0)
+            if score >= 0.5:
                 correct_count += 1
             results.append({
                 "question_id": problem_id,
-                "correct": is_correct,
                 "score": score,
-                "error": result_data.get("error"),
                 "cached": True,
             })
 
@@ -262,12 +259,10 @@ class ExternalEvaluatorDomain(DomainInterface):
                     score, diagnostics = self._evaluator_fn(
                         candidate, example, problem_dir=problem_dir
                     )
-                    is_correct = score >= 0.5
                 except Exception as e:
                     self.logger.error(f"Evaluator failed on {problem_id}: {e}")
                     score = 0.0
                     diagnostics = {"error": str(e)}
-                    is_correct = False
 
                 for key in ("question_id", "problem_id", "id", "example_id"):
                     if key in example:
@@ -288,21 +283,16 @@ class ExternalEvaluatorDomain(DomainInterface):
 
                 result_entry = {
                     "question_id": eid,
-                    "correct": is_correct,
                     "score": score,
-                    "error": diagnostics.get("error"),
                     "eval_cost": cost_usd,
                 }
 
                 # Write result.json for future caching (don't overwrite
                 # a richer one the evaluator may have already written)
                 result_path = problem_dir / "result.json"
-                if not diagnostics.get("error") and not result_path.exists():
+                if not result_path.exists():
                     with open(result_path, "w") as f:
-                        json.dump(
-                            {k: v for k, v in result_entry.items() if k != "error"},
-                            f, indent=2,
-                        )
+                        json.dump(result_entry, f, indent=2)
 
                 # Write diagnostics as readable files for evolution.
                 # String values → {key}.md (or {key} if it already has an
@@ -322,9 +312,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                 self.logger.error(f"Unexpected error for {problem_id}: {e}")
                 return {
                     "question_id": problem_id,
-                    "correct": False,
                     "score": 0.0,
-                    "error": str(e),
                 }
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -335,7 +323,7 @@ class ExternalEvaluatorDomain(DomainInterface):
             for future in as_completed(futures):
                 result_entry = future.result()
                 results.append(result_entry)
-                if result_entry["correct"]:
+                if result_entry["score"] >= 0.5:
                     correct_count += 1
 
         total = cached_count + fresh_count
@@ -459,7 +447,7 @@ Agent source code:
         Scans iteration directories before the current one for existing results
         that can be reused via symlinks. Same pattern as CodeGenDomain.
 
-        A result is cacheable if its result.json exists and has no "error" key.
+        A result is cacheable if its result.json exists and is valid JSON.
 
         Returns:
             Dict mapping problem_id -> resolved Path to the cached problem directory
@@ -500,9 +488,6 @@ Agent source code:
                     with open(result_file) as f:
                         result_data = json.load(f)
                 except (json.JSONDecodeError, IOError):
-                    continue
-
-                if "error" in result_data:
                     continue
 
                 # Resolve to avoid symlink chains

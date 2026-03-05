@@ -265,72 +265,44 @@ def run_agent(agent_code, train_in, train_out, test_in, test_out, model_id, max_
 # Dataset builder
 # ---------------------------------------------------------------------------
 
-def load_arc_dataset(seed: int = 0):
-    """Load ARC-AGI dataset from HuggingFace.
-
-    Returns (train_set, val_set, test_set) as lists of dspy.Example.
-    Matches GEPA's split: train=3200, val=200 (from HF training), test=HF evaluation.
-    """
-    import dspy
-    from datasets import load_dataset
-
-    ds = load_dataset("dataartist/arc-agi")
-
-    def make_example(ex):
-        return dspy.Example(
-            problem_id=ex["id"],
-            train_in=[t["input"] for t in ex["train"]],
-            train_out=[t["output"] for t in ex["train"]],
-            test_in=[t["input"] for t in ex["test"]],
-            test_out=[t["output"] for t in ex["test"]],
-        ).with_inputs("problem_id", "train_in", "train_out", "test_in", "test_out")
-
-    trainset = [make_example(ex) for ex in ds["training"]]
-    testset = [make_example(ex) for ex in ds["evaluation"]]
-
-    random.Random(seed).shuffle(trainset)
-
-    val_set = trainset[-200:]
-    train_set = trainset[:-200]
-    test_set = testset
-
-    logger.info(f"ARC-AGI dataset: train={len(train_set)}, val={len(val_set)}, test={len(test_set)}")
-    return train_set, val_set, test_set
-
-
 def build_arc_agi_dataset(split: str = "train", seed: int = 0) -> List[Dict[str, Any]]:
-    """Build a flat list of ARC-AGI example dicts for RoboPhD/GEPA.
+    """Build a flat list of ARC-AGI example dicts from HuggingFace.
 
-    Wraps load_arc_dataset() and converts dspy.Example -> plain dicts.
+    Matches GEPA's split logic: shuffle HF training with seed, last 200 = val,
+    rest = train, HF evaluation = test.
 
     Args:
-        split: "train" (3200 problems), "val" (200 problems), or "test" (HF evaluation set).
+        split: "train" (200 problems), "val" (200 problems), or "test" (HF evaluation, 400).
         seed: Random seed for train/val split (default 0, matching GEPA).
 
     Returns:
         List of dicts with keys: problem_id, train_in, train_out, test_in, test_out.
     """
+    from datasets import load_dataset
+
     if split not in ("train", "val", "test"):
         raise ValueError(f"Unknown ARC-AGI split: {split!r}. Use 'train', 'val', or 'test'.")
 
-    train_set, val_set, test_set = load_arc_dataset(seed=seed)
+    ds = load_dataset("dataartist/arc-agi")
 
-    if split == "train":
-        examples = train_set
-    elif split == "val":
-        examples = val_set
+    def to_dict(ex):
+        return {
+            "problem_id": ex["id"],
+            "train_in": [t["input"] for t in ex["train"]],
+            "train_out": [t["output"] for t in ex["train"]],
+            "test_in": [t["input"] for t in ex["test"]],
+            "test_out": [t["output"] for t in ex["test"]],
+        }
+
+    if split == "test":
+        result = [to_dict(ex) for ex in ds["evaluation"]]
     else:
-        examples = test_set
-
-    result = []
-    for ex in examples:
-        result.append({
-            "problem_id": ex.problem_id,
-            "train_in": ex.train_in,
-            "train_out": ex.train_out,
-            "test_in": ex.test_in,
-            "test_out": ex.test_out,
-        })
+        trainset = [to_dict(ex) for ex in ds["training"]]
+        random.Random(seed).shuffle(trainset)
+        if split == "val":
+            result = trainset[-200:]
+        else:
+            result = trainset[:-200]
 
     logger.info(f"ARC-AGI {split} set: {len(result)} problems")
     return result

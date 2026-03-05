@@ -600,7 +600,6 @@ Do not include explanations, prefixes, or combine both responses."""
             "question_id": example["question_id"],
             "db_id": db_id,
             "score": score,
-            "correct": score >= 0.5,
             "status": comparison["status"],
             "verification_retries": len([a for a in attempts if not a["is_correct"]]),
             "cost_usd": cost,
@@ -644,7 +643,6 @@ Do not include explanations, prefixes, or combine both responses."""
             result_entry = {
                 "question_id": example["question_id"],
                 "db_id": db_id,
-                "correct": score >= 0.5,
                 "score": score,
                 "status": comparison["status"],
                 "verification_retries": len([a for a in attempts if not a["is_correct"]]),

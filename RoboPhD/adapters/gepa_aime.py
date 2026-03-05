@@ -215,7 +215,6 @@ class AIMEEvaluator:
         diagnostics = {
             "problem_id": example["problem_id"],
             "score": score,
-            "correct": score >= 0.5,
             "cost_usd": cost,
             # String diagnostics — keys are filenames written by ExternalEvaluatorDomain
             "problem.md": problem_text,
@@ -235,7 +234,6 @@ class AIMEEvaluator:
             problem_dir.mkdir(parents=True, exist_ok=True)
             result_entry = {
                 "problem_id": example["problem_id"],
-                "correct": score >= 0.5,
                 "score": score,
                 "predicted_answer": predicted,
                 "expected_answer": example["answer"],
