@@ -281,7 +281,6 @@ class CachedSQLExecutor:
         # Cache miss - execute
         db_stats[f'{stat_prefix}_cache_misses'] += 1
         
-        # Auto-clear locks and use optimized connection pool
         results = execute_sql_with_timeout(db_path, sql, timeout_seconds)
         
         # Cache only if results are small enough
