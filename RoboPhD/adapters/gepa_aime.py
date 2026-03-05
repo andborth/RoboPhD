@@ -184,12 +184,9 @@ class AIMEEvaluator:
             self._total_eval_cost += cost
 
         # Debug logging
-        log_dir = self.debug_log_dir
-        if log_dir is None and problem_dir is not None:
-            log_dir = Path(problem_dir) / "debug"
         maybe_debug_log(
             debug_log_probability=self.debug_log_probability,
-            debug_log_dir=log_dir,
+            debug_log_dir=self.debug_log_dir,
             call_type="generation",
             model=self.solver_model,
             messages=messages,
@@ -209,6 +206,7 @@ class AIMEEvaluator:
         diagnostics = {
             "problem_id": example["problem_id"],
             "score": score,
+            "correct": score >= 0.5,
             "cost_usd": cost,
             # String diagnostics — keys are filenames written by ExternalEvaluatorDomain
             "problem.md": problem_text,

@@ -417,6 +417,7 @@ class RoboPhDCodeGenEvaluator:
         diagnostics["cost_usd"] = eval_cost
         diagnostics["question_id"] = question_id
         diagnostics["score"] = score
+        diagnostics["correct"] = score >= 0.5
         diagnostics["v1_passed"] = result.get("v1_passed", False)
         diagnostics["v2_passed"] = result.get("v2_passed", False)
         diagnostics["improved"] = result.get("improved", False)

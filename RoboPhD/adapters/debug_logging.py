@@ -19,8 +19,8 @@ def _slugify(text: str, max_len: int = 40) -> str:
     return slug[:max_len].rstrip('_')
 
 
-def _truncate_message(content: str, max_chars: int = 400) -> str:
-    """Truncate long message content, keeping first and last 200 chars."""
+def _truncate_message(content: str, max_chars: int = 1200) -> str:
+    """Truncate long message content, keeping first and last 600 chars."""
     if len(content) <= max_chars:
         return content
     kept = max_chars // 2
@@ -80,18 +80,18 @@ def maybe_debug_log(
             logged_messages = []
             for msg in messages:
                 logged_msg = dict(msg)
-                if isinstance(logged_msg.get("content"), str) and len(logged_msg["content"]) > 400:
+                if isinstance(logged_msg.get("content"), str) and len(logged_msg["content"]) > 1200:
                     logged_msg["content"] = _truncate_message(logged_msg["content"])
                 logged_messages.append(logged_msg)
         else:
-            logged_messages = _truncate_message(messages) if len(messages) > 400 else messages
+            logged_messages = _truncate_message(messages) if len(messages) > 1200 else messages
 
         entry = {
             "timestamp": now.isoformat(),
             "call_type": call_type,
             "model": model,
             "messages": logged_messages,
-            "response": _truncate_message(response_text) if len(response_text) > 400 else response_text,
+            "response": _truncate_message(response_text) if len(response_text) > 1200 else response_text,
         }
         if metadata:
             entry["metadata"] = metadata

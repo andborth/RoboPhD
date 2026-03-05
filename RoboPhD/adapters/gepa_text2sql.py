@@ -312,7 +312,7 @@ class Text2SQLEvaluator:
 
     # -- Phase 2: LLM SQL generation --
 
-    def _generate_sql(self, eval_instructions: str, analysis: str, question: str, evidence: str, *, debug_log_dir: Optional[Path] = None) -> Tuple[str, float]:
+    def _generate_sql(self, eval_instructions: str, analysis: str, question: str, evidence: str) -> Tuple[str, float]:
         """Generate initial SQL via LLM. Returns (sql, cost).
 
         Uses multi-breakpoint caching:
@@ -338,7 +338,7 @@ class Text2SQLEvaluator:
 
         maybe_debug_log(
             debug_log_probability=self.debug_log_probability,
-            debug_log_dir=debug_log_dir or self.debug_log_dir,
+            debug_log_dir=self.debug_log_dir,
             call_type="generation",
             model=self.eval_model,
             messages=[
@@ -381,7 +381,6 @@ class Text2SQLEvaluator:
         attempts: List[Dict],
         eval_instructions: str,
         analysis: str,
-        debug_log_dir: Optional[Path] = None,
     ) -> Tuple[bool, str, float]:
         """Single verification call. Returns (is_correct, new_sql, cost).
 
@@ -436,7 +435,7 @@ Do not include explanations, prefixes, or combine both responses."""
 
         maybe_debug_log(
             debug_log_probability=self.debug_log_probability,
-            debug_log_dir=debug_log_dir or self.debug_log_dir,
+            debug_log_dir=self.debug_log_dir,
             call_type="verification",
             model=self.eval_model,
             messages=[
@@ -474,10 +473,9 @@ Do not include explanations, prefixes, or combine both responses."""
         evidence: str,
         verify_prompt: str,
         db_id: str,
-        debug_log_dir: Optional[Path] = None,
     ) -> Tuple[str, float, List[Dict]]:
         """Generate SQL with verification loop. Returns (final_sql, total_cost, attempts)."""
-        sql, total_cost = self._generate_sql(eval_instructions, analysis, question, evidence, debug_log_dir=debug_log_dir)
+        sql, total_cost = self._generate_sql(eval_instructions, analysis, question, evidence)
         attempts: List[Dict] = []
 
         executor = self._get_sql_executor()
@@ -494,7 +492,6 @@ Do not include explanations, prefixes, or combine both responses."""
             is_correct, new_sql, cost = self._verify_and_improve(
                 verify_prompt, question, evidence, sql, summary, attempts,
                 eval_instructions=eval_instructions, analysis=analysis,
-                debug_log_dir=debug_log_dir,
             )
             total_cost += cost
 
@@ -554,11 +551,6 @@ Do not include explanations, prefixes, or combine both responses."""
         with self._lock:
             self._eval_count += 1
 
-        # Resolve effective debug log dir (fall back to problem_dir/debug in RoboPhD stack)
-        debug_log_dir = self.debug_log_dir
-        if debug_log_dir is None and problem_dir is not None:
-            debug_log_dir = Path(problem_dir) / "debug"
-
         # Phase 1: Tool-based analysis (cached)
         analysis = self._get_analysis(analysis_code, db_id)
 
@@ -567,10 +559,9 @@ Do not include explanations, prefixes, or combine both responses."""
             if self.max_verification_retries > 0:
                 predicted_sql, cost, attempts = self._generate_with_verification(
                     eval_instructions, analysis, question, evidence, verify_prompt, db_id,
-                    debug_log_dir=debug_log_dir,
                 )
             else:
-                predicted_sql, cost = self._generate_sql(eval_instructions, analysis, question, evidence, debug_log_dir=debug_log_dir)
+                predicted_sql, cost = self._generate_sql(eval_instructions, analysis, question, evidence)
                 attempts = []
         except Exception as e:
             logger.error(f"SQL generation failed for {db_id}/{example['question_id']}: {e}")
@@ -600,6 +591,9 @@ Do not include explanations, prefixes, or combine both responses."""
             "question_id": example["question_id"],
             "db_id": db_id,
             "score": score,
+            "correct": score >= 0.5,
+            "status": comparison["status"],
+            "verification_retries": len([a for a in attempts if not a["is_correct"]]),
             "cost_usd": cost,
             # String diagnostics — keys are filenames written by ExternalEvaluatorDomain
             "question.md": f"# Question\n\n{question}\n\n## Evidence\n\n{evidence or '(none)'}",
