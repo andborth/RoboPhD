@@ -21,235 +21,70 @@ class SQLTimeoutError(Exception):
     pass
 
 
-class ReadOnlyConnectionPool:
-    """Thread-safe connection pool for read-only SQLite access.
+def _create_readonly_connection(db_path: str) -> sqlite3.Connection:
+    """Create a read-only optimized SQLite connection.
 
-    Caps total idle connections across all databases to prevent FD exhaustion
-    (BIRD has ~70 databases; without a cap, long runs hit EMFILE).
-    When the cap is reached, idle connections for the least-recently-used
-    database are evicted.
+    All database access in RoboPhD is read-only, so we skip connection
+    pooling entirely — just create a fresh connection and close it when done.
+    This avoids FD accumulation (BIRD has ~70 databases; pooling previously
+    caused EMFILE on long runs).
     """
-
-    def __init__(self, max_connections_per_db: int = 2, max_total_idle: int = 40):
-        self.max_connections_per_db = max_connections_per_db
-        self.max_total_idle = max_total_idle
-        self.pools = {}  # db_path -> list of connections
-        self.pool_locks = {}  # db_path -> lock
-        self.connection_counts = {}  # db_path -> current count
-        self._access_order = []  # LRU list of db_paths with idle connections
-        self.global_lock = threading.Lock()
-    
-    def _clear_db_locks_if_needed(self, db_path: str):
-        """Automatically clear SQLite lock files since we're read-only"""
-        try:
-            lock_files = [
-                f"{db_path}-wal",
-                f"{db_path}-shm", 
-                f"{db_path}-journal"
-            ]
-            
-            for lock_file in lock_files:
-                if os.path.exists(lock_file):
-                    os.remove(lock_file)
-                    # Log lock file cleanup at debug level
-                    import logging
-                    logging.debug(f"Auto-cleared read-only lock file: {lock_file}")
-        except Exception as e:
-            # Log warning at debug level - not critical
-            import logging
-            logging.debug(f"Could not clear lock files for {db_path}: {e}")
-    
-    def _create_optimized_connection(self, db_path: str) -> sqlite3.Connection:
-        """Create connection with read-only optimizations"""
-        # Auto-clear any lock files first (safe for read-only)
-        self._clear_db_locks_if_needed(db_path)
-
-        # Create connection with optimizations
-        # Note: We do NOT use mode=ro as SQLite needs to create temporary tables
-        # for some queries (e.g., ORDER BY, GROUP BY operations).
-        # The PRAGMA query_only setting below prevents actual data modifications.
-        conn = sqlite3.connect(db_path, timeout=10.0, check_same_thread=False)
-
-        # Read-only PRAGMA optimizations
-        conn.execute("PRAGMA query_only = 1")  # Prevent writes to the database
-        conn.execute("PRAGMA read_uncommitted = 1")  # Faster reads
-        conn.execute("PRAGMA synchronous = OFF")  # No sync for reads
-        conn.execute("PRAGMA journal_mode = WAL")  # WAL mode for concurrent reads
-        conn.execute("PRAGMA temp_store = MEMORY")  # Use memory for temp tables
-        conn.execute("PRAGMA mmap_size = 268435456")  # 256MB mmap for faster reads
-        conn.execute("PRAGMA cache_size = -64000")  # 64MB cache (negative = KB)
-        conn.execute("PRAGMA page_size = 4096")  # Optimal page size for read performance
-
-        return conn
-    
-    @contextmanager
-    def get_connection(self, db_path: str):
-        """Get a pooled connection with context manager"""
-        # Initialize pool for this database if needed
-        with self.global_lock:
-            if db_path not in self.pools:
-                self.pools[db_path] = []
-                self.pool_locks[db_path] = threading.Lock()
-                self.connection_counts[db_path] = 0
-        
-        pool_lock = self.pool_locks[db_path]
-        conn = None
-        
-        try:
-            # Try to get existing connection from pool
-            with pool_lock:
-                if self.pools[db_path]:
-                    conn = self.pools[db_path].pop()
-                elif self.connection_counts[db_path] < self.max_connections_per_db:
-                    conn = self._create_optimized_connection(db_path)
-                    self.connection_counts[db_path] += 1
-            
-            # If no connection available, create temporary one
-            if conn is None:
-                conn = self._create_optimized_connection(db_path)
-                temp_connection = True
-            else:
-                temp_connection = False
-            
-            yield conn
-            
-        finally:
-            # Return connection to pool or close if temporary
-            if conn and not temp_connection:
-                with pool_lock:
-                    if len(self.pools[db_path]) < self.max_connections_per_db:
-                        self.pools[db_path].append(conn)
-                    else:
-                        conn.close()
-                        self.connection_counts[db_path] -= 1
-                # Evict idle connections from least-recently-used DBs if over cap
-                self._evict_if_needed(db_path)
-            elif conn and temp_connection:
-                conn.close()
-    
-    def _evict_if_needed(self, current_db_path: str):
-        """Evict idle connections from LRU databases when over the total cap.
-
-        Called after returning a connection to the pool.  Only evicts idle
-        (pooled) connections — never touches connections currently checked out
-        by other threads.
-        """
-        with self.global_lock:
-            # Update access order (move current db to end = most recent)
-            if current_db_path in self._access_order:
-                self._access_order.remove(current_db_path)
-            self._access_order.append(current_db_path)
-
-            # Count total idle connections
-            total_idle = sum(len(pool) for pool in self.pools.values())
-            if total_idle <= self.max_total_idle:
-                return
-
-            # Evict from least-recently-used databases first
-            for victim_path in list(self._access_order):
-                if total_idle <= self.max_total_idle:
-                    break
-                if victim_path == current_db_path:
-                    continue  # Don't evict the DB we just used
-                if victim_path not in self.pools:
-                    continue
-                with self.pool_locks[victim_path]:
-                    while self.pools[victim_path] and total_idle > self.max_total_idle:
-                        conn_to_close = self.pools[victim_path].pop()
-                        try:
-                            conn_to_close.close()
-                        except Exception:
-                            pass
-                        self.connection_counts[victim_path] -= 1
-                        total_idle -= 1
-                    if not self.pools[victim_path]:
-                        self._access_order.remove(victim_path)
-
-    def close_database(self, db_path: str):
-        """Close all connections for a specific database"""
-        with self.global_lock:
-            if db_path in self.pools:
-                with self.pool_locks[db_path]:
-                    for conn in self.pools[db_path]:
-                        try:
-                            conn.close()
-                        except:
-                            pass  # Ignore close errors
-                    self.pools[db_path].clear()
-                    self.connection_counts[db_path] = 0
-
-    def close_all(self):
-        """Close all pooled connections"""
-        with self.global_lock:
-            for db_path, pool in self.pools.items():
-                with self.pool_locks[db_path]:
-                    for conn in pool:
-                        conn.close()
-                    pool.clear()
-                    self.connection_counts[db_path] = 0
+    conn = sqlite3.connect(db_path, timeout=10.0, check_same_thread=False)
+    conn.execute("PRAGMA query_only = 1")
+    conn.execute("PRAGMA read_uncommitted = 1")
+    conn.execute("PRAGMA synchronous = OFF")
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA temp_store = MEMORY")
+    conn.execute("PRAGMA mmap_size = 268435456")  # 256MB mmap
+    conn.execute("PRAGMA cache_size = -64000")  # 64MB cache
+    return conn
 
 
-# Global connection pool instance
-_connection_pool = ReadOnlyConnectionPool()
-
-# Cleanup handler for proper connection closing
-import atexit
-atexit.register(_connection_pool.close_all)
+@contextmanager
+def _get_connection(db_path: str):
+    """Context manager: create a read-only connection, close on exit."""
+    conn = _create_readonly_connection(db_path)
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
 def close_database_connections(db_path: str):
-    """
-    Close all cached connections for a specific database.
-    Call this after SQL generation to release database locks before evaluation.
-    """
-    _connection_pool.close_database(db_path)
+    """No-op. Retained for backward compatibility with callers (e.g. researcher.py)."""
+    pass
 
 
 def close_all_connections():
-    """
-    Close all pooled database connections.
-    Call this between iterations to prevent file descriptor accumulation.
-    """
-    _connection_pool.close_all()
+    """No-op. Retained for backward compatibility with callers (e.g. researcher.py)."""
+    pass
 
 
 def execute_sql_with_timeout(db_path: str, sql: str, timeout_seconds: int) -> List[Tuple]:
-    """
-    Execute SQL with timeout using optimized read-only connection pool
-    Much faster due to connection reuse and read-only optimizations
-    """
+    """Execute SQL with timeout using a fresh read-only connection."""
     result_queue = queue.Queue()
     exception_queue = queue.Queue()
-    
+
     def target():
         try:
-            # Use pooled connection with read-only optimizations
-            with _connection_pool.get_connection(db_path) as conn:
+            with _get_connection(db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(sql)
                 results = cursor.fetchall()
                 result_queue.put(results)
         except Exception as e:
             exception_queue.put(e)
-    
-    # Start execution in a separate thread
-    thread = threading.Thread(target=target)
-    thread.daemon = True
+
+    thread = threading.Thread(target=target, daemon=True)
     thread.start()
-    
-    # Wait for completion or timeout
     thread.join(timeout_seconds)
-    
+
     if thread.is_alive():
-        # Thread is still running - timeout occurred
-        # Note: We can't actually kill the thread, but we can abandon it
         raise SQLTimeoutError(f"SQL query timed out after {timeout_seconds} seconds")
-    
-    # Check for exceptions
+
     if not exception_queue.empty():
         raise exception_queue.get()
-    
-    # Return results
+
     if not result_queue.empty():
         return result_queue.get()
     else:
@@ -257,41 +92,17 @@ def execute_sql_with_timeout(db_path: str, sql: str, timeout_seconds: int) -> Li
 
 
 def check_database_lock(db_path: str) -> bool:
-    """
-    Check if database has active locks (with auto-clearing for read-only)
-    Returns True if database appears to be locked after clearing attempts
-    """
+    """Check if database is accessible. Returns True if locked/inaccessible."""
     try:
-        # First try with pooled connection (will auto-clear locks)
-        with _connection_pool.get_connection(db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT 1")
-            cursor.fetchone()
-            return False  # No lock
-        
+        with _get_connection(db_path) as conn:
+            conn.execute("SELECT 1").fetchone()
+            return False
     except sqlite3.OperationalError as e:
         if "database is locked" in str(e).lower():
-            # Try manual lock clearing as last resort
-            try:
-                lock_files = [f"{db_path}-wal", f"{db_path}-shm", f"{db_path}-journal"]
-                for lock_file in lock_files:
-                    if os.path.exists(lock_file):
-                        os.remove(lock_file)
-                        print(f"Cleared persistent lock file: {lock_file}")
-                
-                # Try again after clearing
-                with _connection_pool.get_connection(db_path) as conn:
-                    cursor = conn.cursor()
-                    cursor.execute("SELECT 1")
-                    cursor.fetchone()
-                    return False
-            except Exception:
-                pass
-            
-            return True  # Still locked after clearing attempts
-        raise  # Other error
+            return True
+        raise
     except Exception:
-        return True  # Assume locked if any other issue
+        return True
 
 
 def normalize_sql(sql: str) -> str:
