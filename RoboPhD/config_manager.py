@@ -14,14 +14,13 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from RoboPhD.config import LMSTUDIO_DEFAULT_BASE_URL
 
 
 # Parameters that cannot change after iteration 1 (affect cache identity, data loading, etc.)
 IMMUTABLE_PARAMS = [
     "domain", "dataset", "random_seed",
     "initial_agents", "agents_directory",
-    "coder_model", "coder_model_tag", "codegen_split", "runs_directory",
+    "runs_directory",
 ]
 
 
@@ -66,21 +65,11 @@ class ConfigManager:
             "domain": "external",  # Domain plugin: 'external' for all task-registry domains
             "dataset": "train-filtered",
             "examples_per_iteration": 15,
-            "problems_per_context": 30,
             "agents_per_iteration": 3,
 
-            # Models (Text2SQL)
+            # Models
             "eval_model": "haiku-4.5",
-            "analysis_model": "haiku-4.5",
             "evolution_model": "opus-4.6",
-
-            # Models (CodeGen)
-            "coder_model": "haiku-4.5",   # Model for code generation
-            "coder_model_tag": "",         # Variant tag for cache isolation (e.g., "6bit_100K")
-            "critic_model": None,          # Model for critic (defaults to coder_model if None)
-
-            # CodeGen dataset filtering
-            "codegen_split": "evolution",  # "evolution" or "test" - which problems to use
 
             # Evolution parameters (NO LONGER SPECIAL!)
             "evolution_strategy": "cross_pollination",
@@ -95,21 +84,12 @@ class ConfigManager:
             # Deep Focus
             "new_agent_test_rounds": 1,
 
-            # SQL generation
-            "max_verification_retries": 2,
-            "temperature_strategy": "fixed",
-
             # Performance
             "max_concurrent": None,  # None = Python default: min(32, cpu_count+4)
 
             # Timeouts
             "evolution_timeout": 1800,
             "llm_call_timeout": 120,  # Per-call LLM timeout (2 min) - affects local models
-            "codegen_call_timeout": 1200,  # Per-call timeout for codegen (solution generation)
-            "critic_call_timeout": 600,    # Per-call timeout for critic/revision/acceptance
-
-            # LM Studio integration
-            "lmstudio_base_url": LMSTUDIO_DEFAULT_BASE_URL,  # LM Studio server URL
 
             # Other
             "debug_log_probability": 0.02,
@@ -150,9 +130,7 @@ class ConfigManager:
         # Iteration 0 = Pure defaults
         defaults = self.get_defaults()
         self.iteration_configs[0] = defaults.copy()
-        resolved_0 = defaults.copy()
-        self._resolve_dynamic_defaults(resolved_0)
-        self.resolved_configs[0] = resolved_0
+        self.resolved_configs[0] = defaults.copy()
 
         # Iteration 1 = User overrides only (delta from defaults)
         self.iteration_configs[1] = user_config.copy()
@@ -160,7 +138,6 @@ class ConfigManager:
         # Resolve iteration 1 = defaults + user overrides
         resolved = defaults.copy()
         resolved.update(user_config)
-        self._resolve_dynamic_defaults(resolved)
         self.resolved_configs[1] = resolved
 
         # Record in history
@@ -312,8 +289,6 @@ class ConfigManager:
             # Performance and system settings (user-controlled)
             "max_concurrent",
             "evolution_timeout",
-            "codegen_call_timeout",
-            "critic_call_timeout",
             "debug_log_probability"
         ]
 
@@ -364,7 +339,6 @@ class ConfigManager:
 
         # NOTE: We do NOT execute weighted random here
         # The config still contains weighted_random_configs pool for validation
-        self._resolve_dynamic_defaults(config)
         return config
 
     def set_current_iteration(self, iteration: int) -> None:
@@ -664,7 +638,6 @@ class ConfigManager:
                     "rationale": f"Weighted random selection from pool of {len(pool)} configs (selected with {selected_weight}% probability)"
                 })
 
-        self._resolve_dynamic_defaults(config)
         return config
 
     def _select_from_weighted_pool(self,
@@ -711,18 +684,6 @@ class ConfigManager:
         # Fallback (shouldn't reach here due to weights summing to 100)
         return pool[-1][0].copy()
 
-    def _resolve_dynamic_defaults(self, config: Dict[str, Any]) -> None:
-        """
-        Resolve dynamic defaults where one field depends on another.
-
-        Modifies config in place. Called after merging user config with defaults.
-
-        Dynamic defaults:
-        - critic_model: defaults to coder_model if None
-        """
-        if config.get('critic_model') is None:
-            config['critic_model'] = config['coder_model']  # Fail fast if coder_model missing
-
     def _resolve_base_config(self, iteration: int) -> Optional[Dict[str, Any]]:
         """
         Resolve config for iterations 0 or 1 (base cases with no side effects).
@@ -735,7 +696,6 @@ class ConfigManager:
         """
         if iteration == 0:
             config = self.get_defaults()
-            self._resolve_dynamic_defaults(config)
             return config
 
         if iteration == 1:
@@ -743,14 +703,12 @@ class ConfigManager:
             user_config = self.iteration_configs.get(1, {})
             resolved = defaults.copy()
             resolved.update(user_config)
-            self._resolve_dynamic_defaults(resolved)
             return resolved
 
         return None
 
     # Deprecated parameter aliases: old_name -> new_name
     _DEPRECATED_ALIASES = {
-        "verification_retries": "max_verification_retries",
     }
 
     def _apply_deprecated_aliases(self, config: Dict[str, Any]) -> None:

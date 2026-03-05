@@ -330,7 +330,6 @@ class DomainInterface(ABC):
             problems: List of problem dicts for this context
             config: Configuration dict with:
                 - eval_model: Model for generation
-                - analysis_model: Model for analysis
                 - timeout: Timeout for operations
                 - Additional domain-specific options
 

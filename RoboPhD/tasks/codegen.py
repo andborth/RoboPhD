@@ -166,8 +166,11 @@ def make_codegen_task() -> TaskDefinition:
         },
         config_defaults={
             "coder_model": "haiku-4.5",
+            "coder_model_tag": "",
             "critic_model": "haiku-4.5",
+            "codegen_split": "evolution",
             "codegen_timeout": 1200,
+            "codegen_call_timeout": 1200,
             "critic_timeout": 600,
             "runs_dir": "../robophd_runs",
             "evaluation_budget": 1600,

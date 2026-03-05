@@ -186,13 +186,10 @@ class ParallelAgentEvolver:
         # Extract all parameters from config
         self.evolution_model = config["evolution_model"]
         self.evolution_timeout = config["evolution_timeout"]
-        self.evolution_strategy = config["evolution_strategy"]
         self.agents_directory = config.get("agents_directory")
         self.strategies_directory = config.get("strategies_directory")
         self.new_agent_test_rounds = config["new_agent_test_rounds"]
         self.max_concurrent = config["max_concurrent"]
-        self.max_verification_retries = config["max_verification_retries"]
-        self.temperature_strategy = config["temperature_strategy"]
         self.debug_log_probability = config["debug_log_probability"]
         self.llm_call_timeout = config["llm_call_timeout"]
 
@@ -207,14 +204,11 @@ class ParallelAgentEvolver:
         self.use_challenger_selection = False
         # Greedy mode flag (set per-iteration)
         self.use_greedy_selection = False
-        self.header_repairs = []
         self.is_first_evolution_call = True
-        self.evolution_validation_failures = []  # Track validation failures
         
         # Setup paths
         # Evolution strategies will be loaded from experiment directory after strategies are copied
         self.evolution_prompts_dir = self.experiment_dir / "evolution_strategies"
-        self.analysis_skills_dir = Path(__file__).parent / "analysis_skills"
         self.available_strategies = {}
         # Note: _load_evolution_strategies() called after load_initial_strategies() in run()
 
@@ -344,11 +338,9 @@ class ParallelAgentEvolver:
                     databases_map[test_iteration] = databases
 
         # Deep focus test rounds don't cache, so all evals are fresh
-        # Hierarchical domains (Text2SQL): each context has problems_per_context problems
-        # Flat domains (CodeGen): each context IS one problem
-        problems_per_ctx = self.problems_per_context if self.domain.is_hierarchical else 1
+        # All domains use flat evaluation (each context IS one problem)
         self._current_deep_focus_fresh_evals = sum(
-            len(dbs) * problems_per_ctx for dbs in databases_map.values()
+            len(dbs) for dbs in databases_map.values()
         )
 
         # Create Deep Focus Evolution Manager
@@ -357,11 +349,8 @@ class ParallelAgentEvolver:
             test_rounds=self.new_agent_test_rounds,
             evolution_model=self.evolution_model,
             eval_model=self.eval_model,
-            analysis_model=self.analysis_model,
             timeout=self.evolution_timeout,
             max_concurrent=self.max_concurrent,
-            max_verification_retries=self.max_verification_retries,
-            temperature_strategy=self.temperature_strategy,
             debug_log_probability=self.debug_log_probability,
             llm_call_timeout=self.llm_call_timeout,
             domain=self.domain,
@@ -377,7 +366,7 @@ class ParallelAgentEvolver:
                 evolution_strategy_name=strategy_name,
                 evolution_prompt=prompt,
                 contexts=databases_map,
-                problems_per_context=self.problems_per_context,
+                problems_per_context=1,
             )
         except Exception as e:
             print(f"❌ Deep Focus evolution failed: {e}")
@@ -740,15 +729,11 @@ class ParallelAgentResearcher:
         self.domain_name = config.get("domain", "external")
         self.dataset = config["dataset"]
         self.examples_per_iteration = config["examples_per_iteration"]
-        self.problems_per_context = config["problems_per_context"]
         self.agents_per_iteration = config["agents_per_iteration"]
         self.eval_model = config["eval_model"]
-        self.analysis_model = config["analysis_model"]
         self.evolution_model = config["evolution_model"]
         self.max_concurrent = config["max_concurrent"]
         self.evolution_timeout = config["evolution_timeout"]
-        self.max_verification_retries = config["max_verification_retries"]
-        self.temperature_strategy = config["temperature_strategy"]
         self.debug_log_probability = config["debug_log_probability"]
         self.llm_call_timeout = config["llm_call_timeout"]
         self.new_agent_test_rounds = config["new_agent_test_rounds"]
@@ -862,8 +847,6 @@ class ParallelAgentResearcher:
             self.exception_failures = []
             self.five_hour_limit_incidents = []
 
-        self.debug = False
-
         # Ensure eval mode is always set
         if not hasattr(self, 'dev_eval_mode'):
             self.dev_eval_mode = dev_eval_mode
@@ -908,8 +891,6 @@ class ParallelAgentResearcher:
 
         # Pass references to evolver for Deep Focus
         self.evolver.eval_model = self.eval_model
-        self.evolver.analysis_model = self.analysis_model
-        self.evolver.problems_per_context = self.problems_per_context
         self.evolver.test_history = self.test_history
 
         # Legacy test_eval_mode for BIRD benchmark test set evaluation was
@@ -1232,8 +1213,8 @@ class ParallelAgentResearcher:
                         if total_questions == 0:
                             for r in cleaned_results:
                                 if 'accuracy' in r and 'examples' in r:
-                                    # Estimate based on problems per context
-                                    questions = r['examples'] * self.problems_per_context
+                                    # Each context is one problem (flat evaluation)
+                                    questions = r['examples']
                                     total_questions += questions
                                     total_correct += int(questions * r['accuracy'] / 100)
 
@@ -1557,7 +1538,7 @@ class ParallelAgentResearcher:
             if problems:
                 sampled = random.sample(
                     problems,
-                    min(self.problems_per_context, len(problems))
+                    min(1, len(problems))
                 )
                 self.current_iteration_problems[context_name] = sampled
             else:
@@ -2601,16 +2582,12 @@ class ParallelAgentResearcher:
             random.seed(self.random_seed)
 
             # Update mutable parameters from config
-            self.problems_per_context = config["problems_per_context"]
             self.examples_per_iteration = config["examples_per_iteration"]
             self.agents_per_iteration = config["agents_per_iteration"]
             self.eval_model = config["eval_model"]
-            self.analysis_model = config["analysis_model"]
             self.evolution_model = config["evolution_model"]
             self.max_concurrent = config["max_concurrent"]
             self.evolution_timeout = config["evolution_timeout"]
-            self.max_verification_retries = config["max_verification_retries"]
-            self.temperature_strategy = config["temperature_strategy"]
             self.debug_log_probability = config["debug_log_probability"]
             self.llm_call_timeout = config["llm_call_timeout"]
             self.new_agent_test_rounds = config["new_agent_test_rounds"]
@@ -2623,8 +2600,6 @@ class ParallelAgentResearcher:
             )
             # Restore evolver references
             self.evolver.eval_model = self.eval_model
-            self.evolver.analysis_model = self.analysis_model
-            self.evolver.problems_per_context = self.problems_per_context
             self.evolver.test_history = self.test_history
 
             # Load evolution strategies (needed after recreating evolver)

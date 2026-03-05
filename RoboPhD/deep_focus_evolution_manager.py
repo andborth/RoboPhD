@@ -57,11 +57,8 @@ class DeepFocusEvolutionManager:
         test_rounds: int = 2,
         evolution_model: str = "opus-4.5",
         eval_model: str = "haiku-4.5",
-        analysis_model: str = "haiku-4.5",
         timeout: int = 1800,
         max_concurrent: int | None = None,
-        max_verification_retries: int = 2,
-        temperature_strategy: str = "fixed",
         debug_log_probability: float = 0.02,
         llm_call_timeout: int = 120,
         domain: Optional['DomainInterface'] = None,
@@ -76,12 +73,9 @@ class DeepFocusEvolutionManager:
                         1 = Rounds 1, 2 (test against 1 iteration)
                         2 = Rounds 1, 2, 3 (test against 2 iterations) [DEFAULT]
             evolution_model: Model for evolution/planning (default opus-4.5)
-            eval_model: Model for SQL generation (default haiku-4.5)
-            analysis_model: Model for database analysis (default haiku-4.5)
+            eval_model: Model for evaluation (default haiku-4.5)
             timeout: Timeout in seconds for Claude CLI calls (default 1800)
             max_concurrent: Maximum concurrent context processing (None = Python default)
-            max_verification_retries: Maximum number of SQL verification retries (default 2)
-            temperature_strategy: Temperature strategy for SQL generation (default "fixed")
             debug_log_probability: Probability (0.0-1.0) of logging API calls for debugging (default 0.02)
             llm_call_timeout: Per-call LLM timeout in seconds (default 120, for local models)
             domain: Optional domain interface for domain-specific workspace setup.
@@ -93,11 +87,8 @@ class DeepFocusEvolutionManager:
         self.test_rounds = test_rounds
         self.evolution_model = evolution_model
         self.eval_model = eval_model
-        self.analysis_model = analysis_model
         self.timeout = timeout
         self.max_concurrent = max_concurrent
-        self.max_verification_retries = max_verification_retries
-        self.temperature_strategy = temperature_strategy
         self.debug_log_probability = debug_log_probability
         self.llm_call_timeout = llm_call_timeout
         self.domain = domain
@@ -836,10 +827,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             'cache_manager': None,  # No caching in DeepFocus testing
             'experiment_dir': self.experiment_dir,
             'eval_model': self.eval_model,
-            'analysis_model': self.analysis_model,
             'max_concurrent': self.max_concurrent,
-            'max_verification_retries': self.max_verification_retries,
-            'temperature_strategy': self.temperature_strategy,
             'debug_log_probability': self.debug_log_probability,
             'llm_call_timeout': self.llm_call_timeout,
         })

@@ -58,12 +58,10 @@ class ReportGenerator:
             "Dataset & Sampling": [
                 "dataset",
                 "examples_per_iteration",
-                "problems_per_context",
                 "agents_per_iteration"
             ],
             "Models": [
                 "eval_model",
-                "analysis_model",
                 "evolution_model",
                 "meta_evolution_model"
             ],
@@ -75,10 +73,6 @@ class ReportGenerator:
                 "meta_evolution_strategy",
                 "dollar_budget",
                 "evaluation_budget"
-            ],
-            "SQL Generation": [
-                "max_verification_retries",
-                "temperature_strategy"
             ],
             "Performance": [
                 "max_concurrent"
