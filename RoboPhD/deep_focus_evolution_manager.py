@@ -56,9 +56,8 @@ class DeepFocusEvolutionManager:
         self,
         test_rounds: int = 2,
         evolution_model: str = "opus-4.5",
-        eval_model: str = "haiku-4.5",
         timeout: int = 1800,
-        max_concurrent: int | None = None,
+        max_workers: int | None = None,
         debug_log_probability: float = 0.02,
         llm_call_timeout: int = 120,
         domain: Optional['DomainInterface'] = None,
@@ -73,9 +72,8 @@ class DeepFocusEvolutionManager:
                         1 = Rounds 1, 2 (test against 1 iteration)
                         2 = Rounds 1, 2, 3 (test against 2 iterations) [DEFAULT]
             evolution_model: Model for evolution/planning (default opus-4.5)
-            eval_model: Model for evaluation (default haiku-4.5)
             timeout: Timeout in seconds for Claude CLI calls (default 1800)
-            max_concurrent: Maximum concurrent context processing (None = Python default)
+            max_workers: Maximum concurrent context processing (None = Python default)
             debug_log_probability: Probability (0.0-1.0) of logging API calls for debugging (default 0.02)
             llm_call_timeout: Per-call LLM timeout in seconds (default 120, for local models)
             domain: Optional domain interface for domain-specific workspace setup.
@@ -86,9 +84,8 @@ class DeepFocusEvolutionManager:
         """
         self.test_rounds = test_rounds
         self.evolution_model = evolution_model
-        self.eval_model = eval_model
         self.timeout = timeout
-        self.max_concurrent = max_concurrent
+        self.max_workers = max_workers
         self.debug_log_probability = debug_log_probability
         self.llm_call_timeout = llm_call_timeout
         self.domain = domain
@@ -782,7 +779,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
 
         # Run agent testing using domain-agnostic approach
         context_label = self.domain.context_label_plural if self.domain else "contexts"
-        logger.info(f"Running agent on {len(contexts)} {context_label} (max concurrent: {self.max_concurrent})...")
+        logger.info(f"Running agent on {len(contexts)} {context_label} (max workers: {self.max_workers})...")
 
         # Create agent package directory with evolved agent artifacts
         agent_package_dir = test_workspace / "agent_package"
@@ -826,8 +823,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             'agent_id': agent_name,
             'cache_manager': None,  # No caching in DeepFocus testing
             'experiment_dir': self.experiment_dir,
-            'eval_model': self.eval_model,
-            'max_concurrent': self.max_concurrent,
+            'max_workers': self.max_workers,
             'debug_log_probability': self.debug_log_probability,
             'llm_call_timeout': self.llm_call_timeout,
         })

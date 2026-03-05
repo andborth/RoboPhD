@@ -189,7 +189,7 @@ class ParallelAgentEvolver:
         self.agents_directory = config.get("agents_directory")
         self.strategies_directory = config.get("strategies_directory")
         self.new_agent_test_rounds = config["new_agent_test_rounds"]
-        self.max_concurrent = config["max_concurrent"]
+        self.max_workers = config["max_workers"]
         self.debug_log_probability = config["debug_log_probability"]
         self.llm_call_timeout = config["llm_call_timeout"]
 
@@ -348,9 +348,8 @@ class ParallelAgentEvolver:
         manager = DeepFocusEvolutionManager(
             test_rounds=self.new_agent_test_rounds,
             evolution_model=self.evolution_model,
-            eval_model=self.eval_model,
             timeout=self.evolution_timeout,
-            max_concurrent=self.max_concurrent,
+            max_workers=self.max_workers,
             debug_log_probability=self.debug_log_probability,
             llm_call_timeout=self.llm_call_timeout,
             domain=self.domain,
@@ -730,9 +729,8 @@ class ParallelAgentResearcher:
         self.dataset = config["dataset"]
         self.examples_per_iteration = config["examples_per_iteration"]
         self.agents_per_iteration = config["agents_per_iteration"]
-        self.eval_model = config["eval_model"]
         self.evolution_model = config["evolution_model"]
-        self.max_concurrent = config["max_concurrent"]
+        self.max_workers = config["max_workers"]
         self.evolution_timeout = config["evolution_timeout"]
         self.debug_log_probability = config["debug_log_probability"]
         self.llm_call_timeout = config["llm_call_timeout"]
@@ -890,7 +888,6 @@ class ParallelAgentResearcher:
         )
 
         # Pass references to evolver for Deep Focus
-        self.evolver.eval_model = self.eval_model
         self.evolver.test_history = self.test_history
 
         # Legacy test_eval_mode for BIRD benchmark test set evaluation was
@@ -2584,9 +2581,8 @@ class ParallelAgentResearcher:
             # Update mutable parameters from config
             self.examples_per_iteration = config["examples_per_iteration"]
             self.agents_per_iteration = config["agents_per_iteration"]
-            self.eval_model = config["eval_model"]
             self.evolution_model = config["evolution_model"]
-            self.max_concurrent = config["max_concurrent"]
+            self.max_workers = config["max_workers"]
             self.evolution_timeout = config["evolution_timeout"]
             self.debug_log_probability = config["debug_log_probability"]
             self.llm_call_timeout = config["llm_call_timeout"]
@@ -2599,7 +2595,6 @@ class ParallelAgentResearcher:
                 domain=self.domain
             )
             # Restore evolver references
-            self.evolver.eval_model = self.eval_model
             self.evolver.test_history = self.test_history
 
             # Load evolution strategies (needed after recreating evolver)

@@ -61,7 +61,6 @@ class ReportGenerator:
                 "agents_per_iteration"
             ],
             "Models": [
-                "eval_model",
                 "evolution_model",
                 "meta_evolution_model"
             ],
@@ -75,7 +74,7 @@ class ReportGenerator:
                 "evaluation_budget"
             ],
             "Performance": [
-                "max_concurrent"
+                "max_workers"
             ],
             "Timeouts": [
                 "evolution_timeout"

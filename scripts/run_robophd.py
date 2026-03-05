@@ -101,31 +101,24 @@ _UNIVERSAL_TASK_KEYS = {
     "val_ratio", "reflection_model",
 }
 
-# Shared keys that need translation for ConfigManager.
-_SHARED_KEY_MAP = {
-    "max_workers": "max_concurrent",
-}
-
 
 def split_config(full_config: dict, task: "TaskDefinition") -> tuple[dict, dict]:
     """
     Split merged config into (researcher_config, task_config).
 
-    researcher_config: keys that ConfigManager validates (engine + shared operational).
+    researcher_config: keys that ConfigManager validates (engine parameters).
     task_config: keys consumed by evaluator/dataset factories only.
 
     Routing priority (first match wins):
-      1. _SHARED_KEY_MAP  → both (translated key to researcher, original to task)
-         e.g. max_workers → max_concurrent in researcher, max_workers in task
-      2. task_only_keys   → task_config (+ researcher_config if key also exists
+      1. task_only_keys   → task_config (+ researcher_config if key also exists
          in ConfigManager defaults, e.g. evaluation_budget)
-      3. ConfigManager defaults → researcher_config only
+      2. ConfigManager defaults → researcher_config only
 
-    Valid keys: union of all three sets. Unknown keys raise SystemExit.
+    Valid keys: union of both sets. Unknown keys raise SystemExit.
     """
     defaults = ConfigManager().get_defaults()
     task_only_keys = _UNIVERSAL_TASK_KEYS | set(task.config_defaults)
-    valid_keys = set(defaults) | task_only_keys | set(_SHARED_KEY_MAP)
+    valid_keys = set(defaults) | task_only_keys
 
     researcher_config = {}
     task_config = {}
@@ -136,10 +129,7 @@ def split_config(full_config: dict, task: "TaskDefinition") -> tuple[dict, dict]
                 f"Unknown config key: {key!r}\n"
                 f"Use --list-params to see valid parameters."
             )
-        if key in _SHARED_KEY_MAP:
-            researcher_config[_SHARED_KEY_MAP[key]] = value
-            task_config[key] = value
-        elif key in task_only_keys:
+        if key in task_only_keys:
             task_config[key] = value
             if key in defaults:
                 researcher_config[key] = value
@@ -204,12 +194,6 @@ def _list_params(task):
         print(f"  - {k}{suffix}")
     print()
 
-    # Shared keys
-    print("Shared keys (accepted in --task-config, translated for engine):")
-    for src, dst in sorted(_SHARED_KEY_MAP.items()):
-        print(f"  - {src}  ->  {dst}")
-    print()
-
     # Engine params from ConfigManager
     defaults = ConfigManager().get_defaults()
     categories = {
@@ -219,7 +203,7 @@ def _list_params(task):
         "Meta-Evolution": ["meta_evolution_strategy", "meta_evolution_model", "dollar_budget"],
         "Deep Focus": ["new_agent_test_rounds"],
         "Stopping Conditions": ["evaluation_budget"],
-        "Performance": ["max_concurrent"],
+        "Performance": ["max_workers"],
         "Timeouts": ["evolution_timeout"],
         "Caching": ["eval_result_cache"],
         "Other": ["debug_log_probability"],
@@ -299,10 +283,15 @@ def main():
     }
 
     # --- 3. Split config for ConfigManager vs task-only ---
-    # Only validate user-provided keys (task defaults are always valid)
+    # Seed researcher_config from task defaults so task-level settings
+    # (eval_model, max_workers, evaluation_budget) reach ConfigManager.
+    # User-provided keys override task defaults.
+    defaults = ConfigManager().get_defaults()
+    seeded_config = {k: v for k, v in task.config_defaults.items() if k in defaults}
     user_config = {**task_config, **engine_config}
     user_config["runs_directory"] = str(args.runs_dir)  # CLI arg always wins
-    researcher_config, _ = split_config(user_config, task)
+    seeded_config.update(user_config)
+    researcher_config, _ = split_config(seeded_config, task)
 
     # Force external domain (ExternalEvaluatorDomain wraps the task's evaluator)
     researcher_config["domain"] = "external"

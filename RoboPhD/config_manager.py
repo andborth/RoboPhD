@@ -68,7 +68,6 @@ class ConfigManager:
             "agents_per_iteration": 3,
 
             # Models
-            "eval_model": "haiku-4.5",
             "evolution_model": "opus-4.6",
 
             # Evolution parameters (NO LONGER SPECIAL!)
@@ -85,7 +84,7 @@ class ConfigManager:
             "new_agent_test_rounds": 1,
 
             # Performance
-            "max_concurrent": None,  # None = Python default: min(32, cpu_count+4)
+            "max_workers": None,  # None = Python default: min(32, cpu_count+4)
 
             # Timeouts
             "evolution_timeout": 1800,
@@ -287,7 +286,7 @@ class ConfigManager:
             "evaluation_budget",
 
             # Performance and system settings (user-controlled)
-            "max_concurrent",
+            "max_workers",
             "evolution_timeout",
             "debug_log_probability"
         ]
@@ -709,6 +708,7 @@ class ConfigManager:
 
     # Deprecated parameter aliases: old_name -> new_name
     _DEPRECATED_ALIASES = {
+        "max_concurrent": "max_workers",
     }
 
     def _apply_deprecated_aliases(self, config: Dict[str, Any]) -> None:
