@@ -148,7 +148,7 @@ def main():
     candidate = extract_candidate(agent_dir, task.file_mapping)
 
     # Build test dataset (matching run_gepa.py protocol)
-    test_config = {**task.test_overrides, **config}
+    test_config = {**config, **task.test_overrides}
     test_examples = task.dataset_builder(test_config)
     test_repeats = args.test_repeats
     test_examples = test_examples * test_repeats
