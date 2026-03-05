@@ -550,9 +550,6 @@ Do not include explanations, prefixes, or combine both responses."""
 
         with self._lock:
             self._eval_count += 1
-            count = self._eval_count
-        if count % 50 == 0:
-            logger.info(f"Text2SQL evaluator: {count} evaluations completed (${self._total_eval_cost:.2f} spent)")
 
         # Phase 1: Tool-based analysis (cached)
         analysis = self._get_analysis(analysis_code, db_id)
@@ -572,6 +569,10 @@ Do not include explanations, prefixes, or combine both responses."""
 
         with self._lock:
             self._total_eval_cost += cost
+            count = self._eval_count
+            total_cost = self._total_eval_cost
+        if count % 50 == 0:
+            logger.info(f"Text2SQL evaluator: {count} evaluations completed (${total_cost:.2f} spent)")
 
         # Scoring: compare result sets
         from RoboPhD.utilities.cached_sql_executor import compare_execution_results
