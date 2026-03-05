@@ -909,7 +909,6 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             overall_accuracy=overall_accuracy,
             total_correct=total_correct,
             total_questions=total_questions,
-            comparison_path=comparison_path
         )
 
         # Save snapshot after refinement
@@ -924,7 +923,6 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         overall_accuracy: float,
         total_correct: int,
         total_questions: int,
-        comparison_path: Optional[Path]
     ):
         """
         Prompt Claude Code to refine agent based on test results.
@@ -937,13 +935,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             overall_accuracy: Overall accuracy percentage
             total_correct: Number of correct answers
             total_questions: Total number of questions
-            comparison_path: Path to comparison report (None if not supported)
         """
-        comparison_report = ""
-        if comparison_path and comparison_path.exists():
-            with open(comparison_path) as f:
-                comparison_report = f.read()
-
         # Check if error analysis report exists (always generated now)
         test_workspace_name = f"iteration_{test_iteration:03d}_test"
         error_analysis_path = self.working_dir / test_workspace_name / "error_analysis_report.md"
@@ -964,13 +956,6 @@ python RoboPhD/tools/error_analysis/extract_error_details.py \\
 ```
 """
 
-        comparison_section = ""
-        if comparison_report:
-            comparison_section = f"""
-### Comparison Report
-{comparison_report}
-"""
-
         prompt = f"""
 ## Round {round_num}: Testing and Refinement
 
@@ -978,7 +963,7 @@ Your agent was tested on data from iteration {test_iteration}.
 
 ### Results
 Overall accuracy: {overall_accuracy:.1f}% ({total_correct}/{total_questions})
-{comparison_section}{error_analysis_section}
+{error_analysis_section}
 ### Your Task
 Review the performance results above and the diagnostic outputs in the test workspace at `./iteration_{test_iteration:03d}_test/`.
 
