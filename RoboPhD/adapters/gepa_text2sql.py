@@ -29,6 +29,8 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from RoboPhD.adapters.debug_logging import maybe_debug_log
+
 from RoboPhD.adapters.candidate_utils import extract_candidate, materialize_candidate  # noqa: F401
 
 logger = logging.getLogger(__name__)
@@ -157,6 +159,8 @@ class Text2SQLEvaluator:
         temperature_strategy: str = "fixed",
         output_dir: Optional[str] = None,
         work_dir: Optional[Path] = None,
+        debug_log_probability: float = 0.0,
+        debug_log_dir: Optional[Path] = None,
     ):
         from RoboPhD.config import DATASET_PATHS
 
@@ -167,6 +171,9 @@ class Text2SQLEvaluator:
 
         paths = DATASET_PATHS[dataset]
         self.db_root = Path(paths["db_root"])
+
+        self.debug_log_probability = debug_log_probability
+        self.debug_log_dir = Path(debug_log_dir) if debug_log_dir else None
 
         self.work_dir = Path(work_dir) if work_dir else Path("gepa_text2sql_work")
         self.work_dir.mkdir(parents=True, exist_ok=True)
@@ -328,6 +335,21 @@ class Text2SQLEvaluator:
         )
 
         cost = self._compute_cost(response)
+
+        maybe_debug_log(
+            debug_log_probability=self.debug_log_probability,
+            debug_log_dir=self.debug_log_dir,
+            call_type="generation",
+            model=self.eval_model,
+            messages=[
+                {"role": "system", "content": eval_instructions},
+                {"role": "system", "content": f"## Database Analysis\n\n{analysis}"},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_text=response.text,
+            metadata={"cost_usd": cost, "input_tokens": response.input_tokens, "output_tokens": response.output_tokens},
+        )
+
         return _clean_sql(response.text), cost
 
     # -- Verification loop --
@@ -410,6 +432,22 @@ Do not include explanations, prefixes, or combine both responses."""
             cached_blocks=[eval_instructions, f"## Database Analysis\n\n{analysis}", verify_block],
         )
         cost = self._compute_cost(response)
+
+        maybe_debug_log(
+            debug_log_probability=self.debug_log_probability,
+            debug_log_dir=self.debug_log_dir,
+            call_type="verification",
+            model=self.eval_model,
+            messages=[
+                {"role": "system", "content": eval_instructions},
+                {"role": "system", "content": f"## Database Analysis\n\n{analysis}"},
+                {"role": "system", "content": verify_block},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_text=response.text,
+            metadata={"cost_usd": cost, "attempt": len(attempts), "temperature": temperature},
+        )
+
         text = response.text.strip()
 
         if text.upper() == "CORRECT" or text.upper().startswith("CORRECT"):

@@ -60,6 +60,8 @@ _GEPA_DEFAULTS = {
     "reflection_model": ("opus-4.6", "Model for GEPA reflection (mutation proposals)"),
     "test_repeats": (1, "Number of test set repetitions (task test_overrides may increase)"),
     "max_test_workers": (None, "Test eval thread pool size (default: max_workers // 2)"),
+    "debug_log_probability": (0.1, "Probability (0-1.0) of logging LLM calls for debugging"),
+    "only_log_reflection": (True, "If true, debug logging only applies to reflection model"),
 }
 
 
@@ -252,10 +254,24 @@ def main():
     gepa_config = GEPAConfig(engine=engine_cfg)
 
     reflection_model = config.get("reflection_model", _GEPA_DEFAULTS["reflection_model"][0])
+    debug_log_prob = config.get("debug_log_probability", _GEPA_DEFAULTS["debug_log_probability"][0])
+    only_log_reflection = config.get("only_log_reflection", _GEPA_DEFAULTS["only_log_reflection"][0])
+
     from gepa.optimize_anything import ReflectionConfig
     litellm_model = to_litellm_model(reflection_model)
-    reflection_lm = CostTrackingLM(litellm_model, api_key=api_key)
+    reflection_lm = CostTrackingLM(
+        litellm_model,
+        api_key=api_key,
+        debug_log_probability=debug_log_prob,
+        debug_log_dir=args.output_dir / "debug_logs" / "reflection",
+    )
     gepa_config.reflection = ReflectionConfig(reflection_lm=reflection_lm)
+
+    # Configure evaluator debug logging
+    if not only_log_reflection:
+        config["debug_log_dir"] = str(args.output_dir / "debug_logs" / "eval")
+    else:
+        config["debug_log_probability"] = 0.0
 
     logger.info(
         f"Starting GEPA optimization with evaluation_budget={evaluation_budget}, "

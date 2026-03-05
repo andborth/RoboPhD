@@ -22,6 +22,8 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from RoboPhD.adapters.debug_logging import maybe_debug_log
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -126,9 +128,13 @@ class AIMEEvaluator:
         self,
         solver_model: str = "gpt-4.1-mini",
         work_dir: Optional[Path] = None,
+        debug_log_probability: float = 0.0,
+        debug_log_dir: Optional[Path] = None,
     ):
         self.solver_model = solver_model
         self.work_dir = Path(work_dir) if work_dir else Path("gepa_aime_work")
+        self.debug_log_probability = debug_log_probability
+        self.debug_log_dir = Path(debug_log_dir) if debug_log_dir else None
 
         self._eval_count = 0
         self._total_eval_cost = 0.0
@@ -176,6 +182,23 @@ class AIMEEvaluator:
         with self._lock:
             self._eval_count += 1
             self._total_eval_cost += cost
+
+        # Debug logging
+        log_dir = self.debug_log_dir
+        if log_dir is None and problem_dir is not None:
+            log_dir = Path(problem_dir) / "debug"
+        maybe_debug_log(
+            debug_log_probability=self.debug_log_probability,
+            debug_log_dir=log_dir,
+            call_type="generation",
+            model=self.solver_model,
+            messages=messages,
+            response_text=response,
+            metadata={
+                "cost_usd": cost,
+                "problem_id": example["problem_id"],
+            },
+        )
 
         # Parse and score
         predicted = parse_aime_answer(response)

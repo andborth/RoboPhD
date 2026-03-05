@@ -27,6 +27,8 @@ def _evaluator_factory(config: Dict[str, Any]):
         temperature_strategy=config.get("temperature_strategy", "fixed"),
         output_dir=config.get("output_dir"),
         work_dir=work_dir,
+        debug_log_probability=config.get("debug_log_probability", 0.0),
+        debug_log_dir=config.get("debug_log_dir"),
     )
 
 

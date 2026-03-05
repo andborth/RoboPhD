@@ -8,6 +8,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from RoboPhD.adapters.debug_logging import maybe_debug_log
 from RoboPhD.config import SUPPORTED_MODELS
 
 
@@ -26,9 +27,17 @@ class CostTrackingLM:
     through the API account instead of Claude Max).
     """
 
-    def __init__(self, model_name: str, api_key: str | None = None):
+    def __init__(
+        self,
+        model_name: str,
+        api_key: str | None = None,
+        debug_log_probability: float = 0.0,
+        debug_log_dir: Path | str | None = None,
+    ):
         self.model_name = model_name
         self._api_key = api_key
+        self.debug_log_probability = debug_log_probability
+        self.debug_log_dir = Path(debug_log_dir) if debug_log_dir else None
         self.total_cost = 0.0
         self.total_input_tokens = 0
         self.total_output_tokens = 0
@@ -58,8 +67,26 @@ class CostTrackingLM:
             if usage:
                 self.total_input_tokens += getattr(usage, "prompt_tokens", 0)
                 self.total_output_tokens += getattr(usage, "completion_tokens", 0)
+            call_count = self.call_count
 
-        return completion.choices[0].message.content
+        response_text = completion.choices[0].message.content
+
+        maybe_debug_log(
+            debug_log_probability=self.debug_log_probability,
+            debug_log_dir=self.debug_log_dir,
+            call_type="reflection",
+            model=self.model_name,
+            messages=messages,
+            response_text=response_text or "",
+            metadata={
+                "cost_usd": cost,
+                "call_count": call_count,
+                "input_tokens": getattr(usage, "prompt_tokens", 0) if usage else 0,
+                "output_tokens": getattr(usage, "completion_tokens", 0) if usage else 0,
+            },
+        )
+
+        return response_text
 
 
 def fmt_val(val: Any) -> str:

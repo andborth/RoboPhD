@@ -58,7 +58,6 @@ class DeepFocusEvolutionManager:
         evolution_model: str = "opus-4.5",
         timeout: int = 1800,
         max_workers: int | None = None,
-        debug_log_probability: float = 0.02,
         llm_call_timeout: int = 120,
         domain: Optional['DomainInterface'] = None,
         config: Optional[Dict[str, Any]] = None
@@ -74,7 +73,6 @@ class DeepFocusEvolutionManager:
             evolution_model: Model for evolution/planning (default opus-4.5)
             timeout: Timeout in seconds for Claude CLI calls (default 1800)
             max_workers: Maximum concurrent context processing (None = Python default)
-            debug_log_probability: Probability (0.0-1.0) of logging API calls for debugging (default 0.02)
             llm_call_timeout: Per-call LLM timeout in seconds (default 120, for local models)
             domain: Optional domain interface for domain-specific workspace setup.
                    If not provided, defaults to Text2SQL-style database symlink.
@@ -86,7 +84,6 @@ class DeepFocusEvolutionManager:
         self.evolution_model = evolution_model
         self.timeout = timeout
         self.max_workers = max_workers
-        self.debug_log_probability = debug_log_probability
         self.llm_call_timeout = llm_call_timeout
         self.domain = domain
         self.config = config or {}
@@ -824,7 +821,6 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             'cache_manager': None,  # No caching in DeepFocus testing
             'experiment_dir': self.experiment_dir,
             'max_workers': self.max_workers,
-            'debug_log_probability': self.debug_log_probability,
             'llm_call_timeout': self.llm_call_timeout,
         })
 

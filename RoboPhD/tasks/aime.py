@@ -21,6 +21,8 @@ def _evaluator_factory(config: Dict[str, Any]):
     return AIMEEvaluator(
         solver_model=config.get("solver_model", "gpt-4.1-mini"),
         work_dir=work_dir,
+        debug_log_probability=config.get("debug_log_probability", 0.0),
+        debug_log_dir=config.get("debug_log_dir"),
     )
 
 

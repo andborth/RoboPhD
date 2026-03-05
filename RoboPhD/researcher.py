@@ -190,7 +190,6 @@ class ParallelAgentEvolver:
         self.strategies_directory = config.get("strategies_directory")
         self.new_agent_test_rounds = config["new_agent_test_rounds"]
         self.max_workers = config["max_workers"]
-        self.debug_log_probability = config["debug_log_probability"]
         self.llm_call_timeout = config["llm_call_timeout"]
 
         # Evolution tracking
@@ -350,7 +349,6 @@ class ParallelAgentEvolver:
             evolution_model=self.evolution_model,
             timeout=self.evolution_timeout,
             max_workers=self.max_workers,
-            debug_log_probability=self.debug_log_probability,
             llm_call_timeout=self.llm_call_timeout,
             domain=self.domain,
             config=self.config
@@ -732,7 +730,6 @@ class ParallelAgentResearcher:
         self.evolution_model = config["evolution_model"]
         self.max_workers = config["max_workers"]
         self.evolution_timeout = config["evolution_timeout"]
-        self.debug_log_probability = config["debug_log_probability"]
         self.llm_call_timeout = config["llm_call_timeout"]
         self.new_agent_test_rounds = config["new_agent_test_rounds"]
         self.agents_directory = config["agents_directory"]
@@ -2584,7 +2581,6 @@ class ParallelAgentResearcher:
             self.evolution_model = config["evolution_model"]
             self.max_workers = config["max_workers"]
             self.evolution_timeout = config["evolution_timeout"]
-            self.debug_log_probability = config["debug_log_probability"]
             self.llm_call_timeout = config["llm_call_timeout"]
             self.new_agent_test_rounds = config["new_agent_test_rounds"]
 
