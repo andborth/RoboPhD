@@ -248,7 +248,7 @@ class ExternalEvaluatorDomain(DomainInterface):
         problems_dir = output_dir / "problems"
         problems_dir.mkdir(parents=True, exist_ok=True)
 
-        max_concurrent = config.get("max_workers")
+        max_workers = config.get("max_workers")
 
         def _evaluate_one(problem_id: str) -> dict:
             try:
@@ -327,7 +327,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                     "error": str(e),
                 }
 
-        with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
                 executor.submit(_evaluate_one, pid): pid
                 for pid in fresh_problem_ids
