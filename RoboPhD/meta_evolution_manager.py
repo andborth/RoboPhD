@@ -246,7 +246,7 @@ class MetaEvolutionManager:
         for iter_num in range(1, through_iteration + 1):
             if iter_num - 1 < len(iteration_costs):
                 cost_dict = iteration_costs[iter_num - 1]
-                eval_cost += cost_dict.get('eval_cost', 0.0)
+                eval_cost += cost_dict.get('eval_cost', 0.0) or cost_dict.get('phase2_cost', 0.0)
                 evolution_cost += cost_dict.get('evolution_cost', 0.0)
                 meta_evolution_cost += cost_dict.get('meta_evolution_cost', 0.0)
 

@@ -594,9 +594,6 @@ class ReportGenerator:
             evolution_pct = (total_evolution_cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
             meta_evolution_pct = (total_meta_evolution_cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
 
-            domain = getattr(self.researcher, 'domain', None)
-            solution = domain.solution_name if domain else "output"
-
             report_lines.append(
                 f"| Evaluation | ${total_eval_cost:.2f} | {eval_pct:.1f}% | "
                 f"- | - | - |"
