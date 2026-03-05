@@ -5,7 +5,6 @@ These tests ensure that:
 1. All agents in an iteration test identical question sets (fair comparison)
 2. Question sampling is deterministic given same random seed
 3. Different iterations use different question samples
-4. Phase 1 failures record correct question counts
 
 Note: These are lightweight unit tests that test the sampling logic directly
 without needing the full ParallelAgentResearcher infrastructure.
@@ -213,56 +212,6 @@ def test_question_samples_differ_across_iterations():
         print(f"FAIL: {e}")
         return False
 
-
-def test_phase1_failure_uses_correct_questions():
-    """Verify Phase 1 failures still record correct question count.
-
-    When Phase 1 fails (analysis agent errors), we still need to record
-    the correct number of questions attempted (for evaluation.json).
-    """
-    print("  Testing: Phase 1 failures record correct question count... ", end="")
-
-    try:
-        problems_by_context = create_mock_questions_db(num_dbs=2, questions_per_db=20)
-        databases = list(problems_by_context.keys())
-        db_name = databases[0]
-        problems_per_context = 7
-        num_agents = 1
-
-        # Pre-sample questions (as run_iteration does)
-        random.seed(42)
-        agent_questions = simulate_iteration_sampling(
-            problems_by_context, databases, problems_per_context, num_agents
-        )
-
-        # Simulate Phase 1 failure path (from researcher.py line 2121)
-        sampled = agent_questions['agent_0'][db_name]
-
-        evaluation = {
-            'database': db_name,
-            'total_questions': len(sampled),
-            'correct': 0,
-            'accuracy': 0.0,
-            'error': 'Phase 1 failed',
-            'results': {}
-        }
-
-        # Verify the count is correct (should be problems_per_context, not more)
-        assert evaluation['total_questions'] == problems_per_context, \
-            f"Phase 1 failure recorded wrong count: {evaluation['total_questions']} vs {problems_per_context}"
-
-        # Verify results is empty
-        assert evaluation['results'] == {}, \
-            f"Phase 1 failure should have empty results: {evaluation['results']}"
-
-        print("PASS")
-        return True
-
-    except Exception as e:
-        print(f"FAIL: {e}")
-        return False
-
-
 def test_current_iteration_questions_populated():
     """Verify current_iteration_questions is populated before threading.
 
@@ -324,7 +273,6 @@ if __name__ == '__main__':
     results.append(test_all_agents_get_same_questions())
     results.append(test_sampling_is_deterministic_databases_and_questions())
     results.append(test_question_samples_differ_across_iterations())
-    results.append(test_phase1_failure_uses_correct_questions())
     results.append(test_current_iteration_questions_populated())
 
     print("\n" + "="*60)

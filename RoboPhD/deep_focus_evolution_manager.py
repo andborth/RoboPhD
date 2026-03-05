@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from RoboPhD.domains.base import DomainInterface
 
 from RoboPhD.domains.base import SampledProblems, EvaluationResult
-from RoboPhD.comparison_report_generator import ComparisonReportGenerator
 from RoboPhD.config import CLAUDE_CLI_MODEL_MAP, get_lmstudio_env
 from utilities.claude_cli import call_claude_cli, RateLimitExceeded
 
@@ -165,7 +164,7 @@ class DeepFocusEvolutionManager:
         }
 
         # Reset cost info for this evolution
-        # Test rounds have nested structure to separate phase1 (DB analysis), phase2 (SQL gen), and evolution (refinement)
+        # Test rounds have nested structure to separate eval and evolution (refinement) costs
         self.cost_info = {
             'first_draft': {'cost': 0.0, 'tokens_in': 0, 'tokens_out': 0, 'cache_created': 0, 'cache_read': 0},
             'reflection': {'cost': 0.0, 'tokens_in': 0, 'tokens_out': 0, 'cache_created': 0, 'cache_read': 0},
@@ -176,8 +175,7 @@ class DeepFocusEvolutionManager:
         # This supports any number of test rounds (meta-evolution can set 3+)
         for i in range(1, self.test_rounds + 1):
             self.cost_info[f'test_refine_{i}'] = {
-                'phase1': {'cost': 0.0, 'tokens_in': 0, 'tokens_out': 0, 'cache_created': 0, 'cache_read': 0},
-                'phase2': {'cost': 0.0, 'tokens_in': 0, 'tokens_out': 0, 'cache_created': 0, 'cache_read': 0},
+                'eval': {'cost': 0.0, 'tokens_in': 0, 'tokens_out': 0, 'cache_created': 0, 'cache_read': 0},
                 'evolution': {'cost': 0.0, 'tokens_in': 0, 'tokens_out': 0, 'cache_created': 0, 'cache_read': 0},
                 'cost': 0.0, 'tokens_in': 0, 'tokens_out': 0, 'cache_created': 0, 'cache_read': 0
             }
@@ -839,7 +837,6 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             'experiment_dir': self.experiment_dir,
             'eval_model': self.eval_model,
             'analysis_model': self.analysis_model,
-            'phase2_timeout': self.timeout,
             'max_concurrent': self.max_concurrent,
             'max_verification_retries': self.max_verification_retries,
             'temperature_strategy': self.temperature_strategy,
@@ -876,19 +873,19 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             r = results[context_name]
             r['accuracy'] = (r['correct'] / r['total'] * 100) if r['total'] > 0 else 0.0
 
-        # Accumulate Phase 2 cost
-        if eval_result.metadata.get('phase2_cost', 0) > 0:
+        # Accumulate evaluation cost
+        if eval_result.metadata.get('eval_cost', 0) > 0:
             if not hasattr(self, '_current_call_costs'):
                 self._current_call_costs = []
-            phase2_cost_info = {
-                'cost': eval_result.metadata.get('phase2_cost', 0),
-                'tokens_in': eval_result.metadata.get('phase2_tokens_in', 0),
-                'tokens_out': eval_result.metadata.get('phase2_tokens_out', 0),
+            eval_cost_info = {
+                'cost': eval_result.metadata.get('eval_cost', 0),
+                'tokens_in': eval_result.metadata.get('eval_tokens_in', 0),
+                'tokens_out': eval_result.metadata.get('eval_tokens_out', 0),
                 'cache_created': 0,
                 'cache_read': 0,
-                'call_type': 'phase2'
+                'call_type': 'eval'
             }
-            self._current_call_costs.append(phase2_cost_info)
+            self._current_call_costs.append(eval_cost_info)
 
         overall_accuracy = eval_result.accuracy
         total_correct = eval_result.correct
@@ -896,23 +893,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
 
         logger.info(f"Overall accuracy: {overall_accuracy:.1f}% ({total_correct}/{total_questions})")
 
-        # Generate comparison report (pass domain for domain-agnostic loading)
-        comparison_path: Optional[Path] = None
-
-        if self.domain and self.domain.supports_comparison_report:
-            comparison_path = self.working_dir / f"iteration_{test_iteration:03d}_comparison.md"
-            report_gen = ComparisonReportGenerator(self.experiment_dir, domain=self.domain)
-            report_gen.generate_comparison_report(
-                test_iteration=test_iteration,
-                new_agent_workspace=new_agent_dir,
-                databases=contexts,
-                output_path=comparison_path
-            )
-            logger.info(f"📊 Comparison report: {comparison_path}")
-        else:
-            logger.info("Skipping comparison report (not supported for this domain)")
-
-        # Generate new vs baseline error analysis (ALWAYS - no longer optional)
+        # Generate new vs baseline error analysis
         logger.info("Generating new vs baseline error analysis...")
         try:
             self._generate_new_vs_baseline_analysis(test_workspace, test_iteration, agent_name)
@@ -1237,7 +1218,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
     def _aggregate_round_costs(self, round_key: str):
         """
         Aggregate costs from _current_call_costs into cost_info for the given round.
-        For test rounds, separates phase1 (DB analysis), phase2 (SQL generation), and evolution (refinement) costs.
+        For test rounds, separates eval and evolution (refinement) costs.
 
         Args:
             round_key: Key in cost_info dict ('first_draft', 'test_refine_1', etc.)
@@ -1252,7 +1233,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             call_type = call_cost.get('call_type', 'evolution')  # Default to evolution for backward compat
 
             if is_test_round:
-                # Accumulate into nested structure (phase1 or evolution)
+                # Accumulate into nested structure (eval or evolution)
                 self.cost_info[round_key][call_type]['cost'] += call_cost['cost']
                 self.cost_info[round_key][call_type]['tokens_in'] += call_cost['tokens_in']
                 self.cost_info[round_key][call_type]['tokens_out'] += call_cost['tokens_out']

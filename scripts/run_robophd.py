@@ -220,7 +220,7 @@ def _list_params(task):
         "Deep Focus": ["new_agent_test_rounds"],
         "Stopping Conditions": ["evaluation_budget"],
         "Performance": ["max_concurrent"],
-        "Timeouts": ["phase1_timeout", "phase2_timeout", "evolution_timeout"],
+        "Timeouts": ["evolution_timeout"],
         "Caching": ["eval_result_cache"],
         "Other": ["debug_log_probability"],
     }

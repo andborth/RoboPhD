@@ -76,7 +76,7 @@ class ExternalEvaluatorDomain(DomainInterface):
     # Core interface
     # -----------------------------------------------------------------
 
-    def prepare_phase1_input(
+    def prepare_eval_input(
         self, workspace: Path, context: str, problem: Optional[Dict] = None
     ) -> Path:
         """Write example data to workspace for agent analysis."""
@@ -241,7 +241,7 @@ class ExternalEvaluatorDomain(DomainInterface):
             return EvaluationResult(
                 accuracy=accuracy, total=total, correct=correct_count,
                 results=results,
-                metadata={"fresh_count": 0, "cached_count": cached_count, "phase2_cost": 0.0},
+                metadata={"fresh_count": 0, "cached_count": cached_count, "eval_cost": 0.0},
             )
 
         # --- Evaluate fresh problems ---
@@ -291,7 +291,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                     "correct": is_correct,
                     "score": score,
                     "error": diagnostics.get("error"),
-                    "phase2_cost": cost_usd,
+                    "eval_cost": cost_usd,
                 }
 
                 # Write result.json for future caching (don't overwrite
@@ -342,8 +342,8 @@ class ExternalEvaluatorDomain(DomainInterface):
         accuracy = (correct_count / total * 100) if total else 0.0
 
         # Aggregate evaluation costs from fresh results
-        total_phase2_cost = sum(
-            r.get("phase2_cost", 0.0) for r in results if not r.get("cached")
+        total_eval_cost = sum(
+            r.get("eval_cost", 0.0) for r in results if not r.get("cached")
         )
 
         # Write evaluation.json for compatibility
@@ -366,53 +366,13 @@ class ExternalEvaluatorDomain(DomainInterface):
             metadata={
                 "fresh_count": fresh_count,
                 "cached_count": cached_count,
-                "phase2_cost": total_phase2_cost,
+                "eval_cost": total_eval_cost,
             },
         )
-
-    def load_agent_results(
-        self, agent_dir: Path, contexts: List[str]
-    ) -> Dict[str, Any]:
-        """Load results from evaluation.json."""
-        results = {
-            "overall_accuracy": 0.0,
-            "total_questions": 0,
-            "correct": 0,
-            "by_context": {},
-        }
-
-        eval_file = agent_dir / "evaluation.json"
-        if not eval_file.exists():
-            return results
-
-        try:
-            with open(eval_file) as f:
-                eval_data = json.load(f)
-        except (json.JSONDecodeError, IOError):
-            return results
-
-        summary = eval_data.get("summary", {})
-        results["overall_accuracy"] = summary.get("accuracy", 0.0)
-        results["total_questions"] = summary.get("total_problems", 0)
-        results["correct"] = summary.get("correct", 0)
-
-        for qid, r in eval_data.get("results", {}).items():
-            is_correct = r.get("correct", False)
-            results["by_context"][qid] = {
-                "accuracy": 100.0 if is_correct else 0.0,
-                "correct": 1 if is_correct else 0,
-                "total": 1,
-            }
-
-        return results
 
     # -----------------------------------------------------------------
     # Properties
     # -----------------------------------------------------------------
-
-    @property
-    def phase1_input_name(self) -> str:
-        return "example"
 
     @property
     def solution_name(self) -> str:
@@ -423,19 +383,7 @@ class ExternalEvaluatorDomain(DomainInterface):
         return self._strategies_dir
 
     @property
-    def phase1_display_name(self) -> str:
-        return "Analysis"
-
-    @property
-    def phase2_display_name(self) -> str:
-        return "Evaluation"
-
-    @property
     def context_label(self) -> str:
-        return "Example"
-
-    @property
-    def phase1_short_label(self) -> str:
         return "Example"
 
     @property

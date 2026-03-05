@@ -7,7 +7,7 @@ and creates new evolution strategies while adjusting configuration parameters.
 Architecture:
 - Single Claude Code session per meta-evolution call
 - Three-phase execution: Planning & Implementation → Validation → Installation
-- Budget tracking across all phases (Phase 1 + Phase 2 + Evolution + Meta-evolution)
+- Budget tracking across all phases (Evaluation + Evolution + Meta-evolution)
 - Automatic termination when budget exhausted
 """
 
@@ -177,8 +177,8 @@ class MetaEvolutionManager:
         Check if budget is exhausted after iteration completes.
 
         Calculates total cost across all phases:
-        - Phase 1 (DB Analysis): Claude CLI costs
-        - Phase 2 (SQL Generation): API costs (from checkpoint.total_cost)
+        - Evaluation costs (from iteration_claude_costs)
+        - Evolution costs (from iteration_claude_costs)
         - Evolution: Claude CLI costs
         - Meta-evolution: Claude CLI costs
 
@@ -219,11 +219,10 @@ class MetaEvolutionManager:
 
     def _calculate_total_cost(self, through_iteration: int) -> float:
         """
-        Calculate total cost across all phases through specified iteration.
+        Calculate total cost through specified iteration.
 
         Returns sum of:
-        - Phase 1 costs (from iteration_claude_costs)
-        - Phase 2 API costs (from checkpoint.total_cost)
+        - Evaluation costs (from iteration_claude_costs)
         - Evolution costs (from iteration_claude_costs)
         - Meta-evolution costs (from iteration_claude_costs)
 
@@ -239,11 +238,7 @@ class MetaEvolutionManager:
         with open(checkpoint_path) as f:
             checkpoint = json.load(f)
 
-        # Phase 2 API costs (already in checkpoint)
-        phase2_cost = checkpoint.get("total_cost", 0.0)
-
-        # Phase 1, Evolution, and Meta-evolution costs (from Claude CLI)
-        phase1_cost = 0.0
+        eval_cost = 0.0
         evolution_cost = 0.0
         meta_evolution_cost = 0.0
 
@@ -251,11 +246,11 @@ class MetaEvolutionManager:
         for iter_num in range(1, through_iteration + 1):
             if iter_num - 1 < len(iteration_costs):
                 cost_dict = iteration_costs[iter_num - 1]
-                phase1_cost += cost_dict.get('phase1_cost', 0.0)
+                eval_cost += cost_dict.get('eval_cost', 0.0)
                 evolution_cost += cost_dict.get('evolution_cost', 0.0)
                 meta_evolution_cost += cost_dict.get('meta_evolution_cost', 0.0)
 
-        return phase1_cost + phase2_cost + evolution_cost + meta_evolution_cost
+        return eval_cost + evolution_cost + meta_evolution_cost
 
     def _load_meta_strategy(self, strategy_name: str) -> str:
         """
@@ -376,7 +371,7 @@ class MetaEvolutionManager:
         Update checkpoint with meta-evolution costs for this iteration.
 
         Costs are tracked in checkpoint.iteration_claude_costs[iteration]['meta_evolution_cost']
-        parallel to phase1_cost and evolution_cost.
+        parallel to eval_cost and evolution_cost.
 
         Args:
             iteration: Current iteration number

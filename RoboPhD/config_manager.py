@@ -103,8 +103,6 @@ class ConfigManager:
             "max_concurrent": None,  # None = Python default: min(32, cpu_count+4)
 
             # Timeouts
-            "phase1_timeout": 1800,
-            "phase2_timeout": 3600,  # Phase 2 generation timeout (renamed from sql_timeout)
             "evolution_timeout": 1800,
             "llm_call_timeout": 120,  # Per-call LLM timeout (2 min) - affects local models
             "codegen_call_timeout": 1200,  # Per-call timeout for codegen (solution generation)
@@ -313,8 +311,6 @@ class ConfigManager:
 
             # Performance and system settings (user-controlled)
             "max_concurrent",
-            "phase1_timeout",
-            "phase2_timeout",
             "evolution_timeout",
             "codegen_call_timeout",
             "critic_call_timeout",

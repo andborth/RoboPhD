@@ -1,19 +1,8 @@
 """
 Base domain interface for RoboPhD research system.
 
-The architecture is isomorphic across domains - only Phase 1 input and evaluation differ:
-
-Text2SQL:
-    - Phase 1 Input: Database file (schema, tables)
-    - agent.md + tools/: Analyze schema → database-specific context
-    - eval_instructions.md: Static SQL generation principles
-    - Output: system_prompt.txt = agent_output + eval_instructions
-
-Code Generation:
-    - Phase 1 Input: Bundle {question, code_v1, approach_description}
-    - agent.md + tools/: Route approach → select/combine heuristics
-    - eval_instructions.md: Static coding principles
-    - Output: critic_prompt.txt = agent_output + eval_instructions
+Domains differ in how problems are loaded, sampled, and evaluated.
+Everything else (evolution, ELO, checkpointing, agent selection) is domain-agnostic.
 """
 
 from abc import ABC, abstractmethod
@@ -69,7 +58,7 @@ class DomainInterface(ABC):
     Minimal interface for domain-specific behavior.
 
     Domains differ only in:
-    1. What gets fed into Phase 1 (prepare_phase1_input)
+    1. What gets fed into evaluation (prepare_eval_input)
     2. How solutions are evaluated (evaluate)
     3. How problems are loaded (load_problems, get_problems_for_context)
 
@@ -77,9 +66,9 @@ class DomainInterface(ABC):
     """
 
     @abstractmethod
-    def prepare_phase1_input(self, workspace: Path, context: str, problem: Optional[Dict] = None) -> Path:
+    def prepare_eval_input(self, workspace: Path, context: str, problem: Optional[Dict] = None) -> Path:
         """
-        Prepare the input for Phase 1 analysis in the workspace.
+        Prepare the input for evaluation in the workspace.
 
         This method sets up whatever the agent needs to analyze:
         - Text2SQL: Creates symlink to database.sqlite
@@ -184,7 +173,7 @@ class DomainInterface(ABC):
         Run evaluation on sampled problems with given agent.
 
         This method orchestrates the full evaluation pipeline for the domain:
-        - Text2SQL: Phase 1 analysis, Phase 2 SQL generation, result comparison
+        - Text2SQL: DB analysis, SQL generation, result comparison
         - CodeGen: Critic feedback, coder revision, test execution
 
         Args:
@@ -195,18 +184,6 @@ class DomainInterface(ABC):
 
         Returns:
             EvaluationResult with accuracy and per-question results
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def phase1_input_name(self) -> str:
-        """
-        Human-readable name for what Phase 1 analyzes.
-
-        Used in logging and prompts:
-        - Text2SQL: "database"
-        - CodeGen: "problem context"
         """
         pass
 
@@ -232,30 +209,6 @@ class DomainInterface(ABC):
         All domains use "evolution_strategies".
 
         The full path is constructed as: RoboPhD/{evolution_strategies_dir}/
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def phase1_display_name(self) -> str:
-        """
-        Display name for Phase 1 in reports and logs.
-
-        Used for labels like "Phase 1 (DB Analysis - CLI)":
-        - Text2SQL: "DB Analysis"
-        - CodeGen: "Problem Analysis"
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def phase2_display_name(self) -> str:
-        """
-        Display name for Phase 2 in reports and logs.
-
-        Used for labels like "Phase 2 (SQL Generation - API)":
-        - Text2SQL: "SQL Generation"
-        - CodeGen: "Code Generation"
         """
         pass
 
@@ -286,31 +239,6 @@ class DomainInterface(ABC):
         - CodeGen: "problems"
         """
         return self.context_label.lower() + "s"
-
-    @property
-    def supports_comparison_report(self) -> bool:
-        """
-        Whether domain supports per-context comparison reports.
-
-        Text2SQL generates per-database comparison tables showing
-        agent performance across databases. Other domains may not
-        have this structure.
-
-        Default: False (subclasses override if supported)
-        """
-        return False
-
-    @property
-    @abstractmethod
-    def phase1_short_label(self) -> str:
-        """
-        Short label for Phase 1 context in reports.
-
-        Used in table headers where space is limited:
-        - Text2SQL: "DB"
-        - CodeGen: "Problem"
-        """
-        pass
 
     @property
     @abstractmethod
@@ -349,29 +277,6 @@ class DomainInterface(ABC):
           Uses: examples_per_iteration only (problems_per_context ignored)
         """
         return 'hierarchical' if self.is_hierarchical else 'flat'
-
-    @abstractmethod
-    def load_agent_results(self, agent_dir: Path, contexts: List[str]) -> Dict[str, Any]:
-        """
-        Load evaluation results from an agent's output directory.
-
-        Used by ComparisonReportGenerator to load results in a domain-agnostic way.
-
-        Args:
-            agent_dir: Path to agent's output directory (e.g., iteration_001/agent_xyz/)
-            contexts: List of context names to load results for
-
-        Returns:
-            Dict with:
-            - overall_accuracy: float (0-100)
-            - total_questions: int
-            - correct: int
-            - by_context: Dict[str, Dict] with per-context results including:
-                - accuracy: float
-                - correct: int
-                - total: int
-        """
-        pass
 
     # === Internal workspace methods ===
     # These are implementation details used by some domains internally.
@@ -415,7 +320,7 @@ class DomainInterface(ABC):
         config: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Run Phase 1 + Phase 2 + evaluation in an existing workspace.
+        Run evaluation in an existing workspace.
 
         The workspace must already be set up via setup_context_workspace().
         This runs the full evaluation pipeline for a single context.
@@ -424,8 +329,8 @@ class DomainInterface(ABC):
             workspace: Workspace directory (already set up)
             problems: List of problem dicts for this context
             config: Configuration dict with:
-                - eval_model: Model for Phase 2 generation
-                - analysis_model: Model for Phase 1 analysis
+                - eval_model: Model for generation
+                - analysis_model: Model for analysis
                 - timeout: Timeout for operations
                 - Additional domain-specific options
 
@@ -435,7 +340,7 @@ class DomainInterface(ABC):
             - correct: Number of correct solutions
             - total: Total number of problems
             - error: Optional error message if evaluation failed
-            - phase2_cost: Optional API cost for Phase 2 (if tracked)
+            - eval_cost: Optional API cost (if tracked)
 
         Note: This is an internal method used by some domains' run_evaluation()
         implementations. External callers should use run_evaluation() directly.

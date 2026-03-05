@@ -746,8 +746,6 @@ class ParallelAgentResearcher:
         self.analysis_model = config["analysis_model"]
         self.evolution_model = config["evolution_model"]
         self.max_concurrent = config["max_concurrent"]
-        self.phase1_timeout = config["phase1_timeout"]
-        self.phase2_timeout = config["phase2_timeout"]
         self.evolution_timeout = config["evolution_timeout"]
         self.max_verification_retries = config["max_verification_retries"]
         self.temperature_strategy = config["temperature_strategy"]
@@ -781,7 +779,6 @@ class ParallelAgentResearcher:
             self.iteration_fresh_evals = resume_checkpoint.get('iteration_fresh_evals', [])
             self.evolution_times = resume_checkpoint.get('evolution_times', [])
             self.meta_evolution_times = resume_checkpoint.get('meta_evolution_times', [])
-            self.phase1_failures = resume_checkpoint.get('phase1_failures', [])
             self.zero_accuracy_cases = resume_checkpoint.get('zero_accuracy_cases', [])
             self.exception_failures = resume_checkpoint.get('exception_failures', [])
             self.five_hour_limit_incidents = resume_checkpoint.get('five_hour_limit_incidents', [])
@@ -861,7 +858,6 @@ class ParallelAgentResearcher:
             self.current_iteration_evolution_cost = None
             self.evolution_times = []
             self.meta_evolution_times = []
-            self.phase1_failures = []
             self.zero_accuracy_cases = []
             self.exception_failures = []
             self.five_hour_limit_incidents = []
@@ -911,7 +907,6 @@ class ParallelAgentResearcher:
         )
 
         # Pass references to evolver for Deep Focus
-        self.evolver.researcher_phase1_failures = self.phase1_failures
         self.evolver.eval_model = self.eval_model
         self.evolver.analysis_model = self.analysis_model
         self.evolver.problems_per_context = self.problems_per_context
@@ -1281,14 +1276,6 @@ class ParallelAgentResearcher:
                 print(f"  ⏱️  Subtracted archived time: {archived_time/60:.1f} minutes")
             
             # Clear failure records for archived iterations
-            original_failures = len(self.phase1_failures) if hasattr(self, 'phase1_failures') else 0
-            if hasattr(self, 'phase1_failures'):
-                self.phase1_failures = [
-                    (agent_id, db_name, iter_num) 
-                    for agent_id, db_name, iter_num in self.phase1_failures 
-                    if iter_num < from_iteration
-                ]
-            
             original_zero_cases = len(self.zero_accuracy_cases) if hasattr(self, 'zero_accuracy_cases') else 0
             if hasattr(self, 'zero_accuracy_cases'):
                 self.zero_accuracy_cases = [
@@ -1305,8 +1292,6 @@ class ParallelAgentResearcher:
                     if iter_num < from_iteration
                 ]
 
-            if original_failures > 0 and original_failures != len(self.phase1_failures):
-                print(f"  🧹 Cleared {original_failures - len(self.phase1_failures)} Phase 1 failure records")
             if original_zero_cases > 0 and original_zero_cases != len(self.zero_accuracy_cases):
                 print(f"  🧹 Cleared {original_zero_cases - len(self.zero_accuracy_cases)} zero accuracy records")
             if original_exception_failures > 0 and original_exception_failures != len(self.exception_failures):
@@ -1586,12 +1571,9 @@ class ParallelAgentResearcher:
 
         # Initialize cost tracking for this iteration
         iteration_cost_dict = {
-            'phase1_cost': 0.0,
-            'phase1_calls': 0,
-            'phase1_tokens_in': 0,
-            'phase1_tokens_out': 0,
-            'phase1_cache_created': 0,
-            'phase1_cache_read': 0,
+            'eval_cost': 0.0,
+            'eval_tokens_in': 0,
+            'eval_tokens_out': 0,
             'evolution_cost': 0.0,
             'evolution_calls': 0,
             'evolution_tokens_in': 0,
@@ -1599,14 +1581,11 @@ class ParallelAgentResearcher:
             'evolution_cache_created': 0,
             'evolution_cache_read': 0,
             'evolution_breakdown': None,
-            'phase2_cost': 0.0,
-            'phase2_tokens_in': 0,
-            'phase2_tokens_out': 0,
         }
 
         # Track results for each agent
         results_by_agent: Dict[str, List[Dict]] = {agent_id: [] for agent_id in selected_agents}
-        costs_by_context: Dict[str, Dict[str, Dict[str, float]]] = {}  # {agent_id: {context: {'phase1': $, 'phase2': $}}}
+        costs_by_context: Dict[str, Dict[str, Dict[str, float]]] = {}  # {agent_id: {context: {'eval': $}}}
         iteration_results: Dict[str, Dict] = {}
         eval_cache_stats: Dict[str, Dict[str, int]] = {}  # {agent_id: {'cached': N, 'fresh': M}}
 
@@ -1665,8 +1644,8 @@ class ParallelAgentResearcher:
                         'correct': 1 if r.get('correct') else 0,
                         'total': 1,
                         'error': r.get('error'),
-                        # Include phase2_cost for cost reporting
-                        'phase2_cost': r.get('phase2_cost', 0.0),
+                        # Include eval_cost for cost reporting
+                        'eval_cost': r.get('eval_cost', 0.0),
                     })
 
                 # Calculate agent metrics
@@ -1681,15 +1660,13 @@ class ParallelAgentResearcher:
 
                 # Get contexts tested successfully from metadata
                 metadata = eval_result.metadata or {}
-                phase1_failures = metadata.get('phase1_failures', [])
-                contexts_tested = [c for c in contexts if c not in phase1_failures]
 
                 iteration_results[agent_id] = {
                     'accuracy': accuracy,
                     'correct': total_correct,
                     'total': total_questions,
-                    'databases_tested': contexts_tested,
-                    'failures': len(phase1_failures)
+                    'databases_tested': list(contexts),
+                    'failures': 0
                 }
 
                 # Update performance records
@@ -1704,10 +1681,6 @@ class ParallelAgentResearcher:
                     'databases': len(contexts_tested)
                 })
 
-                # Track Phase 1 failures
-                for context_name in phase1_failures:
-                    self.phase1_failures.append((agent_id, context_name, iteration))
-
                 # Track zero accuracy cases
                 # For hierarchical domains: track per-context (one entry per database)
                 # For non-hierarchical domains: track per-iteration (one entry per agent)
@@ -1719,20 +1692,11 @@ class ParallelAgentResearcher:
                         # Non-hierarchical: single entry for the iteration
                         self.zero_accuracy_cases.append((agent_id, None, iteration, total_questions))
 
-                # Accumulate Phase 1 costs and token counts from metadata
-                if metadata.get('phase1_cost'):
-                    iteration_cost_dict['phase1_cost'] += metadata['phase1_cost']
-                    iteration_cost_dict['phase1_calls'] += metadata.get('phase1_cache_misses', 0)
-                    iteration_cost_dict['phase1_tokens_in'] += metadata.get('phase1_tokens_in', 0)
-                    iteration_cost_dict['phase1_tokens_out'] += metadata.get('phase1_tokens_out', 0)
-                    iteration_cost_dict['phase1_cache_created'] += metadata.get('phase1_cache_created', 0)
-                    iteration_cost_dict['phase1_cache_read'] += metadata.get('phase1_cache_read', 0)
-
-                # Accumulate Phase 2 costs and token counts from metadata
-                if metadata.get('phase2_cost'):
-                    iteration_cost_dict['phase2_cost'] += metadata['phase2_cost']
-                    iteration_cost_dict['phase2_tokens_in'] += metadata.get('phase2_tokens_in', 0)
-                    iteration_cost_dict['phase2_tokens_out'] += metadata.get('phase2_tokens_out', 0)
+                # Accumulate evaluation costs from metadata
+                if metadata.get('eval_cost'):
+                    iteration_cost_dict['eval_cost'] += metadata['eval_cost']
+                    iteration_cost_dict['eval_tokens_in'] += metadata.get('eval_tokens_in', 0)
+                    iteration_cost_dict['eval_tokens_out'] += metadata.get('eval_tokens_out', 0)
 
                 # Extract per-context costs from metadata for cost report
                 if metadata.get('costs_by_context'):
@@ -2644,8 +2608,6 @@ class ParallelAgentResearcher:
             self.analysis_model = config["analysis_model"]
             self.evolution_model = config["evolution_model"]
             self.max_concurrent = config["max_concurrent"]
-            self.phase1_timeout = config["phase1_timeout"]
-            self.phase2_timeout = config["phase2_timeout"]
             self.evolution_timeout = config["evolution_timeout"]
             self.max_verification_retries = config["max_verification_retries"]
             self.temperature_strategy = config["temperature_strategy"]
@@ -2660,7 +2622,6 @@ class ParallelAgentResearcher:
                 domain=self.domain
             )
             # Restore evolver references
-            self.evolver.researcher_phase1_failures = self.phase1_failures
             self.evolver.eval_model = self.eval_model
             self.evolver.analysis_model = self.analysis_model
             self.evolver.problems_per_context = self.problems_per_context
@@ -2729,10 +2690,6 @@ class ParallelAgentResearcher:
                 evolved_agent_id = None
 
                 if not skip_evolution and self.test_history:
-                    # Update evolver's Phase 1 failures list with current state
-                    # This ensures 5-hour limit restart logic has up-to-date failures
-                    self.evolver.researcher_phase1_failures = self.phase1_failures
-
                     # Create new agent based on previous results
                     recent_results = self.test_history[-1]
 
@@ -2748,11 +2705,11 @@ class ParallelAgentResearcher:
                     
                     # Check if evolution failed
                     if result is None or result[0] is None:
-                        # Check if we need to restart from an earlier iteration due to Phase 1 failures
+                        # Check for 5-hour limit restart
                         if hasattr(self.evolver, 'restart_from_iteration') and self.evolver.restart_from_iteration is not None:
                             restart_iter = self.evolver.restart_from_iteration
                             iterations_to_redo = iteration - restart_iter + 1
-                            print(f"\n🔄 Restarting from iteration {restart_iter} due to Phase 1 failures caused by 5-hour limit")
+                            print(f"\n🔄 Restarting from iteration {restart_iter} due to 5-hour limit")
                             print(f"   Will redo {iterations_to_redo} iteration(s): {restart_iter} through {iteration}")
 
                             # Archive the failed iterations
@@ -3226,147 +3183,73 @@ class ParallelAgentResearcher:
         except Exception as e:
             print(f"❌ Failed to generate error analysis: {e}")
 
-    def _is_agent_tool_only(self, agent_id: str) -> bool:
-        """
-        Check if an agent uses tool-only execution mode.
-
-        Args:
-            agent_id: Agent identifier
-
-        Returns:
-            True if agent has execution_mode: tool_only in frontmatter
-        """
-        import re
-
-        # Get agent path from pool
-        agent_info = self.agent_pool.get(agent_id)
-        if not agent_info:
-            return False
-
-        agent_path = agent_info.get('path')
-        if not agent_path:
-            return False
-
-        agent_file = Path(agent_path)
-        if not agent_file.exists():
-            return False
-
-        try:
-            content = agent_file.read_text()
-
-            # Parse YAML frontmatter
-            yaml_match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
-            if yaml_match:
-                yaml_content = yaml_match.group(1)
-                return 'execution_mode: tool_only' in yaml_content
-        except Exception:
-            pass
-
-        return False
-
     def _generate_iteration_cost_report(self, iteration: int, results_by_agent: Dict,
                                          costs_by_context: Optional[Dict] = None,
                                          eval_cache_stats: Optional[Dict] = None):
         """
         Generate cost analysis report for this iteration.
 
-        Creates a cost matrix showing Phase 1, Phase 2, and total costs
-        for each (database × agent) combination.
-
         Args:
             iteration: Current iteration number
             results_by_agent: Dict mapping agent_id to list of result dicts
-            costs_by_context: Dict mapping agent_id to {context: {'phase1': $, 'phase2': $}}
-                              Used for hierarchical domains (Text2SQL) where costs are per-context
+            costs_by_context: Dict mapping agent_id to {context: {'eval': $}}
             eval_cache_stats: Dict mapping agent_id to {'cached': N, 'fresh': M}
-                              for eval result cache reporting
         """
         iteration_dir = self.experiment_dir / f"iteration_{iteration:03d}"
         if not iteration_dir.exists():
             return
 
-        # Check backward compatibility - skip if no phase2_cost data
         if not results_by_agent:
-            return
-
-        first_agent_results = next(iter(results_by_agent.values()), [])
-        if first_agent_results and 'phase2_cost' not in first_agent_results[0]:
-            print(f"  ⏭️  Skipping cost_report.md (checkpoint from older version)")
             return
 
         print(f"📊 Generating cost analysis for iteration {iteration}")
 
-        # Collect all databases and agents
-        all_databases = set()
+        # Collect all contexts and agents
+        all_contexts = set()
         all_agents = sorted(results_by_agent.keys())
 
-        # Build cost matrix - prefer costs_by_context (context-level) over results (question-level)
-        cost_matrix = {}  # {db_name: {agent_id: {'phase1': $, 'phase2': $}}}
+        # Build cost matrix
+        cost_matrix = {}  # {context: {agent_id: {'eval': $}}}
 
         for agent_id in all_agents:
             if costs_by_context and agent_id in costs_by_context:
-                # Use context-level costs from metadata (for hierarchical domains like Text2SQL)
                 for context_name, costs in costs_by_context[agent_id].items():
-                    all_databases.add(context_name)
+                    all_contexts.add(context_name)
                     if context_name not in cost_matrix:
                         cost_matrix[context_name] = {}
-
                     cost_matrix[context_name][agent_id] = {
-                        'phase1': costs.get('phase1', 0.0),
-                        'phase2': costs.get('phase2', 0.0),
-                        'total': costs.get('phase1', 0.0) + costs.get('phase2', 0.0)
+                        'eval': costs.get('eval', 0.0),
                     }
             else:
-                # Fallback for flat domains (CodeGen) - use existing per-result approach
                 for result in results_by_agent.get(agent_id, []):
                     context_name = result['context']
-                    all_databases.add(context_name)
-
+                    all_contexts.add(context_name)
                     if context_name not in cost_matrix:
                         cost_matrix[context_name] = {}
-
-                    # Get Phase 1 cost (Claude CLI for DB analysis)
-                    phase1_cost_info = result.get('phase1_cost_info')
-                    phase1_cost = phase1_cost_info.get('cost', 0.0) if phase1_cost_info else 0.0
-
-                    # Get Phase 2 cost (API for SQL generation)
-                    phase2_cost = result.get('phase2_cost', 0.0)
-
+                    eval_cost = result.get('eval_cost', 0.0)
                     cost_matrix[context_name][agent_id] = {
-                        'phase1': phase1_cost,
-                        'phase2': phase2_cost,
-                        'total': phase1_cost + phase2_cost
+                        'eval': eval_cost,
                     }
 
-        sorted_databases = sorted(all_databases)
+        sorted_contexts = sorted(all_contexts)
 
         # Calculate totals
-        total_phase1 = 0.0
-        total_phase2 = 0.0
+        total_eval = 0.0
+        ctx_totals = {}
+        agent_totals = {agent: {'eval': 0.0} for agent in all_agents}
 
-        db_totals = {}
-        agent_totals = {agent: {'phase1': 0.0, 'phase2': 0.0, 'total': 0.0} for agent in all_agents}
-
-        for db_name in sorted_databases:
-            db_totals[db_name] = {'phase1': 0.0, 'phase2': 0.0, 'total': 0.0}
+        for ctx_name in sorted_contexts:
+            ctx_totals[ctx_name] = {'eval': 0.0}
             for agent_id in all_agents:
-                if agent_id in cost_matrix[db_name]:
-                    costs = cost_matrix[db_name][agent_id]
-                    db_totals[db_name]['phase1'] += costs['phase1']
-                    db_totals[db_name]['phase2'] += costs['phase2']
-                    db_totals[db_name]['total'] += costs['total']
+                if agent_id in cost_matrix.get(ctx_name, {}):
+                    costs = cost_matrix[ctx_name][agent_id]
+                    ctx_totals[ctx_name]['eval'] += costs['eval']
+                    agent_totals[agent_id]['eval'] += costs['eval']
+                    total_eval += costs['eval']
 
-                    agent_totals[agent_id]['phase1'] += costs['phase1']
-                    agent_totals[agent_id]['phase2'] += costs['phase2']
-                    agent_totals[agent_id]['total'] += costs['total']
-
-                    total_phase1 += costs['phase1']
-                    total_phase2 += costs['phase2']
-
-        total_cost = total_phase1 + total_phase2
         num_tests = sum(len(results) for results in results_by_agent.values())
 
-        # Determine context label based on domain type
+        # Determine context label
         is_flat_domain = not self.domain.is_hierarchical
         context_label = "Problems" if is_flat_domain else "Databases"
 
@@ -3374,221 +3257,69 @@ class ParallelAgentResearcher:
         report_lines = [
             f"# Cost Analysis - Iteration {iteration}",
             "",
-            f"**Total Testing Cost: ${total_cost:.2f}**",
-            f"- Phase 1 ({self.domain.phase1_display_name}): ${total_phase1:.2f} ({total_phase1/total_cost*100:.1f}%)" if total_cost > 0 else f"- Phase 1 ({self.domain.phase1_display_name}): $0.00",
-            f"- Phase 2 ({self.domain.phase2_display_name}): ${total_phase2:.2f} ({total_phase2/total_cost*100:.1f}%)" if total_cost > 0 else f"- Phase 2 ({self.domain.phase2_display_name}): $0.00",
+            f"**Total Evaluation Cost: ${total_eval:.2f}**",
             "",
             f"**Agents Tested**: {len(all_agents)} agents",
-            f"**{context_label} Tested**: {len(sorted_databases)} {context_label.lower()}",
-            f"**Total Tests**: {num_tests} (agent × {context_label.lower()[:-1]} pairs)",
-            "",
-            "---",
+            f"**{context_label} Tested**: {len(sorted_contexts)} {context_label.lower()}",
+            f"**Total Tests**: {num_tests} (agent x {context_label.lower()[:-1]} pairs)",
             "",
         ]
 
-        if is_flat_domain:
-            # Flat domain: show consolidated agent-centric view
-            report_lines.extend(self._generate_flat_cost_table(
-                agent_totals, all_agents, total_phase1, total_phase2, total_cost,
-                eval_cache_stats=eval_cache_stats
-            ))
+        # Agent cost summary table
+        has_cache = eval_cache_stats and any(
+            s.get('cached', 0) > 0 for s in eval_cache_stats.values()
+        )
+
+        if has_cache:
+            header = "| Agent | Eval Cost | Cached | Total |"
+            separator = "|-------|-----------|--------|-------|"
         else:
-            # Hierarchical domain: show full per-context matrix
-            report_lines.append("## Combined Cost Matrix (Phase 1 + Phase 2)")
-            report_lines.append("")
+            header = "| Agent | Eval Cost |"
+            separator = "|-------|-----------|"
 
-            # Header row
-            header = "| Database |"
-            for agent_id in all_agents:
-                header += f" {agent_id} |"
-            header += " **Total** |"
-            report_lines.append(header)
+        report_lines.extend(["## Agent Cost Summary", "", header, separator])
 
-            # Separator row
-            separator = "|----------|"
-            for _ in all_agents:
-                separator += "-----------------|"
-            separator += "-----------|"
-            report_lines.append(separator)
+        for agent_id in all_agents:
+            at = agent_totals[agent_id]
+            if has_cache:
+                cs = eval_cache_stats.get(agent_id, {})
+                cached = cs.get('cached', 0)
+                total_problems = cached + cs.get('fresh', 0)
+                cache_str = f"{cached}/{total_problems}" if cached > 0 else "-"
+                report_lines.append(
+                    f"| {agent_id} | ${at['eval']:.2f} | {cache_str} | **${at['eval']:.2f}** |"
+                )
+            else:
+                report_lines.append(
+                    f"| {agent_id} | **${at['eval']:.2f}** |"
+                )
 
-            # Data rows
-            for db_name in sorted_databases:
-                row = f"| {db_name} |"
-                for agent_id in all_agents:
-                    if agent_id in cost_matrix[db_name]:
-                        costs = cost_matrix[db_name][agent_id]
-                        p1, p2 = costs['phase1'], costs['phase2']
-                        # Determine marker: tool-only, cache hit, or none
-                        if self._is_agent_tool_only(agent_id):
-                            marker = " 🔧"
-                        elif p1 == 0.0 and p2 > 0.0:
-                            marker = " 💾"
-                        else:
-                            marker = ""
-                        row += f" ${p1:.2f} + ${p2:.2f} = **${costs['total']:.2f}**{marker} |"
-                    else:
-                        row += " - |"
-                row += f" **${db_totals[db_name]['total']:.2f}** |"
-                report_lines.append(row)
+        # Total row
+        if has_cache:
+            total_cached = sum(s.get('cached', 0) for s in eval_cache_stats.values())
+            total_all = sum(s.get('cached', 0) + s.get('fresh', 0) for s in eval_cache_stats.values())
+            report_lines.append(
+                f"| **Total** | **${total_eval:.2f}** | **{total_cached}/{total_all}** | **${total_eval:.2f}** |"
+            )
+        else:
+            report_lines.append(
+                f"| **Total** | **${total_eval:.2f}** |"
+            )
 
-            # Total row
-            total_row = "| **Total** |"
-            for agent_id in all_agents:
-                at = agent_totals[agent_id]
-                # Determine marker: tool-only, cache hit, or none
-                if self._is_agent_tool_only(agent_id):
-                    marker = " 🔧"
-                elif at['phase1'] == 0.0 and at['total'] > 0.0:
-                    marker = " 💾"
-                else:
-                    marker = ""
-                total_row += f" **${at['phase1']:.2f} + ${at['phase2']:.2f} = ${at['total']:.2f}**{marker} |"
-            total_row += f" **${total_cost:.2f}** |"
-            report_lines.append(total_row)
+        # Cost insights
+        report_lines.extend(["", "---", "", "## Cost Insights", ""])
 
-            report_lines.extend([
-                "",
-                "🔧 = Tool-only execution (no Phase 1 cost by design)",
-                "💾 = Phase 1 cache hit (reused prior analysis)",
-                "💾 (N) = Phase 2 cache hits (N queries reused from cache, saving ~$0.01 each)",
-                "",
-                "---",
-                "",
-                "## Phase 1 Only (Database Analysis)",
-                ""
-            ])
-
-            # Phase 1 table
-            report_lines.append(header)
-            report_lines.append(separator)
-
-            for db_name in sorted_databases:
-                row = f"| {db_name} |"
-                for agent_id in all_agents:
-                    if agent_id in cost_matrix[db_name]:
-                        p1 = cost_matrix[db_name][agent_id]['phase1']
-                        # Determine marker: tool-only or cache hit
-                        if self._is_agent_tool_only(agent_id):
-                            marker = " 🔧"
-                        elif p1 == 0.0:
-                            marker = " 💾"
-                        else:
-                            marker = ""
-                        row += f" ${p1:.2f}{marker} |"
-                    else:
-                        row += " - |"
-                row += f" **${db_totals[db_name]['phase1']:.2f}** |"
-                report_lines.append(row)
-
-            total_row = "| **Total** |"
-            for agent_id in all_agents:
-                p1 = agent_totals[agent_id]['phase1']
-                # Determine marker: tool-only or cache hit
-                if self._is_agent_tool_only(agent_id):
-                    marker = " 🔧"
-                elif p1 == 0.0:
-                    marker = " 💾"
-                else:
-                    marker = ""
-                total_row += f" **${p1:.2f}**{marker} |"
-            total_row += f" **${total_phase1:.2f}** |"
-            report_lines.append(total_row)
-
-            report_lines.extend([
-                "",
-                "---",
-                "",
-                "## Phase 2 Only (SQL Generation)",
-                ""
-            ])
-
-            # Phase 2 table
-            report_lines.append(header)
-            report_lines.append(separator)
-
-            for db_name in sorted_databases:
-                row = f"| {db_name} |"
-                for agent_id in all_agents:
-                    if agent_id in cost_matrix[db_name]:
-                        p2 = cost_matrix[db_name][agent_id]['phase2']
-
-                        row += f" ${p2:.2f} |"
-                    else:
-                        row += " - |"
-                row += f" **${db_totals[db_name]['phase2']:.2f}** |"
-                report_lines.append(row)
-
-            total_row = "| **Total** |"
-            for agent_id in all_agents:
-                total_row += f" **${agent_totals[agent_id]['phase2']:.2f}** |"
-            total_row += f" **${total_phase2:.2f}** |"
-            report_lines.append(total_row)
-
-        # Add insights section
-        report_lines.extend([
-            "",
-            "---",
-            "",
-            "## Cost Insights",
-            ""
-        ])
-
-        # For flat domains, skip the per-context breakdowns (they're meaningless projections)
-        if not is_flat_domain:
-            # Most expensive combinations
-            all_combinations = []
-            for db_name in sorted_databases:
-                for agent_id in all_agents:
-                    if agent_id in cost_matrix[db_name]:
-                        all_combinations.append((
-                            db_name,
-                            agent_id,
-                            cost_matrix[db_name][agent_id]['total']
-                        ))
-
-            all_combinations.sort(key=lambda x: x[2], reverse=True)
-
-            report_lines.append("### Most Expensive Combinations (Top 5)")
-            for i, (db, agent, cost) in enumerate(all_combinations[:5], 1):
-                pct = (cost / total_cost * 100) if total_cost > 0 else 0
-                report_lines.append(f"{i}. {db} × {agent}: ${cost:.2f} ({pct:.1f}% of total)")
-            report_lines.append("")
-
-            # Most expensive databases
-            db_costs = [(db, db_totals[db]['total']) for db in sorted_databases]
-            db_costs.sort(key=lambda x: x[1], reverse=True)
-
-            report_lines.append("### Most Expensive Databases")
-            for i, (db, cost) in enumerate(db_costs, 1):
-                pct = (cost / total_cost * 100) if total_cost > 0 else 0
-                avg = cost / len(all_agents) if all_agents else 0
-                report_lines.append(f"{i}. {db}: ${cost:.2f} ({pct:.1f}%, avg ${avg:.2f}/agent)")
-            report_lines.append("")
-
-        # Most expensive agents (always shown)
-        agent_costs = [(agent, agent_totals[agent]['total']) for agent in all_agents]
+        # Most expensive agents
+        agent_costs = [(agent, agent_totals[agent]['eval']) for agent in all_agents]
         agent_costs.sort(key=lambda x: x[1], reverse=True)
 
         report_lines.append("### Most Expensive Agents")
         context_label_singular = "problem" if is_flat_domain else "db"
         for i, (agent, cost) in enumerate(agent_costs, 1):
-            pct = (cost / total_cost * 100) if total_cost > 0 else 0
-            avg = cost / len(sorted_databases) if sorted_databases else 0
+            pct = (cost / total_eval * 100) if total_eval > 0 else 0
+            avg = cost / len(sorted_contexts) if sorted_contexts else 0
             report_lines.append(f"{i}. {agent}: ${cost:.2f} ({pct:.1f}%, avg ${avg:.2f}/{context_label_singular})")
         report_lines.append("")
-
-        # Tool-only efficiency
-        tool_only_agents = [agent for agent in all_agents if agent_totals[agent]['phase1'] == 0.0]
-        if tool_only_agents:
-            report_lines.append("### Tool-Only Efficiency")
-            for agent in tool_only_agents:
-                at = agent_totals[agent]
-                # Calculate what Phase 1 would have cost if agent-centric
-                avg_phase1_others = sum(agent_totals[a]['phase1'] for a in all_agents if a not in tool_only_agents)
-                avg_phase1_others /= max(1, len(all_agents) - len(tool_only_agents))
-                savings = avg_phase1_others
-                report_lines.append(f"- **{agent}**: Saved ~${savings:.2f} in Phase 1 costs (vs agent-centric avg)")
-                report_lines.append(f"  - Phase 2 costs: ${at['phase2']:.2f}")
 
         # Write report
         cost_report_path = iteration_dir / "cost_report.md"
@@ -3596,94 +3327,6 @@ class ParallelAgentResearcher:
             f.write('\n'.join(report_lines))
 
         print(f"✓ Generated cost report: {cost_report_path}")
-
-    def _generate_flat_cost_table(self, agent_totals: Dict, all_agents: List[str],
-                                   total_phase1: float, total_phase2: float,
-                                   total_cost: float,
-                                   eval_cache_stats: Optional[Dict] = None) -> List[str]:
-        """
-        Generate a consolidated agent-centric cost table for flat domains.
-
-        For flat domains (like CodeGen), per-problem costs are just projections
-        (total / num_problems) with no actual granularity. This method generates
-        a simpler agent summary table instead of the misleading per-problem matrix.
-
-        Args:
-            agent_totals: Dict mapping agent_id to {'phase1': $, 'phase2': $, 'total': $}
-            all_agents: Sorted list of agent IDs
-            total_phase1: Total Phase 1 cost
-            total_phase2: Total Phase 2 cost
-            total_cost: Total cost (phase1 + phase2)
-            eval_cache_stats: Optional dict mapping agent_id to {'cached': N, 'fresh': M}
-
-        Returns:
-            List of markdown lines for the flat cost table
-        """
-        # Only show Cached column when any agent has cache hits
-        has_cache = eval_cache_stats and any(
-            s.get('cached', 0) > 0 for s in eval_cache_stats.values()
-        )
-
-        if has_cache:
-            header = "| Agent | Phase 1 | Phase 2 | Cached | Total |"
-            separator = "|-------|---------|---------|--------|-------|"
-        else:
-            header = "| Agent | Phase 1 | Phase 2 | Total |"
-            separator = "|-------|---------|---------|-------|"
-
-        lines = [
-            "## Agent Cost Summary",
-            "",
-            "*Note: For flat domains, costs are tracked per-agent rather than per-problem.*",
-            "",
-            header,
-            separator,
-        ]
-
-        # Agent rows
-        for agent_id in all_agents:
-            at = agent_totals[agent_id]
-            # Determine marker: tool-only, cache hit, or none
-            if self._is_agent_tool_only(agent_id):
-                marker = " 🔧"
-            elif at['phase1'] == 0.0 and at['total'] > 0.0:
-                marker = " 💾"
-            else:
-                marker = ""
-
-            if has_cache:
-                cs = eval_cache_stats.get(agent_id, {})
-                cached = cs.get('cached', 0)
-                total_problems = cached + cs.get('fresh', 0)
-                cache_str = f"{cached}/{total_problems}" if cached > 0 else "-"
-                lines.append(
-                    f"| {agent_id}{marker} | ${at['phase1']:.2f} | ${at['phase2']:.2f} | {cache_str} | **${at['total']:.2f}** |"
-                )
-            else:
-                lines.append(
-                    f"| {agent_id}{marker} | ${at['phase1']:.2f} | ${at['phase2']:.2f} | **${at['total']:.2f}** |"
-                )
-
-        # Total row
-        if has_cache:
-            total_cached = sum(s.get('cached', 0) for s in eval_cache_stats.values())
-            total_all = sum(s.get('cached', 0) + s.get('fresh', 0) for s in eval_cache_stats.values())
-            lines.append(
-                f"| **Total** | **${total_phase1:.2f}** | **${total_phase2:.2f}** | **{total_cached}/{total_all}** | **${total_cost:.2f}** |"
-            )
-        else:
-            lines.append(
-                f"| **Total** | **${total_phase1:.2f}** | **${total_phase2:.2f}** | **${total_cost:.2f}** |"
-            )
-
-        lines.extend([
-            "",
-            "🔧 = Tool-only execution (no Phase 1 cost by design)",
-            "💾 = Phase 1 cache hit (reused prior analysis)",
-            "",
-        ])
-
-        return lines
 
     def _validate_checkpoint_consistency(self, iteration: int):
         """
@@ -3761,7 +3404,6 @@ class ParallelAgentResearcher:
             'iteration_fresh_evals': self.iteration_fresh_evals,
             'evolution_times': self.evolution_times,
             'meta_evolution_times': self.meta_evolution_times,
-            'phase1_failures': self.phase1_failures,
             'zero_accuracy_cases': self.zero_accuracy_cases,
             'exception_failures': self.exception_failures,
             'five_hour_limit_incidents': self.five_hour_limit_incidents,

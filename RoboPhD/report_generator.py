@@ -84,8 +84,6 @@ class ReportGenerator:
                 "max_concurrent"
             ],
             "Timeouts": [
-                "phase1_timeout",
-                "phase2_timeout",
                 "evolution_timeout"
             ],
             "Other": [
@@ -286,12 +284,11 @@ class ReportGenerator:
             report_lines.append("")
             report_lines.append("### 5-Hour Limit Incidents")
             report_lines.append(f"Total incidents: {len(self.researcher.five_hour_limit_incidents)}")
-            report_lines.append("\n| Iteration | Recovery Action | Phase 1 Failures |")
-            report_lines.append("|-----------|----------------|------------------|")
+            report_lines.append("\n| Iteration | Recovery Action |")
+            report_lines.append("|-----------|----------------|")
             for incident in self.researcher.five_hour_limit_incidents:
                 recovery = incident.get('recovery_action', 'Unknown')
-                phase1_info = f"{incident['phase1_failures_detected']} (iter {incident['iteration']-1})" if incident['phase1_failures_detected'] > 0 else "0"
-                report_lines.append(f"| {incident['iteration']} | {recovery} | {phase1_info} |")
+                report_lines.append(f"| {incident['iteration']} | {recovery} |")
 
         # Winning Agents by Evolution Strategy
         report_lines.append("\n## Winning Agents by Evolution Strategy\n")
@@ -556,12 +553,7 @@ class ReportGenerator:
 
         if self.researcher.iteration_claude_costs:
             # Calculate totals
-            total_phase1_cost = sum(ic.get('phase1_cost', 0.0) for ic in self.researcher.iteration_claude_costs)
-            total_phase1_calls = sum(ic.get('phase1_calls', 0) for ic in self.researcher.iteration_claude_costs)
-            total_phase1_tokens_in = sum(ic.get('phase1_tokens_in', 0) for ic in self.researcher.iteration_claude_costs)
-            total_phase1_tokens_out = sum(ic.get('phase1_tokens_out', 0) for ic in self.researcher.iteration_claude_costs)
-            total_phase1_cache_created = sum(ic.get('phase1_cache_created', 0) for ic in self.researcher.iteration_claude_costs)
-            total_phase1_cache_read = sum(ic.get('phase1_cache_read', 0) for ic in self.researcher.iteration_claude_costs)
+            total_eval_cost = sum(ic.get('eval_cost', 0.0) for ic in self.researcher.iteration_claude_costs)
 
             total_evolution_cost = sum(ic.get('evolution_cost', 0.0) for ic in self.researcher.iteration_claude_costs)
             total_evolution_calls = sum(ic.get('evolution_calls', 0) for ic in self.researcher.iteration_claude_costs)
@@ -575,48 +567,38 @@ class ReportGenerator:
             total_meta_evolution_tokens_in = sum(ic.get('meta_evolution_tokens_in', 0) for ic in self.researcher.iteration_claude_costs)
             total_meta_evolution_tokens_out = sum(ic.get('meta_evolution_tokens_out', 0) for ic in self.researcher.iteration_claude_costs)
 
-            # Calculate API costs (Phase 2 SQL generation)
-            total_api_cost = sum(ic.get('phase2_cost', 0.0) for ic in self.researcher.iteration_claude_costs)
+            total_cli_cost = total_evolution_cost + total_meta_evolution_cost
+            total_cli_calls = total_evolution_calls + total_meta_evolution_calls
+            total_cli_tokens_in = total_evolution_tokens_in + total_meta_evolution_tokens_in
+            total_cli_tokens_out = total_evolution_tokens_out + total_meta_evolution_tokens_out
 
-            total_cli_cost = total_phase1_cost + total_evolution_cost + total_meta_evolution_cost
-            total_cli_calls = total_phase1_calls + total_evolution_calls + total_meta_evolution_calls
-            total_cli_tokens_in = total_phase1_tokens_in + total_evolution_tokens_in + total_meta_evolution_tokens_in
-            total_cli_tokens_out = total_phase1_tokens_out + total_evolution_tokens_out + total_meta_evolution_tokens_out
-
-            # Grand total (CLI + API)
-            grand_total_cost = total_cli_cost + total_api_cost
+            # Grand total (Eval + CLI)
+            grand_total_cost = total_eval_cost + total_cli_cost
 
             # Overall summary
-            report_lines.append(f"- **Total Cost (CLI + API)**: ${grand_total_cost:.2f}")
-            report_lines.append(f"  - **Claude CLI Cost**: ${total_cli_cost:.2f}")
-            report_lines.append(f"  - **API Cost**: ${total_api_cost:.2f}")
+            report_lines.append(f"- **Total Cost**: ${grand_total_cost:.2f}")
+            report_lines.append(f"  - **Evaluation Cost**: ${total_eval_cost:.2f}")
+            report_lines.append(f"  - **Evolution CLI Cost**: ${total_cli_cost:.2f}")
             report_lines.append(f"- **Total CLI Calls**: {total_cli_calls}")
             report_lines.append(f"- **Total CLI Input Tokens**: {total_cli_tokens_in:,}")
             report_lines.append(f"- **Total CLI Output Tokens**: {total_cli_tokens_out:,}")
-            report_lines.append(f"- **Total Cache Created**: {total_phase1_cache_created + total_evolution_cache_created:,}")
-            report_lines.append(f"- **Total Cache Read**: {total_phase1_cache_read + total_evolution_cache_read:,}")
+            report_lines.append(f"- **Total Cache Created**: {total_evolution_cache_created:,}")
+            report_lines.append(f"- **Total Cache Read**: {total_evolution_cache_read:,}")
 
             # Cost breakdown
             report_lines.append("\n### Cost Breakdown\n")
             report_lines.append("| Operation | Cost | % of Total | Calls | Tokens In | Tokens Out |")
             report_lines.append("|-----------|------|------------|-------|-----------|------------|")
 
-            phase1_pct = (total_phase1_cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
-            api_pct = (total_api_cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
+            eval_pct = (total_eval_cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
             evolution_pct = (total_evolution_cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
             meta_evolution_pct = (total_meta_evolution_cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
 
-            # Get domain display names (fallback to Text2SQL labels for backward compatibility)
             domain = getattr(self.researcher, 'domain', None)
-            phase1_display = domain.phase1_display_name if domain else "DB Analysis"
-            phase2_display = domain.phase2_display_name if domain else "SQL Generation"
+            solution = domain.solution_name if domain else "output"
 
             report_lines.append(
-                f"| Phase 1 ({phase1_display} - CLI) | ${total_phase1_cost:.2f} | {phase1_pct:.1f}% | "
-                f"{total_phase1_calls} | {total_phase1_tokens_in:,} | {total_phase1_tokens_out:,} |"
-            )
-            report_lines.append(
-                f"| Phase 2 ({phase2_display} - API) | ${total_api_cost:.2f} | {api_pct:.1f}% | "
+                f"| Evaluation | ${total_eval_cost:.2f} | {eval_pct:.1f}% | "
                 f"- | - | - |"
             )
             report_lines.append(
@@ -633,13 +615,9 @@ class ReportGenerator:
                 f"**{total_cli_calls}** | **{total_cli_tokens_in:,}** | **{total_cli_tokens_out:,}** |"
             )
 
-            # Answer the key question - identify the highest cost driver
-            # Get domain names for cost driver labels
-            phase1_input = domain.phase1_input_name if domain else "database"
-            solution = domain.solution_name if domain else "SQL"
+            # Identify highest cost driver
             cost_drivers = [
-                (f'Phase 1 {phase1_input} analysis', phase1_pct),
-                (f'Phase 2 {solution} generation', api_pct),
+                ('Evaluation', eval_pct),
                 ('Evolution', evolution_pct),
                 ('Meta-Evolution', meta_evolution_pct)
             ]
@@ -648,8 +626,8 @@ class ReportGenerator:
 
             # Per-iteration cost breakdown
             report_lines.append("\n### Per-Iteration Cost Breakdown\n")
-            report_lines.append("| Iter | Total | P1 Cost | P1 Calls | P1 In | P1 Out | P2 Cost | Evo Cost | Evo Calls | Evo In | Evo Out | Meta Cost | Meta Calls | Strategy | Meta-strategy |")
-            report_lines.append("|------|-------|---------|----------|-------|--------|---------|----------|-----------|--------|---------|-----------|------------|----------|---------------|")
+            report_lines.append("| Iter | Total | Eval Cost | Evo Cost | Evo Calls | Evo In | Evo Out | Meta Cost | Meta Calls | Strategy | Meta-strategy |")
+            report_lines.append("|------|-------|-----------|----------|-----------|--------|---------|-----------|------------|----------|---------------|")
 
             for idx, cost_dict in enumerate(self.researcher.iteration_claude_costs):
                 iter_num = idx + 1
@@ -657,77 +635,51 @@ class ReportGenerator:
                 # Get evolution strategy for this iteration if available
                 strategy_display = "-"
                 if cost_dict.get('evolution_cost', 0) > 0:
-                    # Find the agent created in this iteration
                     evolved_agent_id = None
                     for agent_id, agent_info in self.researcher.agent_pool.items():
                         if agent_info.get('created_iteration') == iter_num and agent_info.get('source') == 'evolution':
                             evolved_agent_id = agent_id
                             break
-
                     if evolved_agent_id:
                         strategy = self.researcher.agent_pool[evolved_agent_id].get('evolution_strategy', 'unknown')
                         strategy_display = strategy
 
-                # Get meta-evolution strategy for this iteration if available
                 meta_strategy_display = "-"
                 if cost_dict.get('meta_evolution_cost', 0) > 0:
-                    # Get the config for this iteration to find meta_evolution_strategy
                     iter_config = self.researcher.config_manager.get_config(iter_num)
                     meta_strategy = iter_config.get('meta_evolution_strategy')
                     if meta_strategy and meta_strategy != 'none':
                         meta_strategy_display = meta_strategy
 
-                # Calculate totals for this iteration
-                phase1_cost = cost_dict.get('phase1_cost', 0.0)
-                phase1_calls = cost_dict.get('phase1_calls', 0)
-                phase1_tokens_in = cost_dict.get('phase1_tokens_in', 0)
-                phase1_tokens_out = cost_dict.get('phase1_tokens_out', 0)
-
-                # Get API cost for this iteration (Phase 2 SQL generation)
-                api_cost = cost_dict.get('phase2_cost', 0.0)
-
+                eval_cost = cost_dict.get('eval_cost', 0.0)
                 evo_cost = cost_dict.get('evolution_cost', 0.0)
                 evo_calls = cost_dict.get('evolution_calls', 0)
                 evo_tokens_in = cost_dict.get('evolution_tokens_in', 0)
                 evo_tokens_out = cost_dict.get('evolution_tokens_out', 0)
-
                 meta_cost = cost_dict.get('meta_evolution_cost', 0.0)
                 meta_calls = cost_dict.get('meta_evolution_calls', 0)
+                total_cost = eval_cost + evo_cost + meta_cost
 
-                total_cost = phase1_cost + api_cost + evo_cost + meta_cost
-                total_calls = phase1_calls + evo_calls + meta_calls  # API calls not tracked
-                total_tokens_in = phase1_tokens_in + evo_tokens_in  # API tokens not tracked here
-                total_tokens_out = phase1_tokens_out + evo_tokens_out
-
-                # Single row with all information
                 report_lines.append(
                     f"| **{iter_num}** | **${total_cost:.2f}** | "
-                    f"${phase1_cost:.2f} | {phase1_calls} | {phase1_tokens_in:,} | {phase1_tokens_out:,} | "
-                    f"${api_cost:.2f} | "
+                    f"${eval_cost:.2f} | "
                     f"${evo_cost:.2f} | {evo_calls} | {evo_tokens_in:,} | {evo_tokens_out:,} | "
                     f"${meta_cost:.2f} | {meta_calls} | "
                     f"{strategy_display} | {meta_strategy_display} |"
                 )
 
-            # Detailed per-iteration costs (one row per iteration with subtotals + components)
-            # Use domain-specific labels for phase columns
-            phase1_short = domain.phase1_short_label if domain else "DB"
-            phase2_short = solution if domain else "SQL"  # "SQL" or "code"
+            # Detailed per-iteration costs
             report_lines.append("\n### Detailed Per-Iteration Costs\n")
-            report_lines.append(f"| Iter | Total | **{phase1_display}** | P1 | Test {phase1_short} | **{phase2_short.title()} Gen** | P2 | Test {phase2_short.title()} | **Evolution** | 1st Draft | Test Evo | Refl | Meta | Strategy | Meta-strategy |")
-            report_lines.append("|------|-------|-----------------|----|---------|-----------|----|----------|---------------|-----------|----------|------|------|----------|---------------|")
+            report_lines.append(f"| Iter | Total | **Evaluation** | **Evolution** | 1st Draft | Test Eval | Test Evo | Refl | Meta | Strategy | Meta-strategy |")
+            report_lines.append("|------|-------|----------------|---------------|-----------|-----------|----------|------|------|----------|---------------|")
 
             # Accumulators for totals
             totals = {
                 'total_cost': 0.0,
-                'total_db_analysis': 0.0,
-                'phase1_base': 0.0,
-                'test_db': 0.0,
-                'total_sql_gen': 0.0,
-                'phase2_base': 0.0,
-                'test_sql': 0.0,
+                'total_eval': 0.0,
                 'total_evolution': 0.0,
                 'first_draft': 0.0,
+                'test_eval': 0.0,
                 'test_evo': 0.0,
                 'reflection': 0.0,
                 'meta_evolution': 0.0
@@ -736,107 +688,81 @@ class ReportGenerator:
             for idx, cost_dict in enumerate(self.researcher.iteration_claude_costs):
                 iter_num = idx + 1
 
-                # Get evolution strategy for this iteration if available
                 strategy_display = "-"
                 if cost_dict.get('evolution_cost', 0) > 0:
-                    # Find the agent created in this iteration
                     evolved_agent_id = None
                     for agent_id, agent_info in self.researcher.agent_pool.items():
                         if agent_info.get('created_iteration') == iter_num and agent_info.get('source') == 'evolution':
                             evolved_agent_id = agent_id
                             break
-
                     if evolved_agent_id:
                         strategy = self.researcher.agent_pool[evolved_agent_id].get('evolution_strategy', 'unknown')
                         strategy_display = strategy
 
-                # Get meta-evolution strategy for this iteration if available
                 meta_strategy_display = "-"
                 if cost_dict.get('meta_evolution_cost', 0) > 0:
-                    # Get the config for this iteration to find meta_evolution_strategy
                     iter_config = self.researcher.config_manager.get_config(iter_num)
                     meta_strategy = iter_config.get('meta_evolution_strategy')
                     if meta_strategy and meta_strategy != 'none':
                         meta_strategy_display = meta_strategy
 
                 # Get base costs
-                phase1_base = cost_dict.get('phase1_cost', 0.0)
-                phase2_base = cost_dict.get('phase2_cost', 0.0)
+                eval_base = cost_dict.get('eval_cost', 0.0)
 
                 # Get evolution breakdown
                 evolution_breakdown = cost_dict.get('evolution_breakdown')
 
                 # Extract test round costs
-                test_db = 0.0
-                test_sql = 0.0
+                test_eval = 0.0
                 test_evo = 0.0
                 first_draft = 0.0
                 reflection = 0.0
 
                 if evolution_breakdown:
-                    # First Draft (Round 1)
                     first_draft = evolution_breakdown.get('first_draft', {}).get('cost', 0.0)
 
-                    # Test & Refine 1 (Round 2)
                     test_refine_1 = evolution_breakdown.get('test_refine_1', {})
-                    test_db += test_refine_1.get('phase1', {}).get('cost', 0.0)
-                    test_sql += test_refine_1.get('phase2', {}).get('cost', 0.0)
+                    test_eval += test_refine_1.get('eval', {}).get('cost', 0.0)
                     test_evo += test_refine_1.get('evolution', {}).get('cost', 0.0)
 
-                    # Test & Refine 2 (Round 3)
                     test_refine_2 = evolution_breakdown.get('test_refine_2', {})
-                    test_db += test_refine_2.get('phase1', {}).get('cost', 0.0)
-                    test_sql += test_refine_2.get('phase2', {}).get('cost', 0.0)
+                    test_eval += test_refine_2.get('eval', {}).get('cost', 0.0)
                     test_evo += test_refine_2.get('evolution', {}).get('cost', 0.0)
 
-                    # Reflection
                     reflection = evolution_breakdown.get('reflection', {}).get('cost', 0.0)
 
-                # Get meta-evolution cost
                 meta_evolution_cost = cost_dict.get('meta_evolution_cost', 0.0)
 
-                # Calculate subtotals
-                total_db_analysis = phase1_base + test_db
-                total_sql_gen = phase2_base + test_sql
-                total_evolution = first_draft + test_evo + reflection
-                total_cost = total_db_analysis + total_sql_gen + total_evolution + meta_evolution_cost
+                total_eval_iter = eval_base + test_eval
+                total_evolution_iter = first_draft + test_evo + reflection
+                total_cost = total_eval_iter + total_evolution_iter + meta_evolution_cost
 
-                # Accumulate totals
                 totals['total_cost'] += total_cost
-                totals['total_db_analysis'] += total_db_analysis
-                totals['phase1_base'] += phase1_base
-                totals['test_db'] += test_db
-                totals['total_sql_gen'] += total_sql_gen
-                totals['phase2_base'] += phase2_base
-                totals['test_sql'] += test_sql
-                totals['total_evolution'] += total_evolution
+                totals['total_eval'] += total_eval_iter
+                totals['total_evolution'] += total_evolution_iter
                 totals['first_draft'] += first_draft
+                totals['test_eval'] += test_eval
                 totals['test_evo'] += test_evo
                 totals['reflection'] += reflection
                 totals['meta_evolution'] += meta_evolution_cost
 
-                # Format values (use "-" for zero values to keep table clean)
                 def fmt(val):
                     return f"${val:.2f}" if val > 0 else "-"
 
-                # Single row with all data
                 report_lines.append(
                     f"| **{iter_num}** | ${total_cost:.2f} | "
-                    f"**{fmt(total_db_analysis)}** | {fmt(phase1_base)} | {fmt(test_db)} | "
-                    f"**{fmt(total_sql_gen)}** | {fmt(phase2_base)} | {fmt(test_sql)} | "
-                    f"**{fmt(total_evolution)}** | {fmt(first_draft)} | {fmt(test_evo)} | {fmt(reflection)} | "
+                    f"**{fmt(total_eval_iter)}** | "
+                    f"**{fmt(total_evolution_iter)}** | {fmt(first_draft)} | {fmt(test_eval)} | {fmt(test_evo)} | {fmt(reflection)} | "
                     f"{fmt(meta_evolution_cost)} | "
                     f"{strategy_display} | {meta_strategy_display} |"
                 )
 
-            # Add separator and totals row
-            num_iterations = len(self.researcher.iteration_claude_costs)
-            report_lines.append("|------|-------|-----------------|----|---------|-----------|----|----------|---------------|-----------|----------|------|------|----------|---------------|")
+            # Totals row
+            report_lines.append("|------|-------|----------------|---------------|-----------|-----------|----------|------|------|----------|---------------|")
             report_lines.append(
                 f"| **TOTAL** | **${totals['total_cost']:.2f}** | "
-                f"**${totals['total_db_analysis']:.2f}** | ${totals['phase1_base']:.2f} | ${totals['test_db']:.2f} | "
-                f"**${totals['total_sql_gen']:.2f}** | ${totals['phase2_base']:.2f} | ${totals['test_sql']:.2f} | "
-                f"**${totals['total_evolution']:.2f}** | ${totals['first_draft']:.2f} | ${totals['test_evo']:.2f} | ${totals['reflection']:.2f} | "
+                f"**${totals['total_eval']:.2f}** | "
+                f"**${totals['total_evolution']:.2f}** | ${totals['first_draft']:.2f} | ${totals['test_eval']:.2f} | ${totals['test_evo']:.2f} | ${totals['reflection']:.2f} | "
                 f"${totals['meta_evolution']:.2f} | "
                 f"- | - |"
             )
@@ -847,7 +773,6 @@ class ReportGenerator:
                 report_lines.append("| Phase | Avg Cost | % of Evolution | Avg Tokens In | Avg Tokens Out |")
                 report_lines.append("|-------|----------|----------------|---------------|----------------|")
 
-                # Calculate averages from evolution_breakdown
                 num_evolutions_with_cost = sum(1 for ic in self.researcher.iteration_claude_costs if ic.get('evolution_breakdown'))
 
                 if num_evolutions_with_cost > 0:
@@ -864,7 +789,6 @@ class ReportGenerator:
                             if key.startswith('test_refine_'):
                                 test_round_keys.add(key)
 
-                    # Calculate averages for each test round (costs and nested breakdown)
                     test_round_stats = {}
                     for key in sorted(test_round_keys):
                         test_round_stats[key] = {
@@ -872,8 +796,8 @@ class ReportGenerator:
                                 (ic.get('evolution_breakdown') or {}).get(key, {}).get('cost', 0.0)
                                 for ic in self.researcher.iteration_claude_costs
                             ) / num_evolutions_with_cost,
-                            'phase1_cost': sum(
-                                (ic.get('evolution_breakdown') or {}).get(key, {}).get('phase1', {}).get('cost', 0.0)
+                            'eval_cost': sum(
+                                (ic.get('evolution_breakdown') or {}).get(key, {}).get('eval', {}).get('cost', 0.0)
                                 for ic in self.researcher.iteration_claude_costs
                             ) / num_evolutions_with_cost,
                             'evolution_cost': sum(
@@ -884,21 +808,19 @@ class ReportGenerator:
 
                     avg_total_evo_cost = total_evolution_cost / num_evolutions_with_cost
 
-                    # Tokens
                     avg_first_draft_tokens_in = sum(
                         (ic.get('evolution_breakdown') or {}).get('first_draft', {}).get('tokens_in', 0)
                         for ic in self.researcher.iteration_claude_costs
                     ) / num_evolutions_with_cost
 
-                    # Add token statistics to test_round_stats
                     for key in sorted(test_round_keys):
                         test_round_stats[key]['tokens_in'] = sum(
                             (ic.get('evolution_breakdown') or {}).get(key, {}).get('tokens_in', 0)
                             for ic in self.researcher.iteration_claude_costs
                         ) / num_evolutions_with_cost
 
-                        test_round_stats[key]['phase1_tokens_in'] = sum(
-                            (ic.get('evolution_breakdown') or {}).get(key, {}).get('phase1', {}).get('tokens_in', 0)
+                        test_round_stats[key]['eval_tokens_in'] = sum(
+                            (ic.get('evolution_breakdown') or {}).get(key, {}).get('eval', {}).get('tokens_in', 0)
                             for ic in self.researcher.iteration_claude_costs
                         ) / num_evolutions_with_cost
 
@@ -912,15 +834,14 @@ class ReportGenerator:
                         for ic in self.researcher.iteration_claude_costs
                     ) / num_evolutions_with_cost
 
-                    # Add tokens_out statistics to test_round_stats
                     for key in sorted(test_round_keys):
                         test_round_stats[key]['tokens_out'] = sum(
                             (ic.get('evolution_breakdown') or {}).get(key, {}).get('tokens_out', 0)
                             for ic in self.researcher.iteration_claude_costs
                         ) / num_evolutions_with_cost
 
-                        test_round_stats[key]['phase1_tokens_out'] = sum(
-                            (ic.get('evolution_breakdown') or {}).get(key, {}).get('phase1', {}).get('tokens_out', 0)
+                        test_round_stats[key]['eval_tokens_out'] = sum(
+                            (ic.get('evolution_breakdown') or {}).get(key, {}).get('eval', {}).get('tokens_out', 0)
                             for ic in self.researcher.iteration_claude_costs
                         ) / num_evolutions_with_cost
 
@@ -947,12 +868,10 @@ class ReportGenerator:
 
                     # Percentages
                     pct_first_draft = (avg_first_draft_cost / avg_total_evo_cost * 100) if avg_total_evo_cost > 0 else 0
-                    pct_reflection = (avg_reflection_cost / avg_total_evo_cost * 100) if avg_total_evo_cost > 0 else 0
 
-                    # Calculate percentages for each test round
                     for key in test_round_stats.keys():
                         test_round_stats[key]['pct'] = (test_round_stats[key]['cost'] / avg_total_evo_cost * 100) if avg_total_evo_cost > 0 else 0
-                        test_round_stats[key]['pct_phase1'] = (test_round_stats[key]['phase1_cost'] / test_round_stats[key]['cost'] * 100) if test_round_stats[key]['cost'] > 0 else 0
+                        test_round_stats[key]['pct_eval'] = (test_round_stats[key]['eval_cost'] / test_round_stats[key]['cost'] * 100) if test_round_stats[key]['cost'] > 0 else 0
                         test_round_stats[key]['pct_evolution'] = (test_round_stats[key]['evolution_cost'] / test_round_stats[key]['cost'] * 100) if test_round_stats[key]['cost'] > 0 else 0
 
                     report_lines.append(
@@ -960,31 +879,25 @@ class ReportGenerator:
                         f"{avg_first_draft_tokens_in:.0f} | {avg_first_draft_tokens_out:.0f} |"
                     )
 
-                    # Dynamic test round rows
                     for i, key in enumerate(sorted(test_round_keys), start=1):
                         stats = test_round_stats[key]
-                        round_num = i + 1  # Rounds start at 2 (after first_draft=1)
+                        round_num = i + 1
 
-                        # Total row
                         report_lines.append(
                             f"| **Test & Refine {i} (Round {round_num})** | **${stats['cost']:.2f}** | **{stats['pct']:.1f}%** | "
                             f"**{stats['tokens_in']:.0f}** | **{stats['tokens_out']:.0f}** |"
                         )
 
-                        # Nested breakdown (if cost > 0)
-                        # Use domain-specific labels
-                        nested_phase1_label = domain.phase1_display_name if domain else "DB Analysis"
                         if stats['cost'] > 0:
                             report_lines.append(
-                                f"|   ├─ {nested_phase1_label} | ${stats['phase1_cost']:.2f} | {stats['pct_phase1']:.1f}% | "
-                                f"{stats['phase1_tokens_in']:.0f} | {stats['phase1_tokens_out']:.0f} |"
+                                f"|   ├─ Evaluation | ${stats['eval_cost']:.2f} | {stats['pct_eval']:.1f}% | "
+                                f"{stats['eval_tokens_in']:.0f} | {stats['eval_tokens_out']:.0f} |"
                             )
                             report_lines.append(
                                 f"|   └─ Evolution | ${stats['evolution_cost']:.2f} | {stats['pct_evolution']:.1f}% | "
                                 f"{stats['evolution_tokens_in']:.0f} | {stats['evolution_tokens_out']:.0f} |"
                             )
 
-                    # Reflection row (always shown now that we track it)
                     if avg_reflection_cost > 0:
                         pct_reflection = (avg_reflection_cost / avg_total_evo_cost * 100) if avg_total_evo_cost > 0 else 0
                         report_lines.append(
@@ -992,7 +905,6 @@ class ReportGenerator:
                             f"{avg_reflection_tokens_in:.0f} | {avg_reflection_tokens_out:.0f} |"
                         )
 
-                    # Calculate total tokens (dynamically including all test rounds)
                     total_tokens_in = avg_first_draft_tokens_in + avg_reflection_tokens_in
                     total_tokens_out = avg_first_draft_tokens_out + avg_reflection_tokens_out
                     for stats in test_round_stats.values():
@@ -1005,26 +917,13 @@ class ReportGenerator:
                     )
 
             # Cache performance
-            total_cache_created = total_phase1_cache_created + total_evolution_cache_created
-            total_cache_read = total_phase1_cache_read + total_evolution_cache_read
-            cache_hit_rate = (total_cache_read / (total_cache_read + total_cache_created) * 100) if (total_cache_read + total_cache_created) > 0 else 0
+            cache_hit_rate = (total_evolution_cache_read / (total_evolution_cache_read + total_evolution_cache_created) * 100) if (total_evolution_cache_read + total_evolution_cache_created) > 0 else 0
 
             report_lines.append("\n### Cache Performance\n")
-            report_lines.append(f"- **Cache Creation**: {total_cache_created:,} tokens")
-            report_lines.append(f"- **Cache Hits**: {total_cache_read:,} tokens ({cache_hit_rate:.1f}% hit rate)")
+            report_lines.append(f"- **Cache Creation**: {total_evolution_cache_created:,} tokens")
+            report_lines.append(f"- **Cache Hits**: {total_evolution_cache_read:,} tokens ({cache_hit_rate:.1f}% hit rate)")
         else:
-            report_lines.append("No Claude CLI cost tracking data available")
-
-        # Phase 1 Failures section
-        report_lines.append("\n## Phase 1 Failures")
-        if self.researcher.phase1_failures:
-            report_lines.append(f"Total Phase 1 failures: {len(self.researcher.phase1_failures)}")
-            report_lines.append("\n| Agent | Database | Iteration |")
-            report_lines.append("|-------|----------|-----------|")
-            for agent_id, db_name, iteration_num in sorted(self.researcher.phase1_failures):
-                report_lines.append(f"| {agent_id} | {db_name} | {iteration_num} |")
-        else:
-            report_lines.append("No Phase 1 failures encountered ✅")
+            report_lines.append("No cost tracking data available")
 
         # Zero Accuracy Cases section
         report_lines.append("\n## Zero Accuracy Cases")
@@ -1056,8 +955,7 @@ class ReportGenerator:
             # Use domain-specific solution name
             exception_solution = getattr(self.researcher, 'domain', None)
             exception_solution_name = exception_solution.solution_name if exception_solution else "SQL"
-            report_lines.append(f"These are errors that occurred during {exception_solution_name} generation or evaluation (Phase 2).")
-            report_lines.append("Unlike Phase 1 failures, these may indicate issues with generated SQL or evaluation logic.")
+            report_lines.append(f"These are errors that occurred during {exception_solution_name} generation or evaluation.")
             report_lines.append("")
             report_lines.append("| Agent | Database | Iteration | Error | Questions |")
             report_lines.append("|-------|----------|-----------|-------|-----------|")
