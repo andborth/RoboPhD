@@ -205,6 +205,7 @@ class RoboPhDCodeGenEvaluator:
         self._evaluator = None  # CriticEvaluator instance
         self._eval_count = 0
         self._total_eval_cost = 0.0
+        self._last_logged_count = 0
 
         # Thread safety for concurrent __call__ from GEPA's ThreadPoolExecutor
         self._lock = threading.Lock()
@@ -395,8 +396,12 @@ class RoboPhDCodeGenEvaluator:
             self._total_eval_cost += eval_cost
             count = self._eval_count
             total_cost = self._total_eval_cost
-        if count % 50 == 0:
-            logger.info(f"CodeGen evaluator: {count} evaluations completed (${total_cost:.2f} spent)")
+            milestone = count // 50 * 50
+            should_log = milestone > 0 and milestone > self._last_logged_count
+            if should_log:
+                self._last_logged_count = milestone
+        if should_log:
+            logger.info(f"CodeGen evaluator: {milestone} evaluations completed (${total_cost:.2f} spent)")
 
         # Score: 1.0 if v2 passed, 0.0 otherwise
         score = 1.0 if result.get("v2_passed", False) else 0.0

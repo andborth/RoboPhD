@@ -187,6 +187,7 @@ class Text2SQLEvaluator:
 
         self._eval_count = 0
         self._total_eval_cost = 0.0
+        self._last_logged_count = 0
         self._lock = threading.Lock()
         self._cache_lock = threading.Lock()
 
@@ -571,8 +572,12 @@ Do not include explanations, prefixes, or combine both responses."""
             self._total_eval_cost += cost
             count = self._eval_count
             total_cost = self._total_eval_cost
-        if count % 50 == 0:
-            logger.info(f"Text2SQL evaluator: {count} evaluations completed (${total_cost:.2f} spent)")
+            milestone = count // 50 * 50
+            should_log = milestone > 0 and milestone > self._last_logged_count
+            if should_log:
+                self._last_logged_count = milestone
+        if should_log:
+            logger.info(f"Text2SQL evaluator: {milestone} evaluations completed (${total_cost:.2f} spent)")
 
         # Scoring: compare result sets
         from RoboPhD.utilities.cached_sql_executor import compare_execution_results
