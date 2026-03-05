@@ -808,6 +808,11 @@ class ParallelAgentResearcher:
                 self.experiment_dir = runs_dir / "robophd" / f"{task_name}_{timestamp}"
             self.experiment_dir.mkdir(parents=True, exist_ok=True)
 
+            # Set evaluator debug_log_dir now that experiment_dir is known
+            evaluator_fn = self.runtime_config.get("evaluator_fn")
+            if evaluator_fn and hasattr(evaluator_fn, "debug_log_dir") and evaluator_fn.debug_log_dir is None:
+                evaluator_fn.debug_log_dir = self.experiment_dir / "debug_logs" / "eval"
+
             # Initialize as git repo so evolution AI gets scoped per-run memory.
             # Claude CLI recursive lookup will still find parent code-gen-critic/CLAUDE.md.
             git_dir = self.experiment_dir / ".git"
