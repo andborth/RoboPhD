@@ -776,12 +776,6 @@ class ParallelAgentResearcher:
             self.test_history = resume_checkpoint['test_history']
             self.iteration_times = resume_checkpoint.get('iteration_times', [])
             self.iteration_claude_costs = resume_checkpoint.get('iteration_claude_costs', [])
-            # Normalize old phase2_cost → eval_cost for backward compat with pre-simplification checkpoints
-            for cost_dict in self.iteration_claude_costs:
-                if 'phase2_cost' in cost_dict and 'eval_cost' not in cost_dict:
-                    cost_dict['eval_cost'] = cost_dict.pop('phase2_cost')
-                    cost_dict['eval_tokens_in'] = cost_dict.pop('phase2_tokens_in', 0)
-                    cost_dict['eval_tokens_out'] = cost_dict.pop('phase2_tokens_out', 0)
             self.iteration_fresh_evals = resume_checkpoint.get('iteration_fresh_evals', [])
             self.evolution_times = resume_checkpoint.get('evolution_times', [])
             self.meta_evolution_times = resume_checkpoint.get('meta_evolution_times', [])
@@ -1237,10 +1231,9 @@ class ParallelAgentResearcher:
                         # If we don't have correct/total, calculate from accuracy
                         if total_questions == 0:
                             for r in cleaned_results:
-                                num_contexts = r.get('examples') or r.get('databases')
-                                if 'accuracy' in r and num_contexts:
+                                if 'accuracy' in r and 'examples' in r:
                                     # Estimate based on problems per context
-                                    questions = num_contexts * self.problems_per_context
+                                    questions = r['examples'] * self.problems_per_context
                                     total_questions += questions
                                     total_correct += int(questions * r['accuracy'] / 100)
 
