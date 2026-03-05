@@ -22,13 +22,21 @@ class SQLTimeoutError(Exception):
 
 
 class ReadOnlyConnectionPool:
-    """Thread-safe connection pool for read-only SQLite access"""
-    
-    def __init__(self, max_connections_per_db: int = 5):
+    """Thread-safe connection pool for read-only SQLite access.
+
+    Caps total idle connections across all databases to prevent FD exhaustion
+    (BIRD has ~70 databases; without a cap, long runs hit EMFILE).
+    When the cap is reached, idle connections for the least-recently-used
+    database are evicted.
+    """
+
+    def __init__(self, max_connections_per_db: int = 2, max_total_idle: int = 40):
         self.max_connections_per_db = max_connections_per_db
+        self.max_total_idle = max_total_idle
         self.pools = {}  # db_path -> list of connections
         self.pool_locks = {}  # db_path -> lock
         self.connection_counts = {}  # db_path -> current count
+        self._access_order = []  # LRU list of db_paths with idle connections
         self.global_lock = threading.Lock()
     
     def _clear_db_locks_if_needed(self, db_path: str):
@@ -114,9 +122,49 @@ class ReadOnlyConnectionPool:
                     else:
                         conn.close()
                         self.connection_counts[db_path] -= 1
+                # Evict idle connections from least-recently-used DBs if over cap
+                self._evict_if_needed(db_path)
             elif conn and temp_connection:
                 conn.close()
     
+    def _evict_if_needed(self, current_db_path: str):
+        """Evict idle connections from LRU databases when over the total cap.
+
+        Called after returning a connection to the pool.  Only evicts idle
+        (pooled) connections — never touches connections currently checked out
+        by other threads.
+        """
+        with self.global_lock:
+            # Update access order (move current db to end = most recent)
+            if current_db_path in self._access_order:
+                self._access_order.remove(current_db_path)
+            self._access_order.append(current_db_path)
+
+            # Count total idle connections
+            total_idle = sum(len(pool) for pool in self.pools.values())
+            if total_idle <= self.max_total_idle:
+                return
+
+            # Evict from least-recently-used databases first
+            for victim_path in list(self._access_order):
+                if total_idle <= self.max_total_idle:
+                    break
+                if victim_path == current_db_path:
+                    continue  # Don't evict the DB we just used
+                if victim_path not in self.pools:
+                    continue
+                with self.pool_locks[victim_path]:
+                    while self.pools[victim_path] and total_idle > self.max_total_idle:
+                        conn_to_close = self.pools[victim_path].pop()
+                        try:
+                            conn_to_close.close()
+                        except Exception:
+                            pass
+                        self.connection_counts[victim_path] -= 1
+                        total_idle -= 1
+                    if not self.pools[victim_path]:
+                        self._access_order.remove(victim_path)
+
     def close_database(self, db_path: str):
         """Close all connections for a specific database"""
         with self.global_lock:
