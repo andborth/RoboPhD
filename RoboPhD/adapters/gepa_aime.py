@@ -182,6 +182,9 @@ class AIMEEvaluator:
         with self._lock:
             self._eval_count += 1
             self._total_eval_cost += cost
+            count = self._eval_count
+        if count % 50 == 0:
+            logger.info(f"AIME evaluator: {count} evaluations completed (${self._total_eval_cost:.2f} spent)")
 
         # Debug logging
         maybe_debug_log(

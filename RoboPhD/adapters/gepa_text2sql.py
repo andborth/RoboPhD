@@ -550,6 +550,9 @@ Do not include explanations, prefixes, or combine both responses."""
 
         with self._lock:
             self._eval_count += 1
+            count = self._eval_count
+        if count % 50 == 0:
+            logger.info(f"Text2SQL evaluator: {count} evaluations completed (${self._total_eval_cost:.2f} spent)")
 
         # Phase 1: Tool-based analysis (cached)
         analysis = self._get_analysis(analysis_code, db_id)

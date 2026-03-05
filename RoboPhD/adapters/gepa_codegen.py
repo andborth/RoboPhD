@@ -351,8 +351,11 @@ class RoboPhDCodeGenEvaluator:
         # overwritten mid-evaluation — that would need per-candidate dirs.
         with self._lock:
             self._eval_count += 1
+            count = self._eval_count
             agent_dir = self._ensure_agent_materialized(candidate)
             evaluator = self._get_evaluator(agent_dir)
+        if count % 50 == 0:
+            logger.info(f"CodeGen evaluator: {count} evaluations completed (${self._total_eval_cost:.2f} spent)")
 
         # Resolve problem data from cache
         cache_problem_dir = self.cache_dir / question_id
