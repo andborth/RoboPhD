@@ -61,8 +61,7 @@ def _example_to_dict(ex) -> Dict[str, Any]:
 def load_arc_train_val(seed: int = 0) -> Tuple[List[Dict], List[Dict]]:
     """Load ARC-AGI train and val splits (200 + 200 from HF training).
 
-    Calls the vendored load_arc_dataset() — the test split is loaded by HF
-    but not converted, keeping overhead minimal.
+    Calls the vendored load_arc_dataset() which loads all HF splits internally.
     """
     _utils = _load_vendored()
     train_dspy, val_dspy, _test_dspy = _utils.load_arc_dataset(seed)
