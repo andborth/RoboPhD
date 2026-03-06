@@ -191,38 +191,43 @@ def main():
     seed = config.get("seed", _GEPA_DEFAULTS["seed"][0])
     rng = random.Random(seed)
 
-    dataset = task.dataset_builder(config)
-    logger.info(f"Dataset: {len(dataset)} examples")
-
-    if not dataset:
-        logger.error("Empty dataset — check cache directory and task configuration.")
-        sys.exit(1)
-
-    # Train/val split
     val_ratio = config.get("val_ratio", _GEPA_DEFAULTS["val_ratio"][0])
     val_size = config.get("val_size", _GEPA_DEFAULTS["val_size"][0])
 
-    if val_size is not None and val_ratio != _GEPA_DEFAULTS["val_ratio"][0]:
-        logger.error("Cannot specify both val_ratio and val_size")
-        sys.exit(1)
-
-    shuffled = list(dataset)
-    rng.shuffle(shuffled)
-
-    if val_size is not None:
-        if val_size < 1:
-            logger.error(f"val_size ({val_size}) must be >= 1")
-            sys.exit(1)
-        if val_size >= len(shuffled):
-            logger.error(f"val_size ({val_size}) must be less than dataset size ({len(shuffled)})")
-            sys.exit(1)
-        split_idx = len(shuffled) - val_size
+    if task.gepa_datasets_builder is not None:
+        # Task provides pre-split datasets (e.g. ARC-AGI matching GEPA's canonical splits)
+        trainset, valset = task.gepa_datasets_builder(config)
+        logger.info(f"Dataset (pre-split): {len(trainset)} train, {len(valset)} val")
     else:
-        split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
+        dataset = task.dataset_builder(config)
+        logger.info(f"Dataset: {len(dataset)} examples")
 
-    trainset = shuffled[:split_idx]
-    valset = shuffled[split_idx:]
-    logger.info(f"Training set: {len(trainset)}, Validation set: {len(valset)}")
+        if not dataset:
+            logger.error("Empty dataset — check cache directory and task configuration.")
+            sys.exit(1)
+
+        # Train/val split
+        if val_size is not None and val_ratio != _GEPA_DEFAULTS["val_ratio"][0]:
+            logger.error("Cannot specify both val_ratio and val_size")
+            sys.exit(1)
+
+        shuffled = list(dataset)
+        rng.shuffle(shuffled)
+
+        if val_size is not None:
+            if val_size < 1:
+                logger.error(f"val_size ({val_size}) must be >= 1")
+                sys.exit(1)
+            if val_size >= len(shuffled):
+                logger.error(f"val_size ({val_size}) must be less than dataset size ({len(shuffled)})")
+                sys.exit(1)
+            split_idx = len(shuffled) - val_size
+        else:
+            split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
+
+        trainset = shuffled[:split_idx]
+        valset = shuffled[split_idx:]
+        logger.info(f"Training set: {len(trainset)}, Validation set: {len(valset)}")
 
     # --- 4. Create evaluator ---
     config["work_dir"] = str(args.output_dir / "work")

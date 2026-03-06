@@ -4,7 +4,7 @@ ARC-AGI task definition: evolve agent code for abstract reasoning.
 Targets Gemini 3 Flash by default, matching the GEPA examples/arc_agi setup.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from .base import TaskDefinition
 
@@ -27,11 +27,26 @@ def _evaluator_factory(config: Dict[str, Any]):
 
 
 def _dataset_builder(config: Dict[str, Any]) -> List[Dict]:
-    """Build ARC-AGI dataset from HuggingFace."""
-    from RoboPhD.adapters.gepa_arc_agi import build_arc_agi_dataset
+    """Build ARC-AGI dataset.
+
+    For run_robophd (split="train"): returns train+val concatenated (400 problems).
+    For test (split="test"): returns HF evaluation (400 problems).
+    """
+    from RoboPhD.adapters.gepa_arc_agi import load_arc_splits
 
     split = config.get("arc_agi_split", "train")
-    return build_arc_agi_dataset(split=split)
+    train, val, test = load_arc_splits()
+    if split == "test":
+        return test
+    return train + val
+
+
+def _gepa_datasets_builder(config: Dict[str, Any]) -> Tuple[List[Dict], List[Dict]]:
+    """Pre-split datasets for GEPA: train=200, val=200 matching GEPA exactly."""
+    from RoboPhD.adapters.gepa_arc_agi import load_arc_splits
+
+    train, val, _ = load_arc_splits()
+    return train, val
 
 
 def make_arc_agi_task() -> TaskDefinition:
@@ -57,4 +72,5 @@ def make_arc_agi_task() -> TaskDefinition:
             "evaluation_budget": 3000,
         },
         test_overrides={"arc_agi_split": "test"},
+        gepa_datasets_builder=_gepa_datasets_builder,
     )

@@ -5,7 +5,7 @@ A task is a benchmark + evaluator that both GEPA and RoboPhD can optimize.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 
 @dataclass
@@ -47,3 +47,7 @@ class TaskDefinition:
     config_defaults: Dict[str, Any] = field(default_factory=dict)
     test_overrides: Dict[str, Any] = field(default_factory=dict)
     """Config overrides applied when building the test dataset (e.g. switching split)."""
+
+    gepa_datasets_builder: Optional[Callable[..., Tuple[List[Dict], List[Dict]]]] = None
+    """Optional pre-split dataset builder for GEPA: (config) -> (trainset, valset).
+    When set, run_gepa.py uses these splits directly instead of shuffle + val_ratio."""
