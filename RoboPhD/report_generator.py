@@ -20,6 +20,19 @@ if TYPE_CHECKING:
     from .researcher import ParallelAgentResearcher
 
 
+def format_non_binary_scores(non_binary: dict) -> list:
+    """Render non-binary scores (not 0.0 or 1.0) as report lines, grouped by agent."""
+    if not non_binary:
+        return []
+    lines = ["## Non-Binary Scores", ""]
+    for agent in sorted(non_binary):
+        entries = sorted(non_binary[agent], key=lambda e: e['question_id'])
+        items = ', '.join(f"{e['question_id']} ({e['score']:.2f})" for e in entries)
+        lines.append(f"**{agent}** ({len(entries)}): {items}")
+    lines.append("")
+    return lines
+
+
 class ReportGenerator:
     """Generates comprehensive reports for RoboPhD research runs."""
 

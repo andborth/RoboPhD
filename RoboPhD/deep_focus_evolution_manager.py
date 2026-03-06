@@ -523,17 +523,8 @@ class DeepFocusEvolutionManager:
                     report_lines.append("")
 
                 # Non-binary scores (e.g., partial credit)
-                non_binary = index.get('non_binary_scores', {})
-                if non_binary:
-                    report_lines.extend([
-                        "## Non-Binary Scores",
-                        "",
-                    ])
-                    for agent in sorted(non_binary):
-                        entries = sorted(non_binary[agent], key=lambda e: e['question_id'])
-                        items = ', '.join(f"{e['question_id']} ({e['score']:.2f})" for e in entries)
-                        report_lines.append(f"**{agent}** ({len(entries)}): {items}")
-                    report_lines.append("")
+                from RoboPhD.report_generator import format_non_binary_scores
+                report_lines.extend(format_non_binary_scores(index.get('non_binary_scores', {})))
 
                 report_lines.extend([
                     "## Extract Details",
