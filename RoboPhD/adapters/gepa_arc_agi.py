@@ -173,6 +173,9 @@ BACKGROUND = _UPSTREAM_BACKGROUND.replace(
     "$0.8~1.0 LLM cost per problem",
     "$0.20~0.25 LLM cost per problem",
 )
+assert BACKGROUND != _UPSTREAM_BACKGROUND, (
+    "BACKGROUND cost override failed — upstream text may have changed"
+)
 
 
 # ---------------------------------------------------------------------------
