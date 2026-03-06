@@ -225,13 +225,13 @@ def build_cross_agent_analysis(newest_agent: str, baseline_agents: List[str],
             continue
 
         new_result = agents_results[newest_agent]
-        new_correct = new_result.get('correct', False)
+        new_correct = new_result.get('score', 0) >= 0.5
 
         # Check baseline agents
         baseline_results = []
         for agent in baseline_agents:
             if agent in agents_results:
-                baseline_correct = agents_results[agent].get('correct', False)
+                baseline_correct = agents_results[agent].get('score', 0) >= 0.5
                 baseline_results.append((agent, baseline_correct))
 
         if not baseline_results:
@@ -294,8 +294,8 @@ def build_cross_agent_analysis(newest_agent: str, baseline_agents: List[str],
             new_result = agents_results[newest_agent]
             baseline_result = agents_results[baseline_agent]
 
-            new_correct = new_result.get('correct', False)
-            baseline_correct = baseline_result.get('correct', False)
+            new_correct = new_result.get('score', 0) >= 0.5
+            baseline_correct = baseline_result.get('score', 0) >= 0.5
 
             if not new_correct and baseline_correct:
                 new_wrong_A_right.append(question_id)
@@ -363,7 +363,7 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
 
         for question_id, result in results['by_agent'][agent].items():
             total_questions += 1
-            if result.get('correct', False):
+            if result.get('score', 0) >= 0.5:
                 total_correct += 1
             else:
                 error_ids.append(question_id)

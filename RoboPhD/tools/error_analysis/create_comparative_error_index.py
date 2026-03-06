@@ -98,8 +98,8 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
             if not question_id:
                 continue
 
-            # Use standard 'correct' field
-            is_match = result.get('correct', False)
+            # Derive correctness from score (>= 0.5 counts as correct)
+            is_match = result.get('score', 0) >= 0.5
             status = 'MATCH' if is_match else 'ERROR'
 
             processed_result = {
