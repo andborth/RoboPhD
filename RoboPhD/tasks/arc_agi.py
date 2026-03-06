@@ -19,7 +19,7 @@ def _evaluator_factory(config: Dict[str, Any]):
         work_dir = Path(config.get("output_dir", "gepa_runs/work")) / "work"
 
     return ArcAGIEvaluator(
-        solver_model=config.get("solver_model", "openrouter/google/gemini-3.1-flash-lite-preview"),
+        solver_model=config["solver_model"],
         work_dir=work_dir,
         max_llm_calls=config.get("max_llm_calls", 10),
         reasoning_effort=config.get("reasoning_effort", "high"),
@@ -49,7 +49,9 @@ def _gepa_datasets_builder(config: Dict[str, Any]) -> Tuple[List[Dict], List[Dic
 
 def make_arc_agi_task() -> TaskDefinition:
     """Create the ARC-AGI task definition."""
-    from RoboPhD.adapters.gepa_arc_agi import ARC_AGI_FILE_MAPPING, BACKGROUND, OBJECTIVE
+    from RoboPhD.adapters.gepa_arc_agi import (
+        ARC_AGI_FILE_MAPPING, BACKGROUND, OBJECTIVE, _DEFAULT_SOLVER_MODEL,
+    )
 
     return TaskDefinition(
         name="arc_agi",
@@ -65,7 +67,7 @@ def make_arc_agi_task() -> TaskDefinition:
             "error.md": "Agent execution error (if any)",
         },
         config_defaults={
-            "solver_model": "openrouter/google/gemini-3.1-flash-lite-preview",
+            "solver_model": _DEFAULT_SOLVER_MODEL,
             "arc_agi_split": "train",
             "evaluation_budget": 3000,
         },
