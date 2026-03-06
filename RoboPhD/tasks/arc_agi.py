@@ -57,7 +57,7 @@ def make_arc_agi_task() -> TaskDefinition:
 
     return TaskDefinition(
         name="arc_agi",
-        description="Evolve ARC-AGI solving agents (Gemini 3.1 Flash Lite)",
+        description="Evolve ARC-AGI solving agents (Gemini 3.1 Flash Lite, $0.25 cap)",
         evaluator_factory=_evaluator_factory,
         dataset_builder=_dataset_builder,
         file_mapping=ARC_AGI_FILE_MAPPING,
@@ -71,7 +71,7 @@ def make_arc_agi_task() -> TaskDefinition:
         config_defaults={
             "solver_model": DEFAULT_SOLVER_MODEL,
             "arc_agi_split": "train",
-            "evaluation_budget": 3000,
+            "evaluation_budget": 1500,
         },
         test_overrides={"arc_agi_split": "test"},
         gepa_datasets_builder=_gepa_datasets_builder,

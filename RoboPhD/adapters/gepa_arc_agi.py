@@ -166,7 +166,13 @@ ARC_AGI_FILE_MAPPING = {
 
 # BACKGROUND and OBJECTIVE come from the vendored utils (single source of truth).
 # Imported eagerly — this module requires dspy/datasets at import time.
-from RoboPhD.adapters.arc_agi_utils_unmodified import BACKGROUND, OBJECTIVE
+from RoboPhD.adapters.arc_agi_utils_unmodified import OBJECTIVE
+from RoboPhD.adapters.arc_agi_utils_unmodified import BACKGROUND as _UPSTREAM_BACKGROUND
+
+BACKGROUND = _UPSTREAM_BACKGROUND.replace(
+    "$0.8~1.0 LLM cost per problem",
+    "$0.20~0.25 LLM cost per problem",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -265,7 +271,7 @@ class ArcAGIEvaluator:
         cost = llms.total_cost
 
         # Score with cost penalty (matches GEPA)
-        score = max(0, result["test_score"] - 0.1 * (cost > 1.0))
+        score = max(0, result["test_score"] - 0.1 * (cost > 0.25))
 
         # Track stats
         with self._lock:
