@@ -21,9 +21,17 @@ Usage:
 
 import json
 import logging
+import random
 import threading
+import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+import litellm
+from litellm import completion as litellm_completion
+
+litellm.suppress_debug_info = True
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +40,137 @@ def _load_vendored():
     """Lazy-import vendored utils to avoid requiring dspy/datasets at import time."""
     from RoboPhD.adapters import arc_agi_utils_unmodified as _utils
     return _utils
+
+
+# ---------------------------------------------------------------------------
+# TrackedLLM and run_agent — forked from vendored utils with cost fix
+# ---------------------------------------------------------------------------
+# The vendored TrackedLLM uses litellm.completion_cost() which fails for
+# OpenRouter models not in litellm's pricing DB. Our version falls back to
+# resp.usage.cost which OpenRouter provides directly.
+
+
+@dataclass
+class TrackedLLM:
+    """LLM wrapper that tracks calls and costs.
+
+    Forked from arc_agi_utils_unmodified.TrackedLLM with fixed cost tracking:
+    uses resp.usage.cost (from OpenRouter) when litellm.completion_cost() fails.
+    """
+
+    model_id: str = "openrouter/google/gemini-3.1-flash-lite-preview"
+    max_llm_calls: int = 20
+    reasoning_effort: str = "high"
+    calls: list = field(default_factory=list)
+
+    @property
+    def total_cost(self) -> float:
+        return sum(c.get("cost", 0.0) for c in self.calls)
+
+    def __call__(self, prompt: str, temperature: float = 1.0) -> str:
+        if len(self.calls) >= self.max_llm_calls:
+            raise RuntimeError(f"LLM budget exhausted ({self.max_llm_calls} calls)")
+
+        start = time.time()
+        kwargs: dict = {
+            "model": self.model_id,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature,
+        }
+        if self.reasoning_effort:
+            kwargs["extra_body"] = {"reasoning": {"effort": self.reasoning_effort}}
+
+        resp = litellm_completion(**kwargs)
+        duration = time.time() - start
+        msg = resp.choices[0].message
+        content = msg.content or ""
+        reasoning = getattr(msg, "reasoning_content", None) or ""
+
+        # Cost: try litellm's DB first, fall back to provider-reported cost
+        try:
+            cost = litellm.completion_cost(completion_response=resp)
+        except Exception:
+            cost = getattr(resp.usage, "cost", None) or 0.0
+
+        call_data = {
+            "prompt": prompt,
+            "response": content,
+            "cost": cost,
+            "duration": duration,
+        }
+        if reasoning:
+            call_data["reasoning"] = reasoning
+        self.calls.append(call_data)
+        return content
+
+    def get_traces(self) -> dict:
+        calls_to_include = self.calls
+        sampled = False
+        if len(self.calls) > 10:
+            calls_to_include = random.sample(self.calls, 10)
+            sampled = True
+
+        trajectory = []
+        for c in calls_to_include:
+            entry = {
+                "prompt": c["prompt"],
+                "response": c["response"],
+                "cost": c.get("cost", 0.0),
+            }
+            if c.get("reasoning"):
+                entry["reasoning"] = c["reasoning"]
+            trajectory.append(entry)
+
+        result = {
+            "llm_calls": len(self.calls),
+            "llm_budget": self.max_llm_calls,
+            "total_cost": self.total_cost,
+            "trajectory": trajectory,
+        }
+        if sampled:
+            result["trajectory_note"] = f"Randomly sampled 10 of {len(self.calls)} LLM calls"
+        return result
+
+
+def run_agent(agent_code, train_in, train_out, test_in, test_out, model_id, max_llm_calls, reasoning_effort=None):
+    """Run agent and return evaluation results. Uses our TrackedLLM with cost fix."""
+    _utils = _load_vendored()
+
+    llms = TrackedLLM(model_id=model_id, max_llm_calls=max_llm_calls, reasoning_effort=reasoning_effort)
+    try:
+        namespace = {}
+        exec(agent_code, namespace)
+        result = namespace["solve"](train_in, train_out, test_in, llms)
+        train_preds = result.get("train", [])
+        test_preds = result.get("test", [])
+    except Exception as e:
+        return {
+            "training_score": 0.0, "test_score": 0.0, "error": str(e),
+            "train_examples": [], "test_examples": [], "llms": llms,
+        }
+
+    training_score, train_results = _utils.evaluate_predictions(train_preds, train_out)
+    if test_out:
+        test_score, test_results = _utils.evaluate_test(test_preds, test_out)
+    else:
+        test_score, test_results = 0.0, []
+
+    train_examples = []
+    for i, (inp, gold, res) in enumerate(zip(train_in, train_out, train_results)):
+        pred = train_preds[i] if i < len(train_preds) else None
+        train_examples.append({"input": inp, "gold": gold, "prediction": pred, "correct": res["correct"], "feedback": res["feedback"]})
+
+    test_examples = []
+    for i, res in enumerate(test_results):
+        inp = test_in[i] if i < len(test_in) else None
+        gold = test_out[i] if test_out and i < len(test_out) else None
+        pred = test_preds[i] if i < len(test_preds) else None
+        test_examples.append({"input": inp, "gold": gold, "prediction": pred, "correct": res["correct"], "feedback": res["feedback"]})
+
+    return {
+        "training_score": training_score, "test_score": test_score, "error": None,
+        "train_examples": train_examples, "test_examples": test_examples, "llms": llms,
+    }
 
 # ---------------------------------------------------------------------------
 # File mapping: candidate dict keys -> agent directory paths
@@ -91,7 +230,7 @@ class ArcAGIEvaluator:
 
     def __init__(
         self,
-        solver_model: str = "openrouter/google/gemini-3-flash-preview",
+        solver_model: str = "openrouter/google/gemini-3.1-flash-lite-preview",
         work_dir: Optional[Path] = None,
         max_llm_calls: int = 10,
         reasoning_effort: Optional[str] = "high",
@@ -127,8 +266,7 @@ class ArcAGIEvaluator:
         agent_code = candidate.get("agent_code", "")
         problem_id = example["problem_id"]
 
-        _utils = _load_vendored()
-        result = _utils.run_agent(
+        result = run_agent(
             agent_code=agent_code,
             train_in=example["train_in"],
             train_out=example["train_out"],

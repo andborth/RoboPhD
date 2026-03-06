@@ -1,7 +1,7 @@
 """
 ARC-AGI task definition: evolve agent code for abstract reasoning.
 
-Targets Gemini 3 Flash by default, matching the GEPA examples/arc_agi setup.
+Targets Gemini 3.1 Flash Lite by default (cheaper than GEPA's Gemini 3 Flash).
 """
 
 from typing import Any, Dict, List, Tuple
@@ -19,7 +19,7 @@ def _evaluator_factory(config: Dict[str, Any]):
         work_dir = Path(config.get("output_dir", "gepa_runs/work")) / "work"
 
     return ArcAGIEvaluator(
-        solver_model=config.get("solver_model", "openrouter/google/gemini-3-flash-preview"),
+        solver_model=config.get("solver_model", "openrouter/google/gemini-3.1-flash-lite-preview"),
         work_dir=work_dir,
         max_llm_calls=config.get("max_llm_calls", 10),
         reasoning_effort=config.get("reasoning_effort", "high"),
@@ -53,7 +53,7 @@ def make_arc_agi_task() -> TaskDefinition:
 
     return TaskDefinition(
         name="arc_agi",
-        description="Evolve ARC-AGI solving agents (Gemini 3 Flash)",
+        description="Evolve ARC-AGI solving agents (Gemini 3.1 Flash Lite)",
         evaluator_factory=_evaluator_factory,
         dataset_builder=_dataset_builder,
         file_mapping=ARC_AGI_FILE_MAPPING,
@@ -65,7 +65,7 @@ def make_arc_agi_task() -> TaskDefinition:
             "error.md": "Agent execution error (if any)",
         },
         config_defaults={
-            "solver_model": "openrouter/google/gemini-3-flash-preview",
+            "solver_model": "openrouter/google/gemini-3.1-flash-lite-preview",
             "arc_agi_split": "train",
             "evaluation_budget": 3000,
         },
