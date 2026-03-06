@@ -3113,6 +3113,19 @@ class ParallelAgentResearcher:
 
                     report_lines.append("")
 
+                # Non-binary scores (e.g., partial credit)
+                non_binary = index.get('non_binary_scores', {})
+                if non_binary:
+                    report_lines.extend([
+                        "## Non-Binary Scores",
+                        "",
+                    ])
+                    for agent in sorted(non_binary):
+                        entries = sorted(non_binary[agent], key=lambda e: e['question_id'])
+                        items = ', '.join(f"{e['question_id']} ({e['score']:.2f})" for e in entries)
+                        report_lines.append(f"**{agent}** ({len(entries)}): {items}")
+                    report_lines.append("")
+
                 report_lines.extend([
                     "## Extract Details",
                     "",

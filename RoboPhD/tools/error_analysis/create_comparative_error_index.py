@@ -102,10 +102,12 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
             is_match = result.get('score', 0) >= 0.5
             status = 'MATCH' if is_match else 'ERROR'
 
+            score = result.get('score', 0)
             processed_result = {
                 'question_id': question_id,
                 'status': status,
                 'matches': is_match,
+                'score': score,
             }
 
             by_question[question_id][agent_name] = processed_result
@@ -318,10 +320,22 @@ def build_error_index(iteration_dir: Path) -> Dict:
         split_info['correct'] = [strip_agent_prefix(a) for a in split_info['correct']]
         split_info['wrong'] = [strip_agent_prefix(a) for a in split_info['wrong']]
 
+    # Collect non-binary scores (not 0.0 or 1.0), grouped by agent
+    non_binary_scores = {}
+    for agent, questions in results['by_agent'].items():
+        agent_display = strip_agent_prefix(agent)
+        for qid, r in questions.items():
+            s = r.get('score', 0)
+            if s not in (0, 0.0, 1, 1.0):
+                non_binary_scores.setdefault(agent_display, []).append(
+                    {'question_id': qid, 'score': s}
+                )
+
     return {
         'summary': summary,
         'by_agent': by_agent,
-        'cross_agent_patterns': cross_agent_patterns
+        'cross_agent_patterns': cross_agent_patterns,
+        'non_binary_scores': non_binary_scores,
     }
 
 

@@ -425,10 +425,24 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
                 transformed_mixed[qid] = result_data
             comparison_data['mixed_results'] = transformed_mixed
 
+    # Collect non-binary scores (not 0.0 or 1.0), grouped by agent
+    non_binary_scores = {}
+    for agent in [newest_agent] + baseline_agents:
+        if agent not in results['by_agent']:
+            continue
+        agent_display = strip_agent_prefix(agent)
+        for qid, r in results['by_agent'][agent].items():
+            s = r.get('score', 0)
+            if s not in (0, 0.0, 1, 1.0):
+                non_binary_scores.setdefault(agent_display, []).append(
+                    {'question_id': qid, 'score': s}
+                )
+
     return {
         'summary': summary,
         'by_agent': by_agent,
-        'cross_agent_analysis': global_cross_agent
+        'cross_agent_analysis': global_cross_agent,
+        'non_binary_scores': non_binary_scores,
     }
 
 
