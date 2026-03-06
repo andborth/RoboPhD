@@ -163,7 +163,7 @@ def main():
     test_evaluator = task.evaluator_factory(test_config)
 
     # Parallel eval loop
-    test_workers = test_config.get("max_test_workers") or max(1, (args.max_workers or os.cpu_count() or 4) // 2)
+    test_workers = args.max_workers or test_config.get("max_test_workers") or max(1, min(32, (os.cpu_count() or 4) + 4) // 2)
     logger.info(f"Test evaluation: {len(test_examples)} problems, {test_workers} workers")
 
     score_map: dict[int, float] = {}

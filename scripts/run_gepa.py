@@ -368,7 +368,7 @@ def main():
         test_config["work_dir"] = str(args.output_dir / "test_work")
         test_evaluator = task.evaluator_factory(test_config)
 
-        test_workers = test_config.get("max_test_workers") or max(1, (max_workers or os.cpu_count() or 4) // 2)
+        test_workers = test_config.get("max_test_workers") or max_workers or max(1, min(32, (os.cpu_count() or 4) + 4) // 2)
         logger.info(f"Test evaluation: {len(test_examples)} problems, {test_workers} workers")
 
         score_map: dict[int, float] = {}
