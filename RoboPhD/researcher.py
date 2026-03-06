@@ -602,11 +602,8 @@ class ParallelAgentEvolver:
                             try:
                                 with open(db_eval_file, 'r') as f:
                                     eval_data = json.load(f)
-                                accuracy = eval_data.get('average_score', eval_data.get('accuracy', 0.0))
-                                # Handle legacy percentage format
-                                if accuracy > 1.0:
-                                    accuracy = accuracy / 100.0
-                                row += f" {accuracy:.3f} |"
+                                avg_score = eval_data.get('average_score', 0.0)
+                                row += f" {avg_score:.3f} |"
                             except Exception:
                                 row += " - |"
                         else:
