@@ -32,21 +32,19 @@ def _dataset_builder(config: Dict[str, Any]) -> List[Dict]:
     For run_robophd (split="train"): returns train+val concatenated (400 problems).
     For test (split="test"): returns HF evaluation (400 problems).
     """
-    from RoboPhD.adapters.gepa_arc_agi import load_arc_splits
-
     split = config.get("arc_agi_split", "train")
-    train, val, test = load_arc_splits()
     if split == "test":
-        return test
+        from RoboPhD.adapters.gepa_arc_agi import load_arc_test
+        return load_arc_test()
+    from RoboPhD.adapters.gepa_arc_agi import load_arc_train_val
+    train, val = load_arc_train_val()
     return train + val
 
 
 def _gepa_datasets_builder(config: Dict[str, Any]) -> Tuple[List[Dict], List[Dict]]:
     """Pre-split datasets for GEPA: train=200, val=200 matching GEPA exactly."""
-    from RoboPhD.adapters.gepa_arc_agi import load_arc_splits
-
-    train, val, _ = load_arc_splits()
-    return train, val
+    from RoboPhD.adapters.gepa_arc_agi import load_arc_train_val
+    return load_arc_train_val()
 
 
 def make_arc_agi_task() -> TaskDefinition:

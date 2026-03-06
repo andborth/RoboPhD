@@ -11,7 +11,8 @@ Candidate representation:
 Usage:
     from RoboPhD.adapters.gepa_arc_agi import (
         ArcAGIEvaluator,
-        load_arc_splits,
+        load_arc_train_val,
+        load_arc_test,
         ARC_AGI_FILE_MAPPING,
         BACKGROUND,
         OBJECTIVE,
@@ -24,17 +25,13 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from RoboPhD.adapters.arc_agi_utils_unmodified import (
-    BACKGROUND,
-    OBJECTIVE,
-    TrackedLLM,
-    compare_grid,
-    evaluate_predictions,
-    evaluate_test,
-    run_agent,
-)
-
 logger = logging.getLogger(__name__)
+
+
+def _load_vendored():
+    """Lazy-import vendored utils to avoid requiring dspy/datasets at import time."""
+    from RoboPhD.adapters import arc_agi_utils_unmodified as _utils
+    return _utils
 
 # ---------------------------------------------------------------------------
 # File mapping: candidate dict keys -> agent directory paths
@@ -44,22 +41,39 @@ ARC_AGI_FILE_MAPPING = {
     "agent_code": "agent.py",
 }
 
+# BACKGROUND and OBJECTIVE come from the vendored utils (single source of truth).
+# Imported eagerly — this module requires dspy/datasets at import time.
+from RoboPhD.adapters.arc_agi_utils_unmodified import BACKGROUND, OBJECTIVE
+
 
 # ---------------------------------------------------------------------------
 # Dataset loading (wraps vendored load_arc_dataset)
 # ---------------------------------------------------------------------------
 
-def load_arc_splits(seed: int = 0) -> Tuple[List[Dict], List[Dict], List[Dict]]:
-    """Load ARC-AGI dataset with GEPA's canonical splits as plain dicts.
+_EXAMPLE_KEYS = ("problem_id", "train_in", "train_out", "test_in", "test_out")
 
-    Calls the vendored load_arc_dataset() and converts dspy.Example -> dict.
 
-    Returns:
-        (train, val, test) where train=200, val=200, test=400.
+def _example_to_dict(ex) -> Dict[str, Any]:
+    """Convert a dspy.Example to a plain dict with explicit keys."""
+    return {k: ex[k] for k in _EXAMPLE_KEYS}
+
+
+def load_arc_train_val(seed: int = 0) -> Tuple[List[Dict], List[Dict]]:
+    """Load ARC-AGI train and val splits (200 + 200 from HF training).
+
+    Calls the vendored load_arc_dataset() — the test split is loaded by HF
+    but not converted, keeping overhead minimal.
     """
-    from RoboPhD.adapters.arc_agi_utils_unmodified import load_arc_dataset
-    train_dspy, val_dspy, test_dspy = load_arc_dataset(seed)
-    return [dict(e) for e in train_dspy], [dict(e) for e in val_dspy], [dict(e) for e in test_dspy]
+    _utils = _load_vendored()
+    train_dspy, val_dspy, _test_dspy = _utils.load_arc_dataset(seed)
+    return [_example_to_dict(e) for e in train_dspy], [_example_to_dict(e) for e in val_dspy]
+
+
+def load_arc_test(seed: int = 0) -> List[Dict]:
+    """Load ARC-AGI test split (400 from HF evaluation)."""
+    _utils = _load_vendored()
+    _train_dspy, _val_dspy, test_dspy = _utils.load_arc_dataset(seed)
+    return [_example_to_dict(e) for e in test_dspy]
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +128,8 @@ class ArcAGIEvaluator:
         agent_code = candidate.get("agent_code", "")
         problem_id = example["problem_id"]
 
-        result = run_agent(
+        _utils = _load_vendored()
+        result = _utils.run_agent(
             agent_code=agent_code,
             train_in=example["train_in"],
             train_out=example["train_out"],
