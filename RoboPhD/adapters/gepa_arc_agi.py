@@ -33,7 +33,7 @@ litellm.suppress_debug_info = True
 logger = logging.getLogger(__name__)
 
 # Default solver model — single source of truth (also in arc_agi.py config_defaults)
-_DEFAULT_SOLVER_MODEL = "openrouter/google/gemini-3.1-flash-lite-preview"
+DEFAULT_SOLVER_MODEL = "openrouter/google/gemini-3.1-flash-lite-preview"
 
 
 def _load_vendored():
@@ -214,7 +214,7 @@ class ArcAGIEvaluator:
 
     def __init__(
         self,
-        solver_model: str = _DEFAULT_SOLVER_MODEL,
+        solver_model: str = DEFAULT_SOLVER_MODEL,
         work_dir: Optional[Path] = None,
         max_llm_calls: int = 10,
         reasoning_effort: Optional[str] = "high",
