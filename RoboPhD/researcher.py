@@ -549,19 +549,19 @@ class ParallelAgentEvolver:
 
         agents = sorted(prev_results.keys())
 
-        # Agent accuracy table
-        lines.append("### Agent Accuracy")
+        # Agent score table
+        lines.append("### Agent Scores")
         lines.append("")
-        lines.append("| Agent | Accuracy | Correct / Total |")
-        lines.append("|-------|----------|-----------------|")
+        lines.append("| Agent | Score | Score Sum / Total |")
+        lines.append("|-------|-------|-------------------|")
 
         for agent_id in agents:
             agent_data = prev_results[agent_id]
-            accuracy = agent_data.get('accuracy', 0.0)
-            correct = agent_data.get('correct', 0)
+            average_score = agent_data.get('average_score', 0.0)
+            score_sum = agent_data.get('score_sum', 0)
             total = agent_data.get('total', 0)
             agent_display = agent_id[:30] + "..." if len(agent_id) > 30 else agent_id
-            lines.append(f"| {agent_display} | {accuracy:.1f}% | {correct}/{total} |")
+            lines.append(f"| {agent_display} | {average_score:.3f} | {score_sum:.1f}/{total} |")
 
         lines.append("")
 
@@ -602,15 +602,18 @@ class ParallelAgentEvolver:
                             try:
                                 with open(db_eval_file, 'r') as f:
                                     eval_data = json.load(f)
-                                accuracy = eval_data.get('accuracy', 0.0)
-                                row += f" {accuracy:.1f}% |"
+                                accuracy = eval_data.get('average_score', eval_data.get('accuracy', 0.0))
+                                # Handle legacy percentage format
+                                if accuracy > 1.0:
+                                    accuracy = accuracy / 100.0
+                                row += f" {accuracy:.3f} |"
                             except Exception:
                                 row += " - |"
                         else:
                             row += " - |"
 
-                    overall = agent_data.get('accuracy', 0.0)
-                    row += f" {overall:.1f}% |"
+                    overall = agent_data.get('average_score', 0.0)
+                    row += f" {overall:.3f} |"
                     lines.append(row)
 
                 lines.append("")
@@ -626,7 +629,7 @@ class ParallelAgentEvolver:
                             eval_data = json.load(f)
                         failed = [
                             pid for pid, r in eval_data.get('results', {}).items()
-                            if not r.get('correct', False)
+                            if r.get('score', 0) < 0.5
                         ]
                         if failed:
                             lines.append(f"**{agent_id}** failed problems ({len(failed)}): {', '.join(failed[:20])}")
@@ -645,7 +648,7 @@ class ParallelAgentEvolver:
         for agent_id in sorted(agent_pool.keys()):
             perf = performance_records.get(agent_id, {})
             elo_score = perf.get('elo', 1500)
-            lines.append(f"- {agent_id}: {perf.get('mean_accuracy', 0):.1f}% (ELO: {elo_score:.0f})")
+            lines.append(f"- {agent_id}: {perf.get('mean_score', 0):.3f} (ELO: {elo_score:.0f})")
         return "\n".join(lines)
 
     def _generate_agent_id(self, content: str, iteration: int) -> str:
@@ -1005,9 +1008,9 @@ class ParallelAgentResearcher:
                     iteration_results = self.test_history[iter_idx]
                     if agent_id in iteration_results:
                         # Check if this agent won this iteration
-                        max_accuracy = max(iteration_results[k]['accuracy']
-                                         for k in iteration_results.keys())
-                        if iteration_results[agent_id]['accuracy'] == max_accuracy:
+                        max_score = max(iteration_results[k]['average_score']
+                                       for k in iteration_results.keys())
+                        if iteration_results[agent_id]['average_score'] == max_score:
                             last_win = iter_idx + 1  # Convert back to 1-indexed
 
             # Find most recent test before from_iteration
@@ -1206,22 +1209,14 @@ class ParallelAgentResearcher:
 
                     # Recalculate summary statistics based on cleaned results
                     if cleaned_results:
-                        total_correct = sum(r.get('correct', 0) for r in cleaned_results if 'correct' in r)
+                        total_score_sum = sum(r.get('score_sum', 0.0) for r in cleaned_results if 'score_sum' in r)
                         total_questions = sum(r.get('total', 0) for r in cleaned_results if 'total' in r)
-                        # If we don't have correct/total, calculate from accuracy
-                        if total_questions == 0:
-                            for r in cleaned_results:
-                                if 'accuracy' in r and 'examples' in r:
-                                    # Each context is one problem (flat evaluation)
-                                    questions = r['examples']
-                                    total_questions += questions
-                                    total_correct += int(questions * r['accuracy'] / 100)
 
                         self.performance_records[agent_id]['test_count'] = len(cleaned_results)
-                        self.performance_records[agent_id]['total_correct'] = total_correct
+                        self.performance_records[agent_id]['total_score_sum'] = total_score_sum
                         self.performance_records[agent_id]['total_questions'] = total_questions
                         if total_questions > 0:
-                            self.performance_records[agent_id]['mean_accuracy'] = (total_correct / total_questions) * 100
+                            self.performance_records[agent_id]['mean_score'] = total_score_sum / total_questions
                     else:
                         # No results left - mark for removal from performance_records
                         # (No point preserving agents with no historical data)
@@ -1410,9 +1405,9 @@ class ParallelAgentResearcher:
             # Initialize performance record
             self.performance_records[agent_id] = {
                 'test_count': 0,
-                'total_correct': 0,
+                'total_score_sum': 0.0,
                 'total_questions': 0,
-                'mean_accuracy': 0.0,
+                'mean_score': 0.0,
                 'elo': 1500,
                 'iteration_results': [],
                 'last_win_iteration': None,
@@ -1579,8 +1574,8 @@ class ParallelAgentResearcher:
             if not agent_info:
                 print(f"    ❌ {agent_id}: Agent not found")
                 iteration_results[agent_id] = {
-                    'accuracy': 0.0,
-                    'correct': 0,
+                    'average_score': 0.0,
+                    'score_sum': 0.0,
                     'total': sum(len(p) for p in self.current_iteration_problems.values()),
                     'databases_tested': [],
                     'failures': len(contexts)
@@ -1620,8 +1615,7 @@ class ParallelAgentResearcher:
                         'success': r.get('error') is None,
                         'context': context_name,
                         'agent_id': agent_id,
-                        'accuracy': 100.0 if r.get('correct') else 0.0,
-                        'correct': 1 if r.get('correct') else 0,
+                        'score': r.get('score', 0),
                         'total': 1,
                         'error': r.get('error'),
                         # Include eval_cost for cost reporting
@@ -1629,21 +1623,21 @@ class ParallelAgentResearcher:
                     })
 
                 # Calculate agent metrics
-                accuracy = eval_result.accuracy
-                total_correct = eval_result.correct
+                average_score = eval_result.average_score
+                score_sum = eval_result.score_sum
                 total_questions = eval_result.total
 
                 timestamp = datetime.now().strftime("%H:%M:%S")
                 cache_meta_count = (eval_result.metadata or {}).get('cached_count', 0)
                 cache_suffix = f" [cached {cache_meta_count}/{total_questions}]" if cache_meta_count else ""
-                print(f"    [{timestamp}] {agent_id}: Accuracy = {accuracy:.1f}% ({total_correct}/{total_questions}){cache_suffix}")
+                print(f"    [{timestamp}] {agent_id}: Score = {average_score:.3f} ({score_sum:.1f}/{total_questions}){cache_suffix}")
 
                 # Get contexts tested successfully from metadata
                 metadata = eval_result.metadata or {}
 
                 iteration_results[agent_id] = {
-                    'accuracy': accuracy,
-                    'correct': total_correct,
+                    'average_score': average_score,
+                    'score_sum': score_sum,
                     'total': total_questions,
                     'databases_tested': list(contexts),
                     'failures': 0
@@ -1652,19 +1646,20 @@ class ParallelAgentResearcher:
                 # Update performance records
                 perf = self.performance_records[agent_id]
                 perf['test_count'] += 1
-                perf['total_correct'] += total_correct
+                perf['total_score_sum'] += score_sum
                 perf['total_questions'] += total_questions
-                perf['mean_accuracy'] = (perf['total_correct'] / perf['total_questions'] * 100) if perf['total_questions'] > 0 else 0
+                perf['mean_score'] = (perf['total_score_sum'] / perf['total_questions']) if perf['total_questions'] > 0 else 0
                 perf['iteration_results'].append({
                     'iteration': iteration,
-                    'accuracy': accuracy,
+                    'average_score': average_score,
+                    'score_sum': score_sum,
                     'examples': len(contexts)
                 })
 
-                # Track zero accuracy cases
+                # Track zero score cases
                 # For hierarchical domains: track per-context (one entry per database)
                 # For non-hierarchical domains: track per-iteration (one entry per agent)
-                if accuracy == 0 and total_questions > 0:
+                if average_score == 0 and total_questions > 0:
                     if self.domain.is_hierarchical:
                         for ctx in contexts:
                             self.zero_accuracy_cases.append((agent_id, ctx, iteration, total_questions // len(contexts)))
@@ -1689,7 +1684,7 @@ class ParallelAgentResearcher:
                         'fresh': metadata.get('fresh_count', total_questions),
                     }
 
-                print(f"\n{agent_id}: {accuracy:.1f}% ({total_correct}/{total_questions})")
+                print(f"\n{agent_id}: {average_score:.3f} ({score_sum:.1f}/{total_questions})")
 
             except Exception as e:
                 import traceback
@@ -1715,8 +1710,8 @@ class ParallelAgentResearcher:
 
                 total_questions = sum(len(p) for p in self.current_iteration_problems.values())
                 iteration_results[agent_id] = {
-                    'accuracy': 0.0,
-                    'correct': 0,
+                    'average_score': 0.0,
+                    'score_sum': 0.0,
                     'total': total_questions,
                     'databases_tested': [],
                     'failures': len(contexts)
@@ -1736,13 +1731,13 @@ class ParallelAgentResearcher:
             raise RuntimeError(error_msg)
 
         # Find winner(s)
-        max_accuracy = max(r['accuracy'] for r in iteration_results.values())
-        winners = [k for k, v in iteration_results.items() if v['accuracy'] == max_accuracy]
+        max_score = max(r['average_score'] for r in iteration_results.values())
+        winners = [k for k, v in iteration_results.items() if v['average_score'] == max_score]
 
         if len(winners) == 1:
-            print(f"\n🏆 Iteration {iteration} winner: {winners[0]} ({max_accuracy:.1f}%)")
+            print(f"\n🏆 Iteration {iteration} winner: {winners[0]} ({max_score:.3f})")
         else:
-            print(f"\n🏆 Iteration {iteration} tied winners: {', '.join(winners)} ({max_accuracy:.1f}%)")
+            print(f"\n🏆 Iteration {iteration} tied winners: {', '.join(winners)} ({max_score:.3f})")
 
         # Update last_win_iteration for ALL winners
         for winner_id in winners:
@@ -1784,29 +1779,29 @@ class ParallelAgentResearcher:
     def _calculate_elo_updates(current_elos: Dict[str, float], iteration_results: Dict, k: int = 32) -> Dict[str, float]:
         """
         Calculate updated ELO scores based on head-to-head results, properly handling ties.
-        
+
         Args:
             current_elos: Dictionary of agent_id -> current ELO score
-            iteration_results: Dictionary of agent_id -> {'accuracy': float, ...}
+            iteration_results: Dictionary of agent_id -> {'average_score': float, ...}
             k: K-factor for ELO calculations (default 32)
-            
+
         Returns:
             Dictionary of agent_id -> updated ELO score
         """
         # Create a copy to avoid modifying the input
         updated_elos = current_elos.copy()
         agents = list(iteration_results.keys())
-        
-        # Group agents by accuracy to identify ties
-        accuracy_groups = {}
+
+        # Group agents by score to identify ties
+        score_groups = {}
         for agent in agents:
-            acc = iteration_results[agent]['accuracy']
-            if acc not in accuracy_groups:
-                accuracy_groups[acc] = []
-            accuracy_groups[acc].append(agent)
-        
+            score = iteration_results[agent]['average_score']
+            if score not in score_groups:
+                score_groups[score] = []
+            score_groups[score].append(agent)
+
         # Process ties within groups (each agent draws against others in same group)
-        for acc, group in accuracy_groups.items():
+        for score, group in score_groups.items():
             if len(group) > 1:
                 # Process all pairs within the tied group
                 for i, agent1 in enumerate(group):
@@ -1814,30 +1809,30 @@ class ParallelAgentResearcher:
                         # Handle as a draw (0.5 points each)
                         elo1 = updated_elos[agent1]
                         elo2 = updated_elos[agent2]
-                        
+
                         expected1 = 1 / (1 + 10**((elo2 - elo1) / 400))
                         expected2 = 1 / (1 + 10**((elo1 - elo2) / 400))
-                        
+
                         updated_elos[agent1] += k * (0.5 - expected1)
                         updated_elos[agent2] += k * (0.5 - expected2)
-        
-        # Process wins/losses between different accuracy groups
-        sorted_groups = sorted(accuracy_groups.keys(), reverse=True)
-        for i, higher_acc in enumerate(sorted_groups[:-1]):
-            for lower_acc in sorted_groups[i+1:]:
-                for winner in accuracy_groups[higher_acc]:
-                    for loser in accuracy_groups[lower_acc]:
+
+        # Process wins/losses between different score groups
+        sorted_groups = sorted(score_groups.keys(), reverse=True)
+        for i, higher_score in enumerate(sorted_groups[:-1]):
+            for lower_score in sorted_groups[i+1:]:
+                for winner in score_groups[higher_score]:
+                    for loser in score_groups[lower_score]:
                         # Winner beats loser
                         winner_elo = updated_elos[winner]
                         loser_elo = updated_elos[loser]
-                        
+
                         # ELO calculation
                         expected_winner = 1 / (1 + 10**((loser_elo - winner_elo) / 400))
                         expected_loser = 1 / (1 + 10**((winner_elo - loser_elo) / 400))
-                        
+
                         updated_elos[winner] += k * (1 - expected_winner)
                         updated_elos[loser] += k * (0 - expected_loser)
-        
+
         return updated_elos
     
     def _recalculate_all_elo_scores(self):
@@ -1855,24 +1850,23 @@ class ParallelAgentResearcher:
                 if agent not in cumulative_elo_scores:
                     cumulative_elo_scores[agent] = 1500.0
             
-            # Get accuracies for this iteration
-            # Convert from percentage to decimal (accuracy is stored as percentage in test_history)
+            # Get scores for this iteration (already 0-1 scale)
             iteration_results = {
-                agent: {'accuracy': data['accuracy'] / 100.0} 
+                agent: {'average_score': data['average_score']}
                 for agent, data in iteration_data.items()
             }
-            
+
             # Calculate updated ELO scores using the shared logic
             current_elos_for_iteration = {
-                agent: cumulative_elo_scores[agent] 
+                agent: cumulative_elo_scores[agent]
                 for agent in iteration_results
             }
             updated_elos = self._calculate_elo_updates(current_elos_for_iteration, iteration_results)
-            
+
             # Update the cumulative scores
             for agent, new_elo in updated_elos.items():
                 cumulative_elo_scores[agent] = new_elo
-        
+
         # Update all performance_records with recalculated ELO scores
         for agent_id in self.performance_records:
             if agent_id in cumulative_elo_scores:
@@ -1895,7 +1889,7 @@ class ParallelAgentResearcher:
         Calculate ELO progression to track the leader after each iteration.
         
         Returns:
-            List of dictionaries containing iteration number, leader name, ELO score, and accuracy
+            List of dictionaries containing iteration number, leader name, ELO score, and average_score
         """
         # We need to maintain a cumulative ELO score dictionary
         cumulative_elo_scores = {}
@@ -1907,25 +1901,24 @@ class ParallelAgentResearcher:
                 if agent not in cumulative_elo_scores:
                     cumulative_elo_scores[agent] = 1500.0
             
-            # Get accuracies for this iteration
-            # Convert from percentage to decimal (accuracy is stored as percentage in test_history)
+            # Get scores for this iteration (already 0-1 scale)
             iteration_results = {
-                agent: {'accuracy': data['accuracy'] / 100.0} 
+                agent: {'average_score': data['average_score']}
                 for agent, data in iteration_data.items()
             }
-            
+
             # Calculate updated ELO scores using the shared logic
             # Important: We update the cumulative scores, not reset them
             current_elos_for_iteration = {
-                agent: cumulative_elo_scores[agent] 
+                agent: cumulative_elo_scores[agent]
                 for agent in iteration_results
             }
             updated_elos = self._calculate_elo_updates(current_elos_for_iteration, iteration_results)
-            
+
             # Update the cumulative scores with the new values
             for agent, new_elo in updated_elos.items():
                 cumulative_elo_scores[agent] = new_elo
-            
+
             # Find the leader after this iteration (from ALL agents, not just tested ones)
             if cumulative_elo_scores:
                 leader_agent = max(cumulative_elo_scores.items(), key=lambda x: x[1])
@@ -1933,7 +1926,7 @@ class ParallelAgentResearcher:
                     'iteration': iter_num,
                     'leader': leader_agent[0],
                     'elo': leader_agent[1],
-                    'accuracy': iteration_data.get(leader_agent[0], {}).get('accuracy', None)
+                    'average_score': iteration_data.get(leader_agent[0], {}).get('average_score', None)
                 })
         
         return leaders
@@ -2752,9 +2745,9 @@ class ParallelAgentResearcher:
                     # Initialize performance record
                     self.performance_records[new_agent_id] = {
                         'test_count': 0,
-                        'total_correct': 0,
+                        'total_score_sum': 0.0,
                         'total_questions': 0,
-                        'mean_accuracy': 0.0,
+                        'mean_score': 0.0,
                         'elo': 1500,
                         'iteration_results': [],
                         'last_win_iteration': None,  # Track when agent last won

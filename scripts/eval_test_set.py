@@ -70,7 +70,7 @@ def find_best_agent(run_dir: Path) -> tuple[str, Path]:
     logger.info(
         f"Best agent: {best_id} "
         f"(ELO: {best_perf['elo']:.0f}, "
-        f"accuracy: {best_perf['mean_accuracy']:.1f}%, "
+        f"score: {best_perf['mean_score']:.3f}, "
         f"tests: {best_perf['test_count']})"
     )
 

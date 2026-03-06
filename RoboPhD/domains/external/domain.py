@@ -10,7 +10,7 @@ The evaluator function interface:
 Where:
     - candidate is a dict[str, str] of named text components (e.g., eval_instructions, tool_code)
     - example is a dict identifying the problem (e.g., {"question_id": "abc314_c"})
-    - score is 0.0 or 1.0 (binary pass/fail)
+    - score is a float in [0, 1] (0.0 = wrong, 1.0 = perfect; intermediate values allowed)
     - diagnostics is a dict of execution trace data (ASI)
 """
 
@@ -212,12 +212,11 @@ class ExternalEvaluatorDomain(DomainInterface):
 
         # --- Build results from cached entries ---
         results = []
-        correct_count = 0
+        score_sum = 0.0
 
         for problem_id, result_data in cached_results.items():
             score = result_data.get("score", 0.0)
-            if score >= 0.5:
-                correct_count += 1
+            score_sum += score
             results.append({
                 "question_id": problem_id,
                 "score": score,
@@ -228,15 +227,15 @@ class ExternalEvaluatorDomain(DomainInterface):
         if fresh_count == 0 and cached_count > 0:
             self.logger.info("All problems cached — skipping evaluator")
             total = cached_count
-            accuracy = (correct_count / total * 100) if total else 0.0
+            average_score = (score_sum / total) if total else 0.0
             eval_data = {
-                "summary": {"total_problems": total, "correct": correct_count, "accuracy": accuracy},
+                "summary": {"total_problems": total, "score_sum": score_sum, "average_score": average_score},
                 "results": {r["question_id"]: r for r in results},
             }
             with open(output_dir / "evaluation.json", "w") as f:
                 json.dump(eval_data, f, indent=2)
             return EvaluationResult(
-                accuracy=accuracy, total=total, correct=correct_count,
+                average_score=average_score, total=total, score_sum=score_sum,
                 results=results,
                 metadata={"fresh_count": 0, "cached_count": cached_count, "eval_cost": 0.0},
             )
@@ -323,11 +322,10 @@ class ExternalEvaluatorDomain(DomainInterface):
             for future in as_completed(futures):
                 result_entry = future.result()
                 results.append(result_entry)
-                if result_entry["score"] >= 0.5:
-                    correct_count += 1
+                score_sum += result_entry["score"]
 
         total = cached_count + fresh_count
-        accuracy = (correct_count / total * 100) if total else 0.0
+        average_score = (score_sum / total) if total else 0.0
 
         # Aggregate evaluation costs from fresh results
         total_eval_cost = sum(
@@ -338,8 +336,8 @@ class ExternalEvaluatorDomain(DomainInterface):
         eval_data = {
             "summary": {
                 "total_problems": total,
-                "correct": correct_count,
-                "accuracy": accuracy,
+                "score_sum": score_sum,
+                "average_score": average_score,
             },
             "results": {r["question_id"]: r for r in results},
         }
@@ -347,9 +345,9 @@ class ExternalEvaluatorDomain(DomainInterface):
             json.dump(eval_data, f, indent=2)
 
         return EvaluationResult(
-            accuracy=accuracy,
+            average_score=average_score,
             total=total,
-            correct=correct_count,
+            score_sum=score_sum,
             results=results,
             metadata={
                 "fresh_count": fresh_count,

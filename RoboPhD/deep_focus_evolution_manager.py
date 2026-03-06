@@ -840,18 +840,17 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             context_name = r.get('db_id') or r.get('question_id')
             if context_name not in results:
                 results[context_name] = {
-                    'accuracy': 0.0,
-                    'correct': 0,
+                    'average_score': 0.0,
+                    'score_sum': 0.0,
                     'total': 0,
                 }
             results[context_name]['total'] += 1
-            if r.get('correct'):
-                results[context_name]['correct'] += 1
+            results[context_name]['score_sum'] += r.get('score', 0)
 
-        # Calculate per-context accuracy
+        # Calculate per-context average score
         for context_name in results:
             r = results[context_name]
-            r['accuracy'] = (r['correct'] / r['total'] * 100) if r['total'] > 0 else 0.0
+            r['average_score'] = (r['score_sum'] / r['total']) if r['total'] > 0 else 0.0
 
         # Accumulate evaluation cost
         if eval_result.metadata.get('eval_cost', 0) > 0:
@@ -867,11 +866,11 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             }
             self._current_call_costs.append(eval_cost_info)
 
-        overall_accuracy = eval_result.accuracy
-        total_correct = eval_result.correct
+        overall_score = eval_result.average_score
+        total_score_sum = eval_result.score_sum
         total_questions = eval_result.total
 
-        logger.info(f"Overall accuracy: {overall_accuracy:.1f}% ({total_correct}/{total_questions})")
+        logger.info(f"Overall score: {overall_score:.3f} ({total_score_sum:.1f}/{total_questions})")
 
         # Generate new vs baseline error analysis
         logger.info("Generating new vs baseline error analysis...")
@@ -886,8 +885,8 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         self._prompt_for_refinement(
             round_num=round_num,
             test_iteration=test_iteration,
-            overall_accuracy=overall_accuracy,
-            total_correct=total_correct,
+            overall_score=overall_score,
+            total_score_sum=total_score_sum,
             total_questions=total_questions,
         )
 
@@ -900,8 +899,8 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         self,
         round_num: int,
         test_iteration: int,
-        overall_accuracy: float,
-        total_correct: int,
+        overall_score: float,
+        total_score_sum: float,
         total_questions: int,
     ):
         """
@@ -912,8 +911,8 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         Args:
             round_num: Current round number
             test_iteration: Iteration that was tested against
-            overall_accuracy: Overall accuracy percentage
-            total_correct: Number of correct answers
+            overall_score: Overall average score (0-1)
+            total_score_sum: Sum of all per-problem scores
             total_questions: Total number of questions
         """
         # Check if error analysis report exists (always generated now)
@@ -942,7 +941,7 @@ python RoboPhD/tools/error_analysis/extract_error_details.py \\
 Your agent was tested on data from iteration {test_iteration}.
 
 ### Results
-Overall accuracy: {overall_accuracy:.1f}% ({total_correct}/{total_questions})
+Overall score: {overall_score:.3f} ({total_score_sum:.1f}/{total_questions})
 {error_analysis_section}
 ### Your Task
 Review the performance results above and the diagnostic outputs in the test workspace at `./iteration_{test_iteration:03d}_test/`.

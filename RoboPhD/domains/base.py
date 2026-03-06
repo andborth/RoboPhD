@@ -34,21 +34,23 @@ class EvaluationResult:
     Domain-agnostic container for evaluation results.
 
     Returned by run_evaluation() to provide the evolution system with
-    accuracy metrics and per-question results.
+    score metrics and per-question results.
 
     Attributes:
-        accuracy: Overall accuracy as a percentage (0-100)
+        average_score: Mean score across all problems (0-1 scale).
+            For binary domains this equals accuracy as a fraction.
         total: Total number of problems evaluated
-        correct: Number of correct solutions
+        score_sum: Sum of all per-problem scores (float, not count).
+            For binary domains this equals the number of correct solutions.
         results: List of per-question result dicts with at minimum:
             - question_id or problem_id
-            - score: float (>= 0.5 counts as correct)
+            - score: float (raw score, 0-1)
             - Additional domain-specific details
         metadata: Optional dict for domain-specific metadata (timing, costs, etc.)
     """
-    accuracy: float
+    average_score: float
     total: int
-    correct: int
+    score_sum: float
     results: List[Dict[str, Any]]
     metadata: Dict[str, Any] = field(default_factory=dict)
 

@@ -295,8 +295,8 @@ class ReportGenerator:
             for test_results in self.researcher.test_history:
                 # Find winner(s) of this iteration
                 if test_results:
-                    max_accuracy = max(test_results[k]['accuracy'] for k in test_results.keys())
-                    winners = [k for k in test_results.keys() if test_results[k]['accuracy'] == max_accuracy]
+                    max_score = max(test_results[k]['average_score'] for k in test_results.keys())
+                    winners = [k for k in test_results.keys() if test_results[k]['average_score'] == max_score]
 
                     for winner in winners:
                         agent_wins[winner] += 1
@@ -366,31 +366,31 @@ class ReportGenerator:
 
         # Simple summary table
         report_lines.append("### Quick Summary\n")
-        report_lines.append("| Agent | ELO | Mean Accuracy | Tests |")
-        report_lines.append("|-------|-----|---------------|-------|")
+        report_lines.append("| Agent | ELO | Mean Score | Tests |")
+        report_lines.append("|-------|-----|------------|-------|")
 
         for agent_id in sorted_agents:
             perf = self.researcher.performance_records[agent_id]
             report_lines.append(f"| {agent_id} | {perf['elo']:.0f} | "
-                              f"{perf['mean_accuracy']:.1f}% | {perf['test_count']} |")
+                              f"{perf['mean_score']:.3f} | {perf['test_count']} |")
 
         # Iteration progression table
         report_lines.append("\n### Iteration Progression\n")
-        report_lines.append("| Iter | Winner(s) | Accuracy | Evo Time | Test Time | Total Time |")
-        report_lines.append("|------|-----------|----------|----------|-----------|------------|")
+        report_lines.append("| Iter | Winner(s) | Score | Evo Time | Test Time | Total Time |")
+        report_lines.append("|------|-----------|-------|----------|-----------|------------|")
 
         for i, test_results in enumerate(self.researcher.test_history):
             iteration_num = i + 1
 
             # Find winner(s)
             if test_results:
-                max_accuracy = max(test_results[k]['accuracy'] for k in test_results.keys())
-                winners = [k for k in test_results.keys() if test_results[k]['accuracy'] == max_accuracy]
+                max_score = max(test_results[k]['average_score'] for k in test_results.keys())
+                winners = [k for k in test_results.keys() if test_results[k]['average_score'] == max_score]
                 winner_str = ', '.join(winners) if len(winners) <= 2 else f"{winners[0]} +{len(winners)-1}"
-                accuracy_str = f"{max_accuracy:.1f}%"
+                score_str = f"{max_score:.3f}"
             else:
                 winner_str = "N/A"
-                accuracy_str = "N/A"
+                score_str = "N/A"
 
             # Get timing data
             test_time = self.researcher.iteration_times[i] if i < len(self.researcher.iteration_times) else 0
@@ -407,7 +407,7 @@ class ReportGenerator:
                 evo_time_str = "-"
                 total_time_str = test_time_str
 
-            report_lines.append(f"| {iteration_num} | {winner_str} | {accuracy_str} | "
+            report_lines.append(f"| {iteration_num} | {winner_str} | {score_str} | "
                               f"{evo_time_str} | {test_time_str} | {total_time_str} |")
 
         # Best agent
@@ -415,7 +415,7 @@ class ReportGenerator:
             best_agent = sorted_agents[0]
             report_lines.append(f"\n## Best Agent: {best_agent}")
             report_lines.append(f"- ELO Score: {self.researcher.performance_records[best_agent]['elo']:.0f}")
-            report_lines.append(f"- Mean Accuracy: {self.researcher.performance_records[best_agent]['mean_accuracy']:.1f}%")
+            report_lines.append(f"- Mean Score: {self.researcher.performance_records[best_agent]['mean_score']:.3f}")
 
         # ELO Leadership Progression
         report_lines.append("\n")

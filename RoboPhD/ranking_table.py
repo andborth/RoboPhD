@@ -7,7 +7,7 @@ from typing import Dict, List
 
 
 def calculate_mean_ranks(records: Dict) -> Dict[str, float]:
-    """Calculate mean average rank for each agent across iterations based on overall accuracy."""
+    """Calculate mean average rank for each agent across iterations based on overall score."""
     # Group results by iteration
     iteration_results = {}
     for agent_id, record in records.items():
@@ -17,30 +17,30 @@ def calculate_mean_ranks(records: Dict) -> Dict[str, float]:
             if iteration:
                 if iteration not in iteration_results:
                     iteration_results[iteration] = {}
-                
-                # Get accuracy directly from iteration_result
-                if iter_result.get('accuracy') is not None:
-                    iteration_results[iteration][agent_id] = iter_result.get('accuracy')
+
+                # Get average_score directly from iteration_result
+                if iter_result.get('average_score') is not None:
+                    iteration_results[iteration][agent_id] = iter_result.get('average_score')
     
     # Calculate ranks within each iteration with proper tie handling
     agent_ranks = {aid: [] for aid in records.keys()}
     for iteration, scores in iteration_results.items():
         if len(scores) > 1:  # Need at least 2 agents to rank
-            # Group agents by accuracy for proper tie handling
-            accuracy_groups = {}
-            for agent_id, accuracy in scores.items():
-                if accuracy not in accuracy_groups:
-                    accuracy_groups[accuracy] = []
-                accuracy_groups[accuracy].append(agent_id)
-            
+            # Group agents by score for proper tie handling
+            score_groups = {}
+            for agent_id, score in scores.items():
+                if score not in score_groups:
+                    score_groups[score] = []
+                score_groups[score].append(agent_id)
+
             # Assign ranks with proper tie handling
             current_rank = 1
-            for accuracy in sorted(accuracy_groups.keys(), reverse=True):
-                agents_at_accuracy = accuracy_groups[accuracy]
-                for agent_id in agents_at_accuracy:
+            for score in sorted(score_groups.keys(), reverse=True):
+                agents_at_score = score_groups[score]
+                for agent_id in agents_at_score:
                     agent_ranks[agent_id].append(current_rank)
                 # Skip ranks for ties
-                current_rank += len(agents_at_accuracy)
+                current_rank += len(agents_at_score)
     
     # Calculate mean ranks
     mean_ranks = {}
@@ -90,32 +90,32 @@ def generate_ranking_table(test_history: List, performance_records: Dict, for_ev
     
     # Process each iteration
     for iter_num, iteration_data in enumerate(test_history, 1):
-        # Get all agents and their accuracies for this iteration
-        agent_accuracies = {}
-        
-        # RoboPhD format: direct agent keys with accuracy field
+        # Get all agents and their scores for this iteration
+        agent_scores = {}
+
+        # RoboPhD format: direct agent keys with average_score field
         for agent_id, agent_data in iteration_data.items():
-            if isinstance(agent_data, dict) and 'accuracy' in agent_data:
-                agent_accuracies[agent_id] = agent_data['accuracy']
-        
+            if isinstance(agent_data, dict) and 'average_score' in agent_data:
+                agent_scores[agent_id] = agent_data['average_score']
+
         # Rank agents for this iteration with proper tie handling
-        accuracy_groups = {}
-        for agent_id, accuracy in agent_accuracies.items():
-            if accuracy not in accuracy_groups:
-                accuracy_groups[accuracy] = []
-            accuracy_groups[accuracy].append(agent_id)
-        
+        score_groups = {}
+        for agent_id, score in agent_scores.items():
+            if score not in score_groups:
+                score_groups[score] = []
+            score_groups[score].append(agent_id)
+
         # Assign ranks with proper tie handling
         current_rank = 1
-        for accuracy in sorted(accuracy_groups.keys(), reverse=True):
-            agents_at_accuracy = accuracy_groups[accuracy]
-            for agent_id in agents_at_accuracy:
+        for score in sorted(score_groups.keys(), reverse=True):
+            agents_at_score = score_groups[score]
+            for agent_id in agents_at_score:
                 agent_iteration_data[agent_id]['iterations'][iter_num] = {
                     'rank': current_rank,
-                    'accuracy': accuracy
+                    'score': score
                 }
             # Skip ranks for ties (e.g., if 2 agents tied at rank 1, next is rank 3)
-            current_rank += len(agents_at_accuracy)
+            current_rank += len(agents_at_score)
     
     # Sort agents by ELO score (highest first)
     sorted_agents = sorted(agent_iteration_data.items(), 
@@ -159,20 +159,20 @@ def generate_ranking_table(test_history: List, performance_records: Dict, for_ev
         for i in range(1, num_iterations + 1):
             if i in data['iterations']:
                 rank = data['iterations'][i]['rank']
-                accuracy = data['iterations'][i]['accuracy']
-                
+                score = data['iterations'][i]['score']
+
                 # Format based on rank
                 if rank == 1:
-                    cell = f" **#1** {accuracy:.1f}% |"
+                    cell = f" **#1** {score:.3f} |"
                 elif rank == 2:
-                    cell = f" #2 {accuracy:.1f}% |"
+                    cell = f" #2 {score:.3f} |"
                 elif rank == 3:
-                    cell = f" #3 {accuracy:.1f}% |"
+                    cell = f" #3 {score:.3f} |"
                 else:
-                    cell = f" #{rank} {accuracy:.1f}% |"
+                    cell = f" #{rank} {score:.3f} |"
             else:
                 cell = " - |"
-            
+
             row += cell
         
         # Add ELO and mean rank
@@ -197,7 +197,7 @@ def generate_ranking_table(test_history: List, performance_records: Dict, for_ev
     table += "\n### Legend:\n"
     table += "- **#1** = 1st place (winner of iteration)\n"
     table += "- #2, #3, etc. = 2nd, 3rd place, etc.\n"
-    table += "- Percentage = Accuracy on that iteration's databases\n"
+    table += "- Score = Average score (0-1) on that iteration's problems\n"
     table += "- **Bold ELO/Rank** = Top performer\n"
     table += "- `-` = Agent not tested in that iteration\n"
     
