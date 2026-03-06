@@ -17,6 +17,7 @@ RoboPhD is a multi-domain evolution system that implements a three-level AI hier
 - **CodeGen**: Evolving critic agents for code review on LiveCodeBench
 - **AIME**: Evolving math reasoning prompts on AIME 2022-2024
 - **Text2SQL**: Evolving database analysis agents for BIRD benchmark SQL generation
+- **ARC-AGI**: Evolving abstract reasoning agents (Gemini via OpenRouter)
 
 New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `TaskDefinition` with an evaluator function, dataset builder, and file mapping.
 
@@ -30,6 +31,7 @@ New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `
 | CodeGen | LiveCodeBench | `eval_instructions.md` + `tools/problem_analyzer.py` |
 | AIME | AIME 2022-2024 | `system_prompt.md` |
 | Text2SQL | BIRD | `eval_instructions.md` + `tools/analyze_db.py` + `verify_prompt.md` |
+| ARC-AGI | ARC-AGI (HuggingFace) | `agent.py` |
 
 ## Key Commands
 
@@ -37,6 +39,12 @@ New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `
 ```bash
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"
 pip install -r requirements.txt
+
+# For GEPA and ARC-AGI (adds gepa, dspy, datasets, cloudpickle)
+pip install -r requirements-gepa.txt
+
+# For ARC-AGI: OpenRouter API key (routes to Gemini)
+export OPENROUTER_API_KEY="sk-or-..."
 
 # Install Claude Code CLI (required for evolution)
 # See: https://docs.anthropic.com/en/docs/claude-code
@@ -52,6 +60,9 @@ python scripts/run_robophd.py --task aime --num-iterations 10
 
 # Text2SQL evolution
 python scripts/run_robophd.py --task text2sql --num-iterations 10
+
+# ARC-AGI evolution
+python scripts/run_robophd.py --task arc_agi --num-iterations 10
 
 # Quick test
 python scripts/run_robophd.py --task codegen --num-iterations 2 \
@@ -76,6 +87,10 @@ python scripts/run_gepa.py --task codegen \
 # AIME via GEPA
 python scripts/run_gepa.py --task aime \
   --engine-config '{"evaluation_budget": 200, "val_ratio": 0.2}'
+
+# ARC-AGI via GEPA (pre-split: train=200, val=200 matching GEPA exactly)
+python scripts/run_gepa.py --task arc_agi \
+  --engine-config '{"evaluation_budget": 300}'
 
 # Sequential (easier debugging, no ThreadPoolExecutor)
 python scripts/run_gepa.py --task codegen \
@@ -102,6 +117,21 @@ python scripts/run_robophd.py --task codegen \
   --resume ../robophd_runs/robophd/codegen_20251031_043607 \
   --extend 5 \
   --engine-config '{"evolution_strategy": "challenger"}'
+```
+
+### Test-Set Evaluation (`eval_test_set.py`)
+```bash
+# Auto-select best agent by ELO from a run
+python scripts/eval_test_set.py --task arc_agi \
+  --run-dir ../robophd_runs/robophd/arc_agi_20260306_104927
+
+# Specify agent directly
+python scripts/eval_test_set.py --task aime \
+  --agent-dir ../robophd_runs/robophd/aime_20260227_180324/agents/iter4_verified_enumerator
+
+# With repeats and config overrides
+python scripts/eval_test_set.py --task aime --run-dir ... \
+  --test-repeats 5 --task-config '{"solver_model": "gpt-4.1"}'
 ```
 
 ## Three-Level AI Architecture
@@ -169,6 +199,7 @@ Agents are directories containing text files declared by the task's `file_mappin
 | CodeGen | `{"eval_instructions": "eval_instructions.md", "tool_code": "tools/problem_analyzer.py"}` | `RoboPhD/codegen_agents/naive_critic/` |
 | AIME | `{"system_prompt": "system_prompt.md"}` | `RoboPhD/aime_agents/baseline/` |
 | Text2SQL | `{"eval_instructions": "eval_instructions.md", "database_analysis_code": "tools/analyze_db.py", "verify_prompt": "verify_prompt.md"}` | `RoboPhD/text2sql_agents/naive/` |
+| ARC-AGI | `{"agent_code": "agent.py"}` | `RoboPhD/arcagi_agents/baseline/` |
 
 Conversion between agent directories and flat candidate dicts is handled by `candidate_utils.py` (`extract_candidate`, `materialize_candidate`).
 
@@ -257,12 +288,14 @@ Available meta-evolution strategies:
 ### Entry Points
 - **`scripts/run_robophd.py`**: Multi-agent ELO evolution runner
 - **`scripts/run_gepa.py`**: GEPA optimization runner
+- **`scripts/eval_test_set.py`**: Standalone test-set evaluation for any agent
 
 ### Task Registry
 - **`tasks/base.py`**: `TaskDefinition` dataclass (name, evaluator_factory, dataset_builder, file_mapping, objective)
 - **`tasks/codegen.py`**: CodeGen task — LiveCodeBench critic evolution
 - **`tasks/aime.py`**: AIME task — math reasoning prompt evolution
 - **`tasks/text2sql.py`**: Text2SQL task — BIRD benchmark SQL generation
+- **`tasks/arc_agi.py`**: ARC-AGI task — abstract reasoning agent evolution
 
 ### Core
 - **`researcher.py`**: Evolution loop orchestrator (called by `run_robophd.py`)
@@ -277,6 +310,8 @@ Available meta-evolution strategies:
 - **`adapters/candidate_utils.py`**: `extract_candidate` / `materialize_candidate` — convert between agent dirs and flat dicts
 - **`adapters/gepa_codegen.py`**: GEPA adapter for CodeGen evaluator
 - **`adapters/gepa_aime.py`**: GEPA adapter for AIME evaluator
+- **`adapters/gepa_arc_agi.py`**: ARC-AGI evaluator, TrackedLLM (with cost fix), dataset splits
+- **`adapters/arc_agi_utils_unmodified.py`**: Vendored GEPA utils (exact copy, do not modify)
 
 ### Config
 - **`config.py`**: Model mappings and fallbacks
@@ -321,6 +356,7 @@ Available meta-evolution strategies:
 ### Domain-Specific Issues
 - **CodeGen**: See [docs/claude/codegen.md](docs/claude/codegen.md) for test execution issues
 - **Text2SQL**: See [docs/claude/text2sql.md](docs/claude/text2sql.md) for database-related issues
+- **ARC-AGI**: Requires `requirements-gepa.txt` (dspy, datasets) and `OPENROUTER_API_KEY`. Default solver: `gemini-3.1-flash-lite-preview` via OpenRouter. Cost tracking uses `resp.usage.cost` from OpenRouter (litellm's pricing DB doesn't cover these models).
 
 ## License
 
