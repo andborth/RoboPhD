@@ -479,7 +479,6 @@ class ReportGenerator:
             total_test_time = sum(self.researcher.iteration_times)
 
             # Calculate phase averages for fixed phases
-            avg_error_analyzer = sum(t.get('error_analyzer', 0) for t in evolution_timings) / num_evolutions
             avg_first_draft = sum(t.get('first_draft', 0) for t in evolution_timings) / num_evolutions
 
             # Dynamically calculate test round averages (excluding zeros for optional phases)
@@ -496,11 +495,10 @@ class ReportGenerator:
             avg_reflection = sum(reflection_values) / len(reflection_values) if reflection_values else 0
 
             # Recalculate total evolution time including all dynamic test rounds and reflection
-            avg_evo_time = (avg_error_analyzer + avg_first_draft +
+            avg_evo_time = (avg_first_draft +
                            sum(test_round_averages.values()) + avg_reflection)
 
             # Calculate percentages of total evolution time
-            pct_error_analyzer = (avg_error_analyzer / avg_evo_time * 100) if avg_evo_time > 0 else 0
             pct_first_draft = (avg_first_draft / avg_evo_time * 100) if avg_evo_time > 0 else 0
             pct_reflection = (avg_reflection / avg_evo_time * 100) if avg_evo_time > 0 else 0
 
@@ -518,7 +516,6 @@ class ReportGenerator:
             report_lines.append("\n### Time Breakdown by Evolution Phase\n")
             report_lines.append("| Phase | Avg Time | % of Evolution |")
             report_lines.append("|-------|----------|----------------|")
-            report_lines.append(f"| Error Analyzer | {avg_error_analyzer/60:.1f}m | {pct_error_analyzer:.1f}% |")
             report_lines.append(f"| First Draft (Round 1) | {avg_first_draft/60:.1f}m | {pct_first_draft:.1f}% |")
 
             # Dynamic test round rows
@@ -654,50 +651,6 @@ class ReportGenerator:
             ]
             max_driver = max(cost_drivers, key=lambda x: x[1])
             report_lines.append(f"\n**Answer: {max_driver[0]} drives {max_driver[1]:.1f}% of total costs**")
-
-            # Per-iteration cost breakdown
-            report_lines.append("\n### Per-Iteration Cost Breakdown\n")
-            report_lines.append("| Iter | Total | Eval Cost | Evo Cost | Evo Calls | Evo In | Evo Out | Meta Cost | Meta Calls | Strategy | Meta-strategy |")
-            report_lines.append("|------|-------|-----------|----------|-----------|--------|---------|-----------|------------|----------|---------------|")
-
-            for idx, cost_dict in enumerate(self.researcher.iteration_claude_costs):
-                iter_num = idx + 1
-
-                # Get evolution strategy for this iteration if available
-                strategy_display = "-"
-                if cost_dict.get('evolution_cost', 0) > 0:
-                    evolved_agent_id = None
-                    for agent_id, agent_info in self.researcher.agent_pool.items():
-                        if agent_info.get('created_iteration') == iter_num and agent_info.get('source') == 'evolution':
-                            evolved_agent_id = agent_id
-                            break
-                    if evolved_agent_id:
-                        strategy = self.researcher.agent_pool[evolved_agent_id].get('evolution_strategy', 'unknown')
-                        strategy_display = strategy
-
-                meta_strategy_display = "-"
-                if cost_dict.get('meta_evolution_cost', 0) > 0:
-                    iter_config = self.researcher.config_manager.get_config(iter_num)
-                    meta_strategy = iter_config.get('meta_evolution_strategy')
-                    if meta_strategy and meta_strategy != 'none':
-                        meta_strategy_display = meta_strategy
-
-                eval_cost = cost_dict.get('eval_cost', 0.0)
-                evo_cost = cost_dict.get('evolution_cost', 0.0)
-                evo_calls = cost_dict.get('evolution_calls', 0)
-                evo_tokens_in = cost_dict.get('evolution_tokens_in', 0)
-                evo_tokens_out = cost_dict.get('evolution_tokens_out', 0)
-                meta_cost = cost_dict.get('meta_evolution_cost', 0.0)
-                meta_calls = cost_dict.get('meta_evolution_calls', 0)
-                total_cost = eval_cost + evo_cost + meta_cost
-
-                report_lines.append(
-                    f"| **{iter_num}** | **${total_cost:.2f}** | "
-                    f"${eval_cost:.2f} | "
-                    f"${evo_cost:.2f} | {evo_calls} | {evo_tokens_in:,} | {evo_tokens_out:,} | "
-                    f"${meta_cost:.2f} | {meta_calls} | "
-                    f"{strategy_display} | {meta_strategy_display} |"
-                )
 
             # Detailed per-iteration costs
             report_lines.append("\n### Detailed Per-Iteration Costs\n")
