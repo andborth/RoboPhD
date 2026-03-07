@@ -494,9 +494,9 @@ class ParallelAgentEvolver:
         
         return "\n".join(lines)
     
-    def _generate_ranking_table(self, test_history: List, performance_records: Dict, for_evolution: bool = False) -> str:
+    def _generate_ranking_table(self, test_history: List, performance_records: Dict, for_evolution: bool = False, clone_agent_ids: set = None) -> str:
         """Generate comprehensive ranking table for agents across all iterations."""
-        return generate_ranking_table(test_history, performance_records, for_evolution)
+        return generate_ranking_table(test_history, performance_records, for_evolution, clone_agent_ids=clone_agent_ids)
     
     def _calculate_mean_ranks(self, records: Dict) -> Dict[str, float]:
         """Calculate mean average rank for each agent across iterations."""

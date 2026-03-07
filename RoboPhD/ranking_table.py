@@ -53,15 +53,18 @@ def calculate_mean_ranks(records: Dict) -> Dict[str, float]:
     return mean_ranks
 
 
-def generate_ranking_table(test_history: List, performance_records: Dict, for_evolution: bool = False) -> str:
+def generate_ranking_table(test_history: List, performance_records: Dict, for_evolution: bool = False, clone_agent_ids: set = None) -> str:
     """
     Generate comprehensive ranking table for agents across all iterations.
-    
+
     Args:
         test_history: Complete test history data
         performance_records: Performance records for ELO/rank calculations
         for_evolution: If True, format for evolution prompts (simpler). If False, for final report.
+        clone_agent_ids: Set of agent IDs that were detected as exact clones (ELO penalized).
     """
+    if clone_agent_ids is None:
+        clone_agent_ids = set()
     if not test_history or len(test_history) < 1:
         return ""
     
@@ -178,12 +181,13 @@ def generate_ranking_table(test_history: List, performance_records: Dict, for_ev
         # Add ELO and mean rank
         elo = data['elo']
         mean_rank = data['mean_rank']
-        
+        clone_marker = "*" if agent_id in clone_agent_ids else ""
+
         # Highlight best performer
         if sorted_agents and elo == max(d['elo'] for _, d in sorted_agents):
-            row += f" **{elo:.0f}** |"
+            row += f" **{elo:.0f}**{clone_marker} |"
         else:
-            row += f" {elo:.0f} |"
+            row += f" {elo:.0f}{clone_marker} |"
         
         if mean_rank < 2.0:
             row += f" **{mean_rank:.2f}** |"
@@ -200,5 +204,7 @@ def generate_ranking_table(test_history: List, performance_records: Dict, for_ev
     table += "- Score = Average score (0-1) on that iteration's problems\n"
     table += "- **Bold ELO/Rank** = Top performer\n"
     table += "- `-` = Agent not tested in that iteration\n"
-    
+    if clone_agent_ids:
+        table += "- \\* *Exact clone: identical per-problem scores to an existing agent on debut. ELO penalized by 200.*\n"
+
     return table

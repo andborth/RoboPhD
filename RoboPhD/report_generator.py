@@ -374,10 +374,12 @@ class ReportGenerator:
 
         # Add comprehensive ranking table
         if self.researcher.test_history and len(self.researcher.test_history) > 0:
+            clone_agent_ids = set(c for c, _m, _i in getattr(self.researcher, 'clone_detections', []))
             ranking_table = self.researcher.evolver._generate_ranking_table(
                 self.researcher.test_history,
                 self.researcher.performance_records,
-                for_evolution=False
+                for_evolution=False,
+                clone_agent_ids=clone_agent_ids
             )
             report_lines.append(ranking_table)
             report_lines.append("\n")
@@ -420,7 +422,7 @@ class ReportGenerator:
                 winners = [k for k in eligible.keys() if eligible[k]['average_score'] == max_score]
                 winner_str = ', '.join(winners) if len(winners) <= 2 else f"{winners[0]} +{len(winners)-1}"
                 if iter_clones:
-                    winner_str += f" (clone: {', '.join(iter_clones)} excluded)"
+                    winner_str += f" ({', '.join(f'{c}*' for c in iter_clones)} excluded)"
                 score_str = f"{max_score:.3f}"
             else:
                 winner_str = "N/A"
@@ -443,6 +445,11 @@ class ReportGenerator:
 
             report_lines.append(f"| {iteration_num} | {winner_str} | {score_str} | "
                               f"{evo_time_str} | {test_time_str} | {total_time_str} |")
+
+        if clone_by_iteration:
+            report_lines.append("")
+            report_lines.append("\\* *Exact clone: identical per-problem scores to an existing agent on debut. "
+                              "ELO penalized by 200; excluded from winner selection.*")
 
         # Best agent
         if sorted_agents:
