@@ -297,6 +297,7 @@ class ArcAGIEvaluator:
             "training_score": result["training_score"],
             "test_score": result["test_score"],
             "cost": cost,
+            "cost_usd": cost,
             "error": result["error"],
             "train_examples": result["train_examples"],
             "test_examples": result["test_examples"],
