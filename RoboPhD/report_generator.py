@@ -304,12 +304,22 @@ class ReportGenerator:
             strategy_winners = defaultdict(list)
             agent_wins = defaultdict(int)
 
+            # Build clone lookup for winner exclusion
+            wins_clone_by_iter = {}
+            for clone_id, _matched_id, clone_iter in getattr(self.researcher, 'clone_detections', []):
+                wins_clone_by_iter.setdefault(clone_iter, set()).add(clone_id)
+
             # Count wins for each agent
-            for test_results in self.researcher.test_history:
-                # Find winner(s) of this iteration
+            for i, test_results in enumerate(self.researcher.test_history):
+                iteration_num = i + 1
+                # Find winner(s) of this iteration, excluding clones
                 if test_results:
-                    max_score = max(test_results[k]['average_score'] for k in test_results.keys())
-                    winners = [k for k in test_results.keys() if test_results[k]['average_score'] == max_score]
+                    iter_clones = wins_clone_by_iter.get(iteration_num, set())
+                    eligible = {k: v for k, v in test_results.items() if k not in iter_clones}
+                    if not eligible:
+                        eligible = test_results
+                    max_score = max(eligible[k]['average_score'] for k in eligible.keys())
+                    winners = [k for k in eligible.keys() if eligible[k]['average_score'] == max_score]
 
                     for winner in winners:
                         agent_wins[winner] += 1
@@ -392,14 +402,25 @@ class ReportGenerator:
         report_lines.append("| Iter | Winner(s) | Score | Evo Time | Test Time | Total Time |")
         report_lines.append("|------|-----------|-------|----------|-----------|------------|")
 
+        # Build clone lookup by iteration
+        clone_by_iteration = {}
+        for clone_id, _matched_id, clone_iter in getattr(self.researcher, 'clone_detections', []):
+            clone_by_iteration.setdefault(clone_iter, []).append(clone_id)
+
         for i, test_results in enumerate(self.researcher.test_history):
             iteration_num = i + 1
 
-            # Find winner(s)
+            # Find winner(s), excluding clones
             if test_results:
-                max_score = max(test_results[k]['average_score'] for k in test_results.keys())
-                winners = [k for k in test_results.keys() if test_results[k]['average_score'] == max_score]
+                iter_clones = set(clone_by_iteration.get(iteration_num, []))
+                eligible = {k: v for k, v in test_results.items() if k not in iter_clones}
+                if not eligible:
+                    eligible = test_results  # Fallback (shouldn't happen)
+                max_score = max(eligible[k]['average_score'] for k in eligible.keys())
+                winners = [k for k in eligible.keys() if eligible[k]['average_score'] == max_score]
                 winner_str = ', '.join(winners) if len(winners) <= 2 else f"{winners[0]} +{len(winners)-1}"
+                if iter_clones:
+                    winner_str += f" (clone: {', '.join(iter_clones)} excluded)"
                 score_str = f"{max_score:.3f}"
             else:
                 winner_str = "N/A"

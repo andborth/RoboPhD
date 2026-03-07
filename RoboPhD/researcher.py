@@ -762,6 +762,7 @@ class ParallelAgentResearcher:
             self.zero_accuracy_cases = resume_checkpoint.get('zero_accuracy_cases', [])
             self.exception_failures = resume_checkpoint.get('exception_failures', [])
             self.five_hour_limit_incidents = resume_checkpoint.get('five_hour_limit_incidents', [])
+            self.clone_detections = resume_checkpoint.get('clone_detections', [])
             self.current_iteration_evolution_cost = None
 
             if resume_from_iteration:
@@ -846,6 +847,7 @@ class ParallelAgentResearcher:
             self.zero_accuracy_cases = []
             self.exception_failures = []
             self.five_hour_limit_incidents = []
+            self.clone_detections = []  # [(clone_id, matched_id, iteration), ...]
 
         # Ensure eval mode is always set
         if not hasattr(self, 'dev_eval_mode'):
@@ -1261,6 +1263,14 @@ class ParallelAgentResearcher:
                 self.exception_failures = [
                     (agent_id, db_name, iter_num, error_msg, total_q)
                     for agent_id, db_name, iter_num, error_msg, total_q in self.exception_failures
+                    if iter_num < from_iteration
+                ]
+
+            # Clear clone detections for archived iterations
+            if hasattr(self, 'clone_detections'):
+                self.clone_detections = [
+                    (clone_id, matched_id, iter_num)
+                    for clone_id, matched_id, iter_num in self.clone_detections
                     if iter_num < from_iteration
                 ]
 
@@ -1727,9 +1737,33 @@ class ParallelAgentResearcher:
             )
             raise RuntimeError(error_msg)
 
-        # Find winner(s)
-        max_score = max(r['average_score'] for r in iteration_results.values())
-        winners = [k for k, v in iteration_results.items() if v['average_score'] == max_score]
+        # Detect exact-clone agents: newly created agents with identical
+        # per-problem scores to any other agent in this iteration.
+        clone_agents = set()
+        for agent_id in selected_agents:
+            agent_info = self.agent_pool.get(agent_id, {})
+            if agent_info.get('created_iteration') != iteration:
+                continue  # Only check newly created agents
+            # Build score vector for this agent
+            new_scores = {r['context']: r['score'] for r in results_by_agent.get(agent_id, [])}
+            if not new_scores:
+                continue
+            # Compare against all other agents in this iteration
+            for other_id in selected_agents:
+                if other_id == agent_id:
+                    continue
+                other_scores = {r['context']: r['score'] for r in results_by_agent.get(other_id, [])}
+                if new_scores == other_scores:
+                    clone_agents.add(agent_id)
+                    self.clone_detections.append((agent_id, other_id, iteration))
+                    print(f"    ⚠️ Clone detected: {agent_id} has identical scores to {other_id} — ELO penalty applied, excluded from winners")
+                    break
+
+        # Find winner(s) — exclude clone agents
+        eligible = {k: v for k, v in iteration_results.items() if k not in clone_agents}
+        assert eligible, "All agents are clones — this should be impossible (at most 1 new agent per iteration)"
+        max_score = max(r['average_score'] for r in eligible.values())
+        winners = [k for k, v in eligible.items() if v['average_score'] == max_score]
 
         if len(winners) == 1:
             print(f"\n🏆 Iteration {iteration} winner: {winners[0]} ({max_score:.3f})")
@@ -1745,6 +1779,11 @@ class ParallelAgentResearcher:
 
         # Update ELO scores
         self._update_elo_scores(iteration_results)
+
+        # Apply ELO penalty to clone agents
+        for agent_id in clone_agents:
+            if agent_id in self.performance_records:
+                self.performance_records[agent_id]['elo'] -= 200
 
         # Populate evolution costs from temporary storage
         if self.current_iteration_evolution_cost is not None:
@@ -1871,6 +1910,11 @@ class ParallelAgentResearcher:
             else:
                 # Agent hasn't been tested yet, keep base ELO
                 self.performance_records[agent_id]['elo'] = 1500.0
+
+        # Apply persistent clone penalties
+        for clone_id, _matched_id, _iteration in self.clone_detections:
+            if clone_id in self.performance_records:
+                self.performance_records[clone_id]['elo'] -= 200
     
     def _update_elo_scores(self, iteration_results: Dict):
         """
@@ -3135,6 +3179,19 @@ class ParallelAgentResearcher:
                     ""
                 ])
 
+                # Append clone detection section if any clones found this iteration
+                iteration_clones = [(c, m) for c, m, i in self.clone_detections if i == iteration]
+                if iteration_clones:
+                    report_lines.append("## Clone Detection")
+                    report_lines.append("")
+                    for clone_id, matched_id in iteration_clones:
+                        report_lines.append(
+                            f"⚠️ **{clone_id}** identified as exact clone of **{matched_id}** "
+                            f"(identical scores on all {total_q} problems). "
+                            f"ELO penalized by 200; excluded from winner selection."
+                        )
+                    report_lines.append("")
+
                 # Write report
                 with open(error_report_path, 'w') as f:
                     f.write('\n'.join(report_lines))
@@ -3372,6 +3429,7 @@ class ParallelAgentResearcher:
             'zero_accuracy_cases': self.zero_accuracy_cases,
             'exception_failures': self.exception_failures,
             'five_hour_limit_incidents': self.five_hour_limit_incidents,
+            'clone_detections': self.clone_detections,
             'config_manager': self.config_manager.to_checkpoint(),
         }
 
