@@ -19,7 +19,7 @@ import json
 import logging
 import random
 import shutil
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -71,6 +71,9 @@ class ExternalEvaluatorDomain(DomainInterface):
 
         # Cache for loaded problems
         self._problems_cache: Optional[Dict[str, List[Dict]]] = None
+
+        # Track threads leaked by eval timeouts (can't kill Python threads)
+        self._leaked_threads: int = 0
 
     # -----------------------------------------------------------------
     # Core interface
@@ -240,6 +243,13 @@ class ExternalEvaluatorDomain(DomainInterface):
                 metadata={"fresh_count": 0, "cached_count": cached_count, "eval_cost": 0.0},
             )
 
+        # --- Warn about leaked threads from prior timeouts ---
+        if self._leaked_threads > 0:
+            self.logger.warning(
+                f"{self._leaked_threads} timed-out eval thread(s) still running "
+                f"from prior iterations (each burns one CPU core)"
+            )
+
         # --- Evaluate fresh problems ---
         problems_dir = output_dir / "problems"
         problems_dir.mkdir(parents=True, exist_ok=True)
@@ -314,17 +324,68 @@ class ExternalEvaluatorDomain(DomainInterface):
                     "score": 0.0,
                 }
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {
+        eval_timeout = config.get("eval_timeout", 300)
+        timed_out = False
+        timed_out_pids: set[str] = set()  # Don't resubmit problems that already timed out
+
+        executor = ThreadPoolExecutor(max_workers=max_workers)
+        try:
+            future_to_pid = {
                 executor.submit(_evaluate_one, pid): pid
                 for pid in fresh_problem_ids
             }
-            for future in as_completed(futures):
-                result_entry = future.result()
-                results.append(result_entry)
-                score_sum += result_entry["score"]
+            remaining = set(future_to_pid.keys())
 
-        total = cached_count + fresh_count
+            while remaining:
+                done, not_done = wait(
+                    remaining, timeout=eval_timeout,
+                    return_when=FIRST_COMPLETED,
+                )
+                if not done:
+                    # No future completed within timeout — abandon hung
+                    # futures but resubmit queued ones (unless already timed out).
+                    still_remaining = set()
+                    for future in not_done:
+                        pid = future_to_pid[future]
+                        if future.cancel():
+                            if pid in timed_out_pids:
+                                # Already timed out before — don't resubmit
+                                result_entry = {"question_id": pid, "score": 0.0, "error": "timeout"}
+                                results.append(result_entry)
+                            else:
+                                # Queued — resubmit so it gets a chance to run
+                                new_future = executor.submit(_evaluate_one, pid)
+                                future_to_pid[new_future] = pid
+                                still_remaining.add(new_future)
+                        else:
+                            # Running and hung — score 0, leak thread
+                            self._leaked_threads += 1
+                            timed_out = True
+                            timed_out_pids.add(pid)
+                            self.logger.warning(
+                                f"EVAL TIMEOUT: {pid} exceeded {eval_timeout}s — "
+                                f"scored 0, thread leaked ({self._leaked_threads} total leaked)"
+                            )
+                            result_entry = {"question_id": pid, "score": 0.0, "error": "timeout"}
+                            self._write_timeout_result(problems_dir, pid, result_entry)
+                            results.append(result_entry)
+                    remaining = still_remaining
+                    continue
+
+                for future in done:
+                    result_entry = future.result()
+                    results.append(result_entry)
+                    score_sum += result_entry["score"]
+                remaining = not_done
+        finally:
+            if timed_out:
+                # Don't block on hung threads — cancel queued futures and move on.
+                # Running threads keep burning CPU until process exit (Python limitation).
+                executor.shutdown(wait=False, cancel_futures=True)
+            else:
+                executor.shutdown(wait=True)
+
+        total = len(results)
         average_score = (score_sum / total) if total else 0.0
 
         # Aggregate evaluation costs from fresh results
@@ -432,6 +493,23 @@ Agent source code:
     # -----------------------------------------------------------------
     # Helpers
     # -----------------------------------------------------------------
+
+    def _write_timeout_result(self, problems_dir: Path, pid: str, result_entry: dict) -> None:
+        """Write result.json for a timed-out eval so the error is visible when browsing.
+
+        The hung thread may eventually finish and overwrite this with the real
+        result — that's fine (better for future cache hits). The current
+        iteration already scored 0.
+        """
+        try:
+            problem_dir = problems_dir / pid
+            problem_dir.mkdir(parents=True, exist_ok=True)
+            result_path = problem_dir / "result.json"
+            if not result_path.exists():
+                with open(result_path, "w") as f:
+                    json.dump(result_entry, f, indent=2)
+        except OSError as e:
+            self.logger.debug(f"Failed to write timeout result for {pid}: {e}")
 
     def _find_cached_results(
         self,

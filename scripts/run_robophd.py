@@ -98,7 +98,7 @@ def parse_args():
 # Accepted by all tasks regardless of domain.
 _UNIVERSAL_TASK_KEYS = {
     "seed_agent", "seed", "output_dir", "work_dir", "runs_dir",
-    "val_ratio", "reflection_model",
+    "val_ratio", "reflection_model", "eval_timeout",
 }
 
 

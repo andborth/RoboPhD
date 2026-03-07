@@ -328,6 +328,7 @@ Available meta-evolution strategies:
 ### Model Configuration
 - **API Models**: opus-4.6 ($5/$25/MTok), sonnet-4.5 ($3/$15/MTok), haiku-4.5 ($1/$5/MTok)
 - **Timeouts**: 1800s (30 minutes) default for evolution
+- **Eval Timeout**: `eval_timeout` (300s default) — per-evaluation timeout on `future.result()` in all ThreadPoolExecutor eval loops (domain.py, run_gepa.py, eval_test_set.py). Timed-out evals score 0 with `"error": "timeout"` in result.json. The hung thread keeps burning CPU until process exit (Python limitation); `domain.py` tracks leaked thread count across iterations and warns at each iteration start.
 - **CodeGen Timeouts**: `codegen_timeout` (1200s) for solution generation, `critic_timeout` (600s) for critic/revision/acceptance
 - **API Key**: Set via `ANTHROPIC_API_KEY_FOR_ROBOPHD` environment variable
 

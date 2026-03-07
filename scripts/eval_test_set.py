@@ -24,7 +24,7 @@ import json
 import logging
 import os
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 from pathlib import Path
 
 # Add project root to path
@@ -166,21 +166,65 @@ def main():
     test_workers = args.max_workers or test_config.get("max_test_workers") or max(1, min(32, (os.cpu_count() or 4) + 4) // 2)
     logger.info(f"Test evaluation: {len(test_examples)} problems, {test_workers} workers")
 
+    eval_timeout = test_config.get("eval_timeout", 300)
+    timed_out = False
+    timed_out_idxs: set[int] = set()
+
     score_map: dict[int, float] = {}
-    with ThreadPoolExecutor(max_workers=test_workers) as executor:
-        futures = {
+    idx_to_example = {i: ex for i, ex in enumerate(test_examples)}
+    executor = ThreadPoolExecutor(max_workers=test_workers)
+    try:
+        future_to_idx = {
             executor.submit(test_evaluator, candidate, ex): i
             for i, ex in enumerate(test_examples)
         }
-        for future in as_completed(futures):
-            idx = futures[future]
-            score, diag = future.result()
-            score_map[idx] = score
+        remaining = set(future_to_idx.keys())
+
+        while remaining:
+            done, not_done = wait(
+                remaining, timeout=eval_timeout,
+                return_when=FIRST_COMPLETED,
+            )
+            if not done:
+                still_remaining = set()
+                for future in not_done:
+                    idx = future_to_idx[future]
+                    if future.cancel():
+                        if idx in timed_out_idxs:
+                            score_map[idx] = 0.0
+                        else:
+                            new_future = executor.submit(
+                                test_evaluator, candidate, idx_to_example[idx]
+                            )
+                            future_to_idx[new_future] = idx
+                            still_remaining.add(new_future)
+                    else:
+                        logger.warning(
+                            f"EVAL TIMEOUT: example {idx} exceeded {eval_timeout}s — "
+                            f"scored 0, thread leaked (will burn CPU until process exit)"
+                        )
+                        score_map[idx] = 0.0
+                        timed_out_idxs.add(idx)
+                        timed_out = True
+                remaining = still_remaining
+                continue
+
+            for future in done:
+                idx = future_to_idx[future]
+                score, diag = future.result()
+                score_map[idx] = score
+            remaining = not_done
+
             if len(score_map) % 10 == 0:
                 logger.info(
                     f"Test progress: {len(score_map)}/{len(test_examples)}, "
                     f"running accuracy: {sum(score_map.values())/len(score_map)*100:.1f}%"
                 )
+    finally:
+        if timed_out:
+            executor.shutdown(wait=False, cancel_futures=True)
+        else:
+            executor.shutdown(wait=True)
     scores = [score_map[i] for i in range(len(test_examples))]
 
     test_accuracy = sum(scores) / len(scores) * 100 if scores else 0.0
