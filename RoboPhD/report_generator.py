@@ -583,10 +583,29 @@ class ReportGenerator:
         report_lines.append("\n## Claude CLI Usage & Cost Analysis")
 
         if self.researcher.iteration_claude_costs:
-            # Calculate totals
-            total_eval_cost = sum(ic.get('eval_cost', 0.0) for ic in self.researcher.iteration_claude_costs)
-
-            total_evolution_cost = sum(ic.get('evolution_cost', 0.0) for ic in self.researcher.iteration_claude_costs)
+            # Calculate totals — group DF eval costs with evaluation (not evolution)
+            # so that the summary ties out with the Detailed Per-Iteration table
+            total_eval_cost = 0.0
+            total_evolution_cost = 0.0
+            for ic in self.researcher.iteration_claude_costs:
+                eval_base = ic.get('eval_cost', 0.0)
+                breakdown = ic.get('evolution_breakdown')
+                test_eval = 0.0
+                first_draft = 0.0
+                test_evo = 0.0
+                reflection = 0.0
+                if breakdown:
+                    first_draft = breakdown.get('first_draft', {}).get('cost', 0.0)
+                    for key in breakdown:
+                        if key.startswith('test_refine_'):
+                            test_eval += breakdown[key].get('eval', {}).get('cost', 0.0)
+                            test_evo += breakdown[key].get('evolution', {}).get('cost', 0.0)
+                    reflection = breakdown.get('reflection', {}).get('cost', 0.0)
+                    total_eval_cost += eval_base + test_eval
+                    total_evolution_cost += first_draft + test_evo + reflection
+                else:
+                    total_eval_cost += eval_base
+                    total_evolution_cost += ic.get('evolution_cost', 0.0)
             total_evolution_calls = sum(ic.get('evolution_calls', 0) for ic in self.researcher.iteration_claude_costs)
             total_evolution_tokens_in = sum(ic.get('evolution_tokens_in', 0) for ic in self.researcher.iteration_claude_costs)
             total_evolution_tokens_out = sum(ic.get('evolution_tokens_out', 0) for ic in self.researcher.iteration_claude_costs)
@@ -654,8 +673,35 @@ class ReportGenerator:
 
             # Detailed per-iteration costs
             report_lines.append("\n### Detailed Per-Iteration Costs\n")
-            report_lines.append(f"| Iter | Total | **Evaluation** | **Evolution** | 1st Draft | Test Eval | Test Evo | Refl | Meta | Strategy | Meta-strategy |")
-            report_lines.append("|------|-------|----------------|---------------|-----------|-----------|----------|------|------|----------|---------------|")
+
+            # Detect number of DF rounds from data
+            all_test_round_keys = set()
+            for ic in self.researcher.iteration_claude_costs:
+                evo_bd = ic.get('evolution_breakdown') or {}
+                for key in evo_bd:
+                    if key.startswith('test_refine_'):
+                        all_test_round_keys.add(key)
+            sorted_test_round_keys = sorted(all_test_round_keys)
+            num_df_rounds = len(sorted_test_round_keys)
+
+            # Check if we have fresh eval data
+            has_fresh = hasattr(self.researcher, 'iteration_fresh_evals') and self.researcher.iteration_fresh_evals
+
+            # Build dynamic header
+            header_cols = ["Iter", "Total", "**Eval**", "**Evo**", "Iter Eval", "1st Draft"]
+            for i in range(num_df_rounds):
+                round_label = f"DF Eval {i+1}" if num_df_rounds > 1 else "DF Eval"
+                draft_label = f"Draft {i+2}"
+                header_cols.extend([round_label, draft_label])
+            header_cols.extend(["Refl", "Meta"])
+            if has_fresh:
+                header_cols.append("Fresh")
+            header_cols.extend(["Strategy", "Meta-strategy"])
+
+            header = "| " + " | ".join(header_cols) + " |"
+            separator = "|" + "|".join(["------"] * len(header_cols)) + "|"
+            report_lines.append(header)
+            report_lines.append(separator)
 
             # Accumulators for totals
             totals = {
@@ -663,11 +709,16 @@ class ReportGenerator:
                 'total_eval': 0.0,
                 'total_evolution': 0.0,
                 'first_draft': 0.0,
-                'test_eval': 0.0,
-                'test_evo': 0.0,
                 'reflection': 0.0,
-                'meta_evolution': 0.0
+                'meta_evolution': 0.0,
             }
+            # Per-round accumulators
+            round_totals_eval = [0.0] * num_df_rounds
+            round_totals_draft = [0.0] * num_df_rounds
+            total_fresh = 0
+
+            def fmt(val):
+                return f"${val:.2f}" if val > 0 else "-"
 
             for idx, cost_dict in enumerate(self.researcher.iteration_claude_costs):
                 iter_num = idx + 1
@@ -692,64 +743,70 @@ class ReportGenerator:
 
                 # Get base costs
                 eval_base = cost_dict.get('eval_cost', 0.0)
-
-                # Get evolution breakdown
                 evolution_breakdown = cost_dict.get('evolution_breakdown')
 
-                # Extract test round costs
-                test_eval = 0.0
-                test_evo = 0.0
+                # Extract costs dynamically
                 first_draft = 0.0
                 reflection = 0.0
+                round_evals = [0.0] * num_df_rounds
+                round_drafts = [0.0] * num_df_rounds
 
                 if evolution_breakdown:
                     first_draft = evolution_breakdown.get('first_draft', {}).get('cost', 0.0)
-
-                    test_refine_1 = evolution_breakdown.get('test_refine_1', {})
-                    test_eval += test_refine_1.get('eval', {}).get('cost', 0.0)
-                    test_evo += test_refine_1.get('evolution', {}).get('cost', 0.0)
-
-                    test_refine_2 = evolution_breakdown.get('test_refine_2', {})
-                    test_eval += test_refine_2.get('eval', {}).get('cost', 0.0)
-                    test_evo += test_refine_2.get('evolution', {}).get('cost', 0.0)
-
+                    for i, key in enumerate(sorted_test_round_keys):
+                        round_data = evolution_breakdown.get(key, {})
+                        round_evals[i] = round_data.get('eval', {}).get('cost', 0.0)
+                        round_drafts[i] = round_data.get('evolution', {}).get('cost', 0.0)
                     reflection = evolution_breakdown.get('reflection', {}).get('cost', 0.0)
 
                 meta_evolution_cost = cost_dict.get('meta_evolution_cost', 0.0)
 
-                total_eval_iter = eval_base + test_eval
-                total_evolution_iter = first_draft + test_evo + reflection
+                total_eval_iter = eval_base + sum(round_evals)
+                total_evolution_iter = first_draft + sum(round_drafts) + reflection
                 total_cost = total_eval_iter + total_evolution_iter + meta_evolution_cost
 
                 totals['total_cost'] += total_cost
                 totals['total_eval'] += total_eval_iter
                 totals['total_evolution'] += total_evolution_iter
                 totals['first_draft'] += first_draft
-                totals['test_eval'] += test_eval
-                totals['test_evo'] += test_evo
                 totals['reflection'] += reflection
                 totals['meta_evolution'] += meta_evolution_cost
+                for i in range(num_df_rounds):
+                    round_totals_eval[i] += round_evals[i]
+                    round_totals_draft[i] += round_drafts[i]
 
-                def fmt(val):
-                    return f"${val:.2f}" if val > 0 else "-"
+                # Fresh evals
+                fresh_val = 0
+                if has_fresh and idx < len(self.researcher.iteration_fresh_evals):
+                    fresh_val = self.researcher.iteration_fresh_evals[idx]
+                    total_fresh += fresh_val
 
-                report_lines.append(
-                    f"| **{iter_num}** | ${total_cost:.2f} | "
-                    f"**{fmt(total_eval_iter)}** | "
-                    f"**{fmt(total_evolution_iter)}** | {fmt(first_draft)} | {fmt(test_eval)} | {fmt(test_evo)} | {fmt(reflection)} | "
-                    f"{fmt(meta_evolution_cost)} | "
-                    f"{strategy_display} | {meta_strategy_display} |"
-                )
+                # Build row
+                row_vals = [f"**{iter_num}**", f"${total_cost:.2f}",
+                            f"**{fmt(total_eval_iter)}**", f"**{fmt(total_evolution_iter)}**",
+                            fmt(eval_base), fmt(first_draft)]
+                for i in range(num_df_rounds):
+                    row_vals.extend([fmt(round_evals[i]), fmt(round_drafts[i])])
+                row_vals.extend([fmt(reflection), fmt(meta_evolution_cost)])
+                if has_fresh:
+                    row_vals.append(str(fresh_val) if fresh_val > 0 else "-")
+                row_vals.extend([strategy_display, meta_strategy_display])
+
+                report_lines.append("| " + " | ".join(row_vals) + " |")
 
             # Totals row
-            report_lines.append("|------|-------|----------------|---------------|-----------|-----------|----------|------|------|----------|---------------|")
-            report_lines.append(
-                f"| **TOTAL** | **${totals['total_cost']:.2f}** | "
-                f"**${totals['total_eval']:.2f}** | "
-                f"**${totals['total_evolution']:.2f}** | ${totals['first_draft']:.2f} | ${totals['test_eval']:.2f} | ${totals['test_evo']:.2f} | ${totals['reflection']:.2f} | "
-                f"${totals['meta_evolution']:.2f} | "
-                f"- | - |"
-            )
+            report_lines.append(separator)
+            total_vals = ["**TOTAL**", f"**${totals['total_cost']:.2f}**",
+                          f"**${totals['total_eval']:.2f}**", f"**${totals['total_evolution']:.2f}**",
+                          f"${totals['total_eval'] - sum(round_totals_eval):.2f}",
+                          f"${totals['first_draft']:.2f}"]
+            for i in range(num_df_rounds):
+                total_vals.extend([f"${round_totals_eval[i]:.2f}", f"${round_totals_draft[i]:.2f}"])
+            total_vals.extend([f"${totals['reflection']:.2f}", f"${totals['meta_evolution']:.2f}"])
+            if has_fresh:
+                total_vals.append(f"**{total_fresh}**")
+            total_vals.extend(["-", "-"])
+            report_lines.append("| " + " | ".join(total_vals) + " |")
 
             # Evolution cost breakdown (if evolution happened)
             if total_evolution_cost > 0 and evolution_timings:
