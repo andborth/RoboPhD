@@ -90,16 +90,18 @@ recent error patterns.
 
 ## Input Sources
 
-You have full read access to:
-- Interim reports: `../../iteration_XXX/interim_report.md`
-- Error analysis: `../../iteration_XXX/error_analysis_report.md`
-- Evolution planning: `../../evolution_output/iteration_XXX/reasoning.md`
-- Evolution reflections: `../../evolution_output/iteration_XXX/evolution_reflection.md`
-- Session summaries: `../../evolution_output/iteration_XXX/session_summary.md` (readable markdown summary of the evolution session — assistant reasoning and tool call summaries)
-- Checkpoint: `../../checkpoint.json` (includes `config_change_history`)
-- Evolution strategies for this experiment: `../../evolution_strategies/`
+You have full read access to everything below.
 
-**Bash tools**: You have full bash access — use `diff` to compare strategy files, `jq` to query JSON, and standard Unix tools as needed.
+### Produced by Meta-Evolution
+
+- `../../meta_evolution_output/iteration_XXX/reasoning.md` — prior meta-evolution analysis
+- `../../meta_evolution_output/iteration_XXX/meta_evolution_reflection.md` — prior self-assessment
+
+### Produced by Evolution
+
+- `../../evolution_output/iteration_XXX/reasoning.md`
+- `../../evolution_output/iteration_XXX/evolution_reflection.md` — **start here**
+- `../../evolution_output/iteration_XXX/session_summary.md` (readable markdown summary of the evolution session — assistant reasoning and tool call summaries)
 
 **Understanding evolution artifacts** — each evolution iteration produces these in order:
 
@@ -110,6 +112,17 @@ You have full read access to:
 3. **evolution_reflection.md**: Written after the agent is created and tested in a deep focus round (tested against prior agents on a set of questions). Contains self-assessment, what worked, what was challenging, and suggestions for improvement. **Start here** — it's the most informative single document.
 
 4. **session_summary.md**: Readable markdown summary of the full evolution session — includes all assistant reasoning verbatim and one-line tool call summaries. **Use this** when reflection/reasoning aren't enough and you need to see the full narrative of what the AI thought and did.
+
+### Iteration Reports and Analysis
+
+- `../../iteration_XXX/interim_report.md`
+- `../../iteration_XXX/error_analysis_report.md`
+
+### Other
+
+- `../../checkpoint.json` (includes `config_change_history`)
+- `../../evolution_strategies/` — installed strategies for this experiment
+- **Bash tools**: `diff`, `jq`, `tree`, standard Unix tools
 
 ## Output Requirements
 
