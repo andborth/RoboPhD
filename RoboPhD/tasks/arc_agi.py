@@ -44,9 +44,20 @@ def _dataset_builder(config: Dict[str, Any]) -> List[Dict]:
 
 
 def _gepa_datasets_builder(config: Dict[str, Any]) -> Tuple[List[Dict], List[Dict]]:
-    """Pre-split datasets for GEPA: train=200, val=200 matching GEPA exactly."""
+    """Pre-split datasets for GEPA: train=200, val=200 matching GEPA exactly.
+
+    Override with train_size/val_size in task-config for testing:
+        --task-config '{"train_size": 20, "val_size": 20}'
+    """
     from RoboPhD.adapters.gepa_arc_agi import load_arc_train_val
-    return load_arc_train_val()
+    train, val = load_arc_train_val()
+    train_size = config.get("train_size")
+    val_size = config.get("val_size")
+    if train_size is not None:
+        train = train[:train_size]
+    if val_size is not None:
+        val = val[:val_size]
+    return train, val
 
 
 def make_arc_agi_task() -> TaskDefinition:
@@ -72,6 +83,8 @@ def make_arc_agi_task() -> TaskDefinition:
             "solver_model": DEFAULT_SOLVER_MODEL,
             "arc_agi_split": "train",
             "evaluation_budget": 1500,
+            "train_size": None,  # Override GEPA train split size (default: all 200)
+            "val_size": None,    # Override GEPA val split size (default: all 200)
         },
         test_overrides={"arc_agi_split": "test"},
         gepa_datasets_builder=_gepa_datasets_builder,
