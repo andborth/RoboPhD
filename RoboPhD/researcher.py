@@ -765,16 +765,8 @@ class ParallelAgentResearcher:
             self.clone_detections = resume_checkpoint.get('clone_detections', [])
             self.current_iteration_evolution_cost = None
 
-            if resume_from_iteration:
-                self.archive_iterations(resume_from_iteration)
-                # Restore performance tracking to state before resume_from_iteration
-                # This prevents agents from being treated as "pending winners" for
-                # wins that are being re-executed
-                self._restore_performance_tracking_before_iteration(resume_from_iteration)
-
-            # Setup random seed for resume (from checkpoint root)
+            # Validate checkpoint integrity before any mutation
             self.original_seed = resume_checkpoint.get("random_seed")
-
             if self.original_seed is None:
                 raise ValueError(
                     "Checkpoint missing random_seed at root level. "
@@ -782,6 +774,14 @@ class ParallelAgentResearcher:
                 )
 
             last_completed = resume_checkpoint.get('last_completed_iteration', len(resume_checkpoint.get('test_history', [])))
+            # Always archive partial work from crashed iterations
+            self.archive_iterations(resume_from_iteration or (last_completed + 1))
+            # Only restore performance tracking when explicitly rewinding with --from-iteration
+            # On auto-resume, the checkpoint already has correct data; rebuilding is harmful
+            # because it can incorrectly grant clone agents pending-winner status
+            if resume_from_iteration and resume_from_iteration <= last_completed:
+                self._restore_performance_tracking_before_iteration(resume_from_iteration)
+
             current_iteration = resume_from_iteration if resume_from_iteration else last_completed + 1
             self.random_seed = (self.original_seed + current_iteration * 10000) % (2**32)
             random.seed(self.random_seed)
@@ -999,6 +999,11 @@ class ParallelAgentResearcher:
         print(f"🧹 Restoring performance tracking to state before iteration {from_iteration}")
         restored_count = 0
 
+        # Build set of cloned agent IDs for each iteration
+        clone_agents_by_iter = {}
+        for clone_id, _matched_id, iter_num in self.clone_detections:
+            clone_agents_by_iter.setdefault(iter_num, set()).add(clone_id)
+
         for agent_id in self.performance_records.keys():
             # Find most recent win before from_iteration
             last_win = None
@@ -1006,11 +1011,17 @@ class ParallelAgentResearcher:
                 if iter_idx < len(self.test_history):
                     iteration_results = self.test_history[iter_idx]
                     if agent_id in iteration_results:
-                        # Check if this agent won this iteration
-                        max_score = max(iteration_results[k]['average_score']
-                                       for k in iteration_results.keys())
-                        if iteration_results[agent_id]['average_score'] == max_score:
-                            last_win = iter_idx + 1  # Convert back to 1-indexed
+                        # Check if this agent won this iteration (excluding clones)
+                        iter_num = iter_idx + 1
+                        clones_this_iter = clone_agents_by_iter.get(iter_num, set())
+                        if agent_id not in clones_this_iter:
+                            eligible = {k: v for k, v in iteration_results.items()
+                                       if k not in clones_this_iter}
+                            if eligible:
+                                max_score = max(eligible[k]['average_score']
+                                               for k in eligible)
+                                if iteration_results[agent_id]['average_score'] == max_score:
+                                    last_win = iter_num
 
             # Find most recent test before from_iteration
             last_test = None
