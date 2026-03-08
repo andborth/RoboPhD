@@ -247,6 +247,17 @@ def main():
 
     logger.info(f"Results saved to {output_path}")
 
+    # Force-exit if any non-daemon threads are still alive — Python's atexit
+    # handler blocks on t.join() for hung threads, hanging the process.
+    # This catches eval timeout leaks, litellm/httpx connection pool threads, etc.
+    import threading
+    alive = [t for t in threading.enumerate()
+             if t is not threading.main_thread() and t.is_alive() and not t.daemon]
+    if alive:
+        names = ", ".join(t.name for t in alive)
+        logger.info(f"Force-exiting ({len(alive)} non-daemon thread(s) still running: {names})")
+        os._exit(0)
+
 
 if __name__ == "__main__":
     main()

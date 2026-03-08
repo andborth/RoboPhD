@@ -26,6 +26,7 @@ Config merge order: task defaults -> --task-config -> --engine-config
 
 import argparse
 import logging
+import os
 import random
 import sys
 from pathlib import Path
@@ -375,6 +376,17 @@ def main():
         researcher.run(initial_agents=researcher_config["initial_agents"])
 
     logger.info("Done.")
+
+    # Force-exit if any non-daemon threads are still alive — Python's atexit
+    # handler blocks on t.join() for hung threads, hanging the process.
+    # This catches eval timeout leaks, litellm/httpx connection pool threads, etc.
+    import threading
+    alive = [t for t in threading.enumerate()
+             if t is not threading.main_thread() and t.is_alive() and not t.daemon]
+    if alive:
+        names = ", ".join(t.name for t in alive)
+        logger.info(f"Force-exiting ({len(alive)} non-daemon thread(s) still running: {names})")
+        os._exit(0)
 
 
 if __name__ == "__main__":
