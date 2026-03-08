@@ -350,7 +350,8 @@ class ExternalEvaluatorDomain(DomainInterface):
                         if future.cancel():
                             if pid in timed_out_pids:
                                 # Already timed out before — don't resubmit
-                                result_entry = {"question_id": pid, "score": 0.0, "error": "timeout"}
+                                result_entry = {"question_id": pid, "score": 0.0}
+                                self._write_timeout_result(problems_dir, pid, result_entry, eval_timeout)
                                 results.append(result_entry)
                             else:
                                 # Queued — resubmit so it gets a chance to run
@@ -366,8 +367,8 @@ class ExternalEvaluatorDomain(DomainInterface):
                                 f"EVAL TIMEOUT: {pid} exceeded {eval_timeout}s — "
                                 f"scored 0, thread leaked ({self._leaked_threads} total leaked)"
                             )
-                            result_entry = {"question_id": pid, "score": 0.0, "error": "timeout"}
-                            self._write_timeout_result(problems_dir, pid, result_entry)
+                            result_entry = {"question_id": pid, "score": 0.0}
+                            self._write_timeout_result(problems_dir, pid, result_entry, eval_timeout)
                             results.append(result_entry)
                     remaining = still_remaining
                     continue
@@ -494,8 +495,12 @@ Agent source code:
     # Helpers
     # -----------------------------------------------------------------
 
-    def _write_timeout_result(self, problems_dir: Path, pid: str, result_entry: dict) -> None:
-        """Write result.json for a timed-out eval so the error is visible when browsing.
+    def _write_timeout_result(self, problems_dir: Path, pid: str, result_entry: dict, eval_timeout: int) -> None:
+        """Write result.json and error diagnostic for a timed-out eval.
+
+        Writes the same ``error`` diagnostic file that evaluator exceptions
+        produce (line ~274 / ~314), so evolution AI discovers timeout errors
+        the same way it discovers evaluator errors — by reading problem dirs.
 
         The hung thread may eventually finish and overwrite this with the real
         result — that's fine (better for future cache hits). The current
@@ -508,6 +513,10 @@ Agent source code:
             if not result_path.exists():
                 with open(result_path, "w") as f:
                     json.dump(result_entry, f, indent=2)
+            # Write diagnostic file (same pattern as evaluator exceptions)
+            error_path = problem_dir / "error"
+            if not error_path.exists():
+                error_path.write_text(f"Evaluation timed out after {eval_timeout}s")
         except OSError as e:
             self.logger.debug(f"Failed to write timeout result for {pid}: {e}")
 
