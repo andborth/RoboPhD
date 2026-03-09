@@ -56,7 +56,7 @@ class DeepFocusEvolutionManager:
         self,
         test_rounds: int = 2,
         test_round_offset: int = -2,
-        evolution_model: str = "opus-4.5",
+        evolution_model: str = "opus-4.6",
         timeout: int = 1800,
         max_workers: int | None = None,
         llm_call_timeout: int = 120,
@@ -74,7 +74,7 @@ class DeepFocusEvolutionManager:
             test_round_offset: Starting offset from current iteration (default -2).
                         At iteration 8 with offset -2, first test is against iteration 6.
                         Iterations < 1 are skipped.
-            evolution_model: Model for evolution/planning (default opus-4.5)
+            evolution_model: Model for evolution/planning (default opus-4.6)
             timeout: Timeout in seconds for Claude CLI calls (default 1800)
             max_workers: Maximum concurrent context processing (None = Python default)
             llm_call_timeout: Per-call LLM timeout in seconds (default 120, for local models)
