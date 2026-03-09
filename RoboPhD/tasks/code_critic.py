@@ -55,10 +55,12 @@ def _dataset_builder(config: Dict[str, Any]) -> List[Dict]:
     split = config.get("codegen_split", "evolution")
     examples = build_codegen_dataset(cache_dir, split=split)
 
-    # Filter to entries that have solution.py (cache is read-only in fresh mode)
+    # Filter to entries that have both solution.py and reflection.md
+    # (cache is read-only in fresh mode; reflection.md is needed for call 1)
     filtered = []
     for ex in examples:
-        if (cache_dir / ex["question_id"] / "solution.py").exists():
+        entry_dir = cache_dir / ex["question_id"]
+        if (entry_dir / "solution.py").exists() and (entry_dir / "reflection.md").exists():
             filtered.append(ex)
 
     if len(filtered) < len(examples):
@@ -66,7 +68,7 @@ def _dataset_builder(config: Dict[str, Any]) -> List[Dict]:
         logger = logging.getLogger(__name__)
         logger.info(
             f"code_critic: filtered {len(examples)} -> {len(filtered)} "
-            f"(excluding entries without solution.py)"
+            f"(excluding entries without solution.py or reflection.md)"
         )
 
     return filtered
