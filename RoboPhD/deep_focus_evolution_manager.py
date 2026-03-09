@@ -55,6 +55,7 @@ class DeepFocusEvolutionManager:
     def __init__(
         self,
         test_rounds: int = 2,
+        test_round_offset: int = -2,
         evolution_model: str = "opus-4.5",
         timeout: int = 1800,
         max_workers: int | None = None,
@@ -70,6 +71,9 @@ class DeepFocusEvolutionManager:
                         0 = Round 1 only (no testing)
                         1 = Rounds 1, 2 (test against 1 iteration)
                         2 = Rounds 1, 2, 3 (test against 2 iterations) [DEFAULT]
+            test_round_offset: Starting offset from current iteration (default -2).
+                        At iteration 8 with offset -2, first test is against iteration 6.
+                        Iterations < 1 are skipped.
             evolution_model: Model for evolution/planning (default opus-4.5)
             timeout: Timeout in seconds for Claude CLI calls (default 1800)
             max_workers: Maximum concurrent context processing (None = Python default)
@@ -81,6 +85,7 @@ class DeepFocusEvolutionManager:
                    are available without manual extraction.
         """
         self.test_rounds = test_rounds
+        self.test_round_offset = test_round_offset
         self.evolution_model = evolution_model
         self.timeout = timeout
         self.max_workers = max_workers
@@ -219,7 +224,7 @@ class DeepFocusEvolutionManager:
             test_round_count = 0
             for test_round in range(self.test_rounds):
                 round_num = 2 + test_round
-                test_iteration = current_iteration - 1 - test_round
+                test_iteration = current_iteration + self.test_round_offset - test_round
 
                 if test_iteration < 1:
                     logger.warning(f"Cannot test against iteration {test_iteration} (doesn't exist)")

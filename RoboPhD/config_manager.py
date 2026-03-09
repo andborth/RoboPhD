@@ -81,7 +81,8 @@ class ConfigManager:
             "evaluation_budget": None,             # Max fresh evaluations across all iterations (default: no limit)
 
             # Deep Focus
-            "new_agent_test_rounds": 1,
+            "new_agent_test_rounds": 2,
+            "new_agent_test_round_offset": -2,
 
             # Performance
             "max_workers": None,  # None = Python default: min(32, cpu_count+4)

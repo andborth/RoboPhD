@@ -189,6 +189,7 @@ class ParallelAgentEvolver:
         self.agents_directory = config.get("agents_directory")
         self.strategies_directory = config.get("strategies_directory")
         self.new_agent_test_rounds = config["new_agent_test_rounds"]
+        self.new_agent_test_round_offset = config["new_agent_test_round_offset"]
         self.max_workers = config["max_workers"]
         self.llm_call_timeout = config["llm_call_timeout"]
 
@@ -330,7 +331,7 @@ class ParallelAgentEvolver:
         # Build database mapping for test rounds
         databases_map = {}
         for test_round in range(self.new_agent_test_rounds):
-            test_iteration = iteration - 1 - test_round
+            test_iteration = iteration + self.new_agent_test_round_offset - test_round
             if test_iteration >= 1:
                 databases = self._get_iteration_databases(test_iteration)
                 if databases:
@@ -346,6 +347,7 @@ class ParallelAgentEvolver:
         # Pass full config so domains get all required fields (coder_model, critic_model, etc.)
         manager = DeepFocusEvolutionManager(
             test_rounds=self.new_agent_test_rounds,
+            test_round_offset=self.new_agent_test_round_offset,
             evolution_model=self.evolution_model,
             timeout=self.evolution_timeout,
             max_workers=self.max_workers,
@@ -732,6 +734,7 @@ class ParallelAgentResearcher:
         self.evolution_timeout = config["evolution_timeout"]
         self.llm_call_timeout = config["llm_call_timeout"]
         self.new_agent_test_rounds = config["new_agent_test_rounds"]
+        self.new_agent_test_round_offset = config["new_agent_test_round_offset"]
         self.agents_directory = config["agents_directory"]
         self.strategies_directory = config.get("strategies_directory")
 
@@ -2633,6 +2636,7 @@ class ParallelAgentResearcher:
             self.evolution_timeout = config["evolution_timeout"]
             self.llm_call_timeout = config["llm_call_timeout"]
             self.new_agent_test_rounds = config["new_agent_test_rounds"]
+            self.new_agent_test_round_offset = config["new_agent_test_round_offset"]
 
             # Recreate evolver with current iteration's config
             self.evolver = ParallelAgentEvolver(

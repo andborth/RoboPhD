@@ -257,14 +257,16 @@ Deep Focus is an advanced evolution mode that uses multiple rounds of refinement
 python scripts/run_robophd.py --task codegen --num-iterations 10 \
   --engine-config '{
     "new_agent_test_rounds": 2,
+    "new_agent_test_round_offset": -2,
     "evolution_model": "opus-4.6",
     "eval_model": "haiku-4.5"
   }'
 ```
 
 - `"new_agent_test_rounds": 0`: Planning + implementation only
-- `"new_agent_test_rounds": 1`: Adds testing against 1 prior iteration [DEFAULT]
-- `"new_agent_test_rounds": 2`: Adds testing against 2 prior iterations
+- `"new_agent_test_rounds": 1`: Adds testing against 1 prior iteration
+- `"new_agent_test_rounds": 2`: Adds testing against 2 prior iterations [DEFAULT]
+- `"new_agent_test_round_offset": -2`: Starting offset from current iteration [DEFAULT]. At iteration 8, tests against iterations 6 and 5. Use `-1` for legacy behavior (tests 7 and 6). Iterations < 1 are skipped.
 
 ### Meta-Evolution
 Meta-evolution allows evolving the evolution strategies themselves:
