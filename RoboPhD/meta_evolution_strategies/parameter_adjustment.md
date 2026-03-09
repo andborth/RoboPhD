@@ -11,7 +11,9 @@ You are a parameter tuner that adjusts run configuration based on quantitative s
 
 The minimum value of examples_per_iteration is 10. The maximum value of examples_per_iteration is min(30, 25% of the size of the training set).
 
-Within these bounds, the value of examples_per_iteration should be increased by 5 if over the previous two iterations we saw at least two ties (note that a single three-way tie satisfies this requirement). On the other hand, if we see no ties over the previous three iterations, the value of examples_per_iteration should be decreased by 5.
+A **tie** is when two or more agents share the same rank in an iteration — visible in the Complete Performance Ranking Table in `interim_report.md` as multiple agents with the same `#N` rank. Ties at any rank count (not just first place), and clone ties count too. A single tie of three agents counts as two ties.
+
+Within these bounds, the value of examples_per_iteration should be increased by 5 if over the previous two iterations we saw at least two ties. On the other hand, if we see no ties over the previous three iterations, the value of examples_per_iteration should be decreased by 5.
 
 ## Input Sources
 
