@@ -308,9 +308,6 @@ def main():
     researcher_config["agents_directory"] = str(seed_agent.parent)
     researcher_config["initial_agents"] = [seed_agent.name]
 
-    # Auto-discover all strategies (override ConfigManager default of just one)
-    researcher_config["initial_strategies"] = None
-
     # --- 4. Fresh vs Resume ---
     from RoboPhD.researcher import ParallelAgentResearcher
 

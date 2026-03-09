@@ -739,7 +739,7 @@ Example meta_config_schedule.json:
 }}
 
 **Forbidden Parameters** (do NOT include in meta_config_schedule.json):
-- Initial config: `initial_agents`, `agents_directory`, `initial_strategies`, `strategies_directory`
+- Initial config: `initial_agents`, `agents_directory`, `strategies_directory`
 - Dataset: `dataset`
 - Meta-evolution self-reference: `meta_evolution_strategy`, `meta_evolution_model`, `dollar_budget`
 

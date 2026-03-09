@@ -1439,6 +1439,47 @@ class ParallelAgentResearcher:
 
         print(f"\n✅ Loaded {len(self.agent_pool)} initial agents")
 
+    # Strategies that don't correspond to file-based strategy directories
+    NON_FILE_STRATEGIES = {"none", "challenger", "greedy", "random"}
+
+    def _collect_referenced_strategies(self) -> List[str]:
+        """
+        Scan the full config for all evolution_strategy references.
+
+        Checks:
+        - Base evolution_strategy
+        - config_schedule values
+        - weighted_random_configs entries
+
+        Returns:
+            Deduplicated list of file-based strategy names, or empty list
+            if none found (which triggers auto-discover-all fallback).
+        """
+        config = self.config_manager.get_config(1)
+        strategies = set()
+
+        # Base evolution_strategy
+        base = config.get("evolution_strategy")
+        if base:
+            strategies.add(base)
+
+        # config_schedule values
+        for delta in config.get("config_schedule", {}).values():
+            if isinstance(delta, dict) and "evolution_strategy" in delta:
+                strategies.add(delta["evolution_strategy"])
+
+        # weighted_random_configs entries
+        for entry in config.get("weighted_random_configs", []):
+            if isinstance(entry, (list, tuple)) and len(entry) == 2:
+                cfg, _weight = entry
+                if isinstance(cfg, dict) and "evolution_strategy" in cfg:
+                    strategies.add(cfg["evolution_strategy"])
+
+        # Filter out non-file-based strategies and None
+        strategies = {s for s in strategies if s and s not in self.NON_FILE_STRATEGIES}
+
+        return sorted(strategies) if strategies else []
+
     def load_initial_strategies(self, strategy_list: Optional[List[str]] = None):
         """
         Load initial evolution strategies from strategies directory.
@@ -2580,8 +2621,8 @@ class ParallelAgentResearcher:
         if not self.resume_mode:
             self.load_initial_agents(initial_agents)
 
-            # Load initial strategies (auto-discover all if not specified)
-            initial_strategies = self.config_manager.get_config(1).get("initial_strategies")
+            # Load initial strategies (auto-derived from all config references)
+            initial_strategies = self._collect_referenced_strategies()
             self.load_initial_strategies(initial_strategies or None)
 
             # Load evolution strategies from experiment directory

@@ -226,7 +226,7 @@ Evolution strategies can be controlled per-iteration using the `config_schedule`
 ```bash
 python scripts/run_robophd.py --task codegen --num-iterations 10 \
   --engine-config '{
-    "evolution_strategy": "cross_pollination",
+    "evolution_strategy": "use_your_judgment",
     "config_schedule": {
       "3": {"evolution_strategy": "none"},
       "5": {"evolution_strategy": "refinement"},
@@ -243,7 +243,7 @@ python scripts/run_robophd.py --task codegen --num-iterations 10 \
   --engine-config '{
     "use_weighted_random": true,
     "weighted_random_configs": [
-      [{"evolution_strategy": "cross_pollination"}, 50],
+      [{"evolution_strategy": "use_your_judgment"}, 50],
       [{"evolution_strategy": "refinement"}, 30],
       [{"evolution_strategy": "none"}, 20]
     ]

@@ -98,7 +98,6 @@ class ReportGenerator:
             "Immutable": [
                 "initial_agents",
                 "agents_directory",
-                "initial_strategies",
                 "strategies_directory"
             ]
         }

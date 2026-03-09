@@ -71,7 +71,7 @@ class ConfigManager:
             "evolution_model": "opus-4.6",
 
             # Evolution parameters (NO LONGER SPECIAL!)
-            "evolution_strategy": "cross_pollination",
+            "evolution_strategy": "use_your_judgment",
 
             # Meta-evolution parameters
             "meta_evolution_strategy": None,       # Which meta-evolution strategy to use
@@ -104,7 +104,6 @@ class ConfigManager:
             # Immutable parameters (user-set once at iteration 1, cannot change after)
             "initial_agents": ["naive"],
             "agents_directory": None,
-            "initial_strategies": ["cross_pollination"],
             "strategies_directory": None,
 
             # Runs directory (where experiment_dir lives)
@@ -274,7 +273,6 @@ class ConfigManager:
             # Initial configuration (immutable after iteration 1)
             "initial_agents",
             "agents_directory",
-            "initial_strategies",
             "strategies_directory",
 
             # Dataset (changing mid-run would invalidate comparisons)
