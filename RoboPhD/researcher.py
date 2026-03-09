@@ -1220,7 +1220,7 @@ class ParallelAgentResearcher:
                     # Recalculate summary statistics based on cleaned results
                     if cleaned_results:
                         total_score_sum = sum(r.get('score_sum', 0.0) for r in cleaned_results if 'score_sum' in r)
-                        total_questions = sum(r.get('total', 0) for r in cleaned_results if 'total' in r)
+                        total_questions = sum(r.get('examples', 0) for r in cleaned_results)
 
                         self.performance_records[agent_id]['test_count'] = len(cleaned_results)
                         self.performance_records[agent_id]['total_score_sum'] = total_score_sum
