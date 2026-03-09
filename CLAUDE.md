@@ -18,6 +18,7 @@ RoboPhD is a multi-domain evolution system that implements a three-level AI hier
 - **AIME**: Evolving math reasoning prompts on AIME 2022-2024
 - **Text2SQL**: Evolving database analysis agents for BIRD benchmark SQL generation
 - **ARC-AGI**: Evolving abstract reasoning agents (Gemini via OpenRouter)
+- **CodeCritic**: CodeGen variant with fresh-session revision (no code generation)
 
 New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `TaskDefinition` with an evaluator function, dataset builder, and file mapping.
 
@@ -32,6 +33,7 @@ New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `
 | AIME | AIME 2022-2024 | `system_prompt.md` |
 | Text2SQL | BIRD | `eval_instructions.md` + `tools/analyze_db.py` + `verify_prompt.md` |
 | ARC-AGI | ARC-AGI (HuggingFace) | `agent.py` |
+| CodeCritic | LiveCodeBench | `eval_instructions.md` + `tools/problem_analyzer.py` |
 
 ## Key Commands
 
@@ -200,6 +202,7 @@ Agents are directories containing text files declared by the task's `file_mappin
 | AIME | `{"system_prompt": "system_prompt.md"}` | `RoboPhD/aime_agents/baseline/` |
 | Text2SQL | `{"eval_instructions": "eval_instructions.md", "database_analysis_code": "tools/analyze_db.py", "verify_prompt": "verify_prompt.md"}` | `RoboPhD/text2sql_agents/naive/` |
 | ARC-AGI | `{"agent_code": "agent.py"}` | `RoboPhD/arcagi_agents/baseline/` |
+| CodeCritic | `{"eval_instructions": "eval_instructions.md", "tool_code": "tools/problem_analyzer.py"}` | `RoboPhD/codegen_agents/naive_critic/` |
 
 Conversion between agent directories and flat candidate dicts is handled by `candidate_utils.py` (`extract_candidate`, `materialize_candidate`).
 

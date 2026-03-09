@@ -179,6 +179,7 @@ class CriticEvaluator:
         codegen_timeout: int = 1200,
         critic_timeout: int = 600,
         lmstudio_base_url: str = LMSTUDIO_DEFAULT_BASE_URL,
+        revision_mode: str = "fork",
     ):
         self.cache_dir = cache_dir
         self.critic_agent_dir = critic_agent_dir
@@ -188,6 +189,7 @@ class CriticEvaluator:
         self.codegen_timeout = codegen_timeout
         self.critic_timeout = critic_timeout
         self.lmstudio_base_url = lmstudio_base_url
+        self.revision_mode = revision_mode
 
         # Precompute LM Studio env overrides for coder and critic models
         # None means the model uses standard Anthropic API (no overrides needed)
@@ -627,17 +629,105 @@ If no changes needed, confirm the code is correct."""
 
         return solution_v2_path, forked_session_id, timing_info
 
+    def run_revision_fresh(
+        self,
+        output_problem_dir: Path,
+        question_id: str,
+    ) -> Tuple[Path, str, Dict]:
+        """
+        Run coder revision in a fresh session (no session forking).
+
+        Two sequential calls in one fresh session:
+        1. Read problem.md, solution.py, reflection.md — summarize understanding
+        2. Present critic feedback — optionally revise to solution_v2.py
+
+        The coder internalizes the solution before seeing feedback, making it
+        less likely to blindly accept critic suggestions.
+
+        Returns (path to solution_v2.py, session_id, timing_info).
+        """
+        start = time.time()
+
+        feedback_path = output_problem_dir / "feedback.md"
+        solution_v2_path = output_problem_dir / "solution_v2.py"
+
+        # Call 1: Establish understanding of the solution
+        call1_prompt = (
+            "Read problem.md, solution.py, and reflection.md. "
+            "Summarize your understanding of the problem and the solution approach."
+        )
+
+        _, session_id, cost1 = self._run_claude_code(
+            call1_prompt,
+            working_dir=output_problem_dir,
+            model=self.coder_model,
+            timeout=self.critic_timeout,
+            context=f"fresh-understand:{question_id}",
+            extra_env=self.coder_extra_env,
+        )
+
+        if not session_id:
+            logger.warning(f"Fresh revision call 1 failed for {question_id}: no session_id")
+            elapsed = time.time() - start
+            return solution_v2_path, "", {"elapsed_seconds": elapsed, **cost1}
+
+        # Call 2: Present feedback and request optional revision
+        feedback = feedback_path.read_text().strip() if feedback_path.exists() else ""
+
+        call2_prompt = f"""Here is feedback from a code reviewer:
+
+<feedback>
+{feedback}
+</feedback>
+
+You may accept all, some, or none of this feedback.
+If you make changes, write your revised solution to solution_v2.py.
+If no changes needed, confirm the code is correct."""
+
+        _, session_id_2, cost2 = self._run_claude_code(
+            call2_prompt,
+            working_dir=output_problem_dir,
+            model=self.coder_model,
+            timeout=self.critic_timeout,
+            session_id=session_id,
+            context=f"fresh-revise:{question_id}",
+            extra_env=self.coder_extra_env,
+        )
+
+        # If completed but no solution_v2.py, copy original (no changes needed)
+        effective_session = session_id_2 or session_id
+        if effective_session and not solution_v2_path.exists():
+            original = output_problem_dir / "solution.py"
+            if original.exists():
+                shutil.copy(original, solution_v2_path)
+                logger.info(f"No revision made, using original for {question_id}")
+
+        elapsed = time.time() - start
+        # Accumulate costs from both calls
+        timing_info = {
+            "elapsed_seconds": elapsed,
+            "cost_usd": cost1.get("cost_usd", 0) + cost2.get("cost_usd", 0),
+            "input_tokens": cost1.get("input_tokens", 0) + cost2.get("input_tokens", 0),
+            "output_tokens": cost1.get("output_tokens", 0) + cost2.get("output_tokens", 0),
+            "cache_creation_tokens": cost1.get("cache_creation_tokens", 0) + cost2.get("cache_creation_tokens", 0),
+            "cache_read_tokens": cost1.get("cache_read_tokens", 0) + cost2.get("cache_read_tokens", 0),
+        }
+
+        return solution_v2_path, effective_session, timing_info
+
     def query_acceptance(
         self,
         cache_problem_dir: Path,
         output_problem_dir: Path,
         session_id: str,
         question_id: str,
+        working_dir: Optional[Path] = None,
     ) -> Tuple[Dict, Dict]:
         """
         Post-hoc query (Call 3): which suggestions did you accept?
 
         Runs from cache_problem_dir (for session) with deny_edit_paths to protect cache.
+        When working_dir is provided, runs from there instead (fresh mode).
         Writes acceptance.md to output_problem_dir.
 
         Returns (acceptance_dict, timing_info) where acceptance_dict contains:
@@ -648,10 +738,22 @@ If no changes needed, confirm the code is correct."""
 
         logger.info(f"Querying acceptance for {question_id}")
 
+        wd = working_dir or cache_problem_dir
         acceptance_path = output_problem_dir / "acceptance.md"
 
         # Build prompt - write directly to output dir
-        prompt = f"""Reflect on the feedback you received and your revision.
+        if working_dir:
+            # Fresh mode: session lives in output_problem_dir, write locally
+            prompt = f"""Reflect on the feedback you received and your revision.
+
+Create acceptance.md with the first line being exactly one of:
+ACCEPTED_ALL
+ACCEPTED_SOME
+REJECTED_ALL
+
+Then explain briefly what you accepted or rejected and why."""
+        else:
+            prompt = f"""Reflect on the feedback you received and your revision.
 
 Create {acceptance_path.resolve()} with the first line being exactly one of:
 ACCEPTED_ALL
@@ -664,14 +766,17 @@ Then explain briefly what you accepted or rejected and why."""
         prompt_path = output_problem_dir / "acceptance_prompt.md"
         prompt_path.write_text(prompt)
 
+        extra_dirs = [output_problem_dir] if not working_dir else None
+        deny_edit = [cache_problem_dir] if not working_dir else None
+
         result, _, cost_info = self._run_claude_code(
             prompt,
-            working_dir=cache_problem_dir,
+            working_dir=wd,
             model=self.coder_model,
             timeout=self.critic_timeout,
             session_id=session_id,
-            extra_dirs=[output_problem_dir],  # Allow writes to output dir
-            deny_edit_paths=[cache_problem_dir],  # Protect entire cache dir
+            extra_dirs=extra_dirs,
+            deny_edit_paths=deny_edit,
             context=f"acceptance:{question_id}",
             extra_env=self.coder_extra_env,
         )
@@ -711,26 +816,31 @@ Then explain briefly what you accepted or rejected and why."""
             with open(meta_path) as f:
                 meta = json.load(f)
 
-        # Step 1: Ensure valid session (regenerate if needed)
-        session_id = meta.get("session_id", "")
         regenerated = False
         codegen_timing = None
 
         logger.info(f"Evaluating {question_id}...")
 
-        if not self.check_session_valid(session_id, cache_problem_dir):
-            logger.info(f"Session expired for {question_id}, regenerating...")
-            session_id, codegen_timing = self.regenerate_coder(cache_problem_dir, question_id)
-            regenerated = True
-
-            # Update meta.json with new session_id and codegen_timing
-            meta["session_id"] = session_id
-            meta["codegen_timing"] = codegen_timing
-            with open(meta_path, "w") as f:
-                json.dump(meta, f, indent=2)
+        if self.revision_mode == "fresh":
+            # Fresh mode: skip Phase 1 entirely (no session check, no regeneration)
+            session_id = ""
         else:
-            # Load codegen_timing from meta if available (from prior regeneration)
-            codegen_timing = meta.get("codegen_timing")
+            # Step 1: Ensure valid session (regenerate if needed)
+            session_id = meta.get("session_id", "")
+
+            if not self.check_session_valid(session_id, cache_problem_dir):
+                logger.info(f"Session expired for {question_id}, regenerating...")
+                session_id, codegen_timing = self.regenerate_coder(cache_problem_dir, question_id)
+                regenerated = True
+
+                # Update meta.json with new session_id and codegen_timing
+                meta["session_id"] = session_id
+                meta["codegen_timing"] = codegen_timing
+                with open(meta_path, "w") as f:
+                    json.dump(meta, f, indent=2)
+            else:
+                # Load codegen_timing from meta if available (from prior regeneration)
+                codegen_timing = meta.get("codegen_timing")
 
         # Symlink problem.md (static, from dataset)
         problem_dest = output_problem_dir / "problem.md"
@@ -743,6 +853,13 @@ Then explain briefly what you accepted or rejected and why."""
         cache_solution = cache_problem_dir / "solution.py"
         if cache_solution.exists():
             shutil.copy(cache_solution, solution_v1_path)
+
+        # Copy reflection.md from cache (needed for fresh mode)
+        if self.revision_mode == "fresh":
+            cache_reflection = cache_problem_dir / "reflection.md"
+            reflection_dest = output_problem_dir / "reflection.md"
+            if cache_reflection.exists() and not reflection_dest.exists():
+                shutil.copy(cache_reflection, reflection_dest)
 
         # Step 2: Run critic
         logger.info(f"Running critic on {question_id}")
@@ -788,23 +905,36 @@ Then explain briefly what you accepted or rejected and why."""
             revision_failed_reason = None
 
             try:
-                # Run revision from cache_problem_dir (for session) with cache protected
-                # Writes directly to output_problem_dir/solution_v2.py
-                _, forked_session_id, revision_timing = self.run_revision(
-                    cache_problem_dir, output_problem_dir, session_id, question_id
-                )
-
-                # Check if revision succeeded (empty session_id means timeout/failure)
-                if not forked_session_id:
-                    logger.warning(f"Revision failed for {question_id}: timeout or no session")
-                    revision_failed_reason = "timeout_or_no_session"
-                    acceptance = None
-                else:
-                    # Step 3.5: Query acceptance (Call 3) on forked session
-                    # Writes directly to output_problem_dir/acceptance.md
-                    acceptance, acceptance_timing = self.query_acceptance(
-                        cache_problem_dir, output_problem_dir, forked_session_id, question_id
+                if self.revision_mode == "fresh":
+                    # Fresh mode: two-call session in output_problem_dir
+                    _, fresh_session_id, revision_timing = self.run_revision_fresh(
+                        output_problem_dir, question_id
                     )
+
+                    if not fresh_session_id:
+                        logger.warning(f"Fresh revision failed for {question_id}: no session")
+                        revision_failed_reason = "timeout_or_no_session"
+                        acceptance = None
+                    else:
+                        acceptance, acceptance_timing = self.query_acceptance(
+                            cache_problem_dir, output_problem_dir, fresh_session_id, question_id,
+                            working_dir=output_problem_dir,
+                        )
+                else:
+                    # Fork mode: resume coder's cached session
+                    _, forked_session_id, revision_timing = self.run_revision(
+                        cache_problem_dir, output_problem_dir, session_id, question_id
+                    )
+
+                    if not forked_session_id:
+                        logger.warning(f"Revision failed for {question_id}: timeout or no session")
+                        revision_failed_reason = "timeout_or_no_session"
+                        acceptance = None
+                    else:
+                        # Step 3.5: Query acceptance (Call 3) on forked session
+                        acceptance, acceptance_timing = self.query_acceptance(
+                            cache_problem_dir, output_problem_dir, forked_session_id, question_id
+                        )
             except Exception as e:
                 logger.warning(f"Revision failed for {question_id}: {e}")
                 revision_failed_reason = str(e)

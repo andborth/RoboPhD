@@ -166,6 +166,7 @@ class RoboPhDCodeGenEvaluator:
         critic_timeout: int = 600,
         file_mapping: Optional[Dict[str, str]] = None,
         lmstudio_base_url: str = "http://localhost:1234",
+        revision_mode: str = "fork",
     ):
         """
         Args:
@@ -185,6 +186,7 @@ class RoboPhDCodeGenEvaluator:
         self.critic_timeout = critic_timeout
         self.file_mapping = file_mapping or CODEGEN_FILE_MAPPING
         self.lmstudio_base_url = lmstudio_base_url
+        self.revision_mode = revision_mode
 
         # Resolve cache directory
         if cache_dir is not None:
@@ -281,6 +283,7 @@ class RoboPhDCodeGenEvaluator:
             codegen_timeout=self.codegen_timeout,
             critic_timeout=self.critic_timeout,
             lmstudio_base_url=self.lmstudio_base_url,
+            revision_mode=self.revision_mode,
         )
         return self._evaluator
 

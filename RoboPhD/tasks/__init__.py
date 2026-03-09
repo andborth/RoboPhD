@@ -32,6 +32,9 @@ def _ensure_builtins():
     from .codegen import make_codegen_task
     register_task(make_codegen_task())
 
+    from .code_critic import make_code_critic_task
+    register_task(make_code_critic_task())
+
     from .aime import make_aime_task
     register_task(make_aime_task())
 
