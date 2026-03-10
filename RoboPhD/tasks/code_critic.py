@@ -175,7 +175,7 @@ def make_code_critic_task() -> TaskDefinition:
             "codegen_timeout": 1200,
             "codegen_call_timeout": 1200,
             "critic_timeout": 600,
-            "evaluation_budget": 1600,
+            "evaluation_budget": 1500,
             "max_workers": 12,
         },
         test_overrides={"codegen_split": "test"},
