@@ -73,6 +73,7 @@ class MetaEvolutionManager:
         self.domain_name = domain_name
         self._domain = domain
         self._task_background = getattr(domain, 'task_background', '') if domain else ''
+        self._task_objective = getattr(domain, 'task_objective', '') if domain else ''
         self.strategies_dir = Path("RoboPhD/meta_evolution_strategies")  # Source directory
         self.output_dir = experiment_dir / "meta_evolution_output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -656,6 +657,8 @@ Remember:
         claude_md_path = self.output_dir / "CLAUDE.md"
         if not claude_md_path.exists():
             sections = []
+            if self._task_objective:
+                sections.append(f"# Domain Objective\n\n{self._task_objective}")
             if self._task_background:
                 sections.append(f"# Domain Background\n\n{self._task_background}")
             sections.append(META_EVOLUTION_ENVIRONMENT_GUIDE)

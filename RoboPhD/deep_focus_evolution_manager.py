@@ -207,6 +207,8 @@ class DeepFocusEvolutionManager:
         claude_md_path = evolution_output_dir / "CLAUDE.md"
         if not claude_md_path.exists():
             sections = []
+            if self._task_objective:
+                sections.append(f"# Domain Objective\n\n{self._task_objective}")
             if self._task_background:
                 sections.append(f"# Domain Background\n\n{self._task_background}")
             sections.append(EVOLUTION_ENVIRONMENT_GUIDE)
@@ -606,10 +608,6 @@ class DeepFocusEvolutionManager:
             artifact_lines.append(f"{idx}. `{path}` - {key.replace('_', ' ')}")
         artifact_listing = "\n".join(artifact_lines)
 
-        task_objective_line = ""
-        if self._task_objective:
-            task_objective_line = f"\n**Task objective**: {self._task_objective}\n"
-
         prompt = f"""
 {evolution_prompt}
 
@@ -634,7 +632,7 @@ Include a `Name:` line (e.g. `Name: my-agent-name`) for agent identification.
 Based on your analysis and plan in `reasoning.md`, create the agent artifacts:
 
 {artifact_listing}
-{task_objective_line}
+
 Create these artifacts in the current directory.
 
 After completing both steps, respond with: "ROUND 1 COMPLETE"
