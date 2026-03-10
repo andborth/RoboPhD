@@ -604,7 +604,7 @@ Your implementation has validation errors:
 Please fix these issues and recreate the required files.
 
 Remember:
-- `meta_config_schedule.json` is REQUIRED (even if empty: {{}})
+- At least one of `meta_config_schedule.json` or `config_delta.json` is REQUIRED
 - Strategies go in `meta_evolution_output/iteration_{iteration:03d}/new_strategies/strategy_name/`
 - Each strategy needs `strategy.md` with valid YAML frontmatter (name and description fields)
 - Python tools must have valid syntax
