@@ -827,14 +827,6 @@ class ParallelAgentResearcher:
             # Store evaluation modes
             self.dev_eval_mode = dev_eval_mode
 
-            # Create symlink to papers directory
-            papers_source = Path(__file__).parent.parent / "papers"
-            papers_link = self.experiment_dir / "papers"
-            if papers_source.exists() and not papers_link.exists():
-                try:
-                    os.symlink(papers_source.absolute(), papers_link.absolute())
-                except Exception as e:
-                    raise RuntimeError(f"Failed to create papers symlink: {e}")
 
             # Initialize state
             self.agent_pool = {}
