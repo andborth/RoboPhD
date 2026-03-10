@@ -86,13 +86,15 @@ Phase 4: Evaluation (Ground Truth)
 
 ### What The Critic Controls
 
-1. **`eval_instructions.md`** — Decision framework for the eval LLM.
-   Guides the critic's verdict (CORRECT/INCORRECT) and feedback content.
+The critic review has two steps, in this order:
 
-2. **`tools/problem_analyzer.py`** — Static analysis script.
+1. **`tools/problem_analyzer.py`** runs first as a subprocess.
    Reads solution.py and problem.md, performs analysis, writes findings
-   to tool_output/analysis.txt. The eval LLM uses this analysis
-   alongside eval_instructions to render a verdict.
+   to tool_output/analysis.txt.
+
+2. **`eval_instructions.md`** is then given to the eval LLM along with
+   the tool's analysis output. The LLM uses both to render a verdict
+   (CORRECT/INCORRECT) and write feedback.
 
 ### What The Critic Does NOT Control
 
