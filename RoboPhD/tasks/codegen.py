@@ -65,8 +65,8 @@ Phase 1: Initial Generation (Coder)
   Receives problem, generates initial solution (Code v1).
   Can execute code on visible examples only.
 
-Phase 2: Critic Review (tool-only + eval LLM)
-  Tool analyzes code → eval LLM produces verdict + feedback.
+Phase 2: Critic Review
+  Critic reviews code, produces verdict + feedback.
   Verdict: CORRECT or INCORRECT.
   If CORRECT → no revision, v2 = v1, skip to evaluation.
   If INCORRECT → proceed to Phase 3.
