@@ -78,7 +78,7 @@ def parse_args():
     )
 
     # Session management (same as researcher.py CLI)
-    parser.add_argument("--num-iterations", type=int, default=10)
+    parser.add_argument("--num-iterations", type=int, default=5)
     parser.add_argument("--resume", default=None, help="Path to experiment directory to resume")
     parser.add_argument("--extend", type=int, default=None, help="Add N more iterations to a resumed run")
     parser.add_argument("--from-iteration", type=int, default=None, help="Restart from specific iteration")
@@ -221,7 +221,7 @@ def _list_params(task):
     print()
 
     print("CLI-only arguments (not in config):")
-    print("  --num-iterations N     Number of evolution iterations (default: 10)")
+    print("  --num-iterations N     Number of evolution iterations (default: 5)")
     print("  --resume PATH          Resume from experiment directory")
     print("  --extend N             Add N more iterations to a resumed run")
     print("  --from-iteration N     Restart from specific iteration")
