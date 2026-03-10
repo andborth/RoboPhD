@@ -409,22 +409,16 @@ class RoboPhDCodeGenEvaluator:
         # Score: 1.0 if v2 passed, 0.0 otherwise
         score = 1.0 if result.get("v2_passed", False) else 0.0
 
-        # Write result.json for RoboPhD eval cache
+        # Write result.json for RoboPhD eval cache (full result minus
+        # acceptance_explanation which is already written as acceptance.md)
         if problem_dir is not None:
-            result_entry = {
-                "question_id": question_id,
-                "score": score,
-                "v1_passed": result.get("v1_passed", False),
-                "v2_passed": result.get("v2_passed", False),
-                "improved": result.get("improved", False),
-                "regressed": result.get("regressed", False),
-            }
+            result["score"] = score
+            result.pop("acceptance_explanation", None)
             with open(output_problem_dir / "result.json", "w") as f:
-                json.dump(result_entry, f, indent=2)
+                json.dump(result, f, indent=2)
 
         # Collect diagnostics (ASI)
         diagnostics = self._collect_diagnostics(output_problem_dir)
-        diagnostics["result_json"] = json.dumps(result, indent=2)
         diagnostics["cost_usd"] = eval_cost
         diagnostics["question_id"] = question_id
         diagnostics["score"] = score
