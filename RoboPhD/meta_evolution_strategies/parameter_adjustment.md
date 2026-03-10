@@ -38,22 +38,20 @@ Document your analysis:
 - New value: {N'}
 ```
 
-### 2. meta_config_schedule.json (Step 2 — Required)
+### 2. config_delta.json (Step 2 — Required)
 
-Configuration changes for the next 3 iterations. Only `examples_per_iteration` is adjusted.
+Immediate configuration changes. Only `examples_per_iteration` is adjusted.
 
 **Example** (increase):
 
 ```json
 {
-  "12": {
-    "examples_per_iteration": 20
-  }
+  "examples_per_iteration": 20
 }
 ```
 
-Note: `examples_per_iteration` only needs to appear once (it persists once set). If no change is needed, output an empty object: `{}`.
+Note: This is a flat dict (no iteration nesting). The value persists across future iterations via inheritance. If no change is needed, output an empty object: `{}`.
 
 No `new_strategies/` directory is needed — this strategy does not create evolution strategies.
 
-**Note**: All outputs are created in a single session. Step 1 (reasoning.md) is completed first, then Step 2 (meta_config_schedule.json).
+**Note**: All outputs are created in a single session. Step 1 (reasoning.md) is completed first, then Step 2 (config_delta.json).

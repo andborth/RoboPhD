@@ -87,7 +87,7 @@ class MetaEvolutionManager:
     def run_meta_evolution(
         self,
         iteration: int
-    ) -> tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
+    ) -> tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]], Dict[str, Any]]:
         """
         Execute meta-evolution for this iteration using fresh session.
 
@@ -95,8 +95,9 @@ class MetaEvolutionManager:
             iteration: Current iteration number
 
         Returns:
-            Tuple of (meta_config_schedule, cost_data):
+            Tuple of (meta_config_schedule, config_delta, cost_data):
             - meta_config_schedule: Dict mapping iteration numbers to config deltas (or None if no changes)
+            - config_delta: Dict of immediate parameter changes to apply at iteration+1 (or None)
             - cost_data: Dict containing cost tracking information (total_cost, calls, tokens_in, tokens_out)
         """
         config = self.config_manager.get_config(iteration)
@@ -162,7 +163,7 @@ class MetaEvolutionManager:
 
         # PHASE 3: Validation and installation
         logger.info("✅ Phase 3: Validating and installing outputs...")
-        meta_config_schedule = self._parse_and_validate_outputs(
+        meta_config_schedule, config_delta = self._parse_and_validate_outputs(
             iteration=iteration,
             model=model,
             total_cost_data=total_cost_data,
@@ -188,7 +189,7 @@ class MetaEvolutionManager:
         logger.info(f"Cost: ${total_cost_data['total_cost']:.4f}")
         logger.info(f"{'=' * 60}\n")
 
-        return meta_config_schedule, total_cost_data
+        return meta_config_schedule, config_delta, total_cost_data
 
     def check_budget_and_maybe_terminate(self, iteration: int) -> bool:
         """
@@ -928,7 +929,7 @@ This report is cumulative and includes performance data across all iterations.""
         total_cost_data: Dict,
         session_id: str,
         working_dir: Path
-    ) -> Dict:
+    ) -> tuple[Dict, Optional[Dict]]:
         """
         Parse and validate meta-evolution outputs (Phase 4).
 
@@ -944,7 +945,9 @@ This report is cumulative and includes performance data across all iterations.""
             working_dir: Working directory for Claude Code
 
         Returns:
-            Validated meta_config_schedule
+            Tuple of (meta_config_schedule, config_delta):
+            - meta_config_schedule: Dict mapping iteration numbers to config deltas
+            - config_delta: Optional flat dict of immediate parameter changes
         """
         iteration_dir = self.output_dir / f"iteration_{iteration:03d}"
         new_strategies_dir = iteration_dir / "new_strategies"
@@ -959,28 +962,79 @@ This report is cumulative and includes performance data across all iterations.""
 
         logger.info(f"Discovered {len(strategy_names)} new strategies: {strategy_names}")
 
-        # Validate meta_config_schedule.json (REQUIRED)
+        # Parse config_delta.json (optional — used by parameter_adjustment)
+        config_delta = None
+        config_delta_file = iteration_dir / "config_delta.json"
+        if config_delta_file.exists():
+            with open(config_delta_file) as f:
+                config_delta = json.load(f)
+
+            if not isinstance(config_delta, dict):
+                raise RuntimeError(f"config_delta.json must be a flat dict, got {type(config_delta).__name__}")
+
+            if config_delta:
+                # Validate no forbidden parameters
+                forbidden = self.config_manager._get_meta_evolution_forbidden_params()
+                forbidden_found = [p for p in config_delta if p in forbidden]
+                if forbidden_found:
+                    raise RuntimeError(
+                        f"config_delta.json contains forbidden parameters: {forbidden_found}. "
+                        f"Forbidden: {sorted(forbidden)}"
+                    )
+
+                # Validate all parameters are known
+                try:
+                    self.config_manager._validate_parameters(
+                        config_delta,
+                        "config_delta.json",
+                        ConfigSource.META_EVOLUTION
+                    )
+                except ValueError as e:
+                    raise RuntimeError(f"config_delta.json has invalid parameters: {e}")
+
+                logger.info(f"✓ Loaded config_delta.json: {config_delta}")
+            else:
+                logger.info("✓ config_delta.json is empty (no changes)")
+                config_delta = None  # Normalize empty dict to None
+
+        # Validate meta_config_schedule.json (required unless config_delta.json exists)
         config_file = iteration_dir / "meta_config_schedule.json"
         if not config_file.exists():
-            logger.warning("⚠️  meta_config_schedule.json not found, prompting for correction...")
-            cost_data = self._prompt_for_correction(
-                iteration=iteration,
-                model=model,
-                error_message="meta_config_schedule.json is missing (required). "
-                             "Please create it even if proposing no configuration changes.",
-                session_id=session_id,
-                working_dir=working_dir
-            )
-            self._accumulate_costs(total_cost_data, cost_data)
-
-            # Re-check after correction
-            if not config_file.exists():
-                raise RuntimeError(
-                    "meta_config_schedule.json still missing after correction attempt"
+            if config_delta is not None or config_delta_file.exists():
+                # config_delta.json exists — meta_config_schedule.json is optional
+                logger.info("meta_config_schedule.json not found (config_delta.json present, skipping)")
+                meta_config_schedule = {}
+            else:
+                logger.warning("⚠️  Neither meta_config_schedule.json nor config_delta.json found, prompting for correction...")
+                cost_data = self._prompt_for_correction(
+                    iteration=iteration,
+                    model=model,
+                    error_message="Neither meta_config_schedule.json nor config_delta.json found (at least one is required). "
+                                 "Please create meta_config_schedule.json or config_delta.json.",
+                    session_id=session_id,
+                    working_dir=working_dir
                 )
+                self._accumulate_costs(total_cost_data, cost_data)
 
-        with open(config_file) as f:
-            meta_config_schedule = json.load(f)
+                # Re-check after correction
+                if not config_file.exists() and not config_delta_file.exists():
+                    raise RuntimeError(
+                        "Neither meta_config_schedule.json nor config_delta.json found after correction attempt"
+                    )
+
+                # Check if config_delta.json was created during correction
+                if config_delta_file.exists() and not config_file.exists():
+                    with open(config_delta_file) as f:
+                        config_delta = json.load(f)
+                    if not config_delta:
+                        config_delta = None
+                    meta_config_schedule = {}
+                else:
+                    with open(config_file) as f:
+                        meta_config_schedule = json.load(f)
+        else:
+            with open(config_file) as f:
+                meta_config_schedule = json.load(f)
 
         # Validate structure: all keys must be numeric iteration strings > current iteration
         doc_keys = [k for k in meta_config_schedule.keys() if k.startswith('_')]
@@ -1400,7 +1454,7 @@ This report is cumulative and includes performance data across all iterations.""
             # Install validated strategy
             self._install_strategy_package(strategy_name, iteration)
 
-        return meta_config_schedule
+        return meta_config_schedule, config_delta
 
     def _request_reflection(
         self,
