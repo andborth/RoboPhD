@@ -17,12 +17,9 @@ def _resolve_cache_dir(config: Dict[str, Any]) -> Path:
     cache_dir = config.get("cache_dir")
     if cache_dir is not None:
         return Path(cache_dir)
-    cache_model_name = config.get("coder_model", "haiku-4.5").replace("/", "--")
-    tag = config.get("coder_model_tag", "")
-    if tag:
-        cache_model_name = f"{cache_model_name}_{tag}"
-    runs_dir = Path(config.get("runs_dir", "../robophd_runs"))
-    return runs_dir / "codegen_cache" / f"{cache_model_name}_v6"
+    # Default: in-repo cache (self-contained, rebuild with scripts/rebuild_code_critic_cache.py)
+    project_root = Path(__file__).parent.parent.parent
+    return project_root / "RoboPhD" / "data" / "code_critic" / "cache"
 
 
 def _evaluator_factory(config: Dict[str, Any]):
@@ -179,7 +176,6 @@ def make_code_critic_task() -> TaskDefinition:
             "codegen_timeout": 1200,
             "codegen_call_timeout": 1200,
             "critic_timeout": 600,
-            "runs_dir": "../robophd_runs",
             "evaluation_budget": 1600,
             "max_workers": 12,
         },
