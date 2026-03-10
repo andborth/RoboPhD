@@ -24,6 +24,24 @@ from utilities.claude_cli import call_claude_cli, RateLimitExceeded
 
 logger = logging.getLogger(__name__)
 
+# Import shared report block from evolution manager
+from RoboPhD.deep_focus_evolution_manager import PER_ITERATION_REPORTS
+
+META_EVOLUTION_ENVIRONMENT_GUIDE = f"""\
+# Meta-Evolution Environment
+
+## Strategy Tools
+
+When creating strategies with `strategy_tools/`, these tools are **symlinked into the evolution working directory** as `strategy_tools/`. Reference them as `python strategy_tools/<script>.py` in your strategy.md instructions.
+
+**Important for strategy_tools:**
+- Tools should use only stdlib and libraries already installed in the environment
+- Include `--help` support so Claude can discover usage
+- Reference them with imperative language in strategy.md (e.g., "Run `python strategy_tools/analyze_failures.py ...`" not "If the tool is available...")
+- The symlink will exist — do NOT include fallback instructions suggesting the tool might be missing
+
+{PER_ITERATION_REPORTS}"""
+
 
 class MetaEvolutionManager:
     """
@@ -630,11 +648,14 @@ Remember:
 
         # Write CLAUDE.md with domain background to parent (meta_evolution_output/).
         # Claude Code traverses up to find it, so all iteration subdirs inherit it.
-        if self._task_background:
-            claude_md_path = self.output_dir / "CLAUDE.md"
-            if not claude_md_path.exists():
-                claude_md_path.write_text(f"# Domain Background\n\n{self._task_background}")
-                logger.info(f"Domain background written to: {claude_md_path}")
+        claude_md_path = self.output_dir / "CLAUDE.md"
+        if not claude_md_path.exists():
+            sections = []
+            if self._task_background:
+                sections.append(f"# Domain Background\n\n{self._task_background}")
+            sections.append(META_EVOLUTION_ENVIRONMENT_GUIDE)
+            claude_md_path.write_text("\n\n".join(sections))
+            logger.info(f"CLAUDE.md written to: {claude_md_path}")
 
         prompt = f"""
 {strategy_with_budget}

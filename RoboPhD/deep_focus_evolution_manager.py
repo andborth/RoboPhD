@@ -31,6 +31,27 @@ from utilities.claude_cli import call_claude_cli, RateLimitExceeded
 
 logger = logging.getLogger(__name__)
 
+PER_ITERATION_REPORTS = """\
+## Per-Iteration Reports
+
+These reports are generated after each iteration at `../../iteration_NNN/` (relative to your working dir):
+- `error_analysis_report.md` — cross-agent accuracy comparison, per-problem pass/fail matrix, and failure summary
+- `error_index.json` — raw per-problem error data from which the error analysis report is derived
+- `cost_report.md` — per-agent LLM cost breakdown (token counts, cache hits, USD). Useful if you are instructed to pay attention to cost
+
+## CLI Tools
+
+`jq` and `tree` are installed and available."""
+
+EVOLUTION_ENVIRONMENT_GUIDE = f"""\
+# Evolution Environment
+
+## Strategy Tools
+
+If a `strategy_tools/` directory exists in your working directory, it contains Python helper scripts provided by your evolution strategy. **Run them** — they analyze prior iteration data and produce structured output to guide your work. Use `python strategy_tools/<script>.py --help` to discover usage.
+
+{PER_ITERATION_REPORTS}"""
+
 
 class EvolutionResult(NamedTuple):
     """Result of a deep focus evolution run."""
@@ -182,12 +203,15 @@ class DeepFocusEvolutionManager:
 
         # Write CLAUDE.md with domain background to evolution_output/.
         # Claude Code traverses up to find it, so all iteration subdirs inherit it.
-        if self._task_background:
-            evolution_output_dir = self.experiment_dir / "evolution_output"
-            claude_md_path = evolution_output_dir / "CLAUDE.md"
-            if not claude_md_path.exists():
-                claude_md_path.write_text(f"# Domain Background\n\n{self._task_background}")
-                logger.info(f"Domain background written to: {claude_md_path}")
+        evolution_output_dir = self.experiment_dir / "evolution_output"
+        claude_md_path = evolution_output_dir / "CLAUDE.md"
+        if not claude_md_path.exists():
+            sections = []
+            if self._task_background:
+                sections.append(f"# Domain Background\n\n{self._task_background}")
+            sections.append(EVOLUTION_ENVIRONMENT_GUIDE)
+            claude_md_path.write_text("\n\n".join(sections))
+            logger.info(f"CLAUDE.md written to: {claude_md_path}")
 
         # Create symlink to strategy tools for state persistence
         # This allows research-driven strategies to maintain state (e.g., papers_pool.json)
