@@ -118,7 +118,15 @@ def main():
         "--max-workers", type=int, default=None,
         help="Max parallel workers for evaluation (default: cpu_count // 2)",
     )
+    parser.add_argument(
+        "--runs-dir",
+        type=Path,
+        default=None,
+        help="Root directory for experiment outputs (default: ../robophd_runs relative to repo root)",
+    )
     args = parser.parse_args()
+    if args.runs_dir is None:
+        args.runs_dir = project_root.parent / "robophd_runs"
 
     if args.test_repeats < 1:
         parser.error("--test-repeats must be at least 1")
@@ -130,7 +138,7 @@ def main():
     else:
         agent_dir = args.agent_dir
         agent_name = agent_dir.name
-        results_base = Path(__file__).resolve().parent.parent / "robophd_runs" / "results" / "agent_tests" / args.task / agent_name
+        results_base = args.runs_dir / "results" / "agent_tests" / args.task / agent_name
         default_output = results_base / "test_results.json"
         if not agent_dir.exists():
             logger.error(f"Agent directory not found: {agent_dir}")
