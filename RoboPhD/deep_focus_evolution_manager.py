@@ -48,7 +48,7 @@ EVOLUTION_ENVIRONMENT_GUIDE = f"""\
 
 ## Strategy Tools
 
-If a `strategy_tools/` directory exists in your working directory, it contains Python helper scripts provided by your evolution strategy. **Run them** — they analyze prior iteration data and produce structured output to guide your work. Use `python strategy_tools/<script>.py --help` to discover usage.
+If a `strategy_tools/` directory exists in your working directory, it contains Python helper scripts provided by your evolution strategy. **Run them** — they analyze prior iteration data and produce structured output to guide your work. Use `__PYTHON_EXECUTABLE__ strategy_tools/<script>.py --help` to discover usage.
 
 {PER_ITERATION_REPORTS}"""
 
@@ -211,7 +211,7 @@ class DeepFocusEvolutionManager:
                 sections.append(f"# Domain Background\n\n{self._task_background}")
             if self._task_objective:
                 sections.append(f"# Domain Objective\n\n{self._task_objective}")
-            sections.append(EVOLUTION_ENVIRONMENT_GUIDE)
+            sections.append(EVOLUTION_ENVIRONMENT_GUIDE.replace("__PYTHON_EXECUTABLE__", sys.executable))
             claude_md_path.write_text("\n\n".join(sections))
             logger.info(f"CLAUDE.md written to: {claude_md_path}")
 

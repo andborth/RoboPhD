@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import subprocess
+import sys
 import uuid
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Any
@@ -39,12 +40,12 @@ META_EVOLUTION_ENVIRONMENT_GUIDE = f"""\
 
 ## Strategy Tools
 
-When creating strategies with `strategy_tools/`, these tools are **symlinked into the evolution working directory** as `strategy_tools/`. Reference them as `python strategy_tools/<script>.py` in your strategy.md instructions.
+When creating strategies with `strategy_tools/`, these tools are **symlinked into the evolution working directory** as `strategy_tools/`. Reference them as `__PYTHON_EXECUTABLE__ strategy_tools/<script>.py` in your strategy.md instructions.
 
 **Important for strategy_tools:**
 - Tools should use only stdlib and libraries already installed in the environment
 - Include `--help` support so Claude can discover usage
-- Reference them with imperative language in strategy.md (e.g., "Run `python strategy_tools/analyze_failures.py ...`" not "If the tool is available...")
+- Reference them with imperative language in strategy.md (e.g., "Run `__PYTHON_EXECUTABLE__ strategy_tools/analyze_failures.py ...`" not "If the tool is available...")
 - The symlink will exist — do NOT include fallback instructions suggesting the tool might be missing
 
 {PER_ITERATION_REPORTS}"""
@@ -661,7 +662,7 @@ Remember:
                 sections.append(f"# Domain Background\n\n{self._task_background}")
             if self._task_objective:
                 sections.append(f"# Domain Objective\n\n{self._task_objective}")
-            sections.append(META_EVOLUTION_ENVIRONMENT_GUIDE)
+            sections.append(META_EVOLUTION_ENVIRONMENT_GUIDE.replace("__PYTHON_EXECUTABLE__", sys.executable))
             claude_md_path.write_text("\n\n".join(sections))
             logger.info(f"CLAUDE.md written to: {claude_md_path}")
 
