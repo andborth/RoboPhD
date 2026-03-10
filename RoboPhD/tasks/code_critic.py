@@ -18,8 +18,7 @@ def _resolve_cache_dir(config: Dict[str, Any]) -> Path:
     if cache_dir is not None:
         return Path(cache_dir)
     # Default: in-repo cache (self-contained, rebuild with scripts/rebuild_code_critic_cache.py)
-    project_root = Path(__file__).parent.parent.parent
-    return project_root / "RoboPhD" / "data" / "code_critic" / "cache"
+    return Path(__file__).parent.parent / "data" / "code_critic" / "cache"
 
 
 def _evaluator_factory(config: Dict[str, Any]):

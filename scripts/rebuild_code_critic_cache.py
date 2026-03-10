@@ -25,14 +25,21 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-# Add project paths
+# Add project root to path (for RoboPhD.* and utilities.* imports)
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(PROJECT_ROOT / "RoboPhD" / "tools"))
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_CACHE_DIR = PROJECT_ROOT / "RoboPhD" / "data" / "code_critic" / "cache"
+
+# Model version mapping (mirrors run_critic_evaluation.MODEL_MAP)
+MODEL_MAP = {
+    "haiku-4.5": "claude-haiku-4-5-20251001",
+    "sonnet-4.5": "claude-sonnet-4-5-20250929",
+    "opus-4.5": "claude-opus-4-5-20251101",
+    "opus-4.6": "claude-opus-4-6",
+}
 
 # Reuse the exact prompt from run_critic_evaluation.py
 CALL_1_PROMPT = """Read problem.md and create solution.py to solve it.
@@ -71,7 +78,7 @@ def run_claude_code(
     session_id: str | None = None,
 ) -> tuple[dict, str | None]:
     """Run Claude Code CLI. Returns (result_dict, session_id)."""
-    from run_critic_evaluation import get_cli_model  # noqa: E402
+    cli_model = MODEL_MAP.get(model, model)
 
     settings = {"env": {"CLAUDE_CODE_MAX_OUTPUT_TOKENS": "128000"}}
     cmd = [
@@ -80,7 +87,7 @@ def run_claude_code(
         "--permission-mode", "bypassPermissions",
         "--settings", json.dumps(settings),
         "--add-dir", str(working_dir.resolve()),
-        "--model", get_cli_model(model),
+        "--model", cli_model,
     ]
 
     if session_id:
