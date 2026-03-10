@@ -109,7 +109,7 @@ def print_task_params(task) -> None:
     print(f"  File mapping: {task.file_mapping}")
 
     if task.config_defaults:
-        print(f"\n  Task defaults (overridable via --config):")
+        print(f"\n  Task defaults (overridable via --task-config):")
         for k, v in sorted(task.config_defaults.items()):
             print(f"    {k}: {fmt_val(v)}")
 
