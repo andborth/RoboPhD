@@ -657,10 +657,10 @@ Remember:
         claude_md_path = self.output_dir / "CLAUDE.md"
         if not claude_md_path.exists():
             sections = []
-            if self._task_objective:
-                sections.append(f"# Domain Objective\n\n{self._task_objective}")
             if self._task_background:
                 sections.append(f"# Domain Background\n\n{self._task_background}")
+            if self._task_objective:
+                sections.append(f"# Domain Objective\n\n{self._task_objective}")
             sections.append(META_EVOLUTION_ENVIRONMENT_GUIDE)
             claude_md_path.write_text("\n\n".join(sections))
             logger.info(f"CLAUDE.md written to: {claude_md_path}")
