@@ -1832,13 +1832,8 @@ class ParallelAgentResearcher:
         # Store results in test_history
         self.test_history.append(iteration_results)
 
-        # Update ELO scores
+        # Update ELO scores (includes clone penalties via _recalculate_all_elo_scores)
         self._update_elo_scores(iteration_results)
-
-        # Apply ELO penalty to clone agents
-        for agent_id in clone_agents:
-            if agent_id in self.performance_records:
-                self.performance_records[agent_id]['elo'] -= 200
 
         # Populate evolution costs from temporary storage
         if self.current_iteration_evolution_cost is not None:
