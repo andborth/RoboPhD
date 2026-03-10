@@ -56,86 +56,74 @@ def _dataset_builder(config: Dict[str, Any]) -> List[Dict]:
 _CODEGEN_BACKGROUND = """\
 ## Coder/Critic Architecture
 
-The CodeGen domain uses a 6-phase workflow with verdict branching.
-Rather than evolving the code generator directly, we evolve a **critic agent**
-that reviews code and provides feedback to the coder.
-
-**Key insight**: Learning *what feedback helps* may be more tractable than
-learning to solve problems directly.
+The CodeGen domain evolves a **critic agent** that reviews code and provides
+feedback to the coder.
 
 ### Workflow
 
-```
 Phase 1: Initial Generation (Coder)
   Receives problem, generates initial solution (Code v1).
   Can execute code on visible examples only.
 
 Phase 2: Critic Review (tool-only + eval LLM)
-  Tool analyzes code -> eval LLM produces verdict + feedback.
+  Tool analyzes code → eval LLM produces verdict + feedback.
   Verdict: CORRECT or INCORRECT.
-
-  If CORRECT -> v2 = symlink to v1, skip to evaluation.
-  If INCORRECT -> proceed to Phase 3.
+  If CORRECT → no revision, v2 = v1, skip to evaluation.
+  If INCORRECT → proceed to Phase 3.
 
 Phase 3: Revision (Coder)
-  Forks the coder's original session.
   Receives critic feedback; has discretion to accept all, some, or none.
   Produces Code v2.
 
 Phase 3.5: Acceptance Query
-  Post-hoc query: ACCEPTED_ALL / ACCEPTED_SOME / REJECTED_ALL.
+  Post-hoc query on the revision session. Coder explains its reasoning
+  and categorizes: ACCEPTED_ALL / ACCEPTED_SOME / REJECTED_ALL.
 
 Phase 4: Evaluation (Ground Truth)
   Tests both v1 and v2 against hidden test suite.
-  6-second timeout per test, one retry on timeout.
+  6-second timeout per test.
   Binary outcome: pass (all tests) / fail (any test fails).
-```
 
 ### What The Critic Controls
-
-The evolved critic consists of two files:
 
 1. **`eval_instructions.md`** — Decision framework for the eval LLM.
    Guides the critic's verdict (CORRECT/INCORRECT) and feedback content.
 
 2. **`tools/problem_analyzer.py`** — Static analysis script.
-   Reads `solution.py` and `problem.md` from its working directory,
-   performs analysis, and writes findings to `tool_output/analysis.txt`.
-   The eval LLM then uses this analysis alongside eval_instructions to
-   render a verdict. Common techniques: constraint extraction, complexity
-   estimation, test execution against visible examples, pattern heuristics.
+   Reads solution.py and problem.md, performs analysis, writes findings
+   to tool_output/analysis.txt. The eval LLM uses this analysis
+   alongside eval_instructions to render a verdict.
 
 ### What The Critic Does NOT Control
 
 - The coder's initial solution (Phase 1)
-- The coder's revision behavior (Phase 3) — coder has discretion
+- The coder's revision behavior (Phase 3) — the critic's feedback must be persuasive enough to guide the coder toward the right fix
 - Test execution infrastructure (Phase 4)
 - Problem selection or difficulty
 
-### What Coder and Critic CAN See
+### Visibility
 
-- Problem statement with examples (typically 2-3)
-- Code execution results on visible examples
+Coder and critic can see: problem statement with examples, code execution
+results on visible examples.
 
-### What They CANNOT See
-
-- Hidden test cases (edge cases, corner cases, performance limits)
-- Whether the solution is actually correct beyond visible examples
+They cannot see: hidden test cases, edge cases, performance limits, or
+whether the solution is actually correct beyond visible examples.
 
 ### Scoring
 
-- **Improved**: v1 fail -> v2 pass (critic helped fix a bug)
-- **Regressed**: v1 pass -> v2 fail (critic broke working code)
-- The binary score for each problem: 1.0 if v2 passes, 0.0 if v2 fails
+- Binary score: 1.0 if v2 passes all hidden tests, 0.0 otherwise.
+  This is the score you are seeking to maximize.
+- Improved: v1 fail → v2 pass (critic helped)
+- Regressed: v1 pass → v2 fail (critic hurt)
 - Verdict classification: TP (INCORRECT + v1 wrong), FP (INCORRECT + v1 right),
   TN (CORRECT + v1 right), FN (CORRECT + v1 wrong)
-
-### Dataset: LiveCodeBench v6
-
-Total problems: 1055 (May 2023 - April 2025).
-Evolution split: 767 problems (May 2023 - Oct 2024).
-Test split: 288 problems (Nov 2024 - Apr 2025), never seen during evolution.
 """
+
+_CODEGEN_OBJECTIVE = (
+    "Optimize the critic agent to accurately identify incorrect code solutions "
+    "and provide actionable feedback that helps the coder fix bugs. "
+    "Your overall objective is to maximize the score on problems you have never seen before."
+)
 
 
 def make_codegen_task() -> TaskDefinition:
@@ -149,12 +137,7 @@ def make_codegen_task() -> TaskDefinition:
         dataset_builder=_dataset_builder,
         file_mapping=CODEGEN_FILE_MAPPING,
         default_seed_agent="RoboPhD/codegen_agents/naive_critic",
-        objective=(
-            "Optimize the critic agent to accurately identify incorrect code solutions "
-            "and provide actionable feedback that helps the coder fix bugs. "
-            "The eval_instructions guide the critic's verdict (CORRECT/INCORRECT) and feedback. "
-            "The tool_code performs static analysis before the critic reviews the code."
-        ),
+        objective=_CODEGEN_OBJECTIVE,
         background=_CODEGEN_BACKGROUND,
         diagnostic_files={
             "problem.md": "Problem statement with examples",
