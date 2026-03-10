@@ -15,17 +15,17 @@ SUPPORTED_MODELS = {
             'cache_read': 0.50    # $0.50/MTok (cache hits & refreshes)
         }
     },
-    'opus-4.5': {
-        'name': 'claude-opus-4-5-20251101',
+    'sonnet-4.6': {
+        'name': 'claude-sonnet-4-6',
         'pricing': {
-            'input': 5.00,       # $5/MTok (base input)
-            'output': 25.00,     # $25/MTok
-            'cache_write': 6.25,  # $6.25/MTok (5m cache writes)
-            'cache_read': 0.50    # $0.50/MTok (cache hits & refreshes)
+            'input': 3.00,       # $3/MTok
+            'output': 15.00,     # $15/MTok
+            'cache_write': 3.75,  # $3.75/MTok
+            'cache_read': 0.30    # $0.30/MTok
         }
     },
     'sonnet-4.5': {
-        'name': 'claude-sonnet-4-5-20250929',  # Sonnet 4.5
+        'name': 'claude-sonnet-4-5-20250929',
         'pricing': {
             'input': 3.00,       # $3/MTok
             'output': 15.00,     # $15/MTok
@@ -45,12 +45,14 @@ SUPPORTED_MODELS = {
 }
 
 # Model to Claude CLI name mapping
-# Claude CLI expects simple aliases: 'opus', 'sonnet', 'haiku'
+# Maps our short names to full pinned model IDs for cache isolation.
+# Claude CLI accepts both aliases ('haiku') and full IDs; full IDs are
+# preferred so cache keys stay stable when aliases roll forward.
 CLAUDE_CLI_MODEL_MAP = {
-    'opus-4.6': 'opus',      # CLI expects 'opus' not 'opus-4.6'
-    'opus-4.5': 'claude-opus-4-5-20251101',  # Pin to specific version
-    'sonnet-4.5': 'sonnet',  # CLI expects 'sonnet' not 'sonnet-4.5'
-    'haiku-4.5': 'haiku'     # CLI expects 'haiku' not 'haiku-4.5'
+    'opus-4.6': 'claude-opus-4-6',
+    'sonnet-4.6': 'claude-sonnet-4-6',
+    'sonnet-4.5': 'claude-sonnet-4-5-20250929',
+    'haiku-4.5': 'claude-haiku-4-5-20251001',
 }
 
 # Default model settings

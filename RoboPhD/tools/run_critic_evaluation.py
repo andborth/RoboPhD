@@ -44,7 +44,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 # Reuse evaluation logic from evaluate_livecodebench
 from evaluate_livecodebench import evaluate_single, load_dataset
 from utilities.claude_cli import call_claude_cli, RateLimitExceeded
-from RoboPhD.config import LMSTUDIO_DEFAULT_BASE_URL
+from RoboPhD.config import CLAUDE_CLI_MODEL_MAP, LMSTUDIO_DEFAULT_BASE_URL
 
 # Setup logging
 logging.basicConfig(
@@ -67,20 +67,13 @@ Requirements:
 - Code must run in under 6 seconds on every test case
 - Include brief comments explaining your approach"""
 
-# Model version mapping (short name -> full pinned model ID)
-# Using full IDs ensures actual version pinning (aliases like "haiku" auto-update)
-# See: https://platform.claude.com/docs/en/about-claude/models/overview
-MODEL_MAP = {
-    "haiku-4.5": "claude-haiku-4-5-20251001",
-    "sonnet-4.5": "claude-sonnet-4-5-20250929",
-    "opus-4.5": "claude-opus-4-5-20251101",
-    "opus-4.6": "claude-opus-4-6",
-}
+# Alias for local use — canonical map lives in RoboPhD.config
+MODEL_MAP = CLAUDE_CLI_MODEL_MAP
 
 
 def get_cli_model(model_version: str) -> str:
     """Map versioned model name to Claude CLI model name."""
-    return MODEL_MAP.get(model_version, model_version)
+    return CLAUDE_CLI_MODEL_MAP.get(model_version, model_version)
 
 
 def validate_model_version(model: str, param_name: str) -> None:

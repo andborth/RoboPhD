@@ -31,15 +31,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_CACHE_DIR = PROJECT_ROOT / "RoboPhD" / "data" / "code_critic" / "cache"
+from RoboPhD.config import CLAUDE_CLI_MODEL_MAP
 
-# Model version mapping (mirrors run_critic_evaluation.MODEL_MAP)
-MODEL_MAP = {
-    "haiku-4.5": "claude-haiku-4-5-20251001",
-    "sonnet-4.5": "claude-sonnet-4-5-20250929",
-    "opus-4.5": "claude-opus-4-5-20251101",
-    "opus-4.6": "claude-opus-4-6",
-}
+DEFAULT_CACHE_DIR = PROJECT_ROOT / "RoboPhD" / "data" / "code_critic" / "cache"
 
 # Reuse the exact prompt from run_critic_evaluation.py
 CALL_1_PROMPT = """Read problem.md and create solution.py to solve it.
@@ -78,7 +72,7 @@ def run_claude_code(
     session_id: str | None = None,
 ) -> tuple[dict, str | None]:
     """Run Claude Code CLI. Returns (result_dict, session_id)."""
-    cli_model = MODEL_MAP.get(model, model)
+    cli_model = CLAUDE_CLI_MODEL_MAP.get(model, model)
 
     settings = {"env": {"CLAUDE_CODE_MAX_OUTPUT_TOKENS": "128000"}}
     cmd = [
