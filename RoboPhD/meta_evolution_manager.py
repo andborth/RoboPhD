@@ -40,12 +40,12 @@ META_EVOLUTION_ENVIRONMENT_GUIDE = f"""\
 
 ## Strategy Tools
 
-When creating strategies with `strategy_tools/`, these tools are **symlinked into the evolution working directory** as `strategy_tools/`. Reference them as `__PYTHON_EXECUTABLE__ strategy_tools/<script>.py` in your strategy.md instructions.
+When creating strategies with `strategy_tools/`, these tools are **symlinked into the evolution working directory** as `strategy_tools/`. Reference them as `python strategy_tools/<script>.py` in your strategy.md instructions.
 
 **Important for strategy_tools:**
 - Tools should use only stdlib and libraries already installed in the environment
 - Include `--help` support so Claude can discover usage
-- Reference them with imperative language in strategy.md (e.g., "Run `__PYTHON_EXECUTABLE__ strategy_tools/analyze_failures.py ...`" not "If the tool is available...")
+- Reference them with imperative language in strategy.md (e.g., "Run `python strategy_tools/analyze_failures.py ...`" not "If the tool is available...")
 - The symlink will exist — do NOT include fallback instructions suggesting the tool might be missing
 
 {PER_ITERATION_REPORTS}"""
