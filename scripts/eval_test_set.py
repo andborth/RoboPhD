@@ -130,7 +130,8 @@ def main():
     else:
         agent_dir = args.agent_dir
         agent_name = agent_dir.name
-        default_output = agent_dir / "test_results.json"
+        results_base = Path(__file__).resolve().parent.parent / "robophd_runs" / "results" / "agent_tests" / args.task / agent_name
+        default_output = results_base / "test_results.json"
         if not agent_dir.exists():
             logger.error(f"Agent directory not found: {agent_dir}")
             sys.exit(1)
