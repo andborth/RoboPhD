@@ -67,10 +67,6 @@ Requirements:
 - Code must run in under 6 seconds on every test case
 - Include brief comments explaining your approach"""
 
-# Alias for local use — canonical map lives in RoboPhD.config
-MODEL_MAP = CLAUDE_CLI_MODEL_MAP
-
-
 def get_cli_model(model_version: str) -> str:
     """Map versioned model name to Claude CLI model name."""
     return CLAUDE_CLI_MODEL_MAP.get(model_version, model_version)
@@ -78,10 +74,10 @@ def get_cli_model(model_version: str) -> str:
 
 def validate_model_version(model: str, param_name: str) -> None:
     """
-    Validate that model name is a versioned name from MODEL_MAP.
+    Validate that model name is a versioned name from CLAUDE_CLI_MODEL_MAP.
 
     Raises ValueError if an Anthropic-looking model name (starts with haiku,
-    sonnet, opus, or claude) is not in MODEL_MAP. Non-Anthropic models
+    sonnet, opus, or claude) is not in CLAUDE_CLI_MODEL_MAP. Non-Anthropic models
     (e.g., 'qwen/qwen3-coder-30b') are accepted as-is since they already
     have unique names for cache isolation.
     """
@@ -90,8 +86,8 @@ def validate_model_version(model: str, param_name: str) -> None:
     if not any(model.startswith(p) for p in _ANTHROPIC_PREFIXES):
         return
     # Anthropic model - must be a known versioned name
-    if model not in MODEL_MAP:
-        valid_names = ", ".join(sorted(MODEL_MAP.keys()))
+    if model not in CLAUDE_CLI_MODEL_MAP:
+        valid_names = ", ".join(sorted(CLAUDE_CLI_MODEL_MAP.keys()))
         raise ValueError(
             f"Invalid {param_name}: '{model}'. "
             f"Must use versioned model name for cache isolation. "
