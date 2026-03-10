@@ -2922,28 +2922,28 @@ class ParallelAgentResearcher:
                 meta_start_time = time.time()
                 try:
                     # Run meta-evolution
-                    meta_config_schedule, config_delta, meta_cost_data = self.meta_evolution_manager.run_meta_evolution(iteration)
+                    meta_result = self.meta_evolution_manager.run_meta_evolution(iteration)
 
                     # Store meta-evolution costs
                     if len(self.iteration_claude_costs) >= iteration:
-                        self.iteration_claude_costs[iteration - 1]['meta_evolution_cost'] = meta_cost_data.get('total_cost', 0.0)
-                        self.iteration_claude_costs[iteration - 1]['meta_evolution_calls'] = meta_cost_data.get('calls', 0)
-                        self.iteration_claude_costs[iteration - 1]['meta_evolution_tokens_in'] = meta_cost_data.get('tokens_in', 0)
-                        self.iteration_claude_costs[iteration - 1]['meta_evolution_tokens_out'] = meta_cost_data.get('tokens_out', 0)
+                        self.iteration_claude_costs[iteration - 1]['meta_evolution_cost'] = meta_result.cost_data.get('total_cost', 0.0)
+                        self.iteration_claude_costs[iteration - 1]['meta_evolution_calls'] = meta_result.cost_data.get('calls', 0)
+                        self.iteration_claude_costs[iteration - 1]['meta_evolution_tokens_in'] = meta_result.cost_data.get('tokens_in', 0)
+                        self.iteration_claude_costs[iteration - 1]['meta_evolution_tokens_out'] = meta_result.cost_data.get('tokens_out', 0)
 
                     # If meta-evolution proposed changes, integrate them
-                    if meta_config_schedule:
-                        self.config_manager.integrate_meta_config_schedule(meta_config_schedule, iteration)
-                        logger.info(f"✓ Integrated meta_config_schedule with {len(meta_config_schedule)} iteration changes")
+                    if meta_result.meta_config_schedule:
+                        self.config_manager.integrate_meta_config_schedule(meta_result.meta_config_schedule, iteration)
+                        logger.info(f"✓ Integrated meta_config_schedule with {len(meta_result.meta_config_schedule)} iteration changes")
 
-                    if config_delta:
+                    if meta_result.config_delta:
                         self.config_manager.apply_delta(
                             iteration=iteration + 1,
-                            delta=config_delta,
+                            delta=meta_result.config_delta,
                             source=ConfigSource.META_EVOLUTION,
-                            rationale=f"Immediate meta-evolution parameter adjustment: {config_delta}"
+                            rationale=f"Immediate meta-evolution parameter adjustment: {meta_result.config_delta}"
                         )
-                        logger.info(f"✓ Applied immediate config delta: {config_delta}")
+                        logger.info(f"✓ Applied immediate config delta: {meta_result.config_delta}")
 
                     # Save checkpoint again with meta-evolution results
                     self._save_checkpoint(iteration)

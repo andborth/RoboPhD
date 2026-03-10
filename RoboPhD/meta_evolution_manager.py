@@ -17,12 +17,19 @@ import os
 import subprocess
 import uuid
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, NamedTuple, Optional, Any
 
 from RoboPhD.config_manager import ConfigManager, ConfigSource
 from utilities.claude_cli import call_claude_cli, RateLimitExceeded
 
 logger = logging.getLogger(__name__)
+
+
+class MetaEvolutionResult(NamedTuple):
+    """Result from a meta-evolution run."""
+    meta_config_schedule: Optional[Dict[str, Any]]
+    config_delta: Optional[Dict[str, Any]]
+    cost_data: Dict[str, Any]
 
 # Import shared report block from evolution manager
 from RoboPhD.deep_focus_evolution_manager import PER_ITERATION_REPORTS
@@ -87,7 +94,7 @@ class MetaEvolutionManager:
     def run_meta_evolution(
         self,
         iteration: int
-    ) -> tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]], Dict[str, Any]]:
+    ) -> MetaEvolutionResult:
         """
         Execute meta-evolution for this iteration using fresh session.
 
@@ -95,10 +102,7 @@ class MetaEvolutionManager:
             iteration: Current iteration number
 
         Returns:
-            Tuple of (meta_config_schedule, config_delta, cost_data):
-            - meta_config_schedule: Dict mapping iteration numbers to config deltas (or None if no changes)
-            - config_delta: Dict of immediate parameter changes to apply at iteration+1 (or None)
-            - cost_data: Dict containing cost tracking information (total_cost, calls, tokens_in, tokens_out)
+            MetaEvolutionResult with meta_config_schedule, config_delta, and cost_data
         """
         config = self.config_manager.get_config(iteration)
         strategy_name = config["meta_evolution_strategy"]
@@ -189,7 +193,7 @@ class MetaEvolutionManager:
         logger.info(f"Cost: ${total_cost_data['total_cost']:.4f}")
         logger.info(f"{'=' * 60}\n")
 
-        return meta_config_schedule, config_delta, total_cost_data
+        return MetaEvolutionResult(meta_config_schedule, config_delta, total_cost_data)
 
     def check_budget_and_maybe_terminate(self, iteration: int) -> bool:
         """
@@ -997,44 +1001,39 @@ This report is cumulative and includes performance data across all iterations.""
                 logger.info("✓ config_delta.json is empty (no changes)")
                 config_delta = None  # Normalize empty dict to None
 
-        # Validate meta_config_schedule.json (required unless config_delta.json exists)
+        # Load meta_config_schedule.json (required unless config_delta.json exists)
         config_file = iteration_dir / "meta_config_schedule.json"
-        if not config_file.exists():
-            if config_delta is not None or config_delta_file.exists():
-                # config_delta.json exists — meta_config_schedule.json is optional
-                logger.info("meta_config_schedule.json not found (config_delta.json present, skipping)")
-                meta_config_schedule = {}
-            else:
-                logger.warning("⚠️  Neither meta_config_schedule.json nor config_delta.json found, prompting for correction...")
-                cost_data = self._prompt_for_correction(
-                    iteration=iteration,
-                    model=model,
-                    error_message="Neither meta_config_schedule.json nor config_delta.json found (at least one is required). "
-                                 "Please create meta_config_schedule.json or config_delta.json.",
-                    session_id=session_id,
-                    working_dir=working_dir
+        has_config_delta = config_delta is not None or config_delta_file.exists()
+
+        if not config_file.exists() and not has_config_delta:
+            # Neither file exists — prompt for correction
+            logger.warning("⚠️  Neither meta_config_schedule.json nor config_delta.json found, prompting for correction...")
+            cost_data = self._prompt_for_correction(
+                iteration=iteration,
+                model=model,
+                error_message="Neither meta_config_schedule.json nor config_delta.json found (at least one is required). "
+                             "Please create meta_config_schedule.json or config_delta.json.",
+                session_id=session_id,
+                working_dir=working_dir
+            )
+            self._accumulate_costs(total_cost_data, cost_data)
+
+            if not config_file.exists() and not config_delta_file.exists():
+                raise RuntimeError(
+                    "Neither meta_config_schedule.json nor config_delta.json found after correction attempt"
                 )
-                self._accumulate_costs(total_cost_data, cost_data)
 
-                # Re-check after correction
-                if not config_file.exists() and not config_delta_file.exists():
-                    raise RuntimeError(
-                        "Neither meta_config_schedule.json nor config_delta.json found after correction attempt"
-                    )
+            # Re-check: correction may have created config_delta.json
+            if config_delta_file.exists() and config_delta is None:
+                with open(config_delta_file) as f:
+                    config_delta = json.load(f) or None
 
-                # Check if config_delta.json was created during correction
-                if config_delta_file.exists() and not config_file.exists():
-                    with open(config_delta_file) as f:
-                        config_delta = json.load(f)
-                    if not config_delta:
-                        config_delta = None
-                    meta_config_schedule = {}
-                else:
-                    with open(config_file) as f:
-                        meta_config_schedule = json.load(f)
-        else:
+        if config_file.exists():
             with open(config_file) as f:
                 meta_config_schedule = json.load(f)
+        else:
+            logger.info("meta_config_schedule.json not found (config_delta.json present, skipping)")
+            meta_config_schedule = {}
 
         # Validate structure: all keys must be numeric iteration strings > current iteration
         doc_keys = [k for k in meta_config_schedule.keys() if k.startswith('_')]
