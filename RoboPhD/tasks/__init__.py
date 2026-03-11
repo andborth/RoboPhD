@@ -47,8 +47,11 @@ def _ensure_builtins():
     except ImportError:
         pass  # dspy/datasets not installed — arc_agi task unavailable
 
-    from .cant_be_late import make_cant_be_late_task
-    register_task(make_cant_be_late_task())
+    try:
+        from .cant_be_late import make_cant_be_late_task
+        register_task(make_cant_be_late_task())
+    except ImportError:
+        pass  # configargparse/colorama/numpy not installed — cant_be_late task unavailable
 
 
 def get_task(name: str) -> TaskDefinition:
