@@ -725,7 +725,7 @@ If no changes needed, confirm the code is correct."""
         """
         start = time.time()
 
-        logger.info(f"Querying acceptance for {question_id}")
+        logger.debug(f"Querying acceptance for {question_id}")
 
         wd = working_dir or cache_problem_dir
         acceptance_path = output_problem_dir / "acceptance.md"
@@ -808,7 +808,7 @@ Then explain briefly what you accepted or rejected and why."""
         regenerated = False
         codegen_timing = None
 
-        logger.info(f"Evaluating {question_id}...")
+        logger.debug(f"Evaluating {question_id}...")
 
         if self.revision_mode == "fresh":
             # Fresh mode: skip Phase 1 entirely (no session check, no regeneration)
@@ -851,7 +851,7 @@ Then explain briefly what you accepted or rejected and why."""
                 shutil.copy(cache_reflection, reflection_dest)
 
         # Step 2: Run critic
-        logger.info(f"Running critic on {question_id}")
+        logger.debug(f"Running critic on {question_id}")
         feedback_path, critic_timing = self.run_critic(cache_problem_dir, output_problem_dir, question_id)
 
         # Check if feedback.md was actually created (handles timeout/failure cases)
@@ -882,14 +882,14 @@ Then explain briefly what you accepted or rejected and why."""
 
         if verdict is True:
             # CORRECT - no revision needed, symlink v2 to v1
-            logger.info(f"Verdict CORRECT for {question_id}, skipping revision")
+            logger.debug(f"Verdict CORRECT for {question_id}, skipping revision")
             if solution_v2_path.exists() or solution_v2_path.is_symlink():
                 solution_v2_path.unlink()
             solution_v2_path.symlink_to("solution.py")
             acceptance = None  # No revision, skip Call 3
         else:
             # INCORRECT - apply revision
-            logger.info(f"Running revision on {question_id}")
+            logger.debug(f"Running revision on {question_id}")
             revision_attempted = True
             revision_failed_reason = None
 
