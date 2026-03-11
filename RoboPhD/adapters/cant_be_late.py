@@ -181,6 +181,26 @@ class CantBeLateEvaluator:
 
         score = -cost
         diagnostics = simulation_success_info(score, example, details)
+
+        # Build readable summary for evolution AI (string values get written as files)
+        config = example.get("config", {})
+        summary_lines = [
+            f"# Simulation Result",
+            f"",
+            f"- **Trace**: {os.path.basename(example.get('trace_file', '?'))}",
+            f"- **Duration**: {config.get('duration', '?')}h, **Deadline**: {config.get('deadline', '?')}h, **Overhead**: {config.get('overhead', '?')}h",
+            f"- **Cost**: ${cost:.2f} (score: {score:.2f})",
+        ]
+        output = diagnostics.get("Output", {})
+        if output.get("timeline"):
+            summary_lines.append(f"- **Timeline**: {output['timeline']}")
+        if output.get("segments"):
+            summary_lines.append(f"- **Segments**: {output['segments']}")
+        spot_avail = diagnostics.get("Input", {}).get("spot_availability")
+        if spot_avail and spot_avail != "N/A":
+            summary_lines.append(f"- **Spot availability**: {spot_avail}")
+        diagnostics["summary.md"] = "\n".join(summary_lines)
+
         self._write_result(problem_dir, example, score, cost=cost)
         self._bump_count()
         return score, diagnostics

@@ -88,6 +88,7 @@ def make_cant_be_late_task() -> TaskDefinition:
         objective=OBJECTIVE,
         background=BACKGROUND,
         diagnostic_files={
+            "summary.md": "Simulation result: cost, timeline, spot availability",
             "error.md": "Strategy syntax/simulation error (if any)",
         },
         config_defaults={
