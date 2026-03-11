@@ -55,15 +55,7 @@ CANT_BE_LATE_FILE_MAPPING = {
 
 OBJECTIVE = OPTIMIZATION_OBJECTIVE
 
-BACKGROUND = OPTIMIZATION_BACKGROUND + """
-
-RoboPhD-specific notes:
-- The agent file is `agent.py` containing a Strategy subclass
-- The strategy's `_step()` method is called at each simulation tick
-- Available state: `self.env`, `self.task_duration`, `self.task_done_time`,
-  `self.deadline`, `self.restart_overhead`, plus args `last_cluster_type` and `has_spot`
-- Score = -cost (negative dollars). Higher is better. Failed simulations score -100,000.
-- Simulations run as subprocesses — no LLM calls, pure algorithmic optimization."""
+BACKGROUND = OPTIMIZATION_BACKGROUND
 
 # ---------------------------------------------------------------------------
 # Default dataset root
