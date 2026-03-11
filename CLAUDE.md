@@ -18,6 +18,7 @@ RoboPhD is a multi-domain evolution system that implements a three-level AI hier
 - **AIME**: Evolving math reasoning prompts on AIME 2022-2024
 - **Text2SQL**: Evolving database analysis agents for BIRD benchmark SQL generation
 - **ARC-AGI**: Evolving abstract reasoning agents (Gemini via OpenRouter)
+- **Can't Be Late**: Evolving cloud scheduling strategies on AWS spot traces (NSDI'24)
 - **CodeCritic**: CodeGen variant with fresh-session revision (no code generation)
 
 New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `TaskDefinition` with an evaluator function, dataset builder, and file mapping.
@@ -33,6 +34,7 @@ New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `
 | AIME | AIME 2022-2024 | `system_prompt.md` |
 | Text2SQL | BIRD | `eval_instructions.md` + `tools/analyze_db.py` + `verify_prompt.md` |
 | ARC-AGI | ARC-AGI (HuggingFace) | `agent.py` |
+| Can't Be Late | AWS spot traces (NSDI'24) | `agent.py` |
 | CodeCritic | LiveCodeBench | `eval_instructions.md` + `tools/problem_analyzer.py` |
 
 ## Key Commands
@@ -65,6 +67,10 @@ python scripts/run_robophd.py --task text2sql --num-iterations 10
 
 # ARC-AGI evolution
 python scripts/run_robophd.py --task arc_agi --num-iterations 10
+
+# Can't Be Late evolution (download traces first)
+bash scripts/download_cant_be_late_traces.sh
+python scripts/run_robophd.py --task cant_be_late --num-iterations 10
 
 # Quick test
 python scripts/run_robophd.py --task codegen --num-iterations 2 \
@@ -202,6 +208,7 @@ Agents are directories containing text files declared by the task's `file_mappin
 | AIME | `{"system_prompt": "system_prompt.md"}` | `RoboPhD/aime_agents/baseline/` |
 | Text2SQL | `{"eval_instructions": "eval_instructions.md", "database_analysis_code": "tools/analyze_db.py", "verify_prompt": "verify_prompt.md"}` | `RoboPhD/text2sql_agents/naive/` |
 | ARC-AGI | `{"agent_code": "agent.py"}` | `RoboPhD/arcagi_agents/baseline/` |
+| Can't Be Late | `{"agent_code": "agent.py"}` | `RoboPhD/cant_be_late_agents/baseline/` |
 | CodeCritic | `{"eval_instructions": "eval_instructions.md", "tool_code": "tools/problem_analyzer.py"}` | `RoboPhD/codegen_agents/naive_critic/` |
 
 Conversion between agent directories and flat candidate dicts is handled by `candidate_utils.py` (`extract_candidate`, `materialize_candidate`).
@@ -301,6 +308,7 @@ Available meta-evolution strategies:
 - **`tasks/aime.py`**: AIME task — math reasoning prompt evolution
 - **`tasks/text2sql.py`**: Text2SQL task — BIRD benchmark SQL generation
 - **`tasks/arc_agi.py`**: ARC-AGI task — abstract reasoning agent evolution
+- **`tasks/cant_be_late.py`**: Can't Be Late task — cloud scheduling strategy evolution
 
 ### Core
 - **`researcher.py`**: Evolution loop orchestrator (called by `run_robophd.py`)
@@ -317,6 +325,9 @@ Available meta-evolution strategies:
 - **`adapters/gepa_aime.py`**: GEPA adapter for AIME evaluator
 - **`adapters/gepa_arc_agi.py`**: ARC-AGI evaluator, TrackedLLM (with cost fix), dataset splits
 - **`adapters/arc_agi_utils_unmodified.py`**: Vendored GEPA utils (exact copy, do not modify)
+- **`adapters/cant_be_late.py`**: Can't Be Late evaluator, dataset loading
+- **`adapters/cant_be_late_utils_unmodified/`**: Vendored GEPA utils + simulator (do not modify)
+- **`adapters/cant_be_late_constants_unmodified.py`**: Vendored constants (exact copy, do not modify)
 
 ### Config
 - **`config.py`**: Model mappings and fallbacks
@@ -363,6 +374,7 @@ Available meta-evolution strategies:
 - **CodeGen**: See [docs/claude/codegen.md](docs/claude/codegen.md) for test execution issues
 - **Text2SQL**: See [docs/claude/text2sql.md](docs/claude/text2sql.md) for database-related issues
 - **ARC-AGI**: Requires `requirements-gepa.txt` (dspy, datasets) and `OPENROUTER_API_KEY`. Default solver: `gemini-3.1-flash-lite-preview` via OpenRouter. Cost tracking uses `resp.usage.cost` from OpenRouter (litellm's pricing DB doesn't cover these models).
+- **Can't Be Late**: Requires trace data download via `bash scripts/download_cant_be_late_traces.sh`. Requires `configargparse`, `colorama`, `pyyaml` (simulator dependencies). No LLM calls — pure algorithmic optimization via subprocess simulation.
 
 ## License
 

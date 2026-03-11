@@ -47,6 +47,9 @@ def _ensure_builtins():
     except ImportError:
         pass  # dspy/datasets not installed — arc_agi task unavailable
 
+    from .cant_be_late import make_cant_be_late_task
+    register_task(make_cant_be_late_task())
+
 
 def get_task(name: str) -> TaskDefinition:
     """Look up a task by name. Raises KeyError if not found."""
