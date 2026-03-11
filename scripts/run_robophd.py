@@ -36,7 +36,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from RoboPhD.config_manager import ConfigManager, ConfigSource
+from RoboPhD.config_manager import ConfigManager, ConfigSource, IMMUTABLE_PARAMS
 from RoboPhD.adapters.runner_utils import parse_config_arg, print_task_params, fmt_val
 from RoboPhD.tasks import get_task, list_tasks
 
@@ -342,6 +342,20 @@ def main():
             logger.info(f"Extending by {args.extend} iterations (to {num_iterations} total)")
         else:
             num_iterations = checkpoint_num_iterations
+
+        # Apply CLI overrides (--engine-config) as a delta on the resume iteration
+        if engine_config:
+            cli_delta, _ = split_config(engine_config, task)
+            # Remove keys that can't change after init
+            cli_delta = {k: v for k, v in cli_delta.items() if k not in IMMUTABLE_PARAMS}
+            if cli_delta:
+                config_manager.apply_delta(
+                    iteration=resume_from,
+                    delta=cli_delta,
+                    source=ConfigSource.CLI,
+                    rationale=f"CLI --engine-config override on resume: {cli_delta}",
+                )
+                logger.info(f"Applied CLI config overrides at iteration {resume_from}: {cli_delta}")
 
         researcher = ParallelAgentResearcher(
             config_manager=config_manager,
