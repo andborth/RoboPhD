@@ -18,7 +18,6 @@ Usage:
     )
 """
 
-import json
 import logging
 import os
 import shutil
@@ -155,7 +154,6 @@ class CantBeLateEvaluator:
                 "Error": syntax_error or "Syntax validation failed",
                 "error.md": f"# Syntax/Structure Error\n\n```\n{syntax_error}\n```",
             }
-            self._write_result(problem_dir, example, score, error="syntax")
             self._bump_count()
             return score, diagnostics
 
@@ -175,7 +173,6 @@ class CantBeLateEvaluator:
             score = FAILED_SCORE
             diagnostics = simulation_failure_info(error, example)
             diagnostics["error.md"] = f"# Simulation Error\n\n```\n{error}\n```"
-            self._write_result(problem_dir, example, score, error="simulation")
             self._bump_count()
             return score, diagnostics
 
@@ -201,25 +198,8 @@ class CantBeLateEvaluator:
             summary_lines.append(f"- **Spot availability**: {spot_avail}")
         diagnostics["summary.md"] = "\n".join(summary_lines)
 
-        self._write_result(problem_dir, example, score, cost=cost)
         self._bump_count()
         return score, diagnostics
-
-    def _write_result(self, problem_dir, example, score, cost=None, error=None):
-        """Write result.json if problem_dir provided."""
-        if problem_dir is None:
-            return
-        problem_dir = Path(problem_dir)
-        problem_dir.mkdir(parents=True, exist_ok=True)
-        result_entry = {
-            "trace_file": os.path.basename(example.get("trace_file", "")),
-            "config": example.get("config", {}),
-            "score": score,
-            "cost": cost if cost is not None else (-score if score != FAILED_SCORE else None),
-            "error": error,
-        }
-        with open(problem_dir / "result.json", "w") as f:
-            json.dump(result_entry, f, indent=2)
 
     def _bump_count(self):
         with self._lock:
