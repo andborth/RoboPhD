@@ -345,9 +345,18 @@ def main():
 
         # Apply CLI overrides (--engine-config) as a delta on the resume iteration
         if engine_config:
-            cli_delta, _ = split_config(engine_config, task)
-            # Remove keys that can't change after init
-            cli_delta = {k: v for k, v in cli_delta.items() if k not in IMMUTABLE_PARAMS}
+            cli_delta, task_only = split_config(engine_config, task)
+            if task_only:
+                raise SystemExit(
+                    f"Task-only keys not supported in --engine-config on resume: {list(task_only)}\n"
+                    f"Use --task-config for task-level overrides."
+                )
+            immutable = [k for k in cli_delta if k in IMMUTABLE_PARAMS]
+            if immutable:
+                raise SystemExit(
+                    f"Immutable keys cannot be changed on resume: {immutable}\n"
+                    f"These are fixed at run creation: {', '.join(IMMUTABLE_PARAMS)}"
+                )
             if cli_delta:
                 config_manager.apply_delta(
                     iteration=resume_from,
