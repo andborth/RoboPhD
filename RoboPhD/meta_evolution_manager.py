@@ -796,6 +796,11 @@ Framework will:
 - Integrate meta_config_schedule via ConfigManager
 """
 
+        # Save meta-evolution prompt for debugging and reproducibility
+        meta_prompt_file = iteration_output / "meta_evolution_prompt.md"
+        meta_prompt_file.write_text(prompt)
+        logger.info(f"Meta-evolution prompt saved to: {meta_prompt_file}")
+
         # Single call for planning and implementation
         return self._call_claude_code(
             prompt=prompt,
