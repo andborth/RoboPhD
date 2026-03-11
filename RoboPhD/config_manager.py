@@ -88,7 +88,7 @@ class ConfigManager:
             "max_workers": None,  # None = Python default: min(32, cpu_count+4)
 
             # Timeouts
-            "evolution_timeout": 1800,
+            "evolution_timeout": 3600,
             "llm_call_timeout": 120,  # Per-call LLM timeout (2 min) - affects local models
 
             # Other
