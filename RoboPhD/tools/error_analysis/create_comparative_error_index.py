@@ -331,11 +331,20 @@ def build_error_index(iteration_dir: Path) -> Dict:
                     {'question_id': qid, 'score': s}
                 )
 
+    # Build scores_by_question: {qid: {agent_display: score}}
+    scores_by_question = {}
+    for qid, agents_results in results['by_question'].items():
+        scores_by_question[qid] = {
+            strip_agent_prefix(agent): r.get('score', 0)
+            for agent, r in agents_results.items()
+        }
+
     return {
         'summary': summary,
         'by_agent': by_agent,
         'cross_agent_patterns': cross_agent_patterns,
         'non_binary_scores': non_binary_scores,
+        'scores_by_question': scores_by_question,
     }
 
 

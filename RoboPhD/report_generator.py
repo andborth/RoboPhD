@@ -33,6 +33,245 @@ def format_non_binary_scores(non_binary: dict) -> list:
     return lines
 
 
+def is_continuous_scoring(scores_by_question: dict) -> bool:
+    """Detect whether scores are continuous (not mostly binary).
+
+    Returns True if scores should use continuous-score report format.
+    Binary format is used when >= 80% of scores are exactly 0 or 1,
+    AND all scores are in [0, 1].
+    """
+    all_scores = []
+    for qid, agent_scores in scores_by_question.items():
+        for agent, score in agent_scores.items():
+            all_scores.append(score)
+
+    if not all_scores:
+        return False
+
+    # Any score outside [0, 1] → continuous
+    if any(s < 0.0 or s > 1.0 for s in all_scores):
+        return True
+
+    # Less than 80% binary → continuous
+    binary_count = sum(1 for s in all_scores if s in (0, 0.0, 1, 1.0))
+    if binary_count / len(all_scores) < 0.8:
+        return True
+
+    return False
+
+
+def _ranking_str(agent_scores: list[tuple[str, float]]) -> str:
+    """Build ranking string like 'A > B = C' from sorted (agent, score) pairs.
+
+    Input must be sorted descending by score.
+    """
+    if not agent_scores:
+        return ""
+
+    parts = [agent_scores[0][0]]
+    for i in range(1, len(agent_scores)):
+        prev_score = agent_scores[i - 1][1]
+        curr_score = agent_scores[i][1]
+        separator = " = " if curr_score == prev_score else " > "
+        parts.append(separator + agent_scores[i][0])
+    return "".join(parts)
+
+
+def format_continuous_score_table(scores_by_question: dict, agents: list[str]) -> list[str]:
+    """Build score comparison table for continuous-score tasks (iteration report).
+
+    Sorted by best agent's rank on each problem, then second-best, etc.
+    """
+    if not scores_by_question or not agents:
+        return []
+
+    # Compute mean scores for agent ordering (best overall first)
+    agent_totals: dict[str, list[float]] = {a: [] for a in agents}
+    for qid, agent_scores in scores_by_question.items():
+        for agent in agents:
+            if agent in agent_scores:
+                agent_totals[agent].append(agent_scores[agent])
+
+    agent_means = {
+        a: (sum(scores) / len(scores) if scores else 0.0)
+        for a, scores in agent_totals.items()
+    }
+    sorted_agents = sorted(agents, key=lambda a: agent_means[a], reverse=True)
+
+    # Build rows: (sort_key, problem_id, scores, ranking_str)
+    rows = []
+    for qid, agent_scores in scores_by_question.items():
+        # Rank agents on this problem (descending by score)
+        scored = [(a, agent_scores.get(a, float('-inf'))) for a in sorted_agents]
+        scored_sorted = sorted(scored, key=lambda x: x[1], reverse=True)
+        ranking = _ranking_str(scored_sorted)
+
+        # Sort key: rank of each agent (by overall-best ordering)
+        # For each sorted_agent, what rank did they get on this problem?
+        ranks = {}
+        current_rank = 1
+        for i, (a, s) in enumerate(scored_sorted):
+            if i > 0 and s < scored_sorted[i - 1][1]:
+                current_rank = i + 1
+            ranks[a] = current_rank
+
+        sort_key = tuple(ranks[a] for a in sorted_agents)
+        rows.append((sort_key, qid, agent_scores, ranking))
+
+    rows.sort(key=lambda r: r[0])
+
+    # Summary header
+    lines = [
+        "## Score Summary",
+        "",
+        "| Agent | Mean Score | Problems |",
+        "|-------|-----------|----------|",
+    ]
+    for agent in sorted_agents:
+        scores = agent_totals[agent]
+        mean = sum(scores) / len(scores) if scores else 0.0
+        lines.append(f"| {agent} | {mean:.3f} | {len(scores)} |")
+    lines.append("")
+
+    # Win/tie counts
+    win_counts: dict[str, int] = {a: 0 for a in sorted_agents}
+    for _, qid, agent_scores, _ in rows:
+        scored = [(a, agent_scores.get(a, float('-inf'))) for a in sorted_agents]
+        best_score = max(s for _, s in scored)
+        winners = [a for a, s in scored if s == best_score]
+        if len(winners) == 1:
+            win_counts[winners[0]] += 1
+
+    win_parts = [f"{a}: {win_counts[a]}" for a in sorted_agents]
+    lines.append(f"**Solo wins**: {', '.join(win_parts)}")
+    lines.append("")
+
+    # Score comparison table
+    lines.extend([
+        "## Score Comparison",
+        "",
+    ])
+
+    # Table header
+    header = "| Problem |"
+    separator = "|---------|"
+    for agent in sorted_agents:
+        header += f" {agent} |"
+        separator += "--------|"
+    header += " Ranking |"
+    separator += "---------|"
+    lines.append(header)
+    lines.append(separator)
+
+    for sort_key, qid, agent_scores, ranking in rows:
+        row = f"| {qid} |"
+        for agent in sorted_agents:
+            score = agent_scores.get(agent)
+            if score is not None:
+                row += f" {score:.3f} |"
+            else:
+                row += " — |"
+        row += f" {ranking} |"
+        lines.append(row)
+
+    lines.append("")
+    return lines
+
+
+def format_continuous_score_table_deep_focus(
+    scores_by_question: dict,
+    new_agent: str,
+    baseline_agents: list[str],
+) -> list[str]:
+    """Build score comparison table for continuous-score tasks (deep focus report).
+
+    Shows new agent's rank instead of full ranking string.
+    Sorted by new agent's rank (best first), then by score.
+    """
+    if not scores_by_question:
+        return []
+
+    all_agents = [new_agent] + baseline_agents
+
+    # Compute mean scores
+    agent_totals: dict[str, list[float]] = {a: [] for a in all_agents}
+    for qid, agent_scores in scores_by_question.items():
+        for agent in all_agents:
+            if agent in agent_scores:
+                agent_totals[agent].append(agent_scores[agent])
+
+    # Summary header
+    lines = [
+        "## Score Summary",
+        "",
+        "| Agent | Mean Score | Problems |",
+        "|-------|-----------|----------|",
+    ]
+    for agent in all_agents:
+        scores = agent_totals[agent]
+        mean = sum(scores) / len(scores) if scores else 0.0
+        marker = " **(new)**" if agent == new_agent else ""
+        lines.append(f"| {agent}{marker} | {mean:.3f} | {len(scores)} |")
+    lines.append("")
+
+    # Build rows sorted by new agent's rank, then by new agent's score descending
+    rows = []
+    for qid, agent_scores in scores_by_question.items():
+        scored = [(a, agent_scores.get(a, float('-inf'))) for a in all_agents]
+        scored_sorted = sorted(scored, key=lambda x: x[1], reverse=True)
+
+        # Find new agent's rank (with ties)
+        new_agent_score = agent_scores.get(new_agent, float('-inf'))
+        new_rank = 1
+        for a, s in scored_sorted:
+            if a == new_agent:
+                break
+            if s > new_agent_score:
+                new_rank += 1
+
+        # Tie info for display
+        at_same_score = [a for a, s in scored_sorted if s == new_agent_score]
+        if len(at_same_score) > 1:
+            rank_str = f"#{new_rank} (tied)"
+        else:
+            rank_str = f"#{new_rank}"
+
+        rows.append((new_rank, -new_agent_score, qid, agent_scores, rank_str))
+
+    rows.sort(key=lambda r: (r[0], r[1]))
+
+    # Score comparison table
+    lines.extend([
+        "## Score Comparison",
+        "",
+    ])
+
+    header = "| Problem |"
+    separator = "|---------|"
+    for agent in all_agents:
+        label = f"{agent} (new)" if agent == new_agent else agent
+        header += f" {label} |"
+        separator += "--------|"
+    header += " New Rank |"
+    separator += "----------|"
+    lines.append(header)
+    lines.append(separator)
+
+    for _, _, qid, agent_scores, rank_str in rows:
+        row = f"| {qid} |"
+        for agent in all_agents:
+            score = agent_scores.get(agent)
+            if score is not None:
+                row += f" {score:.3f} |"
+            else:
+                row += " — |"
+        row += f" {rank_str} |"
+        lines.append(row)
+
+    lines.append("")
+    return lines
+
+
 class ReportGenerator:
     """Generates comprehensive reports for RoboPhD research runs."""
 

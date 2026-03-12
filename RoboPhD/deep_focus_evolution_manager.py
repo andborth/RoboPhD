@@ -426,136 +426,149 @@ class DeepFocusEvolutionManager:
                     ""
                 ]
 
-                # Summary section
+                # Detect continuous vs binary scoring
+                from RoboPhD.report_generator import is_continuous_scoring, format_continuous_score_table_deep_focus, format_non_binary_scores
+                scores_by_question = index.get('scores_by_question', {})
                 summary = index.get('summary', {})
                 newest_agent = summary.get('new_agent', 'unknown')
                 baseline_agents = summary.get('baseline_agents', [])
-                # Get accuracies from by_agent dict
-                by_agent = index.get('by_agent', {})
-                accuracies = {name: stats.get('accuracy', 0) for name, stats in by_agent.items()}
 
-                report_lines.append(f"**New Agent**: {newest_agent} ({accuracies.get(newest_agent, 0)}%)")
-                if baseline_agents:
-                    baseline_strs = [f"{a} ({accuracies.get(a, 0)}%)" for a in baseline_agents]
-                    report_lines.append(f"**Baselines**: {', '.join(baseline_strs)}")
-                report_lines.append("")
+                if scores_by_question and is_continuous_scoring(scores_by_question):
+                    # Continuous-score report: score comparison table with new agent rank
+                    report_lines.append(f"**New Agent**: {newest_agent}")
+                    if baseline_agents:
+                        report_lines.append(f"**Baselines**: {', '.join(baseline_agents)}")
+                    report_lines.append("")
+                    report_lines.extend(format_continuous_score_table_deep_focus(
+                        scores_by_question, newest_agent, baseline_agents,
+                    ))
+                else:
+                    # Binary-score report: accuracy, unique successes/errors, mixed results
+                    # Get accuracies from by_agent dict
+                    by_agent = index.get('by_agent', {})
+                    accuracies = {name: stats.get('accuracy', 0) for name, stats in by_agent.items()}
 
-                # Cross-agent analysis
-                cross_agent = index.get('cross_agent_analysis', {}).get('new_vs_baseline', {})
-                unique_successes = cross_agent.get('unique_successes', [])
-                unique_errors = cross_agent.get('unique_errors', [])
-                consensus_errors = cross_agent.get('consensus_errors', [])
-                mixed = cross_agent.get('mixed_results', [])
-
-                report_lines.extend([
-                    "## Summary",
-                    f"- Unique successes (new succeeded, all baselines failed): {len(unique_successes)}",
-                    f"- Unique errors (new failed, all baselines succeeded): {len(unique_errors)}",
-                    f"- Consensus errors (all failed): {len(consensus_errors)}",
-                    f"- Mixed results: {len(mixed)}",
-                    ""
-                ])
-
-                # Per-agent accuracy table
-                by_agent = index.get('by_agent', {})
-                if by_agent:
-                    all_agents = [newest_agent] + baseline_agents
-
-                    report_lines.extend([
-                        "## Agent Accuracy",
-                        "",
-                        "| Agent | Correct | Errors | Accuracy |",
-                        "|-------|---------|--------|----------|"
-                    ])
-                    for agent in all_agents:
-                        stats = by_agent.get(agent, {})
-                        correct = stats.get('total_correct', 0)
-                        errors = stats.get('total_errors', 0)
-                        accuracy = stats.get('accuracy', 0.0)
-                        report_lines.append(f"| {agent} | {correct} | {errors} | {accuracy:.1f}% |")
+                    report_lines.append(f"**New Agent**: {newest_agent} ({accuracies.get(newest_agent, 0)}%)")
+                    if baseline_agents:
+                        baseline_strs = [f"{a} ({accuracies.get(a, 0)}%)" for a in baseline_agents]
+                        report_lines.append(f"**Baselines**: {', '.join(baseline_strs)}")
                     report_lines.append("")
 
-                # Unique Successes (new succeeded, baselines failed)
-                if unique_successes:
-                    count = len(unique_successes)
-                    if count <= 10:
-                        id_str = ', '.join(unique_successes)
-                    else:
-                        id_str = ', '.join(unique_successes[:10]) + ', ...'
+                    # Cross-agent analysis
+                    cross_agent = index.get('cross_agent_analysis', {}).get('new_vs_baseline', {})
+                    unique_successes = cross_agent.get('unique_successes', [])
+                    unique_errors = cross_agent.get('unique_errors', [])
+                    consensus_errors = cross_agent.get('consensus_errors', [])
+                    mixed = cross_agent.get('mixed_results', [])
+
                     report_lines.extend([
-                        "## Unique Successes",
-                        "",
-                        f"New agent succeeded but all baselines failed ({count}): {id_str}",
+                        "## Summary",
+                        f"- Unique successes (new succeeded, all baselines failed): {len(unique_successes)}",
+                        f"- Unique errors (new failed, all baselines succeeded): {len(unique_errors)}",
+                        f"- Consensus errors (all failed): {len(consensus_errors)}",
+                        f"- Mixed results: {len(mixed)}",
                         ""
                     ])
 
-                # Unique Errors (new failed, baselines succeeded)
-                if unique_errors:
-                    count = len(unique_errors)
-                    if count <= 10:
-                        id_str = ', '.join(unique_errors)
-                    else:
-                        id_str = ', '.join(unique_errors[:10]) + ', ...'
-                    report_lines.extend([
-                        "## Unique Errors",
-                        "",
-                        f"New agent failed but all baselines succeeded ({count}): {id_str}",
-                        ""
-                    ])
+                    # Per-agent accuracy table
+                    by_agent = index.get('by_agent', {})
+                    if by_agent:
+                        all_agents = [newest_agent] + baseline_agents
 
-                # Consensus errors (all failed including new)
-                if consensus_errors:
-                    count = len(consensus_errors)
-                    if count <= 10:
-                        id_str = ', '.join(consensus_errors)
-                    else:
-                        id_str = ', '.join(consensus_errors[:10]) + ', ...'
-                    report_lines.extend([
-                        "## Consensus Errors",
-                        "",
-                        f"New agent AND all baselines failed ({count}): {id_str}",
-                        ""
-                    ])
+                        report_lines.extend([
+                            "## Agent Accuracy",
+                            "",
+                            "| Agent | Correct | Errors | Accuracy |",
+                            "|-------|---------|--------|----------|"
+                        ])
+                        for agent in all_agents:
+                            stats = by_agent.get(agent, {})
+                            correct = stats.get('total_correct', 0)
+                            errors = stats.get('total_errors', 0)
+                            accuracy = stats.get('accuracy', 0.0)
+                            report_lines.append(f"| {agent} | {correct} | {errors} | {accuracy:.1f}% |")
+                        report_lines.append("")
 
-                # Mixed results
-                if mixed:
-                    report_lines.extend([
-                        "## Mixed Results",
-                        "",
-                        f"Total mixed results: {len(mixed)}",
-                        ""
-                    ])
+                    # Unique Successes (new succeeded, baselines failed)
+                    if unique_successes:
+                        count = len(unique_successes)
+                        if count <= 10:
+                            id_str = ', '.join(unique_successes)
+                        else:
+                            id_str = ', '.join(unique_successes[:10]) + ', ...'
+                        report_lines.extend([
+                            "## Unique Successes",
+                            "",
+                            f"New agent succeeded but all baselines failed ({count}): {id_str}",
+                            ""
+                        ])
 
-                    # Group by pattern (new_agent_correct, correct baselines, wrong baselines)
-                    pattern_groups = defaultdict(list)
+                    # Unique Errors (new failed, baselines succeeded)
+                    if unique_errors:
+                        count = len(unique_errors)
+                        if count <= 10:
+                            id_str = ', '.join(unique_errors)
+                        else:
+                            id_str = ', '.join(unique_errors[:10]) + ', ...'
+                        report_lines.extend([
+                            "## Unique Errors",
+                            "",
+                            f"New agent failed but all baselines succeeded ({count}): {id_str}",
+                            ""
+                        ])
 
-                    mixed_data = cross_agent.get('mixed_results', {})
-                    for question_id, split_info in mixed_data.items():
-                        new_agent_correct = split_info.get('new_agent_correct', None)
-                        correct_baselines = tuple(sorted(split_info.get('baseline_correct', [])))
-                        wrong_baselines = tuple(sorted(split_info.get('baseline_wrong', [])))
+                    # Consensus errors (all failed including new)
+                    if consensus_errors:
+                        count = len(consensus_errors)
+                        if count <= 10:
+                            id_str = ', '.join(consensus_errors)
+                        else:
+                            id_str = ', '.join(consensus_errors[:10]) + ', ...'
+                        report_lines.extend([
+                            "## Consensus Errors",
+                            "",
+                            f"New agent AND all baselines failed ({count}): {id_str}",
+                            ""
+                        ])
 
-                        pattern = (new_agent_correct, correct_baselines, wrong_baselines)
-                        pattern_groups[pattern].append(question_id)
+                    # Mixed results
+                    if mixed:
+                        report_lines.extend([
+                            "## Mixed Results",
+                            "",
+                            f"Total mixed results: {len(mixed)}",
+                            ""
+                        ])
 
-                    sorted_patterns = sorted(
-                        pattern_groups.items(),
-                        key=lambda x: (-len(x[1]), x[0])
-                    )
+                        # Group by pattern (new_agent_correct, correct baselines, wrong baselines)
+                        pattern_groups = defaultdict(list)
 
-                    for (new_agent_correct, correct_baselines, wrong_baselines), question_ids in sorted_patterns:
-                        new_agent_status = "✅ NEW" if new_agent_correct else "❌ NEW"
-                        correct_str = ', '.join(correct_baselines)
-                        wrong_str = ', '.join(wrong_baselines)
-                        question_ids_str = ', '.join(f"**{qid}**" for qid in sorted(question_ids))
+                        mixed_data = cross_agent.get('mixed_results', {})
+                        for question_id, split_info in mixed_data.items():
+                            new_agent_correct = split_info.get('new_agent_correct', None)
+                            correct_baselines = tuple(sorted(split_info.get('baseline_correct', [])))
+                            wrong_baselines = tuple(sorted(split_info.get('baseline_wrong', [])))
 
-                        report_lines.append(f"- {new_agent_status} | ✓ {correct_str} | ✗ {wrong_str}: {question_ids_str}")
+                            pattern = (new_agent_correct, correct_baselines, wrong_baselines)
+                            pattern_groups[pattern].append(question_id)
 
-                    report_lines.append("")
+                        sorted_patterns = sorted(
+                            pattern_groups.items(),
+                            key=lambda x: (-len(x[1]), x[0])
+                        )
 
-                # Non-binary scores (e.g., partial credit)
-                from RoboPhD.report_generator import format_non_binary_scores
-                report_lines.extend(format_non_binary_scores(index.get('non_binary_scores', {})))
+                        for (new_agent_correct, correct_baselines, wrong_baselines), question_ids in sorted_patterns:
+                            new_agent_status = "✅ NEW" if new_agent_correct else "❌ NEW"
+                            correct_str = ', '.join(correct_baselines)
+                            wrong_str = ', '.join(wrong_baselines)
+                            question_ids_str = ', '.join(f"**{qid}**" for qid in sorted(question_ids))
+
+                            report_lines.append(f"- {new_agent_status} | ✓ {correct_str} | ✗ {wrong_str}: {question_ids_str}")
+
+                        report_lines.append("")
+
+                    # Non-binary scores (e.g., partial credit)
+                    report_lines.extend(format_non_binary_scores(index.get('non_binary_scores', {})))
 
                 report_lines.extend([
                     "## Extract Details",
