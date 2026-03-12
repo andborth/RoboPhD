@@ -349,12 +349,19 @@ class ExternalEvaluatorDomain(DomainInterface):
                         pid = future_to_pid[future]
                         if future.cancel():
                             if pid in timed_out_pids:
-                                # Already timed out before — don't resubmit
+                                # Already resubmitted once — give up
+                                self.logger.warning(
+                                    f"EVAL TIMEOUT: {pid} never started after resubmit — scored 0"
+                                )
                                 result_entry = {"question_id": pid, "score": 0.0}
                                 self._write_timeout_result(problems_dir, pid, result_entry, eval_timeout)
                                 results.append(result_entry)
                             else:
-                                # Queued — resubmit so it gets a chance to run
+                                # Queued (never ran) — resubmit once
+                                self.logger.info(
+                                    f"EVAL TIMEOUT: {pid} never started within {eval_timeout}s — resubmitting"
+                                )
+                                timed_out_pids.add(pid)
                                 new_future = executor.submit(_evaluate_one, pid)
                                 future_to_pid[new_future] = pid
                                 still_remaining.add(new_future)

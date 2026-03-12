@@ -20,6 +20,7 @@ def run_parallel_eval(
     Returns dict with:
         "scores": list of raw scores (ordered by example index)
         "test_results": dict ready for JSON (mean_test_score, total_test_score, total_test_problems)
+        "timed_out": True if any evaluation timed out (leaked threads still running)
 
     Timed-out evaluations score 0. Logs progress and final summary.
     """
@@ -47,8 +48,18 @@ def run_parallel_eval(
                     idx = future_to_idx[future]
                     if future.cancel():
                         if idx in timed_out_idxs:
+                            # Already resubmitted once — give up
+                            logger.warning(
+                                f"EVAL TIMEOUT: example {idx} never started after resubmit — scored 0"
+                            )
                             score_map[idx] = 0.0
+                            timed_out = True
                         else:
+                            # Queued (never ran) — resubmit once
+                            logger.info(
+                                f"EVAL TIMEOUT: example {idx} never started within {eval_timeout}s — resubmitting"
+                            )
+                            timed_out_idxs.add(idx)
                             new_future = executor.submit(
                                 evaluator, candidate, idx_to_example[idx]
                             )
@@ -92,4 +103,4 @@ def run_parallel_eval(
         "total_test_problems": len(scores),
     }
 
-    return {"scores": scores, "test_results": test_results}
+    return {"scores": scores, "test_results": test_results, "timed_out": timed_out}
