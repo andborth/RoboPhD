@@ -339,7 +339,7 @@ def main():
         "seed": seed,
         "max_workers": max_workers,
         "reflection_model": reflection_model,
-        "total_evaluations": evaluator.total_evaluations,
+        "total_evaluations": evaluator.total_evaluations,  # required evaluator attribute
         "train_size": len(trainset),
         "val_size": len(valset),
         "num_candidates_explored": len(candidates),
