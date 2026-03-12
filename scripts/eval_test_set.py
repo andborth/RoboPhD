@@ -25,7 +25,6 @@ import logging
 import os
 import sys
 import threading
-from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 from pathlib import Path
 
 # Add project root to path
@@ -34,6 +33,7 @@ sys.path.insert(0, str(project_root))
 
 from RoboPhD.adapters.candidate_utils import extract_candidate
 from RoboPhD.adapters.runner_utils import parse_config_arg
+from RoboPhD.eval_utils import run_parallel_eval
 from RoboPhD.tasks import get_task
 
 logging.basicConfig(
@@ -175,85 +175,17 @@ def main():
     # Parallel eval loop
     test_workers = args.max_workers or test_config.get("max_test_workers") or max(1, min(32, (os.cpu_count() or 4) + 4) // 2)
     logger.info(f"Test evaluation: {len(test_examples)} problems, {test_workers} workers")
-
     eval_timeout = test_config.get("eval_timeout", 300)
-    timed_out = False
-    timed_out_idxs: set[int] = set()
 
-    score_map: dict[int, float] = {}
-    idx_to_example = {i: ex for i, ex in enumerate(test_examples)}
-    executor = ThreadPoolExecutor(max_workers=test_workers)
-    try:
-        future_to_idx = {
-            executor.submit(test_evaluator, candidate, ex): i
-            for i, ex in enumerate(test_examples)
-        }
-        remaining = set(future_to_idx.keys())
-
-        while remaining:
-            done, not_done = wait(
-                remaining, timeout=eval_timeout,
-                return_when=FIRST_COMPLETED,
-            )
-            if not done:
-                still_remaining = set()
-                for future in not_done:
-                    idx = future_to_idx[future]
-                    if future.cancel():
-                        if idx in timed_out_idxs:
-                            score_map[idx] = 0.0
-                        else:
-                            new_future = executor.submit(
-                                test_evaluator, candidate, idx_to_example[idx]
-                            )
-                            future_to_idx[new_future] = idx
-                            still_remaining.add(new_future)
-                    else:
-                        logger.warning(
-                            f"EVAL TIMEOUT: example {idx} exceeded {eval_timeout}s — "
-                            f"scored 0, thread leaked (will burn CPU until process exit)"
-                        )
-                        score_map[idx] = 0.0
-                        timed_out_idxs.add(idx)
-                        timed_out = True
-                remaining = still_remaining
-                continue
-
-            for future in done:
-                idx = future_to_idx[future]
-                score, diag = future.result()
-                score_map[idx] = score
-            remaining = not_done
-
-            if len(score_map) % 10 == 0:
-                vals = list(score_map.values())
-                mean = sum(vals) / len(vals)
-                is_binary = all(0 <= v <= 1 for v in vals)
-                metric = f"running accuracy: {mean*100:.1f}%" if is_binary else f"running mean score: {mean:.2f}"
-                logger.info(f"Test progress: {len(score_map)}/{len(test_examples)}, {metric}")
-    finally:
-        if timed_out:
-            executor.shutdown(wait=False, cancel_futures=True)
-        else:
-            executor.shutdown(wait=True)
-    scores = [score_map[i] for i in range(len(test_examples))]
-
-    is_binary = all(0 <= s <= 1 for s in scores) if scores else True
-    mean_score = sum(scores) / len(scores) if scores else 0.0
-    if is_binary:
-        test_accuracy = mean_score * 100
-        logger.info(f"Test set accuracy: {test_accuracy:.1f}% ({sum(scores):.0f}/{len(scores)})")
-    else:
-        test_accuracy = mean_score  # continuous score, not a percentage
-        logger.info(f"Test set mean score: {mean_score:.2f} ({len(scores)} problems)")
+    result = run_parallel_eval(
+        test_evaluator, candidate, test_examples,
+        max_workers=test_workers, eval_timeout=eval_timeout,
+    )
 
     # Write results
     test_eval_cost = getattr(test_evaluator, 'total_eval_cost', 0.0)
     test_results = {
-        "test_accuracy": test_accuracy,
-        "test_total": len(scores),
-        "test_correct": sum(scores) if is_binary else None,
-        "test_mean_score": mean_score,
+        **result["test_results"],
         "test_eval_cost_usd": test_eval_cost,
         "agent_name": agent_name,
         "agent_dir": str(agent_dir),

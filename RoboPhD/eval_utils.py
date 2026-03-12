@@ -1,0 +1,95 @@
+"""Shared test evaluation utilities for run_gepa.py and eval_test_set.py."""
+
+import logging
+import os
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
+
+logger = logging.getLogger(__name__)
+
+
+def run_parallel_eval(
+    evaluator,
+    candidate: dict,
+    examples: list,
+    max_workers: int,
+    eval_timeout: int = 300,
+    progress_interval: int = 10,
+) -> dict:
+    """Run evaluator on examples in parallel with timeout handling.
+
+    Returns dict with:
+        "scores": list of raw scores (ordered by example index)
+        "test_results": dict ready for JSON (mean_test_score, total_test_score, total_test_problems)
+
+    Timed-out evaluations score 0. Logs progress and final summary.
+    """
+    timed_out = False
+    timed_out_idxs: set[int] = set()
+
+    score_map: dict[int, float] = {}
+    idx_to_example = {i: ex for i, ex in enumerate(examples)}
+    executor = ThreadPoolExecutor(max_workers=max_workers)
+    try:
+        future_to_idx = {
+            executor.submit(evaluator, candidate, ex): i
+            for i, ex in enumerate(examples)
+        }
+        remaining = set(future_to_idx.keys())
+
+        while remaining:
+            done, not_done = wait(
+                remaining, timeout=eval_timeout,
+                return_when=FIRST_COMPLETED,
+            )
+            if not done:
+                still_remaining = set()
+                for future in not_done:
+                    idx = future_to_idx[future]
+                    if future.cancel():
+                        if idx in timed_out_idxs:
+                            score_map[idx] = 0.0
+                        else:
+                            new_future = executor.submit(
+                                evaluator, candidate, idx_to_example[idx]
+                            )
+                            future_to_idx[new_future] = idx
+                            still_remaining.add(new_future)
+                    else:
+                        logger.warning(
+                            f"EVAL TIMEOUT: example {idx} exceeded {eval_timeout}s — "
+                            f"scored 0, thread leaked (will burn CPU until process exit)"
+                        )
+                        score_map[idx] = 0.0
+                        timed_out_idxs.add(idx)
+                        timed_out = True
+                remaining = still_remaining
+                continue
+
+            for future in done:
+                idx = future_to_idx[future]
+                score, diag = future.result()
+                score_map[idx] = score
+            remaining = not_done
+
+            if len(score_map) % progress_interval == 0:
+                vals = list(score_map.values())
+                mean = sum(vals) / len(vals)
+                logger.info(f"Test progress: {len(score_map)}/{len(examples)}, running score: {mean:.3f}")
+    finally:
+        if timed_out:
+            executor.shutdown(wait=False, cancel_futures=True)
+        else:
+            executor.shutdown(wait=True)
+
+    scores = [score_map[i] for i in range(len(examples))]
+    mean_score = sum(scores) / len(scores) if scores else 0.0
+
+    logger.info(f"Test score: {mean_score:.3f} ({len(scores)} problems)")
+
+    test_results = {
+        "mean_test_score": mean_score,
+        "total_test_score": sum(scores),
+        "total_test_problems": len(scores),
+    }
+
+    return {"scores": scores, "test_results": test_results}
