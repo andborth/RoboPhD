@@ -3118,107 +3118,22 @@ class ParallelAgentResearcher:
                     ""
                 ]
 
-                # Detect continuous vs binary scoring
-                from RoboPhD.report_generator import is_continuous_scoring, format_continuous_score_table, format_non_binary_scores
+                from RoboPhD.report_generator import (
+                    is_continuous_scoring, format_continuous_score_table,
+                    format_binary_report_comparative,
+                )
                 scores_by_question = index.get('scores_by_question', {})
                 summary = index.get('summary', {})
                 agents = summary.get('agents', [])
                 total_q = summary.get('total_questions', 0)
 
                 if scores_by_question and is_continuous_scoring(scores_by_question):
-                    # Continuous-score report: score comparison table
                     report_lines.append(f"**Agents**: {', '.join(agents)}")
                     report_lines.append(f"**Total problems**: {total_q}")
                     report_lines.append("")
                     report_lines.extend(format_continuous_score_table(scores_by_question, agents))
                 else:
-                    # Binary-score report: accuracy, consensus, split decisions
-                    accuracies = summary.get('agent_accuracies', {})
-
-                    if agents:
-                        agent_strs = [f"{a} ({accuracies.get(a, 0)}%)" for a in agents]
-                        report_lines.append(f"**Agents**: {', '.join(agent_strs)}")
-                        report_lines.append("")
-
-                    # Consensus stats
-                    consensus = summary.get('consensus_stats', {})
-                    report_lines.extend([
-                        "## Summary",
-                        f"- Total questions: {total_q}",
-                        f"- Consensus correct: {consensus.get('all_correct', 0)} ({consensus.get('all_correct_pct', 0)}%)",
-                        f"- Consensus errors: {consensus.get('all_failed', 0)} ({consensus.get('all_failed_pct', 0)}%)",
-                        f"- Split decisions: {consensus.get('split_decisions', 0)} ({consensus.get('split_decisions_pct', 0)}%)",
-                        ""
-                    ])
-
-                    # Per-agent accuracy table
-                    by_agent = index.get('by_agent', {})
-                    if by_agent and agents:
-                        report_lines.extend([
-                            "## Agent Accuracy",
-                            "",
-                            "| Agent | Correct | Errors | Accuracy |",
-                            "|-------|---------|--------|----------|"
-                        ])
-                        for agent in agents:
-                            stats = by_agent.get(agent, {})
-                            correct = stats.get('total_correct', 0)
-                            errors = stats.get('total_errors', 0)
-                            accuracy = stats.get('accuracy', 0.0)
-                            report_lines.append(f"| {agent} | {correct} | {errors} | {accuracy:.1f}% |")
-                        report_lines.append("")
-
-                    # Consensus errors (all agents failed)
-                    cross_patterns = index.get('cross_agent_patterns', {})
-                    consensus_errors = cross_patterns.get('consensus_errors', [])
-                    if consensus_errors:
-                        error_count = len(consensus_errors)
-                        if error_count <= 10:
-                            id_str = ', '.join(consensus_errors)
-                        else:
-                            id_str = ', '.join(consensus_errors[:10]) + ', ...'
-                        report_lines.extend([
-                            "## Consensus Errors",
-                            "",
-                            f"All agents failed on {error_count} questions: {id_str}",
-                            ""
-                        ])
-
-                    # Split decisions
-                    split_decisions = cross_patterns.get('split_decisions', {})
-                    if split_decisions:
-                        report_lines.extend([
-                            "## Split Decisions",
-                            "",
-                            f"Total split decisions: {len(split_decisions)}",
-                            ""
-                        ])
-
-                        # Group split decisions by pattern (correct agents, wrong agents)
-                        pattern_groups = defaultdict(list)
-
-                        for question_id, split_info in split_decisions.items():
-                            correct_agents = tuple(sorted(split_info.get('correct', [])))
-                            wrong_agents = tuple(sorted(split_info.get('wrong', [])))
-                            pattern = (correct_agents, wrong_agents)
-                            pattern_groups[pattern].append(question_id)
-
-                        # Sort patterns by number of questions (most common first), then alphabetically
-                        sorted_patterns = sorted(
-                            pattern_groups.items(),
-                            key=lambda x: (-len(x[1]), x[0])
-                        )
-
-                        for (correct_agents, wrong_agents), question_ids in sorted_patterns:
-                            correct_str = ', '.join(correct_agents)
-                            wrong_str = ', '.join(wrong_agents)
-                            question_ids_str = ', '.join(f"**{qid}**" for qid in sorted(question_ids))
-                            report_lines.append(f"- ✓ {correct_str} | ✗ {wrong_str}: {question_ids_str}")
-
-                        report_lines.append("")
-
-                    # Non-binary scores (e.g., partial credit)
-                    report_lines.extend(format_non_binary_scores(index.get('non_binary_scores', {})))
+                    report_lines.extend(format_binary_report_comparative(index))
 
                 report_lines.extend([
                     "## Extract Details",

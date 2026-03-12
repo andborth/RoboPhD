@@ -53,12 +53,242 @@ def is_continuous_scoring(scores_by_question: dict) -> bool:
         return True
 
     # Less than 80% binary → continuous
-    binary_count = sum(1 for s in all_scores if s in (0, 0.0, 1, 1.0))
+    binary_count = sum(1 for s in all_scores if s == 0.0 or s == 1.0)
     if binary_count / len(all_scores) < 0.8:
         return True
 
     return False
 
+
+# ---------------------------------------------------------------------------
+# Binary-score error analysis report
+# ---------------------------------------------------------------------------
+
+def format_binary_report_comparative(index: dict) -> list[str]:
+    """Build binary-score error analysis lines for the iteration (comparative) report.
+
+    Includes accuracy table, consensus stats, split decisions, and non-binary appendix.
+    """
+    from collections import defaultdict
+
+    summary = index.get('summary', {})
+    agents = summary.get('agents', [])
+    accuracies = summary.get('agent_accuracies', {})
+    total_q = summary.get('total_questions', 0)
+
+    lines = []
+
+    if agents:
+        agent_strs = [f"{a} ({accuracies.get(a, 0)}%)" for a in agents]
+        lines.append(f"**Agents**: {', '.join(agent_strs)}")
+        lines.append("")
+
+    # Consensus stats
+    consensus = summary.get('consensus_stats', {})
+    lines.extend([
+        "## Summary",
+        f"- Total questions: {total_q}",
+        f"- Consensus correct: {consensus.get('all_correct', 0)} ({consensus.get('all_correct_pct', 0)}%)",
+        f"- Consensus errors: {consensus.get('all_failed', 0)} ({consensus.get('all_failed_pct', 0)}%)",
+        f"- Split decisions: {consensus.get('split_decisions', 0)} ({consensus.get('split_decisions_pct', 0)}%)",
+        ""
+    ])
+
+    # Per-agent accuracy table
+    by_agent = index.get('by_agent', {})
+    if by_agent and agents:
+        lines.extend([
+            "## Agent Accuracy",
+            "",
+            "| Agent | Correct | Errors | Accuracy |",
+            "|-------|---------|--------|----------|"
+        ])
+        for agent in agents:
+            stats = by_agent.get(agent, {})
+            correct = stats.get('total_correct', 0)
+            errors = stats.get('total_errors', 0)
+            accuracy = stats.get('accuracy', 0.0)
+            lines.append(f"| {agent} | {correct} | {errors} | {accuracy:.1f}% |")
+        lines.append("")
+
+    # Consensus errors (all agents failed)
+    cross_patterns = index.get('cross_agent_patterns', {})
+    consensus_errors = cross_patterns.get('consensus_errors', [])
+    if consensus_errors:
+        error_count = len(consensus_errors)
+        if error_count <= 10:
+            id_str = ', '.join(consensus_errors)
+        else:
+            id_str = ', '.join(consensus_errors[:10]) + ', ...'
+        lines.extend([
+            "## Consensus Errors",
+            "",
+            f"All agents failed on {error_count} questions: {id_str}",
+            ""
+        ])
+
+    # Split decisions
+    split_decisions = cross_patterns.get('split_decisions', {})
+    if split_decisions:
+        lines.extend([
+            "## Split Decisions",
+            "",
+            f"Total split decisions: {len(split_decisions)}",
+            ""
+        ])
+
+        pattern_groups = defaultdict(list)
+        for question_id, split_info in split_decisions.items():
+            correct_agents = tuple(sorted(split_info.get('correct', [])))
+            wrong_agents = tuple(sorted(split_info.get('wrong', [])))
+            pattern_groups[(correct_agents, wrong_agents)].append(question_id)
+
+        sorted_patterns = sorted(
+            pattern_groups.items(),
+            key=lambda x: (-len(x[1]), x[0])
+        )
+
+        for (correct_agents, wrong_agents), question_ids in sorted_patterns:
+            correct_str = ', '.join(correct_agents)
+            wrong_str = ', '.join(wrong_agents)
+            question_ids_str = ', '.join(f"**{qid}**" for qid in sorted(question_ids))
+            lines.append(f"- ✓ {correct_str} | ✗ {wrong_str}: {question_ids_str}")
+
+        lines.append("")
+
+    # Non-binary scores (e.g., partial credit)
+    lines.extend(format_non_binary_scores(index.get('non_binary_scores', {})))
+
+    return lines
+
+
+def format_binary_report_deep_focus(index: dict) -> list[str]:
+    """Build binary-score error analysis lines for the deep focus (new vs baseline) report.
+
+    Includes accuracy table, unique successes/errors, consensus errors, and mixed results.
+    """
+    from collections import defaultdict
+
+    summary = index.get('summary', {})
+    newest_agent = summary.get('new_agent', 'unknown')
+    baseline_agents = summary.get('baseline_agents', [])
+    by_agent = index.get('by_agent', {})
+    accuracies = {name: stats.get('accuracy', 0) for name, stats in by_agent.items()}
+
+    lines = []
+
+    lines.append(f"**New Agent**: {newest_agent} ({accuracies.get(newest_agent, 0)}%)")
+    if baseline_agents:
+        baseline_strs = [f"{a} ({accuracies.get(a, 0)}%)" for a in baseline_agents]
+        lines.append(f"**Baselines**: {', '.join(baseline_strs)}")
+    lines.append("")
+
+    # Cross-agent analysis
+    cross_agent = index.get('cross_agent_analysis', {}).get('new_vs_baseline', {})
+    unique_successes = cross_agent.get('unique_successes', [])
+    unique_errors = cross_agent.get('unique_errors', [])
+    consensus_errors = cross_agent.get('consensus_errors', [])
+    mixed = cross_agent.get('mixed_results', [])
+
+    lines.extend([
+        "## Summary",
+        f"- Unique successes (new succeeded, all baselines failed): {len(unique_successes)}",
+        f"- Unique errors (new failed, all baselines succeeded): {len(unique_errors)}",
+        f"- Consensus errors (all failed): {len(consensus_errors)}",
+        f"- Mixed results: {len(mixed)}",
+        ""
+    ])
+
+    # Per-agent accuracy table
+    if by_agent:
+        all_agents = [newest_agent] + baseline_agents
+        lines.extend([
+            "## Agent Accuracy",
+            "",
+            "| Agent | Correct | Errors | Accuracy |",
+            "|-------|---------|--------|----------|"
+        ])
+        for agent in all_agents:
+            stats = by_agent.get(agent, {})
+            correct = stats.get('total_correct', 0)
+            errors = stats.get('total_errors', 0)
+            accuracy = stats.get('accuracy', 0.0)
+            lines.append(f"| {agent} | {correct} | {errors} | {accuracy:.1f}% |")
+        lines.append("")
+
+    # Unique Successes
+    if unique_successes:
+        count = len(unique_successes)
+        id_str = ', '.join(unique_successes[:10]) + (', ...' if count > 10 else '')
+        lines.extend([
+            "## Unique Successes",
+            "",
+            f"New agent succeeded but all baselines failed ({count}): {id_str}",
+            ""
+        ])
+
+    # Unique Errors
+    if unique_errors:
+        count = len(unique_errors)
+        id_str = ', '.join(unique_errors[:10]) + (', ...' if count > 10 else '')
+        lines.extend([
+            "## Unique Errors",
+            "",
+            f"New agent failed but all baselines succeeded ({count}): {id_str}",
+            ""
+        ])
+
+    # Consensus errors
+    if consensus_errors:
+        count = len(consensus_errors)
+        id_str = ', '.join(consensus_errors[:10]) + (', ...' if count > 10 else '')
+        lines.extend([
+            "## Consensus Errors",
+            "",
+            f"New agent AND all baselines failed ({count}): {id_str}",
+            ""
+        ])
+
+    # Mixed results
+    if mixed:
+        lines.extend([
+            "## Mixed Results",
+            "",
+            f"Total mixed results: {len(mixed)}",
+            ""
+        ])
+
+        pattern_groups = defaultdict(list)
+        mixed_data = cross_agent.get('mixed_results', {})
+        for question_id, split_info in mixed_data.items():
+            new_agent_correct = split_info.get('new_agent_correct', None)
+            correct_baselines = tuple(sorted(split_info.get('baseline_correct', [])))
+            wrong_baselines = tuple(sorted(split_info.get('baseline_wrong', [])))
+            pattern_groups[(new_agent_correct, correct_baselines, wrong_baselines)].append(question_id)
+
+        sorted_patterns = sorted(
+            pattern_groups.items(),
+            key=lambda x: (-len(x[1]), x[0])
+        )
+
+        for (new_agent_correct, correct_baselines, wrong_baselines), question_ids in sorted_patterns:
+            new_agent_status = "✅ NEW" if new_agent_correct else "❌ NEW"
+            correct_str = ', '.join(correct_baselines)
+            wrong_str = ', '.join(wrong_baselines)
+            question_ids_str = ', '.join(f"**{qid}**" for qid in sorted(question_ids))
+            lines.append(f"- {new_agent_status} | ✓ {correct_str} | ✗ {wrong_str}: {question_ids_str}")
+
+        lines.append("")
+
+    # Non-binary scores
+    lines.extend(format_non_binary_scores(index.get('non_binary_scores', {})))
+
+    return lines
+
+
+# ---------------------------------------------------------------------------
+# Continuous-score error analysis report
+# ---------------------------------------------------------------------------
 
 def _ranking_str(agent_scores: list[tuple[str, float]]) -> str:
     """Build ranking string like 'A > B = C' from sorted (agent, score) pairs.
@@ -77,6 +307,75 @@ def _ranking_str(agent_scores: list[tuple[str, float]]) -> str:
     return "".join(parts)
 
 
+def _compute_agent_totals(scores_by_question: dict, agents: list[str]) -> dict[str, list[float]]:
+    """Collect per-agent score lists from scores_by_question."""
+    agent_totals: dict[str, list[float]] = {a: [] for a in agents}
+    for qid, agent_scores in scores_by_question.items():
+        for agent in agents:
+            if agent in agent_scores:
+                agent_totals[agent].append(agent_scores[agent])
+    return agent_totals
+
+
+def _format_score_summary(agent_totals: dict[str, list[float]], agents: list[str],
+                          new_agent: str | None = None) -> list[str]:
+    """Build the score summary table. Marks new_agent if provided."""
+    lines = [
+        "## Score Summary",
+        "",
+        "| Agent | Mean Score | Problems |",
+        "|-------|-----------|----------|",
+    ]
+    for agent in agents:
+        scores = agent_totals[agent]
+        mean = sum(scores) / len(scores) if scores else 0.0
+        marker = " **(new)**" if agent == new_agent else ""
+        lines.append(f"| {agent}{marker} | {mean:.3f} | {len(scores)} |")
+    lines.append("")
+    return lines
+
+
+def _format_score_rows(scores_by_question: dict, agents: list[str],
+                       agent_labels: list[str], last_col_header: str,
+                       last_col_fn) -> list[str]:
+    """Build the score comparison table rows.
+
+    last_col_fn(scored_sorted, agent_scores) -> (sort_key, display_str)
+    where scored_sorted is [(agent, score)] descending.
+    """
+    rows = []
+    for qid, agent_scores in scores_by_question.items():
+        scored = [(a, agent_scores.get(a, float('-inf'))) for a in agents]
+        scored_sorted = sorted(scored, key=lambda x: x[1], reverse=True)
+        sort_key, display = last_col_fn(scored_sorted, agent_scores)
+        rows.append((sort_key, qid, agent_scores, display))
+
+    rows.sort(key=lambda r: r[0])
+
+    # Table header
+    lines = ["## Score Comparison", ""]
+    header = "| Problem |"
+    separator = "|---------|"
+    for label in agent_labels:
+        header += f" {label} |"
+        separator += "--------|"
+    header += f" {last_col_header} |"
+    separator += "---------|"
+    lines.append(header)
+    lines.append(separator)
+
+    for _, qid, agent_scores, display in rows:
+        row = f"| {qid} |"
+        for agent in agents:
+            score = agent_scores.get(agent)
+            row += f" {score:.3f} |" if score is not None else " — |"
+        row += f" {display} |"
+        lines.append(row)
+
+    lines.append("")
+    return lines
+
+
 def format_continuous_score_table(scores_by_question: dict, agents: list[str]) -> list[str]:
     """Build score comparison table for continuous-score tasks (iteration report).
 
@@ -85,57 +384,18 @@ def format_continuous_score_table(scores_by_question: dict, agents: list[str]) -
     if not scores_by_question or not agents:
         return []
 
-    # Compute mean scores for agent ordering (best overall first)
-    agent_totals: dict[str, list[float]] = {a: [] for a in agents}
-    for qid, agent_scores in scores_by_question.items():
-        for agent in agents:
-            if agent in agent_scores:
-                agent_totals[agent].append(agent_scores[agent])
-
+    agent_totals = _compute_agent_totals(scores_by_question, agents)
     agent_means = {
         a: (sum(scores) / len(scores) if scores else 0.0)
         for a, scores in agent_totals.items()
     }
     sorted_agents = sorted(agents, key=lambda a: agent_means[a], reverse=True)
 
-    # Build rows: (sort_key, problem_id, scores, ranking_str)
-    rows = []
-    for qid, agent_scores in scores_by_question.items():
-        # Rank agents on this problem (descending by score)
-        scored = [(a, agent_scores.get(a, float('-inf'))) for a in sorted_agents]
-        scored_sorted = sorted(scored, key=lambda x: x[1], reverse=True)
-        ranking = _ranking_str(scored_sorted)
+    lines = _format_score_summary(agent_totals, sorted_agents)
 
-        # Sort key: rank of each agent (by overall-best ordering)
-        # For each sorted_agent, what rank did they get on this problem?
-        ranks = {}
-        current_rank = 1
-        for i, (a, s) in enumerate(scored_sorted):
-            if i > 0 and s < scored_sorted[i - 1][1]:
-                current_rank = i + 1
-            ranks[a] = current_rank
-
-        sort_key = tuple(ranks[a] for a in sorted_agents)
-        rows.append((sort_key, qid, agent_scores, ranking))
-
-    rows.sort(key=lambda r: r[0])
-
-    # Summary header
-    lines = [
-        "## Score Summary",
-        "",
-        "| Agent | Mean Score | Problems |",
-        "|-------|-----------|----------|",
-    ]
-    for agent in sorted_agents:
-        scores = agent_totals[agent]
-        mean = sum(scores) / len(scores) if scores else 0.0
-        lines.append(f"| {agent} | {mean:.3f} | {len(scores)} |")
-    lines.append("")
-
-    # Win/tie counts
+    # Win counts
     win_counts: dict[str, int] = {a: 0 for a in sorted_agents}
-    for _, qid, agent_scores, _ in rows:
+    for qid, agent_scores in scores_by_question.items():
         scored = [(a, agent_scores.get(a, float('-inf'))) for a in sorted_agents]
         best_score = max(s for _, s in scored)
         winners = [a for a, s in scored if s == best_score]
@@ -146,35 +406,21 @@ def format_continuous_score_table(scores_by_question: dict, agents: list[str]) -
     lines.append(f"**Solo wins**: {', '.join(win_parts)}")
     lines.append("")
 
-    # Score comparison table
-    lines.extend([
-        "## Score Comparison",
-        "",
-    ])
+    def ranking_col(scored_sorted, agent_scores):
+        ranking = _ranking_str(scored_sorted)
+        # Sort key: rank of each agent on this problem
+        ranks = {}
+        current_rank = 1
+        for i, (a, s) in enumerate(scored_sorted):
+            if i > 0 and s < scored_sorted[i - 1][1]:
+                current_rank = i + 1
+            ranks[a] = current_rank
+        sort_key = tuple(ranks[a] for a in sorted_agents)
+        return sort_key, ranking
 
-    # Table header
-    header = "| Problem |"
-    separator = "|---------|"
-    for agent in sorted_agents:
-        header += f" {agent} |"
-        separator += "--------|"
-    header += " Ranking |"
-    separator += "---------|"
-    lines.append(header)
-    lines.append(separator)
-
-    for sort_key, qid, agent_scores, ranking in rows:
-        row = f"| {qid} |"
-        for agent in sorted_agents:
-            score = agent_scores.get(agent)
-            if score is not None:
-                row += f" {score:.3f} |"
-            else:
-                row += " — |"
-        row += f" {ranking} |"
-        lines.append(row)
-
-    lines.append("")
+    lines.extend(_format_score_rows(
+        scores_by_question, sorted_agents, sorted_agents, "Ranking", ranking_col,
+    ))
     return lines
 
 
@@ -192,35 +438,13 @@ def format_continuous_score_table_deep_focus(
         return []
 
     all_agents = [new_agent] + baseline_agents
+    agent_totals = _compute_agent_totals(scores_by_question, all_agents)
 
-    # Compute mean scores
-    agent_totals: dict[str, list[float]] = {a: [] for a in all_agents}
-    for qid, agent_scores in scores_by_question.items():
-        for agent in all_agents:
-            if agent in agent_scores:
-                agent_totals[agent].append(agent_scores[agent])
+    lines = _format_score_summary(agent_totals, all_agents, new_agent=new_agent)
 
-    # Summary header
-    lines = [
-        "## Score Summary",
-        "",
-        "| Agent | Mean Score | Problems |",
-        "|-------|-----------|----------|",
-    ]
-    for agent in all_agents:
-        scores = agent_totals[agent]
-        mean = sum(scores) / len(scores) if scores else 0.0
-        marker = " **(new)**" if agent == new_agent else ""
-        lines.append(f"| {agent}{marker} | {mean:.3f} | {len(scores)} |")
-    lines.append("")
+    agent_labels = [f"{a} (new)" if a == new_agent else a for a in all_agents]
 
-    # Build rows sorted by new agent's rank, then by new agent's score descending
-    rows = []
-    for qid, agent_scores in scores_by_question.items():
-        scored = [(a, agent_scores.get(a, float('-inf'))) for a in all_agents]
-        scored_sorted = sorted(scored, key=lambda x: x[1], reverse=True)
-
-        # Find new agent's rank (with ties)
+    def new_rank_col(scored_sorted, agent_scores):
         new_agent_score = agent_scores.get(new_agent, float('-inf'))
         new_rank = 1
         for a, s in scored_sorted:
@@ -229,46 +453,14 @@ def format_continuous_score_table_deep_focus(
             if s > new_agent_score:
                 new_rank += 1
 
-        # Tie info for display
         at_same_score = [a for a, s in scored_sorted if s == new_agent_score]
-        if len(at_same_score) > 1:
-            rank_str = f"#{new_rank} (tied)"
-        else:
-            rank_str = f"#{new_rank}"
+        rank_str = f"#{new_rank} (tied)" if len(at_same_score) > 1 else f"#{new_rank}"
+        sort_key = (new_rank, -new_agent_score)
+        return sort_key, rank_str
 
-        rows.append((new_rank, -new_agent_score, qid, agent_scores, rank_str))
-
-    rows.sort(key=lambda r: (r[0], r[1]))
-
-    # Score comparison table
-    lines.extend([
-        "## Score Comparison",
-        "",
-    ])
-
-    header = "| Problem |"
-    separator = "|---------|"
-    for agent in all_agents:
-        label = f"{agent} (new)" if agent == new_agent else agent
-        header += f" {label} |"
-        separator += "--------|"
-    header += " New Rank |"
-    separator += "----------|"
-    lines.append(header)
-    lines.append(separator)
-
-    for _, _, qid, agent_scores, rank_str in rows:
-        row = f"| {qid} |"
-        for agent in all_agents:
-            score = agent_scores.get(agent)
-            if score is not None:
-                row += f" {score:.3f} |"
-            else:
-                row += " — |"
-        row += f" {rank_str} |"
-        lines.append(row)
-
-    lines.append("")
+    lines.extend(_format_score_rows(
+        scores_by_question, all_agents, agent_labels, "New Rank", new_rank_col,
+    ))
     return lines
 
 
