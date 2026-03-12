@@ -301,11 +301,12 @@ def main():
 
     best_val = max(val_scores) if val_scores else 0.0
     reflection_cost = reflection_lm.total_cost if reflection_lm else 0.0
-    total_cost = evaluator.total_eval_cost + reflection_cost
+    eval_cost = getattr(evaluator, "total_eval_cost", 0.0)
+    total_cost = eval_cost + reflection_cost
     logger.info(f"Optimization complete. Best validation score: {best_val:.3f}")
     logger.info(
         f"Cost: ${total_cost:.2f} total "
-        f"(eval: ${evaluator.total_eval_cost:.2f}, reflection: ${reflection_cost:.2f})"
+        f"(eval: ${eval_cost:.2f}, reflection: ${reflection_cost:.2f})"
     )
 
     with open(args.output_dir / "best_candidate.json", "w") as f:
@@ -346,7 +347,7 @@ def main():
         "val_scores": val_scores,
         "config": {k: v for k, v in config.items() if isinstance(v, (str, int, float, bool, type(None)))},
         "cost": {
-            "eval_cost_usd": evaluator.total_eval_cost,
+            "eval_cost_usd": eval_cost,
             "reflection_cost_usd": reflection_cost,
             "reflection_calls": reflection_lm.call_count if reflection_lm else 0,
             "reflection_input_tokens": reflection_lm.total_input_tokens if reflection_lm else 0,
