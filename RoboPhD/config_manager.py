@@ -107,7 +107,8 @@ class ConfigManager:
             "strategies_directory": None,
 
             # Runs directory (where experiment_dir lives)
-            "runs_directory": "../robophd_runs",
+            # Resolved by CLI scripts relative to repo root; None = ../robophd_runs
+            "runs_directory": None,
         }
 
     def set_initial_config(self,
