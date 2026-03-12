@@ -94,19 +94,23 @@ def _write_program(code: str) -> Tuple[str, str]:
     return path, tmpdir
 
 
-def _full_spot_availability(trace_file: str, gap_hours: float) -> str:
+def _full_spot_availability(trace_file: str) -> Tuple[str, float]:
     """Summarise spot availability from trace file without segment cap.
 
     Same logic as vendored _extract_spot_availability but without the
     10-segment truncation, so the evolution AI sees the full pattern.
+
+    Returns (availability_string, gap_hours) to avoid re-reading the file.
     """
     if not trace_file or not os.path.exists(trace_file):
-        return "N/A"
+        return "N/A", 0.0
     try:
         with open(trace_file) as f:
-            data = json.load(f).get("data", [])
-        if not data:
-            return "N/A"
+            trace = json.load(f)
+        gap_hours = trace.get("metadata", {}).get("gap_seconds", 0) / 3600.0
+        data = trace.get("data", [])
+        if not data or gap_hours <= 0:
+            return "N/A", gap_hours
         parts: list = []
         current_state = None
         start_tick = 0
@@ -121,9 +125,9 @@ def _full_spot_availability(trace_file: str, gap_hours: float) -> str:
         if current_state is not None:
             label = "S" if current_state else "X"
             parts.append(f"{start_tick * gap_hours:.1f}-{len(data) * gap_hours:.1f}:{label}")
-        return " | ".join(parts)
+        return " | ".join(parts), gap_hours
     except Exception:
-        return "N/A"
+        return "N/A", 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -250,15 +254,9 @@ class CantBeLateEvaluator:
         if output.get("segments"):
             summary_lines.append(f"- **Segments**: {output['segments']}")
         # Full spot availability (vendored code truncates to 10 segments)
-        try:
-            with open(example["trace_file"]) as f:
-                gap_hours = json.load(f).get("metadata", {}).get("gap_seconds", 0) / 3600.0
-        except Exception:
-            gap_hours = 0.0
-        if gap_hours > 0:
-            spot_avail = _full_spot_availability(example.get("trace_file", ""), gap_hours)
-            if spot_avail and spot_avail != "N/A":
-                summary_lines.append(f"- **Spot availability**: {spot_avail}")
+        spot_avail, _ = _full_spot_availability(example.get("trace_file", ""))
+        if spot_avail and spot_avail != "N/A":
+            summary_lines.append(f"- **Spot availability**: {spot_avail}")
         diagnostics["summary.md"] = "\n".join(summary_lines)
 
         self._bump_count()
