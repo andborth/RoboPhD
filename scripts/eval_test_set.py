@@ -226,10 +226,11 @@ def main():
             remaining = not_done
 
             if len(score_map) % 10 == 0:
-                logger.info(
-                    f"Test progress: {len(score_map)}/{len(test_examples)}, "
-                    f"running accuracy: {sum(score_map.values())/len(score_map)*100:.1f}%"
-                )
+                vals = list(score_map.values())
+                mean = sum(vals) / len(vals)
+                is_binary = all(0 <= v <= 1 for v in vals)
+                metric = f"running accuracy: {mean*100:.1f}%" if is_binary else f"running mean score: {mean:.2f}"
+                logger.info(f"Test progress: {len(score_map)}/{len(test_examples)}, {metric}")
     finally:
         if timed_out:
             executor.shutdown(wait=False, cancel_futures=True)
@@ -237,15 +238,22 @@ def main():
             executor.shutdown(wait=True)
     scores = [score_map[i] for i in range(len(test_examples))]
 
-    test_accuracy = sum(scores) / len(scores) * 100 if scores else 0.0
-    logger.info(f"Test set accuracy: {test_accuracy:.1f}% ({sum(scores):.0f}/{len(scores)})")
+    is_binary = all(0 <= s <= 1 for s in scores) if scores else True
+    mean_score = sum(scores) / len(scores) if scores else 0.0
+    if is_binary:
+        test_accuracy = mean_score * 100
+        logger.info(f"Test set accuracy: {test_accuracy:.1f}% ({sum(scores):.0f}/{len(scores)})")
+    else:
+        test_accuracy = mean_score  # continuous score, not a percentage
+        logger.info(f"Test set mean score: {mean_score:.2f} ({len(scores)} problems)")
 
     # Write results
     test_eval_cost = getattr(test_evaluator, 'total_eval_cost', 0.0)
     test_results = {
         "test_accuracy": test_accuracy,
         "test_total": len(scores),
-        "test_correct": sum(scores),
+        "test_correct": sum(scores) if is_binary else None,
+        "test_mean_score": mean_score,
         "test_eval_cost_usd": test_eval_cost,
         "agent_name": agent_name,
         "agent_dir": str(agent_dir),
