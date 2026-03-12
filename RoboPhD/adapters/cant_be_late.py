@@ -184,6 +184,7 @@ class CantBeLateEvaluator:
 
     def __init__(self, simulation_timeout: int = 300):
         self.simulation_timeout = simulation_timeout
+        self.total_eval_cost = 0.0  # No LLM calls — pure subprocess simulation
         self._eval_count = 0
         self._lock = threading.Lock()
 
