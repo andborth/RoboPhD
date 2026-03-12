@@ -97,6 +97,19 @@ def _write_program(code: str) -> Tuple[str, str]:
 # Dataset loading
 # ---------------------------------------------------------------------------
 
+def _make_problem_id(example: Dict[str, Any]) -> str:
+    """Build a human-readable problem_id from trace path and config.
+
+    E.g. "us-west-2a_k80_1__281__d48_dl92_oh0.40"
+    """
+    trace_path = Path(example["trace_file"])
+    trace_id = trace_path.stem  # "281"
+    # Path: .../real/<env>/traces/random_start/<id>.json
+    env = trace_path.parent.parent.parent.name  # "us-west-2a_k80_1"
+    cfg = example["config"]
+    return f"{env}__{trace_id}__d{cfg['duration']}_dl{cfg['deadline']}_oh{cfg['overhead']:.2f}"
+
+
 def load_cant_be_late_dataset(
     dataset_root: Optional[str] = None,
     seed: int = 0,
@@ -104,11 +117,16 @@ def load_cant_be_late_dataset(
 ) -> Dict[str, list]:
     """Load Can't Be Late trace dataset with train/val/test splits."""
     root = dataset_root or _DEFAULT_DATASET_ROOT
-    return load_trace_dataset(
+    ds = load_trace_dataset(
         dataset_root=root,
         seed=seed,
         max_traces_per_split=max_traces_per_split,
     )
+    # Add human-readable problem_id to each example
+    for split in ds.values():
+        for example in split:
+            example["problem_id"] = _make_problem_id(example)
+    return ds
 
 
 # ---------------------------------------------------------------------------
