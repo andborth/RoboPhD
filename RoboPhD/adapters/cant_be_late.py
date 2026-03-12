@@ -185,7 +185,7 @@ class CantBeLateEvaluator:
     def __init__(self, simulation_timeout: int = 300):
         self.simulation_timeout = simulation_timeout
         self.total_eval_cost = 0.0  # No LLM calls — pure subprocess simulation
-        self._eval_count = 0
+        self.total_evaluations = 0
         self._lock = threading.Lock()
 
     def __call__(
@@ -265,7 +265,7 @@ class CantBeLateEvaluator:
 
     def _bump_count(self):
         with self._lock:
-            self._eval_count += 1
-            count = self._eval_count
+            self.total_evaluations += 1
+            count = self.total_evaluations
         if count % 100 == 0:
             logger.info(f"Can't Be Late evaluator: {count} evaluations completed")
