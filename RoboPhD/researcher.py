@@ -3135,27 +3135,6 @@ class ParallelAgentResearcher:
                 else:
                     report_lines.extend(format_binary_report_comparative(index))
 
-                report_lines.extend([
-                    "## Extract Details",
-                    "",
-                    "To extract detailed error information for specific questions:",
-                    "```bash",
-                    "# All agents:",
-                    f"python RoboPhD/tools/error_analysis/extract_error_details.py \\",
-                    f"  --iteration-dir {iteration_dir.name} \\",
-                    "  --question-ids ID1,ID2,ID3 \\",
-                    "  --output details.json",
-                    "",
-                    "# Single agent:",
-                    f"python RoboPhD/tools/error_analysis/extract_error_details.py \\",
-                    f"  --iteration-dir {iteration_dir.name} \\",
-                    "  --question-ids ID1,ID2,ID3 \\",
-                    "  --agent agent_name \\",
-                    "  --output agent_details.json",
-                    "```",
-                    ""
-                ])
-
                 # Append clone detection section if any clones found this iteration
                 iteration_clones = [(c, m) for c, m, i in self.clone_detections if i == iteration]
                 if iteration_clones:

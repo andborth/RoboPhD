@@ -445,20 +445,6 @@ class DeepFocusEvolutionManager:
                 else:
                     report_lines.extend(format_binary_report_deep_focus(index))
 
-                report_lines.extend([
-                    "## Extract Details",
-                    "",
-                    "To extract detailed error information for specific questions:",
-                    "```bash",
-                    "python RoboPhD/tools/error_analysis/extract_error_details.py \\",
-                    f"  --question-ids 'ID1,ID2' \\",
-                    f"  --iteration-dir '{test_workspace.name}'",
-                    "```",
-                    "",
-                    "The tool returns complete evaluation data including SQL, results, and error details.",
-                    ""
-                ])
-
                 # Write report
                 with open(error_report_path, 'w') as f:
                     f.write('\n'.join(report_lines))
@@ -844,14 +830,6 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
 A structured error analysis comparing your new agent against baselines has been generated:
 - Report: `./{test_workspace_name}/error_analysis_report.md`
 - Error index: `./{test_workspace_name}/error_index.json`
-
-**For detailed question analysis, use the CLI tool:**
-
-```bash
-python RoboPhD/tools/error_analysis/extract_error_details.py \\
-  --question-ids '1234,5678' \\
-  --iteration-dir '{test_workspace_name}'
-```
 """
 
         prompt = f"""
