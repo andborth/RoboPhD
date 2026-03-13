@@ -529,7 +529,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             if not self._recover_missing_file(reasoning_file, "reasoning.md", description):
                 raise RuntimeError("Round 1 did not create reasoning.md")
 
-        logger.info(f"✓ reasoning.md created ({reasoning_file.stat().st_size} bytes)")
+        logger.info(f"✓ reasoning.md created ({reasoning_file.stat().st_size} bytes): {reasoning_file}")
 
         # Verify artifacts from file_mapping were created
         for key, rel_path in self._file_mapping.items():
@@ -1313,7 +1313,7 @@ After saving the reflection, respond with: "REFLECTION COMPLETE"
             if success:
                 reflection_file = self.working_dir / "evolution_reflection.md"
                 if reflection_file.exists():
-                    logger.info(f"✓ Evolution reflection saved: {reflection_file.name}")
+                    logger.info(f"✓ Evolution reflection saved: {reflection_file}")
                 else:
                     logger.warning("Reflection completed but evolution_reflection.md not found")
             else:
