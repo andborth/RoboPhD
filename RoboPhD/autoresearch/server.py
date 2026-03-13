@@ -35,6 +35,7 @@ class EvalServer:
         self.budget_total = evaluation_budget
         self.workspace = workspace
         self._lock = threading.Lock()
+        self._last_logged_pct = 100  # track 5% increments (start at 100%)
 
         handler = _make_handler(self)
         self._httpd = HTTPServer(("localhost", 0), handler)
@@ -65,7 +66,21 @@ class EvalServer:
             self.budget_remaining -= n
             overdrawn = self.budget_remaining <= 0
             self._write_budget()
+            self._maybe_log_budget()
             return True, overdrawn
+
+    def _maybe_log_budget(self):
+        """Log when budget crosses a 5% threshold. Must be called under _lock."""
+        pct = (self.budget_remaining / self.budget_total * 100) if self.budget_total > 0 else 0
+        # Find the highest 5% mark at or below current pct
+        current_mark = int(pct // 5) * 5
+        if current_mark < self._last_logged_pct:
+            used = self.budget_total - self.budget_remaining
+            logger.info(
+                f"Budget: {self.budget_remaining}/{self.budget_total} remaining "
+                f"({used} used, {pct:.0f}%)"
+            )
+            self._last_logged_pct = current_mark
 
     def start(self):
         self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
@@ -145,6 +160,12 @@ def _make_handler(server: EvalServer):
                     scores[eid] = 0.0
                     diagnostics[eid] = {"error": str(e)}
 
+            mean = sum(scores.values()) / len(scores) if scores else 0.0
+            logger.info(
+                f"Train eval: {len(example_ids)} examples, "
+                f"mean={mean:.3f}, budget={server.budget_remaining}"
+            )
+
             resp = {
                 "scores": scores,
                 "diagnostics": diagnostics,
@@ -178,6 +199,11 @@ def _make_handler(server: EvalServer):
                 count += 1
 
             mean_score = total_score / count if count else 0.0
+            logger.info(
+                f"Val eval: {count} examples, "
+                f"mean={mean_score:.3f}, budget={server.budget_remaining}"
+            )
+
             resp = {
                 "mean_score": mean_score,
                 "budget_remaining": server.budget_remaining,

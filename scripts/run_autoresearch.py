@@ -427,18 +427,24 @@ def main():
             logger.error(f"Claude Code session error: {e}")
             break
 
-        # Log result
+        # Log session result
+        try:
+            output = json.loads(result.stdout)
+            result_text = output.get("result", "")
+            # Truncate for logging
+            result_preview = result_text[:200] + "..." if len(result_text) > 200 else result_text
+            logger.info(f"Session exited (code={result.returncode}): {result_preview}")
+        except (json.JSONDecodeError, TypeError):
+            logger.info(f"Session exited (code={result.returncode}), stdout={result.stdout[:200]}")
+            output = None
+
         if result.returncode != 0:
-            logger.warning(f"Claude Code exited with code {result.returncode}")
             # Check if it's a rate limit that call_claude_cli didn't handle
-            try:
-                output = json.loads(result.stdout)
-                if output.get("is_error") and "hit your limit" in output.get("result", "").lower():
-                    logger.info("Rate limit hit — will retry on next loop iteration")
-                    continue
-            except (json.JSONDecodeError, AttributeError):
-                pass
+            if output and output.get("is_error") and "hit your limit" in output.get("result", "").lower():
+                logger.info("Rate limit hit — will retry on next loop iteration")
+                continue
             # Non-rate-limit error — break
+            logger.warning(f"Claude Code failed (code={result.returncode})")
             if result.stderr:
                 logger.error(f"stderr: {result.stderr[:500]}")
             break
@@ -487,7 +493,7 @@ def main():
     if experiment_log:
         kept_experiments = [e for e in experiment_log if e.get("kept")]
         if kept_experiments:
-            best_val_score = max(e.get("val_score", 0.0) for e in kept_experiments)
+            best_val_score = max(e.get("val_score") or 0.0 for e in kept_experiments)
 
     summary = {
         "task": task.name,

@@ -63,10 +63,12 @@ def _gepa_datasets_builder(config: Dict[str, Any]) -> Tuple[List[Dict], List[Dic
     train, val = ds["train"], ds["val"]
     train_size = config.get("train_size")
     val_size = config.get("val_size")
+    if val_size is not None:
+        # Move unused val examples to train
+        train = train + val[val_size:]
+        val = val[:val_size]
     if train_size is not None:
         train = train[:train_size]
-    if val_size is not None:
-        val = val[:val_size]
     return train, val
 
 
