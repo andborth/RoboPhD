@@ -52,14 +52,20 @@ class EvalServer:
         }
         (self.workspace / "_budget.json").write_text(json.dumps(budget, indent=2))
 
-    def _consume_budget(self, n: int) -> bool:
-        """Consume n budget. Returns True if budget was available (or in-flight completion)."""
+    def _consume_budget(self, n: int) -> tuple[bool, bool]:
+        """Consume n budget.
+
+        Returns (allowed, overdrawn):
+            allowed: True if budget was > 0 before this call (request proceeds).
+            overdrawn: True if budget is now <= 0 after this call (no future requests).
+        """
         with self._lock:
             if self.budget_remaining <= 0:
-                return False
+                return False, True
             self.budget_remaining -= n
+            overdrawn = self.budget_remaining <= 0
             self._write_budget()
-            return True
+            return True, overdrawn
 
     def start(self):
         self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
@@ -112,7 +118,8 @@ def _make_handler(server: EvalServer):
                 return
 
             cost = len(example_ids)
-            if not server._consume_budget(cost):
+            allowed, overdrawn = server._consume_budget(cost)
+            if not allowed:
                 self._send_json({
                     "error": "budget_exhausted",
                     "budget_remaining": server.budget_remaining,
@@ -122,7 +129,6 @@ def _make_handler(server: EvalServer):
             candidate = server.candidate_fn()
             scores = {}
             diagnostics = {}
-            budget_exhausted = server.budget_remaining < 0
 
             for eid in example_ids:
                 if eid not in server.train_examples:
@@ -144,13 +150,14 @@ def _make_handler(server: EvalServer):
                 "diagnostics": diagnostics,
                 "budget_remaining": server.budget_remaining,
             }
-            if budget_exhausted:
+            if overdrawn:
                 resp["budget_exhausted"] = True
             self._send_json(resp)
 
         def _handle_val(self):
             cost = len(server.val_examples)
-            if not server._consume_budget(cost):
+            allowed, overdrawn = server._consume_budget(cost)
+            if not allowed:
                 self._send_json({
                     "error": "budget_exhausted",
                     "budget_remaining": server.budget_remaining,
@@ -160,7 +167,6 @@ def _make_handler(server: EvalServer):
             candidate = server.candidate_fn()
             total_score = 0.0
             count = 0
-            budget_exhausted = server.budget_remaining < 0
 
             for example in server.val_examples:
                 try:
@@ -175,7 +181,7 @@ def _make_handler(server: EvalServer):
                 "mean_score": mean_score,
                 "budget_remaining": server.budget_remaining,
             }
-            if budget_exhausted:
+            if overdrawn:
                 resp["budget_exhausted"] = True
             self._send_json(resp)
 
