@@ -92,7 +92,7 @@ def parse_args():
 
     args = parser.parse_args()
     if args.runs_dir is None:
-        args.runs_dir = project_root.parent / "robophd_runs"
+        args.runs_dir = Path("../robophd_runs")
     return args
 
 

@@ -126,7 +126,7 @@ def main():
     )
     args = parser.parse_args()
     if args.runs_dir is None:
-        args.runs_dir = project_root.parent / "robophd_runs"
+        args.runs_dir = Path("../robophd_runs")
 
     if args.test_repeats < 1:
         parser.error("--test-repeats must be at least 1")

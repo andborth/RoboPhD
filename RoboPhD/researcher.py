@@ -810,7 +810,7 @@ class ParallelAgentResearcher:
                 if runs_dir_cfg:
                     runs_dir = Path(runs_dir_cfg)
                 else:
-                    runs_dir = Path(__file__).resolve().parent.parent / "robophd_runs"
+                    runs_dir = Path("../robophd_runs")
                 task_name = runtime_config.get("task_name", "unknown") if runtime_config else "unknown"
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 self.experiment_dir = runs_dir / "robophd" / f"{task_name}_{timestamp}"
