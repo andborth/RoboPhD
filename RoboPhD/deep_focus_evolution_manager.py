@@ -665,6 +665,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         # Create symlinks to baseline agents for comparison
         # Use absolute path so symlinks work from any location
         baseline_iter_dir = (self.experiment_dir / f"iteration_{test_iteration:03d}").resolve()
+        baseline_scores = {}
         if baseline_iter_dir.exists():
             baseline_agents = list(baseline_iter_dir.glob("agent_*"))
             logger.info(f"Creating symlinks to {len(baseline_agents)} baseline agents")
@@ -673,7 +674,19 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
                 if not symlink_path.exists():
                     try:
                         symlink_path.symlink_to(baseline_agent_dir, target_is_directory=True)
-                        logger.info(f"  ✓ Linked {baseline_agent_dir.name}")
+                        # Read baseline score from evaluation.json
+                        score_str = ""
+                        try:
+                            eval_json = baseline_agent_dir / "evaluation.json"
+                            if eval_json.exists():
+                                eval_data = json.loads(eval_json.read_text())
+                                score = eval_data.get("summary", {}).get("average_score")
+                                if score is not None:
+                                    baseline_scores[baseline_agent_dir.name] = score
+                                    score_str = f" (score: {score:.3f})"
+                        except Exception:
+                            pass
+                        logger.info(f"  ✓ Linked {baseline_agent_dir.name}{score_str}")
                     except Exception as e:
                         logger.warning(f"  ⚠️  Failed to link {baseline_agent_dir.name}: {e}")
         else:
@@ -775,7 +788,21 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         total_score_sum = eval_result.score_sum
         total_questions = eval_result.total
 
-        logger.info(f"Overall score: {overall_score:.3f} ({total_score_sum:.1f}/{total_questions})")
+        # Compute rank relative to baselines
+        rank_str = ""
+        if baseline_scores:
+            all_scores = list(baseline_scores.values()) + [overall_score]
+            # Round to 6 decimals for tie detection (consistent with ranking_table.py)
+            rounded_new = round(overall_score, 6)
+            higher_count = sum(1 for s in baseline_scores.values() if round(s, 6) > rounded_new)
+            tied_count = sum(1 for s in baseline_scores.values() if round(s, 6) == rounded_new)
+            rank = higher_count + 1
+            total = len(all_scores)
+            if tied_count > 0:
+                rank_str = f" — rank #{rank} (tied) of {total}"
+            else:
+                rank_str = f" — rank #{rank} of {total}"
+        logger.info(f"Overall score: {overall_score:.3f} ({total_score_sum:.1f}/{total_questions}){rank_str}")
 
         # Generate new vs baseline error analysis
         logger.info("Generating new vs baseline error analysis...")
