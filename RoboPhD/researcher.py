@@ -806,7 +806,7 @@ class ParallelAgentResearcher:
             if dev_eval_mode and custom_experiment_name:
                 self.experiment_dir = Path("robophd_evaluation") / custom_experiment_name
             else:
-                runs_dir_cfg = config_manager.get_config(0).get("runs_directory")
+                runs_dir_cfg = (runtime_config or {}).get("runs_dir")
                 if runs_dir_cfg:
                     runs_dir = Path(runs_dir_cfg)
                 else:
