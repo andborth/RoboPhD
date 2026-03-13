@@ -21,6 +21,40 @@ class RateLimitExceeded(Exception):
     pass
 
 
+def _parse_envrc_exports(cwd: Path) -> Dict[str, str]:
+    """
+    Walk up from cwd to filesystem root, find the first .envrc file,
+    and parse 'export KEY=value' lines into a dict.
+
+    Handles ~ expansion and optional single/double quotes around values.
+    """
+    current = cwd.resolve()
+    while True:
+        envrc = current / '.envrc'
+        if envrc.is_file():
+            exports: Dict[str, str] = {}
+            for line in envrc.read_text().splitlines():
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                m = re.match(r'^export\s+([A-Za-z_][A-Za-z0-9_]*)=(.*)$', line)
+                if m:
+                    key = m.group(1)
+                    val = m.group(2).strip()
+                    # Strip matching quotes
+                    if len(val) >= 2 and val[0] == val[-1] and val[0] in ('"', "'"):
+                        val = val[1:-1]
+                    # Expand ~
+                    val = os.path.expanduser(val)
+                    exports[key] = val
+            return exports
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+    return {}
+
+
 def find_claude_cli() -> Optional[str]:
     """Find the Claude CLI executable."""
     # Check common locations (prioritize the actual path over aliases)
@@ -172,10 +206,9 @@ def call_claude_cli(
     """
     log = logger or logging.getLogger(__name__)
 
-    # Build environment with optional overrides
-    env = None
-    if extra_env:
-        env = {**os.environ, **extra_env}
+    # Build environment: base env + .envrc exports + explicit overrides
+    envrc_vars = _parse_envrc_exports(Path(cwd))
+    env = {**os.environ, **envrc_vars, **(extra_env or {})}
 
     while True:
         result = subprocess.run(
@@ -235,3 +268,11 @@ def call_claude_cli(
 
         print("✓ Resuming Claude Code call...")
         log.info("Rate limit wait complete, retrying Claude CLI call")
+
+        # After rate limit wait, the session already exists from the first attempt.
+        # Swap --session-id to --resume so the retry doesn't fail with
+        # "Session ID is already in use".
+        if "--session-id" in cmd:
+            idx = cmd.index("--session-id")
+            cmd = list(cmd)  # copy to avoid mutating caller's list
+            cmd[idx] = "--resume"
