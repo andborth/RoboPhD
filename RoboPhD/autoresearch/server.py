@@ -171,9 +171,10 @@ def _make_handler(server: EvalServer):
             for example in server.val_examples:
                 try:
                     score, _ = server.evaluator(candidate, example)
-                    total_score += score
                 except Exception as e:
                     logger.warning(f"Evaluator error on val example: {e}")
+                    score = 0.0
+                total_score += score
                 count += 1
 
             mean_score = total_score / count if count else 0.0

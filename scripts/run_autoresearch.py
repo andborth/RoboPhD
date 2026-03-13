@@ -306,17 +306,30 @@ def main():
         valset = shuffled[split_idx:]
         logger.info(f"Training set: {len(trainset)}, Validation set: {len(valset)}")
 
-    # Assign IDs to examples (use existing 'id' field or index)
-    for i, ex in enumerate(trainset):
-        if "id" not in ex:
-            ex["id"] = str(i)
-        else:
-            ex["id"] = str(ex["id"])
-    for i, ex in enumerate(valset):
-        if "id" not in ex:
-            ex["id"] = f"val_{i}"
-        else:
-            ex["id"] = str(ex["id"])
+    # Assign IDs to examples. Tasks use different ID fields (question_id,
+    # problem_id, etc.) — discover the right one from the first example.
+    _ID_FIELDS = ("id", "question_id", "problem_id", "task_id")
+
+    def _find_id_field(examples):
+        if not examples:
+            return None
+        for field in _ID_FIELDS:
+            if field in examples[0]:
+                return field
+        return None
+
+    def _assign_ids(examples, prefix=""):
+        id_field = _find_id_field(examples)
+        for i, ex in enumerate(examples):
+            if id_field and id_field != "id":
+                ex["id"] = str(ex[id_field])
+            elif "id" in ex:
+                ex["id"] = str(ex["id"])
+            else:
+                ex["id"] = f"{prefix}{i}"
+
+    _assign_ids(trainset)
+    _assign_ids(valset, prefix="val_")
 
     train_example_ids = [ex["id"] for ex in trainset]
 
