@@ -20,7 +20,6 @@ from typing import Any, Dict, List, Optional, Tuple
 IMMUTABLE_PARAMS = [
     "domain", "dataset", "random_seed",
     "initial_agents", "agents_directory",
-    "runs_directory",
 ]
 
 
