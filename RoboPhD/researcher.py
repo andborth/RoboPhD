@@ -1875,9 +1875,10 @@ class ParallelAgentResearcher:
         agents = list(iteration_results.keys())
 
         # Group agents by score to identify ties
+        # Round to 6 decimals to collapse floating-point noise into ties
         score_groups = {}
         for agent in agents:
-            score = iteration_results[agent]['average_score']
+            score = round(iteration_results[agent]['average_score'], 6)
             if score not in score_groups:
                 score_groups[score] = []
             score_groups[score].append(agent)

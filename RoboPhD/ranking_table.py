@@ -27,11 +27,13 @@ def calculate_mean_ranks(records: Dict) -> Dict[str, float]:
     for iteration, scores in iteration_results.items():
         if len(scores) > 1:  # Need at least 2 agents to rank
             # Group agents by score for proper tie handling
+            # Round to 6 decimals to collapse floating-point noise into ties
             score_groups = {}
             for agent_id, score in scores.items():
-                if score not in score_groups:
-                    score_groups[score] = []
-                score_groups[score].append(agent_id)
+                rounded = round(score, 6)
+                if rounded not in score_groups:
+                    score_groups[rounded] = []
+                score_groups[rounded].append(agent_id)
 
             # Assign ranks with proper tie handling
             current_rank = 1
@@ -102,11 +104,13 @@ def generate_ranking_table(test_history: List, performance_records: Dict, for_ev
                 agent_scores[agent_id] = agent_data['average_score']
 
         # Rank agents for this iteration with proper tie handling
+        # Round to 6 decimals to collapse floating-point noise into ties
         score_groups = {}
         for agent_id, score in agent_scores.items():
-            if score not in score_groups:
-                score_groups[score] = []
-            score_groups[score].append(agent_id)
+            rounded = round(score, 6)
+            if rounded not in score_groups:
+                score_groups[rounded] = []
+            score_groups[rounded].append(agent_id)
 
         # Assign ranks with proper tie handling
         current_rank = 1
