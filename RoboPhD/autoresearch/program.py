@@ -78,18 +78,17 @@ not a rigid protocol.
 
 LOOP:
 
-1. Look at the current state: `git log --oneline`, check budget with `python _evaluate.py budget`
-2. Study a few training examples to get diagnostics: `python _evaluate.py train <id> ...`
-3. Form a hypothesis about what change will improve scores
-4. Edit the candidate files to implement your idea
-5. Evaluate on training examples to check if the change helps
-6. If training looks promising, run a validation sweep: `python _evaluate.py val`
-7. Log results to `_experiment_log.jsonl`:
+1. Check state: `git log --oneline`, `python _evaluate.py budget`
+2. Research: study training examples (`python _evaluate.py train <id> ...`),
+   read diagnostics, form a hypothesis
+3. Edit the candidate files to implement your idea
+4. Run a validation sweep: `python _evaluate.py val`
+5. Log results to `_experiment_log.jsonl`:
    ```json
    {{"experiment": N, "hypothesis": "...", "val_score": X.XXX, "baseline_val_score": X.XXX, "kept": true/false, "budget_remaining": N}}
    ```
-8. If val score improved: `git add -A && git commit -m "Experiment N: <description> (val=X.XXX)"`
-9. If val score did not improve: `git checkout -- .` to revert all changes
+6. If val score improved: `git add -A && git commit -m "Experiment N: <description> (val=X.XXX)"`
+7. If val score did not improve: `git checkout -- .` to revert all changes
 
 The idea is that you are a completely autonomous researcher trying things out.
 If they work, keep. If they don't, discard. And you're advancing the branch so
