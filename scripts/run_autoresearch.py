@@ -385,6 +385,10 @@ def main():
     except ImportError:
         call_claude_cli = None
 
+    total_session_cost = 0.0
+    total_session_tokens_in = 0
+    total_session_tokens_out = 0
+
     while eval_server.budget_remaining > 0:
         budget_before = eval_server.budget_remaining
 
@@ -436,6 +440,14 @@ def main():
             # Truncate for logging
             result_preview = result_text[:200] + "..." if len(result_text) > 200 else result_text
             logger.info(f"Session exited (code={result.returncode}): {result_preview}")
+
+            # Accumulate cost from this CLI call
+            call_cost = output.get("total_cost_usd", 0.0)
+            if call_cost:
+                total_session_cost += call_cost
+            usage = output.get("usage", {})
+            total_session_tokens_in += usage.get("input_tokens", 0)
+            total_session_tokens_out += usage.get("output_tokens", 0)
         except (json.JSONDecodeError, TypeError):
             logger.info(f"Session exited (code={result.returncode}), stdout={result.stdout[:200]}")
             output = None
@@ -484,9 +496,19 @@ def main():
     logger.info("Requesting agent reflection...")
     try:
         if call_claude_cli:
-            call_claude_cli(reflection_cmd, cwd=workspace, timeout=300, logger=logger)
+            refl_result = call_claude_cli(reflection_cmd, cwd=workspace, timeout=300, logger=logger)
         else:
-            subprocess.run(reflection_cmd, cwd=workspace, capture_output=True, text=True, timeout=300)
+            refl_result = subprocess.run(reflection_cmd, cwd=workspace, capture_output=True, text=True, timeout=300)
+        try:
+            refl_output = json.loads(refl_result.stdout)
+            refl_cost = refl_output.get("total_cost_usd", 0.0)
+            if refl_cost:
+                total_session_cost += refl_cost
+            refl_usage = refl_output.get("usage", {})
+            total_session_tokens_in += refl_usage.get("input_tokens", 0)
+            total_session_tokens_out += refl_usage.get("output_tokens", 0)
+        except (json.JSONDecodeError, TypeError):
+            pass
     except Exception as e:
         logger.warning(f"Reflection request failed: {type(e).__name__}: {e}")
 
@@ -559,13 +581,19 @@ def main():
         "experiment_log": experiment_log,
         "git_history": git_history,
         "config": {k: v for k, v in config.items() if isinstance(v, (str, int, float, bool, type(None)))},
+        "cost": {
+            "evolution_cost_usd": round(total_session_cost, 2),
+            "tokens_in": total_session_tokens_in,
+            "tokens_out": total_session_tokens_out,
+        },
     }
     with open(args.output_dir / "optimization_summary.json", "w") as f:
         json.dump(summary, f, indent=2)
 
     logger.info(
         f"Optimization complete. {len(experiment_log)} experiments, "
-        f"best val score: {best_val_score:.3f}"
+        f"best val score: {best_val_score:.3f}, "
+        f"evolution cost: ${total_session_cost:.2f}"
     )
 
     # --- 11. Optional test-set evaluation ---
