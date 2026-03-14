@@ -79,8 +79,8 @@ not a rigid protocol.
 LOOP:
 
 1. Check state: `git log --oneline`, `python _evaluate.py budget`
-2. Research: study training examples (`python _evaluate.py train <id> ...`),
-   read diagnostics, form a hypothesis
+2. Research: run one or more rounds of training evaluation
+   (`python _evaluate.py train <id> ...`), read diagnostics, form a hypothesis
 3. Edit the candidate files to implement your idea
 4. Run a validation sweep: `python _evaluate.py val`
 5. Log results to `_experiment_log.jsonl`:
