@@ -488,7 +488,7 @@ def main():
         else:
             subprocess.run(reflection_cmd, cwd=workspace, capture_output=True, text=True, timeout=300)
     except Exception as e:
-        logger.warning(f"Reflection request failed: {e}")
+        logger.warning(f"Reflection request failed: {type(e).__name__}: {e}")
 
     # --- 11. Collect results ---
     logger.info("Collecting results...")
