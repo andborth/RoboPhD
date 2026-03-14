@@ -62,6 +62,12 @@ to confirm overall improvement.
 the candidate files however you want. The only constraint is that the evaluator can
 still score your candidate.
 
+**The first run**: Your very first run should always be to establish the baseline.
+Run a validation sweep (`python _evaluate.py val`) on the initial candidate before
+making any changes. Record this as experiment 0 in the log. This gives you a
+concrete number to beat and ensures you don't waste budget chasing improvements
+that don't actually exceed the starting point.
+
 LOOP FOREVER:
 
 1. Look at the current state: `git log --oneline`, check budget with `python _evaluate.py budget`
