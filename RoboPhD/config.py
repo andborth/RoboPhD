@@ -49,7 +49,7 @@ SUPPORTED_MODELS = {
 # Claude CLI accepts both aliases ('haiku') and full IDs; full IDs are
 # preferred so cache keys stay stable when aliases roll forward.
 CLAUDE_CLI_MODEL_MAP = {
-    'opus-4.6': 'claude-opus-4-6',
+    'opus-4.6': 'claude-opus-4-6[1m]',
     'sonnet-4.6': 'claude-sonnet-4-6',
     'sonnet-4.5': 'claude-sonnet-4-5-20250929',
     'haiku-4.5': 'claude-haiku-4-5-20251001',
