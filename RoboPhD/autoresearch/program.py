@@ -62,13 +62,21 @@ to confirm overall improvement.
 the candidate files however you want. The only constraint is that the evaluator can
 still score your candidate.
 
-**The first run**: Your very first run should always be to establish the baseline.
-Run a validation sweep (`python _evaluate.py val`) on the initial candidate before
-making any changes. Record this as experiment 0 in the log. This gives you a
-concrete number to beat and ensures you don't waste budget chasing improvements
-that don't actually exceed the starting point.
+Always start and end with a validation sweep. Everything in between is up to you.
 
-LOOP FOREVER:
+**First**: Run `python _evaluate.py val` on the unmodified candidate to establish the
+baseline. Record this as experiment 0 in the log. This gives you a concrete number
+to beat.
+
+**Last**: Reserve exactly {val_size} budget for a final validation sweep. When your
+remaining budget equals {val_size}, stop experimenting and run one last
+`python _evaluate.py val`. Commit or revert based on the result.
+
+**In between**: Use the remaining budget however you see fit — training evals,
+validation sweeps, whatever mix works. The loop below is a suggested rhythm,
+not a rigid protocol.
+
+LOOP:
 
 1. Look at the current state: `git log --oneline`, check budget with `python _evaluate.py budget`
 2. Study a few training examples to get diagnostics: `python _evaluate.py train <id> ...`
@@ -87,10 +95,6 @@ The idea is that you are a completely autonomous researcher trying things out.
 If they work, keep. If they don't, discard. And you're advancing the branch so
 that you can iterate. If you feel like you're getting stuck in some way, you can
 rewind, but you should probably do this very sparingly (if ever).
-
-It's your call how to balance training and validation evaluations and how many
-validation runs you do. End your experimentation with a final validation sweep
-that exhausts your remaining budget, then commit or revert and log the result.
 
 The best candidate is whatever is in the workspace at HEAD when you stop.
 
