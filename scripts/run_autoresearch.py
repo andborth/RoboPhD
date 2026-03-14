@@ -386,6 +386,8 @@ def main():
         call_claude_cli = None
 
     while eval_server.budget_remaining > 0:
+        budget_before = eval_server.budget_remaining
+
         if first_call:
             prompt = "Read program.md and begin the autoresearch protocol."
             cmd = [
@@ -449,9 +451,46 @@ def main():
                 logger.error(f"stderr: {result.stderr[:500]}")
             break
 
+        # Detect stale sessions: agent exited cleanly but consumed no budget
+        budget_after = eval_server.budget_remaining
+        if budget_after == budget_before and result.returncode == 0:
+            logger.info("Agent exited without consuming budget — stopping")
+            break
+
     eval_server.stop()
 
-    # --- 10. Collect results ---
+    # --- 10. Request reflection ---
+    reflection_prompt = (
+        "Thanks for your work on this. Looking back at the entire session, "
+        "please write a brief reflection to `_reflection.md`. Consider:\n\n"
+        "- What approaches worked well? What didn't?\n"
+        "- What was surprising or unexpected about the problem?\n"
+        "- What would you do differently with a fresh budget?\n"
+        "- Any insights about the task itself that a future researcher should know?\n"
+        "- Any suggestions for improving the instructions you were given?\n"
+        "- Is there any tool or library that you wish you had access to?\n\n"
+        "Keep it concise — a few paragraphs, not an essay."
+    )
+    reflection_cmd = [
+        claude_cli,
+        "--model", cli_model,
+        "--permission-mode", "bypassPermissions",
+        "--output-format", "json",
+        "--resume", session_id,
+        "--print", reflection_prompt,
+    ]
+    reflection_cmd.extend(["--settings", json.dumps({"autoCompact": True})])
+
+    logger.info("Requesting agent reflection...")
+    try:
+        if call_claude_cli:
+            call_claude_cli(reflection_cmd, cwd=workspace, timeout=300, logger=logger)
+        else:
+            subprocess.run(reflection_cmd, cwd=workspace, capture_output=True, text=True, timeout=300)
+    except Exception as e:
+        logger.warning(f"Reflection request failed: {e}")
+
+    # --- 11. Collect results ---
     logger.info("Collecting results...")
 
     # Best candidate = current workspace files
@@ -487,6 +526,12 @@ def main():
     budget_path = workspace / "_budget.json"
     if budget_path.exists():
         budget_state = json.loads(budget_path.read_text())
+
+    # Copy reflection if the agent wrote one
+    reflection_path = workspace / "_reflection.md"
+    if reflection_path.exists():
+        shutil.copy2(reflection_path, args.output_dir / "reflection.md")
+        logger.info(f"Agent reflection saved to {args.output_dir / 'reflection.md'}")
 
     # Best val score from experiment log
     best_val_score = 0.0

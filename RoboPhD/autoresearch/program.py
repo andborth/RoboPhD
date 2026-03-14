@@ -23,11 +23,7 @@ def generate_program(
 
     return f"""# Autoresearch Program
 
-## Objective
-
-{task.objective}
-
-## Candidate Files
+## Candidate files
 
 Your candidate is defined by these files in the workspace root:
 
@@ -52,7 +48,7 @@ python _evaluate.py budget
 ```
 
 Training example IDs are listed in `_train_examples.json` ({len(train_example_ids)} examples).
-Each training evaluation costs 1 budget per example.
+Each training evaluation costs 1 budget unit per example.
 Each validation evaluation costs {val_size} budget (entire val set).
 Total budget: {evaluation_budget} evaluator calls.
 
@@ -60,44 +56,47 @@ Total budget: {evaluation_budget} evaluator calls.
 breakdown. Use training evaluations to study failure modes in detail, then validate
 to confirm overall improvement.
 
-## Protocol
+## The experiment loop
 
-### 1. Baseline
-Evaluate the seed candidate on the validation set to establish a baseline score.
+**The goal is simple: get the highest val score.** Everything is fair game: rewrite
+the candidate files however you want. The only constraint is that the evaluator can
+still score your candidate.
 
-### 2. Experiment Loop
-Repeat until budget is exhausted:
+LOOP FOREVER:
 
-1. **Study**: Evaluate on a few training examples to get detailed diagnostics.
-   Analyze the diagnostics to understand failure modes.
-2. **Hypothesize**: Form a specific hypothesis about what change will improve scores.
-3. **Modify**: Edit the candidate files to implement your hypothesis.
-4. **Evaluate (train)**: Test on training examples to verify the change helps.
-5. **Evaluate (val)**: If training looks promising, run a validation sweep.
-6. **Commit or revert**:
-   - If val score improved: `git add -A && git commit -m "Experiment N: <description> (val=X.XXX)"`
-   - If val score did not improve: `git checkout -- .` to revert all changes
-7. **Log**: Append to `_experiment_log.jsonl`:
+1. Look at the current state: `git log --oneline`, check budget with `python _evaluate.py budget`
+2. Study a few training examples to get diagnostics: `python _evaluate.py train <id> ...`
+3. Form a hypothesis about what change will improve scores
+4. Edit the candidate files to implement your idea
+5. Evaluate on training examples to check if the change helps
+6. If training looks promising, run a validation sweep: `python _evaluate.py val`
+7. Log results to `_experiment_log.jsonl`:
    ```json
    {{"experiment": N, "hypothesis": "...", "val_score": X.XXX, "baseline_val_score": X.XXX, "kept": true/false, "budget_remaining": N}}
    ```
+8. If val score improved: `git add -A && git commit -m "Experiment N: <description> (val=X.XXX)"`
+9. If val score did not improve: `git checkout -- .` to revert all changes
 
-### 3. Budget Management
-- Check budget before expensive operations (`python _evaluate.py budget`)
-- Training evaluations are cheap (1 call each) — use them to probe and diagnose
-- Validation sweeps are expensive ({val_size} calls) — use sparingly to confirm gains
-- When budget is exhausted, the evaluator returns an error. Stop experimenting.
+The idea is that you are a completely autonomous researcher trying things out.
+If they work, keep. If they don't, discard. And you're advancing the branch so
+that you can iterate. If you feel like you're getting stuck in some way, you can
+rewind, but you should probably do this very sparingly (if ever).
 
-### 4. Strategy Tips
-- Start with a small training probe (2-3 examples) to understand the problem
-- Make targeted changes based on diagnostic evidence, not guesses
-- Keep changes small and testable — one hypothesis per experiment
-- If a change helps on training but not validation, it may be overfitting
-- The best candidate is whatever is in the workspace at HEAD when you stop
+It's your call how to balance training and validation evaluations and how many
+validation runs you do. End your experimentation with a final validation sweep
+that exhausts your remaining budget, then commit or revert and log the result.
 
-## Version Control
-- Git is initialized in this workspace. The seed candidate is the initial commit.
-- Always commit improvements so they aren't lost if a later experiment fails.
-- Use `git log --oneline` to review your experiment history.
-- Use `git diff` to see what changed since the last commit.
+The best candidate is whatever is in the workspace at HEAD when you stop.
+
+**Timeout and crashes**: If your session gets interrupted or crashes, the
+infrastructure will resume you automatically. Your git commits and experiment log
+are durable — check them on resume to see where you left off and continue from there.
+
+**NEVER STOP**: Do NOT pause to ask the human if you should continue. Do NOT ask
+"should I keep going?" or "is this a good stopping point?". The human might be
+asleep or away from the computer and expects you to continue working until your
+budget is exhausted or you are manually stopped. You are autonomous. If you run
+out of ideas, think harder — re-read the diagnostics, try combining previous
+near-misses, try more radical changes. The loop runs until the budget runs out.
+
 """
