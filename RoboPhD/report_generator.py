@@ -949,7 +949,7 @@ class ReportGenerator:
             report_lines.append(f"| First Draft (Round 1) | {avg_first_draft/60:.1f}m | {pct_first_draft:.1f}% |")
 
             # Dynamic test round rows
-            for i, key in enumerate(sorted(test_round_averages.keys()), start=1):
+            for i, key in enumerate(sorted(test_round_averages.keys(), key=lambda k: int(k.split('_')[-1])), start=1):
                 avg_time = test_round_averages[key]
                 pct = test_round_percentages[key]
                 round_num = i + 1  # Rounds start at 2 (after first_draft=1)
@@ -1111,7 +1111,15 @@ class ReportGenerator:
                 for key in evo_bd:
                     if key.startswith('test_refine_'):
                         all_test_round_keys.add(key)
-            sorted_test_round_keys = sorted(all_test_round_keys)
+            sorted_test_round_keys = sorted(all_test_round_keys, key=lambda k: int(k.split('_')[-1]))
+            # Prune test_refine keys that have zero cost across all iterations
+            sorted_test_round_keys = [
+                key for key in sorted_test_round_keys
+                if any(
+                    (ic.get('evolution_breakdown') or {}).get(key, {}).get('cost', 0.0) > 0
+                    for ic in self.researcher.iteration_claude_costs
+                )
+            ]
             num_df_rounds = len(sorted_test_round_keys)
 
             # Check if we have fresh eval data
@@ -1260,8 +1268,17 @@ class ReportGenerator:
                             if key.startswith('test_refine_'):
                                 test_round_keys.add(key)
 
+                    # Prune keys with zero total cost and sort numerically
+                    test_round_keys = {
+                        key for key in test_round_keys
+                        if any(
+                            (ic.get('evolution_breakdown') or {}).get(key, {}).get('cost', 0.0) > 0
+                            for ic in self.researcher.iteration_claude_costs
+                        )
+                    }
+
                     test_round_stats = {}
-                    for key in sorted(test_round_keys):
+                    for key in sorted(test_round_keys, key=lambda k: int(k.split('_')[-1])):
                         test_round_stats[key] = {
                             'cost': sum(
                                 (ic.get('evolution_breakdown') or {}).get(key, {}).get('cost', 0.0)
@@ -1284,7 +1301,7 @@ class ReportGenerator:
                         for ic in self.researcher.iteration_claude_costs
                     ) / num_evolutions_with_cost
 
-                    for key in sorted(test_round_keys):
+                    for key in sorted(test_round_keys, key=lambda k: int(k.split('_')[-1])):
                         test_round_stats[key]['tokens_in'] = sum(
                             (ic.get('evolution_breakdown') or {}).get(key, {}).get('tokens_in', 0)
                             for ic in self.researcher.iteration_claude_costs
@@ -1305,7 +1322,7 @@ class ReportGenerator:
                         for ic in self.researcher.iteration_claude_costs
                     ) / num_evolutions_with_cost
 
-                    for key in sorted(test_round_keys):
+                    for key in sorted(test_round_keys, key=lambda k: int(k.split('_')[-1])):
                         test_round_stats[key]['tokens_out'] = sum(
                             (ic.get('evolution_breakdown') or {}).get(key, {}).get('tokens_out', 0)
                             for ic in self.researcher.iteration_claude_costs
@@ -1350,7 +1367,7 @@ class ReportGenerator:
                         f"{avg_first_draft_tokens_in:.0f} | {avg_first_draft_tokens_out:.0f} |"
                     )
 
-                    for i, key in enumerate(sorted(test_round_keys), start=1):
+                    for i, key in enumerate(sorted(test_round_keys, key=lambda k: int(k.split('_')[-1])), start=1):
                         stats = test_round_stats[key]
                         round_num = i + 1
 
