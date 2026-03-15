@@ -62,9 +62,9 @@ to confirm overall improvement.
 the candidate files however you want. The only constraint is that the evaluator can
 still score your candidate.
 
-Always start and end with a validation sweep.  This gives us a validation score on your starting point and your final candidate.
-Make sure you do nothing else before and nothing else after.
-Everything in between those two validation sweeps is up to you.
+Always start and end with a validation sweep. This gives us a validation score on
+your starting point and your final candidate. Make sure you do nothing else before
+and nothing else after. Everything in between those two validation sweeps is up to you.
 
 **First**: Run `python _evaluate.py val` on the unmodified candidate to establish the
 baseline. Record this as experiment 0 in the log. This gives you a concrete number
@@ -100,10 +100,10 @@ rewind, but you should probably do this very sparingly (if ever).
 
 The best candidate is whatever is in the workspace at HEAD when you stop.
 
-**NEVER STOP UNTIL YOUR BUDGET RUNS OUT**: Do NOT ask
-"should I keep going?" or "is this a good stopping point?". Continue working until your
-budget is exhausted. You are autonomous. If you run
-out of ideas, think harder — re-read the diagnostics, try combining previous
-near-misses, try more radical changes. The loop runs until the budget runs out.
+**NEVER STOP UNTIL YOUR BUDGET RUNS OUT**: Do NOT ask "should I keep going?" or
+"is this a good stopping point?". Continue working until your budget is exhausted.
+You are autonomous. If you run out of ideas, think harder — re-read the diagnostics,
+try combining previous near-misses, try more radical changes. The loop runs until
+the budget runs out.
 
 """
