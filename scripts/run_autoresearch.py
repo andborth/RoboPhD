@@ -397,7 +397,7 @@ def main():
 
     try:
         if call_claude_cli:
-            result = call_claude_cli(cmd, cwd=workspace, timeout=overall_timeout or 3600, logger=logger)
+            result = call_claude_cli(cmd, cwd=workspace, timeout=overall_timeout, logger=logger)
         else:
             result = subprocess.run(
                 cmd, cwd=workspace, capture_output=True, text=True, timeout=overall_timeout,
@@ -430,48 +430,53 @@ def main():
             if result.stderr:
                 logger.error(f"stderr: {result.stderr[:500]}")
 
+    session_ok = result is not None and result.returncode == 0
+
     eval_server.stop()
 
-    # --- 10. Request reflection ---
-    reflection_prompt = (
-        "Thanks for your work on this. Looking back at the entire session, "
-        "please write a brief reflection to `_reflection.md`. Consider:\n\n"
-        "- What approaches worked well? What didn't?\n"
-        "- What was surprising or unexpected about the problem?\n"
-        "- What would you do differently with a fresh budget?\n"
-        "- Any insights about the task itself that a future researcher should know?\n"
-        "- Any suggestions for improving the instructions you were given?\n"
-        "- Is there any tool or library that you wish you had access to?\n\n"
-        "Keep it concise — a few paragraphs, not an essay."
-    )
-    reflection_cmd = [
-        claude_cli,
-        "--model", cli_model,
-        "--permission-mode", "bypassPermissions",
-        "--output-format", "json",
-        "--resume", session_id,
-        "--print", reflection_prompt,
-    ]
-    reflection_cmd.extend(["--settings", json.dumps({"autoCompact": True})])
+    # --- 10. Request reflection (only if session completed normally) ---
+    if not session_ok:
+        logger.info("Skipping reflection — session did not complete normally")
+    else:
+        reflection_prompt = (
+            "Thanks for your work on this. Looking back at the entire session, "
+            "please write a brief reflection to `_reflection.md`. Consider:\n\n"
+            "- What approaches worked well? What didn't?\n"
+            "- What was surprising or unexpected about the problem?\n"
+            "- What would you do differently with a fresh budget?\n"
+            "- Any insights about the task itself that a future researcher should know?\n"
+            "- Any suggestions for improving the instructions you were given?\n"
+            "- Is there any tool or library that you wish you had access to?\n\n"
+            "Keep it concise — a few paragraphs, not an essay."
+        )
+        reflection_cmd = [
+            claude_cli,
+            "--model", cli_model,
+            "--permission-mode", "bypassPermissions",
+            "--output-format", "json",
+            "--resume", session_id,
+            "--print", reflection_prompt,
+        ]
+        reflection_cmd.extend(["--settings", json.dumps({"autoCompact": True})])
 
-    logger.info("Requesting agent reflection...")
-    try:
-        if call_claude_cli:
-            refl_result = call_claude_cli(reflection_cmd, cwd=workspace, timeout=300, logger=logger)
-        else:
-            refl_result = subprocess.run(reflection_cmd, cwd=workspace, capture_output=True, text=True, timeout=300)
+        logger.info("Requesting agent reflection...")
         try:
-            refl_output = json.loads(refl_result.stdout)
-            refl_cost = refl_output.get("total_cost_usd", 0.0)
-            if refl_cost:
-                total_session_cost += refl_cost
-            refl_usage = refl_output.get("usage", {})
-            total_session_tokens_in += refl_usage.get("input_tokens", 0)
-            total_session_tokens_out += refl_usage.get("output_tokens", 0)
-        except (json.JSONDecodeError, TypeError):
-            pass
-    except Exception as e:
-        logger.warning(f"Reflection request failed: {type(e).__name__}: {e}")
+            if call_claude_cli:
+                refl_result = call_claude_cli(reflection_cmd, cwd=workspace, timeout=300, logger=logger)
+            else:
+                refl_result = subprocess.run(reflection_cmd, cwd=workspace, capture_output=True, text=True, timeout=300)
+            try:
+                refl_output = json.loads(refl_result.stdout)
+                refl_cost = refl_output.get("total_cost_usd", 0.0)
+                if refl_cost:
+                    total_session_cost += refl_cost
+                refl_usage = refl_output.get("usage", {})
+                total_session_tokens_in += refl_usage.get("input_tokens", 0)
+                total_session_tokens_out += refl_usage.get("output_tokens", 0)
+            except (json.JSONDecodeError, TypeError):
+                pass
+        except Exception as e:
+            logger.warning(f"Reflection request failed: {type(e).__name__}: {e}")
 
     # --- 11. Collect results ---
     logger.info("Collecting results...")
@@ -527,6 +532,7 @@ def main():
         "task": task.name,
         "objective": task.objective,
         "engine": "autoresearch",
+        "session_ok": session_ok,
         "seed_agent": str(seed_agent),
         "evaluation_budget": evaluation_budget,
         "val_ratio": val_ratio if val_size_cfg is None else None,
