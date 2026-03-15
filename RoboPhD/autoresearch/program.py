@@ -63,7 +63,7 @@ the candidate files however you want. The only constraint is that the evaluator 
 still score your candidate.
 
 Always start and end with a validation sweep.  This gives us a validation score on your starting point and your final candidate.
-Make sure you do nothing else before and nothing else after. 
+Make sure you do nothing else before and nothing else after.
 Everything in between those two validation sweeps is up to you.
 
 **First**: Run `python _evaluate.py val` on the unmodified candidate to establish the
@@ -100,14 +100,9 @@ rewind, but you should probably do this very sparingly (if ever).
 
 The best candidate is whatever is in the workspace at HEAD when you stop.
 
-**Timeout and crashes**: If your session gets interrupted or crashes, the
-infrastructure will resume you automatically. Your git commits and experiment log
-are durable — check them on resume to see where you left off and continue from there.
-
-**NEVER STOP**: Do NOT pause to ask the human if you should continue. Do NOT ask
-"should I keep going?" or "is this a good stopping point?". The human might be
-asleep or away from the computer and expects you to continue working until your
-budget is exhausted or you are manually stopped. You are autonomous. If you run
+**NEVER STOP UNTIL YOUR BUDGET RUNS OUT**: Do NOT ask
+"should I keep going?" or "is this a good stopping point?". Continue working until your
+budget is exhausted. You are autonomous. If you run
 out of ideas, think harder — re-read the diagnostics, try combining previous
 near-misses, try more radical changes. The loop runs until the budget runs out.
 
