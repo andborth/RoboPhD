@@ -62,15 +62,18 @@ to confirm overall improvement.
 the candidate files however you want. The only constraint is that the evaluator can
 still score your candidate.
 
-Always start and end with a validation sweep. Everything in between is up to you.
+Always start and end with a validation sweep.  This gives us a validation score on your starting point and your final candidate.
+Make sure you do nothing else before and nothing else after. 
+Everything in between those two validation sweeps is up to you.
 
 **First**: Run `python _evaluate.py val` on the unmodified candidate to establish the
 baseline. Record this as experiment 0 in the log. This gives you a concrete number
-to beat.
+to beat. Do not read code, plan, or do anything else before this.
 
 **Last**: Reserve exactly {val_size} budget for a final validation sweep. When your
 remaining budget equals {val_size}, stop experimenting and run one last
-`python _evaluate.py val`. Commit or revert based on the result.
+`python _evaluate.py val`. Commit or revert based on the result. Do not do anything
+after this — your work is done.
 
 **In between**: Use the remaining budget however you see fit — training evals,
 validation sweeps, whatever mix works. The loop below is a suggested rhythm,
