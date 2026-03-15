@@ -49,7 +49,6 @@ from RoboPhD.autoresearch.server import EvalServer
 from RoboPhD.config import CLAUDE_CLI_MODEL_MAP
 from RoboPhD.eval_utils import run_parallel_eval
 from RoboPhD.tasks import get_task, list_tasks
-from utilities.claude_cli import _is_rate_limit_error, _parse_rate_limit_reset_time
 
 logging.basicConfig(
     level=logging.INFO,
@@ -110,12 +109,6 @@ def parse_args():
         default=None,
         help="Root directory for outputs (default: ../robophd_runs)",
     )
-    parser.add_argument(
-        "--resume",
-        type=Path,
-        default=None,
-        help="Path to experiment directory to resume after a crash",
-    )
 
     args = parser.parse_args()
     if args.runs_dir is None:
@@ -141,7 +134,6 @@ def _list_params(task):
     print("  --eval-test-set        Evaluate best candidate on held-out test set")
     print("  --output-dir PATH      Output directory (overrides --runs-dir)")
     print("  --runs-dir PATH        Root directory for outputs (default: ../robophd_runs)")
-    print("  --resume PATH          Resume a crashed run from its experiment directory")
     print()
 
 
@@ -205,31 +197,6 @@ def _read_candidate_from_workspace(workspace: Path, file_mapping: dict) -> dict:
     return candidate
 
 
-def _wait_for_rate_limit(result: subprocess.CompletedProcess):
-    """Parse rate limit reset time and sleep until then."""
-    import time
-
-    try:
-        output = json.loads(result.stdout)
-        error_msg = output.get("result", "")
-    except (json.JSONDecodeError, TypeError):
-        error_msg = ""
-
-    reset_time = _parse_rate_limit_reset_time(error_msg)
-    if reset_time:
-        if reset_time.tzinfo is not None:
-            now = datetime.now(reset_time.tzinfo)
-        else:
-            now = datetime.now()
-        wait_seconds = max(0, (reset_time - now).total_seconds()) + 30  # 30s buffer
-        reset_str = reset_time.strftime('%I:%M%p').lstrip('0').lower()
-        logger.info(f"Rate limit — waiting {int(wait_seconds)}s until {reset_str}")
-        time.sleep(wait_seconds)
-    else:
-        logger.warning("Rate limit hit but couldn't parse reset time — waiting 5 minutes")
-        time.sleep(300)
-
-
 def _find_claude_cli():
     """Find Claude CLI, reusing the utility if available."""
     try:
@@ -255,261 +222,6 @@ def _find_claude_cli():
     return None
 
 
-def _run_session(
-    claude_cli: str,
-    cli_model: str,
-    workspace: Path,
-    session_id: str,
-    overall_timeout,
-    evaluation_budget: int,
-    prompt: str,
-    is_resume: bool = False,
-) -> tuple:
-    """Run a single Claude Code session with rate-limit retry.
-
-    Returns (total_cost, tokens_in, tokens_out).
-    """
-    total_cost = 0.0
-    tokens_in = 0
-    tokens_out = 0
-
-    env = {**os.environ}
-
-    while True:
-        if is_resume:
-            cmd = [
-                claude_cli,
-                "--model", cli_model,
-                "--permission-mode", "bypassPermissions",
-                "--output-format", "json",
-                "--resume", session_id,
-                "--print", "You were interrupted. Please continue.",
-            ]
-        else:
-            cmd = [
-                claude_cli,
-                "--model", cli_model,
-                "--permission-mode", "bypassPermissions",
-                "--output-format", "json",
-                "--session-id", session_id,
-                "--print", prompt,
-            ]
-
-        cmd.extend(["--settings", json.dumps({"autoCompact": True})])
-
-        logger.info(f"Launching Claude Code session (session_id={session_id[:8]}..., resume={is_resume})")
-
-        try:
-            result = subprocess.run(
-                cmd, cwd=workspace, capture_output=True, text=True,
-                timeout=overall_timeout, env=env,
-            )
-        except subprocess.TimeoutExpired:
-            logger.warning(f"Claude Code session timed out after {overall_timeout}s")
-            break
-        except Exception as e:
-            logger.error(f"Claude Code session error: {e}")
-            break
-
-        # Parse output and accumulate cost
-        try:
-            output = json.loads(result.stdout)
-            result_text = output.get("result", "")
-            result_preview = result_text[:200] + "..." if len(result_text) > 200 else result_text
-            logger.info(f"Session exited (code={result.returncode}): {result_preview}")
-
-            call_cost = output.get("total_cost_usd", 0.0)
-            if call_cost:
-                total_cost += call_cost
-            usage = output.get("usage", {})
-            tokens_in += usage.get("input_tokens", 0)
-            tokens_out += usage.get("output_tokens", 0)
-        except (json.JSONDecodeError, TypeError):
-            logger.info(f"Session exited (code={result.returncode}), stdout={result.stdout[:200]}")
-
-        # Check for rate limit — wait and retry with --resume
-        if _is_rate_limit_error(result):
-            _wait_for_rate_limit(result)
-            is_resume = True
-            continue
-
-        if result.returncode != 0:
-            logger.warning(f"Claude Code failed (code={result.returncode})")
-            if result.stderr:
-                logger.error(f"stderr: {result.stderr[:500]}")
-
-        break  # Done (success or non-rate-limit error)
-
-    return total_cost, tokens_in, tokens_out
-
-
-def _resume_run(args):
-    """Resume a crashed autoresearch run from its experiment directory."""
-    resume_dir = args.resume.resolve()
-
-    # Check if run already completed
-    if (resume_dir / "optimization_summary.json").exists():
-        logger.error(f"Run already completed. Cannot resume a finished run: {resume_dir}")
-        sys.exit(1)
-
-    workspace = resume_dir / "workspace"
-    if not workspace.exists():
-        logger.error(f"No workspace found at {workspace}")
-        sys.exit(1)
-
-    # Read session_id
-    session_id_path = workspace / "_session_id"
-    if not session_id_path.exists():
-        logger.error(f"No session ID found at {session_id_path} — cannot resume")
-        sys.exit(1)
-    session_id = session_id_path.read_text().strip()
-
-    # Read budget state
-    budget_path = workspace / "_budget.json"
-    if not budget_path.exists():
-        logger.error(f"No budget state found at {budget_path} — cannot resume")
-        sys.exit(1)
-    budget_state = json.loads(budget_path.read_text())
-    remaining_budget = budget_state.get("remaining", 0)
-    if remaining_budget <= 0:
-        logger.error(f"No budget remaining ({remaining_budget}) — nothing to resume")
-        sys.exit(1)
-
-    # Read seed config to reconstruct task
-    seed_config_path = resume_dir / "seed_candidate.json"
-    if not seed_config_path.exists():
-        logger.error(f"No seed_candidate.json found at {resume_dir}")
-        sys.exit(1)
-
-    # Load task
-    task = get_task(args.task)
-    task_config = parse_config_arg(args.task_config)
-    engine_config = parse_config_arg(args.engine_config)
-    config = {**task.config_defaults, **task_config, **engine_config}
-
-    evaluation_budget = budget_state.get("total", config.get("evaluation_budget", _AUTORESEARCH_DEFAULTS["evaluation_budget"][0]))
-    model = config.get("model", _AUTORESEARCH_DEFAULTS["model"][0])
-    overall_timeout = config.get("overall_timeout", _AUTORESEARCH_DEFAULTS["overall_timeout"][0])
-    seed = config.get("seed", _AUTORESEARCH_DEFAULTS["seed"][0])
-    val_ratio = config.get("val_ratio", _AUTORESEARCH_DEFAULTS["val_ratio"][0])
-    val_size_cfg = config.get("val_size", _AUTORESEARCH_DEFAULTS["val_size"][0])
-    seed_agent = Path(config.get("seed_agent", task.default_seed_agent))
-
-    # Rebuild datasets (deterministic with same seed)
-    import random
-    rng = random.Random(seed)
-
-    if task.gepa_datasets_builder is not None:
-        trainset, valset = task.gepa_datasets_builder(config)
-    else:
-        dataset = task.dataset_builder(config)
-        shuffled = list(dataset)
-        rng.shuffle(shuffled)
-
-        if val_size_cfg is not None:
-            split_idx = len(shuffled) - val_size_cfg
-        else:
-            split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
-
-        trainset = shuffled[:split_idx]
-        valset = shuffled[split_idx:]
-
-    # Assign IDs (same logic as fresh run)
-    _ID_FIELDS = ("id", "question_id", "problem_id", "task_id")
-
-    def _find_id_field(examples):
-        if not examples:
-            return None
-        for field in _ID_FIELDS:
-            if field in examples[0]:
-                return field
-        return None
-
-    def _assign_ids(examples, prefix=""):
-        id_field = _find_id_field(examples)
-        for i, ex in enumerate(examples):
-            if id_field and id_field != "id":
-                ex["id"] = str(ex[id_field])
-            elif "id" in ex:
-                ex["id"] = str(ex["id"])
-            else:
-                ex["id"] = f"{prefix}{i}"
-
-    _assign_ids(trainset)
-    _assign_ids(valset, prefix="val_")
-
-    # Create evaluator
-    config["work_dir"] = str(resume_dir / "work")
-    config["output_dir"] = str(resume_dir)
-    evaluator = task.evaluator_factory(config)
-
-    # Start eval server with remaining budget
-    def get_candidate():
-        return _read_candidate_from_workspace(workspace, task.file_mapping)
-
-    used = budget_state.get("used", 0)
-    eval_server = EvalServer(
-        evaluator=evaluator,
-        candidate_fn=get_candidate,
-        train_examples=trainset,
-        val_examples=valset,
-        evaluation_budget=evaluation_budget,
-        workspace=workspace,
-    )
-    eval_server.start()
-    # Adjust budget to account for already-used evals
-    eval_server.budget_remaining = remaining_budget
-
-    # Find Claude CLI
-    claude_cli = _find_claude_cli()
-    if not claude_cli:
-        logger.error("Claude CLI not found.")
-        eval_server.stop()
-        sys.exit(1)
-
-    cli_model = CLAUDE_CLI_MODEL_MAP.get(model, model)
-
-    logger.info(
-        f"Resuming autoresearch session (session_id={session_id[:8]}..., "
-        f"budget_remaining={remaining_budget}, model={cli_model})"
-    )
-
-    total_cost, tokens_in, tokens_out = _run_session(
-        claude_cli=claude_cli,
-        cli_model=cli_model,
-        workspace=workspace,
-        session_id=session_id,
-        overall_timeout=overall_timeout,
-        evaluation_budget=evaluation_budget,
-        prompt="You were interrupted. Please continue.",
-        is_resume=True,
-    )
-
-    eval_server.stop()
-
-    # Run the same post-session steps as a fresh run
-    args.output_dir = resume_dir
-    _post_session(
-        args=args,
-        task=task,
-        config=config,
-        workspace=workspace,
-        session_id=session_id,
-        claude_cli=claude_cli,
-        cli_model=cli_model,
-        seed_agent=seed_agent,
-        evaluation_budget=evaluation_budget,
-        val_ratio=val_ratio,
-        val_size_cfg=val_size_cfg,
-        valset=valset,
-        trainset=trainset,
-        overall_timeout=overall_timeout,
-        total_session_cost=total_cost,
-        total_session_tokens_in=tokens_in,
-        total_session_tokens_out=tokens_out,
-    )
-
-
 def main():
     args = parse_args()
 
@@ -518,10 +230,6 @@ def main():
         task = get_task(args.task)
         _list_params(task)
         sys.exit(0)
-
-    # --- Handle --resume ---
-    if args.resume:
-        return _resume_run(args)
 
     # --- 1. Load task and merge config ---
     task = get_task(args.task)
@@ -660,69 +368,71 @@ def main():
     # Map model name to CLI model
     cli_model = CLAUDE_CLI_MODEL_MAP.get(model, model)
 
-    # --- 9. Run Claude Code session (single call + rate-limit retry) ---
+    # --- 9. Run single Claude Code session ---
     session_id = str(uuid.uuid4())
 
-    # Persist session_id for crash recovery
-    (workspace / "_session_id").write_text(session_id)
-
-    total_session_cost, total_session_tokens_in, total_session_tokens_out = _run_session(
-        claude_cli=claude_cli,
-        cli_model=cli_model,
-        workspace=workspace,
-        session_id=session_id,
-        overall_timeout=overall_timeout,
-        evaluation_budget=evaluation_budget,
-        prompt="Read program.md and begin the autoresearch protocol.",
+    logger.info(
+        f"Starting autoresearch session (model={cli_model}, budget={evaluation_budget}, "
+        f"timeout={overall_timeout})"
     )
+
+    try:
+        from utilities.claude_cli import call_claude_cli
+    except ImportError:
+        call_claude_cli = None
+
+    total_session_cost = 0.0
+    total_session_tokens_in = 0
+    total_session_tokens_out = 0
+
+    cmd = [
+        claude_cli,
+        "--model", cli_model,
+        "--permission-mode", "bypassPermissions",
+        "--output-format", "json",
+        "--session-id", session_id,
+        "--print", "Read program.md and begin the autoresearch protocol.",
+    ]
+    cmd.extend(["--settings", json.dumps({"autoCompact": True})])
+
+    try:
+        if call_claude_cli:
+            result = call_claude_cli(cmd, cwd=workspace, timeout=overall_timeout or 3600, logger=logger)
+        else:
+            result = subprocess.run(
+                cmd, cwd=workspace, capture_output=True, text=True, timeout=overall_timeout,
+            )
+    except subprocess.TimeoutExpired:
+        logger.warning(f"Claude Code session timed out after {overall_timeout}s")
+        result = None
+    except Exception as e:
+        logger.error(f"Claude Code session error: {e}")
+        result = None
+
+    if result is not None:
+        try:
+            output = json.loads(result.stdout)
+            result_text = output.get("result", "")
+            result_preview = result_text[:200] + "..." if len(result_text) > 200 else result_text
+            logger.info(f"Session exited (code={result.returncode}): {result_preview}")
+
+            call_cost = output.get("total_cost_usd", 0.0)
+            if call_cost:
+                total_session_cost += call_cost
+            usage = output.get("usage", {})
+            total_session_tokens_in += usage.get("input_tokens", 0)
+            total_session_tokens_out += usage.get("output_tokens", 0)
+        except (json.JSONDecodeError, TypeError):
+            logger.info(f"Session exited (code={result.returncode}), stdout={result.stdout[:200]}")
+
+        if result.returncode != 0:
+            logger.warning(f"Claude Code failed (code={result.returncode})")
+            if result.stderr:
+                logger.error(f"stderr: {result.stderr[:500]}")
 
     eval_server.stop()
 
-    _post_session(
-        args=args,
-        task=task,
-        config=config,
-        workspace=workspace,
-        session_id=session_id,
-        claude_cli=claude_cli,
-        cli_model=cli_model,
-        seed_agent=seed_agent,
-        evaluation_budget=evaluation_budget,
-        val_ratio=val_ratio,
-        val_size_cfg=val_size_cfg,
-        valset=valset,
-        trainset=trainset,
-        overall_timeout=overall_timeout,
-        total_session_cost=total_session_cost,
-        total_session_tokens_in=total_session_tokens_in,
-        total_session_tokens_out=total_session_tokens_out,
-    )
-
-
-def _post_session(
-    *,
-    args,
-    task,
-    config,
-    workspace,
-    session_id,
-    claude_cli,
-    cli_model,
-    seed_agent,
-    evaluation_budget,
-    val_ratio,
-    val_size_cfg,
-    valset,
-    trainset,
-    overall_timeout,
-    total_session_cost,
-    total_session_tokens_in,
-    total_session_tokens_out,
-):
-    """Post-session steps: reflection, results collection, optional test-set eval."""
-    model = config.get("model", _AUTORESEARCH_DEFAULTS["model"][0])
-
-    # --- Request reflection ---
+    # --- 10. Request reflection ---
     reflection_prompt = (
         "Thanks for your work on this. Looking back at the entire session, "
         "please write a brief reflection to `_reflection.md`. Consider:\n\n"
@@ -746,7 +456,10 @@ def _post_session(
 
     logger.info("Requesting agent reflection...")
     try:
-        refl_result = subprocess.run(reflection_cmd, cwd=workspace, capture_output=True, text=True, timeout=300)
+        if call_claude_cli:
+            refl_result = call_claude_cli(reflection_cmd, cwd=workspace, timeout=300, logger=logger)
+        else:
+            refl_result = subprocess.run(reflection_cmd, cwd=workspace, capture_output=True, text=True, timeout=300)
         try:
             refl_output = json.loads(refl_result.stdout)
             refl_cost = refl_output.get("total_cost_usd", 0.0)
@@ -760,7 +473,7 @@ def _post_session(
     except Exception as e:
         logger.warning(f"Reflection request failed: {type(e).__name__}: {e}")
 
-    # --- Collect results ---
+    # --- 11. Collect results ---
     logger.info("Collecting results...")
 
     # Best candidate = current workspace files
@@ -818,7 +531,7 @@ def _post_session(
         "evaluation_budget": evaluation_budget,
         "val_ratio": val_ratio if val_size_cfg is None else None,
         "val_size": len(valset),
-        "seed": config.get("seed", _AUTORESEARCH_DEFAULTS["seed"][0]),
+        "seed": seed,
         "model": model,
         "overall_timeout": overall_timeout,
         "train_size": len(trainset),
@@ -844,7 +557,7 @@ def _post_session(
         f"evolution cost: ${total_session_cost:.2f}"
     )
 
-    # --- Optional test-set evaluation ---
+    # --- 12. Optional test-set evaluation ---
     if args.eval_test_set:
         logger.info("Evaluating best candidate on test set...")
         test_config = {**config, **task.test_overrides}
