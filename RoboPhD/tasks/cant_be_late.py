@@ -102,6 +102,7 @@ def make_cant_be_late_task() -> TaskDefinition:
             "max_traces_per_split": None,  # None = use all traces
             "train_size": None,         # Override GEPA train split size
             "val_size": None,           # Override GEPA val split size
+            "evaluation_budget": 1500,
         },
         test_overrides={"cant_be_late_split": "test"},
         gepa_datasets_builder=_gepa_datasets_builder,
