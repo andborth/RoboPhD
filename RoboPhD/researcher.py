@@ -1764,8 +1764,8 @@ class ParallelAgentResearcher:
         # Find winner(s) — exclude clone agents
         eligible = {k: v for k, v in iteration_results.items() if k not in clone_agents}
         assert eligible, "All agents are clones — this should be impossible (at most 1 new agent per iteration)"
-        max_score = max(r['average_score'] for r in eligible.values())
-        winners = [k for k, v in eligible.items() if v['average_score'] == max_score]
+        max_score = round(max(r['average_score'] for r in eligible.values()), 6)
+        winners = [k for k, v in eligible.items() if round(v['average_score'], 6) == max_score]
 
         # King-of-the-hill tie breaking: oldest agent wins
         if len(winners) > 1 and current_config.get("oldest_agent_wins_ties", False):
