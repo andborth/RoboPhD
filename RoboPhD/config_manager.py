@@ -63,7 +63,7 @@ class ConfigManager:
             # Domain and dataset
             "domain": "external",  # Domain plugin: 'external' for all task-registry domains
             "dataset": "train-filtered",
-            "examples_per_iteration": 15,
+            "examples_per_iteration": 20,
             "agents_per_iteration": 3,
 
             # Models
