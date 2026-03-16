@@ -94,6 +94,7 @@ class EvalServer:
             self.evaluator, candidate, examples,
             max_workers=self.max_workers,
             eval_timeout=self.eval_timeout,
+            quiet=True,
         )
 
     def start(self):
@@ -205,14 +206,15 @@ def _make_handler(server: EvalServer):
                 }, 429)
                 return
 
+            logger.info(f"Starting val eval: {len(server.val_examples)} examples...")
             candidate = server.candidate_fn()
             result = server._run_eval(candidate, server.val_examples)
 
             mean_score = result["test_results"]["mean_test_score"]
             count = result["test_results"]["total_test_problems"]
             logger.info(
-                f"Val eval: {count} examples, "
-                f"mean={mean_score:.3f}, budget={server.budget_remaining}"
+                f"⭐ Val result: {mean_score:.3f} on {count} examples, "
+                f"budget={server.budget_remaining}"
             )
 
             resp = {

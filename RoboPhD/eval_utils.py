@@ -14,6 +14,7 @@ def run_parallel_eval(
     max_workers: int | None = None,
     eval_timeout: int = 300,
     progress_interval: int = 10,
+    quiet: bool = False,
 ) -> dict:
     """Run evaluator on examples in parallel with timeout handling.
 
@@ -90,7 +91,7 @@ def run_parallel_eval(
                 diag_map[idx] = diag
             remaining = not_done
 
-            if len(score_map) % progress_interval == 0:
+            if not quiet and len(score_map) % progress_interval == 0:
                 vals = list(score_map.values())
                 mean = sum(vals) / len(vals)
                 logger.info(f"Test progress: {len(score_map)}/{len(examples)}, running score: {mean:.3f}")
@@ -104,7 +105,8 @@ def run_parallel_eval(
     diagnostics = [diag_map.get(i, {}) for i in range(len(examples))]
     mean_score = sum(scores) / len(scores) if scores else 0.0
 
-    logger.info(f"Test score: {mean_score:.3f} ({len(scores)} problems)")
+    if not quiet:
+        logger.info(f"Test score: {mean_score:.3f} ({len(scores)} problems)")
 
     test_results = {
         "mean_test_score": mean_score,
