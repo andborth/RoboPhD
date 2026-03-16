@@ -1767,7 +1767,13 @@ class ParallelAgentResearcher:
         max_score = max(r['average_score'] for r in eligible.values())
         winners = [k for k, v in eligible.items() if v['average_score'] == max_score]
 
-        if len(winners) == 1:
+        # King-of-the-hill tie breaking: oldest agent wins
+        if len(winners) > 1 and current_config.get("oldest_agent_wins_ties", False):
+            winners.sort(key=lambda a: (self.agent_pool[a].get('created_iteration', 0), random.random()))
+            print(f"\n🏆 Iteration {iteration} winner: {winners[0]} ({max_score:.3f})")
+            print(f"     (tie-break over {', '.join(winners[1:])} — oldest agent wins)")
+            winners = [winners[0]]
+        elif len(winners) == 1:
             print(f"\n🏆 Iteration {iteration} winner: {winners[0]} ({max_score:.3f})")
         else:
             print(f"\n🏆 Iteration {iteration} tied winners: {', '.join(winners)} ({max_score:.3f})")

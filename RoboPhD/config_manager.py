@@ -90,6 +90,9 @@ class ConfigManager:
             "evolution_timeout": 3600,
             "llm_call_timeout": 120,  # Per-call LLM timeout (2 min) - affects local models
 
+            # Tie handling
+            "oldest_agent_wins_ties": False,  # King-of-the-hill: oldest agent wins ties
+
             # Other
             "debug_log_probability": 0.02,
             "eval_result_cache": True,  # Cache (agent, problem) results across iterations via symlinks
