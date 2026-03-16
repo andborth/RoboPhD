@@ -357,6 +357,8 @@ def main():
         val_examples=valset,
         evaluation_budget=evaluation_budget,
         workspace=workspace,
+        max_workers=config.get("max_workers"),
+        eval_timeout=config.get("eval_timeout", 300),
     )
     eval_server.start()
 

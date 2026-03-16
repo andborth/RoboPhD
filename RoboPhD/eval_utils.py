@@ -11,7 +11,7 @@ def run_parallel_eval(
     evaluator,
     candidate: dict,
     examples: list,
-    max_workers: int,
+    max_workers: int | None = None,
     eval_timeout: int = 300,
     progress_interval: int = 10,
 ) -> dict:
@@ -28,6 +28,7 @@ def run_parallel_eval(
     timed_out_idxs: set[int] = set()
 
     score_map: dict[int, float] = {}
+    diag_map: dict[int, dict] = {}
     idx_to_example = {i: ex for i, ex in enumerate(examples)}
     executor = ThreadPoolExecutor(max_workers=max_workers)
     try:
@@ -53,6 +54,7 @@ def run_parallel_eval(
                                 f"EVAL TIMEOUT: example {idx} never started after resubmit — scored 0"
                             )
                             score_map[idx] = 0.0
+                            diag_map[idx] = {"error": f"timeout after {eval_timeout}s"}
                             timed_out = True
                         else:
                             # Queued (never ran) — resubmit once
@@ -71,6 +73,7 @@ def run_parallel_eval(
                             f"scored 0, thread leaked (will burn CPU until process exit)"
                         )
                         score_map[idx] = 0.0
+                        diag_map[idx] = {"error": f"timeout after {eval_timeout}s"}
                         timed_out_idxs.add(idx)
                         timed_out = True
                 remaining = still_remaining
@@ -78,8 +81,13 @@ def run_parallel_eval(
 
             for future in done:
                 idx = future_to_idx[future]
-                score, diag = future.result()
+                try:
+                    score, diag = future.result()
+                except Exception as e:
+                    logger.warning(f"Evaluator error on example {idx}: {e}")
+                    score, diag = 0.0, {"error": str(e)}
                 score_map[idx] = score
+                diag_map[idx] = diag
             remaining = not_done
 
             if len(score_map) % progress_interval == 0:
@@ -93,6 +101,7 @@ def run_parallel_eval(
             executor.shutdown(wait=True)
 
     scores = [score_map[i] for i in range(len(examples))]
+    diagnostics = [diag_map.get(i, {}) for i in range(len(examples))]
     mean_score = sum(scores) / len(scores) if scores else 0.0
 
     logger.info(f"Test score: {mean_score:.3f} ({len(scores)} problems)")
@@ -103,4 +112,4 @@ def run_parallel_eval(
         "total_test_problems": len(scores),
     }
 
-    return {"scores": scores, "test_results": test_results, "timed_out": timed_out}
+    return {"scores": scores, "diagnostics": diagnostics, "test_results": test_results, "timed_out": timed_out}

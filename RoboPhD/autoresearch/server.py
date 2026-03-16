@@ -12,6 +12,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Callable, Dict, List
 
+from RoboPhD.eval_utils import run_parallel_eval
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,6 +28,8 @@ class EvalServer:
         val_examples: List[dict],
         evaluation_budget: int,
         workspace: Path,
+        max_workers: int | None = None,
+        eval_timeout: int = 300,
     ):
         self.evaluator = evaluator
         self.candidate_fn = candidate_fn  # callable returning current candidate dict
@@ -34,6 +38,8 @@ class EvalServer:
         self.budget_remaining = evaluation_budget
         self.budget_total = evaluation_budget
         self.workspace = workspace
+        self.max_workers = max_workers
+        self.eval_timeout = eval_timeout
         self._lock = threading.Lock()
         self._last_logged_pct = 100  # track 5% increments (start at 100%)
 
@@ -81,6 +87,14 @@ class EvalServer:
                 f"({used} used, {pct:.0f}%)"
             )
             self._last_logged_pct = current_mark
+
+    def _run_eval(self, candidate: dict, examples: list[dict]) -> dict:
+        """Evaluate examples using shared parallel infrastructure."""
+        return run_parallel_eval(
+            self.evaluator, candidate, examples,
+            max_workers=self.max_workers,
+            eval_timeout=self.eval_timeout,
+        )
 
     def start(self):
         self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
@@ -142,23 +156,29 @@ def _make_handler(server: EvalServer):
                 return
 
             candidate = server.candidate_fn()
-            scores = {}
-            diagnostics = {}
 
+            # Resolve example IDs, catching unknown ones
+            unknown_scores = {}
+            unknown_diags = {}
+            valid_examples = []
             for eid in example_ids:
                 if eid not in server.train_examples:
-                    scores[eid] = 0.0
-                    diagnostics[eid] = {"error": f"unknown example id: {eid}"}
-                    continue
-                example = server.train_examples[eid]
-                try:
-                    score, diag = server.evaluator(candidate, example)
-                    scores[eid] = score
-                    diagnostics[eid] = diag
-                except Exception as e:
-                    logger.warning(f"Evaluator error on {eid}: {e}")
-                    scores[eid] = 0.0
-                    diagnostics[eid] = {"error": str(e)}
+                    unknown_scores[eid] = 0.0
+                    unknown_diags[eid] = {"error": f"unknown example id: {eid}"}
+                else:
+                    valid_examples.append(server.train_examples[eid])
+
+            if valid_examples:
+                result = server._run_eval(candidate, valid_examples)
+            else:
+                result = {"scores": [], "diagnostics": []}
+
+            # Merge results back keyed by example ID
+            scores = dict(unknown_scores)
+            diagnostics = dict(unknown_diags)
+            for i, ex in enumerate(valid_examples):
+                scores[ex["id"]] = result["scores"][i]
+                diagnostics[ex["id"]] = result["diagnostics"][i]
 
             mean = sum(scores.values()) / len(scores) if scores else 0.0
             logger.info(
@@ -186,19 +206,10 @@ def _make_handler(server: EvalServer):
                 return
 
             candidate = server.candidate_fn()
-            total_score = 0.0
-            count = 0
+            result = server._run_eval(candidate, server.val_examples)
 
-            for example in server.val_examples:
-                try:
-                    score, _ = server.evaluator(candidate, example)
-                except Exception as e:
-                    logger.warning(f"Evaluator error on val example: {e}")
-                    score = 0.0
-                total_score += score
-                count += 1
-
-            mean_score = total_score / count if count else 0.0
+            mean_score = result["test_results"]["mean_test_score"]
+            count = result["test_results"]["total_test_problems"]
             logger.info(
                 f"Val eval: {count} examples, "
                 f"mean={mean_score:.3f}, budget={server.budget_remaining}"
