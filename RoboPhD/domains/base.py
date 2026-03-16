@@ -244,20 +244,6 @@ class DomainInterface(ABC):
 
     @property
     @abstractmethod
-    def is_hierarchical(self) -> bool:
-        """
-        Whether contexts have multiple problems (True) or 1:1 mapping (False).
-
-        This is the fundamental structural property of the domain:
-        - True: Contexts contain multiple problems (e.g., Text2SQL databases)
-        - False: Each context IS a problem, 1:1 mapping (e.g., CodeGen problems)
-
-        Used by sampling logic and comparison reports.
-        """
-        pass
-
-    @property
-    @abstractmethod
     def experiment_structure_docs(self) -> str:
         """
         Return documentation of experiment directory structure for evolution prompts.
@@ -267,18 +253,6 @@ class DomainInterface(ABC):
         placeholder which will be replaced with the actual iteration number.
         """
         pass
-
-    @property
-    def sampling_style(self) -> str:
-        """
-        Sampling model label, derived from is_hierarchical.
-
-        - 'hierarchical': Two-level (contexts → problems per context)
-          Uses: examples_per_iteration, problems_per_context
-        - 'flat': Single-level (contexts ARE problems)
-          Uses: examples_per_iteration only (problems_per_context ignored)
-        """
-        return 'hierarchical' if self.is_hierarchical else 'flat'
 
     # === Internal workspace methods ===
     # These are implementation details used by some domains internally.

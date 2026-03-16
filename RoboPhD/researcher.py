@@ -276,9 +276,10 @@ class ParallelAgentEvolver:
         if not iteration_data:
             return []
 
-        # Get databases_tested from first agent (all agents test same DBs)
+        # Get contexts tested from first agent (all agents test same contexts)
         first_agent_data = next(iter(iteration_data.values()))
-        return first_agent_data.get('databases_tested', [])
+        # Support both new key and legacy checkpoints
+        return first_agent_data.get('contexts_tested') or first_agent_data.get('databases_tested', [])
 
     def create_new_agent(self,
                         agent_pool: Dict,
@@ -365,7 +366,6 @@ class ParallelAgentEvolver:
                 evolution_strategy_name=strategy_name,
                 evolution_prompt=prompt,
                 contexts=databases_map,
-                problems_per_context=1,
             )
         except Exception as e:
             print(f"❌ Deep Focus evolution failed: {e}")
@@ -567,58 +567,10 @@ class ParallelAgentEvolver:
 
         lines.append("")
 
-        # Per-database breakdown (only for hierarchical domains)
-        if self.domain and self.domain.is_hierarchical:
-            databases = set()
-            for agent_id, agent_data in prev_results.items():
-                databases.update(agent_data.get('databases_tested', []))
-
-            if databases:
-                databases = sorted(databases)
-                lines.append("### Per-Database Breakdown")
-                lines.append("")
-
-                header = "| Agent |"
-                for db in databases:
-                    db_display = db[:15] + "..." if len(db) > 15 else db
-                    header += f" {db_display} |"
-                header += " Overall |"
-                lines.append(header)
-
-                separator = "|-------|"
-                for _ in databases:
-                    separator += "-------|"
-                separator += "--------|"
-                lines.append(separator)
-
-                for agent_id in agents:
-                    agent_data = prev_results[agent_id]
-                    agent_display = agent_id[:25] + "..." if len(agent_id) > 25 else agent_id
-                    row = f"| {agent_display} |"
-
-                    iter_dir = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
-
-                    for db in databases:
-                        db_eval_file = iter_dir / db / "results" / "evaluation.json"
-                        if db_eval_file.exists():
-                            try:
-                                with open(db_eval_file, 'r') as f:
-                                    eval_data = json.load(f)
-                                avg_score = eval_data.get('average_score', 0.0)
-                                row += f" {avg_score:.3f} |"
-                            except Exception:
-                                row += " - |"
-                        else:
-                            row += " - |"
-
-                    overall = agent_data.get('average_score', 0.0)
-                    row += f" {overall:.3f} |"
-                    lines.append(row)
-
-                lines.append("")
-
-        # Failed problem IDs from evaluation.json (flat domains)
-        if self.domain and not self.domain.is_hierarchical:
+        # Failed problem IDs from evaluation.json (skip for continuous-score domains)
+        if self.domain:
+            # Build scores_by_question to check scoring type
+            scores_by_question: Dict[str, Dict[str, float]] = {}
             for agent_id in agents:
                 iter_agent_dir = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
                 eval_file = iter_agent_dir / "evaluation.json"
@@ -626,16 +578,34 @@ class ParallelAgentEvolver:
                     try:
                         with open(eval_file, 'r') as f:
                             eval_data = json.load(f)
-                        failed = [
-                            pid for pid, r in eval_data.get('results', {}).items()
-                            if r.get('score', 0) < 0.5
-                        ]
-                        if failed:
-                            lines.append(f"**{agent_id}** failed problems ({len(failed)}): {', '.join(failed[:20])}")
-                            if len(failed) > 20:
-                                lines.append(f"  ... and {len(failed) - 20} more")
+                        for pid, r in eval_data.get('results', {}).items():
+                            if pid not in scores_by_question:
+                                scores_by_question[pid] = {}
+                            scores_by_question[pid][agent_id] = r.get('score', 0)
                     except Exception:
                         pass
+
+            from RoboPhD.report_generator import is_continuous_scoring
+            continuous = is_continuous_scoring(scores_by_question)
+
+            if not continuous:
+                for agent_id in agents:
+                    iter_agent_dir = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
+                    eval_file = iter_agent_dir / "evaluation.json"
+                    if eval_file.exists():
+                        try:
+                            with open(eval_file, 'r') as f:
+                                eval_data = json.load(f)
+                            failed = [
+                                pid for pid, r in eval_data.get('results', {}).items()
+                                if r.get('score', 0) < 0.5
+                            ]
+                            if failed:
+                                lines.append(f"**{agent_id}** failed problems ({len(failed)}): {', '.join(failed[:20])}")
+                                if len(failed) > 20:
+                                    lines.append(f"  ... and {len(failed) - 20} more")
+                        except Exception:
+                            pass
 
             lines.append("")
 
@@ -1635,7 +1605,6 @@ class ParallelAgentResearcher:
                     'average_score': 0.0,
                     'score_sum': 0.0,
                     'total': sum(len(p) for p in self.current_iteration_problems.values()),
-                    'databases_tested': [],
                     'failures': len(contexts)
                 }
                 continue
@@ -1697,7 +1666,7 @@ class ParallelAgentResearcher:
                     'average_score': average_score,
                     'score_sum': score_sum,
                     'total': total_questions,
-                    'databases_tested': list(contexts),
+                    'contexts_tested': list(contexts),
                     'failures': 0
                 }
 
@@ -1715,15 +1684,8 @@ class ParallelAgentResearcher:
                 })
 
                 # Track zero score cases
-                # For hierarchical domains: track per-context (one entry per database)
-                # For non-hierarchical domains: track per-iteration (one entry per agent)
                 if average_score == 0 and total_questions > 0:
-                    if self.domain.is_hierarchical:
-                        for ctx in contexts:
-                            self.zero_accuracy_cases.append((agent_id, ctx, iteration, total_questions // len(contexts)))
-                    else:
-                        # Non-hierarchical: single entry for the iteration
-                        self.zero_accuracy_cases.append((agent_id, None, iteration, total_questions))
+                    self.zero_accuracy_cases.append((agent_id, None, iteration, total_questions))
 
                 # Accumulate evaluation costs from metadata
                 if metadata.get('eval_cost'):
@@ -1771,7 +1733,6 @@ class ParallelAgentResearcher:
                     'average_score': 0.0,
                     'score_sum': 0.0,
                     'total': total_questions,
-                    'databases_tested': [],
                     'failures': len(contexts)
                 }
 
@@ -3232,9 +3193,7 @@ class ParallelAgentResearcher:
 
         num_tests = sum(len(results) for results in results_by_agent.values())
 
-        # Determine context label
-        is_flat_domain = not self.domain.is_hierarchical
-        context_label = "Problems" if is_flat_domain else "Databases"
+        context_label = "Problems"
 
         # Generate markdown report
         report_lines = [

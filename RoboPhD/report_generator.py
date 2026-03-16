@@ -1413,22 +1413,11 @@ class ReportGenerator:
         # Zero Accuracy Cases section
         report_lines.append("\n## Zero Accuracy Cases")
         if self.researcher.zero_accuracy_cases:
-            # Check if hierarchical (has context names) or non-hierarchical (context is None)
-            is_hierarchical = any(ctx is not None for _, ctx, _, _ in self.researcher.zero_accuracy_cases)
             report_lines.append(f"Total zero accuracy cases: {len(self.researcher.zero_accuracy_cases)}")
-            if is_hierarchical:
-                # Hierarchical domain: show per-context breakdown
-                context_label = getattr(self.researcher.domain, 'context_label', 'Database')
-                report_lines.append(f"\n| Agent | {context_label} | Iteration | Questions Tested |")
-                report_lines.append("|-------|----------|-----------|------------------|")
-                for agent_id, ctx_name, iteration_num, total_q in sorted(self.researcher.zero_accuracy_cases):
-                    report_lines.append(f"| {agent_id} | {ctx_name} | {iteration_num} | {total_q} |")
-            else:
-                # Non-hierarchical domain: show per-iteration only
-                report_lines.append("\n| Agent | Iteration | Problems Tested |")
-                report_lines.append("|-------|-----------|-----------------|")
-                for agent_id, _, iteration_num, total_q in sorted(self.researcher.zero_accuracy_cases):
-                    report_lines.append(f"| {agent_id} | {iteration_num} | {total_q} |")
+            report_lines.append("\n| Agent | Iteration | Problems Tested |")
+            report_lines.append("|-------|-----------|-----------------|")
+            for agent_id, _, iteration_num, total_q in sorted(self.researcher.zero_accuracy_cases):
+                report_lines.append(f"| {agent_id} | {iteration_num} | {total_q} |")
         else:
             report_lines.append("No zero accuracy cases encountered ✅")
 

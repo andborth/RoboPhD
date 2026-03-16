@@ -131,7 +131,6 @@ class DeepFocusEvolutionManager:
         evolution_strategy_name: str,
         evolution_prompt: str,
         contexts: Dict[int, List[str]],
-        problems_per_context: int,
     ) -> Tuple[Path, Path, Optional[Path], Dict[str, float]]:
         """
         Main orchestration method for deep focus evolution.
@@ -145,7 +144,6 @@ class DeepFocusEvolutionManager:
             contexts: Dict mapping test_iteration -> list of context names
                       e.g., {34: ['db1', 'db2'], 33: ['db1', 'db2']}
                       Used for Rounds 3+ testing against prior iterations
-            problems_per_context: Problems per context for testing
 
         Returns:
             EvolutionResult with artifact_paths, timing_info, cost_info, session_id
@@ -273,7 +271,6 @@ class DeepFocusEvolutionManager:
                     round_num=round_num,
                     test_iteration=test_iteration,
                     contexts=test_contexts,
-                    problems_per_context=problems_per_context,
                 )
                 self.timing_info[f'test_refine_{test_round + 1}'] = time.time() - start_time
                 self._aggregate_round_costs(f'test_refine_{test_round + 1}')
@@ -552,18 +549,13 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         self,
         test_iteration: int,
         contexts: List[str],
-        questions_per_context: int
     ) -> Dict[str, List[Dict]]:
         """
         Load problems for each context, reusing baseline question IDs where available.
 
-        For Text2SQL: Loads question IDs from baseline evaluation.json files
-        For CodeGen: Loads problem data from domain
-
         Args:
             test_iteration: Iteration number to get baseline questions from
             contexts: List of context names (database names or problem_ids)
-            questions_per_context: Max questions per context (fallback if no baseline)
 
         Returns:
             Dict mapping context_name -> list of problem dicts
@@ -604,10 +596,6 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
                     q for q in context_problems
                     if str(q.get('question_id')) in baseline_question_ids
                 ]
-            elif questions_per_context and len(context_problems) > questions_per_context:
-                # Fallback: sample randomly if no baseline available
-                logger.warning(f"    Could not load baseline questions for {context_name}, sampling {questions_per_context} randomly")
-                problems_by_context[context_name] = random.sample(context_problems, questions_per_context)
             else:
                 # Use all available problems
                 problems_by_context[context_name] = list(context_problems)
@@ -619,7 +607,6 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         round_num: int,
         test_iteration: int,
         contexts: List[str],
-        problems_per_context: int,
     ):
         """
         Execute a test and refinement round.
@@ -636,7 +623,6 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             round_num: Round number (3, 4, 5, ...)
             test_iteration: Iteration number to test against
             contexts: Contexts to test on (databases for Text2SQL, problem_ids for CodeGen)
-            problems_per_context: Problems per context
         """
         logger.info(f"Round {round_num}: Testing against iteration {test_iteration}")
 
@@ -715,7 +701,6 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         problems_by_context = self._load_baseline_problems(
             test_iteration=test_iteration,
             contexts=contexts,
-            questions_per_context=problems_per_context
         )
 
         # Build SampledProblems (same interface as main loop in researcher.py)

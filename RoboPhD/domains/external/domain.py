@@ -442,10 +442,6 @@ class ExternalEvaluatorDomain(DomainInterface):
         return "Example"
 
     @property
-    def is_hierarchical(self) -> bool:
-        return False
-
-    @property
     def file_mapping(self) -> Dict[str, str]:
         return self._file_mapping
 
