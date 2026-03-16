@@ -64,6 +64,8 @@ _AUTORESEARCH_DEFAULTS = {
     "seed": (0, "Random seed"),
     "model": ("opus-4.6", "Claude Code model for the session"),
     "overall_timeout": (None, "Max wall-clock seconds for the entire run (None = no limit)"),
+    "max_workers": (None, "Max parallel workers for evaluation (None = Python default)"),
+    "eval_timeout": (300, "Per-example evaluation timeout in seconds"),
 }
 
 
