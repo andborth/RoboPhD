@@ -38,7 +38,7 @@ try:
     from .domains import get_domain
     from .evolution import EvolutionStrategySelector
     from .config_manager import ConfigManager, ConfigSource
-    from .report_generator import ReportGenerator
+    from .report_generator import ReportGenerator, is_continuous_scoring
     from .deep_focus_evolution_manager import DeepFocusEvolutionManager
     from .utilities.cached_sql_executor import close_all_connections as close_robophd_connections
 except ImportError:
@@ -56,7 +56,7 @@ except ImportError:
     from RoboPhD.domains import get_domain
     from RoboPhD.evolution import EvolutionStrategySelector
     from RoboPhD.config_manager import ConfigManager, ConfigSource
-    from RoboPhD.report_generator import ReportGenerator
+    from RoboPhD.report_generator import ReportGenerator, is_continuous_scoring
     from RoboPhD.deep_focus_evolution_manager import DeepFocusEvolutionManager
     from RoboPhD.utilities.cached_sql_executor import close_all_connections as close_robophd_connections
     from RoboPhD.domains.base import SampledProblems
@@ -258,15 +258,15 @@ class ParallelAgentEvolver:
         strategies.append("weighted_random")
         return sorted(strategies)
 
-    def _get_iteration_databases(self, iteration: int) -> List[str]:
+    def _get_iteration_contexts(self, iteration: int) -> List[str]:
         """
-        Get databases used in a specific iteration from test_history.
+        Get contexts used in a specific iteration from test_history.
 
         Args:
             iteration: Iteration number (1-indexed)
 
         Returns:
-            List of database names used in that iteration, or empty list if not available
+            List of context IDs used in that iteration, or empty list if not available
         """
         if iteration < 1 or iteration > len(self.test_history):
             return []
@@ -334,7 +334,7 @@ class ParallelAgentEvolver:
         for test_round in range(self.new_agent_test_rounds):
             test_iteration = iteration + self.new_agent_test_round_offset - test_round
             if test_iteration >= 1:
-                databases = self._get_iteration_databases(test_iteration)
+                databases = self._get_iteration_contexts(test_iteration)
                 if databases:
                     databases_map[test_iteration] = databases
 
@@ -569,8 +569,9 @@ class ParallelAgentEvolver:
 
         # Failed problem IDs from evaluation.json (skip for continuous-score domains)
         if self.domain:
-            # Build scores_by_question to check scoring type
+            # Single pass: collect scores and per-agent failed lists
             scores_by_question: Dict[str, Dict[str, float]] = {}
+            failed_by_agent: Dict[str, List[str]] = {}
             for agent_id in agents:
                 iter_agent_dir = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
                 eval_file = iter_agent_dir / "evaluation.json"
@@ -578,34 +579,24 @@ class ParallelAgentEvolver:
                     try:
                         with open(eval_file, 'r') as f:
                             eval_data = json.load(f)
+                        agent_failed = []
                         for pid, r in eval_data.get('results', {}).items():
+                            score = r.get('score', 0)
                             if pid not in scores_by_question:
                                 scores_by_question[pid] = {}
-                            scores_by_question[pid][agent_id] = r.get('score', 0)
+                            scores_by_question[pid][agent_id] = score
+                            if score < 0.5:
+                                agent_failed.append(pid)
+                        if agent_failed:
+                            failed_by_agent[agent_id] = agent_failed
                     except Exception:
                         pass
 
-            from RoboPhD.report_generator import is_continuous_scoring
-            continuous = is_continuous_scoring(scores_by_question)
-
-            if not continuous:
-                for agent_id in agents:
-                    iter_agent_dir = self.experiment_dir / f"iteration_{iteration:03d}" / f"agent_{agent_id}"
-                    eval_file = iter_agent_dir / "evaluation.json"
-                    if eval_file.exists():
-                        try:
-                            with open(eval_file, 'r') as f:
-                                eval_data = json.load(f)
-                            failed = [
-                                pid for pid, r in eval_data.get('results', {}).items()
-                                if r.get('score', 0) < 0.5
-                            ]
-                            if failed:
-                                lines.append(f"**{agent_id}** failed problems ({len(failed)}): {', '.join(failed[:20])}")
-                                if len(failed) > 20:
-                                    lines.append(f"  ... and {len(failed) - 20} more")
-                        except Exception:
-                            pass
+            if not is_continuous_scoring(scores_by_question):
+                for agent_id, failed in failed_by_agent.items():
+                    lines.append(f"**{agent_id}** failed problems ({len(failed)}): {', '.join(failed[:20])}")
+                    if len(failed) > 20:
+                        lines.append(f"  ... and {len(failed) - 20} more")
 
             lines.append("")
 
@@ -1233,9 +1224,8 @@ class ParallelAgentResearcher:
             original_zero_cases = len(self.zero_accuracy_cases) if hasattr(self, 'zero_accuracy_cases') else 0
             if hasattr(self, 'zero_accuracy_cases'):
                 self.zero_accuracy_cases = [
-                    (agent_id, db_name, iter_num, total_q)
-                    for agent_id, db_name, iter_num, total_q in self.zero_accuracy_cases
-                    if iter_num < from_iteration
+                    entry for entry in self.zero_accuracy_cases
+                    if entry[-2] < from_iteration  # iter_num is second-to-last in both 3-tuple and legacy 4-tuple
                 ]
 
             original_exception_failures = len(self.exception_failures) if hasattr(self, 'exception_failures') else 0
@@ -1685,7 +1675,7 @@ class ParallelAgentResearcher:
 
                 # Track zero score cases
                 if average_score == 0 and total_questions > 0:
-                    self.zero_accuracy_cases.append((agent_id, None, iteration, total_questions))
+                    self.zero_accuracy_cases.append((agent_id, iteration, total_questions))
 
                 # Accumulate evaluation costs from metadata
                 if metadata.get('eval_cost'):

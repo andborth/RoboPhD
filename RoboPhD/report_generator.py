@@ -1416,7 +1416,9 @@ class ReportGenerator:
             report_lines.append(f"Total zero accuracy cases: {len(self.researcher.zero_accuracy_cases)}")
             report_lines.append("\n| Agent | Iteration | Problems Tested |")
             report_lines.append("|-------|-----------|-----------------|")
-            for agent_id, _, iteration_num, total_q in sorted(self.researcher.zero_accuracy_cases):
+            for entry in sorted(self.researcher.zero_accuracy_cases):
+                # Support both 3-tuple (agent, iter, total) and legacy 4-tuple (agent, None, iter, total)
+                agent_id, iteration_num, total_q = entry[0], entry[-2], entry[-1]
                 report_lines.append(f"| {agent_id} | {iteration_num} | {total_q} |")
         else:
             report_lines.append("No zero accuracy cases encountered ✅")
