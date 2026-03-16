@@ -167,12 +167,14 @@ def _setup_workspace(
     # Write training example IDs
     (workspace / "_train_examples.json").write_text(json.dumps(train_example_ids, indent=2))
 
-    # Write CLAUDE.md with task background
-    claude_md = f"# {task.name}\n\n"
-    claude_md += f"**Objective**: {task.objective}\n\n"
+    # Write CLAUDE.md with task background (matches deep_focus_evolution_manager.py format)
+    sections = []
     if task.background:
-        claude_md += task.background
-    claude_md += "\n\n---\n\nRead `program.md` for the full autoresearch protocol.\n"
+        sections.append(f"# Domain Background\n\n{task.background}")
+    if task.objective:
+        sections.append(f"# Domain Objective\n\n{task.objective}")
+    sections.append("---\n\nRead `program.md` for the full autoresearch protocol.")
+    claude_md = "\n\n".join(sections) + "\n"
     (workspace / "CLAUDE.md").write_text(claude_md)
 
     # Initialize git repo
