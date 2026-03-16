@@ -693,11 +693,13 @@ class ConfigManager:
             Resolved config for iterations 0 or 1, None for iteration >= 2
         """
         if iteration == 0:
-            config = self.get_defaults()
-            return config
+            # Use stored defaults from iteration_configs[0] when available
+            # (preserves checkpoint stability when code defaults change).
+            # Falls back to get_defaults() before set_initial_config is called.
+            return self.iteration_configs.get(0, self.get_defaults()).copy()
 
         if iteration == 1:
-            defaults = self.get_defaults()
+            defaults = self.iteration_configs.get(0, self.get_defaults())
             user_config = self.iteration_configs.get(1, {})
             resolved = defaults.copy()
             resolved.update(user_config)
