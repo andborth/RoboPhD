@@ -3246,7 +3246,7 @@ class ParallelAgentResearcher:
         agent_costs.sort(key=lambda x: x[1], reverse=True)
 
         report_lines.append("### Most Expensive Agents")
-        context_label_singular = "problem" if is_flat_domain else "db"
+        context_label_singular = "problem"
         for i, (agent, cost) in enumerate(agent_costs, 1):
             pct = (cost / total_eval * 100) if total_eval > 0 else 0
             avg = cost / len(sorted_contexts) if sorted_contexts else 0
