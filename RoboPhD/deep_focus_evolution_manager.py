@@ -33,56 +33,18 @@ logger = logging.getLogger(__name__)
 EVOLUTION_ENVIRONMENT_GUIDE = """\
 # Evolution Environment
 
-## Round Lifecycle
+## Available Data
 
-You work in multiple rounds:
+Use `tree` or `ls` to explore the experiment directory. Key artifacts:
 
-- **Round 1 (Analysis & Implementation)**: You receive an evolution prompt with performance data. Read evaluation results from `../../iteration_NNN/` to understand agent behavior. Create `reasoning.md` and agent artifacts.
-- **Rounds 2+ (Testing & Refinement)**: Your agent is tested on prior iteration data. Results appear in `./iteration_NNN_test/` with your agent's output alongside baseline symlinks. Refine your artifacts based on the comparison.
+- `../../agents/<name>/` — agent source code (one directory per agent)
+- `../../iteration_NNN/` — evaluation results per iteration:
+  - `error_analysis_report.md` — cross-agent score comparison and failure summary
+  - `error_index.json` — machine-readable score data (error analysis report was derived from this)
+  - `cost_report.md` — per-agent cost breakdown. Useful if you are instructed to pay attention to cost
+  - `agent_<name>/problems/<id>/` — per-problem results and diagnostics
 
-## Directory Layout
-
-**IMPORTANT**: Evaluation data and evolution workspaces are separate trees. Do not confuse them.
-
-### Experiment root (`../../` from your working directory)
-
-```
-../../                                    <- experiment root
-+-- agents/                               <- agent source code (one dir per agent)
-|   +-- <agent_name>/                     <- file_mapping artifacts (e.g., agent.py)
-+-- iteration_NNN/                        <- EVALUATION DATA for iteration NNN
-|   +-- agent_<name>/                     <- per-agent evaluation output
-|   |   +-- evaluation.json               <- summary metrics (scores, counts)
-|   |   +-- problems/                     <- per-problem results & diagnostics
-|   +-- error_analysis_report.md          <- cross-agent score comparison & failure summary
-|   +-- error_index.json                  <- raw per-problem score data (source for the report)
-|   +-- cost_report.md                    <- per-agent LLM cost breakdown (tokens, cache, USD)
-+-- evolution_output/                     <- evolution workspaces (you are here)
-|   +-- CLAUDE.md                         <- this file
-|   +-- iteration_NNN/                    <- per-iteration evolution workspace
-+-- checkpoint.json                       <- run state (ELO, agent pool, config)
-```
-
-Use `../../iteration_NNN/` for evaluation data (Round 1).
-Do NOT use `../../evolution_output/iteration_NNN/` — those are prior evolution workspaces containing prompts and reasoning, not evaluation results.
-
-### Your evolution workspace (`.` = current working directory)
-
-```
-./                                        <- evolution workspace for current iteration
-+-- evolution_prompt.md                   <- the prompt that started this session
-+-- reasoning.md                          <- your analysis (you create in Round 1)
-+-- <artifact files>                      <- agent artifacts per file_mapping
-+-- iteration_NNN_test/                   <- created in Rounds 2+ (deep focus testing)
-|   +-- agent_<your_agent>/               <- YOUR agent's evaluation output
-|   |   +-- evaluation.json
-|   |   +-- problems/
-|   +-- agent_<baseline>/ -> symlink      <- baseline agents from that iteration
-|   +-- agent_package/                    <- copy of your artifacts used for testing
-|   +-- error_analysis_report.md          <- your agent vs baselines comparison
-|   +-- error_index.json
-+-- roundN_snapshot/                      <- artifact snapshots after each round
-```
+During testing and refinement rounds (Rounds 2+), your results appear in `./iteration_NNN_test/` (in your working directory, not the experiment root).
 
 ## Strategy Tools
 
