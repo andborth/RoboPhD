@@ -30,26 +30,66 @@ from utilities.claude_cli import call_claude_cli, RateLimitExceeded
 
 logger = logging.getLogger(__name__)
 
-PER_ITERATION_REPORTS = """\
-## Per-Iteration Reports
-
-These reports are generated after each iteration at `../../iteration_NNN/` (relative to your working dir):
-- `error_analysis_report.md` — cross-agent accuracy comparison, per-problem pass/fail matrix, and failure summary
-- `error_index.json` — raw per-problem error data from which the error analysis report is derived
-- `cost_report.md` — per-agent LLM cost breakdown (token counts, cache hits, USD). Useful if you are instructed to pay attention to cost
-
-## CLI Tools
-
-`jq` and `tree` are installed and available."""
-
-EVOLUTION_ENVIRONMENT_GUIDE = f"""\
+EVOLUTION_ENVIRONMENT_GUIDE = """\
 # Evolution Environment
+
+## Round Lifecycle
+
+You work in multiple rounds:
+
+- **Round 1 (Analysis & Implementation)**: You receive an evolution prompt with performance data. Read evaluation results from `../../iteration_NNN/` to understand agent behavior. Create `reasoning.md` and agent artifacts.
+- **Rounds 2+ (Testing & Refinement)**: Your agent is tested on prior iteration data. Results appear in `./iteration_NNN_test/` with your agent's output alongside baseline symlinks. Refine your artifacts based on the comparison.
+
+## Directory Layout
+
+**IMPORTANT**: Evaluation data and evolution workspaces are separate trees. Do not confuse them.
+
+### Experiment root (`../../` from your working directory)
+
+```
+../../                                    <- experiment root
++-- agents/                               <- agent source code (one dir per agent)
+|   +-- <agent_name>/                     <- file_mapping artifacts (e.g., agent.py)
++-- iteration_NNN/                        <- EVALUATION DATA for iteration NNN
+|   +-- agent_<name>/                     <- per-agent evaluation output
+|   |   +-- evaluation.json               <- summary metrics (scores, counts)
+|   |   +-- problems/                     <- per-problem results & diagnostics
+|   +-- error_analysis_report.md          <- cross-agent comparison
+|   +-- cost_report.md                    <- LLM cost breakdown
++-- evolution_output/                     <- evolution workspaces (you are here)
+|   +-- CLAUDE.md                         <- this file
+|   +-- iteration_NNN/                    <- per-iteration evolution workspace
++-- checkpoint.json                       <- run state (ELO, agent pool, config)
+```
+
+Use `../../iteration_NNN/` for evaluation data (Round 1).
+Do NOT use `../../evolution_output/iteration_NNN/` — those are prior evolution workspaces containing prompts and reasoning, not evaluation results.
+
+### Your evolution workspace (`.` = current working directory)
+
+```
+./                                        <- evolution workspace for current iteration
++-- evolution_prompt.md                   <- the prompt that started this session
++-- reasoning.md                          <- your analysis (you create in Round 1)
++-- <artifact files>                      <- agent artifacts per file_mapping
++-- iteration_NNN_test/                   <- created in Rounds 2+ (deep focus testing)
+|   +-- agent_<your_agent>/               <- YOUR agent's evaluation output
+|   |   +-- evaluation.json
+|   |   +-- problems/
+|   +-- agent_<baseline>/ -> symlink      <- baseline agents from that iteration
+|   +-- agent_package/                    <- copy of your artifacts used for testing
+|   +-- error_analysis_report.md          <- your agent vs baselines comparison
+|   +-- error_index.json
++-- roundN_snapshot/                      <- artifact snapshots after each round
+```
 
 ## Strategy Tools
 
 If a `strategy_tools/` directory exists in your working directory, it contains Python helper scripts provided by your evolution strategy. **Run them** — they analyze prior iteration data and produce structured output to guide your work. Use `__PYTHON_EXECUTABLE__ strategy_tools/<script>.py --help` to discover usage.
 
-{PER_ITERATION_REPORTS}"""
+## CLI Tools
+
+`jq` and `tree` are installed and available."""
 
 
 class EvolutionResult(NamedTuple):
@@ -805,6 +845,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             overall_score=overall_score,
             total_score_sum=total_score_sum,
             total_questions=total_questions,
+            agent_name=agent_name,
         )
 
         # Save snapshot after refinement
@@ -819,6 +860,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         overall_score: float,
         total_score_sum: float,
         total_questions: int,
+        agent_name: str,
     ):
         """
         Prompt Claude Code to refine agent based on test results.
@@ -831,6 +873,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             overall_score: Overall average score (0-1)
             total_score_sum: Sum of all per-problem scores
             total_questions: Total number of questions
+            agent_name: Name of the new agent being tested
         """
         # Check if error analysis report exists (always generated now)
         test_workspace_name = f"iteration_{test_iteration:03d}_test"
@@ -844,6 +887,31 @@ A structured error analysis comparing your new agent against baselines has been 
 - Error index: `./{test_workspace_name}/error_index.json`
 """
 
+        # Build agent output directory listing
+        agent_dirs_section = ""
+        test_workspace_path = self.working_dir / test_workspace_name
+        if test_workspace_path.exists():
+            new_agent_line = f"- `./{test_workspace_name}/{agent_name}/` ← **your agent**"
+            baseline_lines = []
+            for d in sorted(test_workspace_path.iterdir()):
+                if d.is_dir() and d.name != agent_name and d.name != "agent_package" and d.name.startswith("agent_"):
+                    baseline_lines.append(f"- `./{test_workspace_name}/{d.name}/`")
+            if baseline_lines:
+                agent_dirs_section = f"""
+### Agent Outputs
+Your new agent's per-problem output:
+{new_agent_line}
+
+Baseline agents from iteration {test_iteration} (for comparison):
+{chr(10).join(baseline_lines)}
+"""
+            else:
+                agent_dirs_section = f"""
+### Agent Outputs
+Your new agent's per-problem output:
+{new_agent_line}
+"""
+
         prompt = f"""
 ## Round {round_num}: Testing and Refinement
 
@@ -851,9 +919,9 @@ Your agent was tested on data from iteration {test_iteration}.
 
 ### Results
 Overall score: {overall_score:.3f} ({total_score_sum:.1f}/{total_questions})
-{error_analysis_section}
+{error_analysis_section}{agent_dirs_section}
 ### Your Task
-Review the performance results above and the diagnostic outputs in the test workspace at `./iteration_{test_iteration:03d}_test/`.
+Review the performance results and diagnostic outputs listed above.
 
 Based on what you observe, provide updated versions of any artifacts that need changes.
 
