@@ -23,7 +23,6 @@ import json
 import logging
 import re
 import threading
-import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -257,7 +256,7 @@ class DocFinQAEvaluator:
 
         # Warn on unexpectedly large programs
         if program_str and len(program_str) > 2000:
-            warnings.warn(
+            logger.warning(
                 f"Generated program is unexpectedly large ({len(program_str)} chars). "
                 f"Expected short arithmetic programs (~200 chars). First 500 chars:\n"
                 f"{program_str[:500]}"
@@ -287,6 +286,7 @@ class DocFinQAEvaluator:
             should_log = milestone > 0 and milestone > self._last_logged_count
             if should_log:
                 self._last_logged_count = milestone
+        # should_log is a local bool captured under the lock — safe to read unlocked
         if should_log:
             logger.info(
                 f"DocFinQA evaluator: {milestone} evaluations completed "

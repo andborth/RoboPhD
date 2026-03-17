@@ -33,18 +33,15 @@ def _gepa_datasets_builder(config: Dict[str, Any]) -> Tuple[List[Dict], List[Dic
     """Pre-split datasets for GEPA.
 
     Default: train=5735, val=780 (uses HF validation split as val).
-    Override with train_size/val_size in task-config for testing:
-        --task-config '{"train_size": 50, "val_size": 20}'
+    Override val_size in task-config for testing:
+        --task-config '{"val_size": 20}'
     """
     from RoboPhD.adapters.gepa_docfinqa import load_docfinqa
 
     train = load_docfinqa("train")
     val = load_docfinqa("validation")
 
-    train_size = config.get("train_size")
     val_size = config.get("val_size")
-    if train_size is not None:
-        train = train[:train_size]
     if val_size is not None:
         val = val[:val_size]
 
@@ -72,7 +69,6 @@ def make_docfinqa_task() -> TaskDefinition:
             "cost_budget": 0.05,
             "over_budget_penalty": 0.9,
             "evaluation_budget": 1500,
-            "train_size": None,
             "val_size": None,
         },
         test_overrides={"split": "test"},
