@@ -54,8 +54,8 @@ You work in multiple rounds:
 |   +-- agent_<name>/                     <- per-agent evaluation output
 |   |   +-- evaluation.json               <- summary metrics (scores, counts)
 |   |   +-- problems/                     <- per-problem results & diagnostics
-|   +-- error_analysis_report.md          <- cross-agent accuracy comparison & failure summary
-|   +-- error_index.json                  <- raw per-problem error data (source for the report)
+|   +-- error_analysis_report.md          <- cross-agent score comparison & failure summary
+|   +-- error_index.json                  <- raw per-problem score data (source for the report)
 |   +-- cost_report.md                    <- per-agent LLM cost breakdown (tokens, cache, USD)
 +-- evolution_output/                     <- evolution workspaces (you are here)
 |   +-- CLAUDE.md                         <- this file
