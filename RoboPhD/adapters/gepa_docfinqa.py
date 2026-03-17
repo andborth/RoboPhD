@@ -152,8 +152,14 @@ def check_numeric_answer(predicted, expected, rel_tol: float = 0.01) -> bool:
 # Dataset loading
 # ---------------------------------------------------------------------------
 
+_SPLIT_FILES = {"train": "train.json", "validation": "dev.json", "test": "test.json"}
+
+
 def load_docfinqa(split: str = "train") -> List[Dict[str, Any]]:
     """Load DocFinQA dataset from HuggingFace.
+
+    Downloads via huggingface_hub and loads the JSON directly (bypassing
+    pyarrow, which can't handle the large SEC filing text fields).
 
     Args:
         split: "train" (5735), "validation" (780), or "test" (922).
@@ -161,17 +167,22 @@ def load_docfinqa(split: str = "train") -> List[Dict[str, Any]]:
     Returns:
         List of example dicts with id, document, question, answer, program.
     """
-    from datasets import load_dataset
+    if split not in _SPLIT_FILES:
+        raise ValueError(f"Unknown split: {split!r}. Use one of {tuple(_SPLIT_FILES)}.")
 
-    valid_splits = ("train", "validation", "test")
-    if split not in valid_splits:
-        raise ValueError(f"Unknown split: {split!r}. Use one of {valid_splits}.")
+    from huggingface_hub import hf_hub_download
 
-    # Use streaming=True because the full SEC filings exceed pyarrow's
-    # default string size limit, causing ArrowInvalid on non-streaming load.
-    ds = load_dataset("kensho/DocFinQA", split=split, streaming=True)
+    path = hf_hub_download(
+        repo_id="kensho/DocFinQA",
+        filename=_SPLIT_FILES[split],
+        repo_type="dataset",
+    )
+
+    with open(path) as f:
+        raw = json.load(f)
+
     examples = []
-    for idx, row in enumerate(ds):
+    for idx, row in enumerate(raw):
         examples.append({
             "id": f"docfinqa_{split}_{idx}",
             "document": row["Context"],
