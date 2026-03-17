@@ -167,7 +167,9 @@ def load_docfinqa(split: str = "train") -> List[Dict[str, Any]]:
     if split not in valid_splits:
         raise ValueError(f"Unknown split: {split!r}. Use one of {valid_splits}.")
 
-    ds = load_dataset("kensho/DocFinQA", split=split)
+    # Use streaming=True because the full SEC filings exceed pyarrow's
+    # default string size limit, causing ArrowInvalid on non-streaming load.
+    ds = load_dataset("kensho/DocFinQA", split=split, streaming=True)
     examples = []
     for idx, row in enumerate(ds):
         examples.append({
