@@ -178,8 +178,14 @@ def load_docfinqa(split: str = "train") -> List[Dict[str, Any]]:
         repo_type="dataset",
     )
 
-    with open(path) as f:
-        raw = json.load(f)
+    try:
+        with open(path) as f:
+            raw = json.load(f)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(
+            f"Failed to parse DocFinQA {split} split from {path}. "
+            f"Cache may be corrupt — try deleting the file and re-running."
+        ) from e
 
     examples = []
     for idx, row in enumerate(raw):
