@@ -22,11 +22,17 @@ def _evaluator_factory(config: Dict[str, Any]):
 
 
 def _dataset_builder(config: Dict[str, Any]) -> List[Dict]:
-    """Build DocFinQA dataset. Respects 'split' config."""
+    """Build DocFinQA dataset.
+
+    For run_robophd (split="train"): returns train+val concatenated (6,515 problems).
+    For test (split="test"): returns test split (922 problems).
+    """
     from RoboPhD.adapters.gepa_docfinqa import load_docfinqa
 
     split = config.get("split", "train")
-    return load_docfinqa(split)
+    if split == "test":
+        return load_docfinqa("test")
+    return load_docfinqa("train") + load_docfinqa("validation")
 
 
 def _gepa_datasets_builder(config: Dict[str, Any]) -> Tuple[List[Dict], List[Dict]]:
@@ -43,6 +49,8 @@ def _gepa_datasets_builder(config: Dict[str, Any]) -> Tuple[List[Dict], List[Dic
 
     val_size = config.get("val_size")
     if val_size is not None:
+        # Move unused val examples to train
+        train = train + val[val_size:]
         val = val[:val_size]
 
     return train, val
