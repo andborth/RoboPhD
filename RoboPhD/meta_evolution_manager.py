@@ -32,10 +32,7 @@ class MetaEvolutionResult(NamedTuple):
     config_delta: Optional[Dict[str, Any]]
     cost_data: Dict[str, Any]
 
-# Import shared report block from evolution manager
-from RoboPhD.deep_focus_evolution_manager import PER_ITERATION_REPORTS
-
-META_EVOLUTION_ENVIRONMENT_GUIDE = f"""\
+META_EVOLUTION_ENVIRONMENT_GUIDE = """\
 # Meta-Evolution Environment
 
 ## Strategy Tools
@@ -48,7 +45,16 @@ When creating strategies with `strategy_tools/`, these tools are **symlinked int
 - Reference them with imperative language in strategy.md (e.g., "Run `python strategy_tools/analyze_failures.py ...`" not "If the tool is available...")
 - The symlink will exist — do NOT include fallback instructions suggesting the tool might be missing
 
-{PER_ITERATION_REPORTS}"""
+## Per-Iteration Reports
+
+These reports are generated after each iteration at `../../iteration_NNN/` (relative to the evolution working dir):
+- `error_analysis_report.md` — cross-agent score comparison & failure summary
+- `error_index.json` — raw per-problem score data (source for the report)
+- `cost_report.md` — per-agent LLM cost breakdown (tokens, cache hits, USD)
+
+## CLI Tools
+
+`jq` and `tree` are installed and available."""
 
 
 class MetaEvolutionManager:
