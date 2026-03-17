@@ -88,6 +88,24 @@ class EvalServer:
             )
             self._last_logged_pct = current_mark
 
+    def _budget_hint(self) -> str | None:
+        """Return a budget hint if budget is low, else None."""
+        val_size = len(self.val_examples)
+        b = self.budget_remaining
+        if b <= 0:
+            return "Budget exhausted. Your work is done."
+        if b <= val_size:
+            return (
+                f"You have {b} budget remaining — just enough for a final val sweep. "
+                f"Run `python _evaluate.py val` now."
+            )
+        if b < 2 * val_size:
+            return (
+                f"You have {b} budget remaining — enough for 1 more val sweep ({val_size}) "
+                f"plus {b - val_size} training evals. Keep experimenting."
+            )
+        return None
+
     def _run_eval(self, candidate: dict, examples: list[dict]) -> dict:
         """Evaluate examples using shared parallel infrastructure."""
         return run_parallel_eval(
@@ -128,7 +146,11 @@ def _make_handler(server: EvalServer):
 
         def do_GET(self):
             if self.path == "/budget":
-                self._send_json({"budget_remaining": server.budget_remaining})
+                resp = {"budget_remaining": server.budget_remaining}
+                hint = server._budget_hint()
+                if hint:
+                    resp["hint"] = hint
+                self._send_json(resp)
             else:
                 self._send_json({"error": "not found"}, 404)
 
@@ -192,6 +214,9 @@ def _make_handler(server: EvalServer):
                 "diagnostics": diagnostics,
                 "budget_remaining": server.budget_remaining,
             }
+            hint = server._budget_hint()
+            if hint:
+                resp["hint"] = hint
             if overdrawn:
                 resp["budget_exhausted"] = True
             self._send_json(resp)
@@ -221,6 +246,9 @@ def _make_handler(server: EvalServer):
                 "mean_score": mean_score,
                 "budget_remaining": server.budget_remaining,
             }
+            hint = server._budget_hint()
+            if hint:
+                resp["hint"] = hint
             if overdrawn:
                 resp["budget_exhausted"] = True
             self._send_json(resp)
