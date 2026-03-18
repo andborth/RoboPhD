@@ -725,8 +725,8 @@ class ParallelAgentResearcher:
             self.meta_evolution_times = resume_checkpoint.get('meta_evolution_times', [])
             self.zero_accuracy_cases = [tuple(e) for e in resume_checkpoint.get('zero_accuracy_cases', [])]
             self.exception_failures = [tuple(e) for e in resume_checkpoint.get('exception_failures', [])]
-            self.five_hour_limit_incidents = resume_checkpoint.get('five_hour_limit_incidents', [])
-            self.clone_detections = resume_checkpoint.get('clone_detections', [])
+            self.five_hour_limit_incidents = [tuple(e) for e in resume_checkpoint.get('five_hour_limit_incidents', [])]
+            self.clone_detections = [tuple(e) for e in resume_checkpoint.get('clone_detections', [])]
             self.current_iteration_evolution_cost = None
 
             # Validate checkpoint integrity before any mutation
