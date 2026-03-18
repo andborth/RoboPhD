@@ -140,10 +140,16 @@ def _extract_program(text: str) -> str:
     return text
 
 
+def _parse_number(val) -> float:
+    """Parse a number, stripping common suffixes like % $ , and whitespace."""
+    s = str(val).strip().rstrip("%").replace(",", "").replace("$", "").strip()
+    return float(s)
+
+
 def check_numeric_answer(predicted, expected, rel_tol: float = 0.01) -> bool:
     """Check if predicted matches expected within relative tolerance."""
     try:
-        p, e = float(predicted), float(expected)
+        p, e = _parse_number(predicted), _parse_number(expected)
         return abs(p - e) / max(abs(e), 1e-9) < rel_tol
     except (TypeError, ValueError):
         return str(predicted).strip() == str(expected).strip()
