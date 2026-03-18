@@ -98,7 +98,15 @@ def find_transcript(working_dir, session_id):
     Returns:
         Path to the transcript file, or None if not found.
     """
-    claude_config = Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude"))
+    # Check CLAUDE_CONFIG_DIR from environment first, then from .envrc in the
+    # working directory tree (direnv sets it for subprocesses but not the parent).
+    claude_config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
+    if not claude_config_dir:
+        from utilities.claude_cli import _parse_envrc_exports
+        envrc_vars = _parse_envrc_exports(Path(working_dir))
+        claude_config_dir = envrc_vars.get("CLAUDE_CONFIG_DIR")
+    claude_config = Path(claude_config_dir) if claude_config_dir else Path.home() / ".claude"
+
     project_dir_name = str(Path(working_dir).resolve()).replace('/', '-').replace('_', '-')
     chat_file = claude_config / "projects" / project_dir_name / f"{session_id}.jsonl"
     return chat_file if chat_file.exists() else None
