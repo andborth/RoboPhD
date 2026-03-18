@@ -10,6 +10,7 @@ Also importable:
 
 import gzip
 import json
+import os
 import sys
 from collections import Counter
 from datetime import datetime, timezone
@@ -97,7 +98,6 @@ def find_transcript(working_dir, session_id):
     Returns:
         Path to the transcript file, or None if not found.
     """
-    import os
     claude_config = Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude"))
     project_dir_name = str(Path(working_dir).resolve()).replace('/', '-').replace('_', '-')
     chat_file = claude_config / "projects" / project_dir_name / f"{session_id}.jsonl"
