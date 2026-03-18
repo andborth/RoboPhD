@@ -21,7 +21,7 @@ class RateLimitExceeded(Exception):
     pass
 
 
-def _parse_envrc_exports(cwd: Path) -> Dict[str, str]:
+def parse_envrc_exports(cwd: Path) -> Dict[str, str]:
     """
     Walk up from cwd to filesystem root, find the first .envrc file,
     and parse 'export KEY=value' lines into a dict.
@@ -207,7 +207,7 @@ def call_claude_cli(
     log = logger or logging.getLogger(__name__)
 
     # Build environment: base env + .envrc exports + explicit overrides
-    envrc_vars = _parse_envrc_exports(Path(cwd))
+    envrc_vars = parse_envrc_exports(Path(cwd))
     env = {**os.environ, **envrc_vars, **(extra_env or {})}
 
     while True:

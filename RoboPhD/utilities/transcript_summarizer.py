@@ -102,8 +102,8 @@ def find_transcript(working_dir, session_id):
     # working directory tree (direnv sets it for subprocesses but not the parent).
     claude_config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
     if not claude_config_dir:
-        from utilities.claude_cli import _parse_envrc_exports
-        envrc_vars = _parse_envrc_exports(Path(working_dir))
+        from utilities.claude_cli import parse_envrc_exports
+        envrc_vars = parse_envrc_exports(Path(working_dir))
         claude_config_dir = envrc_vars.get("CLAUDE_CONFIG_DIR")
     claude_config = Path(claude_config_dir) if claude_config_dir else Path.home() / ".claude"
 
