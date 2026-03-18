@@ -274,14 +274,6 @@ class DocFinQAEvaluator:
         # Strip code fences if present
         program_str = _extract_program(program_str)
 
-        # Warn on unexpectedly large programs
-        if program_str and len(program_str) > 2000:
-            logger.warning(
-                f"Generated program is unexpectedly large ({len(program_str)} chars). "
-                f"Expected short arithmetic programs (~200 chars). First 500 chars:\n"
-                f"{program_str[:500]}"
-            )
-
         # Execute the generated program
         exec_error = None
         predicted = None
