@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import litellm
 
 litellm.suppress_debug_info = True
+logging.getLogger("openai._base_client").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
