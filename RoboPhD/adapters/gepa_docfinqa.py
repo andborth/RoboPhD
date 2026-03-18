@@ -320,6 +320,7 @@ class DocFinQAEvaluator:
             "reference_program": example["program"],
             "program": program_str,
             "exec_error": exec_error,
+            "cost_usd": tracker.total,
             "cost_llm": f"${tracker.llm_cost:.4f}",
             "cost_embed": f"${tracker.embed_cost:.4f}",
             "cost_total": f"${tracker.total:.4f}",
