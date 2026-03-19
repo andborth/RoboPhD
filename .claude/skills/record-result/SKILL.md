@@ -154,15 +154,15 @@ For `run_dir`, store as relative path from `../alt_robophd_runs/` (e.g., `gepa/a
 
 For `notes`, ask the user if they want to add any notes.
 
-### Step 14.5: Create run symlink
+### Step 14: Create run symlink
 
-For evolved runs (not baselines), create a symlink in `../alt_robophd_runs/results/runs/`:
+For evolved runs (not baselines), create a symlink in a `runs/` subdirectory next to the results JSON file:
 
-    ../alt_robophd_runs/results/runs/{id} -> {resolved run_dir}
+    {results_dir}/runs/{id} -> {resolved run_dir}
 
 Use a relative path for the symlink target (computed via `os.path.relpath` from the `runs/` directory to the resolved absolute run directory path). Create the `runs/` directory if it doesn't exist.
 
-### Step 14: Show the user the new entry
+### Step 15: Show the user the new entry
 
 Print the full JSON entry that was added. Confirm it was written to the results file.
 
