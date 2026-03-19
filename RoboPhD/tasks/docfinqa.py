@@ -16,7 +16,7 @@ def _evaluator_factory(config: Dict[str, Any]):
     return DocFinQAEvaluator(
         model=config.get("model", "gpt-4.1-mini"),
         embed_model=config.get("embed_model", "text-embedding-3-small"),
-        cost_budget=config.get("cost_budget", 0.05),
+        cost_budget=config.get("cost_budget", 0.10),
         over_budget_penalty=config.get("over_budget_penalty", 0.9),
     )
 
@@ -74,7 +74,7 @@ def make_docfinqa_task() -> TaskDefinition:
             "split": "train",
             "model": "gpt-4.1-mini",
             "embed_model": "text-embedding-3-small",
-            "cost_budget": 0.05,
+            "cost_budget": 0.10,
             "over_budget_penalty": 0.9,
             "evaluation_budget": 1500,
             "val_size": None,

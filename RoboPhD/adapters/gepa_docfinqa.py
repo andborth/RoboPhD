@@ -59,7 +59,7 @@ BACKGROUND = (
     "numerically with 1% relative tolerance. Unit labels (%, $, commas) are stripped "
     "before comparison, so the program should assign a raw number to `answer` "
     "(e.g., `answer = 36.5`, not `answer = '36.5%'`).\n\n"
-    "A per-question cost budget of $0.05 is enforced. Correct answers within budget "
+    "A per-question cost budget of $0.10 is enforced. Correct answers within budget "
     "score 1.0. Correct answers that exceed the budget are penalized to 0.9 (a 10% "
     "reduction). Incorrect answers score 0.0 regardless of cost. The program output "
     "is executed via exec(); if it raises an exception the answer is counted as incorrect."
@@ -73,7 +73,7 @@ BACKGROUND = (
 class CostTracker:
     """Lightweight per-evaluation cost tracker."""
 
-    def __init__(self, budget: float = 0.05):
+    def __init__(self, budget: float = 0.10):
         self.budget = budget
         self.llm_cost = 0.0
         self.embed_cost = 0.0
@@ -230,7 +230,7 @@ class DocFinQAEvaluator:
         self,
         model: str = "gpt-4.1-mini",
         embed_model: str = "text-embedding-3-small",
-        cost_budget: float = 0.05,
+        cost_budget: float = 0.10,
         over_budget_penalty: float = 0.9,
     ):
         self.model = model
