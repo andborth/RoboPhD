@@ -365,7 +365,7 @@ class DocFinQAEvaluator:
 
         # LLM prompt/response previews
         for i, (p, r) in enumerate(zip(tracker.llm_prompts, tracker.llm_responses)):
-            suffix = f"_{i+1}" if len(tracker.llm_prompts) > 1 else ""
+            suffix = f"_{i+1}"
             diagnostics[f"llm_prompt{suffix}"] = _prompt_preview(p)
             diagnostics[f"llm_response{suffix}"] = _prompt_preview(r)
 
