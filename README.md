@@ -68,6 +68,8 @@ RoboPhD uses AI throughout:
 | Text2SQL | BIRD | `eval_instructions.md` + `tools/analyze_db.py` + `verify_prompt.md` | Claude Haiku 4.5 |
 | DocFinQA | DocFinQA (ACL 2024) | `agent.py` — retrieval + QA pipeline | GPT-4.1-mini + text-embedding-3-small |
 
+Additional domains (CodeGen, AIME, CodeCritic) are available in the task registry but not actively maintained.
+
 New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `TaskDefinition` with an evaluator function, dataset builder, and file mapping.
 
 ## Quick Start

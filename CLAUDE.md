@@ -18,6 +18,8 @@ RoboPhD is a multi-domain evolution system that implements a three-level AI hier
 - **DocFinQA**: Evolving retrieval + QA agents for long-document financial questions
 - **Text2SQL**: Evolving database analysis agents for BIRD benchmark SQL generation
 
+Additional domains (CodeGen, AIME, CodeCritic) are available in the task registry but not actively maintained.
+
 New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `TaskDefinition` with an evaluator function, dataset builder, and file mapping.
 
 **Paper**: [RoboPhD: Self-Improving Text-to-SQL Through Autonomous Agent Evolution](https://arxiv.org/abs/2601.01126)
@@ -352,7 +354,7 @@ Available meta-evolution strategies:
 ### Domain-Specific Issues
 - **ARC-AGI**: Requires `requirements-gepa.txt` (dspy, datasets) and `OPENROUTER_API_KEY`. Default solver: `gemini-3.1-flash-lite-preview` via OpenRouter. Cost tracking uses `resp.usage.cost` from OpenRouter (litellm's pricing DB doesn't cover these models).
 - **Can't Be Late**: Requires trace data download via `bash scripts/download_cant_be_late_traces.sh`. Requires `configargparse`, `colorama`, `pyyaml` (simulator dependencies). No LLM calls — pure algorithmic optimization via subprocess simulation.
-- **DocFinQA**: Requires OpenAI API key for `gpt-4.1-mini` (reasoning) and `text-embedding-3-small` (retrieval). Dataset loaded from HuggingFace (`kensho/DocFinQA`). Per-question cost budget of $0.05 enforced.
+- **DocFinQA**: Requires OpenAI API key for `gpt-4.1-mini` (reasoning) and `text-embedding-3-small` (retrieval). Dataset loaded from HuggingFace (`kensho/DocFinQA`). Per-question cost budget of $0.10 enforced.
 - **Text2SQL**: See [docs/claude/text2sql.md](docs/claude/text2sql.md) for database-related issues.
 
 ## License
