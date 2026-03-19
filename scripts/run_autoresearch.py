@@ -257,7 +257,9 @@ def main():
     val_ratio = config.get("val_ratio", _AUTORESEARCH_DEFAULTS["val_ratio"][0])
     val_size_cfg = config.get("val_size", _AUTORESEARCH_DEFAULTS["val_size"][0])
     seed = config.get("seed", _AUTORESEARCH_DEFAULTS["seed"][0])
-    model = config.get("model", _AUTORESEARCH_DEFAULTS["model"][0])
+    # Prefer engine_config's model (Claude CLI session model) over task config's
+    # model (solver model) — both use the key "model" but mean different things.
+    model = engine_config.get("model", _AUTORESEARCH_DEFAULTS["model"][0])
     overall_timeout = config.get("overall_timeout", _AUTORESEARCH_DEFAULTS["overall_timeout"][0])
 
     # --- 3. Extract seed candidate ---
