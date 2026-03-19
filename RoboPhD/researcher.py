@@ -449,10 +449,12 @@ class ParallelAgentEvolver:
         """Build the complete evolution prompt."""
         lines = []
 
-        # Add performance data FIRST for context
-        lines.append("## Performance Rankings Across All Iterations\n")
-        ranking_table = self._generate_ranking_table(test_history, performance_records, for_evolution=True)
-        lines.append(ranking_table)
+        # Add performance rankings and agent pool (can be disabled to reduce ELO-leader fixation)
+        include_rankings = self.config.get("include_evolution_rankings", True)
+        if include_rankings:
+            lines.append("## Performance Rankings Across All Iterations\n")
+            ranking_table = self._generate_ranking_table(test_history, performance_records, for_evolution=True)
+            lines.append(ranking_table)
 
         # Add previous iteration summary with per-database breakdown
         lines.append("\n")
@@ -465,9 +467,10 @@ class ParallelAgentEvolver:
         lines.append(structure)
 
         # Add agent pool summary
-        lines.append("\n## Agent Pool\n")
-        pool_summary = self._format_agent_pool_summary(agent_pool, performance_records)
-        lines.append(pool_summary)
+        if include_rankings:
+            lines.append("\n## Agent Pool\n")
+            pool_summary = self._format_agent_pool_summary(agent_pool, performance_records)
+            lines.append(pool_summary)
 
         # Substitute template variables in strategy content
         strategy_with_vars = self._substitute_template_variables(strategy_content, iteration)

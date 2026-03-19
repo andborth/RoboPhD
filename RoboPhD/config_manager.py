@@ -93,6 +93,9 @@ class ConfigManager:
             # Tie handling
             "oldest_agent_wins_ties": False,  # King-of-the-hill: oldest agent wins ties
 
+            # Prompt content
+            "include_evolution_rankings": True,  # Include Performance Rankings table and Agent Pool in evolution prompt
+
             # Other
             "debug_log_probability": 0.02,
             "eval_result_cache": True,  # Cache (agent, problem) results across iterations via symlinks
