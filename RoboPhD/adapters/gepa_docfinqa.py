@@ -137,16 +137,23 @@ def run_agent(agent_code: str, document: str, question: str, llm, embed) -> tupl
     """Execute the candidate's answer() function.
 
     Returns (program_str, captured_stdout).
+
+    Captures print() by injecting a custom print into the agent's namespace
+    rather than using redirect_stdout (which is process-global in Python <3.12
+    and breaks print() in other threads).
     """
     import io
-    import contextlib
 
-    namespace = {}
+    buf = io.StringIO()
+
+    def _captured_print(*args, **kwargs):
+        kwargs.setdefault("file", buf)
+        print(*args, **kwargs)
+
+    namespace = {"print": _captured_print}
     exec(agent_code, namespace)
     answer_fn = namespace["answer"]
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        result = answer_fn(document, question, llm, embed)
+    result = answer_fn(document, question, llm, embed)
     return result, buf.getvalue()
 
 
