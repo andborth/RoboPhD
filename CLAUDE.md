@@ -5,7 +5,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Quick Reference
 
 - **Available CLI Tools**: `jq` and `tree` are installed and available
-- **CodeGen domain**: See [docs/claude/codegen.md](docs/claude/codegen.md)
 - **GEPA integration**: See [docs/claude/gepa.md](docs/claude/gepa.md)
 - **Text2SQL domain**: See [docs/claude/text2sql.md](docs/claude/text2sql.md)
 
@@ -14,12 +13,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 RoboPhD is a multi-domain evolution system that implements a three-level AI hierarchy where AI agents conduct autonomous research to improve other AI agents.
 
 **Active domains**:
-- **CodeGen**: Evolving critic agents for code review on LiveCodeBench
-- **AIME**: Evolving math reasoning prompts on AIME 2022-2024
-- **Text2SQL**: Evolving database analysis agents for BIRD benchmark SQL generation
 - **ARC-AGI**: Evolving abstract reasoning agents (Gemini via OpenRouter)
 - **Can't Be Late**: Evolving cloud scheduling strategies on AWS spot traces (NSDI'24)
-- **CodeCritic**: CodeGen variant with fresh-session revision (no code generation)
+- **DocFinQA**: Evolving retrieval + QA agents for long-document financial questions
+- **Text2SQL**: Evolving database analysis agents for BIRD benchmark SQL generation
 
 New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `TaskDefinition` with an evaluator function, dataset builder, and file mapping.
 
@@ -30,12 +27,10 @@ New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `
 
 | Domain | Benchmark | Agent Artifacts (`file_mapping`) |
 |--------|-----------|-------------------------------|
-| CodeGen | LiveCodeBench | `eval_instructions.md` + `tools/problem_analyzer.py` |
-| AIME | AIME 2022-2024 | `system_prompt.md` |
-| Text2SQL | BIRD | `eval_instructions.md` + `tools/analyze_db.py` + `verify_prompt.md` |
 | ARC-AGI | ARC-AGI (HuggingFace) | `agent.py` |
 | Can't Be Late | AWS spot traces (NSDI'24) | `agent.py` |
-| CodeCritic | LiveCodeBench | `eval_instructions.md` + `tools/problem_analyzer.py` |
+| DocFinQA | DocFinQA (ACL 2024) | `agent.py` |
+| Text2SQL | BIRD | `eval_instructions.md` + `tools/analyze_db.py` + `verify_prompt.md` |
 
 ## Key Commands
 
@@ -56,15 +51,6 @@ export OPENROUTER_API_KEY="sk-or-..."
 
 ### Running Evolution (`run_robophd.py`)
 ```bash
-# CodeGen evolution (10 iterations)
-python scripts/run_robophd.py --task codegen --num-iterations 10
-
-# AIME evolution
-python scripts/run_robophd.py --task aime --num-iterations 10
-
-# Text2SQL evolution
-python scripts/run_robophd.py --task text2sql --num-iterations 10
-
 # ARC-AGI evolution
 python scripts/run_robophd.py --task arc_agi --num-iterations 10
 
@@ -72,37 +58,38 @@ python scripts/run_robophd.py --task arc_agi --num-iterations 10
 bash scripts/download_cant_be_late_traces.sh
 python scripts/run_robophd.py --task cant_be_late --num-iterations 10
 
+# DocFinQA evolution
+python scripts/run_robophd.py --task docfinqa --num-iterations 10
+
+# Text2SQL evolution
+python scripts/run_robophd.py --task text2sql --num-iterations 10
+
 # Quick test
-python scripts/run_robophd.py --task codegen --num-iterations 2 \
+python scripts/run_robophd.py --task cant_be_late --num-iterations 2 \
   --engine-config '{"examples_per_iteration": 3}'
 
 # List all valid parameters for a task
-python scripts/run_robophd.py --task codegen --list-params
+python scripts/run_robophd.py --task cant_be_late --list-params
 ```
 
 ### Running GEPA (`run_gepa.py`)
 ```bash
-# Smoke test (~5 mutation cycles)
-python scripts/run_gepa.py --task codegen \
-  --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic"}' \
-  --engine-config '{"evaluation_budget": 200, "val_ratio": 0.05}'
-
-# Full run
-python scripts/run_gepa.py --task codegen \
-  --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic"}' \
-  --engine-config '{"evaluation_budget": 600, "val_ratio": 0.05, "reflection_model": "opus-4.6"}'
-
-# AIME via GEPA
-python scripts/run_gepa.py --task aime \
-  --engine-config '{"evaluation_budget": 200, "val_ratio": 0.2}'
+# Can't Be Late via GEPA
+python scripts/run_gepa.py --task cant_be_late \
+  --engine-config '{"evaluation_budget": 1500, "val_size": 200}' \
+  --eval-test-set
 
 # ARC-AGI via GEPA (pre-split: train=200, val=200 matching GEPA exactly)
 python scripts/run_gepa.py --task arc_agi \
   --engine-config '{"evaluation_budget": 300}'
 
+# Text2SQL via GEPA
+python scripts/run_gepa.py --task text2sql \
+  --engine-config '{"evaluation_budget": 1500, "val_size": 200}' \
+  --eval-test-set
+
 # Sequential (easier debugging, no ThreadPoolExecutor)
-python scripts/run_gepa.py --task codegen \
-  --task-config '{"seed_agent": "RoboPhD/codegen_agents/naive_critic"}' \
+python scripts/run_gepa.py --task cant_be_late \
   --engine-config '{"evaluation_budget": 200, "max_workers": 1}'
 ```
 
@@ -111,18 +98,18 @@ python scripts/run_gepa.py --task codegen \
 ### Resume and Extend
 ```bash
 # Resume from checkpoint (auto-continues from last completed iteration)
-python scripts/run_robophd.py --task codegen \
-  --resume ../robophd_runs/robophd/codegen_20251031_043607
+python scripts/run_robophd.py --task cant_be_late \
+  --resume ../robophd_runs/robophd/cant_be_late_20260313_230325
 
 # Restart from specific iteration with modifications
-python scripts/run_robophd.py --task codegen \
-  --resume ../robophd_runs/robophd/codegen_20251031_043607 \
+python scripts/run_robophd.py --task cant_be_late \
+  --resume ../robophd_runs/robophd/cant_be_late_20260313_230325 \
   --from-iteration 5 \
-  --engine-config '{"examples_per_iteration": 10, "eval_model": "sonnet-4.5"}'
+  --engine-config '{"examples_per_iteration": 10}'
 
 # Extend completed run with additional iterations
-python scripts/run_robophd.py --task codegen \
-  --resume ../robophd_runs/robophd/codegen_20251031_043607 \
+python scripts/run_robophd.py --task cant_be_late \
+  --resume ../robophd_runs/robophd/cant_be_late_20260313_230325 \
   --extend 5 \
   --engine-config '{"evolution_strategy": "challenger"}'
 ```
@@ -131,15 +118,15 @@ python scripts/run_robophd.py --task codegen \
 ```bash
 # Auto-select best agent by ELO from a run
 python scripts/eval_test_set.py --task arc_agi \
-  --run-dir ../robophd_runs/robophd/arc_agi_20260306_104927
+  --run-dir ../robophd_runs/robophd/arc_agi_20260307_013926
 
 # Specify agent directly
-python scripts/eval_test_set.py --task aime \
-  --agent-dir ../robophd_runs/robophd/aime_20260227_180324/agents/iter4_verified_enumerator
+python scripts/eval_test_set.py --task text2sql \
+  --agent-dir RoboPhD/text2sql_agents/naive
 
 # With repeats and config overrides
-python scripts/eval_test_set.py --task aime --run-dir ... \
-  --test-repeats 5 --task-config '{"solver_model": "gpt-4.1"}'
+python scripts/eval_test_set.py --task arc_agi --run-dir ... \
+  --test-repeats 3
 ```
 
 ## Three-Level AI Architecture
@@ -163,6 +150,7 @@ Two optimization engines share a common task registry:
 
 - **`run_robophd.py`**: Multi-agent ELO competition with evolution strategies
 - **`run_gepa.py`**: GEPA's reflective text evolution with Pareto selection
+- **`run_autoresearch.py`**: Single Claude Code session with greedy experimentation
 
 ### How Evolution Works
 
@@ -204,12 +192,10 @@ Agents are directories containing text files declared by the task's `file_mappin
 
 | Domain | `file_mapping` | Seed Agent |
 |--------|---------------|------------|
-| CodeGen | `{"eval_instructions": "eval_instructions.md", "tool_code": "tools/problem_analyzer.py"}` | `RoboPhD/codegen_agents/naive_critic/` |
-| AIME | `{"system_prompt": "system_prompt.md"}` | `RoboPhD/aime_agents/baseline/` |
-| Text2SQL | `{"eval_instructions": "eval_instructions.md", "database_analysis_code": "tools/analyze_db.py", "verify_prompt": "verify_prompt.md"}` | `RoboPhD/text2sql_agents/naive/` |
 | ARC-AGI | `{"agent_code": "agent.py"}` | `RoboPhD/arcagi_agents/baseline/` |
 | Can't Be Late | `{"agent_code": "agent.py"}` | `RoboPhD/cant_be_late_agents/baseline/` |
-| CodeCritic | `{"eval_instructions": "eval_instructions.md", "tool_code": "tools/problem_analyzer.py"}` | `RoboPhD/codegen_agents/naive_critic/` |
+| DocFinQA | `{"agent_code": "agent.py"}` | `RoboPhD/docfinqa_agents/baseline/` |
+| Text2SQL | `{"eval_instructions": "eval_instructions.md", "database_analysis_code": "tools/analyze_db.py", "verify_prompt": "verify_prompt.md"}` | `RoboPhD/text2sql_agents/naive/` |
 
 Conversion between agent directories and flat candidate dicts is handled by `candidate_utils.py` (`extract_candidate`, `materialize_candidate`).
 
@@ -218,7 +204,7 @@ Conversion between agent directories and flat candidate dicts is handled by `can
 ### Evolution Strategies
 Evolution strategies are organized by domain:
 
-- `RoboPhD/evolution_strategies/` — `cross_pollination`, `refinement`, `use_your_judgment` (used by all domains)
+- `RoboPhD/evolution_strategies/` — `cross_pollination`, `data_focus`, `refinement`, `use_your_judgment` (used by all domains)
 
 **Note**: Meta-evolution can generate additional strategies beyond these built-in options.
 
@@ -234,9 +220,9 @@ Evolution strategies are organized by domain:
 Evolution strategies can be controlled per-iteration using the `config_schedule` parameter:
 
 ```bash
-python scripts/run_robophd.py --task codegen --num-iterations 10 \
+python scripts/run_robophd.py --task cant_be_late --num-iterations 10 \
   --engine-config '{
-    "evolution_strategy": "use_your_judgment",
+    "evolution_strategy": "data_focus",
     "config_schedule": {
       "3": {"evolution_strategy": "none"},
       "5": {"evolution_strategy": "refinement"},
@@ -249,11 +235,11 @@ python scripts/run_robophd.py --task codegen --num-iterations 10 \
 Configure weighted random strategy selection:
 
 ```bash
-python scripts/run_robophd.py --task codegen --num-iterations 10 \
+python scripts/run_robophd.py --task cant_be_late --num-iterations 10 \
   --engine-config '{
     "use_weighted_random": true,
     "weighted_random_configs": [
-      [{"evolution_strategy": "use_your_judgment"}, 50],
+      [{"evolution_strategy": "data_focus"}, 50],
       [{"evolution_strategy": "refinement"}, 30],
       [{"evolution_strategy": "none"}, 20]
     ]
@@ -264,12 +250,11 @@ python scripts/run_robophd.py --task codegen --num-iterations 10 \
 Deep Focus is an advanced evolution mode that uses multiple rounds of refinement:
 
 ```bash
-python scripts/run_robophd.py --task codegen --num-iterations 10 \
+python scripts/run_robophd.py --task text2sql --num-iterations 10 \
   --engine-config '{
     "new_agent_test_rounds": 2,
     "new_agent_test_round_offset": -2,
-    "evolution_model": "opus-4.6",
-    "eval_model": "haiku-4.5"
+    "evolution_model": "opus-4.6"
   }'
 ```
 
@@ -279,17 +264,11 @@ python scripts/run_robophd.py --task codegen --num-iterations 10 \
 - `"new_agent_test_round_offset": -2`: Starting offset from current iteration [DEFAULT]. At iteration 8, tests against iterations 6 and 5. Use `-1` for legacy behavior (tests 7 and 6). Iterations < 1 are skipped.
 
 ### Meta-Evolution
-Meta-evolution allows evolving the evolution strategies themselves:
+Meta-evolution allows evolving the evolution strategies themselves (experimental — currently under study):
 
 ```bash
-python scripts/run_robophd.py --task codegen --num-iterations 20 \
-  --engine-config '{
-    "meta_evolution_strategy": "train_a_winner",
-    "config_schedule": {
-      "10": {"meta_evolution_strategy": "train_a_winner"},
-      "11": {"meta_evolution_strategy": null}
-    }
-  }'
+python scripts/run_robophd.py --task cant_be_late --num-iterations 20 \
+  --engine-config configs/robophd_engine/meta_evolution_starts_at_5.json
 ```
 
 Available meta-evolution strategies:
@@ -300,15 +279,15 @@ Available meta-evolution strategies:
 ### Entry Points
 - **`scripts/run_robophd.py`**: Multi-agent ELO evolution runner
 - **`scripts/run_gepa.py`**: GEPA optimization runner
+- **`scripts/run_autoresearch.py`**: Autoresearch single-session optimizer
 - **`scripts/eval_test_set.py`**: Standalone test-set evaluation for any agent
 
 ### Task Registry
 - **`tasks/base.py`**: `TaskDefinition` dataclass (name, evaluator_factory, dataset_builder, file_mapping, objective)
-- **`tasks/codegen.py`**: CodeGen task — LiveCodeBench critic evolution
-- **`tasks/aime.py`**: AIME task — math reasoning prompt evolution
-- **`tasks/text2sql.py`**: Text2SQL task — BIRD benchmark SQL generation
 - **`tasks/arc_agi.py`**: ARC-AGI task — abstract reasoning agent evolution
 - **`tasks/cant_be_late.py`**: Can't Be Late task — cloud scheduling strategy evolution
+- **`tasks/docfinqa.py`**: DocFinQA task — long-document financial QA agent evolution
+- **`tasks/text2sql.py`**: Text2SQL task — BIRD benchmark SQL generation
 
 ### Core
 - **`researcher.py`**: Evolution loop orchestrator (called by `run_robophd.py`)
@@ -321,13 +300,13 @@ Available meta-evolution strategies:
 
 ### Adapters
 - **`adapters/candidate_utils.py`**: `extract_candidate` / `materialize_candidate` — convert between agent dirs and flat dicts
-- **`adapters/gepa_codegen.py`**: GEPA adapter for CodeGen evaluator
-- **`adapters/gepa_aime.py`**: GEPA adapter for AIME evaluator
 - **`adapters/gepa_arc_agi.py`**: ARC-AGI evaluator, TrackedLLM (with cost fix), dataset splits
 - **`adapters/arc_agi_utils_unmodified.py`**: Vendored GEPA utils (exact copy, do not modify)
 - **`adapters/cant_be_late.py`**: Can't Be Late evaluator, dataset loading
 - **`adapters/cant_be_late_utils_unmodified/`**: Vendored GEPA utils + simulator (do not modify)
 - **`adapters/cant_be_late_constants_unmodified.py`**: Vendored constants (exact copy, do not modify)
+- **`adapters/gepa_docfinqa.py`**: DocFinQA evaluator, dataset loading, cost tracking
+- **`adapters/gepa_text2sql.py`**: Text2SQL evaluator, BIRD dataset loading
 
 ### Config
 - **`config.py`**: Model mappings and fallbacks
@@ -350,8 +329,8 @@ Available meta-evolution strategies:
 
 ## Development Tips
 
-- **Quick Test**: `python scripts/run_robophd.py --task codegen --num-iterations 2 --engine-config '{"examples_per_iteration": 1}'`
-- **List Parameters**: `python scripts/run_robophd.py --task codegen --list-params`
+- **Quick Test**: `python scripts/run_robophd.py --task cant_be_late --num-iterations 2 --engine-config '{"examples_per_iteration": 3}'`
+- **List Parameters**: `python scripts/run_robophd.py --task cant_be_late --list-params`
 - **Check Progress**: Review `checkpoint.json` and `final_report.md` in the experiment dir
 - **Debug Evaluation**: Check `iteration_XXX/agent_YYY/problems/` and `evaluation.json` in the experiment dir
 - **Evolution Output**: Check `evolution_output/iteration_XXX/` in the experiment dir for Claude's reasoning
@@ -371,10 +350,10 @@ Available meta-evolution strategies:
 - **Session errors**: Check Claude CLI authentication with `claude --version`
 
 ### Domain-Specific Issues
-- **CodeGen**: See [docs/claude/codegen.md](docs/claude/codegen.md) for test execution issues
-- **Text2SQL**: See [docs/claude/text2sql.md](docs/claude/text2sql.md) for database-related issues
 - **ARC-AGI**: Requires `requirements-gepa.txt` (dspy, datasets) and `OPENROUTER_API_KEY`. Default solver: `gemini-3.1-flash-lite-preview` via OpenRouter. Cost tracking uses `resp.usage.cost` from OpenRouter (litellm's pricing DB doesn't cover these models).
 - **Can't Be Late**: Requires trace data download via `bash scripts/download_cant_be_late_traces.sh`. Requires `configargparse`, `colorama`, `pyyaml` (simulator dependencies). No LLM calls — pure algorithmic optimization via subprocess simulation.
+- **DocFinQA**: Requires OpenAI API key for `gpt-4.1-mini` (reasoning) and `text-embedding-3-small` (retrieval). Dataset loaded from HuggingFace (`kensho/DocFinQA`). Per-question cost budget of $0.05 enforced.
+- **Text2SQL**: See [docs/claude/text2sql.md](docs/claude/text2sql.md) for database-related issues.
 
 ## License
 
