@@ -62,7 +62,11 @@ BACKGROUND = (
     "A per-question cost budget of $0.10 is enforced. Correct answers within budget "
     "score 1.0. Correct answers that exceed the budget are penalized to 0.9 (a 10% "
     "reduction). Incorrect answers score 0.0 regardless of cost. The program output "
-    "is executed via exec(); if it raises an exception the answer is counted as incorrect."
+    "is executed via exec(); if it raises an exception the answer is counted as incorrect.\n\n"
+    "Diagnostics: Any print() output from the agent is captured and included "
+    "in evaluation diagnostics as agent_stdout. Use print() to log any information "
+    "you think would be helpful for you to see in improving the agent in later "
+    "rounds of testing and refinement."
 )
 
 
@@ -79,6 +83,8 @@ class CostTracker:
         self.embed_cost = 0.0
         self.llm_calls = 0
         self.embed_calls = 0
+        self.llm_prompts = []
+        self.llm_responses = []
 
     @property
     def total(self) -> float:
@@ -97,9 +103,12 @@ def make_tracked_llm(model: str, tracker: CostTracker):
             cost = litellm.completion_cost(completion_response=resp)
         except Exception:
             cost = 0.0
+        response_text = resp.choices[0].message.content or ""
         tracker.llm_cost += cost
         tracker.llm_calls += 1
-        return resp.choices[0].message.content or ""
+        tracker.llm_prompts.append(prompt)
+        tracker.llm_responses.append(response_text)
+        return response_text
 
     return llm
 
@@ -124,12 +133,21 @@ def make_tracked_embed(model: str, tracker: CostTracker):
 # Agent execution helpers
 # ---------------------------------------------------------------------------
 
-def run_agent(agent_code: str, document: str, question: str, llm, embed) -> str:
-    """Execute the candidate's answer() function, return the program string."""
+def run_agent(agent_code: str, document: str, question: str, llm, embed) -> tuple:
+    """Execute the candidate's answer() function.
+
+    Returns (program_str, captured_stdout).
+    """
+    import io
+    import contextlib
+
     namespace = {}
     exec(agent_code, namespace)
     answer_fn = namespace["answer"]
-    return answer_fn(document, question, llm, embed)
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        result = answer_fn(document, question, llm, embed)
+    return result, buf.getvalue()
 
 
 def _extract_program(text: str) -> str:
@@ -142,6 +160,13 @@ def _extract_program(text: str) -> str:
     if m:
         return m.group(1).strip()
     return text
+
+
+def _prompt_preview(prompt: str, head: int = 500, tail: int = 500) -> str:
+    """Truncate a prompt to head + tail with ellipsis."""
+    if len(prompt) <= head + tail + 50:
+        return prompt
+    return prompt[:head] + f"\n\n... [{len(prompt) - head - tail} chars omitted] ...\n\n" + prompt[-tail:]
 
 
 def _parse_number(val) -> float:
@@ -271,15 +296,19 @@ class DocFinQAEvaluator:
         embed = make_tracked_embed(self.embed_model, tracker)
 
         # Run the agent
+        agent_stdout = ""
         try:
-            program_str = run_agent(agent_code, example["document"], question, llm, embed)
+            program_str, agent_stdout = run_agent(agent_code, example["document"], question, llm, embed)
         except Exception as e:
-            return 0.0, {
+            diagnostics = {
                 "error": f"Agent crashed: {e}",
                 "question": question,
                 "expected": expected,
                 "reference_program": example["program"],
             }
+            if agent_stdout.strip():
+                diagnostics["agent_stdout"] = agent_stdout
+            return 0.0, diagnostics
 
         # Strip code fences if present
         program_str = _extract_program(program_str)
@@ -333,6 +362,16 @@ class DocFinQAEvaluator:
             "doc_words": len(example["document"].split()),
             "question": question,
         }
+
+        # LLM prompt/response previews
+        for i, (p, r) in enumerate(zip(tracker.llm_prompts, tracker.llm_responses)):
+            suffix = f"_{i+1}" if len(tracker.llm_prompts) > 1 else ""
+            diagnostics[f"llm_prompt{suffix}"] = _prompt_preview(p)
+            diagnostics[f"llm_response{suffix}"] = _prompt_preview(r)
+
+        # Agent stdout (if any)
+        if agent_stdout.strip():
+            diagnostics["agent_stdout"] = agent_stdout
 
         # Write result.json if problem_dir provided
         if problem_dir is not None:
