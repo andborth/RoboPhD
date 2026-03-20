@@ -77,7 +77,6 @@ def make_docfinqa_task() -> TaskDefinition:
             "cost_budget": 0.10,
             "over_budget_penalty": 0.9,
             "evaluation_budget": 1500,
-            "val_size": None,
         },
         test_overrides={"split": "test"},
         gepa_datasets_builder=_gepa_datasets_builder,

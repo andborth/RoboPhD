@@ -88,7 +88,6 @@ def make_arc_agi_task() -> TaskDefinition:
             "arc_agi_split": "train",
             "evaluation_budget": 1500,
             "train_size": None,  # Override GEPA train split size (default: all 200)
-            "val_size": None,    # Override GEPA val split size (default: all 200)
         },
         test_overrides={"arc_agi_split": "test"},
         gepa_datasets_builder=_gepa_datasets_builder,

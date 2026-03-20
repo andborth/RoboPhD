@@ -276,6 +276,9 @@ def main():
 
     # --- 4. Build datasets ---
     if task.gepa_datasets_builder is not None:
+        # Inject resolved val_size so the builder can resize the pre-split
+        if "val_size" not in config and val_size_cfg is not None:
+            config["val_size"] = val_size_cfg
         trainset, valset = task.gepa_datasets_builder(config)
         logger.info(f"Dataset (pre-split): {len(trainset)} train, {len(valset)} val")
     else:
