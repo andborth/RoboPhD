@@ -70,7 +70,7 @@ class ConfigManager:
             "evolution_model": "opus-4.6",
 
             # Evolution parameters (NO LONGER SPECIAL!)
-            "evolution_strategy": "use_your_judgment",
+            "evolution_strategy": "data_focus",
 
             # Meta-evolution parameters
             "meta_evolution_strategy": None,       # Which meta-evolution strategy to use
@@ -94,7 +94,7 @@ class ConfigManager:
             "oldest_agent_wins_ties": False,  # King-of-the-hill: oldest agent wins ties
 
             # Prompt content
-            "include_evolution_rankings": True,  # Include Performance Rankings table and Agent Pool in evolution prompt
+            "include_evolution_rankings": False,  # Exclude Performance Rankings table and Agent Pool from evolution prompt
 
             # Other
             "debug_log_probability": 0.02,
