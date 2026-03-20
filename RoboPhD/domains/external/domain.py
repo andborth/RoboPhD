@@ -269,9 +269,14 @@ class ExternalEvaluatorDomain(DomainInterface):
                         candidate, example, problem_dir=problem_dir
                     )
                 except Exception as e:
+                    error_str = str(e)
+                    # Re-raise rate limit errors — even one corrupts ELO comparisons
+                    # because the agent gets an unfair 0 on a problem it might have solved
+                    if "RateLimitError" in type(e).__name__ or "rate_limit" in error_str:
+                        raise
                     self.logger.error(f"Evaluator failed on {problem_id}: {e}")
                     score = 0.0
-                    diagnostics = {"error": str(e)}
+                    diagnostics = {"error": error_str}
 
                 for key in ("question_id", "problem_id", "id", "example_id"):
                     if key in example:
@@ -381,7 +386,18 @@ class ExternalEvaluatorDomain(DomainInterface):
                     continue
 
                 for future in done:
-                    result_entry = future.result()
+                    try:
+                        result_entry = future.result()
+                    except Exception as e:
+                        error_str = str(e)
+                        if "RateLimitError" in type(e).__name__ or "rate_limit" in error_str:
+                            # Cancel remaining futures and propagate
+                            for f in not_done:
+                                f.cancel()
+                            raise RuntimeError(
+                                f"API_RATE_LIMIT: {e}"
+                            ) from e
+                        raise
                     results.append(result_entry)
                     score_sum += result_entry["score"]
                 remaining = not_done

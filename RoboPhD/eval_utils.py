@@ -85,8 +85,14 @@ def run_parallel_eval(
                 try:
                     score, diag = future.result()
                 except Exception as e:
+                    # Re-raise rate limit errors — even one corrupts score comparisons
+                    error_str = str(e)
+                    if "RateLimitError" in type(e).__name__ or "rate_limit" in error_str:
+                        for f in not_done:
+                            f.cancel()
+                        raise RuntimeError(f"API_RATE_LIMIT: {e}") from e
                     logger.warning(f"Evaluator error on example {idx}: {e}")
-                    score, diag = 0.0, {"error": str(e)}
+                    score, diag = 0.0, {"error": error_str}
                 score_map[idx] = score
                 diag_map[idx] = diag
             remaining = not_done
