@@ -192,11 +192,11 @@ def main():
     val_ratio = config.get("val_ratio", _GEPA_DEFAULTS["val_ratio"][0])
     val_size = config.get("val_size", _GEPA_DEFAULTS["val_size"][0])
 
+    # Ensure resolved engine defaults are visible to dataset builders
+    config.setdefault("val_size", val_size)
+
     if task.gepa_datasets_builder is not None:
         # Task provides pre-split datasets (e.g. ARC-AGI matching GEPA's canonical splits)
-        # Inject resolved val_size so the builder can resize the pre-split
-        if "val_size" not in config and val_size is not None:
-            config["val_size"] = val_size
         trainset, valset = task.gepa_datasets_builder(config)
         logger.info(f"Dataset (pre-split): {len(trainset)} train, {len(valset)} val")
     else:
