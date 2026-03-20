@@ -6,7 +6,6 @@ import argparse
 import json
 import logging
 import random
-import sys
 import threading
 from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
@@ -160,8 +159,9 @@ def split_train_val(
         1. If val_ratio explicitly provided by user → use it
         2. Otherwise → use val_size (default 200)
 
-    Crashes if both val_ratio and val_size are explicitly provided,
-    or if the resulting val set is larger than the training set.
+    Raises:
+        ValueError: If both val_ratio and val_size are explicitly provided,
+            val_size is invalid, or val set is larger than train set.
 
     Args:
         dataset: Full dataset to split.
@@ -178,8 +178,7 @@ def split_train_val(
     log = logger or logging.getLogger(__name__)
 
     if "val_ratio" in user_provided_keys and "val_size" in user_provided_keys:
-        log.error("Cannot specify both val_ratio and val_size")
-        sys.exit(1)
+        raise ValueError("Cannot specify both val_ratio and val_size")
 
     rng = random.Random(seed)
     shuffled = list(dataset)
@@ -189,22 +188,19 @@ def split_train_val(
         split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
     else:
         if val_size < 1:
-            log.error(f"val_size ({val_size}) must be >= 1")
-            sys.exit(1)
+            raise ValueError(f"val_size ({val_size}) must be >= 1")
         if val_size >= len(shuffled):
-            log.error(f"val_size ({val_size}) must be less than dataset size ({len(shuffled)})")
-            sys.exit(1)
+            raise ValueError(f"val_size ({val_size}) must be less than dataset size ({len(shuffled)})")
         split_idx = len(shuffled) - val_size
 
     trainset = shuffled[:split_idx]
     valset = shuffled[split_idx:]
 
     if len(valset) > len(trainset):
-        log.error(
+        raise ValueError(
             f"Validation set ({len(valset)}) is larger than training set ({len(trainset)}). "
             f"This is likely not intended. Use --engine-config '{{\"val_size\": N}}' to set a smaller val size."
         )
-        sys.exit(1)
 
     log.info(f"Training set: {len(trainset)}, Validation set: {len(valset)}")
     return trainset, valset
