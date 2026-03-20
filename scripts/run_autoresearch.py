@@ -59,8 +59,8 @@ logger = logging.getLogger(__name__)
 # Engine defaults
 _AUTORESEARCH_DEFAULTS = {
     "evaluation_budget": (100, "Total evaluator calls (train + val)"),
-    "val_ratio": (0.2, "Fraction held out for validation"),
-    "val_size": (None, "Exact val size (mutually exclusive with val_ratio)"),
+    "val_ratio": (None, "Fraction held out for validation (overrides val_size if set)"),
+    "val_size": (200, "Validation set size (default 200)"),
     "seed": (0, "Random seed"),
     "model": ("opus-4.6", "Claude Code model for the session"),
     "overall_timeout": (None, "Max wall-clock seconds for the entire run (None = no limit)"),
@@ -290,14 +290,18 @@ def main():
             logger.error("Empty dataset — check cache directory and task configuration.")
             sys.exit(1)
 
-        if val_size_cfg is not None and val_ratio != _AUTORESEARCH_DEFAULTS["val_ratio"][0]:
+        if val_ratio is not None and val_size_cfg != _AUTORESEARCH_DEFAULTS["val_size"][0]:
             logger.error("Cannot specify both val_ratio and val_size")
             sys.exit(1)
 
         shuffled = list(dataset)
         rng.shuffle(shuffled)
 
-        if val_size_cfg is not None:
+        if val_ratio is not None:
+            # Explicit val_ratio overrides val_size
+            split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
+        else:
+            # Use val_size (default 200)
             if val_size_cfg < 1:
                 logger.error(f"val_size ({val_size_cfg}) must be >= 1")
                 sys.exit(1)
@@ -305,11 +309,17 @@ def main():
                 logger.error(f"val_size ({val_size_cfg}) must be less than dataset size ({len(shuffled)})")
                 sys.exit(1)
             split_idx = len(shuffled) - val_size_cfg
-        else:
-            split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
 
         trainset = shuffled[:split_idx]
         valset = shuffled[split_idx:]
+
+        if len(valset) > len(trainset):
+            logger.error(
+                f"Validation set ({len(valset)}) is larger than training set ({len(trainset)}). "
+                f"This is likely not intended. Use --engine-config '{{\"val_size\": N}}' to set a smaller val size."
+            )
+            sys.exit(1)
+
         logger.info(f"Training set: {len(trainset)}, Validation set: {len(valset)}")
 
     # Assign IDs to examples. Tasks use different ID fields (question_id,
@@ -543,7 +553,7 @@ def main():
         "session_ok": session_ok,
         "seed_agent": str(seed_agent),
         "evaluation_budget": evaluation_budget,
-        "val_ratio": val_ratio if val_size_cfg is None else None,
+        "val_ratio": val_ratio,
         "val_size": len(valset),
         "seed": seed,
         "model": model,

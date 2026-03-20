@@ -56,8 +56,8 @@ _GEPA_DEFAULTS = {
     "evaluation_budget": (100, "Max evaluator calls (maps to max_metric_calls)"),
     "max_workers": (None, "Thread pool size (None = Python default: min(32, cpu_count+4))"),
     "seed": (0, "Random seed for reproducibility (matches GEPA default)"),
-    "val_ratio": (0.2, "Fraction of dataset held out for validation"),
-    "val_size": (None, "Exact validation set size (mutually exclusive with val_ratio)"),
+    "val_ratio": (None, "Fraction of dataset held out for validation (overrides val_size if set)"),
+    "val_size": (200, "Validation set size (default 200)"),
     "reflection_model": ("opus-4.6", "Model for GEPA reflection (mutation proposals)"),
     "test_repeats": (1, "Number of test set repetitions (task test_overrides may increase)"),
     "max_test_workers": (None, "Test eval thread pool size (default: max_workers // 2)"),
@@ -208,14 +208,18 @@ def main():
             sys.exit(1)
 
         # Train/val split
-        if val_size is not None and val_ratio != _GEPA_DEFAULTS["val_ratio"][0]:
+        if val_ratio is not None and val_size != _GEPA_DEFAULTS["val_size"][0]:
             logger.error("Cannot specify both val_ratio and val_size")
             sys.exit(1)
 
         shuffled = list(dataset)
         rng.shuffle(shuffled)
 
-        if val_size is not None:
+        if val_ratio is not None:
+            # Explicit val_ratio overrides val_size
+            split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
+        else:
+            # Use val_size (default 200)
             if val_size < 1:
                 logger.error(f"val_size ({val_size}) must be >= 1")
                 sys.exit(1)
@@ -223,11 +227,17 @@ def main():
                 logger.error(f"val_size ({val_size}) must be less than dataset size ({len(shuffled)})")
                 sys.exit(1)
             split_idx = len(shuffled) - val_size
-        else:
-            split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
 
         trainset = shuffled[:split_idx]
         valset = shuffled[split_idx:]
+
+        if len(valset) > len(trainset):
+            logger.error(
+                f"Validation set ({len(valset)}) is larger than training set ({len(trainset)}). "
+                f"This is likely not intended. Use --engine-config '{{\"val_size\": N}}' to set a smaller val size."
+            )
+            sys.exit(1)
+
         logger.info(f"Training set: {len(trainset)}, Validation set: {len(valset)}")
 
     # --- 4. Create evaluator ---
@@ -334,8 +344,8 @@ def main():
         "background_sha256": hashlib.sha256(task.background.encode()).hexdigest()[:16] if task.background else None,
         "seed_agent": str(seed_agent),
         "evaluation_budget": evaluation_budget,
-        "val_ratio": val_ratio if val_size is None else None,
-        "val_size": val_size,
+        "val_ratio": val_ratio,
+        "val_size": val_size if val_ratio is None else None,
         "seed": seed,
         "max_workers": max_workers,
         "reflection_model": reflection_model,
