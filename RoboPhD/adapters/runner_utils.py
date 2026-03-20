@@ -1,12 +1,15 @@
 """
-Shared utilities for runner scripts (run_gepa.py, run_robophd.py).
+Shared utilities for runner scripts (run_gepa.py, run_robophd.py, run_autoresearch.py).
 """
 
 import argparse
 import json
+import logging
+import random
+import sys
 import threading
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Set, Tuple
 
 from RoboPhD.adapters.debug_logging import maybe_debug_log
 from RoboPhD.config import SUPPORTED_MODELS
@@ -141,3 +144,67 @@ def parse_config_arg(value: str) -> dict:
     raise argparse.ArgumentTypeError(
         f"Config must be a path to a JSON file or an inline JSON string, got: {value!r}"
     )
+
+
+def split_train_val(
+    dataset: List,
+    val_size: int,
+    val_ratio: float | None,
+    user_provided_keys: Set[str],
+    seed: int = 0,
+    logger: logging.Logger | None = None,
+) -> Tuple[List, List]:
+    """Split a dataset into train and val sets.
+
+    Priority:
+        1. If val_ratio explicitly provided by user → use it
+        2. Otherwise → use val_size (default 200)
+
+    Crashes if both val_ratio and val_size are explicitly provided,
+    or if the resulting val set is larger than the training set.
+
+    Args:
+        dataset: Full dataset to split.
+        val_size: Validation set size (default 200).
+        val_ratio: Fraction held out for validation (None unless user set it).
+        user_provided_keys: Set of config keys the user explicitly provided
+            (from --engine-config and --task-config).
+        seed: Random seed for shuffling.
+        logger: Optional logger.
+
+    Returns:
+        (trainset, valset) tuple.
+    """
+    log = logger or logging.getLogger(__name__)
+
+    if "val_ratio" in user_provided_keys and "val_size" in user_provided_keys:
+        log.error("Cannot specify both val_ratio and val_size")
+        sys.exit(1)
+
+    rng = random.Random(seed)
+    shuffled = list(dataset)
+    rng.shuffle(shuffled)
+
+    if val_ratio is not None:
+        split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
+    else:
+        if val_size < 1:
+            log.error(f"val_size ({val_size}) must be >= 1")
+            sys.exit(1)
+        if val_size >= len(shuffled):
+            log.error(f"val_size ({val_size}) must be less than dataset size ({len(shuffled)})")
+            sys.exit(1)
+        split_idx = len(shuffled) - val_size
+
+    trainset = shuffled[:split_idx]
+    valset = shuffled[split_idx:]
+
+    if len(valset) > len(trainset):
+        log.error(
+            f"Validation set ({len(valset)}) is larger than training set ({len(trainset)}). "
+            f"This is likely not intended. Use --engine-config '{{\"val_size\": N}}' to set a smaller val size."
+        )
+        sys.exit(1)
+
+    log.info(f"Training set: {len(trainset)}, Validation set: {len(valset)}")
+    return trainset, valset

@@ -37,7 +37,7 @@ sys.path.insert(0, str(project_root))
 
 from RoboPhD.config import API_KEY_ENV_VAR
 from RoboPhD.adapters.candidate_utils import extract_candidate, materialize_candidate
-from RoboPhD.adapters.runner_utils import to_litellm_model, CostTrackingLM, parse_config_arg, print_task_params
+from RoboPhD.adapters.runner_utils import to_litellm_model, CostTrackingLM, parse_config_arg, print_task_params, split_train_val
 from RoboPhD.eval_utils import run_parallel_eval
 from RoboPhD.tasks import get_task, list_tasks
 
@@ -187,10 +187,7 @@ def main():
         json.dump(seed_candidate, f, indent=2)
 
     # --- 3. Build datasets ---
-    import random
-
     seed = config.get("seed", _GEPA_DEFAULTS["seed"][0])
-    rng = random.Random(seed)
 
     val_ratio = config.get("val_ratio", _GEPA_DEFAULTS["val_ratio"][0])
     val_size = config.get("val_size", _GEPA_DEFAULTS["val_size"][0])
@@ -207,38 +204,11 @@ def main():
             logger.error("Empty dataset — check cache directory and task configuration.")
             sys.exit(1)
 
-        # Train/val split
-        if val_ratio is not None and val_size != _GEPA_DEFAULTS["val_size"][0]:
-            logger.error("Cannot specify both val_ratio and val_size")
-            sys.exit(1)
-
-        shuffled = list(dataset)
-        rng.shuffle(shuffled)
-
-        if val_ratio is not None:
-            # Explicit val_ratio overrides val_size
-            split_idx = max(1, int(len(shuffled) * (1 - val_ratio)))
-        else:
-            # Use val_size (default 200)
-            if val_size < 1:
-                logger.error(f"val_size ({val_size}) must be >= 1")
-                sys.exit(1)
-            if val_size >= len(shuffled):
-                logger.error(f"val_size ({val_size}) must be less than dataset size ({len(shuffled)})")
-                sys.exit(1)
-            split_idx = len(shuffled) - val_size
-
-        trainset = shuffled[:split_idx]
-        valset = shuffled[split_idx:]
-
-        if len(valset) > len(trainset):
-            logger.error(
-                f"Validation set ({len(valset)}) is larger than training set ({len(trainset)}). "
-                f"This is likely not intended. Use --engine-config '{{\"val_size\": N}}' to set a smaller val size."
-            )
-            sys.exit(1)
-
-        logger.info(f"Training set: {len(trainset)}, Validation set: {len(valset)}")
+        user_provided_keys = set(task_config) | set(engine_config)
+        trainset, valset = split_train_val(
+            dataset, val_size=val_size, val_ratio=val_ratio,
+            user_provided_keys=user_provided_keys, seed=seed, logger=logger,
+        )
 
     # --- 4. Create evaluator ---
     config["work_dir"] = str(args.output_dir / "work")
