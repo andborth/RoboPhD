@@ -25,6 +25,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ..base import DomainInterface, EvaluationResult, SampledProblems
 from RoboPhD.adapters.candidate_utils import extract_candidate, materialize_candidate
+from RoboPhD.eval_utils import EvalRateLimitError, is_rate_limit_error
 
 logger = logging.getLogger(__name__)
 
@@ -269,14 +270,11 @@ class ExternalEvaluatorDomain(DomainInterface):
                         candidate, example, problem_dir=problem_dir
                     )
                 except Exception as e:
-                    error_str = str(e)
-                    # Re-raise rate limit errors — even one corrupts ELO comparisons
-                    # because the agent gets an unfair 0 on a problem it might have solved
-                    if "RateLimitError" in type(e).__name__ or "rate_limit" in error_str:
+                    if is_rate_limit_error(e):
                         raise
                     self.logger.error(f"Evaluator failed on {problem_id}: {e}")
                     score = 0.0
-                    diagnostics = {"error": error_str}
+                    diagnostics = {"error": str(e)}
 
                 for key in ("question_id", "problem_id", "id", "example_id"):
                     if key in example:
@@ -389,18 +387,17 @@ class ExternalEvaluatorDomain(DomainInterface):
                     try:
                         result_entry = future.result()
                     except Exception as e:
-                        error_str = str(e)
-                        if "RateLimitError" in type(e).__name__ or "rate_limit" in error_str:
-                            # Cancel remaining futures and propagate
+                        if is_rate_limit_error(e):
                             for f in not_done:
                                 f.cancel()
-                            raise RuntimeError(
-                                f"API_RATE_LIMIT: {e}"
-                            ) from e
+                            raise EvalRateLimitError(str(e)) from e
                         raise
                     results.append(result_entry)
                     score_sum += result_entry["score"]
                 remaining = not_done
+        except EvalRateLimitError:
+            executor.shutdown(wait=False, cancel_futures=True)
+            raise
         finally:
             if timed_out:
                 # Don't block on hung threads — cancel queued futures and move on.

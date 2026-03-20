@@ -41,6 +41,7 @@ try:
     from .report_generator import ReportGenerator, is_continuous_scoring
     from .deep_focus_evolution_manager import DeepFocusEvolutionManager
     from .utilities.cached_sql_executor import close_all_connections as close_robophd_connections
+    from .eval_utils import EvalRateLimitError
 except ImportError:
     # When run as a script, use absolute imports
     import sys
@@ -60,6 +61,7 @@ except ImportError:
     from RoboPhD.deep_focus_evolution_manager import DeepFocusEvolutionManager
     from RoboPhD.utilities.cached_sql_executor import close_all_connections as close_robophd_connections
     from RoboPhD.domains.base import SampledProblems
+    from RoboPhD.eval_utils import EvalRateLimitError
 
 # Import root-level utilities for evaluation pool cleanup
 from utilities.cached_sql_executor import close_all_connections as close_eval_connections
@@ -1699,16 +1701,15 @@ class ParallelAgentResearcher:
 
                 print(f"\n{agent_id}: {average_score:.3f} ({score_sum:.1f}/{total_questions})")
 
+            except EvalRateLimitError as e:
+                print(f"\n❌ RATE LIMIT EXCEEDED - Aborting research run")
+                print(f"   Agent: {agent_id}")
+                print(f"   Error: {e}")
+                raise
+
             except Exception as e:
                 import traceback
                 error_str = str(e)
-
-                # Check for critical errors
-                if "API_RATE_LIMIT" in error_str:
-                    print(f"\n❌ RATE LIMIT EXCEEDED - Aborting research run")
-                    print(f"   Agent: {agent_id}")
-                    print(f"   Error: {error_str}")
-                    raise
 
                 for infra_error in CRITICAL_INFRASTRUCTURE_ERRORS:
                     if infra_error in error_str:

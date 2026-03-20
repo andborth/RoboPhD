@@ -7,6 +7,32 @@ from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 logger = logging.getLogger(__name__)
 
 
+class EvalRateLimitError(Exception):
+    """Raised when an evaluator hits an API rate limit.
+
+    Even one rate-limited evaluation corrupts score comparisons because
+    the agent gets an unfair 0 on a problem it might have solved.
+    """
+    pass
+
+
+def is_rate_limit_error(exc: BaseException) -> bool:
+    """Check whether an exception is a rate limit error.
+
+    Walks the exception's MRO and cause chain to catch rate limit errors
+    from any library (openai, litellm, etc.) without importing them.
+    """
+    # Check class hierarchy names (catches openai.RateLimitError,
+    # litellm.exceptions.RateLimitError, and subclasses)
+    for cls in type(exc).__mro__:
+        if "RateLimitError" in cls.__name__:
+            return True
+    # Check chained causes (e.g., RuntimeError wrapping a RateLimitError)
+    if exc.__cause__ and exc.__cause__ is not exc:
+        return is_rate_limit_error(exc.__cause__)
+    return False
+
+
 def run_parallel_eval(
     evaluator,
     candidate: dict,
@@ -85,14 +111,12 @@ def run_parallel_eval(
                 try:
                     score, diag = future.result()
                 except Exception as e:
-                    # Re-raise rate limit errors — even one corrupts score comparisons
-                    error_str = str(e)
-                    if "RateLimitError" in type(e).__name__ or "rate_limit" in error_str:
+                    if is_rate_limit_error(e):
                         for f in not_done:
                             f.cancel()
-                        raise RuntimeError(f"API_RATE_LIMIT: {e}") from e
+                        raise EvalRateLimitError(str(e)) from e
                     logger.warning(f"Evaluator error on example {idx}: {e}")
-                    score, diag = 0.0, {"error": error_str}
+                    score, diag = 0.0, {"error": str(e)}
                 score_map[idx] = score
                 diag_map[idx] = diag
             remaining = not_done
@@ -101,6 +125,9 @@ def run_parallel_eval(
                 vals = list(score_map.values())
                 mean = sum(vals) / len(vals)
                 logger.info(f"Test progress: {len(score_map)}/{len(examples)}, running score: {mean:.3f}")
+    except EvalRateLimitError:
+        executor.shutdown(wait=False, cancel_futures=True)
+        raise
     finally:
         if timed_out:
             executor.shutdown(wait=False, cancel_futures=True)
