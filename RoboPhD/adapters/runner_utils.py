@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Set, Tuple
 
 from RoboPhD.adapters.debug_logging import maybe_debug_log
 from RoboPhD.config import SUPPORTED_MODELS
+from RoboPhD.eval_utils import run_parallel_eval
 
 
 def to_litellm_model(name: str) -> str:
@@ -253,6 +254,7 @@ def run_test_eval(
     config: Dict[str, Any],
     output_dir: Path,
     max_workers: int | None = None,
+    metadata: Dict[str, Any] | None = None,
     logger: logging.Logger | None = None,
 ) -> Dict[str, Any]:
     """Evaluate a candidate on the held-out test set.
@@ -265,14 +267,14 @@ def run_test_eval(
         config: Merged config dict (training config — test_overrides applied internally).
         output_dir: Where to write test_results.json and test_work/.
         max_workers: Override for parallel workers.
+        metadata: Optional extra fields to include in test_results.json
+            (e.g., agent_name, agent_dir, task).
         logger: Optional logger.
 
     Returns:
-        dict with mean_test_score, total_test_score, total_test_problems, test_eval_cost_usd.
-        Also writes test_results.json to output_dir.
+        dict with mean_test_score, total_test_score, total_test_problems, test_eval_cost_usd,
+        plus any metadata fields. Also writes test_results.json to output_dir.
     """
-    from RoboPhD.eval_utils import run_parallel_eval
-
     log = logger or logging.getLogger(__name__)
 
     test_config = {**config, **task.test_overrides}
@@ -302,6 +304,8 @@ def run_test_eval(
 
     test_eval_cost = getattr(test_evaluator, "total_eval_cost", 0.0)
     test_results = {**result["test_results"], "test_eval_cost_usd": test_eval_cost}
+    if metadata:
+        test_results.update(metadata)
 
     output_path = Path(output_dir) / "test_results.json"
     with open(output_path, "w") as f:

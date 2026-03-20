@@ -20,7 +20,6 @@ Usage:
 """
 
 import argparse
-import json
 import logging
 import os
 import sys
@@ -120,17 +119,12 @@ def main():
         config["test_repeats"] = args.test_repeats
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    test_results = run_test_eval(
+    run_test_eval(
         candidate, task, config, output_path.parent,
-        max_workers=args.max_workers, logger=logger,
+        max_workers=args.max_workers,
+        metadata={"agent_name": agent_name, "agent_dir": str(agent_dir), "task": task.name},
+        logger=logger,
     )
-
-    # Add agent metadata and re-save
-    test_results["agent_name"] = agent_name
-    test_results["agent_dir"] = str(agent_dir)
-    test_results["task"] = task.name
-    with open(output_path, "w") as f:
-        json.dump(test_results, f, indent=2)
 
     logger.info(f"Results saved to {output_path}")
 

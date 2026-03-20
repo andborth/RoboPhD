@@ -416,16 +416,12 @@ def main():
         agent_name, agent_dir = find_best_agent(experiment_dir)
         candidate = extract_candidate(agent_dir, task.file_mapping)
 
-        test_results = run_test_eval(
+        run_test_eval(
             candidate, task, full_config, experiment_dir,
-            max_workers=full_config.get("max_workers"), logger=logger,
+            max_workers=full_config.get("max_workers"),
+            metadata={"agent_name": agent_name, "agent_dir": str(agent_dir), "task": task.name},
+            logger=logger,
         )
-        # Re-save with agent metadata
-        test_results["agent_name"] = agent_name
-        test_results["agent_dir"] = str(agent_dir)
-        test_results["task"] = task.name
-        with open(experiment_dir / "test_results.json", "w") as f:
-            json.dump(test_results, f, indent=2)
 
     # Force-exit if any non-daemon threads are still alive — Python's atexit
     # handler blocks on t.join() for hung threads, hanging the process.
