@@ -27,9 +27,10 @@ def is_rate_limit_error(exc: BaseException) -> bool:
     for cls in type(exc).__mro__:
         if "RateLimitError" in cls.__name__:
             return True
-    # Check chained causes (e.g., RuntimeError wrapping a RateLimitError)
-    if exc.__cause__ and exc.__cause__ is not exc:
-        return is_rate_limit_error(exc.__cause__)
+    # Check chained causes — explicit (raise X from Y) and implicit (raise X inside except Y)
+    chained = exc.__cause__ or exc.__context__
+    if chained and chained is not exc:
+        return is_rate_limit_error(chained)
     return False
 
 
