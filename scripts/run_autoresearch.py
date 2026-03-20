@@ -47,7 +47,6 @@ from RoboPhD.autoresearch.evaluate_cli import __file__ as _evaluate_cli_source
 from RoboPhD.autoresearch.program import generate_program
 from RoboPhD.autoresearch.server import EvalServer
 from RoboPhD.config import CLAUDE_CLI_MODEL_MAP
-from RoboPhD.eval_utils import run_parallel_eval
 from RoboPhD.tasks import get_task, list_tasks
 
 logging.basicConfig(
@@ -556,30 +555,9 @@ def main():
 
     # --- 12. Optional test-set evaluation ---
     if args.eval_test_set:
-        logger.info("Evaluating best candidate on test set...")
-        test_config = {**config, **task.test_overrides}
-        test_examples = task.dataset_builder(test_config)
-        test_repeats = test_config.get("test_repeats", 1)
-        test_examples = test_examples * test_repeats
-        logger.info(f"Test set: {len(test_examples)} problems ({len(test_examples) // test_repeats} unique × {test_repeats})")
-
-        test_config["work_dir"] = str(args.output_dir / "test_work")
-        test_evaluator = task.evaluator_factory(test_config)
-
-        max_workers = config.get("max_workers") or max(1, min(32, (os.cpu_count() or 4) + 4) // 2)
-        eval_timeout = test_config.get("eval_timeout", 300)
-
-        logger.info(f"Test evaluation: {len(test_examples)} problems, {max_workers} workers")
-
-        result = run_parallel_eval(
-            test_evaluator, best_candidate, test_examples,
-            max_workers=max_workers, eval_timeout=eval_timeout,
-        )
-
-        test_eval_cost = getattr(test_evaluator, "total_eval_cost", 0.0)
-        test_results = {**result["test_results"], "test_eval_cost_usd": test_eval_cost}
-        with open(args.output_dir / "test_results.json", "w") as f:
-            json.dump(test_results, f, indent=2)
+        from RoboPhD.adapters.runner_utils import run_test_eval
+        run_test_eval(best_candidate, task, config, args.output_dir,
+                      max_workers=config.get("max_workers"), logger=logger)
 
     logger.info(f"Done. Results saved to {args.output_dir}")
 

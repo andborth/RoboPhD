@@ -38,7 +38,6 @@ sys.path.insert(0, str(project_root))
 from RoboPhD.config import API_KEY_ENV_VAR
 from RoboPhD.adapters.candidate_utils import extract_candidate, materialize_candidate
 from RoboPhD.adapters.runner_utils import to_litellm_model, CostTrackingLM, parse_config_arg, print_task_params, split_train_val
-from RoboPhD.eval_utils import run_parallel_eval
 from RoboPhD.tasks import get_task, list_tasks
 
 logging.basicConfig(
@@ -343,29 +342,9 @@ def main():
 
     # --- 7. Optional test-set evaluation ---
     if args.eval_test_set:
-        logger.info("Evaluating best candidate on test set...")
-        test_config = {**config, **task.test_overrides}  # test_overrides last: must override training defaults
-        test_examples = task.dataset_builder(test_config)
-        test_repeats = test_config.get("test_repeats", 1)
-        test_examples = test_examples * test_repeats
-        logger.info(f"Test set: {len(test_examples)} problems ({len(test_examples) // test_repeats} unique × {test_repeats})")
-
-        test_config["work_dir"] = str(args.output_dir / "test_work")
-        test_evaluator = task.evaluator_factory(test_config)
-
-        test_workers = test_config.get("max_test_workers") or max_workers or max(1, min(32, (os.cpu_count() or 4) + 4) // 2)
-        logger.info(f"Test evaluation: {len(test_examples)} problems, {test_workers} workers")
-        eval_timeout = test_config.get("eval_timeout", 300)
-
-        result = run_parallel_eval(
-            test_evaluator, best_candidate, test_examples,
-            max_workers=test_workers, eval_timeout=eval_timeout,
-        )
-
-        test_eval_cost = getattr(test_evaluator, 'total_eval_cost', 0.0)
-        test_results = {**result["test_results"], "test_eval_cost_usd": test_eval_cost}
-        with open(args.output_dir / "test_results.json", "w") as f:
-            json.dump(test_results, f, indent=2)
+        from RoboPhD.adapters.runner_utils import run_test_eval
+        run_test_eval(best_candidate, task, config, args.output_dir,
+                      max_workers=max_workers, logger=logger)
 
     logger.info(f"Done. Results saved to {args.output_dir}")
 

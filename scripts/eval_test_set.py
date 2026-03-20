@@ -32,8 +32,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from RoboPhD.adapters.candidate_utils import extract_candidate
-from RoboPhD.adapters.runner_utils import parse_config_arg
-from RoboPhD.eval_utils import run_parallel_eval
+from RoboPhD.adapters.runner_utils import parse_config_arg, find_best_agent, run_test_eval
 from RoboPhD.tasks import get_task
 
 logging.basicConfig(
@@ -44,47 +43,6 @@ logging.getLogger("LiteLLM").setLevel(logging.WARNING)
 logging.getLogger("litellm").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
-
-
-def find_best_agent(run_dir: Path) -> tuple[str, Path]:
-    """Find the best agent by ELO from a checkpoint.json.
-
-    Returns (agent_name, agent_dir).
-    """
-    checkpoint_path = run_dir / "checkpoint.json"
-    if not checkpoint_path.exists():
-        raise FileNotFoundError(f"No checkpoint.json found in {run_dir}")
-
-    with open(checkpoint_path) as f:
-        ckpt = json.load(f)
-
-    perf_records = ckpt.get("performance_records", {})
-    agent_pool = ckpt.get("agent_pool", {})
-
-    if not perf_records:
-        raise ValueError(f"No performance records in {checkpoint_path}")
-
-    # Find agent with highest ELO
-    best_id = max(perf_records, key=lambda k: perf_records[k]["elo"])
-    best_perf = perf_records[best_id]
-
-    logger.info(
-        f"Best agent: {best_id} "
-        f"(ELO: {best_perf['elo']:.0f}, "
-        f"score: {best_perf['mean_score']:.3f}, "
-        f"tests: {best_perf['test_count']})"
-    )
-
-    # Resolve package_dir (stored as relative path from experiment dir)
-    agent_info = agent_pool.get(best_id)
-    if not agent_info or "package_dir" not in agent_info:
-        raise ValueError(f"Agent {best_id} not found in agent_pool or missing package_dir")
-
-    agent_dir = run_dir / agent_info["package_dir"]
-    if not agent_dir.exists():
-        raise FileNotFoundError(f"Agent directory not found: {agent_dir}")
-
-    return best_id, agent_dir
 
 
 def main():
@@ -157,41 +115,20 @@ def main():
     # Extract candidate from agent directory
     candidate = extract_candidate(agent_dir, task.file_mapping)
 
-    # Build test dataset (matching run_gepa.py protocol)
-    test_config = {**config, **task.test_overrides}  # test_overrides last: must override training defaults
-    test_examples = task.dataset_builder(test_config)
-    test_repeats = args.test_repeats
-    test_examples = test_examples * test_repeats
-    logger.info(
-        f"Test set: {len(test_examples)} problems "
-        f"({len(test_examples) // test_repeats} unique × {test_repeats})"
-    )
+    # Apply test repeats to config so run_test_eval picks them up
+    if args.test_repeats > 1:
+        config["test_repeats"] = args.test_repeats
 
-    # Create evaluator
-    output_dir = output_path.parent
-    test_config["work_dir"] = str(output_dir / "test_work")
-    test_evaluator = task.evaluator_factory(test_config)
-
-    # Parallel eval loop
-    test_workers = args.max_workers or test_config.get("max_test_workers") or max(1, min(32, (os.cpu_count() or 4) + 4) // 2)
-    logger.info(f"Test evaluation: {len(test_examples)} problems, {test_workers} workers")
-    eval_timeout = test_config.get("eval_timeout", 300)
-
-    result = run_parallel_eval(
-        test_evaluator, candidate, test_examples,
-        max_workers=test_workers, eval_timeout=eval_timeout,
-    )
-
-    # Write results
-    test_eval_cost = getattr(test_evaluator, 'total_eval_cost', 0.0)
-    test_results = {
-        **result["test_results"],
-        "test_eval_cost_usd": test_eval_cost,
-        "agent_name": agent_name,
-        "agent_dir": str(agent_dir),
-        "task": task.name,
-    }
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    test_results = run_test_eval(
+        candidate, task, config, output_path.parent,
+        max_workers=args.max_workers, logger=logger,
+    )
+
+    # Add agent metadata and re-save
+    test_results["agent_name"] = agent_name
+    test_results["agent_dir"] = str(agent_dir)
+    test_results["task"] = task.name
     with open(output_path, "w") as f:
         json.dump(test_results, f, indent=2)
 

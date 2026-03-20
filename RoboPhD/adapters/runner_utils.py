@@ -5,6 +5,7 @@ Shared utilities for runner scripts (run_gepa.py, run_robophd.py, run_autoresear
 import argparse
 import json
 import logging
+import os
 import random
 import threading
 from pathlib import Path
@@ -204,3 +205,107 @@ def split_train_val(
 
     log.info(f"Training set: {len(trainset)}, Validation set: {len(valset)}")
     return trainset, valset
+
+
+def find_best_agent(run_dir: Path) -> Tuple[str, Path]:
+    """Find the best agent by ELO from a checkpoint.json.
+
+    Returns (agent_name, agent_dir).
+    """
+    log = logging.getLogger(__name__)
+    checkpoint_path = Path(run_dir) / "checkpoint.json"
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(f"No checkpoint.json found in {run_dir}")
+
+    with open(checkpoint_path) as f:
+        ckpt = json.load(f)
+
+    perf_records = ckpt.get("performance_records", {})
+    agent_pool = ckpt.get("agent_pool", {})
+
+    if not perf_records:
+        raise ValueError(f"No performance records in {checkpoint_path}")
+
+    best_id = max(perf_records, key=lambda k: perf_records[k]["elo"])
+    best_perf = perf_records[best_id]
+
+    log.info(
+        f"Best agent: {best_id} "
+        f"(ELO: {best_perf['elo']:.0f}, "
+        f"score: {best_perf['mean_score']:.3f}, "
+        f"tests: {best_perf['test_count']})"
+    )
+
+    agent_info = agent_pool.get(best_id)
+    if not agent_info or "package_dir" not in agent_info:
+        raise ValueError(f"Agent {best_id} not found in agent_pool or missing package_dir")
+
+    agent_dir = Path(run_dir) / agent_info["package_dir"]
+    if not agent_dir.exists():
+        raise FileNotFoundError(f"Agent directory not found: {agent_dir}")
+
+    return best_id, agent_dir
+
+
+def run_test_eval(
+    candidate: Dict[str, str],
+    task,
+    config: Dict[str, Any],
+    output_dir: Path,
+    max_workers: int | None = None,
+    logger: logging.Logger | None = None,
+) -> Dict[str, Any]:
+    """Evaluate a candidate on the held-out test set.
+
+    Shared by run_robophd.py, run_gepa.py, run_autoresearch.py, and eval_test_set.py.
+
+    Args:
+        candidate: Dict of agent artifacts (from extract_candidate).
+        task: TaskDefinition with test_overrides, dataset_builder, evaluator_factory.
+        config: Merged config dict (training config — test_overrides applied internally).
+        output_dir: Where to write test_results.json and test_work/.
+        max_workers: Override for parallel workers.
+        logger: Optional logger.
+
+    Returns:
+        dict with mean_test_score, total_test_score, total_test_problems, test_eval_cost_usd.
+        Also writes test_results.json to output_dir.
+    """
+    from RoboPhD.eval_utils import run_parallel_eval
+
+    log = logger or logging.getLogger(__name__)
+
+    test_config = {**config, **task.test_overrides}
+    test_examples = task.dataset_builder(test_config)
+    test_repeats = test_config.get("test_repeats", 1)
+    test_examples = test_examples * test_repeats
+    log.info(
+        f"Test set: {len(test_examples)} problems "
+        f"({len(test_examples) // test_repeats} unique × {test_repeats})"
+    )
+
+    test_config["work_dir"] = str(Path(output_dir) / "test_work")
+    test_evaluator = task.evaluator_factory(test_config)
+
+    test_workers = (
+        max_workers
+        or test_config.get("max_test_workers")
+        or max(1, min(32, (os.cpu_count() or 4) + 4) // 2)
+    )
+    eval_timeout = test_config.get("eval_timeout", 300)
+    log.info(f"Test evaluation: {len(test_examples)} problems, {test_workers} workers")
+
+    result = run_parallel_eval(
+        test_evaluator, candidate, test_examples,
+        max_workers=test_workers, eval_timeout=eval_timeout,
+    )
+
+    test_eval_cost = getattr(test_evaluator, "total_eval_cost", 0.0)
+    test_results = {**result["test_results"], "test_eval_cost_usd": test_eval_cost}
+
+    output_path = Path(output_dir) / "test_results.json"
+    with open(output_path, "w") as f:
+        json.dump(test_results, f, indent=2)
+    log.info(f"Test results saved to {output_path}")
+
+    return test_results
