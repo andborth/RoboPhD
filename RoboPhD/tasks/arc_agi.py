@@ -87,6 +87,7 @@ def make_arc_agi_task() -> TaskDefinition:
             "solver_model": DEFAULT_SOLVER_MODEL,
             "arc_agi_split": "train",
             "evaluation_budget": 1500,
+            "eval_timeout": 600,  # ARC-AGI agents make 8-10 LLM calls; 300s too tight
             "train_size": None,  # Override GEPA train split size (default: all 200)
         },
         test_overrides={"arc_agi_split": "test"},
