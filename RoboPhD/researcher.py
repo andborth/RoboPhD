@@ -2602,6 +2602,7 @@ class ParallelAgentResearcher:
         self.process_reaper.start()
 
         # Main research loop (using while to allow restart)
+        completed_normally = True
         iteration = start_iteration
         while iteration <= self.num_iterations:
             # Check memory
@@ -2745,6 +2746,7 @@ class ParallelAgentResearcher:
                             # Normal failure - end experiment
                             print(f"\n🏁 Ending experiment early after {iteration-1} successful iterations")
                             print(f"   Evolution failed for iteration {iteration} - cannot continue")
+                            completed_normally = False
                             break
                     
                     # Unpack the result
@@ -2920,7 +2922,7 @@ class ParallelAgentResearcher:
 
                     # Exit gracefully
                     print(f"\n🏁 Ending experiment after {iteration} iterations due to meta-evolution failure")
-                    return
+                    return True
                 finally:
                     # Update meta-evolution time (even if it failed)
                     self.meta_evolution_times[iteration - 1] = time.time() - meta_start_time
@@ -2932,7 +2934,7 @@ class ParallelAgentResearcher:
                 self.process_reaper.stop()
                 self.report_generator.generate_final_report(start_time)
                 print(f"\n🏁 Ending experiment after {iteration} iterations due to budget exhaustion")
-                return
+                return True
 
             # Check evaluation budget
             evaluation_budget = config.get('evaluation_budget')
@@ -2943,7 +2945,7 @@ class ParallelAgentResearcher:
                     self.process_reaper.stop()
                     self.report_generator.generate_final_report(start_time)
                     print(f"\n🏁 Ending experiment after {iteration} iterations: evaluation budget exhausted ({total_fresh}/{evaluation_budget} fresh evals)")
-                    return
+                    return True
 
             # Increment iteration for next loop
             iteration += 1
@@ -2958,6 +2960,8 @@ class ParallelAgentResearcher:
         print(f"\n✅ Research complete!")
         print(f"Total time: {total_time/60:.1f} minutes")
         print(f"Results saved to: {self.experiment_dir}")
+
+        return completed_normally
 
     def _install_three_artifact_package(self, agent_id: str, package_info: Dict, iteration: int) -> Path:
         """

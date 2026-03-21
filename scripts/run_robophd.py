@@ -384,7 +384,7 @@ def main():
             runtime_config=runtime_config,
         )
 
-        researcher.run()
+        completed = researcher.run()
 
     else:
         # Fresh start
@@ -402,26 +402,29 @@ def main():
         )
 
         # load_initial_agents will find the seed in agents_directory and copy it
-        researcher.run(initial_agents=researcher_config["initial_agents"])
+        completed = researcher.run(initial_agents=researcher_config["initial_agents"])
 
     logger.info("Done.")
 
     # --- Optional test-set evaluation ---
     if args.eval_test_set:
-        from RoboPhD.adapters.runner_utils import find_best_agent, run_test_eval
-        from RoboPhD.adapters.candidate_utils import extract_candidate
+        if not completed:
+            logger.info("Skipping test-set evaluation — run ended early due to failure")
+        else:
+            from RoboPhD.adapters.runner_utils import find_best_agent, run_test_eval
+            from RoboPhD.adapters.candidate_utils import extract_candidate
 
-        experiment_dir = researcher.experiment_dir
-        logger.info("Evaluating best agent on test set...")
-        agent_name, agent_dir = find_best_agent(experiment_dir)
-        candidate = extract_candidate(agent_dir, task.file_mapping)
+            experiment_dir = researcher.experiment_dir
+            logger.info("Evaluating best agent on test set...")
+            agent_name, agent_dir = find_best_agent(experiment_dir)
+            candidate = extract_candidate(agent_dir, task.file_mapping)
 
-        run_test_eval(
-            candidate, task, full_config, experiment_dir,
-            max_workers=full_config.get("max_workers"),
-            metadata={"agent_name": agent_name, "agent_dir": str(agent_dir), "task": task.name},
-            logger=logger,
-        )
+            run_test_eval(
+                candidate, task, full_config, experiment_dir,
+                max_workers=full_config.get("max_workers"),
+                metadata={"agent_name": agent_name, "agent_dir": str(agent_dir), "task": task.name},
+                logger=logger,
+            )
 
     # Force-exit if any non-daemon threads are still alive — Python's atexit
     # handler blocks on t.join() for hung threads, hanging the process.
