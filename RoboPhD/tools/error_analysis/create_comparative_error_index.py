@@ -18,10 +18,7 @@ from pathlib import Path
 from typing import Dict, List, Set, Tuple
 from collections import defaultdict
 
-try:
-    from RoboPhD.report_generator import is_continuous_scoring
-except ImportError:
-    from _continuous_scoring import is_continuous_scoring
+from RoboPhD.report_generator import is_continuous_scoring
 
 
 def strip_agent_prefix(agent_name: str) -> str:

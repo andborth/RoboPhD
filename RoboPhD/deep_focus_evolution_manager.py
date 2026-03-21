@@ -387,15 +387,14 @@ class DeepFocusEvolutionManager:
         logger.info(f"Generating new vs baseline analysis for test workspace")
 
         # Paths
-        script_path = Path(__file__).parent / "tools" / "error_analysis" / "create_deep_focus_error_index.py"
         error_index_path = test_workspace / "error_index.json"
         error_report_path = test_workspace / "error_analysis_report.md"
 
         try:
             # Run create_deep_focus_error_index.py with both directories
             cmd = [
-                sys.executable,
-                str(script_path),
+                sys.executable, "-m",
+                "RoboPhD.tools.error_analysis.create_deep_focus_error_index",
                 "--iteration-dirs", f"{baseline_iter},{test_workspace}",
                 "--output", str(error_index_path),
                 "--new-agent", new_agent_name

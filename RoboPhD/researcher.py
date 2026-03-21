@@ -3049,7 +3049,6 @@ class ParallelAgentResearcher:
         print(f"📊 Generating comparative error analysis for iteration {iteration}")
 
         # Paths
-        script_path = Path(__file__).parent / "tools" / "error_analysis" / "create_comparative_error_index.py"
         error_index_path = iteration_dir / "error_index.json"
         error_report_path = iteration_dir / "error_analysis_report.md"
 
@@ -3057,8 +3056,8 @@ class ParallelAgentResearcher:
             # Run create_comparative_error_index.py
             result = subprocess.run(
                 [
-                    sys.executable,
-                    str(script_path),
+                    sys.executable, "-m",
+                    "RoboPhD.tools.error_analysis.create_comparative_error_index",
                     "--iteration-dir", str(iteration_dir),
                     "--output", str(error_index_path)
                 ],
