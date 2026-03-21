@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 # GEPA engine defaults — single source of truth for both _list_params and main().
 # Each entry: key -> (default, description)
 _GEPA_DEFAULTS = {
-    "evaluation_budget": (100, "Max evaluator calls (maps to max_metric_calls)"),
+    "evaluation_budget": (None, "Max evaluator calls (maps to max_metric_calls). Set via task defaults or --engine-config."),
     "max_workers": (None, "Thread pool size (None = Python default: min(32, cpu_count+4))"),
     "seed": (0, "Random seed for reproducibility (matches GEPA default)"),
     "val_ratio": (None, "Fraction of dataset held out for validation (overrides val_size if set)"),
@@ -227,6 +227,12 @@ def main():
         sys.exit(1)
 
     evaluation_budget = config.get("evaluation_budget", _GEPA_DEFAULTS["evaluation_budget"][0])
+    if evaluation_budget is None:
+        logger.error(
+            "evaluation_budget is required but not set. "
+            "Set it via task defaults (tasks/*.py config_defaults) or --engine-config '{\"evaluation_budget\": N}'"
+        )
+        sys.exit(1)
     max_workers = config.get("max_workers", _GEPA_DEFAULTS["max_workers"][0])
 
     config_kwargs = {

@@ -57,7 +57,7 @@ logger = logging.getLogger(__name__)
 
 # Engine defaults
 _AUTORESEARCH_DEFAULTS = {
-    "evaluation_budget": (100, "Total evaluator calls (train + val)"),
+    "evaluation_budget": (None, "Total evaluator calls (train + val). Set via task defaults or --engine-config."),
     "val_ratio": (None, "Fraction held out for validation (overrides val_size if set)"),
     "val_size": (200, "Validation set size (default 200)"),
     "seed": (0, "Random seed"),
@@ -253,6 +253,12 @@ def main():
 
     # --- 2. Extract engine config values ---
     evaluation_budget = config.get("evaluation_budget", _AUTORESEARCH_DEFAULTS["evaluation_budget"][0])
+    if evaluation_budget is None:
+        logger.error(
+            "evaluation_budget is required but not set. "
+            "Set it via task defaults (tasks/*.py config_defaults) or --engine-config '{\"evaluation_budget\": N}'"
+        )
+        sys.exit(1)
     val_ratio = config.get("val_ratio", _AUTORESEARCH_DEFAULTS["val_ratio"][0])
     val_size_cfg = config.get("val_size", _AUTORESEARCH_DEFAULTS["val_size"][0])
     seed = config.get("seed", _AUTORESEARCH_DEFAULTS["seed"][0])

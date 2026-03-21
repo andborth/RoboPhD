@@ -17,6 +17,22 @@ from pathlib import Path
 from typing import Dict, List, Set, Tuple, Optional
 from collections import defaultdict
 
+try:
+    from RoboPhD.report_generator import is_continuous_scoring
+except ImportError:
+    # Fallback for standalone script usage
+    def is_continuous_scoring(scores_by_question):
+        all_scores = []
+        for qid, agent_scores in scores_by_question.items():
+            for agent, score in agent_scores.items():
+                all_scores.append(score)
+        if not all_scores:
+            return False
+        if any(s < 0.0 or s > 1.0 for s in all_scores):
+            return True
+        binary_count = sum(1 for s in all_scores if s == 0.0 or s == 1.0)
+        return binary_count / len(all_scores) < 0.8
+
 
 def strip_agent_prefix(agent_name: str) -> str:
     """Strip 'agent_' prefix from agent name for cleaner display."""
@@ -351,6 +367,141 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
     # Load all results
     results = load_evaluation_results(iteration_dirs)
 
+    # Build scores_by_question: {qid: {agent_display: score}}
+    scores_by_question = {}
+    for qid, agents_results in results['by_question'].items():
+        scores_by_question[qid] = {
+            strip_agent_prefix(agent): r.get('score', 0)
+            for agent, r in agents_results.items()
+        }
+
+    continuous = is_continuous_scoring(scores_by_question)
+
+    if continuous:
+        return _build_continuous_index(newest_agent, baseline_agents, results, scores_by_question)
+    else:
+        return _build_binary_index(newest_agent, baseline_agents, results, scores_by_question)
+
+
+def _build_continuous_index(newest_agent: str, baseline_agents: List[str],
+                            results: Dict, scores_by_question: Dict) -> Dict:
+    """Build error index for continuous-score domains."""
+    new_display = strip_agent_prefix(newest_agent)
+    baseline_displays = [strip_agent_prefix(a) for a in baseline_agents]
+
+    # by_agent: mean_score, wins_vs_all_others, losses_vs_all_others
+    by_agent = {}
+    all_agents = [newest_agent] + baseline_agents
+    for agent in all_agents:
+        if agent not in results['by_agent']:
+            continue
+        agent_display = strip_agent_prefix(agent)
+        scores = [r.get('score', 0) for r in results['by_agent'][agent].values()]
+        mean_score = sum(scores) / len(scores) if scores else 0.0
+
+        wins = []
+        losses = []
+        for qid, agent_scores in scores_by_question.items():
+            if agent_display not in agent_scores:
+                continue
+            my_score = agent_scores[agent_display]
+            others = [s for a, s in agent_scores.items() if a != agent_display]
+            if not others:
+                continue
+            if my_score > max(others):
+                wins.append(qid)
+            if my_score < min(others):
+                losses.append(qid)
+
+        by_agent[agent_display] = {
+            'mean_score': round(mean_score, 4),
+            'wins_vs_all_others': wins,
+            'losses_vs_all_others': losses,
+        }
+
+    # cross_agent_analysis
+    cross_agent = {}
+
+    # new_vs_best_baseline: delta = new - best_baseline per question
+    new_vs_best_baseline = {}
+    new_wins_all = []
+    new_losses_all = []
+    for qid, agent_scores in scores_by_question.items():
+        if new_display not in agent_scores:
+            continue
+        baseline_scores = {a: agent_scores[a] for a in baseline_displays if a in agent_scores}
+        if not baseline_scores:
+            continue
+        new_score = agent_scores[new_display]
+        best_baseline = max(baseline_scores.values())
+        delta = new_score - best_baseline
+        new_vs_best_baseline[qid] = round(delta, 4)
+
+        # Check if new agent beats ALL baselines
+        if all(new_score > bs for bs in baseline_scores.values()):
+            new_wins_all.append(qid)
+        # Check if new agent is worse than ALL baselines
+        if all(new_score < bs for bs in baseline_scores.values()):
+            new_losses_all.append(qid)
+
+    # Sort by delta ascending (worst first for new agent)
+    new_vs_best_baseline = dict(sorted(new_vs_best_baseline.items(), key=lambda x: x[1]))
+
+    cross_agent['new_vs_best_baseline'] = new_vs_best_baseline
+    cross_agent['new_wins_all'] = new_wins_all
+    cross_agent['new_losses_all'] = new_losses_all
+
+    # Pairwise comparisons
+    for baseline_agent in baseline_agents:
+        bl_display = strip_agent_prefix(baseline_agent)
+        deltas = []
+        new_wins = 0
+        new_losses = 0
+        for qid, agent_scores in scores_by_question.items():
+            if new_display not in agent_scores or bl_display not in agent_scores:
+                continue
+            d = agent_scores[new_display] - agent_scores[bl_display]
+            deltas.append(d)
+            if agent_scores[new_display] > agent_scores[bl_display]:
+                new_wins += 1
+            elif agent_scores[new_display] < agent_scores[bl_display]:
+                new_losses += 1
+        mean_delta = sum(deltas) / len(deltas) if deltas else 0.0
+        cross_agent[f'new_vs_{bl_display}'] = {
+            'mean_delta': round(mean_delta, 4),
+            'new_wins': new_wins,
+            'new_losses': new_losses,
+        }
+
+    # summary
+    new_mean = by_agent.get(new_display, {}).get('mean_score', 0.0)
+    baseline_means = [by_agent[a]['mean_score'] for a in baseline_displays if a in by_agent]
+    best_baseline_mean = max(baseline_means) if baseline_means else 0.0
+    total_questions = len(results['by_agent'].get(newest_agent, {}))
+
+    summary = {
+        'new_agent': new_display,
+        'baseline_agents': baseline_displays,
+        'total_questions': total_questions,
+        'new_agent_mean': round(new_mean, 4),
+        'best_baseline_mean': round(best_baseline_mean, 4),
+        'delta': round(new_mean - best_baseline_mean, 4),
+        'new_wins_all_count': len(new_wins_all),
+        'new_losses_all_count': len(new_losses_all),
+    }
+
+    return {
+        'summary': summary,
+        'by_agent': by_agent,
+        'cross_agent_analysis': cross_agent,
+        'non_binary_scores': {},
+        'scores_by_question': scores_by_question,
+    }
+
+
+def _build_binary_index(newest_agent: str, baseline_agents: List[str],
+                         results: Dict, scores_by_question: Dict) -> Dict:
+    """Build error index for binary-score domains."""
     # Build by_agent summary
     by_agent = {}
     for agent in [newest_agent] + baseline_agents:
@@ -438,14 +589,6 @@ def build_error_index(iteration_dirs: List[Path], new_agent: Optional[str] = Non
                     {'question_id': qid, 'score': s}
                 )
 
-    # Build scores_by_question: {qid: {agent_display: score}}
-    scores_by_question = {}
-    for qid, agents_results in results['by_question'].items():
-        scores_by_question[qid] = {
-            strip_agent_prefix(agent): r.get('score', 0)
-            for agent, r in agents_results.items()
-        }
-
     return {
         'summary': summary,
         'by_agent': by_agent,
@@ -516,15 +659,26 @@ def main():
         json.dump(index, f, indent=2)
 
     # Print summary
+    summary = index['summary']
     print(f"\n=== Index Summary ===", file=sys.stderr)
-    print(f"Newest agent: {index['summary']['new_agent']} ({index['summary']['new_agent_accuracy']}%)", file=sys.stderr)
-    print(f"Baseline agents: {', '.join(index['summary']['baseline_agents'])}", file=sys.stderr)
-    print(f"\nTotal errors: {index['summary']['new_agent_errors']}", file=sys.stderr)
-    print(f"  🔴 Unique errors (new failed, all baselines succeeded): {index['summary']['baseline_comparison']['unique_errors']}", file=sys.stderr)
-    print(f"  ✅ Unique successes (new succeeded, all baselines failed): {index['summary']['baseline_comparison']['unique_successes']}", file=sys.stderr)
-    print(f"  🔵 Consensus errors (all failed): {index['summary']['baseline_comparison']['consensus_errors']}", file=sys.stderr)
-    print(f"  ⚪ Mixed results: {index['summary']['baseline_comparison']['mixed_results']}", file=sys.stderr)
-    print(f"\n✅ Wrote index to {output_file}", file=sys.stderr)
+    if 'new_agent_mean' in summary:
+        # Continuous scoring
+        print(f"Newest agent: {summary['new_agent']} (mean={summary['new_agent_mean']:.4f})", file=sys.stderr)
+        print(f"Baseline agents: {', '.join(summary['baseline_agents'])}", file=sys.stderr)
+        print(f"Best baseline mean: {summary['best_baseline_mean']:.4f}", file=sys.stderr)
+        print(f"Delta (new - best baseline): {summary['delta']:+.4f}", file=sys.stderr)
+        print(f"Questions where new wins all: {summary['new_wins_all_count']}", file=sys.stderr)
+        print(f"Questions where new loses all: {summary['new_losses_all_count']}", file=sys.stderr)
+    else:
+        # Binary scoring
+        print(f"Newest agent: {summary['new_agent']} ({summary['new_agent_accuracy']}%)", file=sys.stderr)
+        print(f"Baseline agents: {', '.join(summary['baseline_agents'])}", file=sys.stderr)
+        print(f"\nTotal errors: {summary['new_agent_errors']}", file=sys.stderr)
+        print(f"  Unique errors (new failed, all baselines succeeded): {summary['baseline_comparison']['unique_errors']}", file=sys.stderr)
+        print(f"  Unique successes (new succeeded, all baselines failed): {summary['baseline_comparison']['unique_successes']}", file=sys.stderr)
+        print(f"  Consensus errors (all failed): {summary['baseline_comparison']['consensus_errors']}", file=sys.stderr)
+        print(f"  Mixed results: {summary['baseline_comparison']['mixed_results']}", file=sys.stderr)
+    print(f"\nWrote index to {output_file}", file=sys.stderr)
 
 
 if __name__ == '__main__':

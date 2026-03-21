@@ -18,6 +18,22 @@ from pathlib import Path
 from typing import Dict, List, Set, Tuple
 from collections import defaultdict
 
+try:
+    from RoboPhD.report_generator import is_continuous_scoring
+except ImportError:
+    # Fallback for standalone script usage
+    def is_continuous_scoring(scores_by_question):
+        all_scores = []
+        for qid, agent_scores in scores_by_question.items():
+            for agent, score in agent_scores.items():
+                all_scores.append(score)
+        if not all_scores:
+            return False
+        if any(s < 0.0 or s > 1.0 for s in all_scores):
+            return True
+        binary_count = sum(1 for s in all_scores if s == 0.0 or s == 1.0)
+        return binary_count / len(all_scores) < 0.8
+
 
 def strip_agent_prefix(agent_name: str) -> str:
     """Strip 'agent_' prefix from agent name for cleaner display."""
@@ -236,6 +252,23 @@ def build_agent_stats(agent: str, agents: Set[str], results: Dict) -> Dict:
     }
 
 
+def _warn_sampling_inconsistency(total_unique: int, total_comparable: int):
+    """Warn if agents were tested on different question sets."""
+    if total_unique > total_comparable:
+        difference = total_unique - total_comparable
+        pct_not_comparable = round(difference / total_unique * 100, 1)
+
+        print(f"\nWARNING: Question sampling inconsistency detected!", file=sys.stderr)
+        print(f"   Total unique questions: {total_unique}", file=sys.stderr)
+        print(f"   Questions tested by ALL agents: {total_comparable}", file=sys.stderr)
+        print(f"   Questions tested by SOME agents: {difference} ({pct_not_comparable}%)", file=sys.stderr)
+        print(f"   ", file=sys.stderr)
+        print(f"   This indicates agents were not tested on identical question sets.", file=sys.stderr)
+        print(f"   Comparison metrics may not be meaningful for {pct_not_comparable}% of questions.", file=sys.stderr)
+        print(f"   Consider re-running with fixed question sampling (see RoboPhD/unit_tests/).", file=sys.stderr)
+        print(f"", file=sys.stderr)
+
+
 def build_error_index(iteration_dir: Path) -> Dict:
     """
     Build complete symmetric comparative error index.
@@ -249,6 +282,122 @@ def build_error_index(iteration_dir: Path) -> Dict:
 
     agents = results['agents']
     print(f"Found {len(agents)} agents: {', '.join(sorted(agents))}", file=sys.stderr)
+
+    # Build scores_by_question: {qid: {agent_display: score}}
+    scores_by_question = {}
+    for qid, agents_results in results['by_question'].items():
+        scores_by_question[qid] = {
+            strip_agent_prefix(agent): r.get('score', 0)
+            for agent, r in agents_results.items()
+        }
+
+    # Total unique questions across all agents
+    total_unique_questions = len(results['by_question'])
+
+    # Detect continuous scoring mode
+    continuous = is_continuous_scoring(scores_by_question)
+    if continuous:
+        print(f"Detected continuous scoring domain", file=sys.stderr)
+
+    if continuous:
+        return _build_continuous_index(agents, results, scores_by_question, total_unique_questions)
+    else:
+        return _build_binary_index(agents, results, scores_by_question, total_unique_questions)
+
+
+def _build_continuous_index(agents: Set[str], results: Dict, scores_by_question: Dict, total_unique_questions: int) -> Dict:
+    """Build error index for continuous-score domains (e.g., Can't Be Late)."""
+    sorted_agents = sorted(agents)
+
+    # Find questions tested by ALL agents (comparable)
+    comparable_qids = [
+        qid for qid, agent_results in results['by_question'].items()
+        if len(agent_results) == len(agents)
+    ]
+    total_comparable = len(comparable_qids)
+
+    _warn_sampling_inconsistency(total_unique_questions, total_comparable)
+
+    # Per-agent stats
+    by_agent = {}
+    for agent in sorted_agents:
+        display = strip_agent_prefix(agent)
+        agent_questions = results['by_agent'].get(agent, {})
+        scores = [r.get('score', 0) for r in agent_questions.values()]
+        mean_score = round(sum(scores) / len(scores), 4) if scores else 0.0
+
+        # Solo wins/losses: uniquely highest/lowest among comparable questions
+        solo_wins = []
+        solo_losses = []
+        for qid in comparable_qids:
+            agent_score = results['by_question'][qid][agent].get('score', 0)
+            other_scores = [
+                results['by_question'][qid][other].get('score', 0)
+                for other in agents if other != agent
+            ]
+            if not other_scores:
+                continue
+            if agent_score > max(other_scores):
+                solo_wins.append(qid)
+            if agent_score < min(other_scores):
+                solo_losses.append(qid)
+
+        by_agent[display] = {
+            'total_questions': len(agent_questions),
+            'mean_score': mean_score,
+            'solo_wins': solo_wins,
+            'solo_losses': solo_losses,
+        }
+
+    # Cross-agent differentiation patterns (on comparable questions only)
+    deltas = []
+    for qid in comparable_qids:
+        agent_scores = scores_by_question[qid]
+        score_vals = list(agent_scores.values())
+        delta = max(score_vals) - min(score_vals)
+        deltas.append({'id': qid, 'delta': round(delta, 4)})
+
+    deltas_sorted_desc = sorted(deltas, key=lambda x: x['delta'], reverse=True)
+    most_differentiated = deltas_sorted_desc[:20]
+    least_differentiated = sorted(deltas, key=lambda x: x['delta'])[:20]
+
+    cross_agent_patterns = {
+        'most_differentiated': most_differentiated,
+        'least_differentiated': least_differentiated,
+    }
+
+    # Summary
+    agent_mean_scores = {
+        strip_agent_prefix(a): by_agent[strip_agent_prefix(a)]['mean_score']
+        for a in sorted_agents
+    }
+
+    all_deltas = [d['delta'] for d in deltas] if deltas else [0.0]
+    differentiation_stats = {
+        'mean_delta': round(sum(all_deltas) / len(all_deltas), 4),
+        'max_delta': round(max(all_deltas), 4),
+        'min_delta': round(min(all_deltas), 4),
+    }
+
+    summary = {
+        'agents': [strip_agent_prefix(a) for a in sorted_agents],
+        'total_questions': total_comparable,
+        'total_unique_questions': total_unique_questions,
+        'agent_mean_scores': agent_mean_scores,
+        'differentiation_stats': differentiation_stats,
+    }
+
+    return {
+        'summary': summary,
+        'by_agent': by_agent,
+        'cross_agent_patterns': cross_agent_patterns,
+        'non_binary_scores': {},
+        'scores_by_question': scores_by_question,
+    }
+
+
+def _build_binary_index(agents: Set[str], results: Dict, scores_by_question: Dict, total_unique_questions: int) -> Dict:
+    """Build error index for binary-score domains (original behavior)."""
 
     # Build consensus patterns
     cross_agent_patterns = build_consensus_patterns(agents, results)
@@ -270,23 +419,7 @@ def build_error_index(iteration_dir: Path) -> Dict:
     split_count = len(cross_agent_patterns['split_decisions'])
     total_comparable_questions = consensus_correct_count + consensus_errors_count + split_count
 
-    # Total unique questions across all agents
-    total_unique_questions = len(results['by_question'])
-
-    # WARNING: Detect if agents tested different questions
-    if total_unique_questions > total_comparable_questions:
-        difference = total_unique_questions - total_comparable_questions
-        pct_not_comparable = round(difference / total_unique_questions * 100, 1)
-
-        print(f"\n⚠️  WARNING: Question sampling inconsistency detected!", file=sys.stderr)
-        print(f"   Total unique questions: {total_unique_questions}", file=sys.stderr)
-        print(f"   Questions tested by ALL agents: {total_comparable_questions}", file=sys.stderr)
-        print(f"   Questions tested by SOME agents: {difference} ({pct_not_comparable}%)", file=sys.stderr)
-        print(f"   ", file=sys.stderr)
-        print(f"   This indicates agents were not tested on identical question sets.", file=sys.stderr)
-        print(f"   Comparison metrics may not be meaningful for {pct_not_comparable}% of questions.", file=sys.stderr)
-        print(f"   Consider re-running with fixed question sampling (see RoboPhD/unit_tests/).", file=sys.stderr)
-        print(f"", file=sys.stderr)
+    _warn_sampling_inconsistency(total_unique_questions, total_comparable_questions)
 
     summary = {
         'agents': sorted(agents),
@@ -330,14 +463,6 @@ def build_error_index(iteration_dir: Path) -> Dict:
                 non_binary_scores.setdefault(agent_display, []).append(
                     {'question_id': qid, 'score': s}
                 )
-
-    # Build scores_by_question: {qid: {agent_display: score}}
-    scores_by_question = {}
-    for qid, agents_results in results['by_question'].items():
-        scores_by_question[qid] = {
-            strip_agent_prefix(agent): r.get('score', 0)
-            for agent, r in agents_results.items()
-        }
 
     return {
         'summary': summary,
@@ -387,16 +512,29 @@ def main():
     # Print summary
     print(f"\n=== Index Summary ===", file=sys.stderr)
     agents = index['summary']['agents']
-    accuracies = index['summary']['agent_accuracies']
-    print(f"Agents: {', '.join(f'{a} ({accuracies[a]}%)' for a in agents)}", file=sys.stderr)
 
-    consensus = index['summary']['consensus_stats']
-    print(f"\nConsensus patterns:", file=sys.stderr)
-    print(f"  All correct: {consensus['all_correct']} ({consensus['all_correct_pct']}%)", file=sys.stderr)
-    print(f"  All failed: {consensus['all_failed']} ({consensus['all_failed_pct']}%)", file=sys.stderr)
-    print(f"  Split decisions: {consensus['split_decisions']} ({consensus['split_decisions_pct']}%)", file=sys.stderr)
+    if 'agent_mean_scores' in index['summary']:
+        # Continuous scoring
+        mean_scores = index['summary']['agent_mean_scores']
+        print(f"Agents: {', '.join(f'{a} (mean={mean_scores[a]})' for a in agents)}", file=sys.stderr)
 
-    print(f"\n✅ Wrote index to {output_file}", file=sys.stderr)
+        diff = index['summary']['differentiation_stats']
+        print(f"\nDifferentiation stats:", file=sys.stderr)
+        print(f"  Mean delta: {diff['mean_delta']}", file=sys.stderr)
+        print(f"  Max delta: {diff['max_delta']}", file=sys.stderr)
+        print(f"  Min delta: {diff['min_delta']}", file=sys.stderr)
+    else:
+        # Binary scoring
+        accuracies = index['summary']['agent_accuracies']
+        print(f"Agents: {', '.join(f'{a} ({accuracies[a]}%)' for a in agents)}", file=sys.stderr)
+
+        consensus = index['summary']['consensus_stats']
+        print(f"\nConsensus patterns:", file=sys.stderr)
+        print(f"  All correct: {consensus['all_correct']} ({consensus['all_correct_pct']}%)", file=sys.stderr)
+        print(f"  All failed: {consensus['all_failed']} ({consensus['all_failed_pct']}%)", file=sys.stderr)
+        print(f"  Split decisions: {consensus['split_decisions']} ({consensus['split_decisions_pct']}%)", file=sys.stderr)
+
+    print(f"\nWrote index to {output_file}", file=sys.stderr)
 
 
 if __name__ == '__main__':

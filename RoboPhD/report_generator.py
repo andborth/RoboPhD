@@ -336,19 +336,21 @@ def _format_score_summary(agent_totals: dict[str, list[float]], agents: list[str
 
 
 def _format_score_rows(scores_by_question: dict, agents: list[str],
-                       agent_labels: list[str], last_col_header: str,
-                       last_col_fn) -> list[str]:
-    """Build the score comparison table rows.
+                       agent_labels: list[str],
+                       extra_col_headers: list[str],
+                       extra_cols_fn) -> list[str]:
+    """Build the score comparison table rows with pluggable extra columns.
 
-    last_col_fn(scored_sorted, agent_scores) -> (sort_key, display_str)
-    where scored_sorted is [(agent, score)] descending.
+    extra_cols_fn(scored_sorted, agent_scores) -> (sort_key, [display_str, ...])
+    where scored_sorted is [(agent, score)] descending and the display list
+    has one entry per extra_col_headers.
     """
     rows = []
     for qid, agent_scores in scores_by_question.items():
         scored = [(a, agent_scores.get(a, float('-inf'))) for a in agents]
         scored_sorted = sorted(scored, key=lambda x: x[1], reverse=True)
-        sort_key, display = last_col_fn(scored_sorted, agent_scores)
-        rows.append((sort_key, qid, agent_scores, display))
+        sort_key, displays = extra_cols_fn(scored_sorted, agent_scores)
+        rows.append((sort_key, qid, agent_scores, displays))
 
     rows.sort(key=lambda r: r[0])
 
@@ -359,17 +361,19 @@ def _format_score_rows(scores_by_question: dict, agents: list[str],
     for label in agent_labels:
         header += f" {label} |"
         separator += "--------|"
-    header += f" {last_col_header} |"
-    separator += "---------|"
+    for col_header in extra_col_headers:
+        header += f" {col_header} |"
+        separator += "---------|"
     lines.append(header)
     lines.append(separator)
 
-    for _, qid, agent_scores, display in rows:
+    for _, qid, agent_scores, displays in rows:
         row = f"| {qid} |"
         for agent in agents:
             score = agent_scores.get(agent)
             row += f" {score:.3f} |" if score is not None else " — |"
-        row += f" {display} |"
+        for display in displays:
+            row += f" {display} |"
         lines.append(row)
 
     lines.append("")
@@ -379,7 +383,7 @@ def _format_score_rows(scores_by_question: dict, agents: list[str],
 def format_continuous_score_table(scores_by_question: dict, agents: list[str]) -> list[str]:
     """Build score comparison table for continuous-score tasks (iteration report).
 
-    Sorted by best agent's rank on each problem, then second-best, etc.
+    Sorted by delta(best-worst) descending — most differentiated problems first.
     """
     if not scores_by_question or not agents:
         return []
@@ -393,33 +397,43 @@ def format_continuous_score_table(scores_by_question: dict, agents: list[str]) -
 
     lines = _format_score_summary(agent_totals, sorted_agents)
 
-    # Win counts
-    win_counts: dict[str, int] = {a: 0 for a in sorted_agents}
+    # Solo wins and solo losses per agent (with problem IDs)
+    win_ids: dict[str, list[str]] = {a: [] for a in sorted_agents}
+    loss_ids: dict[str, list[str]] = {a: [] for a in sorted_agents}
     for qid, agent_scores in scores_by_question.items():
         scored = [(a, agent_scores.get(a, float('-inf'))) for a in sorted_agents]
         best_score = max(s for _, s in scored)
+        worst_score = min(s for _, s in scored)
         winners = [a for a, s in scored if s == best_score]
+        losers = [a for a, s in scored if s == worst_score]
         if len(winners) == 1:
-            win_counts[winners[0]] += 1
+            win_ids[winners[0]].append(qid)
+        if len(losers) == 1 and worst_score < best_score:
+            loss_ids[losers[0]].append(qid)
 
-    win_parts = [f"{a}: {win_counts[a]}" for a in sorted_agents]
-    lines.append(f"**Solo wins**: {', '.join(win_parts)}")
+    for agent in sorted_agents:
+        wins = win_ids[agent]
+        wins_str = ', '.join(wins) if wins else ''
+        lines.append(f"**Solo wins**: {agent}: {len(wins)}" + (f" ({wins_str})" if wins else ""))
+    for agent in sorted_agents:
+        losses = loss_ids[agent]
+        losses_str = ', '.join(losses) if losses else ''
+        lines.append(f"**Solo losses**: {agent}: {len(losses)}" + (f" ({losses_str})" if losses else ""))
     lines.append("")
 
-    def ranking_col(scored_sorted, agent_scores):
-        ranking = _ranking_str(scored_sorted)
-        # Sort key: rank of each agent on this problem
-        ranks = {}
-        current_rank = 1
-        for i, (a, s) in enumerate(scored_sorted):
-            if i > 0 and s < scored_sorted[i - 1][1]:
-                current_rank = i + 1
-            ranks[a] = current_rank
-        sort_key = tuple(ranks[a] for a in sorted_agents)
-        return sort_key, ranking
+    def delta_cols(scored_sorted, agent_scores):
+        scores_list = [s for _, s in scored_sorted]
+        best = scores_list[0]
+        worst = scores_list[-1]
+        delta_bw = best - worst
+        delta_12 = (scores_list[0] - scores_list[1]) if len(scores_list) >= 2 else 0.0
+        # Sort descending by delta(best-worst) => negate for ascending sort
+        sort_key = -delta_bw
+        return sort_key, [f"{delta_bw:.3f}", f"{delta_12:.3f}"]
 
     lines.extend(_format_score_rows(
-        scores_by_question, sorted_agents, sorted_agents, "Ranking", ranking_col,
+        scores_by_question, sorted_agents, sorted_agents,
+        ["Δ(best-worst)", "Δ(#1-#2)"], delta_cols,
     ))
     return lines
 
@@ -431,8 +445,8 @@ def format_continuous_score_table_deep_focus(
 ) -> list[str]:
     """Build score comparison table for continuous-score tasks (deep focus report).
 
-    Shows new agent's rank instead of full ranking string.
-    Sorted by new agent's rank (best first), then by score.
+    Shows new-vs-best-baseline delta and new agent's rank.
+    Sorted by new-vs-best ascending (worst problems for new agent first).
     """
     if not scores_by_question:
         return []
@@ -444,23 +458,67 @@ def format_continuous_score_table_deep_focus(
 
     agent_labels = [f"{a} (new)" if a == new_agent else a for a in all_agents]
 
-    def new_rank_col(scored_sorted, agent_scores):
-        new_agent_score = agent_scores.get(new_agent, float('-inf'))
+    # Track wins/losses for summary
+    new_wins: list[str] = []
+    new_losses: list[str] = []
+
+    def new_vs_best_cols(scored_sorted, agent_scores):
+        new_score = agent_scores.get(new_agent, float('-inf'))
+        baseline_scores = [agent_scores.get(a, float('-inf')) for a in baseline_agents]
+        best_baseline = max(baseline_scores) if baseline_scores else float('-inf')
+        delta = new_score - best_baseline
+
+        # Compute rank
         new_rank = 1
         for a, s in scored_sorted:
             if a == new_agent:
                 break
-            if s > new_agent_score:
+            if s > new_score:
                 new_rank += 1
-
-        at_same_score = [a for a, s in scored_sorted if s == new_agent_score]
+        at_same_score = [a for a, s in scored_sorted if s == new_score]
         rank_str = f"#{new_rank} (tied)" if len(at_same_score) > 1 else f"#{new_rank}"
-        sort_key = (new_rank, -new_agent_score)
-        return sort_key, rank_str
+
+        delta_str = f"{delta:+.3f}"
+        # Sort ascending by delta (worst problems first)
+        sort_key = (delta, -new_score)
+        return sort_key, [delta_str, rank_str]
+
+    # Pre-compute wins/losses before building the table
+    for qid, agent_scores in scores_by_question.items():
+        new_score = agent_scores.get(new_agent, float('-inf'))
+        baseline_scores = [agent_scores.get(a, float('-inf')) for a in baseline_agents]
+        best_baseline = max(baseline_scores) if baseline_scores else float('-inf')
+        worst_all = min([new_score] + baseline_scores)
+        best_all = max([new_score] + baseline_scores)
+        if new_score > best_baseline and new_score == best_all:
+            scored = [(a, agent_scores.get(a, float('-inf'))) for a in all_agents]
+            winners = [a for a, s in scored if s == best_all]
+            if len(winners) == 1:
+                new_wins.append(qid)
+        if new_score == worst_all and new_score < best_all:
+            scored = [(a, agent_scores.get(a, float('-inf'))) for a in all_agents]
+            losers = [a for a, s in scored if s == worst_all]
+            if len(losers) == 1:
+                new_losses.append(qid)
 
     lines.extend(_format_score_rows(
-        scores_by_question, all_agents, agent_labels, "New Rank", new_rank_col,
+        scores_by_question, all_agents, agent_labels,
+        ["New vs Best", "New Rank"], new_vs_best_cols,
     ))
+
+    # Summary lines
+    if new_wins:
+        ids_str = ', '.join(new_wins[:10]) + (', ...' if len(new_wins) > 10 else '')
+        lines.append(f"**New agent wins**: {len(new_wins)} problems where new beat all baselines ({ids_str})")
+    else:
+        lines.append(f"**New agent wins**: 0 problems where new beat all baselines")
+    if new_losses:
+        ids_str = ', '.join(new_losses[:10]) + (', ...' if len(new_losses) > 10 else '')
+        lines.append(f"**New agent losses**: {len(new_losses)} problems where new was worst ({ids_str})")
+    else:
+        lines.append(f"**New agent losses**: 0 problems where new was worst")
+    lines.append("")
+
     return lines
 
 
