@@ -1190,7 +1190,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             pass
 
         raise RuntimeError(
-            "Claude CLI not found. Install with: pip install claude-cli"
+            "Claude CLI not found. Install from: https://docs.anthropic.com/en/docs/claude-code"
         )
 
     def _save_snapshot(self, round_num: int):

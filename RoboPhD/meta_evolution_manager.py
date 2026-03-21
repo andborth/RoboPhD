@@ -461,7 +461,7 @@ class MetaEvolutionManager:
             return Path(result.stdout.strip())
         except subprocess.CalledProcessError:
             raise FileNotFoundError(
-                "Claude CLI not found. Install with: pip install claude-cli"
+                "Claude CLI not found. Install from: https://docs.anthropic.com/en/docs/claude-code"
             )
 
     def _call_claude_code(
