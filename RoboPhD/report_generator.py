@@ -404,8 +404,8 @@ def format_continuous_score_table(scores_by_question: dict, agents: list[str]) -
         scored = [(a, agent_scores.get(a, float('-inf'))) for a in sorted_agents]
         best_score = max(s for _, s in scored)
         worst_score = min(s for _, s in scored)
-        winners = [a for a, s in scored if s == best_score]
-        losers = [a for a, s in scored if s == worst_score]
+        winners = [a for a, s in scored if round(s, 6) == round(best_score, 6)]
+        losers = [a for a, s in scored if round(s, 6) == round(worst_score, 6)]
         if len(winners) == 1:
             win_ids[winners[0]].append(qid)
         if len(losers) == 1 and worst_score < best_score:

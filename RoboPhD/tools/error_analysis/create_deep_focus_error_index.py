@@ -17,21 +17,7 @@ from pathlib import Path
 from typing import Dict, List, Set, Tuple, Optional
 from collections import defaultdict
 
-try:
-    from RoboPhD.report_generator import is_continuous_scoring
-except ImportError:
-    # Fallback for standalone script usage
-    def is_continuous_scoring(scores_by_question):
-        all_scores = []
-        for qid, agent_scores in scores_by_question.items():
-            for agent, score in agent_scores.items():
-                all_scores.append(score)
-        if not all_scores:
-            return False
-        if any(s < 0.0 or s > 1.0 for s in all_scores):
-            return True
-        binary_count = sum(1 for s in all_scores if s == 0.0 or s == 1.0)
-        return binary_count / len(all_scores) < 0.8
+from RoboPhD.report_generator import is_continuous_scoring
 
 
 def strip_agent_prefix(agent_name: str) -> str:
