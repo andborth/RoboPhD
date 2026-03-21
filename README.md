@@ -17,9 +17,9 @@ Tested across four benchmarks with diverse task types — abstract reasoning, cl
 | Benchmark | Train | Val | Test | Seed Baseline | RoboPhD Best | GEPA Best | Autoresearch Best | Published |
 |-----------|-------|-----|------|--------------|-------------|-----------|-------------------|-----------|
 | [ARC-AGI](https://arcprize.org/) | 200 | 200 | 400 | 26.5% | **65.1%** | 58.5% | 60.25% | — |
-| [Can't Be Late](https://github.com/UCB-ADRS/ADRS/tree/main/openevolve/examples/ADRS/cant-be-late) | 2000 | — | 1080 | -96.48 | **-87.85** | -91.97 | -90.48 | — |
+| [Can't Be Late](https://github.com/UCB-ADRS/ADRS/tree/main/openevolve/examples/ADRS/cant-be-late) | 2000 | — | 1080 | -96.48 | **-87.85** | -89.13 | -90.48 | — |
 | [Text2SQL (BIRD)](https://bird-bench.github.io/) | 6601 | — | 1534 | 59.19% | **67.14%** | 61.15% | 65.38% | 66.1% |
-| [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) | 5735 | 780 | 922 | 0.22% | **45.88%** | — | — | 42.6% |
+| [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) | 5735 | 780 | 922 | 0.22% | **51.63%** | 37.85% | 45.88% | 42.6% |
 
 *ARC-AGI and DocFinQA have designated val splits. For Can't Be Late and Text2SQL, GEPA and Autoresearch carve validation from the training set (typically 200 examples). RoboPhD combines all training data into a single pool and samples from it each iteration.*
 
@@ -134,12 +134,11 @@ Meta-evolution (`train_a_winner`) can generate additional strategies beyond thes
 ## Configuration
 
 ```bash
-# Full run with deep focus testing
-python scripts/run_robophd.py --task text2sql --num-iterations 20 \
-  --engine-config '{"examples_per_iteration": 20, "evaluation_budget": 1500}'
+# Full run with deep focus testing and test-set evaluation
+python scripts/run_robophd.py --task text2sql --num-iterations 20 --eval-test-set
 
 # With meta-evolution
-python scripts/run_robophd.py --task cant_be_late --num-iterations 22 \
+python scripts/run_robophd.py --task cant_be_late --num-iterations 22 --eval-test-set \
   --engine-config configs/robophd_engine/meta_evolution_starts_at_5.json
 
 # Resume a run
