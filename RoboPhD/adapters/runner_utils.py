@@ -248,6 +248,82 @@ def find_best_agent(run_dir: Path) -> Tuple[str, Path]:
     return best_id, agent_dir
 
 
+def find_last_winner(run_dir: Path) -> Tuple[str, Path, bool]:
+    """Find the agent that won the last completed iteration.
+
+    For king-of-the-hill runs (oldest_agent_wins_ties=true), the last-round
+    winner may differ from the ELO leader.
+
+    Returns (agent_name, agent_dir, is_also_elo_leader).
+    """
+    log = logging.getLogger(__name__)
+    checkpoint_path = Path(run_dir) / "checkpoint.json"
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(f"No checkpoint.json found in {run_dir}")
+
+    with open(checkpoint_path) as f:
+        ckpt = json.load(f)
+
+    perf_records = ckpt.get("performance_records", {})
+    agent_pool = ckpt.get("agent_pool", {})
+    last_iter = ckpt.get("last_completed_iteration", 0)
+
+    if not perf_records:
+        raise ValueError(f"No performance records in {checkpoint_path}")
+
+    elo_leader = max(perf_records, key=lambda k: perf_records[k]["elo"])
+
+    # Find agents whose last win was at the final iteration
+    last_winners = [
+        name for name, rec in perf_records.items()
+        if rec.get("last_win_iteration") == last_iter
+    ]
+
+    if not last_winners:
+        has_field = any(
+            "last_win_iteration" in rec for rec in perf_records.values()
+        )
+        if not has_field:
+            log.warning(
+                f"No last_win_iteration field in performance records "
+                f"(older checkpoint format); falling back to ELO leader"
+            )
+        else:
+            log.warning(
+                f"No agent won iteration {last_iter}; falling back to ELO leader"
+            )
+        return elo_leader, _resolve_agent_dir(run_dir, elo_leader, agent_pool, perf_records, log), True
+
+    # Tiebreak by ELO
+    winner_id = max(last_winners, key=lambda k: perf_records[k]["elo"])
+    is_elo_leader = winner_id == elo_leader
+    winner_perf = perf_records[winner_id]
+
+    log.info(
+        f"Last-round winner (iteration {last_iter}): {winner_id} "
+        f"(ELO: {winner_perf['elo']:.0f}, "
+        f"score: {winner_perf['mean_score']:.3f}, "
+        f"tests: {winner_perf['test_count']}"
+        f"{', also ELO leader' if is_elo_leader else ''})"
+    )
+
+    return winner_id, _resolve_agent_dir(run_dir, winner_id, agent_pool, perf_records, log), is_elo_leader
+
+
+def _resolve_agent_dir(run_dir: Path, agent_id: str, agent_pool: dict,
+                       perf_records: dict, log) -> Path:
+    """Resolve an agent's directory from the agent pool."""
+    agent_info = agent_pool.get(agent_id)
+    if not agent_info or "package_dir" not in agent_info:
+        raise ValueError(f"Agent {agent_id} not found in agent_pool or missing package_dir")
+
+    agent_dir = Path(run_dir) / agent_info["package_dir"]
+    if not agent_dir.exists():
+        raise FileNotFoundError(f"Agent directory not found: {agent_dir}")
+
+    return agent_dir
+
+
 def run_test_eval(
     candidate: Dict[str, str],
     task,
@@ -256,6 +332,7 @@ def run_test_eval(
     max_workers: int | None = None,
     metadata: Dict[str, Any] | None = None,
     logger: logging.Logger | None = None,
+    output_filename: str = "test_results.json",
 ) -> Dict[str, Any]:
     """Evaluate a candidate on the held-out test set.
 
@@ -265,15 +342,16 @@ def run_test_eval(
         candidate: Dict of agent artifacts (from extract_candidate).
         task: TaskDefinition with test_overrides, dataset_builder, evaluator_factory.
         config: Merged config dict (training config — test_overrides applied internally).
-        output_dir: Where to write test_results.json and test_work/.
+        output_dir: Where to write the results file and test_work/.
         max_workers: Override for parallel workers.
-        metadata: Optional extra fields to include in test_results.json
+        metadata: Optional extra fields to include in the results file
             (e.g., agent_name, agent_dir, task).
         logger: Optional logger.
+        output_filename: Name of the results file (default: test_results.json).
 
     Returns:
         dict with mean_test_score, total_test_score, total_test_problems, test_eval_cost_usd,
-        plus any metadata fields. Also writes test_results.json to output_dir.
+        plus any metadata fields. Also writes the results file to output_dir.
     """
     log = logger or logging.getLogger(__name__)
 
@@ -307,7 +385,7 @@ def run_test_eval(
     if metadata:
         test_results.update(metadata)
 
-    output_path = Path(output_dir) / "test_results.json"
+    output_path = Path(output_dir) / output_filename
     with open(output_path, "w") as f:
         json.dump(test_results, f, indent=2)
     log.info(f"Test results saved to {output_path}")

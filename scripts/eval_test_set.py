@@ -31,7 +31,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from RoboPhD.adapters.candidate_utils import extract_candidate
-from RoboPhD.adapters.runner_utils import parse_config_arg, find_best_agent, run_test_eval
+from RoboPhD.adapters.runner_utils import parse_config_arg, find_best_agent, find_last_winner, run_test_eval
 from RoboPhD.tasks import get_task
 
 logging.basicConfig(
@@ -81,6 +81,11 @@ def main():
         default=None,
         help="Root directory for experiment outputs (default: ../robophd_runs relative to repo root)",
     )
+    parser.add_argument(
+        "--last-winner",
+        action="store_true",
+        help="Select the agent that won the final iteration (instead of ELO leader). Requires --run-dir.",
+    )
     args = parser.parse_args()
     if args.runs_dir is None:
         args.runs_dir = Path("../robophd_runs")
@@ -88,15 +93,30 @@ def main():
     if args.test_repeats < 1:
         parser.error("--test-repeats must be at least 1")
 
+    if args.last_winner and not args.run_dir:
+        parser.error("--last-winner requires --run-dir")
+
     # Resolve agent
     if args.run_dir:
-        agent_name, agent_dir = find_best_agent(args.run_dir)
-        default_output = args.run_dir / "test_results.json"
+        if args.last_winner:
+            agent_name, agent_dir, is_elo_leader = find_last_winner(args.run_dir)
+            if is_elo_leader:
+                logger.info("Last-round winner is also the ELO leader — writing to test_results.json")
+                default_output = args.run_dir / "test_results.json"
+                symlink_path = args.run_dir / "last_winner_test_results.json"
+            else:
+                default_output = args.run_dir / "last_winner_test_results.json"
+                symlink_path = None
+        else:
+            agent_name, agent_dir = find_best_agent(args.run_dir)
+            default_output = args.run_dir / "test_results.json"
+            symlink_path = None
     else:
         agent_dir = args.agent_dir
         agent_name = agent_dir.name
         results_base = args.runs_dir / "results" / "agent_tests" / args.task / agent_name
         default_output = results_base / "test_results.json"
+        symlink_path = None
         if not agent_dir.exists():
             logger.error(f"Agent directory not found: {agent_dir}")
             sys.exit(1)
@@ -124,9 +144,16 @@ def main():
         max_workers=args.max_workers,
         metadata={"agent_name": agent_name, "agent_dir": str(agent_dir), "task": task.name},
         logger=logger,
+        output_filename=output_path.name,
     )
 
     logger.info(f"Results saved to {output_path}")
+
+    # Create symlink when last winner == ELO leader
+    if args.run_dir and symlink_path is not None:
+        symlink_path.unlink(missing_ok=True)
+        symlink_path.symlink_to(output_path.name)
+        logger.info(f"Symlinked {symlink_path.name} -> {output_path.name}")
 
     # Force-exit if any non-daemon threads are still alive — Python's atexit
     # handler blocks on t.join() for hung threads, hanging the process.
