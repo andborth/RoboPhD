@@ -24,14 +24,20 @@ def _evaluator_factory(config: Dict[str, Any]):
 def _dataset_builder(config: Dict[str, Any]) -> List[Dict]:
     """Build DocFinQA dataset.
 
-    For run_robophd (split="train"): returns train+val concatenated (6,515 problems).
-    For test (split="test"): returns test split (922 problems).
+    split="train" (default): train+val concatenated (6,515 problems)
+    split="validation": HF validation split only (780 problems)
+    split="test": HF test split (922 problems)
+
+    Note: split="train" includes the HF validation split for a larger
+    training pool. Use split="validation" to train on val only.
     """
     from RoboPhD.adapters.gepa_docfinqa import load_docfinqa
 
     split = config.get("split", "train")
     if split == "test":
         return load_docfinqa("test")
+    if split == "validation":
+        return load_docfinqa("validation")
     return load_docfinqa("train") + load_docfinqa("validation")
 
 
