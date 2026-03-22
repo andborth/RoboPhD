@@ -19,6 +19,7 @@ Usage:
     )
 """
 
+import io
 import json
 import logging
 import re
@@ -142,8 +143,6 @@ def run_agent(agent_code: str, document: str, question: str, llm, embed) -> tupl
     rather than using redirect_stdout (which is process-global in Python <3.12
     and breaks print() in other threads).
     """
-    import io
-
     buf = io.StringIO()
 
     def _captured_print(*args, **kwargs):
@@ -315,18 +314,29 @@ class DocFinQAEvaluator:
             }
             if agent_stdout.strip():
                 diagnostics["agent_stdout"] = agent_stdout
+            with self._lock:
+                self._eval_count += 1
             return 0.0, diagnostics
 
         # Strip code fences if present
         program_str = _extract_program(program_str)
 
-        # Execute the generated program
+        # Execute the generated program (suppress stdout from print() in generated code)
         exec_error = None
         predicted = None
         try:
-            namespace = {}
-            exec(program_str, namespace)
-            predicted = namespace.get("answer")
+            prog_buf = io.StringIO()
+
+            def _prog_print(*args, **kwargs):
+                kwargs.setdefault("file", prog_buf)
+                print(*args, **kwargs)
+
+            prog_namespace = {"print": _prog_print}
+            exec(program_str, prog_namespace)
+            predicted = prog_namespace.get("answer")
+            prog_stdout = prog_buf.getvalue()
+            if prog_stdout.strip():
+                agent_stdout += "\n--- program output ---\n" + prog_stdout
         except Exception as e:
             exec_error = str(e)
 
