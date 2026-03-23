@@ -958,6 +958,10 @@ class ParallelAgentResearcher:
         This is needed when using --from-iteration to ensure agents aren't
         incorrectly treated as "pending winners" for wins that are being re-executed.
 
+        Applies the current tie-breaking mode (oldest_agent_wins_ties,
+        random_agent_wins_ties) during replay so pending-winner state is
+        consistent with the configured behavior.
+
         Args:
             from_iteration: Iteration number to restore before (1-indexed)
         """
@@ -969,34 +973,52 @@ class ParallelAgentResearcher:
         for clone_id, _matched_id, iter_num in self.clone_detections:
             clone_agents_by_iter.setdefault(iter_num, set()).add(clone_id)
 
+        # Get tie-breaking config
+        current_config = self.config_manager.get_config(1)
+        oawt = current_config.get("oldest_agent_wins_ties", False)
+        rawt = current_config.get("random_agent_wins_ties", False)
+
+        # Determine winners per iteration (with tie-breaking)
+        # Maps agent_id -> most recent winning iteration
+        last_win_by_agent = {agent_id: None for agent_id in self.performance_records}
+
+        for iter_idx in range(min(from_iteration - 1, len(self.test_history))):
+            iteration_results = self.test_history[iter_idx]
+            if not iteration_results:
+                continue
+            iter_num = iter_idx + 1
+            clones_this_iter = clone_agents_by_iter.get(iter_num, set())
+            eligible = {k: v for k, v in iteration_results.items()
+                       if k not in clones_this_iter}
+            if not eligible:
+                continue
+
+            max_score = max(eligible[k]['average_score'] for k in eligible)
+            winners = [k for k, v in eligible.items()
+                      if round(v['average_score'], 6) == round(max_score, 6)]
+
+            # Apply tie-breaking
+            if len(winners) > 1 and oawt:
+                winners.sort(key=lambda a: (self.agent_pool[a].get('created_iteration', 0), random.random()))
+                winners = [winners[0]]
+            elif len(winners) > 1 and rawt:
+                winners = [random.choice(winners)]
+
+            for winner_id in winners:
+                last_win_by_agent[winner_id] = iter_num
+
+        # Restore last_win_iteration and last_test_iteration
         for agent_id in self.performance_records.keys():
-            # Find most recent win before from_iteration
-            last_win = None
-            for iter_idx in range(from_iteration - 1):  # 0-indexed, so iter 30 is index 29
-                if iter_idx < len(self.test_history):
-                    iteration_results = self.test_history[iter_idx]
-                    if agent_id in iteration_results:
-                        # Check if this agent won this iteration (excluding clones)
-                        iter_num = iter_idx + 1
-                        clones_this_iter = clone_agents_by_iter.get(iter_num, set())
-                        if agent_id not in clones_this_iter:
-                            eligible = {k: v for k, v in iteration_results.items()
-                                       if k not in clones_this_iter}
-                            if eligible:
-                                max_score = max(eligible[k]['average_score']
-                                               for k in eligible)
-                                if iteration_results[agent_id]['average_score'] == max_score:
-                                    last_win = iter_num
+            last_win = last_win_by_agent.get(agent_id)
 
             # Find most recent test before from_iteration
             last_test = None
-            for iter_idx in range(from_iteration - 2, -1, -1):  # Search backwards (from_iteration-2 to 0)
+            for iter_idx in range(from_iteration - 2, -1, -1):
                 if iter_idx < len(self.test_history):
                     if agent_id in self.test_history[iter_idx]:
-                        last_test = iter_idx + 1  # Convert to 1-indexed
+                        last_test = iter_idx + 1
                         break
 
-            # Update performance records if they differ from archived state
             old_win = self.performance_records[agent_id].get('last_win_iteration')
             old_test = self.performance_records[agent_id].get('last_test_iteration')
 
@@ -1771,12 +1793,18 @@ class ParallelAgentResearcher:
         max_score = round(max(r['average_score'] for r in eligible.values()), 6)
         winners = [k for k, v in eligible.items() if round(v['average_score'], 6) == max_score]
 
-        # King-of-the-hill tie breaking: oldest agent wins
+        # Tie breaking
         if len(winners) > 1 and current_config.get("oldest_agent_wins_ties", False):
             winners.sort(key=lambda a: (self.agent_pool[a].get('created_iteration', 0), random.random()))
             print(f"\n🏆 Iteration {iteration} winner: {winners[0]} ({max_score:.3f})")
             print(f"     (tie-break over {', '.join(winners[1:])} — oldest agent wins)")
             winners = [winners[0]]
+        elif len(winners) > 1 and current_config.get("random_agent_wins_ties", False):
+            winner = random.choice(winners)
+            others = [w for w in winners if w != winner]
+            print(f"\n🏆 Iteration {iteration} winner: {winner} ({max_score:.3f})")
+            print(f"     (random tie-break over {', '.join(others)})")
+            winners = [winner]
         elif len(winners) == 1:
             print(f"\n🏆 Iteration {iteration} winner: {winners[0]} ({max_score:.3f})")
         else:
@@ -2562,6 +2590,11 @@ class ParallelAgentResearcher:
             initial_agents: Optional list of specific agents to start with
         """
         start_time = time.time()
+
+        # Validate mutually exclusive config options
+        iter1_config = self.config_manager.get_config(1)
+        if iter1_config.get("oldest_agent_wins_ties") and iter1_config.get("random_agent_wins_ties"):
+            raise ValueError("Cannot set both oldest_agent_wins_ties and random_agent_wins_ties")
 
         print("\n" + "="*60)
         print("PARALLEL AGENT RESEARCH EXPERIMENT" + (" (RESUMED)" if self.resume_mode else ""))

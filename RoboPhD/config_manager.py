@@ -92,6 +92,7 @@ class ConfigManager:
 
             # Tie handling
             "oldest_agent_wins_ties": False,  # King-of-the-hill: oldest agent wins ties
+            "random_agent_wins_ties": False,  # Randomly pick one winner from ties (increases diversity)
 
             # Prompt content
             "include_evolution_rankings": False,  # Exclude Performance Rankings table and Agent Pool from evolution prompt
