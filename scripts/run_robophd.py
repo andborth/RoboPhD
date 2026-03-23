@@ -207,10 +207,10 @@ def _list_params(task):
     defaults = ConfigManager().get_defaults()
     categories = {
         "Sampling": ["examples_per_iteration", "agents_per_iteration"],
-        "Evolution": ["evolution_strategy", "oldest_agent_wins_ties"],
+        "Evolution": ["evolution_strategy", "oldest_agent_wins_ties", "random_agent_wins_ties", "include_evolution_rankings"],
         "Evolution Schedule": ["config_schedule", "weighted_random_configs", "use_weighted_random"],
         "Meta-Evolution": ["meta_evolution_strategy", "meta_evolution_model", "dollar_budget"],
-        "Deep Focus": ["new_agent_test_rounds"],
+        "Deep Focus": ["new_agent_test_rounds", "new_agent_test_round_offset"],
         "Stopping Conditions": ["evaluation_budget"],
         "Performance": ["max_workers"],
         "Timeouts": ["evolution_timeout"],
