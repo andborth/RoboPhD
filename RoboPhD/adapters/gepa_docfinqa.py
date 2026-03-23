@@ -30,6 +30,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import litellm
 
+from RoboPhD.eval_utils import is_rate_limit_error
+
 litellm.suppress_debug_info = True
 logging.getLogger("openai._base_client").setLevel(logging.WARNING)
 
@@ -98,12 +100,17 @@ _RATE_LIMIT_BASE_DELAY = 0.5  # seconds; 429s typically say "try again in 30ms"
 
 
 def _retry_on_rate_limit(fn, max_retries=_RATE_LIMIT_MAX_RETRIES):
-    """Call fn(), retrying with exponential backoff on rate limit errors."""
+    """Call fn(), retrying with exponential backoff on rate limit errors.
+
+    This is the first line of defense: transient 429s (typically needing
+    only 30ms) are resolved here without any caller awareness.  If all
+    retries are exhausted, the exception propagates to the eval loop
+    where EvalRateLimitError crashes the run to prevent corrupted scores.
+    """
     for attempt in range(max_retries + 1):
         try:
             return fn()
         except Exception as e:
-            from RoboPhD.eval_utils import is_rate_limit_error
             if is_rate_limit_error(e) and attempt < max_retries:
                 delay = _RATE_LIMIT_BASE_DELAY * (2 ** attempt)
                 logger.warning(f"Rate limit hit, retrying in {delay:.1f}s (attempt {attempt + 1}/{max_retries})")
