@@ -107,6 +107,10 @@ class TrackedLLM:
         return self._inner.total_cost
 
     @property
+    def max_llm_calls(self):
+        return self._inner.max_llm_calls
+
+    @property
     def calls(self):
         return self._inner.calls
 

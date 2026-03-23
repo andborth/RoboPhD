@@ -48,6 +48,12 @@ def _ensure_builtins():
         pass  # dspy/datasets not installed — arc_agi task unavailable
 
     try:
+        from .arc_agi_1 import make_arc_agi_1_task
+        register_task(make_arc_agi_1_task())
+    except ImportError:
+        pass  # dspy/datasets not installed — arc_agi_1 task unavailable
+
+    try:
         from .docfinqa import make_docfinqa_task
         register_task(make_docfinqa_task())
     except ImportError:
