@@ -98,6 +98,11 @@ class CostTracker:
 _RATE_LIMIT_MAX_RETRIES = 5
 _RATE_LIMIT_BASE_DELAY = 0.5  # seconds; 429s typically say "try again in 30ms"
 
+# Module-level counter for rate limit summary logging
+_rate_limit_lock = threading.Lock()
+_rate_limit_count = 0
+_rate_limit_last_logged = 0
+
 
 def _retry_on_rate_limit(fn, max_retries=_RATE_LIMIT_MAX_RETRIES):
     """Call fn(), retrying with exponential backoff on rate limit errors.
@@ -106,14 +111,28 @@ def _retry_on_rate_limit(fn, max_retries=_RATE_LIMIT_MAX_RETRIES):
     only 30ms) are resolved here without any caller awareness.  If all
     retries are exhausted, the exception propagates to the eval loop
     where EvalRateLimitError crashes the run to prevent corrupted scores.
+
+    Logging: first retries are silent to avoid spam from concurrent workers.
+    A summary is logged every 50 rate limit hits.
     """
+    global _rate_limit_count, _rate_limit_last_logged
     for attempt in range(max_retries + 1):
         try:
             return fn()
         except Exception as e:
             if is_rate_limit_error(e) and attempt < max_retries:
                 delay = _RATE_LIMIT_BASE_DELAY * (2 ** attempt)
-                logger.warning(f"Rate limit hit, retrying in {delay:.1f}s (attempt {attempt + 1}/{max_retries})")
+                with _rate_limit_lock:
+                    _rate_limit_count += 1
+                    count = _rate_limit_count
+                    should_log = (count // 50) > (_rate_limit_last_logged // 50)
+                    if should_log:
+                        _rate_limit_last_logged = count
+                # Log summary every 50 hits; individual retries only at attempt 3+
+                if should_log:
+                    logger.warning(f"Rate limit: {count} retries so far")
+                elif attempt >= 2:
+                    logger.warning(f"Rate limit retry {attempt + 1}/{max_retries} (delay {delay:.1f}s)")
                 time.sleep(delay)
                 continue
             raise
