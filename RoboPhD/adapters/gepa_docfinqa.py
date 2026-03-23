@@ -24,6 +24,7 @@ import json
 import logging
 import re
 import threading
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -92,13 +93,34 @@ class CostTracker:
         return self.llm_cost + self.embed_cost
 
 
+_RATE_LIMIT_MAX_RETRIES = 5
+_RATE_LIMIT_BASE_DELAY = 0.5  # seconds; 429s typically say "try again in 30ms"
+
+
+def _retry_on_rate_limit(fn, max_retries=_RATE_LIMIT_MAX_RETRIES):
+    """Call fn(), retrying with exponential backoff on rate limit errors."""
+    for attempt in range(max_retries + 1):
+        try:
+            return fn()
+        except Exception as e:
+            from RoboPhD.eval_utils import is_rate_limit_error
+            if is_rate_limit_error(e) and attempt < max_retries:
+                delay = _RATE_LIMIT_BASE_DELAY * (2 ** attempt)
+                logger.warning(f"Rate limit hit, retrying in {delay:.1f}s (attempt {attempt + 1}/{max_retries})")
+                time.sleep(delay)
+                continue
+            raise
+
+
 def make_tracked_llm(model: str, tracker: CostTracker):
     """Return an llm(prompt) -> str callable with cost tracking."""
 
     def llm(prompt: str) -> str:
-        resp = litellm.completion(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
+        resp = _retry_on_rate_limit(
+            lambda: litellm.completion(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+            )
         )
         try:
             cost = litellm.completion_cost(completion_response=resp)
@@ -118,7 +140,9 @@ def make_tracked_embed(model: str, tracker: CostTracker):
     """Return an embed(text) -> list[float] callable with cost tracking."""
 
     def embed(text: str) -> list:
-        resp = litellm.embedding(model=model, input=[text])
+        resp = _retry_on_rate_limit(
+            lambda: litellm.embedding(model=model, input=[text])
+        )
         try:
             cost = litellm.completion_cost(completion_response=resp)
         except Exception:
