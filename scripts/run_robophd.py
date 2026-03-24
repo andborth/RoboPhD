@@ -262,38 +262,15 @@ def main():
             sys.exit(1)
         args.task = _infer_task_from_resume(args.resume)
 
-    # --- 1. Load task and merge config ---
+    # --- 1. Load task and parse CLI config args ---
     task = get_task(args.task)
     task_config = parse_config_arg(args.task_config)
     engine_config = parse_config_arg(args.engine_config)
-    full_config = {**task.config_defaults, **task_config, **engine_config}
-    full_config["runs_directory"] = str(args.runs_dir)  # for evaluator/dataset factories (e.g., codegen cache dir)
+    # effective_task_config: starts as CLI --task-config, updated on resume
+    # with saved checkpoint values (CLI overrides take precedence)
+    effective_task_config = dict(task_config)
 
     logger.info(f"Task: {task.name} — {task.description}")
-
-    # --- 2. Build evaluator and dataset ---
-    evaluator = task.evaluator_factory(full_config)
-    dataset = task.dataset_builder(full_config)
-    logger.info(f"Dataset: {len(dataset)} examples")
-
-    if not dataset:
-        logger.error("Empty dataset — check cache directory and task configuration.")
-        sys.exit(1)
-
-    # Build runtime_config (non-serializable, passed to ExternalEvaluatorDomain)
-    # Include eval_timeout from the merged config so task defaults reach the domain.
-    runtime_config = {
-        "evaluator_fn": evaluator,
-        "dataset": dataset,
-        "file_mapping": task.file_mapping,
-        "task_objective": task.objective,
-        "task_description": task.description,
-        "task_background": task.background,
-        "task_name": task.name,
-        "diagnostic_files": task.diagnostic_files,
-        "runs_dir": str(args.runs_dir),
-        "eval_timeout": full_config.get("eval_timeout"),
-    }
 
     # --- 3. Split config for ConfigManager vs task-only ---
     # Seed researcher_config from task defaults so task-level settings
@@ -304,7 +281,7 @@ def main():
     user_config = {**task_config, **engine_config}
     user_config["runs_directory"] = str(args.runs_dir)  # CLI arg always wins
     seeded_config.update(user_config)
-    researcher_config, _ = split_config(seeded_config, task)
+    researcher_config, task_only_config = split_config(seeded_config, task)
 
     # Force external domain (ExternalEvaluatorDomain wraps the task's evaluator)
     researcher_config["domain"] = "external"
@@ -312,7 +289,8 @@ def main():
     researcher_config["meta_evolution_domain"] = task.name
 
     # Seed agent: set agents_directory so load_initial_agents can find it
-    seed_agent = Path(full_config.get("seed_agent", task.default_seed_agent))
+    seed_agent_path = task_config.get("seed_agent", engine_config.get("seed_agent", task.default_seed_agent))
+    seed_agent = Path(seed_agent_path)
     if not seed_agent.exists():
         print(f"Error: Seed agent not found: {seed_agent}")
         sys.exit(1)
@@ -334,6 +312,15 @@ def main():
         if "config_manager" not in checkpoint:
             print("Error: Checkpoint missing ConfigManager data")
             sys.exit(1)
+
+        # Restore task config: saved values + CLI --task-config overrides
+        saved_task_config = checkpoint.get('task_config', {})
+        if saved_task_config:
+            effective_task_config = {**saved_task_config, **task_config}
+            if task_config:
+                logger.info(f"Task config: restored from checkpoint, CLI overrides: {task_config}")
+            else:
+                logger.info(f"Task config: restored from checkpoint ({len(saved_task_config)} keys)")
 
         config_manager = ConfigManager.from_checkpoint(checkpoint["config_manager"])
         last_completed = checkpoint["last_completed_iteration"]
@@ -377,17 +364,13 @@ def main():
                 )
                 logger.info(f"Applied CLI config overrides at iteration {resume_from}: {cli_delta}")
 
-        researcher = ParallelAgentResearcher(
-            config_manager=config_manager,
-            num_iterations=num_iterations,
+        resume_kwargs = dict(
             resume_mode=True,
             resume_from_iteration=resume_from,
             resume_checkpoint=checkpoint,
             resume_experiment_dir=experiment_dir,
-            runtime_config=runtime_config,
         )
-
-        completed = researcher.run()
+        initial_agents = None  # Resume doesn't need initial agents
 
     else:
         # Fresh start
@@ -396,16 +379,48 @@ def main():
 
         num_iterations = args.num_iterations
         random_seed = args.random_seed if args.random_seed is not None else random.randint(0, 10000)
+        resume_kwargs = dict(random_seed=random_seed)
+        initial_agents = researcher_config["initial_agents"]
 
-        researcher = ParallelAgentResearcher(
-            config_manager=config_manager,
-            num_iterations=num_iterations,
-            random_seed=random_seed,
-            runtime_config=runtime_config,
-        )
+    # --- 5. Build evaluator, dataset, runtime_config with final effective_task_config ---
+    full_config = {**task.config_defaults, **effective_task_config, **engine_config}
+    full_config["runs_directory"] = str(args.runs_dir)
+    evaluator = task.evaluator_factory(full_config)
+    dataset = task.dataset_builder(full_config)
+    logger.info(f"Dataset: {len(dataset)} examples")
 
-        # load_initial_agents will find the seed in agents_directory and copy it
-        completed = researcher.run(initial_agents=researcher_config["initial_agents"])
+    if not dataset:
+        logger.error("Empty dataset — check cache directory and task configuration.")
+        sys.exit(1)
+
+    runtime_config = {
+        "evaluator_fn": evaluator,
+        "dataset": dataset,
+        "file_mapping": task.file_mapping,
+        "task_objective": task.objective,
+        "task_description": task.description,
+        "task_background": task.background,
+        "task_name": task.name,
+        "diagnostic_files": task.diagnostic_files,
+        "runs_dir": str(args.runs_dir),
+        "eval_timeout": full_config.get("eval_timeout"),
+    }
+
+    # Recompute task_only_config with the final effective_task_config
+    seeded_config_final = {k: v for k, v in task.config_defaults.items() if k in defaults}
+    seeded_config_final.update({**effective_task_config, **engine_config, "runs_directory": str(args.runs_dir)})
+    _, task_only_config = split_config(seeded_config_final, task)
+
+    # --- 6. Create researcher and run ---
+    researcher = ParallelAgentResearcher(
+        config_manager=config_manager,
+        num_iterations=num_iterations,
+        runtime_config=runtime_config,
+        task_config=task_only_config,
+        **resume_kwargs,
+    )
+
+    completed = researcher.run(initial_agents=initial_agents)
 
     logger.info("Done.")
 

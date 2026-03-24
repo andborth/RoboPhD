@@ -658,7 +658,8 @@ class ParallelAgentResearcher:
                  dev_eval_mode: bool = False,
                  custom_experiment_name: Optional[str] = None,
                  api_key: Optional[str] = None,
-                 runtime_config: Optional[Dict] = None):
+                 runtime_config: Optional[Dict] = None,
+                 task_config: Optional[Dict] = None):
         """
         Initialize the parallel agent researcher.
 
@@ -675,6 +676,8 @@ class ParallelAgentResearcher:
             runtime_config: Non-serializable domain config (e.g. evaluator_fn,
                 dataset, file_mapping). Merged into domain config in _load_data().
                 Never serialized to checkpoint — reconstructed on resume.
+            task_config: Task-level config (split, model, cost_budget, etc.).
+                Persisted to checkpoint for reproducibility and resume.
         """
         # Store config manager and CLI-only params
         self.config_manager = config_manager
@@ -682,6 +685,9 @@ class ParallelAgentResearcher:
         self.resume_mode = resume_mode
         self.resume_from_iteration = resume_from_iteration
         self.runtime_config = runtime_config or {}
+        self.task_config = task_config if task_config is not None else (
+            resume_checkpoint.get('task_config', {}) if resume_checkpoint else {}
+        )
 
         # Required for Text2SQL (SQL generation via API), optional for external domain
         # (which uses Claude Code CLI subprocesses instead).
@@ -3387,6 +3393,7 @@ class ParallelAgentResearcher:
             'five_hour_limit_incidents': self.five_hour_limit_incidents,
             'clone_detections': self.clone_detections,
             'config_manager': self.config_manager.to_checkpoint(),
+            'task_config': self.task_config,
         }
 
         # Preserve meta_evolution_session_id and meta_evolution_session_created if they exist.

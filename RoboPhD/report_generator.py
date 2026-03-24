@@ -712,6 +712,20 @@ class ReportGenerator:
             report_lines.append(f"- {param_name}: {value}")
         report_lines.append("")
 
+        # Task Configuration (from task defaults + --task-config overrides)
+        task_config = getattr(self.researcher, 'task_config', {})
+        if task_config:
+            report_lines.append("### Task Configuration")
+            report_lines.append("")
+            report_lines.append("Task-specific parameters (from task defaults + --task-config overrides):")
+            report_lines.append("")
+            for param_name in sorted(task_config.keys()):
+                value = task_config[param_name]
+                if param_name.endswith('_model') and value:
+                    value = self._format_model_name(value)
+                report_lines.append(f"- {param_name}: {value}")
+            report_lines.append("")
+
         # User Configuration (Iteration 1) - show delta only
         report_lines.append("### User Configuration (Iteration 1)")
         report_lines.append("")
