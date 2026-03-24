@@ -75,9 +75,11 @@ Read the agent's main artifact(s) to understand the approach.
 
 | Field | GEPA | RoboPhD |
 |-------|------|---------|
-| eval cost | `optimization_summary.json` → `cost.eval_cost_usd` | `checkpoint.json` → `sum(iteration_claude_costs[].eval_cost)` |
-| evolution/reflection cost | `optimization_summary.json` → `cost.reflection_cost_usd` | `checkpoint.json` → `sum(iteration_claude_costs[].evolution_cost)` |
-| total cost | `optimization_summary.json` → `cost.total_cost_usd` | Sum of the above two |
+| eval cost | `optimization_summary.json` → `cost.eval_cost_usd` | `final_report.md` → TOTAL row, **Eval** column |
+| evolution/reflection cost | `optimization_summary.json` → `cost.reflection_cost_usd` | `final_report.md` → TOTAL row, **Evo** column |
+| total cost | `optimization_summary.json` → `cost.total_cost_usd` | `final_report.md` → TOTAL row, Total column |
+
+**IMPORTANT for RoboPhD**: Use `final_report.md` "Detailed Per-Iteration Costs" TOTAL row, not `checkpoint.json`. The checkpoint groups deep focus eval costs under `evolution_cost`, but the final report correctly splits them: deep focus evals count as eval cost, not evolution cost.
 
 ### Step 9: Compute inference cost per problem
 
