@@ -172,8 +172,9 @@ def _infer_task_from_resume(resume_path: str) -> str:
             pass
 
     # Fall back to directory name pattern: <task>_<timestamp>
+    # Sort by length descending so "arc_agi_1" matches before "arc_agi"
     dir_name = experiment_dir.name
-    for task_name in available:
+    for task_name in sorted(available, key=len, reverse=True):
         if dir_name.startswith(f"{task_name}_"):
             return task_name
 
