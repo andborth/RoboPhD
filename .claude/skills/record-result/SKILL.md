@@ -160,7 +160,7 @@ For evolved runs (not baselines), create a symlink in a `runs/` subdirectory nex
 
     {results_dir}/runs/{id} -> {resolved run_dir}
 
-Use a relative path for the symlink target (computed via `os.path.relpath` from the `runs/` directory to the resolved absolute run directory path). Create the `runs/` directory if it doesn't exist.
+Use a relative path for the symlink target. Always use `cd -P` when entering the `runs/` directory to resolve symlinks and avoid incorrect relative path depth. Create the `runs/` directory if it doesn't exist.
 
 ### Step 15: Show the user the new entry
 
