@@ -111,7 +111,11 @@ def run_agent(agent_code, train_in, train_out, test_in, test_out, model_id, max_
         print(*args, **kwargs)
 
     try:
-        namespace = {"print": _captured_print}
+        # Override print in __builtins__ so nested exec() calls also capture output
+        import builtins
+        patched_builtins = dict(vars(builtins))
+        patched_builtins["print"] = _captured_print
+        namespace = {"print": _captured_print, "__builtins__": patched_builtins}
         exec(agent_code, namespace)
         result = namespace["solve"](train_in, train_out, test_in, llms)
         train_preds = result.get("train", [])
