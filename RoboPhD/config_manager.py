@@ -70,7 +70,7 @@ class ConfigManager:
             "evolution_model": "opus-4.6",
 
             # Evolution parameters (NO LONGER SPECIAL!)
-            "evolution_strategy": "data_focus",
+            "evolution_strategy": "use_your_judgment",
 
             # Meta-evolution parameters
             "meta_evolution_strategy": None,       # Which meta-evolution strategy to use
@@ -80,7 +80,7 @@ class ConfigManager:
             "evaluation_budget": None,             # Max fresh evaluations across all iterations (default: no limit)
 
             # Deep Focus
-            "new_agent_test_rounds": 2,
+            "new_agent_test_rounds": 1,
             "new_agent_test_round_offset": -2,
 
             # Performance
