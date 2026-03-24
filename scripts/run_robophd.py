@@ -280,6 +280,7 @@ def main():
         sys.exit(1)
 
     # Build runtime_config (non-serializable, passed to ExternalEvaluatorDomain)
+    # Include eval_timeout from the merged config so task defaults reach the domain.
     runtime_config = {
         "evaluator_fn": evaluator,
         "dataset": dataset,
@@ -290,6 +291,7 @@ def main():
         "task_name": task.name,
         "diagnostic_files": task.diagnostic_files,
         "runs_dir": str(args.runs_dir),
+        "eval_timeout": full_config.get("eval_timeout"),
     }
 
     # --- 3. Split config for ConfigManager vs task-only ---
