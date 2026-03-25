@@ -1,11 +1,12 @@
 # =============================================================================
-# VENDORED with one change: removed `from gepa.optimize_anything import SideInfo`
-# (SideInfo is just `dict`). All type hints replaced with `dict`.
+# VENDORED with two changes:
+#   1. Removed `from gepa.optimize_anything import SideInfo` (SideInfo is just
+#      `dict`). All type hints replaced with `dict`.
+#   2. Added `details["proc_stdout"] = proc.stdout` to surface subprocess
+#      stdout for cant_be_late_stdout task diagnostics.
 #
 # Source: https://github.com/gepa-ai/gepa/blob/main/examples/adrs/can_be_late/utils/simulation.py
 # Fetched: 2026-03-11
-#
-# Any RoboPhD-specific changes belong in cant_be_late.py, not here.
 # =============================================================================
 
 """Run spot-instance scheduling simulations and build GEPA side-info dicts.
@@ -135,10 +136,11 @@ def run_simulation(
 
         if proc.returncode != 0 or "mean:" not in proc.stdout:
             shutil.rmtree(output_dir, ignore_errors=True)
-            return False, 0.0, _extract_error(proc), {}
+            return False, 0.0, _extract_error(proc), {"proc_stdout": proc.stdout or ""}
 
         cost = _parse_cost_from_output(proc.stdout)
         details = _extract_simulation_details(output_dir, trace_file, config)
+        details["proc_stdout"] = proc.stdout  # Surface subprocess stdout for diagnostics
         shutil.rmtree(output_dir, ignore_errors=True)
         return True, cost, "", details
 

@@ -68,6 +68,12 @@ def _ensure_builtins():
     except ImportError:
         pass  # configargparse/colorama/numpy not installed — cant_be_late task unavailable
 
+    try:
+        from .cant_be_late_stdout import make_cant_be_late_stdout_task
+        register_task(make_cant_be_late_stdout_task())
+    except ImportError:
+        pass  # configargparse/colorama/numpy not installed
+
 
 def get_task(name: str) -> TaskDefinition:
     """Look up a task by name. Raises KeyError if not found."""

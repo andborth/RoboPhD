@@ -187,6 +187,7 @@ class CantBeLateEvaluator:
         self.total_eval_cost = 0.0  # No LLM calls — pure subprocess simulation
         self.total_evaluations = 0
         self._lock = threading.Lock()
+        self._last_details_local = threading.local()  # Thread-safe details for subclass
 
     def __call__(
         self,
@@ -224,6 +225,8 @@ class CantBeLateEvaluator:
             )
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
+
+        self._last_details_local.details = details  # Expose for subclass stdout capture
 
         if not success:
             score = FAILED_SCORE
