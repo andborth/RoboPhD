@@ -108,6 +108,16 @@ FALLBACK_SQL = "SELECT 1;"
 LMSTUDIO_DEFAULT_BASE_URL = "http://localhost:1234"
 
 
+def resolve_model_name(model: str) -> str:
+    """Resolve short model names (e.g., 'haiku-4.5') to full litellm-compatible names.
+
+    Returns the input unchanged if not found in SUPPORTED_MODELS.
+    """
+    if model in SUPPORTED_MODELS:
+        return SUPPORTED_MODELS[model]["name"]
+    return model
+
+
 def get_lmstudio_env(model: str, base_url: str = LMSTUDIO_DEFAULT_BASE_URL) -> Optional[Dict[str, str]]:
     """Return env overrides for LM Studio models, or None for Anthropic models.
 
