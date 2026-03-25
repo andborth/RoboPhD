@@ -1,6 +1,6 @@
-import math
 from sky_spot.strategies.strategy import Strategy
 from sky_spot.utils import ClusterType
+
 
 class EvolveSingleRegionStrategy(Strategy):
     NAME = 'evolve_single_region'
@@ -11,21 +11,25 @@ class EvolveSingleRegionStrategy(Strategy):
 
     def reset(self, env, task):
         super().reset(env, task)
+        self.elapsed_seconds = env.elapsed_seconds
+        self.gap_seconds = env.gap_seconds
         self._first_step = True
 
-    def _step(self, last_cluster_type: ClusterType, has_spot: bool) -> ClusterType:
-        env = self.env
+    def step(self):
+        self.elapsed_seconds = self.env.elapsed_seconds
+        return super().step()
 
+    def _step(self, last_cluster_type: ClusterType, has_spot: bool) -> ClusterType:
         remaining_task_time = self.task_duration - sum(self.task_done_time)
         if remaining_task_time <= 1e-3:
             return ClusterType.NONE
 
-        remaining_time = self.deadline - env.elapsed_seconds
+        remaining_time = self.deadline - self.elapsed_seconds
         slack = remaining_time - remaining_task_time
 
         # --- Demonstration: print() output is captured as agent_stdout in diagnostics ---
         if self._first_step:
-            print(f"Task: duration={self.task_duration/3600:.1f}h, deadline={self.deadline/3600:.1f}h, overhead={self.restart_overhead/3600:.2f}h")
+            print(f"Task: duration={self.task_duration/3600:.1f}h, deadline={self.deadline/3600:.1f}h, overhead={self.restart_overhead/3600:.2f}h, gap={self.gap_seconds:.0f}s")
             self._first_step = False
 
         if remaining_task_time + self.restart_overhead >= remaining_time:
