@@ -44,6 +44,9 @@ def _ensure_builtins():
     from .text2sql_stdout import make_text2sql_stdout_task
     register_task(make_text2sql_stdout_task())
 
+    from .text2sql_integrated import make_text2sql_integrated_task
+    register_task(make_text2sql_integrated_task())
+
     try:
         from .arc_agi import make_arc_agi_task
         register_task(make_arc_agi_task())
