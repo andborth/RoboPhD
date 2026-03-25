@@ -3,7 +3,7 @@ Can't Be Late adapter with stdout capture from agent subprocess.
 
 Subclasses CantBeLateEvaluator to surface subprocess stdout as a
 diagnostic. This lets the evolution AI design its own diagnostics
-by adding print() statements to the agent's _step() method.
+by adding print() statements to the agent's step() method.
 
 Results are non-comparable with the base cant_be_late task.
 """
@@ -21,7 +21,7 @@ from RoboPhD.adapters.cant_be_late_constants_unmodified import OPTIMIZATION_BACK
 
 BACKGROUND = OPTIMIZATION_BACKGROUND + """
 
-Diagnostics: Any print() output from the agent's _step() method is \
+Diagnostics: Any print() output from the agent's step() method is \
 captured and included in evaluation diagnostics as agent_stdout. Use \
 print() to log any information you think would be helpful for you to \
 see in improving the agent in later rounds of testing and refinement."""
