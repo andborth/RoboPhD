@@ -170,9 +170,19 @@ class CostTracker:
         return self.llm_cost
 
 
+def _ensure_api_key():
+    """Ensure ANTHROPIC_API_KEY is set for litellm (reads from ANTHROPIC_API_KEY_FOR_ROBOPHD)."""
+    import os
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        key = os.environ.get("ANTHROPIC_API_KEY_FOR_ROBOPHD")
+        if key:
+            os.environ["ANTHROPIC_API_KEY"] = key
+
+
 def make_tracked_llm(model: str, tracker: CostTracker):
     """Return an llm(prompt) -> str callable with cost tracking."""
     from RoboPhD.config import resolve_model_name
+    _ensure_api_key()
     resolved_model = resolve_model_name(model)
 
     def llm(prompt: str) -> str:
