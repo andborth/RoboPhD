@@ -170,13 +170,22 @@ class CostTracker:
         return self.llm_cost
 
 
+def _resolve_model(model: str) -> str:
+    """Resolve short model names (e.g., 'haiku-4.5') to litellm-compatible names."""
+    from RoboPhD.config import SUPPORTED_MODELS
+    if model in SUPPORTED_MODELS:
+        return SUPPORTED_MODELS[model]["name"]
+    return model
+
+
 def make_tracked_llm(model: str, tracker: CostTracker):
     """Return an llm(prompt) -> str callable with cost tracking."""
+    resolved_model = _resolve_model(model)
 
     def llm(prompt: str) -> str:
         resp = _retry_on_rate_limit(
             lambda: litellm.completion(
-                model=model,
+                model=resolved_model,
                 messages=[{"role": "user", "content": prompt}],
             )
         )
