@@ -170,27 +170,27 @@ class CostTracker:
         return self.llm_cost
 
 
-def _ensure_api_key():
-    """Ensure ANTHROPIC_API_KEY is set for litellm (reads from ANTHROPIC_API_KEY_FOR_ROBOPHD)."""
+def _get_api_key() -> Optional[str]:
+    """Get the Anthropic API key without mutating the environment."""
     import os
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        key = os.environ.get("ANTHROPIC_API_KEY_FOR_ROBOPHD")
-        if key:
-            os.environ["ANTHROPIC_API_KEY"] = key
+    return os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY_FOR_ROBOPHD")
 
 
 def make_tracked_llm(model: str, tracker: CostTracker):
     """Return an llm(prompt) -> str callable with cost tracking."""
     from RoboPhD.config import resolve_model_name
-    _ensure_api_key()
     resolved_model = resolve_model_name(model)
+    api_key = _get_api_key()
 
     def llm(prompt: str) -> str:
+        kwargs = {
+            "model": resolved_model,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        if api_key:
+            kwargs["api_key"] = api_key
         resp = _retry_on_rate_limit(
-            lambda: litellm.completion(
-                model=resolved_model,
-                messages=[{"role": "user", "content": prompt}],
-            )
+            lambda: litellm.completion(**kwargs)
         )
         try:
             cost = litellm.completion_cost(completion_response=resp)

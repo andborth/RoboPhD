@@ -138,17 +138,26 @@ def _retry_on_rate_limit(fn, max_retries=_RATE_LIMIT_MAX_RETRIES):
             raise
 
 
+def _get_api_key() -> Optional[str]:
+    """Get the API key without mutating the environment."""
+    return os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY_FOR_ROBOPHD")
+
+
 def make_tracked_llm(model: str, tracker: CostTracker):
     """Return an llm(prompt) -> str callable with cost tracking."""
     from RoboPhD.config import resolve_model_name
     resolved_model = resolve_model_name(model)
+    api_key = _get_api_key()
 
     def llm(prompt: str) -> str:
+        kwargs = {
+            "model": resolved_model,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        if api_key:
+            kwargs["api_key"] = api_key
         resp = _retry_on_rate_limit(
-            lambda: litellm.completion(
-                model=resolved_model,
-                messages=[{"role": "user", "content": prompt}],
-            )
+            lambda: litellm.completion(**kwargs)
         )
         try:
             cost = litellm.completion_cost(completion_response=resp)
@@ -168,10 +177,14 @@ def make_tracked_embed(model: str, tracker: CostTracker):
     """Return an embed(text) -> list[float] callable with cost tracking."""
     from RoboPhD.config import resolve_model_name
     resolved_model = resolve_model_name(model)
+    api_key = _get_api_key()
 
     def embed(text: str) -> list:
+        kwargs = {"model": resolved_model, "input": [text]}
+        if api_key:
+            kwargs["api_key"] = api_key
         resp = _retry_on_rate_limit(
-            lambda: litellm.embedding(model=resolved_model, input=[text])
+            lambda: litellm.embedding(**kwargs)
         )
         try:
             cost = litellm.completion_cost(completion_response=resp)
