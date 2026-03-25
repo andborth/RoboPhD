@@ -119,7 +119,7 @@ Read all artifacts in the agent directory (not just the file_mapping files — e
 
 ### Step 13: Generate the entry and update the results file
 
-Results file: `../alt_robophd_runs/results/{task}.json`
+Results file: `../robophd_runs/results/{task}.json`
 
 **If `--baseline`**: Add/update entry in the `baselines` section (keyed by `seed_prompt` or similar identifier).
 
@@ -163,7 +163,7 @@ Evolved run entry format:
 }
 ```
 
-For `run_dir`, store as relative path from `../alt_robophd_runs/` (e.g., `gepa/aime_20260227_181536` not the absolute path). For runs in `../robophd_runs/`, use a relative path like `../robophd_runs/gepa/...`. For runs in `../alt_robophd_runs/`, just use the path relative to that directory.
+For `run_dir`, store as relative path from `../robophd_runs/` (e.g., `robophd/docfinqa_20260319_074712` not the absolute path). For runs in `../robophd_runs/`, use the path relative to that directory. For runs in `../alt_robophd_runs/`, use a relative path like `../alt_robophd_runs/robophd/...`.
 
 For `notes`, ask the user if they want to add any notes.
 

@@ -114,7 +114,7 @@ def main():
     else:
         agent_dir = args.agent_dir
         agent_name = agent_dir.name
-        results_base = args.runs_dir / "results" / "agent_tests" / args.task / agent_name
+        results_base = args.runs_dir / "agent_tests" / args.task / agent_name
         default_output = results_base / "test_results.json"
         symlink_path = None
         if not agent_dir.exists():
