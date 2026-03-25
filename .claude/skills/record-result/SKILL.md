@@ -99,6 +99,17 @@ Round to 3 decimal places.
 - **GEPA**: candidates_explored, total_evaluations, best_val_score from optimization_summary
 - **RoboPhD**: best_agent name, ELO, val accuracy from checkpoint performance_records; total_evaluations from sum of `iteration_fresh_evals[]`
 - **RoboPhD mean train score**: Read `final_report.md` → "Quick Summary" table. Extract the best agent's `Mean Score` and `Tests` (number of ELO test rounds). Record as `best_agent_mean_train_score` and `best_agent_train_rounds` in the results entry.
+- **Agent complexity**: Count lines for each artifact in the best agent's directory using the task's `file_mapping`. Record as `agent_complexity` in the results object:
+  ```json
+  "agent_complexity": {
+      "total_lines": 567,
+      "artifacts": {
+          "eval_instructions.md": 171,
+          "tools/analyze_db.py": 311,
+          "verify_prompt.md": 85
+      }
+  }
+  ```
 
 ### Step 12: Write the approach description
 
