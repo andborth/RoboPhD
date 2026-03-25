@@ -2,6 +2,7 @@
 Configuration settings for RoboPhD Text-to-SQL Research System
 """
 
+import os
 from typing import Dict, Optional
 
 # Model configuration with pricing from official Anthropic pricing
@@ -106,6 +107,14 @@ FALLBACK_SQL = "SELECT 1;"
 
 # LM Studio integration
 LMSTUDIO_DEFAULT_BASE_URL = "http://localhost:1234"
+
+
+def get_api_key() -> Optional[str]:
+    """Get the Anthropic API key without mutating the environment.
+
+    Checks ANTHROPIC_API_KEY first, falls back to ANTHROPIC_API_KEY_FOR_ROBOPHD.
+    """
+    return os.environ.get("ANTHROPIC_API_KEY") or os.environ.get(API_KEY_ENV_VAR)
 
 
 def resolve_model_name(model: str) -> str:

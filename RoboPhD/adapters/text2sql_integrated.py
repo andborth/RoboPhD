@@ -170,17 +170,11 @@ class CostTracker:
         return self.llm_cost
 
 
-def _get_api_key() -> Optional[str]:
-    """Get the Anthropic API key without mutating the environment."""
-    import os
-    return os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY_FOR_ROBOPHD")
-
-
 def make_tracked_llm(model: str, tracker: CostTracker):
     """Return an llm(prompt) -> str callable with cost tracking."""
-    from RoboPhD.config import resolve_model_name
+    from RoboPhD.config import resolve_model_name, get_api_key
     resolved_model = resolve_model_name(model)
-    api_key = _get_api_key()
+    api_key = get_api_key()
 
     def llm(prompt: str) -> str:
         kwargs = {
