@@ -73,11 +73,11 @@ _DEFAULT_DATASET_ROOT = str(
 def _check_syntax(code: str) -> Tuple[bool, Optional[str]]:
     """Check syntax and required structure. Returns (ok, error_message)."""
     try:
-        compile(code, "<strategy>", "exec")
-        if "class" not in code or "Strategy" not in code:
-            return False, "No Strategy class found"
-        if "_step" not in code:
-            return False, "No _step method found"
+        compile(code, "<agent>", "exec")
+        if "class" not in code or "Agent" not in code:
+            return False, "No Agent class found"
+        if "def step" not in code:
+            return False, "No step method found"
         return True, None
     except SyntaxError as e:
         return False, f"Syntax error: {e}"
@@ -85,13 +85,59 @@ def _check_syntax(code: str) -> Tuple[bool, Optional[str]]:
         return False, str(e)
 
 
+# Driver template: wraps the standalone Agent class in a Strategy subclass.
+# The agent code is written to _agent.py; this driver imports and wraps it.
+_DRIVER_TEMPLATE = """\
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from sky_spot.strategies.strategy import Strategy
+from sky_spot.utils import ClusterType
+from _agent import Agent
+
+class EvolveSingleRegionStrategy(Strategy):
+    NAME = 'evolve_single_region'
+
+    def __init__(self, args):
+        super().__init__(args)
+
+    def reset(self, env, task):
+        super().reset(env, task)
+        self._agent = Agent()
+        self._agent.reset()
+
+    def _step(self, last_cluster_type, has_spot):
+        return self._agent.step(
+            last_cluster_type, has_spot,
+            self.env.elapsed_seconds, self.env.gap_seconds,
+            self.restart_overhead, self.task_duration,
+            self.deadline, self.task_done_time,
+        )
+
+    @classmethod
+    def _from_args(cls, parser):
+        args, _ = parser.parse_known_args()
+        return cls(args)
+"""
+
+
 def _write_program(code: str) -> Tuple[str, str]:
-    """Write code to a temp file. Returns (program_path, tmpdir). Caller must clean up."""
+    """Write agent code + driver to temp dir. Returns (strategy_path, tmpdir).
+
+    The agent code (standalone Agent class) is written to _agent.py.
+    A driver (Strategy subclass wrapping the Agent) is written to strategy.py.
+    The simulator loads strategy.py which imports _agent.py.
+    """
     tmpdir = tempfile.mkdtemp(prefix="cant_be_late_eval_")
-    path = os.path.join(tmpdir, "strategy.py")
-    with open(path, "w", encoding="utf-8") as f:
+    # Write agent code
+    agent_path = os.path.join(tmpdir, "_agent.py")
+    with open(agent_path, "w", encoding="utf-8") as f:
         f.write(code)
-    return path, tmpdir
+    # Write driver
+    driver_path = os.path.join(tmpdir, "strategy.py")
+    with open(driver_path, "w", encoding="utf-8") as f:
+        f.write(_DRIVER_TEMPLATE)
+    return driver_path, tmpdir
 
 
 def _full_spot_availability(trace_file: str) -> Tuple[str, float]:

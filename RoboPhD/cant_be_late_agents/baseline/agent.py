@@ -1,39 +1,25 @@
-from sky_spot.strategies.strategy import Strategy
 from sky_spot.utils import ClusterType
 
 
-class EvolveSingleRegionStrategy(Strategy):
-    NAME = 'evolve_single_region'
+class Agent:
+    def __init__(self):
+        pass
 
-    def __init__(self, args):
-        super().__init__(args)
+    def reset(self):
+        pass
 
-    def reset(self, env, task):
-        super().reset(env, task)
-        self.elapsed_seconds = env.elapsed_seconds
-        self.gap_seconds = env.gap_seconds
-
-    def step(self):
-        self.elapsed_seconds = self.env.elapsed_seconds
-        return super().step()
-
-    def _step(self, last_cluster_type: ClusterType, has_spot: bool) -> ClusterType:
-        remaining_task_time = self.task_duration - sum(self.task_done_time)
+    def step(self, last_cluster_type, has_spot, elapsed_seconds, gap_seconds,
+             restart_overhead, task_duration, deadline, task_done_time):
+        remaining_task_time = task_duration - sum(task_done_time)
         if remaining_task_time <= 1e-3:
             return ClusterType.NONE
 
-        remaining_time = self.deadline - self.elapsed_seconds
-        slack = remaining_time - remaining_task_time
+        remaining_time = deadline - elapsed_seconds
 
-        if remaining_task_time + self.restart_overhead >= remaining_time:
+        if remaining_task_time + restart_overhead >= remaining_time:
             return ClusterType.ON_DEMAND
 
         if has_spot:
             return ClusterType.SPOT
         else:
             return ClusterType.NONE
-
-    @classmethod
-    def _from_args(cls, parser):
-        args, _ = parser.parse_known_args()
-        return cls(args)
