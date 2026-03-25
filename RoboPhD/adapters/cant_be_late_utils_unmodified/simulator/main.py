@@ -1,7 +1,11 @@
 # =============================================================================
-# VENDORED with one change: the wandb stub now injects into sys.modules so that
-# downstream imports (sky_spot/simulate.py does `import wandb`) resolve when
-# wandb is not installed. Original used a local variable only.
+# VENDORED with changes:
+# 1. wandb stub now injects into sys.modules so that downstream imports
+#    (sky_spot/simulate.py does `import wandb`) resolve when wandb is not
+#    installed. Original used a local variable only.
+# 2. --silent now suppresses logging (set to CRITICAL) and print() output,
+#    so only the agent's print() statements appear on stdout. This supports
+#    the cant_be_late_stdout task variant which captures agent stdout.
 #
 # Source: https://github.com/gepa-ai/gepa/blob/main/examples/adrs/can_be_late/utils/simulator/main.py
 # Fetched: 2026-03-11
@@ -172,6 +176,10 @@ if __name__ == '__main__':
                        type=str,
                        default='exp/',
                        help='Output directory')
+    group.add_argument('--silent',
+                       action='store_true',
+                       default=False,
+                       help='Suppress logging and print output (only agent prints go to stdout)')
     
     # --- MODIFIED PART: Define strategy args at the top level ---
     strategy_group = parser.add_argument_group('Strategy Selection')
@@ -187,6 +195,11 @@ if __name__ == '__main__':
     # --- END MODIFIED PART ---
 
     args, _ = parser.parse_known_args()
+
+    # When --silent, suppress all logging to keep stdout clean for agent prints.
+    # The cost summary (logger.info "mean:") is parsed from combined stdout+stderr.
+    if args.silent:
+        logging.disable(logging.CRITICAL)
 
     # This logic block is for when you run with a YAML scenario config.
     if args.scenarios_config:
@@ -399,7 +412,8 @@ if __name__ == '__main__':
     final_env_start_hours = getattr(args, 'env_start_hours', 0.0)
     assert 'current_task' in locals(), "current_task was not defined before simulate call."
 
-    print(f"Starting simulation with {len(envs)} environment instance(s)...")
+    if not args.silent:
+        print(f"Starting simulation with {len(envs)} environment instance(s)...")
     simulate.simulate(envs=envs,
                       strategy=strategy,
                       task=current_task,

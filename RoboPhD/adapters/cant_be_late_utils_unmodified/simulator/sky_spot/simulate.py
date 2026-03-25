@@ -1,3 +1,5 @@
+# VENDORED with one change: cost summary uses print() instead of logger.info()
+# so it survives --silent (logging.disable) in main.py.
 import json
 import logging
 import os
@@ -301,7 +303,6 @@ def simulate(
     std_cost = np.std(costs)
     p99_cost = np.percentile(costs, 99)
     p90_cost = np.percentile(costs, 90)
-    logger.info(
-        f"mean: {mean_cost}; std: {std_cost}; worst 1%: {p99_cost}; worst 10%: {p90_cost}"
-    )
+    # Use print() instead of logger.info() so cost output survives --silent
+    print(f"mean: {mean_cost}; std: {std_cost}; worst 1%: {p99_cost}; worst 10%: {p90_cost}")
     return stats

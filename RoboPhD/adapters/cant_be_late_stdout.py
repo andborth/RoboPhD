@@ -46,7 +46,13 @@ class CantBeLateStdoutEvaluator(CantBeLateEvaluator):
 
         details = getattr(self._last_details_local, "details", {})
         proc_stdout = details.get("proc_stdout", "")
-        if proc_stdout.strip():
-            diagnostics["agent_stdout"] = proc_stdout
+        # Filter out simulator cost summary line (format: "mean: <float>; std: <float>; ...")
+        agent_lines = [
+            line for line in proc_stdout.splitlines()
+            if not (line.startswith("mean: ") and "; std: " in line)
+        ]
+        agent_stdout = "\n".join(agent_lines).strip()
+        if agent_stdout:
+            diagnostics["agent_stdout"] = agent_stdout
 
         return score, diagnostics
