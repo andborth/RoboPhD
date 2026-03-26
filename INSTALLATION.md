@@ -44,8 +44,6 @@ claude --version
 
 ## Step 5: Download BIRD Dataset (Text2SQL Only)
 
-> **Skip this step for CodeGen domain.** No dataset download is needed for CodeGen.
-
 Run the download script:
 
 ```bash
@@ -59,32 +57,22 @@ This will download and extract:
 
 **Manual download**: If the script fails, download from [BIRD Benchmark](https://bird-bench.github.io/) and extract to `benchmark_resources/datasets/`.
 
-## Step 6: Pre-compute Ground Truth (Text2SQL Only)
-
-Pre-computing ground truth prevents "database is locked" errors during research runs:
-
-```bash
-# For train-filtered dataset (default)
-python RoboPhD/tools/precompute_ground_truth.py
-
-# For dev dataset
-python RoboPhD/tools/precompute_ground_truth.py --dataset dev
-```
-
-## Step 7: Verify Installation
+## Step 6: Verify Installation
 
 Run a quick test:
 
 ```bash
-# Text2SQL (requires steps 5-6)
-python RoboPhD/researcher.py \
-  --num-iterations 1 \
-  --config '{"examples_per_iteration": 1, "problems_per_context": 5}'
+# Can't Be Late (no API key needed — pure simulation)
+bash scripts/download_cant_be_late_traces.sh
+python scripts/run_robophd.py --task cant_be_late --num-iterations 2 \
+  --engine-config '{"examples_per_iteration": 3}'
 
-# Or verify with CodeGen domain (no dataset needed)
-python RoboPhD/researcher.py \
-  --num-iterations 1 \
-  --config configs/codegen_small_test.json
+# Text2SQL (requires steps 5-6 + API key)
+python scripts/run_robophd.py --task text2sql --num-iterations 2 \
+  --engine-config '{"examples_per_iteration": 3}'
+
+# List all valid parameters for a task
+python scripts/run_robophd.py --task cant_be_late --list-params
 ```
 
 If successful, you'll see iteration progress and a final report.
@@ -94,18 +82,23 @@ If successful, you'll see iteration progress and a final report.
 ```
 RoboPhD/
 ├── RoboPhD/                    # Core code
-│   ├── agents/                 # Text2SQL agents
-│   ├── codegen_agents/         # CodeGen agents
-│   ├── evolution_strategies/          # Evolution strategies (all domains)
-│   ├── evolution_strategies_text2sql/ # Text2SQL evolution strategies (legacy)
+│   ├── text2sql_agents/        # Text2SQL seed agents
+│   ├── arcagi1_agents/         # ARC-AGI-1 seed agents
+│   ├── cant_be_late_agents/    # Can't Be Late seed agents
+│   ├── docfinqa_agents/        # DocFinQA seed agents
+│   ├── evolution_strategies/   # Evolution strategies (all domains)
+│   ├── adapters/               # Task evaluators and adapters
+│   ├── tasks/                  # Task registry
 │   └── ...
+├── scripts/                    # Entry points (run_robophd.py, eval_test_set.py, etc.)
 ├── benchmark_resources/
-│   └── datasets/
-│       ├── train/              # Training data (~40GB, Text2SQL)
-│       ├── dev/                # Development data (~2GB, Text2SQL)
-│       └── ...
+│   └── datasets/               # BIRD dataset (~40GB, Text2SQL only)
 ├── configs/                    # Configuration files
-└── evolution/                  # Created during runs
+└── ../robophd_runs/            # Created during runs (outside repo)
+    ├── robophd/                # RoboPhD ELO evolution runs
+    ├── gepa/                   # GEPA optimization runs
+    ├── agent_tests/            # Standalone agent evaluations
+    └── results/                # Results JSON files and run symlinks
 ```
 
 ## Troubleshooting
@@ -119,8 +112,8 @@ python RoboPhD/tools/precompute_ground_truth.py
 ### Out of memory errors
 Reduce concurrency:
 ```bash
-python RoboPhD/researcher.py --num-iterations 5 \
-  --config '{"max_concurrent": 2}'
+python scripts/run_robophd.py --task cant_be_late --num-iterations 5 \
+  --engine-config '{"max_concurrent": 2}'
 ```
 
 ### Claude CLI not found
@@ -135,4 +128,4 @@ The system handles rate limits automatically. For high-throughput runs, consider
 
 ## Next Steps
 
-See [QUICKSTART.md](QUICKSTART.md) for a 5-minute tutorial on running your first evolution experiment.
+See [CLAUDE.md](CLAUDE.md) for comprehensive documentation, key commands, and configuration options.

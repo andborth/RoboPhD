@@ -16,14 +16,14 @@ Tested across four benchmarks with diverse task types — abstract reasoning, cl
 
 | Benchmark | Train | Val | Test | Seed Baseline | RoboPhD Best | GEPA Best | Autoresearch Best | Published |
 |-----------|-------|-----|------|--------------|-------------|-----------|-------------------|-----------|
-| [ARC-AGI](https://arcprize.org/) | 200 | 200 | 400 | 26.5% | **65.1%** | 58.5% | 60.25% | — |
+| [ARC-AGI](https://arcprize.org/) | 200 | 200 | 400 | 26.5% | **65.83%** | 58.5% | 60.25% | — |
 | [Can't Be Late](https://github.com/UCB-ADRS/ADRS/tree/main/openevolve/examples/ADRS/cant-be-late) | 2000 | — | 1080 | -96.48 | **-87.85** | -89.13 | -90.48 | — |
-| [Text2SQL (BIRD)](https://bird-bench.github.io/) | 6601 | — | 1534 | 59.19% | **67.14%** | 61.15% | 65.38% | 66.1% |
-| [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) | 5735 | 780 | 922 | 0.22% | **51.63%** | 37.85% | 45.88% | 42.6% |
+| [Text2SQL (BIRD)](https://bird-bench.github.io/) | 6601 | — | 1534 | 59.19% | **67.14%** | 62.58% | 65.38% | 66.1% |
+| [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) | 5735 | 780 | 922 | 0.22% | **51.63%** | 40.02% | 45.88% | 42.6% |
 
 *ARC-AGI and DocFinQA have designated val splits. For Can't Be Late and Text2SQL, GEPA and Autoresearch carve validation from the training set (typically 200 examples). RoboPhD combines all training data into a single pool and samples from it each iteration.*
 
-RoboPhD holds #1 across all four benchmarks. It exceeds published results on Text2SQL (+1.0pp over prior best evolved Haiku) and DocFinQA (+3.3pp over GPT-3.5 + finetuned ColBERT).
+RoboPhD holds #1 across all four benchmarks. It exceeds published results on Text2SQL (+1.0pp over prior best evolved Haiku) and DocFinQA (+9.0pp over GPT-3.5 + finetuned ColBERT).
 
 ## How It Works
 

@@ -105,9 +105,8 @@ print_next_steps() {
     echo "     python RoboPhD/tools/precompute_ground_truth.py"
     echo ""
     echo "For more information, see:"
-    echo "  - QUICKSTART.md for a 5-minute tutorial"
     echo "  - INSTALLATION.md for detailed setup instructions"
-    echo "  - CLAUDE.md for comprehensive system documentation"
+    echo "  - CLAUDE.md for commands, configuration, and system documentation"
     echo ""
 }
 

@@ -12,15 +12,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 RoboPhD is a multi-domain evolution system that implements a three-level AI hierarchy where AI agents conduct autonomous research to improve other AI agents.
 
-**Active domains**:
-- **ARC-AGI**: Evolving abstract reasoning agents (Gemini via OpenRouter)
-- **Can't Be Late**: Evolving cloud scheduling strategies on AWS spot traces (NSDI'24)
+**Active domains** (current focus):
+- **ARC-AGI-1**: Evolving abstract reasoning agents with rich diagnostics and stdout capture (Gemini via OpenRouter)
+- **Can't Be Late (stdout)**: Evolving cloud scheduling strategies with stdout capture, standalone Agent class (NSDI'24)
 - **DocFinQA**: Evolving retrieval + QA agents for long-document financial questions
-- **Text2SQL**: Evolving database analysis agents for BIRD benchmark SQL generation
+- **Text2SQL Integrated**: Agent-controlled SQL generation with `llm()` + `test_sql()` callables (BIRD)
+
+**Older task variants** (available, not primary focus):
+- **ARC-AGI**, **Can't Be Late**, **Text2SQL**, **Text2SQL (stdout)** — earlier versions with less agent control or fewer diagnostics
 
 Additional domains (CodeGen, AIME, CodeCritic) are available in the task registry but not actively maintained.
 
-New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `TaskDefinition` with an evaluator function, dataset builder, and file mapping.
+New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `TaskDefinition` with an evaluator function, dataset builder, and file mapping. See `RoboPhD/adapters/README.md` for a guide.
 
 **Paper**: [RoboPhD: Self-Improving Text-to-SQL Through Autonomous Agent Evolution](https://arxiv.org/abs/2601.01126)
 (Text2SQL achieved **73.67% accuracy** on BIRD benchmark test set.)
@@ -29,9 +32,10 @@ New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `
 
 | Domain | Benchmark | Agent Artifacts (`file_mapping`) |
 |--------|-----------|-------------------------------|
-| ARC-AGI | ARC-AGI (HuggingFace) | `agent.py` |
-| Can't Be Late | AWS spot traces (NSDI'24) | `agent.py` |
+| ARC-AGI-1 | ARC-AGI (HuggingFace) | `agent.py` |
+| Can't Be Late (stdout) | AWS spot traces (NSDI'24) | `agent.py` (standalone Agent class) |
 | DocFinQA | DocFinQA (ACL 2024) | `agent.py` |
+| Text2SQL Integrated | BIRD | `agent.py` + `analyze_db.py` |
 | Text2SQL | BIRD | `eval_instructions.md` + `tools/analyze_db.py` + `verify_prompt.md` |
 
 ## Key Commands
@@ -52,65 +56,78 @@ export OPENROUTER_API_KEY="sk-or-..."
 ```
 
 ### Running Evolution (`run_robophd.py`)
+
+Runs stop early when the `evaluation_budget` is exhausted (default 1500 evaluations), so `--num-iterations 30` typically completes around iteration 21.
+
 ```bash
 # ARC-AGI evolution
-python scripts/run_robophd.py --task arc_agi --num-iterations 10
+python scripts/run_robophd.py --task arc_agi_1 --num-iterations 30
 
 # Can't Be Late evolution (download traces first)
 bash scripts/download_cant_be_late_traces.sh
-python scripts/run_robophd.py --task cant_be_late --num-iterations 10
+python scripts/run_robophd.py --task cant_be_late_stdout --num-iterations 30
 
 # DocFinQA evolution
-python scripts/run_robophd.py --task docfinqa --num-iterations 10
+python scripts/run_robophd.py --task docfinqa --num-iterations 30
 
 # Text2SQL evolution
-python scripts/run_robophd.py --task text2sql --num-iterations 10
+python scripts/run_robophd.py --task text2sql_integrated --num-iterations 30
 
 # Quick test
-python scripts/run_robophd.py --task cant_be_late --num-iterations 2 \
+python scripts/run_robophd.py --task cant_be_late_stdout --num-iterations 2 \
   --engine-config '{"examples_per_iteration": 3}'
 
 # List all valid parameters for a task
-python scripts/run_robophd.py --task cant_be_late --list-params
+python scripts/run_robophd.py --task cant_be_late_stdout --list-params
 ```
 
 ### Running GEPA (`run_gepa.py`)
 ```bash
-# Can't Be Late via GEPA
-python scripts/run_gepa.py --task cant_be_late \
+# Can't Be Late (stdout) via GEPA
+python scripts/run_gepa.py --task cant_be_late_stdout \
   --engine-config '{"evaluation_budget": 1500, "val_size": 200}' \
   --eval-test-set
 
-# ARC-AGI via GEPA (pre-split: train=200, val=200 matching GEPA exactly)
-python scripts/run_gepa.py --task arc_agi \
+# ARC-AGI-1 via GEPA (pre-split: train=200, val=200 matching GEPA exactly)
+python scripts/run_gepa.py --task arc_agi_1 \
   --engine-config '{"evaluation_budget": 300}'
 
-# Text2SQL via GEPA
-python scripts/run_gepa.py --task text2sql \
+# Text2SQL Integrated via GEPA
+python scripts/run_gepa.py --task text2sql_integrated \
+  --engine-config '{"evaluation_budget": 1500, "val_size": 200}' \
+  --eval-test-set
+
+# DocFinQA via GEPA
+python scripts/run_gepa.py --task docfinqa \
   --engine-config '{"evaluation_budget": 1500, "val_size": 200}' \
   --eval-test-set
 
 # Sequential (easier debugging, no ThreadPoolExecutor)
-python scripts/run_gepa.py --task cant_be_late \
+python scripts/run_gepa.py --task cant_be_late_stdout \
   --engine-config '{"evaluation_budget": 200, "max_workers": 1}'
 ```
 
-**Budget math**: Each mutation cycle costs ~minibatch (3) + val sweep (val_size). With `--val-ratio 0.05` (~39 val examples), each cycle ≈ 42 calls. Keep val small to maximize exploration within the budget.
+**Evaluation budget**: `evaluation_budget` (default 1500) caps the total number of `(agent, example)` evaluations per run. Both engines track evaluations and stop early when the budget is exhausted — so `--num-iterations 30` acts as an upper bound, not a target. A typical RoboPhD run with default settings completes ~21 iterations before hitting the budget.
+
+**GEPA budget math**: Each mutation cycle costs ~minibatch (3) + val sweep (val_size). With `--val-ratio 0.05` (~39 val examples), each cycle ≈ 42 calls. Keep val small to maximize exploration within the budget.
+
+### Task Config Persistence
+Task-level parameters (e.g. `split`, `solver_model`, `cost_budget`) are persisted in `checkpoint.json` under `task_config` and automatically restored on resume. This ensures evaluator/dataset construction uses identical settings across resume boundaries. Engine-config overrides on resume are merged on top.
 
 ### Resume and Extend
 ```bash
 # Resume from checkpoint (auto-continues from last completed iteration)
-python scripts/run_robophd.py --task cant_be_late \
+python scripts/run_robophd.py \
   --resume ../robophd_runs/robophd/cant_be_late_20260313_230325
 
 # Restart from specific iteration with modifications
-python scripts/run_robophd.py --task cant_be_late \
+python scripts/run_robophd.py \
   --resume ../robophd_runs/robophd/cant_be_late_20260313_230325 \
   --from-iteration 5 \
   --engine-config '{"examples_per_iteration": 10}'
 
 # Extend completed run with additional iterations
-python scripts/run_robophd.py --task cant_be_late \
+python scripts/run_robophd.py \
   --resume ../robophd_runs/robophd/cant_be_late_20260313_230325 \
   --extend 5 \
   --engine-config '{"evolution_strategy": "challenger"}'
@@ -119,15 +136,20 @@ python scripts/run_robophd.py --task cant_be_late \
 ### Test-Set Evaluation (`eval_test_set.py`)
 ```bash
 # Auto-select best agent by ELO from a run
-python scripts/eval_test_set.py --task arc_agi \
-  --run-dir ../robophd_runs/robophd/arc_agi_20260307_013926
+python scripts/eval_test_set.py --task arc_agi_1 \
+  --run-dir ../robophd_runs/robophd/arc_agi_1_20260322_183016
 
 # Specify agent directly
-python scripts/eval_test_set.py --task text2sql \
-  --agent-dir RoboPhD/text2sql_agents/naive
+python scripts/eval_test_set.py --task text2sql_integrated \
+  --agent-dir RoboPhD/text2sql_integrated_agents/baseline
+
+# King-of-the-hill: test the last-round winner instead of ELO leader
+python scripts/eval_test_set.py --task cant_be_late_stdout \
+  --run-dir ../robophd_runs/robophd/cant_be_late_stdout_20260322_183016 \
+  --last-winner
 
 # With repeats and config overrides
-python scripts/eval_test_set.py --task arc_agi --run-dir ... \
+python scripts/eval_test_set.py --task arc_agi_1 --run-dir ... \
   --test-repeats 3
 ```
 
@@ -210,6 +232,12 @@ Evolution strategies are organized by domain:
 
 **Note**: Meta-evolution can generate additional strategies beyond these built-in options.
 
+**Current defaults** (see `config_manager.py`):
+- `evolution_strategy`: `use_your_judgment`
+- `new_agent_test_rounds`: `1`
+- `random_agent_wins_ties`: `True` (randomly selects one winner from tied agents)
+- `include_evolution_rankings`: `False`
+
 **Agent selection**: Prioritizes pending winners, new agents, then untested agents. Remaining slots filled randomly from top ELO > 1500 agents (falling back to lower ELO if needed).
 
 **Selection strategies** (skip evolution):
@@ -261,8 +289,8 @@ python scripts/run_robophd.py --task text2sql --num-iterations 10 \
 ```
 
 - `"new_agent_test_rounds": 0`: Planning + implementation only
-- `"new_agent_test_rounds": 1`: Adds testing against 1 prior iteration
-- `"new_agent_test_rounds": 2`: Adds testing against 2 prior iterations [DEFAULT]
+- `"new_agent_test_rounds": 1`: Adds testing against 1 prior iteration [DEFAULT]
+- `"new_agent_test_rounds": 2`: Adds testing against 2 prior iterations
 - `"new_agent_test_round_offset": -2`: Starting offset from current iteration [DEFAULT]. At iteration 8, tests against iterations 6 and 5. Use `-1` for legacy behavior (tests 7 and 6). Iterations < 1 are skipped.
 
 ### Meta-Evolution
@@ -284,31 +312,19 @@ Available meta-evolution strategies:
 - **`scripts/run_autoresearch.py`**: Autoresearch single-session optimizer
 - **`scripts/eval_test_set.py`**: Standalone test-set evaluation for any agent
 
-### Task Registry
+### Tasks and Adapters
 - **`tasks/base.py`**: `TaskDefinition` dataclass (name, evaluator_factory, dataset_builder, file_mapping, objective)
-- **`tasks/arc_agi.py`**: ARC-AGI task — abstract reasoning agent evolution
-- **`tasks/cant_be_late.py`**: Can't Be Late task — cloud scheduling strategy evolution
-- **`tasks/docfinqa.py`**: DocFinQA task — long-document financial QA agent evolution
-- **`tasks/text2sql.py`**: Text2SQL task — BIRD benchmark SQL generation
+- **`tasks/__init__.py`**: Task registry — `get_task(name)`, `list_tasks()`
+- Each task has a definition in `tasks/` and an evaluator in `adapters/`. See `adapters/README.md` for how to add new tasks.
+- **`adapters/candidate_utils.py`**: `extract_candidate` / `materialize_candidate` — convert between agent dirs and flat dicts
+- Vendored files (`*_unmodified*`): exact copies from upstream, do not modify (except targeted `--silent` changes in `cant_be_late_utils_unmodified/`)
 
 ### Core
 - **`researcher.py`**: Evolution loop orchestrator (called by `run_robophd.py`)
 - **`evolution.py`**: Evolution strategy selector and orchestration
 - **`deep_focus_evolution_manager.py`**: Multi-round evolution with testing
 - **`meta_evolution_manager.py`**: Meta-evolution for strategy improvement
-
-### Domains
 - **`domains/external/domain.py`**: `ExternalEvaluatorDomain` — bridges evaluator functions into RoboPhD's evolution loop
-
-### Adapters
-- **`adapters/candidate_utils.py`**: `extract_candidate` / `materialize_candidate` — convert between agent dirs and flat dicts
-- **`adapters/gepa_arc_agi.py`**: ARC-AGI evaluator, TrackedLLM (with cost fix), dataset splits
-- **`adapters/arc_agi_utils_unmodified.py`**: Vendored GEPA utils (exact copy, do not modify)
-- **`adapters/cant_be_late.py`**: Can't Be Late evaluator, dataset loading
-- **`adapters/cant_be_late_utils_unmodified/`**: Vendored GEPA utils + simulator (do not modify)
-- **`adapters/cant_be_late_constants_unmodified.py`**: Vendored constants (exact copy, do not modify)
-- **`adapters/gepa_docfinqa.py`**: DocFinQA evaluator, dataset loading, cost tracking
-- **`adapters/gepa_text2sql.py`**: Text2SQL evaluator, BIRD dataset loading
 
 ### Config
 - **`config.py`**: Model mappings and fallbacks
@@ -325,8 +341,7 @@ Available meta-evolution strategies:
 ### Model Configuration
 - **API Models**: opus-4.6 ($5/$25/MTok), sonnet-4.5 ($3/$15/MTok), haiku-4.5 ($1/$5/MTok)
 - **Timeouts**: 3600s (60 minutes) default for evolution
-- **Eval Timeout**: `eval_timeout` (300s default) — per-evaluation timeout on `future.result()` in all ThreadPoolExecutor eval loops (domain.py, run_gepa.py, eval_test_set.py). Timed-out evals score 0 with `"error": "timeout"` in result.json. The hung thread keeps burning CPU until process exit (Python limitation); `domain.py` tracks leaked thread count across iterations and warns at each iteration start.
-- **CodeGen Timeouts**: `codegen_timeout` (1200s) for solution generation, `critic_timeout` (600s) for critic/revision/acceptance
+- **Eval Timeout**: `eval_timeout` (300s default, 600s for ARC-AGI) — per-evaluation timeout on `future.result()` in all ThreadPoolExecutor eval loops (domain.py, run_gepa.py, eval_test_set.py). Timed-out evals score 0 with `"error": "timeout"` in result.json. The hung thread keeps burning CPU until process exit (Python limitation); `domain.py` tracks leaked thread count across iterations and warns at each iteration start.
 - **API Key**: Set via `ANTHROPIC_API_KEY_FOR_ROBOPHD` environment variable
 
 ## Development Tips
@@ -336,7 +351,7 @@ Available meta-evolution strategies:
 - **Check Progress**: Review `checkpoint.json` and `final_report.md` in the experiment dir
 - **Debug Evaluation**: Check `iteration_XXX/agent_YYY/problems/` and `evaluation.json` in the experiment dir
 - **Evolution Output**: Check `evolution_output/iteration_XXX/` in the experiment dir for Claude's reasoning
-- **Run Outputs**: All runs land in `../robophd_runs/` (`robophd/` for ELO, `gepa/` for GEPA)
+- **Run Outputs**: All runs land in `../robophd_runs/` (`robophd/` for ELO, `gepa/` for GEPA). Results JSON files and run symlinks in `../robophd_runs/results/`. Agent tests in `../robophd_runs/agent_tests/`.
 - **Cleanup**: `python scripts/cleanup_runs.py` to find and remove short/experimental runs
 - **Config Files**: Save common configs to JSON files and use `--engine-config path/to/config.json`
 
