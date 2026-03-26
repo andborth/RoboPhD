@@ -73,6 +73,7 @@ def make_text2sql_integrated_task() -> TaskDefinition:
             "over_budget_penalty": 0.9,
             "max_test_sql_calls": 5,
             "evaluation_budget": 1500,
+            "max_workers": 8,
         },
         test_overrides={"dataset": "dev", "max_test_workers": 4},
     )
