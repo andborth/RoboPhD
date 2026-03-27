@@ -42,6 +42,7 @@ class EvalServer:
         self.eval_timeout = eval_timeout
         self._lock = threading.Lock()
         self._last_logged_pct = 100  # track 5% increments (start at 100%)
+        self.eval_cost = 0.0  # cumulative eval cost (from diagnostics)
 
         handler = _make_handler(self)
         self._httpd = HTTPServer(("localhost", 0), handler)
@@ -203,6 +204,14 @@ def _make_handler(server: EvalServer):
                 scores[ex["id"]] = result["scores"][i]
                 diagnostics[ex["id"]] = result["diagnostics"][i]
 
+            # Accumulate eval cost from diagnostics
+            batch_cost = sum(
+                d.get("cost_usd", d.get("cost", 0.0))
+                for d in diagnostics.values() if isinstance(d, dict)
+            )
+            with server._lock:
+                server.eval_cost += batch_cost
+
             mean = sum(scores.values()) / len(scores) if scores else 0.0
             logger.info(
                 f"Train eval: {len(example_ids)} examples, "
@@ -234,6 +243,14 @@ def _make_handler(server: EvalServer):
             logger.info(f"Starting val eval: {len(server.val_examples)} examples...")
             candidate = server.candidate_fn()
             result = server._run_eval(candidate, server.val_examples)
+
+            # Accumulate eval cost from diagnostics
+            batch_cost = sum(
+                d.get("cost_usd", d.get("cost", 0.0))
+                for d in result.get("diagnostics", []) if isinstance(d, dict)
+            )
+            with server._lock:
+                server.eval_cost += batch_cost
 
             mean_score = result["test_results"]["mean_test_score"]
             count = result["test_results"]["total_test_problems"]

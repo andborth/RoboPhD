@@ -545,7 +545,9 @@ def main():
         "git_history": git_history,
         "config": {k: v for k, v in config.items() if isinstance(v, (str, int, float, bool, type(None)))},
         "cost": {
+            "eval_cost_usd": round(eval_server.eval_cost, 2),
             "evolution_cost_usd": round(total_session_cost, 2),
+            "total_cost_usd": round(eval_server.eval_cost + total_session_cost, 2),
             "tokens_in": total_session_tokens_in,
             "tokens_out": total_session_tokens_out,
         },
@@ -556,6 +558,7 @@ def main():
     logger.info(
         f"Optimization complete. {len(experiment_log)} experiments, "
         f"best val score: {best_val_score:.3f}, "
+        f"eval cost: ${eval_server.eval_cost:.2f}, "
         f"evolution cost: ${total_session_cost:.2f}"
     )
 

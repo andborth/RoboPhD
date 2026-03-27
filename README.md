@@ -19,7 +19,7 @@ Tested across four benchmarks with diverse task types — abstract reasoning, cl
 | [ARC-AGI](https://arcprize.org/) | 200 | 200 | 400 | 26.5% | **65.83%** | 58.5% | 60.25% | — |
 | [Can't Be Late](https://github.com/UCB-ADRS/ADRS/tree/main/openevolve/examples/ADRS/cant-be-late) | 2000 | — | 1080 | -96.48 | **-87.85** | -89.13 | -90.48 | — |
 | [Text2SQL (BIRD)](https://bird-bench.github.io/) | 6601 | — | 1534 | 59.19% | **67.14%** | 62.58% | 65.38% | 66.1% |
-| [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) | 5735 | 780 | 922 | 0.22% | **51.63%** | 40.02% | 45.88% | 42.6% |
+| [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) | 5735 | 780 | 922 | 17.68% | **51.63%** | 40.02% | 45.88% | 42.6% |
 
 *ARC-AGI and DocFinQA have designated val splits. For Can't Be Late and Text2SQL, GEPA and Autoresearch carve validation from the training set (typically 200 examples). RoboPhD combines all training data into a single pool and samples from it each iteration.*
 
