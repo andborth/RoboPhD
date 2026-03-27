@@ -117,6 +117,24 @@ def get_api_key() -> Optional[str]:
     return os.environ.get("ANTHROPIC_API_KEY") or os.environ.get(API_KEY_ENV_VAR)
 
 
+def get_api_key_for_model(resolved_model: str) -> Optional[str]:
+    """Get the appropriate API key for a model, or None to let litellm resolve it.
+
+    Only returns the Anthropic key for Anthropic-provider models. For other
+    providers (OpenAI, OpenRouter, etc.), returns None so litellm picks up
+    the correct key from environment variables (OPENAI_API_KEY, etc.).
+    """
+    try:
+        import litellm
+        _, provider, _, _ = litellm.get_llm_provider(resolved_model)
+        if provider == "anthropic":
+            return get_api_key()
+    except Exception:
+        # Fallback: if litellm can't identify the provider, don't pass a key
+        pass
+    return None
+
+
 def resolve_model_name(model: str) -> str:
     """Resolve short model names (e.g., 'haiku-4.5') to full litellm-compatible names.
 

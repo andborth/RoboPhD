@@ -140,9 +140,9 @@ def _retry_on_rate_limit(fn, max_retries=_RATE_LIMIT_MAX_RETRIES):
 
 def make_tracked_llm(model: str, tracker: CostTracker):
     """Return an llm(prompt) -> str callable with cost tracking."""
-    from RoboPhD.config import resolve_model_name, get_api_key
+    from RoboPhD.config import resolve_model_name, get_api_key_for_model
     resolved_model = resolve_model_name(model)
-    api_key = get_api_key()
+    api_key = get_api_key_for_model(resolved_model)
 
     def llm(prompt: str) -> str:
         kwargs = {
@@ -170,9 +170,9 @@ def make_tracked_llm(model: str, tracker: CostTracker):
 
 def make_tracked_embed(model: str, tracker: CostTracker):
     """Return an embed(text) -> list[float] callable with cost tracking."""
-    from RoboPhD.config import resolve_model_name, get_api_key
+    from RoboPhD.config import resolve_model_name, get_api_key_for_model
     resolved_model = resolve_model_name(model)
-    api_key = get_api_key()
+    api_key = get_api_key_for_model(resolved_model)
 
     def embed(text: str) -> list:
         kwargs = {"model": resolved_model, "input": [text]}
