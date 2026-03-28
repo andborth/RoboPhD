@@ -99,6 +99,52 @@ python scripts/run_robophd.py --task text2sql --num-iterations 3 \
 python scripts/run_robophd.py --task cant_be_late --list-params
 ```
 
+### Optimize Anything Programmatic API
+
+One simple way to use RoboPhD is to use it's `optimize_anything()` API to evolve any text artifact with your own evaluator. This is inspired by GEPA's optimize_anything api. Here is the sketch of how to use it:
+
+```python
+from RoboPhD import optimize_anything, RoboPhDConfig
+
+def evaluator(candidate, example, *, problem_dir=None):
+    prompt = candidate["system_prompt"]
+    # Call your LLM, run your code, score the result...
+    score = 1.0 if correct else 0.0
+    return score, {
+        "score": score,
+        "predicted_answer": predicted,
+        # String values are written as files for the evolution AI to read
+        "question.md": example["question"],
+        "response.md": response_text,
+    }
+
+result = optimize_anything(
+    evaluator=evaluator,
+    dataset=[{"id": "1", "question": "...", "answer": "..."}],
+    seed_candidate={"system_prompt": "Your initial prompt here"},
+    objective="Maximize accuracy on my task",
+    config=RoboPhDConfig(num_iterations=5, evaluation_budget=200),
+)
+print(result.best_candidate["system_prompt"])
+print(f"Best ELO: {result.best_score}")
+```
+
+Try the included demo, which evolves a math-problem-solving prompt from a naive seed ("Solve the following math problem") into an optimized prompt with chain-of-thought reasoning:
+
+```bash
+# 1. Set your API key (used for both evolution and the Haiku solver)
+export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"
+
+# 2. Run the demo (3 iterations, ~$1-2 in API costs)
+python scripts/run_optimize_anything.py --num-iterations 3
+
+# 3. Quick test with minimal budget
+python scripts/run_optimize_anything.py --num-iterations 2 \
+    --evaluation-budget 50 --examples-per-iteration 5
+```
+
+See [`RoboPhD/api.py`](RoboPhD/api.py) for the full API reference, including `optimize_task()` for running registered benchmarks programmatically.
+
 ### Running with GEPA
 
 ```bash

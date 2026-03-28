@@ -14,8 +14,13 @@ __version__ = "2.0.0"
 __author__ = "RoboPhD Authors"
 
 from .researcher import ParallelAgentResearcher, ParallelAgentEvolver
+from .api import optimize_anything, optimize_task, OptimizeResult, RoboPhDConfig
 
 __all__ = [
     'ParallelAgentResearcher',
     'ParallelAgentEvolver',
+    'optimize_anything',
+    'optimize_task',
+    'OptimizeResult',
+    'RoboPhDConfig',
 ]
