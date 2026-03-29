@@ -91,21 +91,6 @@ class OptimizeResult:
     total_evaluations: int
 
 
-def _derive_file_mapping(seed_candidate: Dict[str, str]) -> Dict[str, str]:
-    """Auto-derive file_mapping from seed_candidate keys.
-
-    Keys with a file extension (e.g. "agent.py") are used as-is.
-    Keys without extensions get ".txt" appended.
-    """
-    mapping = {}
-    for key in seed_candidate:
-        if "." in key:
-            mapping[key] = key
-        else:
-            mapping[key] = f"{key}.txt"
-    return mapping
-
-
 def optimize_anything(
     evaluator: Callable,
     dataset: List[Dict],
@@ -159,8 +144,8 @@ def optimize_anything(
 
     cfg = config or RoboPhDConfig()
 
-    # 1. Derive file_mapping from seed_candidate keys
-    file_mapping = _derive_file_mapping(seed_candidate)
+    # 1. File mapping: each candidate key is its own filename
+    file_mapping = {key: key for key in seed_candidate}
 
     # 2. Materialize seed agent to a temp directory
     run_dir = Path(cfg.run_dir) if cfg.run_dir else Path("../robophd_runs")
@@ -214,10 +199,25 @@ def optimize_anything(
         task_config={},
     )
 
-    researcher.run(initial_agents=[seed_agent_name])
+    completed_normally = researcher.run(initial_agents=[seed_agent_name])
 
     # 6. Extract results
-    return _build_result(researcher.experiment_dir, file_mapping)
+    try:
+        result = _build_result(researcher.experiment_dir, file_mapping)
+    except (FileNotFoundError, ValueError, KeyError) as exc:
+        raise RuntimeError(
+            f"Optimization failed: could not extract results from {researcher.experiment_dir}. "
+            f"Run completed_normally={completed_normally}. Cause: {exc}"
+        ) from exc
+
+    if not completed_normally:
+        logger.warning(
+            "Optimization ended early (evolution failed). "
+            "Returning partial results from %d completed iteration(s).",
+            result.num_iterations_completed,
+        )
+
+    return result
 
 
 def optimize_task(
@@ -320,10 +320,25 @@ def optimize_task(
         task_config=tc,
     )
 
-    researcher.run(initial_agents=[seed_agent_path.name])
+    completed_normally = researcher.run(initial_agents=[seed_agent_path.name])
 
     # Extract results
-    return _build_result(researcher.experiment_dir, task.file_mapping)
+    try:
+        result = _build_result(researcher.experiment_dir, task.file_mapping)
+    except (FileNotFoundError, ValueError, KeyError) as exc:
+        raise RuntimeError(
+            f"Optimization failed: could not extract results from {researcher.experiment_dir}. "
+            f"Run completed_normally={completed_normally}. Cause: {exc}"
+        ) from exc
+
+    if not completed_normally:
+        logger.warning(
+            "Optimization ended early (evolution failed). "
+            "Returning partial results from %d completed iteration(s).",
+            result.num_iterations_completed,
+        )
+
+    return result
 
 
 def _build_result(experiment_dir: Path, file_mapping: Dict[str, str]) -> OptimizeResult:
