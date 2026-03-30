@@ -159,6 +159,20 @@ result = optimize_anything(
 
 Note: `seed_candidate` is only needed for the initial run — on resume, the file mapping is recovered from the checkpoint. `evaluator` and `dataset` are always required (they can't be serialized).
 
+**Evaluating candidates** — use `eval_candidate()` to evaluate any candidate on a dataset:
+
+```python
+from RoboPhD import eval_candidate, RoboPhDEvalConfig
+
+eval_result = eval_candidate(
+    evaluator=evaluator,
+    dataset=test_dataset,
+    candidate=result.best_candidate,
+    config=RoboPhDEvalConfig(test_repeats=3, max_workers=8),
+)
+print(f"Accuracy: {eval_result.mean_score:.1%} ({eval_result.num_examples} examples)")
+```
+
 Try the included demo, which evolves a math-problem-solving prompt from a naive seed ("Solve the following math problem") into an optimized prompt with chain-of-thought reasoning:
 
 ```bash

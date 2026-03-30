@@ -103,6 +103,38 @@ class OptimizeResult:
     """Whether the optimization ran to completion (True) or ended early due to failure (False)."""
 
 
+@dataclass
+class RoboPhDEvalConfig:
+    """Configuration for eval_candidate()."""
+
+    max_workers: Optional[int] = None
+    """Thread pool size for concurrent evaluation. None = Python default."""
+
+    test_repeats: int = 1
+    """Number of times to repeat the dataset (scores averaged across all repeats)."""
+
+    eval_timeout: int = 300
+    """Seconds per evaluator call before timeout (scores 0)."""
+
+
+@dataclass
+class EvalResult:
+    """Result of an eval_candidate() call."""
+
+    mean_score: float
+    """Mean score across all evaluated examples."""
+    total_score: float
+    """Sum of all scores."""
+    num_examples: int
+    """Total examples evaluated (dataset_size * test_repeats)."""
+    per_example_scores: List[float]
+    """Ordered list of per-example scores."""
+    per_example_diagnostics: List[Dict]
+    """Ordered list of per-example diagnostics from the evaluator."""
+    had_timeouts: bool
+    """Whether any evaluations timed out (leaked threads may be present)."""
+
+
 def _validate_resume_config(cfg: RoboPhDConfig) -> None:
     """Validate resume-related config fields."""
     if cfg.extend_iterations is not None and cfg.experiment_dir is None:
@@ -551,4 +583,58 @@ def _build_result(experiment_dir: Path, file_mapping: Dict[str, str], completed_
         num_iterations_completed=num_iterations,
         total_evaluations=total_evals,
         completed_normally=completed_normally,
+    )
+
+
+def eval_candidate(
+    evaluator: Callable,
+    dataset: List[Dict],
+    candidate: Dict[str, str],
+    config: Optional[RoboPhDEvalConfig] = None,
+) -> EvalResult:
+    """Evaluate a candidate on a dataset using the given evaluator.
+
+    This is the evaluation companion to optimize_anything(). It runs the
+    same evaluator and dataset you used for optimization, but on a specific
+    candidate — typically ``result.best_candidate`` from a prior optimization.
+
+    Args:
+        evaluator: Scoring function with signature
+            ``(candidate: dict, example: dict) -> (score: float, diagnostics: dict)``.
+            Must be thread-safe (called concurrently).
+        dataset: List of example dicts for evaluation.
+        candidate: Text artifact(s) to evaluate (same shape as seed_candidate).
+        config: Evaluation configuration. If None, uses ``RoboPhDEvalConfig()`` defaults.
+
+    Returns:
+        EvalResult with mean_score, per_example_scores, and diagnostics.
+    """
+    from RoboPhD.eval_utils import run_parallel_eval
+
+    if not dataset:
+        raise ValueError("dataset must be a non-empty list of example dicts")
+    if not candidate:
+        raise ValueError("candidate must be a non-empty dict")
+
+    cfg = config or RoboPhDEvalConfig()
+    examples = dataset * cfg.test_repeats
+
+    logger.info(
+        "Evaluating candidate on %d examples (%d unique x %d repeats)",
+        len(examples), len(dataset), cfg.test_repeats,
+    )
+
+    result = run_parallel_eval(
+        evaluator, candidate, examples,
+        max_workers=cfg.max_workers,
+        eval_timeout=cfg.eval_timeout,
+    )
+
+    return EvalResult(
+        mean_score=result["test_results"]["mean_test_score"],
+        total_score=result["test_results"]["total_test_score"],
+        num_examples=result["test_results"]["total_test_problems"],
+        per_example_scores=result["scores"],
+        per_example_diagnostics=result["diagnostics"],
+        had_timeouts=result["timed_out"],
     )

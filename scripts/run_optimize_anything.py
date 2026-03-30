@@ -34,6 +34,10 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+from RoboPhD import optimize_anything, eval_candidate, RoboPhDConfig
+from RoboPhD.config import get_api_key
+from RoboPhD.llm_providers import get_provider
+
 logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s] %(name)s: %(message)s",
@@ -157,7 +161,7 @@ def extract_answer(response: str) -> str | None:
 
 def make_evaluator(solver_model: str = "haiku-4.5"):
     """Create an evaluator function closed over a shared provider."""
-    from RoboPhD.llm_providers import get_provider
+
     provider = get_provider(solver_model)
 
     def evaluator(candidate, example, *, problem_dir=None):
@@ -200,20 +204,18 @@ def make_evaluator(solver_model: str = "haiku-4.5"):
 
 def run_seed_baseline(evaluator_fn):
     """Run the seed prompt on all examples and print accuracy."""
-    correct = 0
-    total = len(DATASET)
+    eval_result = eval_candidate(evaluator=evaluator_fn, dataset=DATASET, candidate=SEED_CANDIDATE)
+    correct = int(eval_result.total_score)
+    total = eval_result.num_examples
 
-    for ex in DATASET:
-        score, _ = evaluator_fn(SEED_CANDIDATE, ex)
-        if score >= 1.0:
-            correct += 1
-        else:
+    for i, (score, ex) in enumerate(zip(eval_result.per_example_scores, DATASET)):
+        if score < 1.0:
             logger.debug(f"  MISS {ex['id']}: expected={ex['answer']}")
 
-    pct = correct / total * 100
+    pct = eval_result.mean_score * 100
     print(f"\nSeed baseline: {correct}/{total} correct ({pct:.0f}%)")
     print(f"Seed prompt: {SEED_CANDIDATE['system_prompt']!r}\n")
-    return correct / total
+    return eval_result.mean_score
 
 
 # ---------------------------------------------------------------------------
@@ -260,8 +262,6 @@ def print_step_result(step_name: str, result):
 
 def run_demo_resume(evaluator_fn, parent_experiments_dir: str):
     """Demo: fresh run → extend → from_iteration + extend."""
-    from RoboPhD import optimize_anything, RoboPhDConfig
-
     # Step 1: Fresh run for 2 iterations
     print("\n" + "=" * 60)
     print("  Step 1: Fresh run (2 iterations)")
@@ -337,7 +337,6 @@ def main():
     args = parse_args()
 
     # Check API key
-    from RoboPhD.config import get_api_key
     api_key = get_api_key()
     if not api_key:
         print("ERROR: Set ANTHROPIC_API_KEY_FOR_ROBOPHD (or ANTHROPIC_API_KEY) environment variable.")
@@ -373,8 +372,6 @@ def main():
         return
 
     # Run evolution
-    from RoboPhD import optimize_anything, RoboPhDConfig
-
     print("\n--- Starting Evolution ---\n")
     result = optimize_anything(
         evaluator=evaluator_fn,
@@ -404,12 +401,9 @@ def main():
 
     # Run best candidate on all examples for final accuracy
     print(f"\n--- Final Evaluation (best prompt on all {len(DATASET)} problems) ---\n")
-    correct = 0
-    for ex in DATASET:
-        score, _ = evaluator_fn(result.best_candidate, ex)
-        if score >= 1.0:
-            correct += 1
-    final_accuracy = correct / len(DATASET)
+    eval_result = eval_candidate(evaluator=evaluator_fn, dataset=DATASET, candidate=result.best_candidate)
+    correct = int(eval_result.total_score)
+    final_accuracy = eval_result.mean_score
     print(f"Evolved prompt: {correct}/{len(DATASET)} correct ({final_accuracy * 100:.0f}%)")
     print(f"Seed prompt:    {seed_accuracy * 100:.0f}%")
     improvement = (final_accuracy - seed_accuracy) * 100
