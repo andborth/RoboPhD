@@ -8,22 +8,22 @@ RoboPhD evolves AI agents to improve task performance without human intervention
 The system supports multiple optimization engines:
 - **RoboPhD**: Multi-agent ELO competition with evolution strategies and deep focus testing
 - **[GEPA](https://github.com/gepa-ai/gepa)**: Reflective text evolution with Pareto selection (Agrawal et al.; [paper](https://arxiv.org/abs/2507.19457))
-- **[Autoresearch](https://github.com/karpathy/autoresearch)**: Single Claude Code session with greedy experimentation (Karpathy, 2025)
+- **[Autoresearch](https://github.com/karpathy/autoresearch)**: Single Claude Code session with greedy experimentation (Karpathy, 2026)
 
 ## Key Results
 
-Tested across four benchmarks with diverse task types — abstract reasoning, cloud scheduling, SQL generation, and financial document QA:
+Tested across four benchmarks with diverse task types — abstract reasoning, cloud scheduling, SQL generation, and financial document QA. All runs use a fixed budget of 1,500 evaluations. Scores show test set performance; numbers in parentheses are agent lines of code.
 
-| Benchmark | Train | Val | Test | Seed Baseline | RoboPhD Best | GEPA Best | Autoresearch Best | Published |
-|-----------|-------|-----|------|--------------|-------------|-----------|-------------------|-----------|
-| [ARC-AGI](https://arcprize.org/) | 200 | 200 | 400 | 26.5% | **65.83%** | 58.5% | 60.25% | — |
-| [Can't Be Late](https://github.com/UCB-ADRS/ADRS/tree/main/openevolve/examples/ADRS/cant-be-late) | 2000 | — | 1080 | -96.48 | **-87.85** | -89.13 | -90.48 | — |
-| [Text2SQL (BIRD)](https://bird-bench.github.io/) | 6601 | — | 1534 | 59.19% | **67.14%** | 62.58% | 65.38% | 66.1% |
-| [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) | 5735 | 780 | 922 | 17.68% | **51.63%** | 40.02% | 45.88% | 42.6% |
+| Benchmark | Seed | RoboPhD | GEPA | Autoresearch |
+|-----------|------|---------|------|--------------|
+| [ARC-AGI](https://arcprize.org/) (%) | 27.8 (22) | **65.8** (1,013) | 58.5 (366) | 54.2 (304) |
+| [Can't Be Late](https://github.com/UCB-ADRS/ADRS/tree/main/openevolve/examples/ADRS/cant-be-late) | -96.5 (31) | -90.7 (148) | -89.3 (142) | **-87.6** (87) |
+| [Text2SQL (BIRD)](https://bird-bench.github.io/) (%) | 52.2 (96) | **64.5** (602) | 60.4 (498) | 60.7 (265) |
+| [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) (%) | 17.7 (29) | **50.4** (825) | 40.0 (207) | 48.2 (198) |
 
-*ARC-AGI and DocFinQA have designated val splits. For Can't Be Late and Text2SQL, GEPA and Autoresearch carve validation from the training set (typically 200 examples). RoboPhD combines all training data into a single pool and samples from it each iteration.*
+*Can't Be Late scores are negative costs (higher = better). RoboPhD uses all training data for Elo-based competition with no validation split. GEPA and Autoresearch carve validation from the training set (typically 100 examples).*
 
-RoboPhD holds #1 across all four benchmarks. It exceeds published results on Text2SQL (+1.0pp over prior best evolved Haiku) and DocFinQA (+9.0pp over GPT-3.5 + finetuned ColBERT).
+Using a single default configuration, RoboPhD outperforms both GEPA and Autoresearch on three of four benchmarks, losing only on Can't Be Late — the simplest task, where the winning solution required just 87 lines of code. On the three complex benchmarks, RoboPhD's multi-iteration Elo competition produces substantially larger agents (602–1,013 lines) that combine strategies discovered across many evolutionary cycles.
 
 ## How It Works
 
@@ -228,5 +228,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) (Reddy et al., ACL 2024)
 - [Can't Be Late](https://github.com/UCB-ADRS/ADRS) (NSDI'24 AWS spot traces)
 - [GEPA](https://github.com/gepa-ai/gepa) (Agrawal et al.)
-- [Autoresearch](https://github.com/karpathy/autoresearch) (Karpathy, 2025)
+- [Autoresearch](https://github.com/karpathy/autoresearch) (Karpathy, 2026)
 - [Anthropic](https://www.anthropic.com/) for Claude API and Claude Code
