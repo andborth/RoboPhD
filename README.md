@@ -21,7 +21,7 @@ Tested across four benchmarks with diverse task types — abstract reasoning, cl
 | [Text2SQL (BIRD)](https://bird-bench.github.io/) (%) | 52.2 (96) | **64.5** (602) | 60.4 (498) | 60.7 (265) |
 | [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) (%) | 17.7 (29) | **50.4** (825) | 40.0 (207) | 48.2 (198) |
 
-*Can't Be Late scores are negative costs (higher = better). RoboPhD uses all training data for Elo-based competition with no validation split. GEPA and Autoresearch carve validation from the training set (typically 100 examples).*
+*Can't Be Late scores are negative costs (higher = better).*
 
 Using a single default configuration, RoboPhD outperforms both GEPA and Autoresearch on three of four benchmarks, losing only on Can't Be Late — the simplest task, where the winning solution required just 87 lines of code. On the three complex benchmarks, RoboPhD's multi-iteration Elo competition produces substantially larger agents (602–1,013 lines) that combine strategies discovered across many evolutionary cycles.
 
