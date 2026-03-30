@@ -129,6 +129,36 @@ print(result.best_candidate["system_prompt"])
 print(f"Best ELO: {result.best_score}")
 ```
 
+**Resume & extend** — The result's `completed_normally` attribute tells you whether the run finished as expected or ended early due to a failure. Either way, `result.experiment_dir` points to the checkpoint directory, so you can always resume from where it left off:
+
+```python
+result = optimize_anything(
+    evaluator=evaluator, dataset=my_dataset, objective="Maximize accuracy",
+    seed_candidate=seed, config=RoboPhDConfig(num_iterations=10),
+)
+
+if not result.completed_normally:
+    # Resume from where the failed run left off
+    result = optimize_anything(
+        evaluator=evaluator, dataset=my_dataset, objective="Maximize accuracy",
+        config=RoboPhDConfig(experiment_dir=result.experiment_dir),
+    )
+
+# Extend by 5 more iterations
+result = optimize_anything(
+    evaluator=evaluator, dataset=my_dataset, objective="Maximize accuracy",
+    config=RoboPhDConfig(experiment_dir=result.experiment_dir, extend_iterations=5),
+)
+
+# Restart from iteration 3 (discards iterations 3+ and re-runs)
+result = optimize_anything(
+    evaluator=evaluator, dataset=my_dataset, objective="Maximize accuracy",
+    config=RoboPhDConfig(experiment_dir=result.experiment_dir, from_iteration=3),
+)
+```
+
+Note: `seed_candidate` is only needed for the initial run — on resume, the file mapping is recovered from the checkpoint. `evaluator` and `dataset` are always required (they can't be serialized).
+
 Try the included demo, which evolves a math-problem-solving prompt from a naive seed ("Solve the following math problem") into an optimized prompt with chain-of-thought reasoning:
 
 ```bash
@@ -141,6 +171,9 @@ python scripts/run_optimize_anything.py --num-iterations 3
 # 3. Quick test with minimal budget
 python scripts/run_optimize_anything.py --num-iterations 2 \
     --evaluation-budget 50 --examples-per-iteration 5
+
+# 4. Demo with resume + extend (runs 2 iterations, extends by 1, then restarts from iteration 2)
+python scripts/run_optimize_anything.py --demo-resume
 ```
 
 See [`RoboPhD/api.py`](RoboPhD/api.py) for the full API reference, including `optimize_task()` for running registered benchmarks programmatically.

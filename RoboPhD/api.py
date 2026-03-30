@@ -23,11 +23,9 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import logging
-import os
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -59,8 +57,11 @@ class RoboPhDConfig:
     """Thread pool size for concurrent evaluation. None = Python default."""
 
     # Output
-    run_dir: Union[str, Path, None] = None
-    """Directory for experiment output. None = ../robophd_runs."""
+    parent_experiments_dir: Union[str, Path, None] = None
+    """Root directory under which new experiment folders are created.
+    Each run gets its own timestamped subdirectory (e.g.
+    ``<parent_experiments_dir>/robophd/optimize_anything_20260329_120000/``).
+    None = ``../robophd_runs``."""
 
     # Reproducibility
     random_seed: Optional[int] = None
@@ -73,6 +74,15 @@ class RoboPhDConfig:
     engine_overrides: Optional[Dict[str, Any]] = None
     """Extra ConfigManager parameters for power users (e.g.
     weighted_random_configs, config_schedule, new_agent_test_rounds)."""
+
+    # Resume / extend
+    experiment_dir: Union[str, Path, None] = None
+    """Path to a prior experiment directory to resume from.
+    Pass the experiment_dir from a previous OptimizeResult."""
+    extend_iterations: Optional[int] = None
+    """Add N more iterations to a resumed run. Only valid with experiment_dir."""
+    from_iteration: Optional[int] = None
+    """Restart from a specific iteration (discards later work). Only valid with experiment_dir."""
 
 
 @dataclass
@@ -89,13 +99,106 @@ class OptimizeResult:
     """All agents with their scores: [{"name": ..., "candidate": ..., "elo": ..., "mean_score": ...}, ...]."""
     num_iterations_completed: int
     total_evaluations: int
+    completed_normally: bool
+    """Whether the optimization ran to completion (True) or ended early due to failure (False)."""
+
+
+def _validate_resume_config(cfg: RoboPhDConfig) -> None:
+    """Validate resume-related config fields."""
+    if cfg.extend_iterations is not None and cfg.experiment_dir is None:
+        raise ValueError("extend_iterations requires experiment_dir")
+    if cfg.from_iteration is not None and cfg.experiment_dir is None:
+        raise ValueError("from_iteration requires experiment_dir")
+
+
+def _build_resume_kwargs(
+    cfg: RoboPhDConfig,
+) -> Tuple[Any, int, Dict[str, Any], Dict[str, str]]:
+    """Build researcher constructor args for resuming from a checkpoint.
+
+    Mirrors the resume logic in run_robophd.py:303-383.
+
+    Returns:
+        (config_manager, num_iterations, researcher_kwargs, task_config)
+        where task_config contains file_mapping, objective, background, etc.
+    """
+    from RoboPhD.config_manager import ConfigManager, ConfigSource
+    from RoboPhD.researcher import ParallelAgentResearcher
+
+    experiment_dir = Path(cfg.experiment_dir)
+    if not experiment_dir.exists():
+        raise FileNotFoundError(f"Experiment directory not found: {experiment_dir}")
+
+    checkpoint = ParallelAgentResearcher.load_checkpoint(experiment_dir)
+
+    if "config_manager" not in checkpoint:
+        raise ValueError(f"Checkpoint missing ConfigManager data: {experiment_dir}")
+
+    # Recover file_mapping from task_config
+    task_config = checkpoint.get("task_config", {})
+    file_mapping = task_config.get("file_mapping")
+    if not file_mapping:
+        raise ValueError(
+            f"Checkpoint missing file_mapping in task_config. "
+            f"This run was created before resume support was added — "
+            f"it cannot be resumed via the API."
+        )
+
+    config_manager = ConfigManager.from_checkpoint(checkpoint["config_manager"])
+    last_completed = checkpoint["last_completed_iteration"]
+    checkpoint_num_iterations = checkpoint.get("num_iterations", last_completed)
+
+    if cfg.from_iteration is not None:
+        resume_from = cfg.from_iteration
+        if resume_from > last_completed:
+            raise ValueError(
+                f"from_iteration={resume_from} exceeds last completed "
+                f"iteration ({last_completed})"
+            )
+        config_manager.clear_from_iteration(resume_from)
+        logger.info("Restarting from iteration %d", resume_from)
+    else:
+        resume_from = last_completed + 1
+        logger.info("Auto-resuming from iteration %d", resume_from)
+
+    if cfg.extend_iterations is not None:
+        num_iterations = checkpoint_num_iterations + cfg.extend_iterations
+        checkpoint["num_iterations"] = num_iterations
+        logger.info(
+            "Extending by %d iterations (to %d total)",
+            cfg.extend_iterations, num_iterations,
+        )
+    else:
+        num_iterations = checkpoint_num_iterations
+
+    # Apply engine_overrides as a delta on the resume iteration
+    if cfg.engine_overrides:
+        config_manager.apply_delta(
+            iteration=resume_from,
+            delta=cfg.engine_overrides,
+            source=ConfigSource.CLI,
+            rationale=f"engine_overrides on resume: {cfg.engine_overrides}",
+        )
+        logger.info(
+            "Applied engine_overrides at iteration %d: %s",
+            resume_from, cfg.engine_overrides,
+        )
+
+    researcher_kwargs = dict(
+        resume_mode=True,
+        resume_from_iteration=resume_from,
+        resume_checkpoint=checkpoint,
+        resume_experiment_dir=experiment_dir,
+    )
+
+    return config_manager, num_iterations, researcher_kwargs, task_config
 
 
 def optimize_anything(
     evaluator: Callable,
     dataset: List[Dict],
-    seed_candidate: Dict[str, str],
-    objective: str,
+    seed_candidate: Optional[Dict[str, str]] = None,
+    objective: str = "",
     background: str = "",
     config: Optional[RoboPhDConfig] = None,
 ) -> OptimizeResult:
@@ -106,6 +209,24 @@ def optimize_anything(
     (Claude Code) proposes improved agents, which are evaluated head-to-head on
     sampled problems from your dataset.
 
+    Supports resume/extend via ``config.experiment_dir``::
+
+        # First run
+        result = optimize_anything(evaluator=..., dataset=...,
+                                   seed_candidate={"prompt": "..."}, objective="...")
+
+        # Resume from where it left off (seed_candidate not needed)
+        result = optimize_anything(
+            evaluator=..., dataset=..., objective="...",
+            config=RoboPhDConfig(experiment_dir=result.experiment_dir),
+        )
+
+        # Extend by 5 more iterations
+        result = optimize_anything(
+            evaluator=..., dataset=..., objective="...",
+            config=RoboPhDConfig(experiment_dir=result.experiment_dir, extend_iterations=5),
+        )
+
     Args:
         evaluator: Scoring function with signature
             ``(candidate: dict, example: dict) -> (score: float, diagnostics: dict)``.
@@ -113,97 +234,123 @@ def optimize_anything(
         dataset: List of example dicts for evaluation.
         seed_candidate: Initial text artifact(s) to optimize. Dict mapping
             component names to text content, e.g. ``{"prompt": "Solve carefully"}``.
+            Required for fresh runs; optional when resuming (recovered from checkpoint).
         objective: Natural-language optimization goal shown to the evolution AI.
+            Persisted in the checkpoint; recovered automatically on resume.
+            Pass a new value on resume to override.
         background: Optional domain documentation shown to the evolution AI.
+            Persisted in the checkpoint; recovered automatically on resume.
         config: Engine configuration. If None, uses ``RoboPhDConfig()`` defaults.
 
     Returns:
         OptimizeResult with best_candidate, best_score, and experiment_dir.
-
-    Example::
-
-        from RoboPhD import optimize_anything, RoboPhDConfig
-
-        result = optimize_anything(
-            evaluator=my_scorer,
-            dataset=my_examples,
-            seed_candidate={"prompt": "Solve the problem step by step"},
-            objective="Maximize accuracy on math problems",
-            config=RoboPhDConfig(num_iterations=5, evaluation_budget=200),
-        )
     """
     from RoboPhD.config_manager import ConfigManager, ConfigSource
     from RoboPhD.researcher import ParallelAgentResearcher
-    from RoboPhD.adapters.candidate_utils import extract_candidate, materialize_candidate
-    from RoboPhD.adapters.runner_utils import find_best_agent
+    from RoboPhD.adapters.candidate_utils import materialize_candidate
 
     if not dataset:
         raise ValueError("dataset must be a non-empty list of example dicts")
-    if not seed_candidate:
-        raise ValueError("seed_candidate must be a non-empty dict")
 
     cfg = config or RoboPhDConfig()
+    _validate_resume_config(cfg)
+    run_dir = Path(cfg.parent_experiments_dir) if cfg.parent_experiments_dir else Path("../robophd_runs")
 
-    # 1. File mapping: each candidate key is its own filename
-    file_mapping = {key: key for key in seed_candidate}
+    if cfg.experiment_dir:
+        # --- Resume path ---
+        config_manager, num_iterations, resume_kwargs, saved_task_config = (
+            _build_resume_kwargs(cfg)
+        )
+        file_mapping = saved_task_config["file_mapping"]
 
-    # 2. Materialize seed agent to a temp directory
-    run_dir = Path(cfg.run_dir) if cfg.run_dir else Path("../robophd_runs")
-    seed_agents_dir = run_dir / "robophd" / "_optimize_anything_seeds"
-    seed_agents_dir.mkdir(parents=True, exist_ok=True)
+        # Recover objective/background from checkpoint; caller overrides if provided
+        effective_objective = objective or saved_task_config.get("objective", "")
+        effective_background = background or saved_task_config.get("background", "")
 
-    seed_dir = Path(tempfile.mkdtemp(dir=seed_agents_dir, prefix="seed_"))
-    materialize_candidate(seed_candidate, seed_dir, file_mapping, name="seed")
-    seed_agent_name = seed_dir.name
+        runtime_config = {
+            "evaluator_fn": evaluator,
+            "dataset": dataset,
+            "file_mapping": file_mapping,
+            "task_objective": effective_objective,
+            "task_description": effective_objective,
+            "task_background": effective_background,
+            "task_name": "optimize_anything",
+            "diagnostic_files": {},
+            "runs_dir": str(run_dir),
+            "eval_timeout": cfg.eval_timeout,
+        }
 
-    # 3. Build ConfigManager
-    config_manager = ConfigManager()
-    researcher_config = {
-        "domain": "external",
-        "evolution_strategy": cfg.evolution_strategy,
-        "evolution_model": cfg.evolution_model,
-        "evolution_timeout": cfg.evolution_timeout,
-        "examples_per_iteration": cfg.examples_per_iteration,
-        "agents_directory": str(seed_dir.parent),
-        "initial_agents": [seed_agent_name],
-    }
-    if cfg.max_workers is not None:
-        researcher_config["max_workers"] = cfg.max_workers
-    if cfg.evaluation_budget is not None:
-        researcher_config["evaluation_budget"] = cfg.evaluation_budget
-    if cfg.engine_overrides:
-        researcher_config.update(cfg.engine_overrides)
+        researcher = ParallelAgentResearcher(
+            config_manager=config_manager,
+            num_iterations=num_iterations,
+            runtime_config=runtime_config,
+            **resume_kwargs,
+        )
+        initial_agents = None
 
-    config_manager.set_initial_config(researcher_config, ConfigSource.CLI)
+    else:
+        # --- Fresh start ---
+        if not seed_candidate:
+            raise ValueError("seed_candidate is required for fresh runs")
 
-    # 4. Build runtime_config (non-serializable, never checkpointed)
-    runtime_config = {
-        "evaluator_fn": evaluator,
-        "dataset": dataset,
-        "file_mapping": file_mapping,
-        "task_objective": objective,
-        "task_description": objective,
-        "task_background": background,
-        "task_name": "optimize_anything",
-        "diagnostic_files": {},
-        "runs_dir": str(run_dir),
-        "eval_timeout": cfg.eval_timeout,
-    }
+        file_mapping = {key: key for key in seed_candidate}
 
-    # 5. Create and run researcher
-    researcher = ParallelAgentResearcher(
-        config_manager=config_manager,
-        num_iterations=cfg.num_iterations,
-        random_seed=cfg.random_seed,
-        runtime_config=runtime_config,
-        task_config={},
-    )
+        seed_agents_dir = run_dir / "robophd" / "_optimize_anything_seeds"
+        seed_agents_dir.mkdir(parents=True, exist_ok=True)
+        seed_dir = Path(tempfile.mkdtemp(dir=seed_agents_dir, prefix="seed_"))
+        materialize_candidate(seed_candidate, seed_dir, file_mapping, name="seed")
+        seed_agent_name = seed_dir.name
 
-    completed_normally = researcher.run(initial_agents=[seed_agent_name])
+        config_manager = ConfigManager()
+        researcher_config = {
+            "domain": "external",
+            "evolution_strategy": cfg.evolution_strategy,
+            "evolution_model": cfg.evolution_model,
+            "evolution_timeout": cfg.evolution_timeout,
+            "examples_per_iteration": cfg.examples_per_iteration,
+            "agents_directory": str(seed_dir.parent),
+            "initial_agents": [seed_agent_name],
+        }
+        if cfg.max_workers is not None:
+            researcher_config["max_workers"] = cfg.max_workers
+        if cfg.evaluation_budget is not None:
+            researcher_config["evaluation_budget"] = cfg.evaluation_budget
+        if cfg.engine_overrides:
+            researcher_config.update(cfg.engine_overrides)
 
-    # 6. Extract results
+        config_manager.set_initial_config(researcher_config, ConfigSource.CLI)
+
+        runtime_config = {
+            "evaluator_fn": evaluator,
+            "dataset": dataset,
+            "file_mapping": file_mapping,
+            "task_objective": objective,
+            "task_description": objective,
+            "task_background": background,
+            "task_name": "optimize_anything",
+            "diagnostic_files": {},
+            "runs_dir": str(run_dir),
+            "eval_timeout": cfg.eval_timeout,
+        }
+
+        # Persist objective/background in task_config so they survive resume
+        researcher = ParallelAgentResearcher(
+            config_manager=config_manager,
+            num_iterations=cfg.num_iterations,
+            random_seed=cfg.random_seed,
+            runtime_config=runtime_config,
+            task_config={
+                "file_mapping": file_mapping,
+                "objective": objective,
+                "background": background,
+            },
+        )
+        initial_agents = [seed_agent_name]
+
+    completed_normally = researcher.run(initial_agents=initial_agents)
+
     try:
-        result = _build_result(researcher.experiment_dir, file_mapping)
+        result = _build_result(researcher.experiment_dir, file_mapping, completed_normally)
     except (FileNotFoundError, ValueError, KeyError) as exc:
         raise RuntimeError(
             f"Optimization failed: could not extract results from {researcher.experiment_dir}. "
@@ -230,6 +377,7 @@ def optimize_task(
     """Run RoboPhD ELO evolution on a registered task.
 
     Equivalent to ``run_robophd.py --task <name>`` but callable from Python.
+    Supports resume/extend via ``config.experiment_dir``.
 
     Args:
         task_name: Registered task name (e.g. "cant_be_late_stdout", "arc_agi_1").
@@ -239,92 +387,111 @@ def optimize_task(
 
     Returns:
         OptimizeResult with best_candidate, best_score, and experiment_dir.
-
-    Example::
-
-        from RoboPhD import optimize_task, RoboPhDConfig
-
-        result = optimize_task(
-            "cant_be_late_stdout",
-            config=RoboPhDConfig(num_iterations=5, evaluation_budget=200),
-        )
     """
     from RoboPhD.config_manager import ConfigManager, ConfigSource
     from RoboPhD.researcher import ParallelAgentResearcher
-    from RoboPhD.adapters.candidate_utils import extract_candidate
-    from RoboPhD.adapters.runner_utils import find_best_agent
     from RoboPhD.tasks import get_task
 
     task = get_task(task_name)
     cfg = config or RoboPhDConfig()
+    _validate_resume_config(cfg)
     tc = dict(task_config or {})
 
     # Build full config for evaluator/dataset factories
     full_config = {**task.config_defaults, **tc}
 
-    # Build evaluator and dataset
+    # Build evaluator and dataset (always needed, even on resume)
     evaluator = task.evaluator_factory(full_config)
     dataset = task.dataset_builder(full_config)
     if not dataset:
         raise ValueError(f"Empty dataset for task {task_name!r}")
 
-    # Resolve seed agent
-    seed_agent_path = Path(tc.get("seed_agent", seed_agent or task.default_seed_agent))
-    if not seed_agent_path.exists():
-        raise FileNotFoundError(f"Seed agent not found: {seed_agent_path}")
+    run_dir = Path(cfg.parent_experiments_dir) if cfg.parent_experiments_dir else Path("../robophd_runs")
+    file_mapping = task.file_mapping
 
-    # Build ConfigManager
-    config_manager = ConfigManager()
-    researcher_config = {
-        "domain": "external",
-        "meta_evolution_domain": task.name,
-        "evolution_strategy": cfg.evolution_strategy,
-        "evolution_model": cfg.evolution_model,
-        "evolution_timeout": cfg.evolution_timeout,
-        "examples_per_iteration": cfg.examples_per_iteration,
-        "agents_directory": str(seed_agent_path.parent),
-        "initial_agents": [seed_agent_path.name],
-    }
-    if cfg.max_workers is not None:
-        researcher_config["max_workers"] = cfg.max_workers
-    if cfg.evaluation_budget is not None:
-        researcher_config["evaluation_budget"] = cfg.evaluation_budget
-    elif "evaluation_budget" in task.config_defaults:
-        researcher_config["evaluation_budget"] = task.config_defaults["evaluation_budget"]
-    if cfg.engine_overrides:
-        researcher_config.update(cfg.engine_overrides)
+    if cfg.experiment_dir:
+        # --- Resume path ---
+        config_manager, num_iterations, resume_kwargs, _ = (
+            _build_resume_kwargs(cfg)
+        )
+        # Use task.file_mapping (authoritative) rather than checkpoint's copy
 
-    config_manager.set_initial_config(researcher_config, ConfigSource.CLI)
+        runtime_config = {
+            "evaluator_fn": evaluator,
+            "dataset": dataset,
+            "file_mapping": file_mapping,
+            "task_objective": task.objective,
+            "task_description": task.description,
+            "task_background": task.background,
+            "task_name": task.name,
+            "diagnostic_files": task.diagnostic_files,
+            "runs_dir": str(run_dir),
+            "eval_timeout": cfg.eval_timeout,
+        }
 
-    # Build runtime_config
-    run_dir = Path(cfg.run_dir) if cfg.run_dir else Path("../robophd_runs")
-    runtime_config = {
-        "evaluator_fn": evaluator,
-        "dataset": dataset,
-        "file_mapping": task.file_mapping,
-        "task_objective": task.objective,
-        "task_description": task.description,
-        "task_background": task.background,
-        "task_name": task.name,
-        "diagnostic_files": task.diagnostic_files,
-        "runs_dir": str(run_dir),
-        "eval_timeout": cfg.eval_timeout,
-    }
+        researcher = ParallelAgentResearcher(
+            config_manager=config_manager,
+            num_iterations=num_iterations,
+            runtime_config=runtime_config,
+            task_config=tc,
+            **resume_kwargs,
+        )
+        initial_agents = None
 
-    # Create and run researcher
-    researcher = ParallelAgentResearcher(
-        config_manager=config_manager,
-        num_iterations=cfg.num_iterations,
-        random_seed=cfg.random_seed,
-        runtime_config=runtime_config,
-        task_config=tc,
-    )
+    else:
+        # --- Fresh start ---
+        seed_agent_path = Path(tc.get("seed_agent", seed_agent or task.default_seed_agent))
+        if not seed_agent_path.exists():
+            raise FileNotFoundError(f"Seed agent not found: {seed_agent_path}")
 
-    completed_normally = researcher.run(initial_agents=[seed_agent_path.name])
+        config_manager = ConfigManager()
+        researcher_config = {
+            "domain": "external",
+            "meta_evolution_domain": task.name,
+            "evolution_strategy": cfg.evolution_strategy,
+            "evolution_model": cfg.evolution_model,
+            "evolution_timeout": cfg.evolution_timeout,
+            "examples_per_iteration": cfg.examples_per_iteration,
+            "agents_directory": str(seed_agent_path.parent),
+            "initial_agents": [seed_agent_path.name],
+        }
+        if cfg.max_workers is not None:
+            researcher_config["max_workers"] = cfg.max_workers
+        if cfg.evaluation_budget is not None:
+            researcher_config["evaluation_budget"] = cfg.evaluation_budget
+        elif "evaluation_budget" in task.config_defaults:
+            researcher_config["evaluation_budget"] = task.config_defaults["evaluation_budget"]
+        if cfg.engine_overrides:
+            researcher_config.update(cfg.engine_overrides)
 
-    # Extract results
+        config_manager.set_initial_config(researcher_config, ConfigSource.CLI)
+
+        runtime_config = {
+            "evaluator_fn": evaluator,
+            "dataset": dataset,
+            "file_mapping": file_mapping,
+            "task_objective": task.objective,
+            "task_description": task.description,
+            "task_background": task.background,
+            "task_name": task.name,
+            "diagnostic_files": task.diagnostic_files,
+            "runs_dir": str(run_dir),
+            "eval_timeout": cfg.eval_timeout,
+        }
+
+        researcher = ParallelAgentResearcher(
+            config_manager=config_manager,
+            num_iterations=cfg.num_iterations,
+            random_seed=cfg.random_seed,
+            runtime_config=runtime_config,
+            task_config=tc,
+        )
+        initial_agents = [seed_agent_path.name]
+
+    completed_normally = researcher.run(initial_agents=initial_agents)
+
     try:
-        result = _build_result(researcher.experiment_dir, task.file_mapping)
+        result = _build_result(researcher.experiment_dir, file_mapping, completed_normally)
     except (FileNotFoundError, ValueError, KeyError) as exc:
         raise RuntimeError(
             f"Optimization failed: could not extract results from {researcher.experiment_dir}. "
@@ -341,7 +508,7 @@ def optimize_task(
     return result
 
 
-def _build_result(experiment_dir: Path, file_mapping: Dict[str, str]) -> OptimizeResult:
+def _build_result(experiment_dir: Path, file_mapping: Dict[str, str], completed_normally: bool) -> OptimizeResult:
     """Extract OptimizeResult from a completed experiment directory."""
     from RoboPhD.adapters.candidate_utils import extract_candidate
     from RoboPhD.adapters.runner_utils import find_best_agent
@@ -383,4 +550,5 @@ def _build_result(experiment_dir: Path, file_mapping: Dict[str, str]) -> Optimiz
         all_candidates=all_candidates,
         num_iterations_completed=num_iterations,
         total_evaluations=total_evals,
+        completed_normally=completed_normally,
     )

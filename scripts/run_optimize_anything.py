@@ -233,11 +233,100 @@ def parse_args():
                         help="Examples sampled per iteration (default: 10)")
     parser.add_argument("--solver-model", type=str, default="haiku-4.5",
                         help="Model for solving math problems (default: haiku-4.5)")
-    parser.add_argument("--run-dir", type=str, default="../robophd_runs",
-                        help="Directory for experiment output (default: ../robophd_runs)")
+    parser.add_argument("--parent-experiments-dir", type=str, default="../robophd_runs",
+                        help="Root directory under which experiment folders are created (default: ../robophd_runs)")
     parser.add_argument("--seed-only", action="store_true",
                         help="Only run seed baseline (no evolution)")
+    parser.add_argument("--demo-resume", action="store_true",
+                        help="Demo resume/extend: 2 iterations → extend +1 → from_iteration 2 + extend 1")
     return parser.parse_args()
+
+
+# ---------------------------------------------------------------------------
+# Resume / extend demo
+# ---------------------------------------------------------------------------
+
+def print_step_result(step_name: str, result):
+    """Print a compact summary of an optimization step."""
+    print(f"\n{'─' * 50}")
+    print(f"  {step_name}")
+    print(f"{'─' * 50}")
+    print(f"  Iterations completed: {result.num_iterations_completed}")
+    print(f"  Total evaluations:    {result.total_evaluations}")
+    print(f"  Best ELO:             {result.best_score:.1f}")
+    print(f"  Agents explored:      {len(result.all_candidates)}")
+    print(f"  Experiment dir:       {result.experiment_dir}")
+
+
+def run_demo_resume(evaluator_fn, parent_experiments_dir: str):
+    """Demo: fresh run → extend → from_iteration + extend."""
+    from RoboPhD import optimize_anything, RoboPhDConfig
+
+    # Step 1: Fresh run for 2 iterations
+    print("\n" + "=" * 60)
+    print("  Step 1: Fresh run (2 iterations)")
+    print("=" * 60)
+    result = optimize_anything(
+        evaluator=evaluator_fn,
+        dataset=DATASET,
+        seed_candidate=SEED_CANDIDATE,
+        objective=OBJECTIVE,
+        background=BACKGROUND,
+        config=RoboPhDConfig(
+            num_iterations=2,
+            evaluation_budget=500,
+            examples_per_iteration=5,
+            parent_experiments_dir=parent_experiments_dir,
+        ),
+    )
+    print_step_result("Step 1 complete", result)
+    experiment_dir = result.experiment_dir
+
+    # Step 2: Extend by 1 iteration (continues from iteration 3)
+    # objective/background are recovered from checkpoint — no need to pass them
+    print("\n" + "=" * 60)
+    print("  Step 2: Extend +1 iteration (resume from checkpoint)")
+    print("=" * 60)
+    result = optimize_anything(
+        evaluator=evaluator_fn,
+        dataset=DATASET,
+        config=RoboPhDConfig(
+            experiment_dir=experiment_dir,
+            extend_iterations=1,
+            evaluation_budget=500,
+            examples_per_iteration=5,
+            parent_experiments_dir=parent_experiments_dir,
+        ),
+    )
+    print_step_result("Step 2 complete", result)
+
+    # Step 3: Restart from iteration 2 and extend by 1
+    # This discards iterations 2-3 and re-runs from iteration 2
+    print("\n" + "=" * 60)
+    print("  Step 3: Restart from iteration 2, extend +1 (re-does iterations 2-3)")
+    print("=" * 60)
+    result = optimize_anything(
+        evaluator=evaluator_fn,
+        dataset=DATASET,
+        config=RoboPhDConfig(
+            experiment_dir=experiment_dir,
+            from_iteration=2,
+            extend_iterations=1,
+            evaluation_budget=500,
+            examples_per_iteration=5,
+            parent_experiments_dir=parent_experiments_dir,
+        ),
+    )
+    print_step_result("Step 3 complete", result)
+
+    # Final summary
+    print("\n" + "=" * 60)
+    print("  Demo Complete")
+    print("=" * 60)
+    print(f"\n  Best prompt:\n")
+    print(result.best_candidate["system_prompt"])
+
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -254,14 +343,27 @@ def main():
         print("ERROR: Set ANTHROPIC_API_KEY_FOR_ROBOPHD (or ANTHROPIC_API_KEY) environment variable.")
         sys.exit(1)
 
+    evaluator_fn = make_evaluator(args.solver_model)
+
+    if args.demo_resume:
+        print("=" * 60)
+        print("  optimize_anything() Demo: Resume & Extend")
+        print("=" * 60)
+        print(f"\nSolver model: {args.solver_model}")
+        print(f"Dataset: {len(DATASET)} math word problems")
+
+        print("\n--- Seed Baseline ---")
+        run_seed_baseline(evaluator_fn)
+
+        run_demo_resume(evaluator_fn, args.parent_experiments_dir)
+        os._exit(0)
+
     print("=" * 60)
     print("  optimize_anything() Demo: Math Problem Prompt Evolution")
     print("=" * 60)
     print(f"\nSolver model: {args.solver_model}")
     print(f"Dataset: {len(DATASET)} math word problems")
     print(f"Evolution: {args.num_iterations} iterations, budget={args.evaluation_budget}")
-
-    evaluator_fn = make_evaluator(args.solver_model)
 
     # Run seed baseline
     print("\n--- Seed Baseline ---")
@@ -284,7 +386,7 @@ def main():
             num_iterations=args.num_iterations,
             evaluation_budget=args.evaluation_budget,
             examples_per_iteration=args.examples_per_iteration,
-            run_dir=args.run_dir,
+            parent_experiments_dir=args.parent_experiments_dir,
         ),
     )
 
