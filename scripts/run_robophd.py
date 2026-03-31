@@ -289,13 +289,15 @@ def main():
     researcher_config["meta_evolution_domain"] = task.name
 
     # Seed agent: set agents_directory so load_initial_agents can find it
-    seed_agent_path = task_config.get("seed_agent", engine_config.get("seed_agent", task.default_seed_agent))
-    seed_agent = Path(seed_agent_path)
-    if not seed_agent.exists():
-        print(f"Error: Seed agent not found: {seed_agent}")
-        sys.exit(1)
-    researcher_config["agents_directory"] = str(seed_agent.parent)
-    researcher_config["initial_agents"] = [seed_agent.name]
+    if "agents_directory" not in user_config:
+        seed_agent_path = task_config.get("seed_agent", engine_config.get("seed_agent", task.default_seed_agent))
+        seed_agent = Path(seed_agent_path)
+        if not seed_agent.exists():
+            print(f"Error: Seed agent not found: {seed_agent}")
+            sys.exit(1)
+        researcher_config["agents_directory"] = str(seed_agent.parent)
+        if "initial_agents" not in user_config:
+            researcher_config["initial_agents"] = [seed_agent.name]
 
     # --- 4. Fresh vs Resume ---
     from RoboPhD.researcher import ParallelAgentResearcher
