@@ -37,24 +37,24 @@ RoboPhD uses AI throughout:
     ┌─────────────────────────────────────────────────────────────┐
     │                      ITERATION CYCLE                        │
     │                                                             │
-    │  ┌──────────────────┐         ┌────────────────────┐        │
-    │  │  EVOLUTION AI    │ Creates │  AGENT ARTIFACTS    │        │
-    │  │  (Claude Code    │────────▶│  (per file_mapping) │        │
-    │  │   CLI session)   │         └────────┬───────────┘        │
+    │  ┌──────────────────┐         ┌───────────────────-─┐       │
+    │  │  EVOLUTION AI    │ Creates │  AGENT ARTIFACTS    │       │
+    │  │  (Claude Code    │────────▶│  (per file_mapping) │       │
+    │  │   CLI session)   │         └────────┬──────────-─┘       │
     │  └──────────────────┘                  │                    │
-    │           ▲                             ▼                    │
-    │           │                    ┌────────────────────┐        │
-    │   Performance                  │  EVALUATOR FN      │        │
-    │   data from                    │  Black-box scoring │        │
-    │   prior iterations             │  (candidate,example)│       │
-    │           │                    │   → (score, diag)  │        │
-    │           │                    └────────┬───────────┘        │
-    │           │                             │                    │
-    │           │                             ▼                    │
+    │           ▲                            ▼                    │
+    │           │                    ┌───────────────────-─┐      │
+    │   Performance                  │  EVALUATOR FN       │      │
+    │   data from                    │  Black-box scoring  │      │
+    │   prior iterations             │  (candidate,example)│      │
+    │           │                    │   → (score, diag)   │      │
+    │           │                    └────────┬───────────-┘      │
+    │           │                             │                   │
+    │           │                             ▼                   │
     │  ┌────────┴─────────┐         ┌────────────────────┐        │
     │  │  AGENT RANKINGS  │◀────────│  ELO COMPETITION   │        │
     │  │  Top agents      │         │  Head-to-head on   │        │
-    │  │  inform next     │         │  sampled problems   │        │
+    │  │  inform next     │         │  sampled problems  │        │
     │  │  evolution round │         └────────────────────┘        │
     │  └──────────────────┘                                       │
     │                                                             │
