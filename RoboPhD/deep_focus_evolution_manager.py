@@ -980,13 +980,6 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             "--model", model
         ]
 
-        # Add MCP config for error analysis tools
-        # Path to MCP config relative to project root
-        project_root = self.experiment_dir.parent
-        mcp_config_path = project_root / "RoboPhD" / "mcp_configs" / "error_analysis_tools.json"
-        if mcp_config_path.exists():
-            cmd.extend(["--mcp-config", str(mcp_config_path)])
-
         # Use explicit session management to prevent interference
         if continue_session:
             # Resume existing session by ID
@@ -1035,10 +1028,6 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
                             str(claude_cli),
                             "--model", model
                         ]
-
-                        # Add MCP config if present
-                        if mcp_config_path.exists():
-                            retry_cmd.extend(["--mcp-config", str(mcp_config_path)])
 
                         # Use --resume for retry (session already exists)
                         retry_cmd.extend(["--resume", self.session_id])

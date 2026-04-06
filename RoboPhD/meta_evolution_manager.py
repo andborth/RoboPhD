@@ -500,13 +500,6 @@ class MetaEvolutionManager:
             "--model", cli_model
         ]
 
-        # Add MCP config for error analysis tools
-        # Path to MCP config relative to project root
-        project_root = self.experiment_dir.parent
-        mcp_config_path = project_root / "RoboPhD" / "mcp_configs" / "error_analysis_tools.json"
-        if mcp_config_path.exists():
-            cmd.extend(["--mcp-config", str(mcp_config_path)])
-
         # Use explicit session management to prevent interference
         if session_created:
             # Resume existing session by ID
