@@ -67,7 +67,7 @@ RoboPhD uses AI throughout:
 |---|---|---|---|
 | ARC-AGI | ARC-AGI (HuggingFace) | `agent.py` — Python solver with `solve()` | Gemini Flash Lite (via OpenRouter) |
 | Can't Be Late | AWS spot traces (NSDI'24) | `agent.py` — scheduling strategy class | Pure algorithmic (no LLM) |
-| Text2SQL | BIRD | `eval_instructions.md` + `tools/analyze_db.py` + `verify_prompt.md` | Claude Haiku 4.5 |
+| Text2SQL | BIRD | `agent.py` + `analyze_db.py` — SQL generation with `llm()` + `test_sql()` | Claude Haiku 4.5 |
 | DocFinQA | DocFinQA (ACL 2024) | `agent.py` — retrieval + QA pipeline | GPT-4.1-mini + text-embedding-3-small |
 
 Additional domains (CodeGen, AIME, CodeCritic) are available in the task registry but not actively maintained.
@@ -257,9 +257,8 @@ If you use RoboPhD in your research, please cite:
 
 ```bibtex
 @article{borthwick2026robophd,
-  title={RoboPhD: Self-Improving Text-to-SQL Through Autonomous Agent Evolution},
-  author={Borthwick, Andrew and Ash, Steve},
-  journal={arXiv preprint arXiv:2601.01126},
+  title={RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets},
+  author={Borthwick, Andrew and Ash, Stephen and Galczak, Anthony},
   year={2026}
 }
 ```
