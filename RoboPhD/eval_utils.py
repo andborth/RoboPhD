@@ -1,7 +1,9 @@
-"""Shared evaluation utilities: rate limit handling, parallel eval loops."""
+"""Shared evaluation utilities: rate limit handling, parallel eval loops, cleanup."""
 
 import logging
 import os
+import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 
@@ -178,3 +180,31 @@ def run_parallel_eval(
     }
 
     return {"scores": scores, "diagnostics": diagnostics, "test_results": test_results, "timed_out": timed_out}
+
+
+def force_exit_if_threads_leaked(grace_period: float = 0.5):
+    """Force-exit if non-daemon threads are still alive after a grace period.
+
+    Call this at the end of a script's if __name__ == "__main__" block.
+    Leaked eval timeout threads and httpx/litellm connection pools can
+    block Python's atexit handler indefinitely. A brief grace period
+    lets well-behaved threads shut down naturally.
+
+    Usage::
+
+        if __name__ == "__main__":
+            try:
+                main()
+            finally:
+                force_exit_if_threads_leaked()
+    """
+    time.sleep(grace_period)
+    alive = [t for t in threading.enumerate()
+             if t is not threading.main_thread() and t.is_alive() and not t.daemon]
+    if alive:
+        names = ", ".join(t.name for t in alive)
+        logger.info(f"Force-exiting ({len(alive)} non-daemon thread(s) still running: {names})")
+        logging.shutdown()
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(1 if sys.exc_info()[0] else 0)
