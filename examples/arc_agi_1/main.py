@@ -186,4 +186,19 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        # Force-exit if any non-daemon threads are still alive (e.g., leaked
+        # eval timeout threads). Python's atexit blocks on t.join() otherwise.
+        import threading
+        alive = [t for t in threading.enumerate()
+                 if t is not threading.main_thread() and t.is_alive() and not t.daemon]
+        if alive:
+            names = ", ".join(t.name for t in alive)
+            logger.info(f"Force-exiting ({len(alive)} non-daemon thread(s) still running: {names})")
+            logging.shutdown()
+            sys.stdout.flush()
+            sys.stderr.flush()
+            import os
+            os._exit(1 if sys.exc_info()[0] else 0)
