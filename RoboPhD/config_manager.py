@@ -88,6 +88,7 @@ class ConfigManager:
 
             # Timeouts
             "evolution_timeout": 3600,
+            "eval_timeout": 300,  # Per-evaluation timeout (seconds) — timed-out evals score 0
             "llm_call_timeout": 120,  # Per-call LLM timeout (2 min) - affects local models
 
             # Tie handling

@@ -340,6 +340,7 @@ def optimize_anything(
             "evolution_strategy": cfg.evolution_strategy,
             "evolution_model": cfg.evolution_model,
             "evolution_timeout": cfg.evolution_timeout,
+            "eval_timeout": cfg.eval_timeout,
             "examples_per_iteration": cfg.examples_per_iteration,
             "agents_directory": str(seed_dir.parent),
             "initial_agents": [seed_agent_name],
