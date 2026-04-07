@@ -42,41 +42,40 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Evolve ARC-AGI-1 agents")
+    parser = argparse.ArgumentParser(
+        description="Evolve ARC-AGI-1 agents",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
 
     # Budget & scale
-    parser.add_argument("--num-iterations", type=int, default=999)
-    parser.add_argument("--evaluation-budget", type=int, default=1500)
-    parser.add_argument("--examples-per-iteration", type=int, default=20)
+    parser.add_argument("--num-iterations", type=int, default=999, help="Max iterations (evaluation budget is the real limit)")
+    parser.add_argument("--evaluation-budget", type=int, default=1500, help="Max evaluator calls across all iterations")
+    parser.add_argument("--examples-per-iteration", type=int, default=20, help="Problems sampled per iteration")
 
     # Evolution
-    parser.add_argument("--evolution-strategy", default="use_your_judgment")
-    parser.add_argument("--evolution-model", default="opus-4.6")
+    parser.add_argument("--evolution-strategy", default="use_your_judgment", help="Evolution strategy")
+    parser.add_argument("--evolution-model", default="opus-4.6", help="Model for evolution AI")
 
     # Task-specific
     parser.add_argument("--paper-config", action="store_true",
                         help="Use paper settings: Gemini 3.1 Flash Lite + $0.25 cost budget "
                              "(default: Gemini 2.5 Flash Lite + $0.10 budget)")
-    parser.add_argument("--max-llm-calls", type=int, default=10)
+    parser.add_argument("--max-llm-calls", type=int, default=10, help="Max LLM calls per problem")
 
     # Infrastructure
-    parser.add_argument("--max-workers", type=int, default=None)
-    parser.add_argument("--runs-dir", default="../robophd_runs")
-    parser.add_argument("--random-seed", type=int, default=None)
-    parser.add_argument("--engine-config", type=str, default=None,
-                        help="JSON string with extra engine overrides")
+    parser.add_argument("--max-workers", type=int, default=None, help="Parallel eval workers (None = Python default)")
+    parser.add_argument("--runs-dir", default="../robophd_runs", help="Root directory for experiment output")
+    parser.add_argument("--random-seed", type=int, default=None, help="Random seed for reproducibility")
+    parser.add_argument("--engine-config", type=str, default=None, help="JSON string with extra engine overrides")
 
     # Test evaluation
-    parser.add_argument("--eval-test-set", action="store_true")
-    parser.add_argument("--test-repeats", type=int, default=1)
+    parser.add_argument("--eval-test-set", action="store_true", help="Run test-set evaluation after optimization")
+    parser.add_argument("--test-repeats", type=int, default=1, help="Number of test-set repeats")
 
     # Resume / extend
-    parser.add_argument("--resume", type=str, default=None,
-                        help="Path to experiment directory to resume")
-    parser.add_argument("--extend", type=int, default=None,
-                        help="Add N more iterations to a resumed run")
-    parser.add_argument("--from-iteration", type=int, default=None,
-                        help="Restart from a specific iteration")
+    parser.add_argument("--resume", type=str, default=None, help="Path to experiment directory to resume")
+    parser.add_argument("--extend", type=int, default=None, help="Add N more iterations to a resumed run")
+    parser.add_argument("--from-iteration", type=int, default=None, help="Restart from a specific iteration")
 
     return parser.parse_args()
 
