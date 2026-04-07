@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Quick Reference
 
-- **Available CLI Tools**: `jq` and `tree` are installed and available
+- **Recommended CLI Tools**: `jq` and `tree` (install via your package manager if not present)
 - **GEPA integration**: See [docs/claude/gepa.md](docs/claude/gepa.md)
 - **Text2SQL domain**: See [docs/claude/text2sql.md](docs/claude/text2sql.md)
 

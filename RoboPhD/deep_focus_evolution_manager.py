@@ -35,7 +35,7 @@ EVOLUTION_ENVIRONMENT_GUIDE = """\
 
 ## Available Data
 
-Use `tree` or `ls` to explore the experiment directory. Key artifacts:
+Use your available tools to explore the experiment directory. Key artifacts:
 
 - `../../agents/<name>/` — agent source code (one directory per agent)
 - `../../iteration_NNN/` — evaluation results per iteration:
@@ -50,9 +50,7 @@ During testing and refinement rounds (Rounds 2+), your results appear in `./iter
 
 If a `strategy_tools/` directory exists in your working directory, it contains Python helper scripts provided by your evolution strategy. **Run them** — they analyze prior iteration data and produce structured output to guide your work. Use `__PYTHON_EXECUTABLE__ strategy_tools/<script>.py --help` to discover usage.
 
-## CLI Tools
-
-`jq` and `tree` are installed and available."""
+"""
 
 
 class EvolutionResult(NamedTuple):
@@ -211,7 +209,19 @@ class DeepFocusEvolutionManager:
                 sections.append(f"# Domain Background\n\n{self._task_background}")
             if self._task_objective:
                 sections.append(f"# Domain Objective\n\n{self._task_objective}")
-            sections.append(EVOLUTION_ENVIRONMENT_GUIDE.replace("__PYTHON_EXECUTABLE__", sys.executable))
+            guide = EVOLUTION_ENVIRONMENT_GUIDE.replace("__PYTHON_EXECUTABLE__", sys.executable)
+
+            # Dynamically detect and advertise available CLI tools
+            available_tools = []
+            missing_tools = []
+            for tool in ["jq", "tree"]:
+                (available_tools if shutil.which(tool) else missing_tools).append(tool)
+            if available_tools:
+                guide += "\n\n## CLI Tools\n\nAvailable: " + ", ".join(f"`{t}`" for t in available_tools)
+            if missing_tools:
+                logger.warning("Recommended CLI tools not found: %s. Install for better evolution results.", ", ".join(missing_tools))
+
+            sections.append(guide)
             claude_md_path.write_text("\n\n".join(sections))
             logger.info(f"CLAUDE.md written to: {claude_md_path}")
 

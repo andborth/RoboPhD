@@ -7,6 +7,18 @@
 - ~50GB disk space for BIRD dataset (Text2SQL domain only)
 - Anthropic API key
 
+### Recommended CLI Tools
+
+`jq` and `tree` are recommended but not essential. The evolution AI uses them to explore experiment data more effectively. Omitting them may impact results slightly.
+
+```bash
+# macOS
+brew install jq tree
+
+# Ubuntu/Debian/WSL
+apt install jq tree
+```
+
 ## Step 1: Clone the Repository
 
 ```bash
