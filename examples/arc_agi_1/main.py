@@ -91,13 +91,20 @@ def main():
     )
 
     # Select config tier
+    # Reasoning effort: Gemini 2.5 Flash Lite has thinking disabled by default.
+    # Enabling it with "high" causes frequent empty responses (the model exhausts
+    # its output budget on reasoning and returns 0-char content). We leave it off
+    # for the default config. Gemini 3.1 Flash Lite (paper config) has thinking
+    # enabled by default and handles "high" well.
     if args.paper_config:
         solver_model = "openrouter/google/gemini-3.1-flash-lite-preview"
         cost_budget = 0.25
-        logger.info("Using paper config: Gemini 3.1 Flash Lite, $0.25 budget")
+        reasoning_effort = "high"
+        logger.info("Using paper config: Gemini 3.1 Flash Lite, $0.25 budget, reasoning=high")
     else:
         solver_model = DEFAULT_SOLVER_MODEL
         cost_budget = 0.10
+        reasoning_effort = None
         logger.info(f"Using default config: {solver_model}, ${cost_budget:.2f} budget")
 
     objective = (HERE / "objective.md").read_text().strip()
@@ -108,6 +115,7 @@ def main():
         solver_model=solver_model,
         max_llm_calls=args.max_llm_calls,
         cost_budget=cost_budget,
+        reasoning_effort=reasoning_effort,
     )
 
     train, val = load_arc_train_val()

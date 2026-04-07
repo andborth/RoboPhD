@@ -60,7 +60,7 @@ class TrackedLLM:
     resp.usage.cost when litellm's pricing DB doesn't cover the model.
     """
 
-    def __init__(self, model_id: str, max_llm_calls: int = 20, reasoning_effort: str = "high"):
+    def __init__(self, model_id: str, max_llm_calls: int = 20, reasoning_effort: Optional[str] = None):
         _v = _load_vendored()
         self._inner = _v.TrackedLLM(
             model_id=model_id,
@@ -328,7 +328,7 @@ class ArcAGI1Evaluator:
         solver_model: str = DEFAULT_SOLVER_MODEL,
         work_dir: Optional[Path] = None,
         max_llm_calls: int = 10,
-        reasoning_effort: Optional[str] = "high",
+        reasoning_effort: Optional[str] = None,
         cost_budget: float = 0.10,
     ):
         self.solver_model = solver_model
