@@ -87,9 +87,13 @@ export OPENROUTER_API_KEY="sk-or-..."
 
 # 4. Run a benchmark example (ARC-AGI-1)
 python examples/arc_agi_1/main.py --num-iterations 2
+
+# 5. Can't Be Late (no solver API key needed — pure algorithmic)
+bash examples/cant_be_late/download_traces.sh
+python examples/cant_be_late/main.py --num-iterations 2
 ```
 
-More examples (Can't Be Late, Text2SQL, DocFinQA) coming soon.
+More examples (Text2SQL, DocFinQA) coming soon.
 
 ## Optimize Anything API
 
