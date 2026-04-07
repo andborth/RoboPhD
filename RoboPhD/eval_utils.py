@@ -182,6 +182,34 @@ def run_parallel_eval(
     return {"scores": scores, "diagnostics": diagnostics, "test_results": test_results, "timed_out": timed_out}
 
 
+def _silence_resource_tracker():
+    """Silence the multiprocessing resource_tracker before os._exit().
+
+    When os._exit() bypasses normal cleanup, the resource tracker (a child
+    process) warns about "leaked semaphore objects". These are harmless —
+    the kernel reclaims POSIX semaphores at process exit — but the warning
+    is confusing.
+
+    The tracker inherits the parent's stderr at spawn time, so we can't
+    redirect it after the fact. Instead we kill the tracker process
+    (SIGKILL) and reap it, preventing it from running its cleanup/warning
+    code at all. The kernel still reclaims any POSIX semaphores.
+    """
+    try:
+        import signal
+        from multiprocessing import resource_tracker
+        tracker = resource_tracker._resource_tracker
+        if tracker._pid is not None:
+            pid = tracker._pid
+            os.close(tracker._fd)
+            tracker._fd = None
+            os.kill(pid, signal.SIGKILL)
+            os.waitpid(pid, 0)
+            tracker._pid = None
+    except Exception:
+        pass
+
+
 def force_exit_if_threads_leaked(grace_period: float = 0.5):
     """Force-exit if non-daemon threads are still alive after a grace period.
 
@@ -207,4 +235,5 @@ def force_exit_if_threads_leaked(grace_period: float = 0.5):
         logging.shutdown()
         sys.stdout.flush()
         sys.stderr.flush()
+        _silence_resource_tracker()
         os._exit(1 if sys.exc_info()[0] else 0)
