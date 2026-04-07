@@ -217,9 +217,9 @@ def build_cross_agent_analysis(newest_agent: str, baseline_agents: List[str],
         filtered_questions = by_question
 
     # Global: newest vs all baseline
-    unique_successes = []  # New succeeded, all baselines failed
-    unique_errors = []     # New failed, all baselines succeeded
-    consensus_errors = []  # All failed (including new)
+    unique_successes = []     # New succeeded, all baselines failed
+    unique_failures = []     # New failed, all baselines succeeded
+    consensus_failures = []  # All failed (including new)
     mixed_results = {}
 
     for question_id, agents_results in filtered_questions.items():
@@ -246,11 +246,11 @@ def build_cross_agent_analysis(newest_agent: str, baseline_agents: List[str],
         if not new_correct:
             # Newest agent got it wrong
             if len(baseline_correct_agents) == len(baseline_results):
-                # All baseline agents got it right - UNIQUE ERROR
-                unique_errors.append(question_id)
+                # All baseline agents got it right - UNIQUE FAILURE
+                unique_failures.append(question_id)
             elif len(baseline_wrong_agents) == len(baseline_results):
-                # All failed (including new) - CONSENSUS ERROR
-                consensus_errors.append(question_id)
+                # All failed (including new) - CONSENSUS FAILURE
+                consensus_failures.append(question_id)
             else:
                 # Mixed - some baseline succeeded, some failed
                 mixed_results[question_id] = {
@@ -277,8 +277,8 @@ def build_cross_agent_analysis(newest_agent: str, baseline_agents: List[str],
     analysis = {
         'new_vs_baseline': {
             'unique_successes': unique_successes,
-            'unique_errors': unique_errors,
-            'consensus_errors': consensus_errors,
+            'unique_failures': unique_failures,
+            'consensus_failures': consensus_failures,
             'mixed_results': mixed_results
         }
     }
@@ -496,22 +496,27 @@ def _build_binary_index(newest_agent: str, baseline_agents: List[str],
 
         total_correct = 0
         total_questions = 0
-        error_ids = []
+        failed_ids = []
+        error_ids = []  # Actual errors (agent crash) — distinct from incorrect answers
 
         for question_id, result in results['by_agent'][agent].items():
             total_questions += 1
             if result.get('score', 0) >= 0.5:
                 total_correct += 1
             else:
-                error_ids.append(question_id)
+                failed_ids.append(question_id)
+                if result.get('error'):
+                    error_ids.append(question_id)
 
         accuracy = (total_correct / total_questions * 100) if total_questions > 0 else 0
 
         by_agent[agent] = {
             'total_correct': total_correct,
-            'total_errors': total_questions - total_correct,
+            'total_failed': total_questions - total_correct,
+            'total_errors': len(error_ids),
             'accuracy': round(accuracy, 1),
-            'error_ids': error_ids
+            'failed_ids': failed_ids,
+            'error_ids': error_ids,
         }
 
     # Build global cross-agent analysis
@@ -521,21 +526,22 @@ def _build_binary_index(newest_agent: str, baseline_agents: List[str],
     new_agent_stats = by_agent.get(newest_agent, {})
 
     # Count baseline comparison categories
-    unique_errors = len(global_cross_agent['new_vs_baseline']['unique_errors'])
+    unique_failures = len(global_cross_agent['new_vs_baseline']['unique_failures'])
     unique_successes = len(global_cross_agent['new_vs_baseline']['unique_successes'])
-    consensus_errors = len(global_cross_agent['new_vs_baseline']['consensus_errors'])
+    consensus_failures = len(global_cross_agent['new_vs_baseline']['consensus_failures'])
     mixed_results = len(global_cross_agent['new_vs_baseline']['mixed_results'])
 
     summary = {
         'new_agent': newest_agent,
         'baseline_agents': baseline_agents,
-        'total_questions': new_agent_stats.get('total_correct', 0) + new_agent_stats.get('total_errors', 0),
+        'total_questions': new_agent_stats.get('total_correct', 0) + new_agent_stats.get('total_failed', 0),
+        'new_agent_failed': new_agent_stats.get('total_failed', 0),
         'new_agent_errors': new_agent_stats.get('total_errors', 0),
         'new_agent_accuracy': new_agent_stats.get('accuracy', 0),
         'baseline_comparison': {
-            'unique_errors': unique_errors,           # New failed, all baselines succeeded
-            'unique_successes': unique_successes,     # New succeeded, all baselines failed
-            'consensus_errors': consensus_errors,     # All failed (including new)
+            'unique_failures': unique_failures,         # New failed, all baselines succeeded
+            'unique_successes': unique_successes,       # New succeeded, all baselines failed
+            'consensus_failures': consensus_failures,   # All failed (including new)
             'mixed_results': mixed_results            # Some baselines succeeded, some failed
         }
     }
@@ -659,10 +665,10 @@ def main():
         # Binary scoring
         print(f"Newest agent: {summary['new_agent']} ({summary['new_agent_accuracy']}%)", file=sys.stderr)
         print(f"Baseline agents: {', '.join(summary['baseline_agents'])}", file=sys.stderr)
-        print(f"\nTotal errors: {summary['new_agent_errors']}", file=sys.stderr)
-        print(f"  Unique errors (new failed, all baselines succeeded): {summary['baseline_comparison']['unique_errors']}", file=sys.stderr)
+        print(f"\nTotal failed: {summary['new_agent_failed']} (errors: {summary['new_agent_errors']})", file=sys.stderr)
+        print(f"  Unique failures (new failed, all baselines succeeded): {summary['baseline_comparison']['unique_failures']}", file=sys.stderr)
         print(f"  Unique successes (new succeeded, all baselines failed): {summary['baseline_comparison']['unique_successes']}", file=sys.stderr)
-        print(f"  Consensus errors (all failed): {summary['baseline_comparison']['consensus_errors']}", file=sys.stderr)
+        print(f"  Consensus failures (all failed): {summary['baseline_comparison']['consensus_failures']}", file=sys.stderr)
         print(f"  Mixed results: {summary['baseline_comparison']['mixed_results']}", file=sys.stderr)
     print(f"\nWrote index to {output_file}", file=sys.stderr)
 

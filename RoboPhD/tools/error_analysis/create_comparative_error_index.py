@@ -102,7 +102,8 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
 
             # Derive correctness from score (>= 0.5 counts as correct)
             is_match = result.get('score', 0) >= 0.5
-            status = 'MATCH' if is_match else 'ERROR'
+            status = 'MATCH' if is_match else 'FAILED'
+            has_error = result.get('error', False)
 
             score = result.get('score', 0)
             processed_result = {
@@ -110,6 +111,7 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
                 'status': status,
                 'matches': is_match,
                 'score': score,
+                'error': has_error,
             }
 
             by_question[question_id][agent_name] = processed_result
@@ -129,7 +131,7 @@ def build_consensus_patterns(agents: Set[str], results: Dict) -> Dict:
     Returns:
         {
             'consensus_correct': [question_ids],  # All agents got right
-            'consensus_errors': [question_ids],    # All agents got wrong
+            'consensus_failures': [question_ids],    # All agents got wrong
             'split_decisions': {
                 'question_id': {
                     'correct': [agent_names],
@@ -139,7 +141,7 @@ def build_consensus_patterns(agents: Set[str], results: Dict) -> Dict:
         }
     """
     consensus_correct = []
-    consensus_errors = []
+    consensus_failures = []
     split_decisions = {}
 
     for question_id, agents_results in results['by_question'].items():
@@ -159,7 +161,7 @@ def build_consensus_patterns(agents: Set[str], results: Dict) -> Dict:
         if len(correct_agents) == len(agents):
             consensus_correct.append(question_id)
         elif len(wrong_agents) == len(agents):
-            consensus_errors.append(question_id)
+            consensus_failures.append(question_id)
         else:
             split_decisions[question_id] = {
                 'correct': sorted(correct_agents),
@@ -168,7 +170,7 @@ def build_consensus_patterns(agents: Set[str], results: Dict) -> Dict:
 
     return {
         'consensus_correct': consensus_correct,
-        'consensus_errors': consensus_errors,
+        'consensus_failures': consensus_failures,
         'split_decisions': split_decisions
     }
 
@@ -181,7 +183,8 @@ def build_agent_stats(agent: str, agents: Set[str], results: Dict) -> Dict:
     """
     total_correct = 0
     total_questions = 0
-    error_ids = []
+    failed_ids = []
+    error_ids = []  # Actual errors (agent crash, rate limit) — distinct from incorrect answers
     unique_successes = []
     unique_failures = []
 
@@ -191,6 +194,7 @@ def build_agent_stats(agent: str, agents: Set[str], results: Dict) -> Dict:
             'total_correct': 0,
             'total_questions': 0,
             'accuracy': 0.0,
+            'failed_ids': [],
             'error_ids': [],
             'unique_successes': [],
             'unique_failures': []
@@ -213,7 +217,9 @@ def build_agent_stats(agent: str, agents: Set[str], results: Dict) -> Dict:
                 if all_others_wrong:
                     unique_successes.append(question_id)
         else:
-            error_ids.append(question_id)
+            failed_ids.append(question_id)
+            if result.get('error'):
+                error_ids.append(question_id)
 
             # Check if this is a unique failure
             other_agents_results = results['by_question'][question_id]
@@ -229,12 +235,14 @@ def build_agent_stats(agent: str, agents: Set[str], results: Dict) -> Dict:
 
     return {
         'total_correct': total_correct,
-        'total_errors': total_questions - total_correct,
+        'total_failed': total_questions - total_correct,
+        'total_errors': len(error_ids),
         'total_questions': total_questions,
         'accuracy': round(accuracy, 1),
         'unique_successes': unique_successes,
         'unique_failures': unique_failures,
-        'error_ids': error_ids
+        'failed_ids': failed_ids,
+        'error_ids': error_ids,
     }
 
 
@@ -401,9 +409,9 @@ def _build_binary_index(agents: Set[str], results: Dict, scores_by_question: Dic
 
     # Count questions where ALL agents have results (for meaningful comparison)
     consensus_correct_count = len(cross_agent_patterns['consensus_correct'])
-    consensus_errors_count = len(cross_agent_patterns['consensus_errors'])
+    consensus_failures_count = len(cross_agent_patterns['consensus_failures'])
     split_count = len(cross_agent_patterns['split_decisions'])
-    total_comparable_questions = consensus_correct_count + consensus_errors_count + split_count
+    total_comparable_questions = consensus_correct_count + consensus_failures_count + split_count
 
     _warn_sampling_inconsistency(total_unique_questions, total_comparable_questions)
 
@@ -415,8 +423,8 @@ def _build_binary_index(agents: Set[str], results: Dict, scores_by_question: Dic
         'consensus_stats': {
             'all_correct': consensus_correct_count,
             'all_correct_pct': round(consensus_correct_count / total_comparable_questions * 100, 1) if total_comparable_questions > 0 else 0,
-            'all_failed': consensus_errors_count,
-            'all_failed_pct': round(consensus_errors_count / total_comparable_questions * 100, 1) if total_comparable_questions > 0 else 0,
+            'all_failed': consensus_failures_count,
+            'all_failed_pct': round(consensus_failures_count / total_comparable_questions * 100, 1) if total_comparable_questions > 0 else 0,
             'split_decisions': split_count,
             'split_decisions_pct': round(split_count / total_comparable_questions * 100, 1) if total_comparable_questions > 0 else 0
         }

@@ -89,7 +89,7 @@ def format_binary_report_comparative(index: dict) -> list[str]:
         "## Summary",
         f"- Total questions: {total_q}",
         f"- Consensus correct: {consensus.get('all_correct', 0)} ({consensus.get('all_correct_pct', 0)}%)",
-        f"- Consensus errors: {consensus.get('all_failed', 0)} ({consensus.get('all_failed_pct', 0)}%)",
+        f"- Consensus failures: {consensus.get('all_failed', 0)} ({consensus.get('all_failed_pct', 0)}%)",
         f"- Split decisions: {consensus.get('split_decisions', 0)} ({consensus.get('split_decisions_pct', 0)}%)",
         ""
     ])
@@ -100,30 +100,31 @@ def format_binary_report_comparative(index: dict) -> list[str]:
         lines.extend([
             "## Agent Accuracy",
             "",
-            "| Agent | Correct | Errors | Accuracy |",
-            "|-------|---------|--------|----------|"
+            "| Agent | Correct | Failed | Errors | Accuracy |",
+            "|-------|---------|--------|--------|----------|"
         ])
         for agent in agents:
             stats = by_agent.get(agent, {})
             correct = stats.get('total_correct', 0)
+            failed = stats.get('total_failed', stats.get('total_errors', 0))
             errors = stats.get('total_errors', 0)
             accuracy = stats.get('accuracy', 0.0)
-            lines.append(f"| {agent} | {correct} | {errors} | {accuracy:.1f}% |")
+            lines.append(f"| {agent} | {correct} | {failed} | {errors} | {accuracy:.1f}% |")
         lines.append("")
 
-    # Consensus errors (all agents failed)
+    # Consensus failures (all agents failed)
     cross_patterns = index.get('cross_agent_patterns', {})
-    consensus_errors = cross_patterns.get('consensus_errors', [])
-    if consensus_errors:
-        error_count = len(consensus_errors)
-        if error_count <= 10:
-            id_str = ', '.join(consensus_errors)
+    consensus_failures = cross_patterns.get('consensus_failures', cross_patterns.get('consensus_errors', []))
+    if consensus_failures:
+        fail_count = len(consensus_failures)
+        if fail_count <= 10:
+            id_str = ', '.join(consensus_failures)
         else:
-            id_str = ', '.join(consensus_errors[:10]) + ', ...'
+            id_str = ', '.join(consensus_failures[:10]) + ', ...'
         lines.extend([
-            "## Consensus Errors",
+            "## Consensus Failures",
             "",
-            f"All agents failed on {error_count} questions: {id_str}",
+            f"All agents failed on {fail_count} questions: {id_str}",
             ""
         ])
 
@@ -186,15 +187,15 @@ def format_binary_report_deep_focus(index: dict) -> list[str]:
     # Cross-agent analysis
     cross_agent = index.get('cross_agent_analysis', {}).get('new_vs_baseline', {})
     unique_successes = cross_agent.get('unique_successes', [])
-    unique_errors = cross_agent.get('unique_errors', [])
-    consensus_errors = cross_agent.get('consensus_errors', [])
+    unique_failures = cross_agent.get('unique_failures', cross_agent.get('unique_errors', []))
+    consensus_failures = cross_agent.get('consensus_failures', cross_agent.get('consensus_errors', []))
     mixed = cross_agent.get('mixed_results', [])
 
     lines.extend([
         "## Summary",
         f"- Unique successes (new succeeded, all baselines failed): {len(unique_successes)}",
-        f"- Unique errors (new failed, all baselines succeeded): {len(unique_errors)}",
-        f"- Consensus errors (all failed): {len(consensus_errors)}",
+        f"- Unique failures (new failed, all baselines succeeded): {len(unique_failures)}",
+        f"- Consensus failures (all failed): {len(consensus_failures)}",
         f"- Mixed results: {len(mixed)}",
         ""
     ])
@@ -205,15 +206,16 @@ def format_binary_report_deep_focus(index: dict) -> list[str]:
         lines.extend([
             "## Agent Accuracy",
             "",
-            "| Agent | Correct | Errors | Accuracy |",
-            "|-------|---------|--------|----------|"
+            "| Agent | Correct | Failed | Errors | Accuracy |",
+            "|-------|---------|--------|--------|----------|"
         ])
         for agent in all_agents:
             stats = by_agent.get(agent, {})
             correct = stats.get('total_correct', 0)
+            failed = stats.get('total_failed', stats.get('total_errors', 0))
             errors = stats.get('total_errors', 0)
             accuracy = stats.get('accuracy', 0.0)
-            lines.append(f"| {agent} | {correct} | {errors} | {accuracy:.1f}% |")
+            lines.append(f"| {agent} | {correct} | {failed} | {errors} | {accuracy:.1f}% |")
         lines.append("")
 
     # Unique Successes
@@ -227,23 +229,23 @@ def format_binary_report_deep_focus(index: dict) -> list[str]:
             ""
         ])
 
-    # Unique Errors
-    if unique_errors:
-        count = len(unique_errors)
-        id_str = ', '.join(unique_errors[:10]) + (', ...' if count > 10 else '')
+    # Unique Failures
+    if unique_failures:
+        count = len(unique_failures)
+        id_str = ', '.join(unique_failures[:10]) + (', ...' if count > 10 else '')
         lines.extend([
-            "## Unique Errors",
+            "## Unique Failures",
             "",
             f"New agent failed but all baselines succeeded ({count}): {id_str}",
             ""
         ])
 
-    # Consensus errors
-    if consensus_errors:
-        count = len(consensus_errors)
-        id_str = ', '.join(consensus_errors[:10]) + (', ...' if count > 10 else '')
+    # Consensus failures
+    if consensus_failures:
+        count = len(consensus_failures)
+        id_str = ', '.join(consensus_failures[:10]) + (', ...' if count > 10 else '')
         lines.extend([
-            "## Consensus Errors",
+            "## Consensus Failures",
             "",
             f"New agent AND all baselines failed ({count}): {id_str}",
             ""

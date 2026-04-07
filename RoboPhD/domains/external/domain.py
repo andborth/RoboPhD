@@ -293,10 +293,12 @@ class ExternalEvaluatorDomain(DomainInterface):
                     except (TypeError, ValueError):
                         pass
 
+                has_error = "error.md" in diagnostics if isinstance(diagnostics, dict) else False
                 result_entry = {
                     "question_id": eid,
                     "score": score,
                     "eval_cost": cost_usd,
+                    "error": has_error,
                 }
 
                 # Write result.json for future caching (don't overwrite
