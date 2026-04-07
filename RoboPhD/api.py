@@ -233,6 +233,7 @@ def optimize_anything(
     objective: str = "",
     background: str = "",
     config: Optional[RoboPhDConfig] = None,
+    task_name: str = "optimize_anything",
 ) -> OptimizeResult:
     """Optimize text artifacts using RoboPhD's ELO evolution engine.
 
@@ -306,7 +307,7 @@ def optimize_anything(
             "task_objective": effective_objective,
             "task_description": effective_objective,
             "task_background": effective_background,
-            "task_name": "optimize_anything",
+            "task_name": task_name,
             "diagnostic_files": {},
             "runs_dir": str(run_dir),
             "eval_timeout": cfg.eval_timeout,
@@ -359,7 +360,7 @@ def optimize_anything(
             "task_objective": objective,
             "task_description": objective,
             "task_background": background,
-            "task_name": "optimize_anything",
+            "task_name": task_name,
             "diagnostic_files": {},
             "runs_dir": str(run_dir),
             "eval_timeout": cfg.eval_timeout,

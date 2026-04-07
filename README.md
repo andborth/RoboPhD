@@ -1,14 +1,9 @@
-# RoboPhD: Evolving AI Agents Without Human Domain Knowledge
+# RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![arXiv](https://img.shields.io/badge/arXiv-2601.01126-b31b1b.svg)](https://arxiv.org/abs/2601.01126)
+[![arXiv](https://img.shields.io/badge/arXiv-2604.04347-b31b1b.svg)](https://arxiv.org/abs/2604.04347)
 
 RoboPhD evolves AI agents to improve task performance without human intervention or author-supplied domain knowledge. It implements a closed-loop evolution cycle where an Evolution agent designs new versions of task agents based on performance feedback, using ELO-based competition to select the best agents across iterations.
-
-The system supports multiple optimization engines:
-- **RoboPhD**: Multi-agent ELO competition with evolution strategies and deep focus testing
-- **[GEPA](https://github.com/gepa-ai/gepa)**: Reflective text evolution with Pareto selection (Agrawal et al.; [paper](https://arxiv.org/abs/2507.19457))
-- **[Autoresearch](https://github.com/karpathy/autoresearch)**: Single Claude Code session with greedy experimentation (Karpathy, 2026)
 
 ## Key Results
 
@@ -70,9 +65,7 @@ RoboPhD uses AI throughout:
 | Text2SQL | BIRD | `agent.py` + `analyze_db.py` — SQL generation with `llm()` + `test_sql()` | Claude Haiku 4.5 |
 | DocFinQA | DocFinQA (ACL 2024) | `agent.py` — retrieval + QA pipeline | GPT-4.1-mini + text-embedding-3-small |
 
-Additional domains (CodeGen, AIME, CodeCritic) are available in the task registry but not actively maintained.
-
-New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `TaskDefinition` with an evaluator function, dataset builder, and file mapping.
+Each domain has a self-contained example under [`examples/`](examples/) with evaluator, seed agent, and documentation. More examples coming soon.
 
 ## Quick Start
 
@@ -81,27 +74,24 @@ New domains are added via the task registry (`RoboPhD/tasks/`) — implement a `
 git clone https://github.com/andborth/RoboPhD.git
 cd RoboPhD
 pip install -r requirements.txt
+pip install -r requirements-gepa.txt  # adds dspy, datasets
 
 # 2. Install Claude Code CLI (required for evolution)
 # See: https://docs.anthropic.com/en/docs/claude-code
 
-# 3. Run a quick test (Can't Be Late — no API key needed)
-bash scripts/download_cant_be_late_traces.sh
-python scripts/run_robophd.py --task cant_be_late --num-iterations 3 \
-  --engine-config '{"examples_per_iteration": 5}'
-
-# 4. Text2SQL (requires Anthropic API key)
+# 3. Set API keys
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"
-python scripts/run_robophd.py --task text2sql --num-iterations 3 \
-  --engine-config '{"examples_per_iteration": 5}'
+export OPENROUTER_API_KEY="sk-or-..."
 
-# 5. List all valid parameters for a task
-python scripts/run_robophd.py --task cant_be_late --list-params
+# 4. Run a benchmark example (ARC-AGI-1)
+python examples/arc_agi_1/main.py --evaluation-budget 60 --num-iterations 2
 ```
 
-### Optimize Anything Programmatic API
+More examples (Can't Be Late, Text2SQL, DocFinQA) coming soon.
 
-One simple way to use RoboPhD is to use it's `optimize_anything()` API to evolve any text artifact with your own evaluator. This is inspired by GEPA's optimize_anything api. Here is the sketch of how to use it:
+## Optimize Anything API
+
+Use `optimize_anything()` to evolve any text artifact with your own evaluator:
 
 ```python
 from RoboPhD import optimize_anything, RoboPhDConfig
@@ -129,31 +119,19 @@ print(result.best_candidate["system_prompt"])
 print(f"Best ELO: {result.best_score}")
 ```
 
-**Resume & extend** — The result's `completed_normally` attribute tells you whether the run finished as expected or ended early due to a failure. Either way, `result.experiment_dir` points to the checkpoint directory, so you can always resume from where it left off:
+**Resume & extend** — `result.experiment_dir` points to the checkpoint directory, so you can always resume:
 
 ```python
+# Resume from where it left off
 result = optimize_anything(
     evaluator=evaluator, dataset=my_dataset, objective="Maximize accuracy",
-    seed_candidate=seed, config=RoboPhDConfig(num_iterations=10),
+    config=RoboPhDConfig(experiment_dir=result.experiment_dir),
 )
-
-if not result.completed_normally:
-    # Resume from where the failed run left off
-    result = optimize_anything(
-        evaluator=evaluator, dataset=my_dataset, objective="Maximize accuracy",
-        config=RoboPhDConfig(experiment_dir=result.experiment_dir),
-    )
 
 # Extend by 5 more iterations
 result = optimize_anything(
     evaluator=evaluator, dataset=my_dataset, objective="Maximize accuracy",
     config=RoboPhDConfig(experiment_dir=result.experiment_dir, extend_iterations=5),
-)
-
-# Restart from iteration 3 (discards iterations 3+ and re-runs)
-result = optimize_anything(
-    evaluator=evaluator, dataset=my_dataset, objective="Maximize accuracy",
-    config=RoboPhDConfig(experiment_dir=result.experiment_dir, from_iteration=3),
 )
 ```
 
@@ -173,46 +151,7 @@ eval_result = eval_candidate(
 print(f"Accuracy: {eval_result.mean_score:.1%} ({eval_result.num_examples} examples)")
 ```
 
-Try the included demo, which evolves a math-problem-solving prompt from a naive seed ("Solve the following math problem") into an optimized prompt with chain-of-thought reasoning:
-
-```bash
-# 1. Set your API key (used for both evolution and the Haiku solver)
-export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"
-
-# 2. Run the demo (3 iterations, ~$1-2 in API costs)
-python scripts/run_optimize_anything.py --num-iterations 3
-
-# 3. Quick test with minimal budget
-python scripts/run_optimize_anything.py --num-iterations 2 \
-    --evaluation-budget 50 --examples-per-iteration 5
-
-# 4. Demo with resume + extend (runs 2 iterations, extends by 1, then restarts from iteration 2)
-python scripts/run_optimize_anything.py --demo-resume
-```
-
-See [`RoboPhD/api.py`](RoboPhD/api.py) for the full API reference, including `optimize_task()` for running registered benchmarks programmatically.
-
-### Running with GEPA
-
-```bash
-pip install -r requirements-gepa.txt
-
-python scripts/run_gepa.py --task cant_be_late \
-  --engine-config '{"evaluation_budget": 1500, "val_size": 200}' \
-  --eval-test-set
-```
-
-### Test-Set Evaluation
-
-```bash
-# Auto-select best agent by ELO from a run
-python scripts/eval_test_set.py --task cant_be_late \
-  --run-dir ../robophd_runs/robophd/cant_be_late_20260313_230325
-
-# Specify agent directly
-python scripts/eval_test_set.py --task text2sql \
-  --agent-dir RoboPhD/text2sql_agents/naive
-```
+See [`RoboPhD/api.py`](RoboPhD/api.py) for the full API reference.
 
 ## Evolution Strategies
 
@@ -222,34 +161,46 @@ Built-in strategies in `RoboPhD/evolution_strategies/`:
 - `refinement` — Iteratively improve a single base agent
 - `cross_pollination` — Combine patterns from multiple successful agents
 
-Meta-evolution (`train_a_winner`) can generate additional strategies beyond these built-in options.
-
 ## Configuration
 
 ```bash
-# Full run with deep focus testing and test-set evaluation
-python scripts/run_robophd.py --task text2sql --num-iterations 20 --eval-test-set
+# Full run with test-set evaluation
+python examples/arc_agi_1/main.py --eval-test-set
 
-# With meta-evolution
-python scripts/run_robophd.py --task cant_be_late --num-iterations 22 --eval-test-set \
-  --engine-config configs/robophd_engine/meta_evolution_starts_at_5.json
+# Use paper configuration (stronger model, higher cost budget)
+python examples/arc_agi_1/main.py --paper-config
+
+# Custom engine config
+python examples/arc_agi_1/main.py --engine-config '{"include_evolution_rankings": false}'
 
 # Resume a run
-python scripts/run_robophd.py --task cant_be_late \
-  --resume ../robophd_runs/robophd/cant_be_late_20260313_230325 --extend 10
+python examples/arc_agi_1/main.py --resume ../robophd_runs/robophd/optimize_anything_20260401_120000
+
+# Extend by 5 more iterations
+python examples/arc_agi_1/main.py --resume <dir> --extend 5
 ```
 
-See [CLAUDE.md](CLAUDE.md) for comprehensive system documentation including all configuration parameters, deep focus evolution, evolution schedule control, and troubleshooting.
+**Multi-engine support**: GEPA and Autoresearch engine selection via config is coming soon. In the meantime, these engines are available via `scripts/run_gepa.py` and `scripts/run_autoresearch.py`.
 
 ## Requirements
 
 - Python 3.10+
 - Claude Code CLI (required for evolution)
-- For GEPA: `pip install -r requirements-gepa.txt`
+- `pip install -r requirements-gepa.txt` (for ARC-AGI dataset loading)
 - For ARC-AGI: `OPENROUTER_API_KEY` environment variable
 - For Text2SQL: `ANTHROPIC_API_KEY_FOR_ROBOPHD` + ~50GB for BIRD dataset
 - For DocFinQA: OpenAI API key (for gpt-4.1-mini and embeddings)
 - For Can't Be Late: trace data via `bash scripts/download_cant_be_late_traces.sh`
+
+## Acknowledgments
+
+RoboPhD builds on several excellent open-source projects and benchmarks:
+- [GEPA](https://github.com/gepa-ai/gepa) (Agrawal et al., 2025) — reflective text evolution with Pareto selection
+- [Autoresearch](https://github.com/karpathy/autoresearch) (Karpathy, 2026) — single-session greedy experimentation
+- [ARC Prize](https://arcprize.org/) / [ARC-AGI](https://arxiv.org/abs/1911.01547) (Chollet, 2019) — abstract reasoning benchmark
+- [BIRD](https://bird-bench.github.io/) (Li et al., 2024) — Text-to-SQL benchmark
+- [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) (Reddy et al., 2024) — long-context financial QA benchmark
+- [Can't Be Late](https://github.com/UCB-ADRS/ADRS) (Wu et al., 2024) — cloud spot instance scheduling
 
 ## Citation
 
@@ -259,20 +210,7 @@ If you use RoboPhD in your research, please cite:
 @article{borthwick2026robophd,
   title={RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets},
   author={Borthwick, Andrew and Ash, Stephen and Galczak, Anthony},
+  journal={arXiv preprint arXiv:2604.04347},
   year={2026}
 }
 ```
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [ARC Prize](https://arcprize.org/) for the ARC-AGI benchmark
-- [BIRD Benchmark](https://bird-bench.github.io/) for the Text2SQL dataset
-- [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) (Reddy et al., ACL 2024)
-- [Can't Be Late](https://github.com/UCB-ADRS/ADRS) (NSDI'24 AWS spot traces)
-- [GEPA](https://github.com/gepa-ai/gepa) (Agrawal et al.)
-- [Autoresearch](https://github.com/karpathy/autoresearch) (Karpathy, 2026)
-- [Anthropic](https://www.anthropic.com/) for Claude API and Claude Code

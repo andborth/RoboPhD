@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument("--examples-per-iteration", type=int, default=20)
 
     # Evolution
-    parser.add_argument("--evolution-strategy", default="data_focus")
+    parser.add_argument("--evolution-strategy", default="use_your_judgment")
     parser.add_argument("--evolution-model", default="opus-4.6")
 
     # Task-specific
@@ -148,6 +148,7 @@ def main():
         objective=objective,
         background=background,
         config=cfg,
+        task_name="arc_agi_1",
     )
 
     logger.info(f"Optimization complete: {result.num_iterations_completed} iterations, "

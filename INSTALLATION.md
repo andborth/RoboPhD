@@ -10,7 +10,7 @@
 ## Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/RoboPhD.git
+git clone https://github.com/andborth/RoboPhD.git
 cd RoboPhD
 ```
 
@@ -18,15 +18,17 @@ cd RoboPhD
 
 ```bash
 pip install -r requirements.txt
+pip install -r requirements-gepa.txt  # adds dspy, datasets (needed for ARC-AGI)
 ```
 
 ## Step 3: Configure API Keys
 
-RoboPhD requires an Anthropic API key for task generation and evaluation.
-
 ```bash
 # Add to your shell profile (~/.bashrc, ~/.zshrc, etc.)
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_anthropic_api_key_here"
+
+# For ARC-AGI (Gemini solver via OpenRouter)
+export OPENROUTER_API_KEY="sk-or-..."
 
 # Reload your shell
 source ~/.zshrc  # or ~/.bashrc
@@ -42,37 +44,30 @@ Verify installation:
 claude --version
 ```
 
-## Step 5: Download BIRD Dataset (Text2SQL Only)
+## Step 5: Download Domain-Specific Data
 
-Run the download script:
+### ARC-AGI
+No download needed — dataset loads automatically from HuggingFace.
 
+### Can't Be Late
+```bash
+bash scripts/download_cant_be_late_traces.sh
+```
+
+### Text2SQL (BIRD dataset, ~50GB)
 ```bash
 ./benchmark_resources/download_bird.sh
 ```
 
-This will download and extract:
-- Training set (~40GB)
-- Development set (~2GB)
-- Test set metadata
-
-**Manual download**: If the script fails, download from [BIRD Benchmark](https://bird-bench.github.io/) and extract to `benchmark_resources/datasets/`.
+### DocFinQA
+No download needed — dataset loads automatically from HuggingFace.
 
 ## Step 6: Verify Installation
 
-Run a quick test:
+Run a quick test with ARC-AGI-1:
 
 ```bash
-# Can't Be Late (no API key needed — pure simulation)
-bash scripts/download_cant_be_late_traces.sh
-python scripts/run_robophd.py --task cant_be_late --num-iterations 2 \
-  --engine-config '{"examples_per_iteration": 3}'
-
-# Text2SQL (requires steps 5-6 + API key)
-python scripts/run_robophd.py --task text2sql --num-iterations 2 \
-  --engine-config '{"examples_per_iteration": 3}'
-
-# List all valid parameters for a task
-python scripts/run_robophd.py --task cant_be_late --list-params
+python examples/arc_agi_1/main.py --evaluation-budget 60 --num-iterations 2
 ```
 
 If successful, you'll see iteration progress and a final report.
@@ -81,39 +76,32 @@ If successful, you'll see iteration progress and a final report.
 
 ```
 RoboPhD/
-├── RoboPhD/                    # Core code
-│   ├── text2sql_agents/        # Text2SQL seed agents
-│   ├── arcagi1_agents/         # ARC-AGI-1 seed agents
-│   ├── cant_be_late_agents/    # Can't Be Late seed agents
-│   ├── docfinqa_agents/        # DocFinQA seed agents
+├── RoboPhD/                    # Core framework
+│   ├── api.py                  # optimize_anything(), eval_candidate()
+│   ├── researcher.py           # ELO evolution engine
 │   ├── evolution_strategies/   # Evolution strategies (all domains)
-│   ├── adapters/               # Task evaluators and adapters
-│   ├── tasks/                  # Task registry
+│   ├── adapters/               # Shared utilities (candidate_utils, etc.)
 │   └── ...
-├── scripts/                    # Entry points (run_robophd.py, eval_test_set.py, etc.)
+├── examples/                   # Self-contained benchmark examples
+│   └── arc_agi_1/              # ARC-AGI-1 (more coming soon)
+│       ├── main.py             # Entry point
+│       ├── evaluator.py        # Domain evaluator
+│       ├── background.md       # Domain description for evolution AI
+│       └── seeds/              # Seed agents
+├── scripts/                    # Utility scripts
 ├── benchmark_resources/
-│   └── datasets/               # BIRD dataset (~40GB, Text2SQL only)
+│   └── datasets/               # BIRD dataset (~50GB, Text2SQL only)
 ├── configs/                    # Configuration files
 └── ../robophd_runs/            # Created during runs (outside repo)
-    ├── robophd/                # RoboPhD ELO evolution runs
-    ├── gepa/                   # GEPA optimization runs
-    ├── agent_tests/            # Standalone agent evaluations
-    └── results/                # Results JSON files and run symlinks
+    └── robophd/                # Experiment output directories
 ```
 
 ## Troubleshooting
 
-### "Database is locked" errors
-Run ground truth pre-computation:
-```bash
-python RoboPhD/tools/precompute_ground_truth.py
-```
-
 ### Out of memory errors
 Reduce concurrency:
 ```bash
-python scripts/run_robophd.py --task cant_be_late --num-iterations 5 \
-  --engine-config '{"max_concurrent": 2}'
+python examples/arc_agi_1/main.py --max-workers 4
 ```
 
 ### Claude CLI not found
@@ -124,7 +112,7 @@ claude --version
 ```
 
 ### API rate limits
-The system handles rate limits automatically. For high-throughput runs, consider using a paid API tier.
+The system retries transient rate limits automatically. For sustained rate limiting, reduce `--max-workers`.
 
 ## Next Steps
 
