@@ -1,5 +1,7 @@
-"""Shared evaluation utilities: rate limit handling, parallel eval loops, cleanup."""
+"""Shared evaluation utilities: rate limit handling, parallel eval loops, stdout capture, cleanup."""
 
+import builtins
+import io
 import logging
 import os
 import sys
@@ -63,6 +65,49 @@ def retry_on_rate_limit(fn, max_retries=5, base_delay=0.5):
                 time.sleep(delay)
                 continue
             raise
+
+
+def exec_with_stdout_capture(code: str, extra_namespace: dict = None, then=None) -> tuple:
+    """Execute Python code with print() output captured.
+
+    Patches __builtins__ so print() is captured even from nested function
+    calls and imported modules within the exec'd code. This is how RoboPhD
+    surfaces agent diagnostics to the evolution AI.
+
+    Args:
+        code: Python source code to execute.
+        extra_namespace: Additional names to inject (e.g., llm, embed callables).
+        then: Optional callable(namespace) invoked after exec, still within
+            the capture context. Use this to call agent functions (e.g.,
+            solve(), answer()) so their print() output is also captured.
+            The return value is stored in namespace["_result"].
+
+    Returns:
+        (namespace, stdout): The exec namespace (for extracting results)
+        and the captured print output as a string.
+
+    On exception, attaches partial stdout to the exception as ``stdout``
+    attribute so callers can recover diagnostic output from crashes.
+    """
+    buf = io.StringIO()
+
+    def _captured_print(*args, **kwargs):
+        kwargs.setdefault("file", buf)
+        print(*args, **kwargs)
+
+    patched_builtins = dict(vars(builtins))
+    patched_builtins["print"] = _captured_print
+    namespace = {"print": _captured_print, "__builtins__": patched_builtins}
+    if extra_namespace:
+        namespace.update(extra_namespace)
+    try:
+        exec(code, namespace)
+        if then is not None:
+            namespace["_result"] = then(namespace)
+    except Exception as e:
+        e.stdout = buf.getvalue()
+        raise
+    return namespace, buf.getvalue()
 
 
 def run_parallel_eval(

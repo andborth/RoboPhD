@@ -9,7 +9,6 @@ No vendored code — uses litellm for LLM/embedding calls and
 huggingface_hub for dataset loading.
 """
 
-import io
 import json
 import logging
 import re
@@ -20,7 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import litellm
 
-from RoboPhD.eval_utils import retry_on_rate_limit
+from RoboPhD.eval_utils import retry_on_rate_limit, exec_with_stdout_capture
 
 litellm.suppress_debug_info = True
 logging.getLogger("openai._base_client").setLevel(logging.WARNING)
@@ -109,20 +108,11 @@ def run_agent(agent_code: str, document: str, question: str, llm, embed) -> tupl
 
     Returns (program_str, captured_stdout).
     """
-    buf = io.StringIO()
-
-    def _captured_print(*args, **kwargs):
-        kwargs.setdefault("file", buf)
-        print(*args, **kwargs)
-
-    import builtins
-    patched_builtins = dict(vars(builtins))
-    patched_builtins["print"] = _captured_print
-    namespace = {"print": _captured_print, "__builtins__": patched_builtins}
-    exec(agent_code, namespace)
-    answer_fn = namespace["answer"]
-    result = answer_fn(document, question, llm, embed)
-    return result, buf.getvalue()
+    namespace, stdout = exec_with_stdout_capture(
+        agent_code,
+        then=lambda ns: ns["answer"](document, question, llm, embed),
+    )
+    return namespace["_result"], stdout
 
 
 def _extract_program(text: str) -> str:
@@ -249,10 +239,10 @@ class DocFinQAEvaluator:
         embed = make_tracked_embed(self.embed_model, tracker)
 
         # Run the agent
-        agent_stdout = ""
         try:
             program_str, agent_stdout = run_agent(agent_code, example["document"], question, llm, embed)
         except Exception as e:
+            agent_stdout = getattr(e, "stdout", "")
             diagnostics = {
                 "error.md": f"Agent crashed: {e}",
                 "question": question,

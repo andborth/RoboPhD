@@ -6,7 +6,6 @@ Self-contained evaluator for the ARC-AGI-1 example. Merges functionality from:
 - RoboPhD/adapters/gepa_arc_agi.py (TrackedLLM, dataset loading)
 """
 
-import io
 import json
 import logging
 import threading
@@ -15,7 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import litellm
-from RoboPhD.eval_utils import retry_on_rate_limit
+from RoboPhD.eval_utils import retry_on_rate_limit, exec_with_stdout_capture
 
 litellm.suppress_debug_info = True
 
@@ -147,26 +146,19 @@ def run_agent(agent_code, train_in, train_out, test_in, test_out, model_id, max_
     _v = _get_vendored()
     llms = TrackedLLM(model_id=model_id, max_llm_calls=max_llm_calls, reasoning_effort=reasoning_effort)
 
-    buf = io.StringIO()
-
-    def _captured_print(*args, **kwargs):
-        kwargs.setdefault("file", buf)
-        print(*args, **kwargs)
-
     try:
-        import builtins
-        patched_builtins = dict(vars(builtins))
-        patched_builtins["print"] = _captured_print
-        namespace = {"print": _captured_print, "__builtins__": patched_builtins}
-        exec(agent_code, namespace)
-        result = namespace["solve"](train_in, train_out, test_in, llms)
+        namespace, agent_stdout = exec_with_stdout_capture(
+            agent_code,
+            then=lambda ns: ns["solve"](train_in, train_out, test_in, llms),
+        )
+        result = namespace["_result"]
         train_preds = result.get("train", [])
         test_preds = result.get("test", [])
     except Exception as e:
         return {
             "training_score": 0.0, "test_score": 0.0, "error": str(e),
             "train_examples": [], "test_examples": [], "llms": llms,
-            "agent_stdout": buf.getvalue(),
+            "agent_stdout": getattr(e, "stdout", ""),
         }
 
     training_score, train_results = _v.evaluate_predictions(train_preds, train_out)
@@ -190,7 +182,7 @@ def run_agent(agent_code, train_in, train_out, test_in, test_out, model_id, max_
     return {
         "training_score": training_score, "test_score": test_score, "error": None,
         "train_examples": train_examples, "test_examples": test_examples, "llms": llms,
-        "agent_stdout": buf.getvalue(),
+        "agent_stdout": agent_stdout,
     }
 
 
