@@ -30,56 +30,61 @@ FILE_MAPPING = {"agent_code": "agent.py"}
 
 
 # ---------------------------------------------------------------------------
-# Vendored utils (lazy import to avoid requiring dspy/datasets at import time)
+# Vendored utils (lazy import — requires dspy/datasets at import time)
+# We use only three functions from utils/arc_agi_eval.py:
+#   - load_arc_dataset: loads ARC-AGI from HuggingFace
+#   - evaluate_predictions: scores train predictions
+#   - evaluate_test: scores test predictions (2-attempt format)
 # ---------------------------------------------------------------------------
 
-_utils = None
+_vendored = None
 
 
-def _load_vendored():
-    global _utils
-    if _utils is None:
-        import importlib, sys
-        # Ensure our utils/ package is importable regardless of cwd
-        utils_dir = Path(__file__).resolve().parent
-        if str(utils_dir) not in sys.path:
-            sys.path.insert(0, str(utils_dir))
-        from utils import arc_agi_eval as _mod
-        _utils = _mod
-    return _utils
+def _get_vendored():
+    global _vendored
+    if _vendored is None:
+        import sys
+        utils_dir = str(Path(__file__).resolve().parent)
+        if utils_dir not in sys.path:
+            sys.path.insert(0, utils_dir)
+        from utils import arc_agi_eval
+        _vendored = arc_agi_eval
+    return _vendored
 
 
 # ---------------------------------------------------------------------------
-# TrackedLLM with OpenRouter cost fix
+# TrackedLLM — self-contained LLM callable with cost tracking
 # ---------------------------------------------------------------------------
 
 class TrackedLLM:
-    """LLM callable with cost tracking, fixed for OpenRouter models.
+    """LLM callable with call/cost tracking for ARC-AGI agents.
 
-    Wraps the vendored TrackedLLM, overriding __call__ to fall back to
-    resp.usage.cost when litellm's pricing DB doesn't cover the model.
+    Falls back to resp.usage.cost when litellm's pricing DB doesn't
+    cover the model (common with OpenRouter).
     """
 
-    def __init__(self, model_id: str, max_llm_calls: int = 20, reasoning_effort: Optional[str] = None):
-        _v = _load_vendored()
-        self._inner = _v.TrackedLLM(
-            model_id=model_id,
-            max_llm_calls=max_llm_calls,
-            reasoning_effort=reasoning_effort,
-        )
+    def __init__(self, model_id: str, max_llm_calls: int = 10, reasoning_effort: Optional[str] = None):
+        self.model_id = model_id
+        self.max_llm_calls = max_llm_calls
+        self.reasoning_effort = reasoning_effort
+        self.calls: list = []
+
+    @property
+    def total_cost(self) -> float:
+        return sum(c.get("cost", 0.0) for c in self.calls)
 
     def __call__(self, prompt: str, temperature: float = 1.0) -> str:
-        if len(self._inner.calls) >= self._inner.max_llm_calls:
-            raise RuntimeError(f"LLM budget exhausted ({self._inner.max_llm_calls} calls)")
+        if len(self.calls) >= self.max_llm_calls:
+            raise RuntimeError(f"LLM budget exhausted ({self.max_llm_calls} calls)")
 
         start = time.time()
         kwargs: dict = {
-            "model": self._inner.model_id,
+            "model": self.model_id,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": temperature,
         }
-        if self._inner.reasoning_effort:
-            kwargs["extra_body"] = {"reasoning": {"effort": self._inner.reasoning_effort}}
+        if self.reasoning_effort:
+            kwargs["extra_body"] = {"reasoning": {"effort": self.reasoning_effort}}
 
         resp = litellm.completion(**kwargs)
         duration = time.time() - start
@@ -87,6 +92,7 @@ class TrackedLLM:
         content = msg.content or ""
         reasoning = getattr(msg, "reasoning_content", None) or ""
 
+        # Cost: try litellm's DB first, fall back to provider-reported cost
         try:
             cost = litellm.completion_cost(completion_response=resp)
         except Exception:
@@ -100,23 +106,9 @@ class TrackedLLM:
         }
         if reasoning:
             call_data["reasoning"] = reasoning
-        self._inner.calls.append(call_data)
+        self.calls.append(call_data)
         return content
 
-    @property
-    def total_cost(self):
-        return self._inner.total_cost
-
-    @property
-    def max_llm_calls(self):
-        return self._inner.max_llm_calls
-
-    @property
-    def calls(self):
-        return self._inner.calls
-
-    def get_traces(self):
-        return self._inner.get_traces()
 
 
 # ---------------------------------------------------------------------------
@@ -133,14 +125,14 @@ def _example_to_dict(ex) -> Dict[str, Any]:
 
 def load_arc_train_val(seed: int = 0) -> Tuple[List[Dict], List[Dict]]:
     """Load ARC-AGI train and val splits (200 + 200 from HF training)."""
-    _v = _load_vendored()
+    _v = _get_vendored()
     train_dspy, val_dspy, _test_dspy = _v.load_arc_dataset(seed)
     return [_example_to_dict(e) for e in train_dspy], [_example_to_dict(e) for e in val_dspy]
 
 
 def load_arc_test(seed: int = 0) -> List[Dict]:
     """Load ARC-AGI test split (400 from HF evaluation)."""
-    _v = _load_vendored()
+    _v = _get_vendored()
     _train_dspy, _val_dspy, test_dspy = _v.load_arc_dataset(seed)
     return [_example_to_dict(e) for e in test_dspy]
 
@@ -151,7 +143,7 @@ def load_arc_test(seed: int = 0) -> List[Dict]:
 
 def run_agent(agent_code, train_in, train_out, test_in, test_out, model_id, max_llm_calls, reasoning_effort=None):
     """Run agent with stdout capture and vendored evaluation logic."""
-    _v = _load_vendored()
+    _v = _get_vendored()
     llms = TrackedLLM(model_id=model_id, max_llm_calls=max_llm_calls, reasoning_effort=reasoning_effort)
 
     buf = io.StringIO()
