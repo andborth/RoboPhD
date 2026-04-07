@@ -70,8 +70,6 @@ def parse_args():
 
     # Test evaluation
     parser.add_argument("--eval-test-set", action="store_true", help="Run test-set evaluation after optimization")
-    parser.add_argument("--test-repeats", type=int, default=1, help="Number of test-set repeats")
-
     # Resume / extend
     parser.add_argument("--resume", type=str, default=None, help="Path to experiment directory to resume")
     parser.add_argument("--extend", type=int, default=None, help="Add N more iterations to a resumed run")
@@ -168,15 +166,12 @@ def main():
             logger.info("Skipping test-set evaluation -- run ended early due to failure")
         else:
             test_data = load_arc_test()
-            logger.info(f"Test evaluation: {len(test_data)} problems x {args.test_repeats} repeats")
+            logger.info(f"Test evaluation: {len(test_data)} problems")
             eval_result = eval_candidate(
                 evaluator=evaluator,
                 dataset=test_data,
                 candidate=result.best_candidate,
-                config=RoboPhDEvalConfig(
-                    test_repeats=args.test_repeats,
-                    eval_timeout=600,
-                ),
+                config=RoboPhDEvalConfig(eval_timeout=600),
             )
             logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
 
