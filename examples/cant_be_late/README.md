@@ -23,7 +23,7 @@ Run from the RoboPhD repo root:
 
 ```bash
 # Smoke test (2 iterations, ~60 evaluations)
-python examples/cant_be_late/main.py --evaluation-budget 60 --num-iterations 2
+python examples/cant_be_late/main.py --num-iterations 2
 
 # Full run (budget-limited, typically ~21 iterations)
 python examples/cant_be_late/main.py

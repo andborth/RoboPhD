@@ -86,7 +86,7 @@ export OPENROUTER_API_KEY="sk-or-..."
 # to get your own Gemini rate limits (otherwise you share limits with all OpenRouter users)
 
 # 4. Run a benchmark example (ARC-AGI-1)
-python examples/arc_agi_1/main.py --evaluation-budget 60 --num-iterations 2
+python examples/arc_agi_1/main.py --num-iterations 2
 ```
 
 More examples (Can't Be Late, Text2SQL, DocFinQA) coming soon.
