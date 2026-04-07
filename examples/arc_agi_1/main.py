@@ -196,9 +196,11 @@ if __name__ == "__main__":
     try:
         main()
     finally:
-        # Force-exit if any non-daemon threads are still alive (e.g., leaked
-        # eval timeout threads). Python's atexit blocks on t.join() otherwise.
-        import threading
+        # Force-exit if non-daemon threads are still alive after a brief
+        # grace period. Leaked eval timeout threads and httpx connection
+        # pools can block Python's atexit handler indefinitely.
+        import threading, time as _time
+        _time.sleep(0.5)  # Brief grace period for clean shutdown
         alive = [t for t in threading.enumerate()
                  if t is not threading.main_thread() and t.is_alive() and not t.daemon]
         if alive:
