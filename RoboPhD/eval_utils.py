@@ -1,7 +1,8 @@
-"""Shared test evaluation utilities for run_gepa.py and eval_test_set.py."""
+"""Shared evaluation utilities: rate limit handling, parallel eval loops."""
 
 import logging
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,34 @@ def is_rate_limit_error(exc: BaseException) -> bool:
     if chained and chained is not exc:
         return is_rate_limit_error(chained)
     return False
+
+
+def retry_on_rate_limit(fn, max_retries=5, base_delay=0.5):
+    """Call fn(), retrying with exponential backoff on rate limit errors.
+
+    Use this inside LLM callables (TrackedLLM, make_tracked_llm, etc.)
+    to handle transient rate limits before they reach the framework.
+    Retry must happen inside the callable because agent code is untrusted
+    and may catch exceptions — if swallowed at the agent level, the
+    framework's EvalRateLimitError detection never fires.
+
+    If all retries are exhausted, the exception propagates up through
+    the evaluator to domain.py, which raises EvalRateLimitError to
+    crash the run and prevent corrupted scores.
+    """
+    for attempt in range(max_retries + 1):
+        try:
+            return fn()
+        except Exception as e:
+            if is_rate_limit_error(e) and attempt < max_retries:
+                delay = base_delay * (2 ** attempt)
+                logger.warning(
+                    "Rate limit hit, retrying in %.1fs (attempt %d/%d)",
+                    delay, attempt + 1, max_retries,
+                )
+                time.sleep(delay)
+                continue
+            raise
 
 
 def run_parallel_eval(

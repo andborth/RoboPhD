@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import litellm
-from RoboPhD.eval_utils import is_rate_limit_error
+from RoboPhD.eval_utils import retry_on_rate_limit
 
 litellm.suppress_debug_info = True
 
@@ -74,9 +74,6 @@ class TrackedLLM:
     def total_cost(self) -> float:
         return sum(c.get("cost", 0.0) for c in self.calls)
 
-    _RATE_LIMIT_MAX_RETRIES = 5
-    _RATE_LIMIT_BASE_DELAY = 0.5
-
     def __call__(self, prompt: str, temperature: float = 1.0) -> str:
         if len(self.calls) >= self.max_llm_calls:
             raise RuntimeError(f"LLM budget exhausted ({self.max_llm_calls} calls)")
@@ -90,20 +87,7 @@ class TrackedLLM:
         if self.reasoning_effort:
             kwargs["extra_body"] = {"reasoning": {"effort": self.reasoning_effort}}
 
-        # Retry on transient rate limits (same pattern as DocFinQA's
-        # _retry_on_rate_limit). Without this, rate limit errors are caught
-        # by run_agent's except Exception and silently scored as 0.
-        for attempt in range(self._RATE_LIMIT_MAX_RETRIES + 1):
-            try:
-                resp = litellm.completion(**kwargs)
-                break
-            except Exception as e:
-                if is_rate_limit_error(e) and attempt < self._RATE_LIMIT_MAX_RETRIES:
-                    delay = self._RATE_LIMIT_BASE_DELAY * (2 ** attempt)
-                    logger.warning(f"Rate limit hit, retrying in {delay:.1f}s (attempt {attempt + 1}/{self._RATE_LIMIT_MAX_RETRIES})")
-                    time.sleep(delay)
-                    continue
-                raise
+        resp = retry_on_rate_limit(lambda: litellm.completion(**kwargs))
         duration = time.time() - start
         msg = resp.choices[0].message
         content = msg.content or ""
