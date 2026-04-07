@@ -1,0 +1,1 @@
+Evolve a Python function that answers numerical questions over long financial documents (SEC 10-K filings, averaging 123K words). The function receives the full document as markdown text, a question, an llm() callable, and an embed() callable. It must return a Python program string whose last line assigns the result to `answer`.
