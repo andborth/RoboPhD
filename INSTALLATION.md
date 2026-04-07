@@ -41,6 +41,8 @@ export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_anthropic_api_key_here"
 
 # For ARC-AGI (Gemini solver via OpenRouter)
 export OPENROUTER_API_KEY="sk-or-..."
+# Recommended: link your Google API key at https://openrouter.ai/settings/integrations
+# to get your own Gemini rate limits (otherwise you share limits with all OpenRouter users)
 
 # Reload your shell
 source ~/.zshrc  # or ~/.bashrc

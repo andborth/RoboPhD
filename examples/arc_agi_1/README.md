@@ -12,6 +12,8 @@ pip install -r ../../requirements-gepa.txt  # adds dspy, datasets
 # Set API keys
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"   # for evolution (Claude Code)
 export OPENROUTER_API_KEY="sk-or-..."              # for the solver (Gemini)
+# Recommended: link your Google API key at https://openrouter.ai/settings/integrations
+# to get your own Gemini rate limits (otherwise you share limits with all OpenRouter users)
 ```
 
 ## Quick Start
