@@ -177,7 +177,7 @@ class AIMEEvaluator:
             cost = litellm.completion_cost(completion_response=completion)
         except Exception as e:
             logger.error(f"LLM call failed for {example['problem_id']}: {e}")
-            return 0.0, {"error": str(e), "problem_id": example["problem_id"]}
+            return 0.0, {"error.md": str(e), "problem_id": example["problem_id"]}
 
         # Track cost
         with self._lock:

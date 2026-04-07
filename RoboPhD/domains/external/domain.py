@@ -274,7 +274,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                         raise
                     self.logger.error(f"Evaluator failed on {problem_id}: {e}")
                     score = 0.0
-                    diagnostics = {"error": str(e)}
+                    diagnostics = {"error.md": str(e)}
 
                 for key in ("question_id", "problem_id", "id", "example_id"):
                     if key in example:
@@ -530,7 +530,7 @@ Agent source code:
                 with open(result_path, "w") as f:
                     json.dump(result_entry, f, indent=2)
             # Write diagnostic file (same pattern as evaluator exceptions)
-            error_path = problem_dir / "error"
+            error_path = problem_dir / "error.md"
             if not error_path.exists():
                 error_path.write_text(f"Evaluation timed out after {eval_timeout}s")
         except OSError as e:

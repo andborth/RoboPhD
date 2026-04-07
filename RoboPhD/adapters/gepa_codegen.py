@@ -362,14 +362,14 @@ class RoboPhDCodeGenEvaluator:
         cache_problem_dir = self.cache_dir / question_id
         if not cache_problem_dir.exists():
             logger.warning(f"Cache dir not found for {question_id}")
-            return 0.0, {"error": f"cache_dir_missing: {question_id}"}
+            return 0.0, {"error.md": f"cache_dir_missing: {question_id}"}
 
         # Load problem data from HF dataset for test evaluation
         hf_dataset = self._load_hf_dataset()
         problem_data = hf_dataset.get(question_id, {})
         if not problem_data:
             logger.warning(f"Problem {question_id} not found in HF dataset")
-            return 0.0, {"error": f"hf_dataset_missing: {question_id}"}
+            return 0.0, {"error.md": f"hf_dataset_missing: {question_id}"}
 
         # Determine output directory
         if problem_dir is not None:
@@ -391,7 +391,7 @@ class RoboPhDCodeGenEvaluator:
             )
         except Exception as e:
             logger.error(f"evaluate_problem failed for {question_id}: {e}")
-            return 0.0, {"error": str(e), "question_id": question_id}
+            return 0.0, {"error.md": str(e), "question_id": question_id}
 
         # Accumulate cost
         eval_cost = result.get("timing", {}).get("total_cost_usd", 0.0)

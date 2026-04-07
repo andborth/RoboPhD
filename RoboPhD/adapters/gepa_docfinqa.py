@@ -369,7 +369,7 @@ class DocFinQAEvaluator:
             program_str, agent_stdout = run_agent(agent_code, example["document"], question, llm, embed)
         except Exception as e:
             diagnostics = {
-                "error": f"Agent crashed: {e}",
+                "error.md": f"Agent crashed: {e}",
                 "question": question,
                 "expected": expected,
                 "reference_program": example["program"],

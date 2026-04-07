@@ -566,7 +566,7 @@ Do not include explanations, prefixes, or combine both responses."""
                 attempts = []
         except Exception as e:
             logger.error(f"SQL generation failed for {db_id}/{example['question_id']}: {e}")
-            return 0.0, {"error": str(e), "question_id": example["question_id"], "db_id": db_id}
+            return 0.0, {"error.md": str(e), "question_id": example["question_id"], "db_id": db_id}
 
         with self._lock:
             self._total_eval_cost += cost
