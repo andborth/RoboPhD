@@ -59,11 +59,12 @@ class CostTracker:
 def make_tracked_llm(model: str, tracker: CostTracker):
     """Return an llm(prompt) -> str callable with cost tracking and rate limit retry."""
 
-    def llm(prompt: str) -> str:
+    def llm(prompt: str, temperature: float = 0.0) -> str:
         resp = retry_on_rate_limit(
             lambda: litellm.completion(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
             )
         )
         try:

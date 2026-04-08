@@ -15,7 +15,7 @@ A per-problem cost budget of ${cost_budget} is enforced. Correct answers within 
 The agent receives:
 - train_in, train_out: Training examples (list of 2D grids)
 - test_in: Test inputs (no ground truth given to agent)
-- llm: Callable for LLM queries with token/call tracking
+- llm: Callable for LLM queries with token/call tracking. Signature: llm(prompt, temperature=1.0). temperature controls randomness (0.0 = deterministic, 1.0 = creative).
 
 The agent must return:
 {
