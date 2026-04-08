@@ -56,6 +56,11 @@ def parse_args():
     parser.add_argument("--evolution-model", default="opus-4.6", help="Model for evolution AI")
 
     # Task-specific
+    parser.add_argument("--solver-model", type=str, default=None,
+                        help="Override solver model (e.g. openrouter/deepseek/deepseek-v3.2)")
+    parser.add_argument("--cost-budget", type=float, default=None, help="Per-problem cost budget in $ (default: 0.10, or 0.25 with --paper-config)")
+    parser.add_argument("--reasoning-effort", type=str, default=None,
+                        help="Reasoning effort (e.g. 'high'). None = model default.")
     parser.add_argument("--paper-config", action="store_true",
                         help="Use paper settings: Gemini 3.1 Flash Lite + $0.25 cost budget "
                              "(default: Gemini 2.5 Flash Lite + $0.10 budget)")
@@ -103,6 +108,16 @@ def main():
         cost_budget = 0.10
         reasoning_effort = None
         logger.info(f"Using default config: {solver_model}, ${cost_budget:.2f} budget")
+
+    # CLI overrides take precedence
+    if args.solver_model:
+        solver_model = args.solver_model
+    if args.cost_budget is not None:
+        cost_budget = args.cost_budget
+    if args.reasoning_effort is not None:
+        reasoning_effort = args.reasoning_effort
+    if args.solver_model or args.cost_budget is not None or args.reasoning_effort is not None:
+        logger.info(f"CLI overrides: model={solver_model}, budget=${cost_budget:.2f}, reasoning={reasoning_effort}")
 
     objective = (HERE / "objective.md").read_text().strip()
     background = (HERE / "background.md").read_text().strip()
