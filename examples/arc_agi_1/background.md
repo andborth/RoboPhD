@@ -4,11 +4,11 @@ ARC-AGI task format:
 - Each task has training examples (input/output pairs) and test inputs
 - The (multi) agent(s) must infer the transformation pattern from training examples
 - Competition allows maximum of 2 parallel output attempts per test input (pass if either matches)
-- You can also use up to 10 LLM calls to solve the problem.
+- You can also use up to {max_llm_calls} LLM calls to solve the problem.
 - Freely explore diverse strategies like multi agent systems, ensembles, voting, etc.
 
 LLM cost:
-- You are allowed to build an agent system with up to 10 LLM calls.
+- You are allowed to build an agent system with up to {max_llm_calls} LLM calls.
 
 A per-problem cost budget of ${cost_budget} is enforced. Correct answers within budget score 1.0. Correct answers that exceed the budget are penalized to 0.9 (a 10% reduction). Incorrect answers score 0.0 regardless of cost.
 

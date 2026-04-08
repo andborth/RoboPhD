@@ -56,15 +56,9 @@ def parse_args():
     parser.add_argument("--evolution-model", default="opus-4.6", help="Model for evolution AI")
 
     # Task-specific
-    parser.add_argument("--solver-model", type=str, default=None,
-                        help="Override solver model (e.g. openrouter/deepseek/deepseek-v3.2)")
-    parser.add_argument("--cost-budget", type=float, default=None, help="Per-problem cost budget in $ (default: 0.10, or 0.25 with --paper-config)")
-    parser.add_argument("--reasoning-effort", type=str, default=None,
-                        help="Reasoning effort (e.g. 'high'). None = model default.")
     parser.add_argument("--paper-config", action="store_true",
-                        help="Use paper settings: Gemini 3.1 Flash Lite + $0.25 cost budget "
-                             "(default: Gemini 2.5 Flash Lite + $0.10 budget)")
-    parser.add_argument("--max-llm-calls", type=int, default=10, help="Max LLM calls per problem")
+                        help="Paper settings: high reasoning + $0.25 budget + 10 LLM calls "
+                             "(default: medium reasoning + $0.10 + 20 calls)")
 
     # Infrastructure
     parser.add_argument("--max-workers", type=int, default=None, help="Parallel eval workers (None = Python default)")
@@ -92,38 +86,33 @@ def main():
         load_arc_train_val, load_arc_test,
     )
 
-    # Select config tier
-    # Reasoning effort: Gemini 2.5 Flash Lite has thinking disabled by default.
-    # Enabling it with "high" causes frequent empty responses (the model exhausts
-    # its output budget on reasoning and returns 0-char content). We leave it off
-    # for the default config. Gemini 3.1 Flash Lite (paper config) has thinking
-    # enabled by default and handles "high" well.
+    # Select config tier.
+    # High reasoning scores 3.3x better on the seed (29% vs 8.7%) but costs
+    # 6.8x more ($0.027 vs $0.004/problem) and runs 7.5x slower. The default
+    # tier trades seed accuracy for cheaper evals and gives evolution 20 LLM
+    # calls to build multi-step strategies.
     if args.paper_config:
-        solver_model = "openrouter/google/gemini-3.1-flash-lite-preview"
+        solver_model = DEFAULT_SOLVER_MODEL
         cost_budget = 0.25
         reasoning_effort = "high"
+        max_llm_calls = 10
     else:
         solver_model = DEFAULT_SOLVER_MODEL
         cost_budget = 0.10
-        reasoning_effort = None
+        reasoning_effort = "medium"
+        max_llm_calls = 20
 
-    # CLI overrides take precedence
-    if args.solver_model:
-        solver_model = args.solver_model
-    if args.cost_budget is not None:
-        cost_budget = args.cost_budget
-    if args.reasoning_effort is not None:
-        reasoning_effort = args.reasoning_effort
-
-    logger.info(f"Solver config: model={solver_model}, budget=${cost_budget:.2f}, reasoning={reasoning_effort}")
+    logger.info(f"Solver config: model={solver_model}, budget=${cost_budget:.2f}, "
+                f"reasoning={reasoning_effort}, max_calls={max_llm_calls}")
 
     objective = (HERE / "objective.md").read_text().strip()
     background = (HERE / "background.md").read_text().strip()
     background = background.replace("{cost_budget}", f"{cost_budget:.2f}")
+    background = background.replace("{max_llm_calls}", str(max_llm_calls))
 
     evaluator = ArcAGI1Evaluator(
         solver_model=solver_model,
-        max_llm_calls=args.max_llm_calls,
+        max_llm_calls=max_llm_calls,
         cost_budget=cost_budget,
         reasoning_effort=reasoning_effort,
     )
