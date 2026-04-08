@@ -25,7 +25,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent.parent))
 sys.path.insert(0, str(HERE))
 
-from RoboPhD import optimize_anything, eval_candidate, RoboPhDConfig, RoboPhDEvalConfig
+from RoboPhD import optimize_anything, eval_candidate, eval_run, RoboPhDConfig, RoboPhDEvalConfig
 
 logging.basicConfig(
     level=logging.INFO,
@@ -64,6 +64,7 @@ def parse_args():
 
     # Test evaluation
     parser.add_argument("--eval-test-set", action="store_true", help="Run test-set evaluation after optimization")
+    parser.add_argument("--eval-only", action="store_true", help="Skip optimization; evaluate best agent from --resume dir on test set")
     # Resume / extend
     parser.add_argument("--resume", type=str, default=None, help="Path to experiment directory to resume")
     parser.add_argument("--extend", type=int, default=None, help="Add N more iterations to a resumed run")
@@ -87,6 +88,24 @@ def main():
     ds = load_dataset(dataset_root=args.dataset_root)
     dataset = ds["train"] + ds["val"]
     logger.info(f"Dataset: {len(dataset)} problems ({len(ds['train'])} train + {len(ds['val'])} val)")
+
+    # --eval-only: skip optimization, evaluate best agent from a prior run
+    if args.eval_only:
+        if not args.resume:
+            raise SystemExit("--eval-only requires --resume <experiment_dir>")
+        test_data = ds["test"]
+        eval_result = eval_run(evaluator=evaluator, dataset=test_data, experiment_dir=args.resume)
+        logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
+        test_path = Path(args.resume) / "test_results.json"
+        with open(test_path, "w") as f:
+            json.dump({
+                "mean_test_score": eval_result.mean_score,
+                "total_test_score": eval_result.total_score,
+                "total_test_problems": eval_result.num_examples,
+                "test_eval_cost_usd": evaluator.total_eval_cost,
+            }, f, indent=2)
+        logger.info(f"Test results saved to {test_path}")
+        return
 
     seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
 
