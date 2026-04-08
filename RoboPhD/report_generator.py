@@ -33,6 +33,27 @@ def format_non_binary_scores(non_binary: dict) -> list:
     return lines
 
 
+def format_agent_errors(index: dict) -> list:
+    """Render agent errors (crashes, rate limits) as report lines, grouped by agent."""
+    by_agent = index.get('by_agent', {})
+    agents_with_errors = {
+        agent: sorted(stats.get('error_ids', []))
+        for agent, stats in by_agent.items()
+        if stats.get('error_ids')
+    }
+    if not agents_with_errors:
+        return []
+
+    total = sum(len(ids) for ids in agents_with_errors.values())
+    lines = ["## Agent Errors", "",
+             f"{total} problem(s) had infrastructure errors (agent crash, rate limit):", ""]
+    for agent in sorted(agents_with_errors):
+        error_ids = agents_with_errors[agent]
+        lines.append(f"- **{agent}** ({len(error_ids)}): {', '.join(error_ids)}")
+    lines.append("")
+    return lines
+
+
 def is_continuous_scoring(scores_by_question: dict) -> bool:
     """Detect whether scores are continuous (not mostly binary).
 
@@ -160,6 +181,9 @@ def format_binary_report_comparative(index: dict) -> list[str]:
     # Non-binary scores (e.g., partial credit)
     lines.extend(format_non_binary_scores(index.get('non_binary_scores', {})))
 
+    # Agent errors (crashes, rate limits)
+    lines.extend(format_agent_errors(index))
+
     return lines
 
 
@@ -284,6 +308,9 @@ def format_binary_report_deep_focus(index: dict) -> list[str]:
 
     # Non-binary scores
     lines.extend(format_non_binary_scores(index.get('non_binary_scores', {})))
+
+    # Agent errors
+    lines.extend(format_agent_errors(index))
 
     return lines
 

@@ -3128,7 +3128,7 @@ class ParallelAgentResearcher:
 
                 from RoboPhD.report_generator import (
                     is_continuous_scoring, format_continuous_score_table,
-                    format_binary_report_comparative,
+                    format_binary_report_comparative, format_agent_errors,
                 )
                 scores_by_question = index.get('scores_by_question', {})
                 summary = index.get('summary', {})
@@ -3140,6 +3140,7 @@ class ParallelAgentResearcher:
                     report_lines.append(f"**Total problems**: {total_q}")
                     report_lines.append("")
                     report_lines.extend(format_continuous_score_table(scores_by_question, agents))
+                    report_lines.extend(format_agent_errors(index))
                 else:
                     report_lines.extend(format_binary_report_comparative(index))
 
