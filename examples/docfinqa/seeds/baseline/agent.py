@@ -9,6 +9,10 @@ def answer(document, question, llm, embed):
     for i in range(0, len(words), size - overlap):
         chunks.append(" ".join(words[i:i+size]))
 
+    # --- Demonstration: print() output is captured as agent_stdout in diagnostics ---
+    print(f"Question: {question}")
+    print(f"Document: {len(words)} words, {len(chunks)} chunks")
+
     # Retrieve the most relevant chunk
     q_emb = embed(question)
     best, best_score = chunks[0], -1
