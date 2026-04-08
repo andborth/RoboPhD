@@ -80,20 +80,24 @@ pip install -r requirements-gepa.txt  # adds dspy, datasets
 # See: https://docs.anthropic.com/en/docs/claude-code
 
 # 3. Set API keys
-export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"
-export OPENROUTER_API_KEY="sk-or-..."
+export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"   # for evolution (Claude Code)
+export OPENAI_API_KEY="sk-..."                     # for DocFinQA (gpt-4.1-mini + embeddings)
+export OPENROUTER_API_KEY="sk-or-..."              # for ARC-AGI (Gemini via OpenRouter)
 # Recommended: link your Google API key at https://openrouter.ai/settings/integrations
 # to get your own Gemini rate limits (otherwise you share limits with all OpenRouter users)
 
-# 4. Run a benchmark example (ARC-AGI-1)
+# 4. DocFinQA — financial document QA (easiest to start with)
+python examples/docfinqa/main.py --num-iterations 2
+
+# 5. ARC-AGI-1 — abstract reasoning (requires OpenRouter key above)
 python examples/arc_agi_1/main.py --num-iterations 2
 
-# 5. Can't Be Late (no solver API key needed — pure algorithmic)
+# 6. Can't Be Late — cloud scheduling (no solver API key needed)
 bash examples/cant_be_late/download_traces.sh
 python examples/cant_be_late/main.py --num-iterations 2
 ```
 
-More examples (Text2SQL, DocFinQA) coming soon.
+Text2SQL example coming soon.
 
 ## Optimize Anything API
 
