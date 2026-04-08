@@ -102,12 +102,10 @@ def main():
         solver_model = "openrouter/google/gemini-3.1-flash-lite-preview"
         cost_budget = 0.25
         reasoning_effort = "high"
-        logger.info("Using paper config: Gemini 3.1 Flash Lite, $0.25 budget, reasoning=high")
     else:
         solver_model = DEFAULT_SOLVER_MODEL
         cost_budget = 0.10
         reasoning_effort = None
-        logger.info(f"Using default config: {solver_model}, ${cost_budget:.2f} budget")
 
     # CLI overrides take precedence
     if args.solver_model:
@@ -116,8 +114,8 @@ def main():
         cost_budget = args.cost_budget
     if args.reasoning_effort is not None:
         reasoning_effort = args.reasoning_effort
-    if args.solver_model or args.cost_budget is not None or args.reasoning_effort is not None:
-        logger.info(f"CLI overrides: model={solver_model}, budget=${cost_budget:.2f}, reasoning={reasoning_effort}")
+
+    logger.info(f"Solver config: model={solver_model}, budget=${cost_budget:.2f}, reasoning={reasoning_effort}")
 
     objective = (HERE / "objective.md").read_text().strip()
     background = (HERE / "background.md").read_text().strip()
