@@ -29,7 +29,6 @@ sys.path.insert(0, str(HERE.parent.parent))
 sys.path.insert(0, str(HERE))
 
 from RoboPhD import optimize_anything, eval_candidate, RoboPhDConfig, RoboPhDEvalConfig
-from RoboPhD.adapters.candidate_utils import extract_candidate
 
 logging.basicConfig(
     level=logging.INFO,
@@ -83,7 +82,7 @@ def main():
 
     # Lazy import evaluator (requires dspy/datasets)
     from evaluator import (
-        ArcAGI1Evaluator, FILE_MAPPING, DEFAULT_SOLVER_MODEL,
+        ArcAGI1Evaluator, DEFAULT_SOLVER_MODEL,
         load_arc_train_val, load_arc_test,
     )
 
@@ -119,7 +118,7 @@ def main():
     dataset = train + val
     logger.info(f"Dataset: {len(dataset)} problems ({len(train)} train + {len(val)} val)")
 
-    seed = extract_candidate(HERE / "seeds" / "baseline", FILE_MAPPING)
+    seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
 
     # Build engine overrides
     engine_overrides = {}

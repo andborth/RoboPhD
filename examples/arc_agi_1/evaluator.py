@@ -26,7 +26,6 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_SOLVER_MODEL = "openrouter/google/gemini-2.5-flash-lite"
 
-FILE_MAPPING = {"agent_code": "agent.py"}
 
 
 # ---------------------------------------------------------------------------
@@ -333,7 +332,7 @@ class ArcAGI1Evaluator:
         *,
         problem_dir: Optional[Path] = None,
     ) -> Tuple[float, Dict[str, Any]]:
-        agent_code = candidate.get("agent_code", "")
+        agent_code = candidate.get("agent.py", "")
         problem_id = example["problem_id"]
 
         result = run_agent(

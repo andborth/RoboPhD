@@ -26,7 +26,6 @@ sys.path.insert(0, str(HERE.parent.parent))
 sys.path.insert(0, str(HERE))
 
 from RoboPhD import optimize_anything, eval_candidate, RoboPhDConfig, RoboPhDEvalConfig
-from RoboPhD.adapters.candidate_utils import extract_candidate
 
 logging.basicConfig(
     level=logging.INFO,
@@ -76,7 +75,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    from evaluator import CantBeLateEvaluator, FILE_MAPPING, load_dataset
+    from evaluator import CantBeLateEvaluator, load_dataset
 
     objective = (HERE / "objective.md").read_text().strip()
     background = (HERE / "background.md").read_text().strip()
@@ -89,7 +88,7 @@ def main():
     dataset = ds["train"] + ds["val"]
     logger.info(f"Dataset: {len(dataset)} problems ({len(ds['train'])} train + {len(ds['val'])} val)")
 
-    seed = extract_candidate(HERE / "seeds" / "baseline", FILE_MAPPING)
+    seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
 
     # Build engine overrides
     engine_overrides = {}

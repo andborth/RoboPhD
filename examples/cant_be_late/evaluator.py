@@ -42,7 +42,6 @@ def _ensure_imports():
 # Constants
 # ---------------------------------------------------------------------------
 
-FILE_MAPPING = {"agent_code": "agent.py"}
 
 # Default dataset root: RoboPhD/data/cant_be_late/traces (from repo root)
 _DEFAULT_DATASET_ROOT = str(
@@ -204,7 +203,7 @@ class CantBeLateEvaluator:
         problem_dir: Optional[Path] = None,
     ) -> Tuple[float, Dict[str, Any]]:
         _ensure_imports()
-        agent_code = candidate.get("agent_code", "")
+        agent_code = candidate.get("agent.py", "")
 
         # Syntax check
         ok, syntax_error = _check_syntax(agent_code)

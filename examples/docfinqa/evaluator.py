@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-FILE_MAPPING = {"agent_code": "agent.py"}
 
 DEFAULT_MODEL = "gpt-4.1-mini"
 DEFAULT_EMBED_MODEL = "text-embedding-3-small"
@@ -230,7 +229,7 @@ class DocFinQAEvaluator:
         *,
         problem_dir: Optional[Path] = None,
     ) -> Tuple[float, Dict[str, Any]]:
-        agent_code = candidate.get("agent_code", "")
+        agent_code = candidate.get("agent.py", "")
         question = example["question"]
         expected = example["answer"]
 
