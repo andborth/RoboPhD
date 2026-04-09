@@ -44,6 +44,9 @@ export OPENROUTER_API_KEY="sk-or-..."
 # Recommended: link your Google API key at https://openrouter.ai/settings/integrations
 # to get your own Gemini rate limits (otherwise you share limits with all OpenRouter users)
 
+# For DocFinQA (gpt-4.1-mini + text-embedding-3-small)
+export OPENAI_API_KEY="sk-..."
+
 # Reload your shell
 source ~/.zshrc  # or ~/.bashrc
 ```
@@ -65,12 +68,12 @@ No download needed — dataset loads automatically from HuggingFace.
 
 ### Can't Be Late
 ```bash
-bash scripts/download_cant_be_late_traces.sh
+bash examples/cant_be_late/download_traces.sh
 ```
 
 ### Text2SQL (BIRD dataset, ~50GB)
 ```bash
-./benchmark_resources/download_bird.sh
+bash benchmark_resources/download_bird.sh
 ```
 
 ### DocFinQA
@@ -97,8 +100,11 @@ RoboPhD/
 │   ├── adapters/               # Shared utilities (candidate_utils, etc.)
 │   └── ...
 ├── examples/                   # Self-contained benchmark examples
-│   └── arc_agi_1/              # ARC-AGI-1 (more coming soon)
-│       ├── main.py             # Entry point
+│   ├── arc_agi_1/              # ARC-AGI abstract reasoning
+│   ├── cant_be_late/           # Cloud scheduling optimization
+│   ├── docfinqa/               # Financial document QA
+│   └── text2sql/               # SQL generation (BIRD benchmark)
+│       ├── main.py             # Entry point (same structure in each)
 │       ├── evaluator.py        # Domain evaluator
 │       ├── background.md       # Domain description for evolution AI
 │       └── seeds/              # Seed agents
