@@ -95,9 +95,11 @@ python examples/arc_agi_1/main.py --num-iterations 2
 # 6. Can't Be Late — cloud scheduling (no solver API key needed)
 bash examples/cant_be_late/download_traces.sh
 python examples/cant_be_late/main.py --num-iterations 2
-```
 
-Text2SQL example coming soon.
+# 7. Text2SQL — SQL generation from natural language (BIRD benchmark)
+bash benchmark_resources/download_bird.sh
+python examples/text2sql/main.py --num-iterations 2
+```
 
 ## Optimize Anything API
 
