@@ -20,7 +20,7 @@ RoboPhD is a multi-domain evolution system that implements a three-level AI hier
 
 Additional domains (CodeGen, AIME, CodeCritic) are available in the task registry but not actively maintained.
 
-**Paper**: [RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets](https://arxiv.org/abs/2601.01126)
+**Paper**: [RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets](https://arxiv.org/abs/2604.04347)
 
 ## Domains
 
