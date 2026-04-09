@@ -410,10 +410,17 @@ class Text2SQLIntegratedEvaluator:
         with self._lock:
             self._eval_count += 1
 
-        # Phase 1: Analysis tool (runs in problem_dir)
-        analysis, tool_stdout = _run_analysis_tool(
-            analysis_code, db_id, self.db_root, problem_dir,
-        )
+        # Phase 1: Analysis tool (runs in problem_dir, or tempdir if standalone)
+        if problem_dir is not None:
+            analysis, tool_stdout = _run_analysis_tool(
+                analysis_code, db_id, self.db_root, problem_dir,
+            )
+        else:
+            import tempfile
+            with tempfile.TemporaryDirectory() as td:
+                analysis, tool_stdout = _run_analysis_tool(
+                    analysis_code, db_id, self.db_root, Path(td),
+                )
 
         # Create callables
         tracker = CostTracker(budget=self.cost_budget)
