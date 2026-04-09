@@ -1677,11 +1677,6 @@ class ParallelAgentResearcher:
                 score_sum = eval_result.score_sum
                 total_questions = eval_result.total
 
-                timestamp = datetime.now().strftime("%H:%M:%S")
-                cache_meta_count = (eval_result.metadata or {}).get('cached_count', 0)
-                cache_suffix = f" [cached {cache_meta_count}/{total_questions}]" if cache_meta_count else ""
-                print(f"    [{timestamp}] {agent_id}: Score = {average_score:.3f} ({score_sum:.1f}/{total_questions}){cache_suffix}")
-
                 # Get contexts tested successfully from metadata
                 metadata = eval_result.metadata or {}
 
@@ -1727,7 +1722,9 @@ class ParallelAgentResearcher:
                         'fresh': metadata.get('fresh_count', total_questions),
                     }
 
-                print(f"\n{agent_id}: {average_score:.3f} ({score_sum:.1f}/{total_questions})")
+                cached_count = metadata.get('cached_count', 0)
+                cache_suffix = f" [cached {cached_count}/{total_questions}]" if cached_count else ""
+                print(f"\n{agent_id}: {average_score:.3f} ({score_sum:.1f}/{total_questions}){cache_suffix}")
 
             except EvalRateLimitError as e:
                 print(f"\n❌ RATE LIMIT EXCEEDED - Aborting research run")

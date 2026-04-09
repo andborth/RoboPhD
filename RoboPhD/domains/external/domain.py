@@ -209,7 +209,7 @@ class ExternalEvaluatorDomain(DomainInterface):
         fresh_count = len(fresh_problem_ids)
 
         if cached_count > 0:
-            self.logger.info(
+            self.logger.debug(
                 f"Eval cache: {cached_count} cached, {fresh_count} fresh "
                 f"(out of {len(sampled.contexts)} total)"
             )
