@@ -103,7 +103,14 @@ def main():
         if not args.resume:
             raise SystemExit("--eval-only requires --resume <experiment_dir>")
         test_data = load_text2sql_dataset("dev")
-        eval_result = eval_run(evaluator=evaluator, dataset=test_data, experiment_dir=args.resume)
+        # Rebuild evaluator with dev db_root (dev databases differ from train)
+        test_evaluator = Text2SQLIntegratedEvaluator(
+            eval_model=resolve_model_name(args.eval_model),
+            dataset="dev",
+            cost_budget=args.cost_budget,
+            max_test_sql_calls=args.max_test_sql_calls,
+        )
+        eval_result = eval_run(evaluator=test_evaluator, dataset=test_data, experiment_dir=args.resume)
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
         test_path = Path(args.resume) / "test_results.json"
         with open(test_path, "w") as f:
@@ -165,9 +172,16 @@ def main():
             logger.info("Skipping test-set evaluation -- run ended early due to failure")
         else:
             test_data = load_text2sql_dataset("dev")
+            # Rebuild evaluator with dev db_root (dev databases differ from train)
+            test_evaluator = Text2SQLIntegratedEvaluator(
+                eval_model=resolve_model_name(args.eval_model),
+                dataset="dev",
+                cost_budget=args.cost_budget,
+                max_test_sql_calls=args.max_test_sql_calls,
+            )
             logger.info(f"Test evaluation: {len(test_data)} problems")
             eval_result = eval_candidate(
-                evaluator=evaluator,
+                evaluator=test_evaluator,
                 dataset=test_data,
                 candidate=result.best_candidate,
             )
@@ -177,7 +191,7 @@ def main():
                 "mean_test_score": eval_result.mean_score,
                 "total_test_score": eval_result.total_score,
                 "total_test_problems": eval_result.num_examples,
-                "test_eval_cost_usd": evaluator.total_eval_cost,
+                "test_eval_cost_usd": test_evaluator.total_eval_cost,
             }
             test_path = result.experiment_dir / "test_results.json"
             with open(test_path, "w") as f:
