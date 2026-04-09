@@ -22,9 +22,9 @@ The evolved agent consists of two files:
 
 1. **`analyze_db.py`** — Database analysis script.
    Reads `database.sqlite` from its working directory, performs schema
-   analysis, and writes findings to `tool_output/analysis.txt`.
-   Runs as a subprocess (cached per code+database). Common techniques:
-   DDL extraction, sample data, foreign key mapping, column statistics.
+   analysis, and writes findings to `analysis.txt`.
+   Runs as a subprocess. Common techniques: DDL extraction, sample data,
+   foreign key mapping, column statistics.
 
 2. **`agent.py`** — SQL generation agent with a `solve()` function.
    Receives the analysis output, the question, and two callables:

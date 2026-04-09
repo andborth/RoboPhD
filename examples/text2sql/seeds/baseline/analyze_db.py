@@ -3,7 +3,6 @@
 Baseline schema extractor - extracts raw DDL using sqlite3.
 """
 
-import os
 import sqlite3
 import sys
 
@@ -33,7 +32,6 @@ def extract_schema(db_path: str, output_file: str):
         schema_output = '\n'.join(output_lines)
 
         # Write to output file
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
         with open(output_file, 'w') as f:
             f.write(schema_output)
 
@@ -48,4 +46,4 @@ def extract_schema(db_path: str, output_file: str):
 
 
 if __name__ == "__main__":
-    exit(extract_schema("database.sqlite", "tool_output/analysis.txt"))
+    exit(extract_schema("database.sqlite", "analysis.txt"))

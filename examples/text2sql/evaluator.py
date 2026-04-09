@@ -7,14 +7,12 @@ Two-phase evaluation:
 Scoring: set-based SQL result comparison (BIRD methodology)
 """
 
-import hashlib
 import json
 import logging
 import queue
 import re
 import sqlite3
 import subprocess
-import tempfile
 import threading
 import time
 from pathlib import Path
@@ -161,10 +159,6 @@ def _format_sql_results(results: Optional[List[Tuple]], max_rows: int = 50) -> O
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _hash_content(s: str) -> str:
-    return hashlib.md5(s.encode()).hexdigest()[:12]
-
-
 def _truncate(text: str, max_chars: int = 2000) -> str:
     """Truncate text with a note."""
     if len(text) <= max_chars:
@@ -254,99 +248,53 @@ def make_tracked_test_sql(db_path: str, tracker: CostTracker, max_calls: int = _
 
 
 # ---------------------------------------------------------------------------
-# Analysis tool (subprocess, cached)
+# Analysis tool (subprocess in problem_dir)
 # ---------------------------------------------------------------------------
 
-class AnalysisToolRunner:
-    """Runs analyze_db.py as a subprocess with caching.
+def _run_analysis_tool(code: str, db_id: str, db_root: Path, problem_dir: Path) -> Tuple[str, str]:
+    """Run analyze_db.py as a subprocess in the problem directory.
 
-    Caches (analysis_text, tool_stdout) as JSON keyed by hash(code)+db_id.
+    Writes analyze_db.py and symlinks database.sqlite into problem_dir,
+    then runs the script. The output file (analysis.txt) and all artifacts
+    persist in problem_dir for reproducibility.
+
+    Returns (analysis_text, stdout).
     """
+    db_path = db_root / db_id / f"{db_id}.sqlite"
+    if not db_path.exists():
+        return f"ERROR: Database not found: {db_path}", ""
 
-    def __init__(self, db_root: Path, cache_dir: Optional[Path] = None):
-        self.db_root = db_root
-        self._cache: Dict[str, str] = {}  # memory cache
-        self._cache_dir = cache_dir
-        if cache_dir:
-            cache_dir.mkdir(parents=True, exist_ok=True)
+    (problem_dir / "analyze_db.py").write_text(code)
+    link = problem_dir / "database.sqlite"
+    if not link.exists():
+        link.symlink_to(db_path.resolve())
 
-    def _cache_key(self, code_hash: str, db_id: str) -> str:
-        return f"integrated_{code_hash}_{db_id}"
+    try:
+        result = subprocess.run(
+            ["python", "analyze_db.py"],
+            cwd=str(problem_dir),
+            capture_output=True, text=True,
+            timeout=_TOOL_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        return f"ERROR: Tool timed out after {_TOOL_TIMEOUT}s for {db_id}", ""
 
-    def get_analysis(self, code: str, db_id: str) -> Tuple[str, str]:
-        """Get (analysis_text, tool_stdout) with caching."""
-        code_hash = _hash_content(code)
-        key = self._cache_key(code_hash, db_id)
+    if result.returncode != 0:
+        stderr = result.stderr[:500] if result.stderr else "(no stderr)"
+        return f"ERROR: Tool exited with code {result.returncode} for {db_id}\n{stderr}", result.stdout or ""
 
-        # Memory cache
-        if key in self._cache:
-            return self._parse_cached(self._cache[key])
+    stdout = result.stdout or ""
 
-        # Disk cache
-        if self._cache_dir:
-            cache_file = self._cache_dir / f"{key}.txt"
-            if cache_file.exists():
-                cached = cache_file.read_text()
-                self._cache[key] = cached
-                return self._parse_cached(cached)
+    # Read analysis output — check common filenames
+    for name in ["analysis.txt", "schema.txt"]:
+        output_path = problem_dir / name
+        if output_path.exists() and output_path.stat().st_size >= 10:
+            return output_path.read_text(), stdout
 
-        # Run tool
-        analysis, stdout = self._run_tool(code, db_id)
-        cache_value = json.dumps({"analysis": analysis, "stdout": stdout})
-        self._cache[key] = cache_value
-        if self._cache_dir:
-            (self._cache_dir / f"{key}.txt").write_text(cache_value)
+    if stdout and len(stdout) >= 10:
+        return stdout, stdout
 
-        return analysis, stdout
-
-    def _parse_cached(self, cached: str) -> Tuple[str, str]:
-        try:
-            obj = json.loads(cached)
-            if isinstance(obj, dict) and "analysis" in obj:
-                return obj["analysis"], obj.get("stdout", "")
-        except (json.JSONDecodeError, TypeError):
-            pass
-        return cached, ""
-
-    def _run_tool(self, code: str, db_id: str) -> Tuple[str, str]:
-        """Run analyze_db.py subprocess, return (analysis, stdout)."""
-        db_path = self.db_root / db_id / f"{db_id}.sqlite"
-        if not db_path.exists():
-            return f"ERROR: Database not found: {db_path}", ""
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmp = Path(tmpdir)
-            (tmp / "analyze_db.py").write_text(code)
-            (tmp / "database.sqlite").symlink_to(db_path.resolve())
-            (tmp / "tool_output").mkdir()
-
-            try:
-                result = subprocess.run(
-                    ["python", "analyze_db.py"],
-                    cwd=str(tmp),
-                    capture_output=True, text=True,
-                    timeout=_TOOL_TIMEOUT,
-                )
-            except subprocess.TimeoutExpired:
-                return f"ERROR: Tool timed out after {_TOOL_TIMEOUT}s for {db_id}", ""
-
-            if result.returncode != 0:
-                stderr = result.stderr[:500] if result.stderr else "(no stderr)"
-                return f"ERROR: Tool exited with code {result.returncode} for {db_id}\n{stderr}", result.stdout or ""
-
-            stdout = result.stdout or ""
-
-            for output_path in [
-                tmp / "tool_output" / "analysis.txt",
-                tmp / "tool_output" / "schema.txt",
-            ]:
-                if output_path.exists() and output_path.stat().st_size >= 10:
-                    return output_path.read_text(), stdout
-
-            if stdout and len(stdout) >= 10:
-                return stdout, stdout
-
-            return f"ERROR: Tool produced no output for {db_id}", stdout
+    return f"ERROR: Tool produced no output for {db_id}", stdout
 
 
 # ---------------------------------------------------------------------------
@@ -427,7 +375,6 @@ class Text2SQLIntegratedEvaluator:
         self,
         eval_model: str = "haiku-4.5",
         dataset: str = "train-filtered",
-        work_dir: Optional[Path] = None,
         cost_budget: float = _COST_BUDGET,
         over_budget_penalty: float = _OVER_BUDGET_PENALTY,
         max_test_sql_calls: int = _MAX_TEST_SQL_CALLS,
@@ -439,14 +386,6 @@ class Text2SQLIntegratedEvaluator:
 
         paths = _DATASET_PATHS[dataset]
         self.db_root = Path(paths["db_root"])
-
-        self.work_dir = Path(work_dir) if work_dir else Path("text2sql_work")
-        self.work_dir.mkdir(parents=True, exist_ok=True)
-
-        self._tool_runner = AnalysisToolRunner(
-            db_root=self.db_root,
-            cache_dir=self.work_dir / "phase1_cache",
-        )
 
         self._eval_count = 0
         self._total_eval_cost = 0.0
@@ -471,8 +410,10 @@ class Text2SQLIntegratedEvaluator:
         with self._lock:
             self._eval_count += 1
 
-        # Phase 1: Analysis tool (cached)
-        analysis, tool_stdout = self._tool_runner.get_analysis(analysis_code, db_id)
+        # Phase 1: Analysis tool (runs in problem_dir)
+        analysis, tool_stdout = _run_analysis_tool(
+            analysis_code, db_id, self.db_root, problem_dir,
+        )
 
         # Create callables
         tracker = CostTracker(budget=self.cost_budget)
@@ -536,7 +477,6 @@ class Text2SQLIntegratedEvaluator:
             "score": score,
             "cost_usd": cost,
             "question.md": f"# Question\n\n{question}\n\n## Evidence\n\n{evidence or '(none)'}",
-            "analysis.md": f"# Database Analysis ({db_id})\n\n{_truncate(analysis, 5000)}",
             "predicted_sql.md": f"```sql\n{predicted_sql}\n```" if predicted_sql else "(no SQL returned)",
             "expected_sql.md": f"```sql\n{ground_truth_sql}\n```",
             "predicted_results.md": str(comparison.get("predicted_results", "(error)"))[:3000],
@@ -562,8 +502,6 @@ class Text2SQLIntegratedEvaluator:
 
         # Write result.json
         if problem_dir is not None:
-            problem_dir = Path(problem_dir)
-            problem_dir.mkdir(parents=True, exist_ok=True)
             with open(problem_dir / "result.json", "w") as f:
                 json.dump({
                     "question_id": example.get("question_id", ""),
