@@ -443,11 +443,11 @@ def format_continuous_score_table(scores_by_question: dict, agents: list[str]) -
     for agent in sorted_agents:
         wins = win_ids[agent]
         wins_str = ', '.join(wins) if wins else ''
-        lines.append(f"**Solo wins**: {agent}: {len(wins)}" + (f" ({wins_str})" if wins else ""))
+        lines.append(f"- **Solo wins**: {agent}: {len(wins)}" + (f" ({wins_str})" if wins else ""))
     for agent in sorted_agents:
         losses = loss_ids[agent]
         losses_str = ', '.join(losses) if losses else ''
-        lines.append(f"**Solo losses**: {agent}: {len(losses)}" + (f" ({losses_str})" if losses else ""))
+        lines.append(f"- **Solo losses**: {agent}: {len(losses)}" + (f" ({losses_str})" if losses else ""))
     lines.append("")
 
     def delta_cols(scored_sorted, agent_scores):
@@ -538,14 +538,14 @@ def format_continuous_score_table_deep_focus(
     # Summary lines
     if new_wins:
         ids_str = ', '.join(new_wins[:10]) + (', ...' if len(new_wins) > 10 else '')
-        lines.append(f"**New agent wins**: {len(new_wins)} problems where new beat all baselines ({ids_str})")
+        lines.append(f"- **New agent wins**: {len(new_wins)} problems where new beat all baselines ({ids_str})")
     else:
-        lines.append(f"**New agent wins**: 0 problems where new beat all baselines")
+        lines.append(f"- **New agent wins**: 0 problems where new beat all baselines")
     if new_losses:
         ids_str = ', '.join(new_losses[:10]) + (', ...' if len(new_losses) > 10 else '')
-        lines.append(f"**New agent losses**: {len(new_losses)} problems where new was worst ({ids_str})")
+        lines.append(f"- **New agent losses**: {len(new_losses)} problems where new was worst ({ids_str})")
     else:
-        lines.append(f"**New agent losses**: 0 problems where new was worst")
+        lines.append(f"- **New agent losses**: 0 problems where new was worst")
     lines.append("")
 
     return lines
