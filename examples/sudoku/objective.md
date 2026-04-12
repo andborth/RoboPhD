@@ -1,0 +1,1 @@
+Evolve a pure-Python Sudoku solver (agent.py) that maximizes speed while maintaining correctness. No compiled extensions (ctypes, subprocess, cffi). The solver must implement solve(puzzle_str) -> str where input/output are 81-character strings.
