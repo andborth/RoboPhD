@@ -17,7 +17,7 @@ from .researcher import ParallelAgentResearcher, ParallelAgentEvolver
 from .api import (
     optimize_anything, optimize_task, eval_candidate, eval_run,
     OptimizeResult, EvalResult,
-    RoboPhDConfig, RoboPhDEvalConfig,
+    RoboPhDConfig, GEPAConfig, AutoresearchConfig, RoboPhDEvalConfig,
 )
 
 __all__ = [
@@ -30,5 +30,7 @@ __all__ = [
     'OptimizeResult',
     'EvalResult',
     'RoboPhDConfig',
+    'GEPAConfig',
+    'AutoresearchConfig',
     'RoboPhDEvalConfig',
 ]

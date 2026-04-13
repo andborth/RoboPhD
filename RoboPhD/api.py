@@ -42,8 +42,8 @@ class RoboPhDConfig:
 
     # Budget & scale
     num_iterations: int = 10
-    evaluation_budget: Optional[int] = None
-    """Max evaluator calls across all iterations. None = unlimited."""
+    evaluation_budget: int = 1500
+    """Max evaluator calls across all iterations."""
     examples_per_iteration: int = 20
 
     # Evolution
@@ -133,6 +133,97 @@ class EvalResult:
     """Ordered list of per-example diagnostics from the evaluator."""
     had_timeouts: bool
     """Whether any evaluations timed out (leaked threads may be present)."""
+
+
+@dataclass
+class GEPAConfig:
+    """Configuration for GEPA Pareto-based reflective text evolution.
+
+    Pass this as the ``config`` argument to ``optimize_anything()`` to use
+    GEPA instead of the default RoboPhD ELO engine.
+
+    GEPA evaluates each candidate on a minibatch then validates promising
+    candidates on a held-out validation set. Use ``val_dataset`` to provide
+    a separate validation pool, or let the engine split ``dataset``.
+    """
+
+    evaluation_budget: int = 1500
+    """Max evaluator calls across all iterations."""
+
+    val_dataset: Optional[List[Dict]] = None
+    """Validation examples. If larger than val_size, val_size examples are
+    sampled and the rest are added to training. If None, dataset is split."""
+
+    val_size: int = 100
+    """Validation set size. Paper results showed 100 outperforms 200."""
+
+    reflection_model: str = "opus-4.6"
+    """Model for GEPA reflection (mutation proposals)."""
+
+    max_workers: Optional[int] = None
+    """Thread pool size for concurrent evaluation. None = Python default."""
+
+    seed: int = 0
+    """Random seed for reproducibility."""
+
+    eval_timeout: int = 300
+    """Seconds per evaluator call before timeout."""
+
+    test_repeats: int = 1
+    """Number of test set repetitions."""
+
+    max_test_workers: Optional[int] = None
+    """Test eval thread pool size. Default: max_workers // 2."""
+
+    debug_log_probability: float = 0.1
+    """Probability (0-1.0) of logging LLM calls for debugging."""
+
+    only_log_reflection: bool = True
+    """If true, debug logging only applies to reflection model."""
+
+    parent_experiments_dir: Union[str, Path, None] = None
+    """Root directory for experiment output. None = ``../robophd_runs``."""
+
+
+@dataclass
+class AutoresearchConfig:
+    """Configuration for Autoresearch single-session greedy hill-climbing.
+
+    Pass this as the ``config`` argument to ``optimize_anything()`` to use
+    Autoresearch instead of the default RoboPhD ELO engine.
+
+    Autoresearch runs a single continuous Claude Code session that
+    autonomously experiments with the agent code, using greedy keep/discard
+    decisions based on a held-out validation set.
+    """
+
+    evaluation_budget: int = 1500
+    """Max evaluator calls (train + val)."""
+
+    val_dataset: Optional[List[Dict]] = None
+    """Validation examples. If larger than val_size, val_size examples are
+    sampled and the rest are added to training. If None, dataset is split."""
+
+    val_size: int = 100
+    """Validation set size. Paper results showed 100 outperforms 200."""
+
+    model: str = "opus-4.6"
+    """Claude Code model for the autonomous session."""
+
+    max_workers: Optional[int] = None
+    """Max parallel workers for evaluation. None = Python default."""
+
+    eval_timeout: int = 300
+    """Per-example evaluation timeout in seconds."""
+
+    seed: int = 0
+    """Random seed."""
+
+    overall_timeout: Optional[int] = None
+    """Max wall-clock seconds for the entire run. None = no limit."""
+
+    parent_experiments_dir: Union[str, Path, None] = None
+    """Root directory for experiment output. None = ``../robophd_runs``."""
 
 
 def _validate_resume_config(cfg: RoboPhDConfig) -> None:
@@ -232,29 +323,35 @@ def optimize_anything(
     seed_candidate: Optional[Dict[str, str]] = None,
     objective: str = "",
     background: str = "",
-    config: Optional[RoboPhDConfig] = None,
+    config: Optional[Union[RoboPhDConfig, GEPAConfig, AutoresearchConfig]] = None,
     task_name: str = "optimize_anything",
 ) -> OptimizeResult:
-    """Optimize text artifacts using RoboPhD's ELO evolution engine.
+    """Optimize text artifacts using evolutionary search.
 
-    This is the simple, programmatic entry point to RoboPhD. Under the hood it
-    runs the full multi-agent ELO competition: each iteration, an evolution AI
-    (Claude Code) proposes improved agents, which are evaluated head-to-head on
-    sampled problems from your dataset.
+    The engine is determined by the config type:
 
-    Supports resume/extend via ``config.experiment_dir``::
+    - ``RoboPhDConfig`` (default): Multi-agent ELO competition with Deep Focus
+    - ``GEPAConfig``: Pareto-based reflective text evolution
+    - ``AutoresearchConfig``: Single Claude Code session with greedy hill-climbing
 
-        # First run
-        result = optimize_anything(evaluator=..., dataset=...,
+    Example::
+
+        # RoboPhD (default)
+        result = optimize_anything(evaluator=e, dataset=d,
                                    seed_candidate={"prompt": "..."}, objective="...")
 
-        # Resume from where it left off (seed_candidate not needed)
-        result = optimize_anything(
-            evaluator=..., dataset=..., objective="...",
-            config=RoboPhDConfig(experiment_dir=result.experiment_dir),
-        )
+        # GEPA
+        result = optimize_anything(evaluator=e, dataset=train,
+                                   seed_candidate={"prompt": "..."},
+                                   config=GEPAConfig(val_dataset=val))
 
-        # Extend by 5 more iterations
+        # Autoresearch
+        result = optimize_anything(evaluator=e, dataset=train,
+                                   seed_candidate={"prompt": "..."},
+                                   config=AutoresearchConfig(val_dataset=val))
+
+    Supports resume/extend via ``config.experiment_dir`` (RoboPhD only)::
+
         result = optimize_anything(
             evaluator=..., dataset=..., objective="...",
             config=RoboPhDConfig(experiment_dir=result.experiment_dir, extend_iterations=5),
@@ -264,28 +361,38 @@ def optimize_anything(
         evaluator: Scoring function with signature
             ``(candidate: dict, example: dict) -> (score: float, diagnostics: dict)``.
             Higher scores are better. Must be thread-safe (called concurrently).
-        dataset: List of example dicts for evaluation.
+        dataset: List of example dicts. For RoboPhD, all examples enter the ELO
+            competition pool. For GEPA/Autoresearch, this is the training pool
+            (validation comes from ``config.val_dataset``).
         seed_candidate: Initial text artifact(s) to optimize. Dict mapping
             component names to text content, e.g. ``{"prompt": "Solve carefully"}``.
             Required for fresh runs; optional when resuming (recovered from checkpoint).
         objective: Natural-language optimization goal shown to the evolution AI.
-            Persisted in the checkpoint; recovered automatically on resume.
-            Pass a new value on resume to override.
         background: Optional domain documentation shown to the evolution AI.
-            Persisted in the checkpoint; recovered automatically on resume.
-        config: Engine configuration. If None, uses ``RoboPhDConfig()`` defaults.
+        config: Engine configuration. Type determines the engine. If None,
+            uses ``RoboPhDConfig()`` defaults.
+        task_name: Name for the experiment directory.
 
     Returns:
         OptimizeResult with best_candidate, best_score, and experiment_dir.
     """
-    from RoboPhD.config_manager import ConfigManager, ConfigSource
-    from RoboPhD.researcher import ParallelAgentResearcher
-    from RoboPhD.adapters.candidate_utils import materialize_candidate
-
     if not dataset:
         raise ValueError("dataset must be a non-empty list of example dicts")
 
     cfg = config or RoboPhDConfig()
+
+    # Dispatch to engine based on config type
+    if isinstance(cfg, GEPAConfig):
+        from RoboPhD.engines.gepa import run_gepa
+        return run_gepa(evaluator, dataset, seed_candidate, objective, background, cfg, task_name)
+    elif isinstance(cfg, AutoresearchConfig):
+        from RoboPhD.engines.autoresearch import run_autoresearch
+        return run_autoresearch(evaluator, dataset, seed_candidate, objective, background, cfg, task_name)
+
+    # --- RoboPhD ELO engine (default) ---
+    from RoboPhD.config_manager import ConfigManager, ConfigSource
+    from RoboPhD.researcher import ParallelAgentResearcher
+    from RoboPhD.adapters.candidate_utils import materialize_candidate
     _validate_resume_config(cfg)
     run_dir = Path(cfg.parent_experiments_dir) if cfg.parent_experiments_dir else Path("../robophd_runs")
 
