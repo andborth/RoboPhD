@@ -42,8 +42,8 @@ class RoboPhDConfig:
 
     # Budget & scale
     num_iterations: int = 10
-    evaluation_budget: int = 1500
-    """Max evaluator calls across all iterations."""
+    evaluation_budget: Optional[int] = None
+    """Max evaluator calls across all iterations. None = unlimited."""
     examples_per_iteration: int = 20
 
     # Evolution

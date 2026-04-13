@@ -9,55 +9,19 @@ from __future__ import annotations
 import json
 import logging
 import os
-import random
 import shutil
 import subprocess
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
+
+from RoboPhD.engines import build_val_split
+
+if TYPE_CHECKING:
+    from RoboPhD.api import AutoresearchConfig, OptimizeResult
 
 logger = logging.getLogger(__name__)
-
-
-def _build_val_split(
-    dataset: List[Dict],
-    val_dataset: Optional[List[Dict]],
-    val_size: int,
-    seed: int,
-) -> tuple[List[Dict], List[Dict]]:
-    """Build train/val split for Autoresearch.
-
-    Same logic as GEPA: when val_dataset is provided, sample val_size from it
-    and add the rest to training. Otherwise split dataset.
-    """
-    rng = random.Random(seed)
-
-    if val_dataset is not None:
-        if len(val_dataset) <= val_size:
-            valset = list(val_dataset)
-            trainset = list(dataset)
-        else:
-            shuffled_val = list(val_dataset)
-            rng.shuffle(shuffled_val)
-            valset = shuffled_val[:val_size]
-            remaining = shuffled_val[val_size:]
-            trainset = list(dataset) + remaining
-        logger.info(
-            f"Val split: {len(valset)} val from val_dataset "
-            f"({len(val_dataset)} provided), {len(trainset)} train"
-        )
-    else:
-        shuffled = list(dataset)
-        rng.shuffle(shuffled)
-        valset = shuffled[:val_size]
-        trainset = shuffled[val_size:]
-        logger.info(
-            f"Val split: {len(valset)} val, {len(trainset)} train "
-            f"(split from {len(dataset)} dataset)"
-        )
-
-    return trainset, valset
 
 
 def _assign_ids(examples: List[Dict], prefix: str = "") -> None:
@@ -185,9 +149,9 @@ def run_autoresearch(
     seed_candidate: Optional[Dict[str, str]],
     objective: str,
     background: str,
-    cfg: Any,  # AutoresearchConfig
+    cfg: AutoresearchConfig,
     task_name: str,
-) -> Any:  # OptimizeResult
+) -> OptimizeResult:
     """Run Autoresearch optimization and return an OptimizeResult."""
     from RoboPhD.api import OptimizeResult
     from RoboPhD.autoresearch.server import EvalServer
@@ -204,7 +168,7 @@ def run_autoresearch(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Build train/val split
-    trainset, valset = _build_val_split(
+    trainset, valset = build_val_split(
         dataset, cfg.val_dataset, cfg.val_size, cfg.seed,
     )
 

@@ -6,59 +6,19 @@ optimize_anything() API, returning an OptimizeResult.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import os
-import random
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
+
+from RoboPhD.engines import build_val_split
+
+if TYPE_CHECKING:
+    from RoboPhD.api import GEPAConfig, OptimizeResult
 
 logger = logging.getLogger(__name__)
-
-
-def _build_val_split(
-    dataset: List[Dict],
-    val_dataset: Optional[List[Dict]],
-    val_size: int,
-    seed: int,
-) -> tuple[List[Dict], List[Dict]]:
-    """Build train/val split for GEPA.
-
-    When val_dataset is provided:
-      - Sample val_size examples from it for validation
-      - Add remaining val_dataset examples to training pool
-    When val_dataset is None:
-      - Split dataset into train/val using val_size
-    """
-    rng = random.Random(seed)
-
-    if val_dataset is not None:
-        if len(val_dataset) <= val_size:
-            valset = list(val_dataset)
-            trainset = list(dataset)
-        else:
-            shuffled_val = list(val_dataset)
-            rng.shuffle(shuffled_val)
-            valset = shuffled_val[:val_size]
-            remaining = shuffled_val[val_size:]
-            trainset = list(dataset) + remaining
-        logger.info(
-            f"Val split: {len(valset)} val from val_dataset "
-            f"({len(val_dataset)} provided), {len(trainset)} train"
-        )
-    else:
-        shuffled = list(dataset)
-        rng.shuffle(shuffled)
-        valset = shuffled[:val_size]
-        trainset = shuffled[val_size:]
-        logger.info(
-            f"Val split: {len(valset)} val, {len(trainset)} train "
-            f"(split from {len(dataset)} dataset)"
-        )
-
-    return trainset, valset
 
 
 def run_gepa(
@@ -67,9 +27,9 @@ def run_gepa(
     seed_candidate: Optional[Dict[str, str]],
     objective: str,
     background: str,
-    cfg: Any,  # GEPAConfig
+    cfg: GEPAConfig,
     task_name: str,
-) -> Any:  # OptimizeResult
+) -> OptimizeResult:
     """Run GEPA optimization and return an OptimizeResult."""
     from RoboPhD.api import OptimizeResult
     from RoboPhD.config import API_KEY_ENV_VAR
@@ -102,7 +62,7 @@ def run_gepa(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Build train/val split
-    trainset, valset = _build_val_split(
+    trainset, valset = build_val_split(
         dataset, cfg.val_dataset, cfg.val_size, cfg.seed,
     )
 
