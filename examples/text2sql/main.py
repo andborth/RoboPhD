@@ -133,16 +133,33 @@ def main():
 
     # Build config based on engine choice
     # Text2SQL has no separate val split — GEPA/Autoresearch auto-split from train
+    if args.engine in ("gepa", "autoresearch"):
+        robophd_only = {
+            "--num-iterations": args.num_iterations != 999,
+            "--examples-per-iteration": args.examples_per_iteration != 20,
+            "--evolution-strategy": args.evolution_strategy != "use_your_judgment",
+            "--evolution-model": args.evolution_model != "opus-4.6",
+            "--engine-config": args.engine_config is not None,
+            "--resume": args.resume is not None,
+            "--extend": args.extend is not None,
+            "--from-iteration": args.from_iteration is not None,
+        }
+        ignored = [k for k, changed in robophd_only.items() if changed]
+        if ignored:
+            logger.warning(f"Flags ignored by {args.engine} engine: {', '.join(ignored)}")
+
     if args.engine == "gepa":
         cfg = GEPAConfig(
             evaluation_budget=args.evaluation_budget,
             max_workers=args.max_workers,
+            seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
     elif args.engine == "autoresearch":
         cfg = AutoresearchConfig(
             evaluation_budget=args.evaluation_budget,
             max_workers=args.max_workers,
+            seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
     else:

@@ -147,12 +147,28 @@ def main():
     seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
 
     # Build config based on engine choice
+    if args.engine in ("gepa", "autoresearch"):
+        robophd_only = {
+            "--num-iterations": args.num_iterations != 999,
+            "--examples-per-iteration": args.examples_per_iteration != 20,
+            "--evolution-strategy": args.evolution_strategy != "use_your_judgment",
+            "--evolution-model": args.evolution_model != "opus-4.6",
+            "--engine-config": args.engine_config is not None,
+            "--resume": args.resume is not None,
+            "--extend": args.extend is not None,
+            "--from-iteration": args.from_iteration is not None,
+        }
+        ignored = [k for k, changed in robophd_only.items() if changed]
+        if ignored:
+            logger.warning(f"Flags ignored by {args.engine} engine: {', '.join(ignored)}")
+
     if args.engine == "gepa":
         cfg = GEPAConfig(
             evaluation_budget=args.evaluation_budget,
             val_dataset=val,
             max_workers=args.max_workers,
             eval_timeout=600,
+            seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
         dataset = train
@@ -162,6 +178,7 @@ def main():
             val_dataset=val,
             max_workers=args.max_workers,
             eval_timeout=600,
+            seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
         dataset = train
