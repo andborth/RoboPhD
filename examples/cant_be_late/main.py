@@ -25,7 +25,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent.parent))
 sys.path.insert(0, str(HERE))
 
-from RoboPhD import optimize_anything, eval_candidate, eval_run, RoboPhDConfig, RoboPhDEvalConfig
+from RoboPhD import optimize_anything, eval_candidate, eval_run, RoboPhDConfig, GEPAConfig, AutoresearchConfig, RoboPhDEvalConfig
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,6 +51,9 @@ def parse_args():
     # Evolution
     parser.add_argument("--evolution-strategy", default="use_your_judgment", help="Evolution strategy")
     parser.add_argument("--evolution-model", default="opus-4.6", help="Model for evolution AI")
+
+    # Engine
+    parser.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd", help="Optimization engine")
 
     # Task-specific
     parser.add_argument("--simulation-timeout", type=int, default=300, help="Timeout per simulation (seconds)")
@@ -86,8 +89,8 @@ def main():
     )
 
     ds = load_dataset(dataset_root=args.dataset_root)
-    dataset = ds["train"] + ds["val"]
-    logger.info(f"Dataset: {len(dataset)} problems ({len(ds['train'])} train + {len(ds['val'])} val)")
+    train, val = ds["train"], ds["val"]
+    logger.info(f"Dataset: {len(train)} train + {len(val)} val")
 
     # --eval-only: skip optimization, evaluate best agent from a prior run
     if args.eval_only:
@@ -109,29 +112,45 @@ def main():
 
     seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
 
-    # Build engine overrides
-    engine_overrides = {}
-    if args.engine_config:
-        engine_overrides = json.loads(args.engine_config)
-
-    cfg = RoboPhDConfig(
-        num_iterations=args.num_iterations,
-        evaluation_budget=args.evaluation_budget,
-        examples_per_iteration=args.examples_per_iteration,
-        evolution_strategy=args.evolution_strategy,
-        evolution_model=args.evolution_model,
-        max_workers=args.max_workers,
-        parent_experiments_dir=args.runs_dir,
-        random_seed=args.random_seed,
-        engine_overrides=engine_overrides or None,
-    )
-
-    if args.resume:
-        cfg.experiment_dir = args.resume
-    if args.extend:
-        cfg.extend_iterations = args.extend
-    if args.from_iteration:
-        cfg.from_iteration = args.from_iteration
+    # Build config based on engine choice
+    if args.engine == "gepa":
+        cfg = GEPAConfig(
+            evaluation_budget=args.evaluation_budget,
+            val_dataset=val,
+            max_workers=args.max_workers,
+            parent_experiments_dir=args.runs_dir,
+        )
+        dataset = train
+    elif args.engine == "autoresearch":
+        cfg = AutoresearchConfig(
+            evaluation_budget=args.evaluation_budget,
+            val_dataset=val,
+            max_workers=args.max_workers,
+            parent_experiments_dir=args.runs_dir,
+        )
+        dataset = train
+    else:
+        dataset = train + val
+        engine_overrides = {}
+        if args.engine_config:
+            engine_overrides = json.loads(args.engine_config)
+        cfg = RoboPhDConfig(
+            num_iterations=args.num_iterations,
+            evaluation_budget=args.evaluation_budget,
+            examples_per_iteration=args.examples_per_iteration,
+            evolution_strategy=args.evolution_strategy,
+            evolution_model=args.evolution_model,
+            max_workers=args.max_workers,
+            parent_experiments_dir=args.runs_dir,
+            random_seed=args.random_seed,
+            engine_overrides=engine_overrides or None,
+        )
+        if args.resume:
+            cfg.experiment_dir = args.resume
+        if args.extend:
+            cfg.extend_iterations = args.extend
+        if args.from_iteration:
+            cfg.from_iteration = args.from_iteration
 
     result = optimize_anything(
         evaluator=evaluator,
