@@ -120,7 +120,7 @@ class StuckProcessReaper:
         self._thread = None
         self._stopped = False
         self._total_killed = 0
-        self._experiment_dir = str(Path(experiment_dir).resolve())
+        self._experiment_dir = str(Path(experiment_dir).resolve()) + "/"
         self.process_age_threshold = process_age_threshold
         self.scan_interval = process_age_threshold // 2
 
