@@ -103,24 +103,26 @@ class MemoryMonitor:
 
 
 class StuckProcessReaper:
-    """Background daemon that kills orphaned `python solution.py` processes.
+    """Background daemon that kills orphaned Python subprocesses.
 
-    Claude CLI critic agents spawn `python solution.py` via their Bash tool.
+    The Claude CLI evolution session spawns subprocesses via its Bash tool.
     When the CLI times out or is killed, these child processes become orphaned
     and run indefinitely at 100% CPU. This reaper periodically scans for and
-    kills any such processes older than the configured threshold.
+    kills any Python process whose cwd is inside the experiment directory
+    and that has been running longer than the configured threshold.
+
+    Agent code (agent.py) is safe — it runs via exec() in-process, not as
+    a separate OS process.
     """
 
-    THRESHOLD_BUFFER = 100  # seconds above codegen_call_timeout
-    DEFAULT_CODEGEN_TIMEOUT = 1200  # fallback if not configured
-
-    def __init__(self, codegen_call_timeout: int = DEFAULT_CODEGEN_TIMEOUT):
+    def __init__(self, experiment_dir: Path, process_age_threshold: int = 1200):
         self._stop_event = threading.Event()
         self._thread = None
         self._stopped = False
         self._total_killed = 0
-        self.process_age_threshold = codegen_call_timeout + self.THRESHOLD_BUFFER
-        self.scan_interval = self.process_age_threshold // 2
+        self._experiment_dir = str(Path(experiment_dir).resolve())
+        self.process_age_threshold = process_age_threshold
+        self.scan_interval = process_age_threshold // 2
 
     def start(self):
         self._thread = threading.Thread(target=self._run, daemon=True)
@@ -153,17 +155,22 @@ class StuckProcessReaper:
                 cmdline = proc.info.get('cmdline') or []
                 if not cmdline:
                     continue
-                # Match: first arg starts with "python", any arg contains solution.py or solution_v2.py
                 if not cmdline[0].startswith('python'):
                     continue
-                if not any('solution.py' in arg or 'solution_v2.py' in arg for arg in cmdline):
-                    continue
                 age = now - (proc.info.get('create_time') or now)
-                if age > self.process_age_threshold:
-                    logger.warning("Killing stuck process pid=%d age=%.0fs cmd=%s",
-                                   proc.pid, age, ' '.join(cmdline[:3]))
-                    proc.kill()
-                    self._total_killed += 1
+                if age <= self.process_age_threshold:
+                    continue
+                # Check cwd is inside experiment directory
+                try:
+                    proc_cwd = proc.cwd()
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+                if not proc_cwd.startswith(self._experiment_dir):
+                    continue
+                logger.warning("Killing stuck process pid=%d age=%.0fs cmd=%s",
+                               proc.pid, age, ' '.join(cmdline[:5]))
+                proc.kill()
+                self._total_killed += 1
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 continue
 
@@ -843,9 +850,7 @@ class ParallelAgentResearcher:
             delattr(self, '_pending_evolution_reset')
 
         self.memory_monitor = MemoryMonitor()
-        self.process_reaper = StuckProcessReaper(
-            codegen_call_timeout=self.config_manager.get_config(1).get("codegen_call_timeout", 1200)
-        )
+        self.process_reaper = StuckProcessReaper(experiment_dir=self.experiment_dir)
 
         # Load data
         self._load_data()
