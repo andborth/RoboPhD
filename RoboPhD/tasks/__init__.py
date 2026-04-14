@@ -77,11 +77,6 @@ def _ensure_builtins():
     except ImportError:
         pass  # configargparse/colorama/numpy not installed
 
-    try:
-        from .sudoku import make_sudoku_task
-        register_task(make_sudoku_task())
-    except ImportError:
-        pass  # examples/sudoku/ dependencies missing
 
 
 def get_task(name: str) -> TaskDefinition:
