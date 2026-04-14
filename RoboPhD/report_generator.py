@@ -28,7 +28,7 @@ def format_non_binary_scores(non_binary: dict) -> list:
     for agent in sorted(non_binary):
         entries = sorted(non_binary[agent], key=lambda e: e['question_id'])
         items = ', '.join(f"{e['question_id']} ({e['score']:.2f})" for e in entries)
-        lines.append(f"**{agent}** ({len(entries)}): {items}")
+        lines.append(f"- **{agent}** ({len(entries)}): {items}")
     lines.append("")
     return lines
 
