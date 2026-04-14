@@ -6,7 +6,6 @@ solver scored on correctness and speed. No LLM calls — pure algorithmic
 optimization.
 """
 
-import gc
 import logging
 import random
 import threading
@@ -198,10 +197,6 @@ class SudokuEvaluator:
             ns["_elapsed"] = time.process_time() - start
             return result
 
-        # Disable GC during solve so collection pauses don't get charged to
-        # the timed region. Restore prior state afterwards.
-        gc_was_enabled = gc.isenabled()
-        gc.disable()
         try:
             namespace, agent_stdout = exec_with_stdout_capture(
                 agent_code, then=_call_solve,
@@ -215,9 +210,6 @@ class SudokuEvaluator:
             if stdout:
                 diag["agent_stdout"] = stdout
             return 0.0, diag
-        finally:
-            if gc_was_enabled:
-                gc.enable()
 
         result = namespace.get("_result", "")
         elapsed = namespace.get("_elapsed", 0.0)

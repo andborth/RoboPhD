@@ -28,8 +28,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent.parent))
 sys.path.insert(0, str(HERE))
 
-from RoboPhD import optimize_anything, eval_candidate, eval_run, RoboPhDConfig, RoboPhDEvalConfig
-from test_eval_candidate import mean_of_medians
+from RoboPhD import optimize_anything, eval_candidate, eval_run, RoboPhDConfig, GEPAConfig, AutoresearchConfig, RoboPhDEvalConfig
 
 
 logging.basicConfig(
@@ -51,16 +50,14 @@ def parse_args():
     # Budget & scale
     parser.add_argument("--num-iterations", type=int, default=999, help="Max iterations (evaluation budget is the real limit)")
     parser.add_argument("--evaluation-budget", type=int, default=1500, help="Max evaluator calls across all iterations")
-    parser.add_argument("--examples-per-iteration", type=int, default=20, help="Problems sampled per iteration")
 
-    # Evolution
-    parser.add_argument("--evolution-strategy", default="use_your_judgment", help="Evolution strategy")
-    parser.add_argument("--evolution-model", default="opus-4.6", help="Model for evolution AI")
+    # Engine
+    parser.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd", help="Optimization engine")
 
     # Infrastructure
     parser.add_argument("--runs-dir", default="../robophd_runs", help="Root directory for experiment output")
     parser.add_argument("--random-seed", type=int, default=None, help="Random seed for reproducibility")
-    parser.add_argument("--engine-config", type=str, default=None, help="JSON string with extra engine overrides")
+    parser.add_argument("--engine-config", type=str, default=None, help="JSON overrides (e.g. evolution_strategy, evolution_model, examples_per_iteration)")
 
     # Test evaluation
     parser.add_argument("--eval-test-set", action="store_true", help="Run test-set evaluation after optimization")
@@ -91,18 +88,13 @@ def main():
             evaluator=evaluator, dataset=test_data, experiment_dir=args.resume,
             config=RoboPhDEvalConfig(test_repeats=10),
         )
-        score, _ = mean_of_medians(eval_result.per_example_scores, len(test_data))
-        logger.info(
-            f"Test score: {score:.3f} (mean of per-puzzle medians, {len(test_data)} puzzles)"
-        )
+        logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
         test_path = Path(args.resume) / "test_results.json"
         with open(test_path, "w") as f:
             json.dump({
-                "mean_test_score": score,
+                "mean_test_score": eval_result.mean_score,
                 "total_test_score": eval_result.total_score,
-                "total_test_problems": len(test_data),
-                "test_repeats": 10,
-                "aggregation": "per_puzzle_median_then_mean",
+                "total_test_problems": eval_result.num_examples,
                 "test_eval_cost_usd": evaluator.total_eval_cost,
             }, f, indent=2)
         logger.info(f"Test results saved to {test_path}")
@@ -117,32 +109,48 @@ def main():
 
     seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
 
-    # Build engine overrides
-    engine_overrides = {}
-    if args.engine_config:
-        engine_overrides = json.loads(args.engine_config)
+    # Build config based on engine choice
+    # Sudoku has no separate val split — GEPA/Autoresearch auto-split from train.
+    # max_workers=1 for all engines: solvers are scored on CPU time via
+    # time.process_time(), which measures the entire process.
+    if args.engine in ("gepa", "autoresearch"):
+        _robophd_flags = {"--num-iterations", "--engine-config", "--resume", "--extend", "--from-iteration"}
+        passed = {f for f in _robophd_flags if any(a == f or a.startswith(f + "=") for a in sys.argv)}
+        if passed:
+            logger.warning(f"Flags ignored by {args.engine} engine: {', '.join(sorted(passed))}")
 
-    cfg = RoboPhDConfig(
-        num_iterations=args.num_iterations,
-        evaluation_budget=args.evaluation_budget,
-        examples_per_iteration=args.examples_per_iteration,
-        evolution_strategy=args.evolution_strategy,
-        evolution_model=args.evolution_model,
-        # Solvers are scored on CPU time via time.process_time(), which measures
-        # the entire process. max_workers=1 ensures only one solver runs at a
-        # time so the measurement is accurate.
-        max_workers=1,
-        parent_experiments_dir=args.runs_dir,
-        random_seed=args.random_seed,
-        engine_overrides=engine_overrides or None,
-    )
-
-    if args.resume:
-        cfg.experiment_dir = args.resume
-    if args.extend:
-        cfg.extend_iterations = args.extend
-    if args.from_iteration:
-        cfg.from_iteration = args.from_iteration
+    if args.engine == "gepa":
+        cfg = GEPAConfig(
+            evaluation_budget=args.evaluation_budget,
+            max_workers=1,
+            seed=args.random_seed or 0,
+            parent_experiments_dir=args.runs_dir,
+        )
+    elif args.engine == "autoresearch":
+        cfg = AutoresearchConfig(
+            evaluation_budget=args.evaluation_budget,
+            max_workers=1,
+            seed=args.random_seed or 0,
+            parent_experiments_dir=args.runs_dir,
+        )
+    else:
+        engine_overrides = {}
+        if args.engine_config:
+            engine_overrides = json.loads(args.engine_config)
+        cfg = RoboPhDConfig(
+            num_iterations=args.num_iterations,
+            evaluation_budget=args.evaluation_budget,
+            max_workers=1,
+            parent_experiments_dir=args.runs_dir,
+            random_seed=args.random_seed,
+            engine_overrides=engine_overrides or None,
+        )
+        if args.resume:
+            cfg.experiment_dir = args.resume
+        if args.extend:
+            cfg.extend_iterations = args.extend
+        if args.from_iteration:
+            cfg.from_iteration = args.from_iteration
 
     result = optimize_anything(
         evaluator=evaluator,
@@ -164,22 +172,19 @@ def main():
             logger.info("Skipping test-set evaluation -- run ended early due to failure")
         else:
             test_data = ds["test"]
-            logger.info(f"Test evaluation: {len(test_data)} problems (mean of per-puzzle medians, 10 repeats)")
+            logger.info(f"Test evaluation: {len(test_data)} problems")
             eval_result = eval_candidate(
                 evaluator=evaluator,
                 dataset=test_data,
                 candidate=result.best_candidate,
                 config=RoboPhDEvalConfig(test_repeats=10),
             )
-            score, _ = mean_of_medians(eval_result.per_example_scores, len(test_data))
-            logger.info(f"Test score: {score:.3f} ({len(test_data)} puzzles)")
+            logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
 
             test_results = {
-                "mean_test_score": score,
+                "mean_test_score": eval_result.mean_score,
                 "total_test_score": eval_result.total_score,
-                "total_test_problems": len(test_data),
-                "test_repeats": 10,
-                "aggregation": "per_puzzle_median_then_mean",
+                "total_test_problems": eval_result.num_examples,
             }
             test_path = result.experiment_dir / "test_results.json"
             with open(test_path, "w") as f:
