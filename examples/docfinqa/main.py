@@ -118,7 +118,7 @@ def main():
     # Build config based on engine choice
     if args.engine in ("gepa", "autoresearch"):
         _robophd_flags = {"--num-iterations", "--engine-config", "--resume", "--extend", "--from-iteration"}
-        passed = _robophd_flags & set(sys.argv)
+        passed = {f for f in _robophd_flags if any(a == f or a.startswith(f + "=") for a in sys.argv)}
         if passed:
             logger.warning(f"Flags ignored by {args.engine} engine: {', '.join(sorted(passed))}")
 
