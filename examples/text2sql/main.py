@@ -49,11 +49,6 @@ def parse_args():
     # Budget & scale
     parser.add_argument("--num-iterations", type=int, default=999, help="Max iterations (evaluation budget is the real limit)")
     parser.add_argument("--evaluation-budget", type=int, default=1500, help="Max evaluator calls across all iterations")
-    parser.add_argument("--examples-per-iteration", type=int, default=20, help="Problems sampled per iteration")
-
-    # Evolution
-    parser.add_argument("--evolution-strategy", default="use_your_judgment", help="Evolution strategy")
-    parser.add_argument("--evolution-model", default="opus-4.6", help="Model for evolution AI")
 
     # Engine
     parser.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd", help="Optimization engine")
@@ -68,7 +63,7 @@ def parse_args():
     parser.add_argument("--max-workers", type=int, default=8, help="Parallel eval workers")
     parser.add_argument("--runs-dir", default="../robophd_runs", help="Root directory for experiment output")
     parser.add_argument("--random-seed", type=int, default=None, help="Random seed for reproducibility")
-    parser.add_argument("--engine-config", type=str, default=None, help="JSON string with extra engine overrides")
+    parser.add_argument("--engine-config", type=str, default=None, help="JSON overrides (e.g. evolution_strategy, evolution_model, examples_per_iteration)")
 
     # Test evaluation
     parser.add_argument("--eval-test-set", action="store_true", help="Run test-set evaluation after optimization")
@@ -134,19 +129,10 @@ def main():
     # Build config based on engine choice
     # Text2SQL has no separate val split — GEPA/Autoresearch auto-split from train
     if args.engine in ("gepa", "autoresearch"):
-        robophd_only = {
-            "--num-iterations": args.num_iterations != 999,
-            "--examples-per-iteration": args.examples_per_iteration != 20,
-            "--evolution-strategy": args.evolution_strategy != "use_your_judgment",
-            "--evolution-model": args.evolution_model != "opus-4.6",
-            "--engine-config": args.engine_config is not None,
-            "--resume": args.resume is not None,
-            "--extend": args.extend is not None,
-            "--from-iteration": args.from_iteration is not None,
-        }
-        ignored = [k for k, changed in robophd_only.items() if changed]
-        if ignored:
-            logger.warning(f"Flags ignored by {args.engine} engine: {', '.join(ignored)}")
+        _robophd_flags = {"--num-iterations", "--engine-config", "--resume", "--extend", "--from-iteration"}
+        passed = _robophd_flags & set(sys.argv)
+        if passed:
+            logger.warning(f"Flags ignored by {args.engine} engine: {', '.join(sorted(passed))}")
 
     if args.engine == "gepa":
         cfg = GEPAConfig(
@@ -169,9 +155,6 @@ def main():
         cfg = RoboPhDConfig(
             num_iterations=args.num_iterations,
             evaluation_budget=args.evaluation_budget,
-            examples_per_iteration=args.examples_per_iteration,
-            evolution_strategy=args.evolution_strategy,
-            evolution_model=args.evolution_model,
             max_workers=args.max_workers,
             parent_experiments_dir=args.runs_dir,
             random_seed=args.random_seed,
