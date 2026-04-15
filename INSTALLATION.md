@@ -30,7 +30,12 @@ cd RoboPhD
 
 ```bash
 pip install -r requirements.txt
-pip install -r requirements-gepa.txt  # adds dspy, datasets (needed for ARC-AGI)
+
+# For GEPA engine support
+pip install -r requirements-gepa.txt
+
+# For ARC-AGI (additional deps: dspy, datasets)
+pip install -r examples/arc_agi_1/requirements.txt
 ```
 
 ## Step 3: Configure API Keys
@@ -79,12 +84,15 @@ bash benchmark_resources/download_bird.sh
 ### DocFinQA
 No download needed — dataset loads automatically from HuggingFace.
 
+### Sudoku
+No download needed — dataset loads automatically from HuggingFace.
+
 ## Step 6: Verify Installation
 
-Run a quick test with ARC-AGI-1:
+Run a quick test:
 
 ```bash
-python examples/arc_agi_1/main.py --evaluation-budget 60 --num-iterations 2
+python examples/cant_be_late/main.py --evaluation-budget 60 --num-iterations 2
 ```
 
 If successful, you'll see iteration progress and a final report.
@@ -94,15 +102,16 @@ If successful, you'll see iteration progress and a final report.
 ```
 RoboPhD/
 ├── RoboPhD/                    # Core framework
-│   ├── api.py                  # optimize_anything(), eval_candidate()
+│   ├── api.py                  # optimize_anything(), eval_candidate(), eval_run()
 │   ├── researcher.py           # ELO evolution engine
-│   ├── evolution_strategies/   # Evolution strategies (all domains)
-│   ├── adapters/               # Shared utilities (candidate_utils, etc.)
+│   ├── engines/                # GEPA + Autoresearch engine wrappers
+│   ├── evolution_strategies/   # Evolution strategy prompts
 │   └── ...
 ├── examples/                   # Self-contained benchmark examples
 │   ├── arc_agi_1/              # ARC-AGI abstract reasoning
 │   ├── cant_be_late/           # Cloud scheduling optimization
 │   ├── docfinqa/               # Financial document QA
+│   ├── sudoku/                 # Sudoku solver optimization
 │   └── text2sql/               # SQL generation (BIRD benchmark)
 │       ├── main.py             # Entry point (same structure in each)
 │       ├── evaluator.py        # Domain evaluator
@@ -111,7 +120,6 @@ RoboPhD/
 ├── scripts/                    # Utility scripts
 ├── benchmark_resources/
 │   └── datasets/               # BIRD dataset (~50GB, Text2SQL only)
-├── configs/                    # Configuration files
 └── ../robophd_runs/            # Created during runs (outside repo)
     └── robophd/                # Experiment output directories
 ```

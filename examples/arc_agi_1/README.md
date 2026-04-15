@@ -7,7 +7,7 @@ Evolve agents that solve ARC-AGI abstract reasoning puzzles using LLM calls.
 ```bash
 # Install core dependencies
 pip install -r ../../requirements.txt
-pip install -r ../../requirements-gepa.txt  # adds dspy, datasets
+pip install -r requirements.txt  # adds dspy, datasets (from examples/arc_agi_1/)
 
 # Set API keys
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"   # for evolution (Claude Code)

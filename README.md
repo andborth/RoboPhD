@@ -74,7 +74,8 @@ Each domain has a self-contained example under [`examples/`](examples/) with eva
 git clone https://github.com/andborth/RoboPhD.git
 cd RoboPhD
 pip install -r requirements.txt
-pip install -r requirements-gepa.txt  # adds dspy, datasets
+pip install -r requirements-gepa.txt  # for GEPA engine support
+pip install -r examples/arc_agi_1/requirements.txt  # for ARC-AGI (dspy, datasets)
 
 # 2. Install Claude Code CLI (required for evolution)
 # See: https://docs.anthropic.com/en/docs/claude-code

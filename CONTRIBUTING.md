@@ -20,30 +20,52 @@ Found a bug or have a feature request? Open an issue on GitHub with:
 5. Commit with clear messages
 6. Push and open a pull request
 
-### 3. Improve Documentation
+### 3. Add a New Domain
 
-- Fix typos or clarify explanations
-- Add examples or tutorials
-- Translate documentation
+Each domain is a self-contained directory under `examples/`. To add a new one:
 
-### 4. Share Results
+```
+examples/my_domain/
+├── main.py             # Entry point using optimize_anything()
+├── evaluator.py        # Domain evaluator: (candidate, example) -> (score, diagnostics)
+├── objective.md        # One-line optimization goal
+├── background.md       # Domain knowledge for the evolution AI
+├── README.md           # Setup and usage instructions
+└── seeds/baseline/     # Seed agent files (e.g., agent.py)
+```
 
-- Report your evolution results (Text2SQL or CodeGen)
-- Share successful agent configurations
+Key requirements:
+- The evaluator must be thread-safe (called concurrently)
+- Return rich string diagnostics (`.md` files) so the evolution AI can learn from failures
+- Include `print()` calls in the seed agent for self-instrumenting diagnostics
+- See existing examples for patterns
+
+### 4. Create New Evolution Strategies
+
+Evolution strategies live in `RoboPhD/evolution_strategies/`. Each is a directory containing:
+
+```
+my_strategy/
+├── strategy.md          # Instructions for the evolution AI
+```
+
+See existing strategies (`use_your_judgment`, `data_focus`, `refinement`, `cross_pollination`) for examples.
+
+### 5. Share Results
+
+- Report evolution results on new or existing benchmarks
+- Share successful configurations
 - Contribute new evolution strategies
 
 ## Development Setup
 
 ```bash
-# Clone your fork
 git clone https://github.com/yourusername/RoboPhD.git
 cd RoboPhD
-
-# Install dependencies
 pip install -r requirements.txt
 
-# Run tests
-python -m pytest tests/
+# Quick test
+python examples/cant_be_late/main.py --num-iterations 2 --evaluation-budget 60
 ```
 
 ## Code Style
@@ -52,43 +74,6 @@ python -m pytest tests/
 - Use type hints where practical
 - Write clear docstrings for public functions
 - Keep functions focused and reasonably sized
-
-## Creating New Evolution Strategies
-
-Evolution strategies live in `RoboPhD/evolution_strategies/` (all domains) or `RoboPhD/evolution_strategies_text2sql/` (Text2SQL legacy). Each strategy is a directory containing:
-
-```
-my_new_strategy/
-├── strategy.md          # Strategy instructions for the evolution AI
-└── strategy_tools/      # Optional helper scripts
-    └── analyze_errors.py
-```
-
-See existing strategies for examples.
-
-## Creating New Agents
-
-Agents live in `RoboPhD/agents/` (Text2SQL) or `RoboPhD/codegen_agents/` (CodeGen). Each agent is a directory containing:
-
-```
-my_agent/
-├── agent.md             # Domain analysis instructions
-├── eval_instructions.md # Task-specific generation instructions
-└── tools/               # Optional analysis scripts
-    └── analyzer.py
-```
-
-### Tool-Only Agents
-
-For deterministic agents, add YAML frontmatter to `agent.md`:
-
-```yaml
----
-execution_mode: tool_only
-tool_command: python tools/my_analyzer.py
-tool_output_file: tool_output/analysis.txt
----
-```
 
 ## Pull Request Guidelines
 
