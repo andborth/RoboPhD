@@ -2,10 +2,10 @@
 # Download Can't Be Late trace data from UCB-ADRS repository.
 #
 # Usage:
-#   bash scripts/download_cant_be_late_traces.sh
+#   bash examples/cant_be_late/download_traces.sh
 #
 # Downloads and extracts the trace directory to:
-#   RoboPhD/data/cant_be_late/traces/
+#   examples/cant_be_late/data/traces/
 #
 # After extraction, the directory contains:
 #   traces/ddl=search+task=48+overhead=0.02/real/<env>/traces/random_start/*.json
@@ -15,8 +15,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-TARGET_DIR="$REPO_ROOT/RoboPhD/data/cant_be_late/traces"
+TARGET_DIR="$SCRIPT_DIR/data/traces"
 
 ARCHIVE_URL="https://github.com/UCB-ADRS/ADRS/raw/main/openevolve/examples/ADRS/cant-be-late/simulator/real_traces.tar.gz"
 

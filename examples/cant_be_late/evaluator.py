@@ -43,9 +43,9 @@ def _ensure_imports():
 # ---------------------------------------------------------------------------
 
 
-# Default dataset root: RoboPhD/data/cant_be_late/traces (from repo root)
+# Default dataset root: examples/cant_be_late/data/traces/
 _DEFAULT_DATASET_ROOT = str(
-    Path(__file__).resolve().parent.parent.parent / "RoboPhD" / "data" / "cant_be_late" / "traces"
+    Path(__file__).resolve().parent / "data" / "traces"
 )
 
 
