@@ -11,7 +11,7 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
 
-from RoboPhD.adapters.debug_logging import maybe_debug_log
+from RoboPhD.debug_logging import maybe_debug_log
 from RoboPhD.config import SUPPORTED_MODELS
 from RoboPhD.eval_utils import run_parallel_eval
 
