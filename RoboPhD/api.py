@@ -392,7 +392,7 @@ def optimize_anything(
     # --- RoboPhD ELO engine (default) ---
     from RoboPhD.config_manager import ConfigManager, ConfigSource
     from RoboPhD.researcher import ParallelAgentResearcher
-    from RoboPhD.adapters.candidate_utils import materialize_candidate
+    from RoboPhD.candidate_utils import materialize_candidate
     _validate_resume_config(cfg)
     run_dir = Path(cfg.parent_experiments_dir) if cfg.parent_experiments_dir else Path("../robophd_runs")
 
@@ -651,8 +651,8 @@ def optimize_task(
 
 def _build_result(experiment_dir: Path, file_mapping: Dict[str, str], completed_normally: bool) -> OptimizeResult:
     """Extract OptimizeResult from a completed experiment directory."""
-    from RoboPhD.adapters.candidate_utils import extract_candidate
-    from RoboPhD.adapters.runner_utils import find_best_agent
+    from RoboPhD.candidate_utils import extract_candidate
+    from RoboPhD.runner_utils import find_best_agent
     from RoboPhD.researcher import ParallelAgentResearcher
 
     agent_name, agent_dir = find_best_agent(experiment_dir)
@@ -770,8 +770,8 @@ def eval_run(
     Returns:
         EvalResult with mean_score, per_example_scores, and diagnostics.
     """
-    from RoboPhD.adapters.runner_utils import find_best_agent
-    from RoboPhD.adapters.candidate_utils import extract_candidate
+    from RoboPhD.runner_utils import find_best_agent
+    from RoboPhD.candidate_utils import extract_candidate
     from RoboPhD.researcher import ParallelAgentResearcher
 
     experiment_dir = Path(experiment_dir)

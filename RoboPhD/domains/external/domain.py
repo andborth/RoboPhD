@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ..base import DomainInterface, EvaluationResult, SampledProblems
-from RoboPhD.adapters.candidate_utils import extract_candidate, materialize_candidate
+from RoboPhD.candidate_utils import extract_candidate, materialize_candidate
 from RoboPhD.eval_utils import EvalRateLimitError, is_rate_limit_error
 
 logger = logging.getLogger(__name__)

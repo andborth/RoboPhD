@@ -33,8 +33,8 @@ def run_gepa(
     """Run GEPA optimization and return an OptimizeResult."""
     from RoboPhD.api import OptimizeResult
     from RoboPhD.config import API_KEY_ENV_VAR
-    from RoboPhD.adapters.runner_utils import to_litellm_model, CostTrackingLM
-    from RoboPhD.adapters.candidate_utils import materialize_candidate
+    from RoboPhD.runner_utils import to_litellm_model, CostTrackingLM
+    from RoboPhD.candidate_utils import materialize_candidate
 
     try:
         from gepa.optimize_anything import (

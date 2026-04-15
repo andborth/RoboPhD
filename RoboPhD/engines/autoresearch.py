@@ -156,7 +156,7 @@ def run_autoresearch(
     from RoboPhD.api import OptimizeResult
     from RoboPhD.autoresearch.server import EvalServer
     from RoboPhD.config import CLAUDE_CLI_MODEL_MAP
-    from RoboPhD.adapters.candidate_utils import materialize_candidate
+    from RoboPhD.candidate_utils import materialize_candidate
 
     if not seed_candidate:
         raise ValueError("seed_candidate is required for Autoresearch")
