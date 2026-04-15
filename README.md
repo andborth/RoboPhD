@@ -192,7 +192,7 @@ python examples/arc_agi_1/main.py --resume ../robophd_runs/robophd/optimize_anyt
 python examples/arc_agi_1/main.py --resume <dir> --extend 5
 ```
 
-**Multi-engine support**: GEPA and Autoresearch engine selection via config is coming soon. In the meantime, these engines are available via `scripts/run_gepa.py` and `scripts/run_autoresearch.py`.
+**Multi-engine support**: All examples support `--engine {robophd,gepa,autoresearch}` to select the optimization engine.
 
 ## Requirements
 
@@ -202,7 +202,7 @@ python examples/arc_agi_1/main.py --resume <dir> --extend 5
 - For ARC-AGI: `OPENROUTER_API_KEY` environment variable
 - For Text2SQL: `ANTHROPIC_API_KEY_FOR_ROBOPHD` + ~50GB for BIRD dataset
 - For DocFinQA: OpenAI API key (for gpt-4.1-mini and embeddings)
-- For Can't Be Late: trace data via `bash scripts/download_cant_be_late_traces.sh`
+- For Can't Be Late: trace data via `bash examples/cant_be_late/download_traces.sh`
 
 ## Acknowledgments
 
