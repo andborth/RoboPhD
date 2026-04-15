@@ -61,13 +61,6 @@ except ImportError:
     from RoboPhD.domains.base import SampledProblems
     from RoboPhD.eval_utils import EvalRateLimitError
 
-# Optional SQL connection cleanup (only needed for text2sql evaluators)
-def _noop(): pass
-try:
-    from utilities.cached_sql_executor import close_all_connections as close_eval_connections
-except ImportError:
-    close_eval_connections = _noop
-
 # Utilities
 import psutil
 
@@ -1850,8 +1843,6 @@ class ParallelAgentResearcher:
         # Store iteration costs
         self.iteration_claude_costs.append(iteration_cost_dict)
 
-        # Cleanup database connections (text2sql only)
-        close_eval_connections()
 
         return iteration_results, results_by_agent, costs_by_context, eval_cache_stats
 
