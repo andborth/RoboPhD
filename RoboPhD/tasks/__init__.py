@@ -78,6 +78,7 @@ def _ensure_builtins():
         pass  # configargparse/colorama/numpy not installed
 
 
+
 def get_task(name: str) -> TaskDefinition:
     """Look up a task by name. Raises KeyError if not found."""
     _ensure_builtins()

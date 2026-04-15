@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """
-Evolve Can't Be Late scheduling agents using RoboPhD's optimize_anything() API.
+Evolve Sudoku solvers using RoboPhD's optimize_anything() API.
 
-Pure algorithmic optimization — no LLM calls, no API keys needed for the solver.
-Requires trace data: run download_traces.sh first.
+Pure algorithmic optimization — no LLM calls needed for the solver.
+Only Claude Code is needed for evolution.
 
 Usage:
     # Quick smoke test
-    python examples/cant_be_late/main.py --evaluation-budget 60 --num-iterations 2
+    python examples/sudoku/main.py --evaluation-budget 60 --num-iterations 2
 
     # Full run
-    python examples/cant_be_late/main.py
+    python examples/sudoku/main.py
+
+    # With test-set evaluation after optimization
+    python examples/sudoku/main.py --eval-test-set
 """
 
 import argparse
@@ -27,6 +30,7 @@ sys.path.insert(0, str(HERE))
 
 from RoboPhD import optimize_anything, eval_candidate, eval_run, RoboPhDConfig, GEPAConfig, AutoresearchConfig, RoboPhDEvalConfig
 
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -39,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Evolve Can't Be Late scheduling agents",
+        description="Evolve pure-Python Sudoku solvers",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
@@ -50,20 +54,16 @@ def parse_args():
     # Engine
     parser.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd", help="Optimization engine")
 
-    # Task-specific
-    parser.add_argument("--simulation-timeout", type=int, default=300, help="Timeout per simulation (seconds)")
-    parser.add_argument("--dataset-root", default=None, help="Override trace data location")
-
     # Infrastructure
-    parser.add_argument("--max-workers", type=int, default=None, help="Parallel eval workers (None = Python default)")
     parser.add_argument("--runs-dir", default="../robophd_runs", help="Root directory for experiment output")
     parser.add_argument("--random-seed", type=int, default=None, help="Random seed for reproducibility")
     parser.add_argument("--engine-config", type=str, default=None, help="JSON overrides (e.g. evolution_strategy, evolution_model, examples_per_iteration)")
 
     # Test evaluation
     parser.add_argument("--eval-test-set", action="store_true", help="Run test-set evaluation after optimization")
-    parser.add_argument("--eval-only", action="store_true", help="Skip optimization; evaluate best agent from --resume dir on test set")
+
     # Resume / extend
+    parser.add_argument("--eval-only", action="store_true", help="Skip optimization; evaluate best agent from --resume dir on test set")
     parser.add_argument("--resume", type=str, default=None, help="Path to experiment directory to resume")
     parser.add_argument("--extend", type=int, default=None, help="Add N more iterations to a resumed run")
     parser.add_argument("--from-iteration", type=int, default=None, help="Restart from a specific iteration")
@@ -74,25 +74,20 @@ def parse_args():
 def main():
     args = parse_args()
 
-    from evaluator import CantBeLateEvaluator, load_dataset
+    from evaluator import SudokuEvaluator, load_dataset
 
-    objective = (HERE / "objective.md").read_text().strip()
-    background = (HERE / "background.md").read_text().strip()
-
-    evaluator = CantBeLateEvaluator(
-        simulation_timeout=args.simulation_timeout,
-    )
-
-    ds = load_dataset(dataset_root=args.dataset_root)
-    train, val = ds["train"], ds["val"]
-    logger.info(f"Dataset: {len(train)} train + {len(val)} val")
+    evaluator = SudokuEvaluator()
 
     # --eval-only: skip optimization, evaluate best agent from a prior run
     if args.eval_only:
         if not args.resume:
             raise SystemExit("--eval-only requires --resume <experiment_dir>")
+        ds = load_dataset()
         test_data = ds["test"]
-        eval_result = eval_run(evaluator=evaluator, dataset=test_data, experiment_dir=args.resume)
+        eval_result = eval_run(
+            evaluator=evaluator, dataset=test_data, experiment_dir=args.resume,
+            config=RoboPhDEvalConfig(test_repeats=10),
+        )
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
         test_path = Path(args.resume) / "test_results.json"
         with open(test_path, "w") as f:
@@ -105,9 +100,19 @@ def main():
         logger.info(f"Test results saved to {test_path}")
         return
 
+    objective = (HERE / "objective.md").read_text().strip()
+    background = (HERE / "background.md").read_text().strip()
+
+    ds = load_dataset()
+    dataset = ds["train"]
+    logger.info(f"Dataset: {len(dataset)} training problems")
+
     seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
 
     # Build config based on engine choice
+    # Sudoku has no separate val split — GEPA/Autoresearch auto-split from train.
+    # max_workers=1 for all engines: solvers are scored on CPU time via
+    # time.process_time(), which measures the entire process.
     if args.engine in ("gepa", "autoresearch"):
         _robophd_flags = {"--num-iterations", "--engine-config", "--resume", "--extend", "--from-iteration"}
         passed = {f for f in _robophd_flags if any(a == f or a.startswith(f + "=") for a in sys.argv)}
@@ -117,30 +122,25 @@ def main():
     if args.engine == "gepa":
         cfg = GEPAConfig(
             evaluation_budget=args.evaluation_budget,
-            val_dataset=val,
-            max_workers=args.max_workers,
+            max_workers=1,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
-        dataset = train
     elif args.engine == "autoresearch":
         cfg = AutoresearchConfig(
             evaluation_budget=args.evaluation_budget,
-            val_dataset=val,
-            max_workers=args.max_workers,
+            max_workers=1,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
-        dataset = train
     else:
-        dataset = train + val
         engine_overrides = {}
         if args.engine_config:
             engine_overrides = json.loads(args.engine_config)
         cfg = RoboPhDConfig(
             num_iterations=args.num_iterations,
             evaluation_budget=args.evaluation_budget,
-            max_workers=args.max_workers,
+            max_workers=1,
             parent_experiments_dir=args.runs_dir,
             random_seed=args.random_seed,
             engine_overrides=engine_overrides or None,
@@ -159,7 +159,7 @@ def main():
         objective=objective,
         background=background,
         config=cfg,
-        task_name="cant_be_late",
+        task_name="sudoku",
     )
 
     logger.info(f"Optimization complete: {result.num_iterations_completed} iterations, "
@@ -177,6 +177,7 @@ def main():
                 evaluator=evaluator,
                 dataset=test_data,
                 candidate=result.best_candidate,
+                config=RoboPhDEvalConfig(test_repeats=10),
             )
             logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
 
@@ -192,8 +193,4 @@ def main():
 
 
 if __name__ == "__main__":
-    from RoboPhD.eval_utils import force_exit_if_threads_leaked
-    try:
-        main()
-    finally:
-        force_exit_if_threads_leaked()
+    main()

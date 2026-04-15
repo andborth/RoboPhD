@@ -28,7 +28,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent.parent))
 sys.path.insert(0, str(HERE))
 
-from RoboPhD import optimize_anything, eval_candidate, eval_run, RoboPhDConfig, RoboPhDEvalConfig
+from RoboPhD import optimize_anything, eval_candidate, eval_run, RoboPhDConfig, GEPAConfig, AutoresearchConfig, RoboPhDEvalConfig
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,11 +49,9 @@ def parse_args():
     # Budget & scale
     parser.add_argument("--num-iterations", type=int, default=999, help="Max iterations (evaluation budget is the real limit)")
     parser.add_argument("--evaluation-budget", type=int, default=1500, help="Max evaluator calls across all iterations")
-    parser.add_argument("--examples-per-iteration", type=int, default=20, help="Problems sampled per iteration")
 
-    # Evolution
-    parser.add_argument("--evolution-strategy", default="use_your_judgment", help="Evolution strategy")
-    parser.add_argument("--evolution-model", default="opus-4.6", help="Model for evolution AI")
+    # Engine
+    parser.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd", help="Optimization engine")
 
     # Task-specific
     parser.add_argument("--eval-model", default="haiku-4.5", help="LLM for agent's llm() callable")
@@ -65,7 +63,7 @@ def parse_args():
     parser.add_argument("--max-workers", type=int, default=8, help="Parallel eval workers")
     parser.add_argument("--runs-dir", default="../robophd_runs", help="Root directory for experiment output")
     parser.add_argument("--random-seed", type=int, default=None, help="Random seed for reproducibility")
-    parser.add_argument("--engine-config", type=str, default=None, help="JSON string with extra engine overrides")
+    parser.add_argument("--engine-config", type=str, default=None, help="JSON overrides (e.g. evolution_strategy, evolution_model, examples_per_iteration)")
 
     # Test evaluation
     parser.add_argument("--eval-test-set", action="store_true", help="Run test-set evaluation after optimization")
@@ -103,7 +101,14 @@ def main():
         if not args.resume:
             raise SystemExit("--eval-only requires --resume <experiment_dir>")
         test_data = load_text2sql_dataset("dev")
-        eval_result = eval_run(evaluator=evaluator, dataset=test_data, experiment_dir=args.resume)
+        # Rebuild evaluator with dev db_root (dev databases differ from train)
+        test_evaluator = Text2SQLIntegratedEvaluator(
+            eval_model=resolve_model_name(args.eval_model),
+            dataset="dev",
+            cost_budget=args.cost_budget,
+            max_test_sql_calls=args.max_test_sql_calls,
+        )
+        eval_result = eval_run(evaluator=test_evaluator, dataset=test_data, experiment_dir=args.resume)
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
         test_path = Path(args.resume) / "test_results.json"
         with open(test_path, "w") as f:
@@ -121,29 +126,46 @@ def main():
         "analyze_db.py": (HERE / "seeds" / "baseline" / "analyze_db.py").read_text(),
     }
 
-    # Build engine overrides
-    engine_overrides = {}
-    if args.engine_config:
-        engine_overrides = json.loads(args.engine_config)
+    # Build config based on engine choice
+    # Text2SQL has no separate val split — GEPA/Autoresearch auto-split from train
+    if args.engine in ("gepa", "autoresearch"):
+        _robophd_flags = {"--num-iterations", "--engine-config", "--resume", "--extend", "--from-iteration"}
+        passed = {f for f in _robophd_flags if any(a == f or a.startswith(f + "=") for a in sys.argv)}
+        if passed:
+            logger.warning(f"Flags ignored by {args.engine} engine: {', '.join(sorted(passed))}")
 
-    cfg = RoboPhDConfig(
-        num_iterations=args.num_iterations,
-        evaluation_budget=args.evaluation_budget,
-        examples_per_iteration=args.examples_per_iteration,
-        evolution_strategy=args.evolution_strategy,
-        evolution_model=args.evolution_model,
-        max_workers=args.max_workers,
-        parent_experiments_dir=args.runs_dir,
-        random_seed=args.random_seed,
-        engine_overrides=engine_overrides or None,
-    )
-
-    if args.resume:
-        cfg.experiment_dir = args.resume
-    if args.extend:
-        cfg.extend_iterations = args.extend
-    if args.from_iteration:
-        cfg.from_iteration = args.from_iteration
+    if args.engine == "gepa":
+        cfg = GEPAConfig(
+            evaluation_budget=args.evaluation_budget,
+            max_workers=args.max_workers,
+            seed=args.random_seed or 0,
+            parent_experiments_dir=args.runs_dir,
+        )
+    elif args.engine == "autoresearch":
+        cfg = AutoresearchConfig(
+            evaluation_budget=args.evaluation_budget,
+            max_workers=args.max_workers,
+            seed=args.random_seed or 0,
+            parent_experiments_dir=args.runs_dir,
+        )
+    else:
+        engine_overrides = {}
+        if args.engine_config:
+            engine_overrides = json.loads(args.engine_config)
+        cfg = RoboPhDConfig(
+            num_iterations=args.num_iterations,
+            evaluation_budget=args.evaluation_budget,
+            max_workers=args.max_workers,
+            parent_experiments_dir=args.runs_dir,
+            random_seed=args.random_seed,
+            engine_overrides=engine_overrides or None,
+        )
+        if args.resume:
+            cfg.experiment_dir = args.resume
+        if args.extend:
+            cfg.extend_iterations = args.extend
+        if args.from_iteration:
+            cfg.from_iteration = args.from_iteration
 
     result = optimize_anything(
         evaluator=evaluator,
@@ -165,9 +187,16 @@ def main():
             logger.info("Skipping test-set evaluation -- run ended early due to failure")
         else:
             test_data = load_text2sql_dataset("dev")
+            # Rebuild evaluator with dev db_root (dev databases differ from train)
+            test_evaluator = Text2SQLIntegratedEvaluator(
+                eval_model=resolve_model_name(args.eval_model),
+                dataset="dev",
+                cost_budget=args.cost_budget,
+                max_test_sql_calls=args.max_test_sql_calls,
+            )
             logger.info(f"Test evaluation: {len(test_data)} problems")
             eval_result = eval_candidate(
-                evaluator=evaluator,
+                evaluator=test_evaluator,
                 dataset=test_data,
                 candidate=result.best_candidate,
             )
@@ -177,7 +206,7 @@ def main():
                 "mean_test_score": eval_result.mean_score,
                 "total_test_score": eval_result.total_score,
                 "total_test_problems": eval_result.num_examples,
-                "test_eval_cost_usd": evaluator.total_eval_cost,
+                "test_eval_cost_usd": test_evaluator.total_eval_cost,
             }
             test_path = result.experiment_dir / "test_results.json"
             with open(test_path, "w") as f:

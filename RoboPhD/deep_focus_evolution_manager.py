@@ -189,10 +189,7 @@ class DeepFocusEvolutionManager:
                 'cost': 0.0, 'tokens_in': 0, 'tokens_out': 0, 'cache_created': 0, 'cache_read': 0
             }
 
-        logger.info(f"Starting Deep Focus evolution for iteration {current_iteration}")
         logger.info(f"Deep Focus session ID: {self.session_id}")
-        logger.info(f"Test rounds configured: {self.test_rounds}")
-        logger.info(f"Evolution strategy: {evolution_strategy_name}")
 
         # Save evolution prompt for debugging and reproducibility
         evolution_prompt_file = working_dir / "evolution_prompt.md"
@@ -275,7 +272,7 @@ class DeepFocusEvolutionManager:
                 logger.info("=" * 60)
                 logger.info(f"ROUND {round_num}: Testing and Refinement")
                 logger.info(f"Testing against iteration {test_iteration}")
-                logger.info(f"Contexts: {', '.join(test_contexts)}")
+                logger.info(f"Problems: {', '.join(test_contexts)}")
                 logger.info("=" * 60)
 
                 start_time = time.time()
@@ -393,8 +390,6 @@ class DeepFocusEvolutionManager:
             new_agent_name: Name of new agent being tested
         """
         baseline_iter = self.experiment_dir / f"iteration_{test_iteration:03d}"
-
-        logger.info(f"Generating new vs baseline analysis for test workspace")
 
         # Paths
         error_index_path = test_workspace / "error_index.json"
@@ -802,7 +797,6 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         logger.info(f"Overall score: {overall_score:.3f} ({total_score_sum:.1f}/{total_questions}){rank_str}")
 
         # Generate new vs baseline error analysis
-        logger.info("Generating new vs baseline error analysis...")
         try:
             self._generate_new_vs_baseline_analysis(test_workspace, test_iteration, agent_name)
         except Exception as e:
