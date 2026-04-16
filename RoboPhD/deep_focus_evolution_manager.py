@@ -191,11 +191,6 @@ class DeepFocusEvolutionManager:
 
         logger.info(f"Deep Focus session ID: {self.session_id}")
 
-        # Save evolution prompt for debugging and reproducibility
-        evolution_prompt_file = working_dir / "evolution_prompt.md"
-        evolution_prompt_file.write_text(evolution_prompt)
-        logger.info(f"Evolution prompt saved to: {evolution_prompt_file}")
-
         # Write CLAUDE.md with domain background to evolution_output/.
         # Claude Code traverses up to find it, so all iteration subdirs inherit it.
         evolution_output_dir = self.experiment_dir / "evolution_output"
@@ -515,6 +510,10 @@ Create these artifacts in the current directory.
 
 After completing both steps, respond with: "ROUND 1 COMPLETE"
 """
+
+        # Save full prompt for debugging and reproducibility
+        (self.working_dir / "evolution_prompt.md").write_text(prompt)
+        logger.info(f"Evolution prompt saved to: {self.working_dir / 'evolution_prompt.md'}")
 
         # Call Claude Code for Round 1
         success = self._call_claude_code(
@@ -893,6 +892,9 @@ Based on what you observe, provide updated versions of any artifacts that need c
 
 After refinements, respond with: "ROUND {round_num} COMPLETE"
 """
+
+        # Save refinement prompt for debugging
+        (self.working_dir / f"refinement_prompt_round{round_num}.md").write_text(prompt)
 
         success = self._call_claude_code(
             prompt=prompt,
