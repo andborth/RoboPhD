@@ -1102,7 +1102,15 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
 
             return True
 
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as e:
+            # Check if the CLI actually finished (marker present) but hung on exit
+            output = (e.stdout or "") + (e.stderr or "")
+            if expected_completion and expected_completion in output:
+                logger.warning(
+                    f"Claude Code timed out after {self.timeout}s but completion "
+                    f"marker found — treating as success"
+                )
+                return True
             logger.error(f"Claude Code call timed out after {self.timeout}s")
             return False
         except RateLimitExceeded as e:
