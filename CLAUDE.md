@@ -189,7 +189,7 @@ python examples/arc_agi_1/main.py --engine-config '{
 # Deep Focus tuning
 python examples/text2sql/main.py --engine-config '{
   "new_agent_test_rounds": 2,
-  "evolution_model": "opus-4.6"
+  "evolution_model": "opus-4.7"
 }'
 
 # Weighted random strategies

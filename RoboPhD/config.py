@@ -7,6 +7,15 @@ from typing import Dict, Optional
 
 # Model configuration with pricing from official Anthropic pricing
 SUPPORTED_MODELS = {
+    'opus-4.7': {
+        'name': 'claude-opus-4-7',
+        'pricing': {
+            'input': 5.00,       # $5/MTok (base input)
+            'output': 25.00,     # $25/MTok
+            'cache_write': 6.25,  # $6.25/MTok (5m cache writes)
+            'cache_read': 0.50    # $0.50/MTok (cache hits & refreshes)
+        }
+    },
     'opus-4.6': {
         'name': 'claude-opus-4-6',
         'pricing': {
@@ -50,6 +59,7 @@ SUPPORTED_MODELS = {
 # Claude CLI accepts both aliases ('haiku') and full IDs; full IDs are
 # preferred so cache keys stay stable when aliases roll forward.
 CLAUDE_CLI_MODEL_MAP = {
+    'opus-4.7': 'claude-opus-4-7',
     'opus-4.6': 'claude-opus-4-6[1m]',
     'sonnet-4.6': 'claude-sonnet-4-6',
     'sonnet-4.5': 'claude-sonnet-4-5-20250929',
