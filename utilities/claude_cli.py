@@ -211,14 +211,25 @@ def call_claude_cli(
     env = {**os.environ, **envrc_vars, **(extra_env or {})}
 
     while True:
-        result = subprocess.run(
+        # Use Popen + communicate so we can capture output even on timeout.
+        # subprocess.run loses stdout/stderr on TimeoutExpired.
+        proc = subprocess.Popen(
             cmd,
             cwd=cwd,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout,
-            env=env
+            env=env,
         )
+        try:
+            stdout, stderr = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            stdout, stderr = proc.communicate()  # Read buffered output
+            raise subprocess.TimeoutExpired(
+                cmd, timeout, output=stdout, stderr=stderr,
+            )
+        result = subprocess.CompletedProcess(cmd, proc.returncode, stdout, stderr)
 
         # Check for rate limit error
         rate_limit_msg = _is_rate_limit_error(result)
