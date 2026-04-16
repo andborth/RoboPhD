@@ -249,7 +249,7 @@ class ParallelAgentEvolver:
                 strategy_name = strategy_dir.name
                 self.available_strategies[strategy_name] = strategy_file
 
-        print(f"📋 Loaded {len(self.available_strategies)} evolution strategies from {self.evolution_prompts_dir}")
+        logger.debug(f"Loaded {len(self.available_strategies)} evolution strategies from {self.evolution_prompts_dir}")
 
     def list_strategies(self) -> List[str]:
         """List all available evolution strategies."""

@@ -1268,7 +1268,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
 
             summary_path = summarize_transcript(chat_file, self.working_dir / "session_summary.md")
             summary_size = summary_path.stat().st_size
-            logger.info(f"Saved session summary: {summary_path.name} ({summary_size/1024:.1f} KB)")
+            logger.info(f"Saved session summary: {os.path.relpath(summary_path)} ({summary_size/1024:.1f} KB)")
 
         except Exception as e:
             logger.warning(f"Failed to save session summary: {e}")
