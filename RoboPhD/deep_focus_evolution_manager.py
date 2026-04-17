@@ -1293,7 +1293,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
                             return True
             return False
         except Exception as e:
-            logger.debug(f"Transcript marker check failed: {e}")
+            logger.warning(f"Transcript marker check failed: {e}")
             return False
 
     def _save_session_transcript(self):
