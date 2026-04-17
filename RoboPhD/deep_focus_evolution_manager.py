@@ -1108,7 +1108,16 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             if expected_completion and expected_completion in output:
                 logger.warning(
                     f"Claude Code timed out after {self.timeout}s but completion "
-                    f"marker found — treating as success"
+                    f"marker found in stdout — treating as success"
+                )
+                return True
+            # With --output-format json the CLI buffers stdout until exit, so
+            # captured output may be empty even when the model produced the
+            # marker. Fall back to the on-disk session transcript.
+            if expected_completion and self._marker_in_transcript(expected_completion):
+                logger.warning(
+                    f"Claude Code timed out after {self.timeout}s but completion "
+                    f"marker found in session transcript — treating as success"
                 )
                 return True
             logger.error(f"Claude Code call timed out after {self.timeout}s")
@@ -1247,6 +1256,45 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
         logger.info(f"Final artifacts verified: {len(artifact_paths)} files")
 
         return artifact_paths
+
+    def _marker_in_transcript(self, marker: str) -> bool:
+        """Return True if the marker appears in an assistant text block
+        in the on-disk session transcript.
+
+        We only scan assistant-text blocks because the marker also appears
+        in the user prompt instructions (e.g. 'respond with: "ROUND 1 COMPLETE"'),
+        which would false-positive a whole-file substring check.
+        """
+        try:
+            from RoboPhD.utilities.transcript_summarizer import find_transcript
+
+            chat_file = find_transcript(self.working_dir, self.session_id)
+            if not chat_file:
+                return False
+            with open(chat_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        msg = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if msg.get('type') != 'assistant':
+                        continue
+                    content = msg.get('message', {}).get('content')
+                    if isinstance(content, list):
+                        for block in content:
+                            if isinstance(block, dict) and block.get('type') == 'text':
+                                if marker in block.get('text', ''):
+                                    return True
+                    elif isinstance(content, str):
+                        if marker in content:
+                            return True
+            return False
+        except Exception as e:
+            logger.debug(f"Transcript marker check failed: {e}")
+            return False
 
     def _save_session_transcript(self):
         """
