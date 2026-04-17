@@ -207,6 +207,8 @@ def make_tracked_llm(model: str, tracker: CostTracker):
             lambda: litellm.completion(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
+                timeout=300,
+                num_retries=0,
             )
         )
         try:

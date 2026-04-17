@@ -81,6 +81,8 @@ class TrackedLLM:
             "model": self.model_id,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": temperature,
+            "timeout": 300,
+            "num_retries": 0,  # don't amplify timeout wall time via litellm internal retries
         }
         if self.reasoning_effort:
             kwargs["extra_body"] = {"reasoning": {"effort": self.reasoning_effort}}

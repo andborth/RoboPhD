@@ -65,6 +65,8 @@ def make_tracked_llm(model: str, tracker: CostTracker):
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
+                timeout=300,
+                num_retries=0,
             )
         )
         try:
@@ -86,7 +88,7 @@ def make_tracked_embed(model: str, tracker: CostTracker):
 
     def embed(text: str) -> list:
         resp = retry_on_rate_limit(
-            lambda: litellm.embedding(model=model, input=[text])
+            lambda: litellm.embedding(model=model, input=[text], timeout=300, num_retries=0)
         )
         try:
             cost = litellm.completion_cost(completion_response=resp)
