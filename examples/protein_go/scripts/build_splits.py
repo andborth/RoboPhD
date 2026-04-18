@@ -241,11 +241,14 @@ def load_price149(
     csv_path: Path,
     ec2go: Dict[str, List[str]],
 ) -> List[Tuple[str, str, List[str]]]:
-    """Parse Price-149 CSV and return (accession, sequence, go_terms_mfo).
+    """Parse Price-149 table and return (accession, sequence, go_terms_mfo).
 
-    CLEAN's price.csv schema (based on the repo's format):
-      Entry,EC number,Sequence
-      P0A825,2.1.2.1,MPEQSKFGRAT...
+    CLEAN's price.csv is **tab-separated** despite the .csv extension:
+      Entry\tEC number\tSequence
+      WP_063460136\t5.3.1.7\tMAIPPYPDFR...
+
+    The "Entry" column holds RefSeq protein IDs (WP_*) rather than UniProt
+    accessions; we pass them through unchanged as the stable identifier.
 
     We filter to rows where:
       - Sequence is valid (standard AAs, length in range)
@@ -262,7 +265,11 @@ def load_price149(
     skipped_rows = 0
 
     with open(csv_path) as f:
-        reader = csv_module.DictReader(f)
+        # Delimiter is pinned to tab; the column-name fallbacks below only help
+        # on future CLEAN revisions that keep tab separation but rename a column.
+        # If CLEAN switches to comma delimiters, update this delimiter and the
+        # setup.sh note together.
+        reader = csv_module.DictReader(f, delimiter="\t")
         for row in reader:
             # CLEAN uses various column names across versions; try several
             accession = (row.get("Entry") or row.get("accession")

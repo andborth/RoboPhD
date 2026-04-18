@@ -169,8 +169,10 @@ fi
 PRICE149_CSV="$DATA/price149_raw.csv"
 if [[ ! -f "$PRICE149_CSV" ]]; then
     echo "[7/8] Downloading Price-149 from CLEAN repository..."
+    # Note: the file is extension-.csv but actually tab-separated.
+    # build_splits.py reads it with delimiter="\t".
     curl -fL --retry 3 \
-        "https://raw.githubusercontent.com/tttianhao/CLEAN/main/app/data/price.csv" \
+        "https://raw.githubusercontent.com/tttianhao/CLEAN/main/app/data/datasets/price.csv" \
         -o "$PRICE149_CSV"
 else
     echo "[7/8] Price-149 already downloaded, skipping"
