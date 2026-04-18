@@ -25,14 +25,14 @@ export OPENAI_API_KEY="your_key"                   # for gpt-4.1-mini and embedd
 bash examples/protein_go/setup.sh
 ```
 
-The setup script downloads:
-- SwissProt 2022_01 (~90 MB compressed) for the BLAST database and annotations
+The setup script downloads ~2.5 GB:
+- SwissProt 2022_01 release tarball (~1.4 GB) for the BLAST database and annotations
 - GO ontology (go-basic.obo, ~30 MB)
-- ec2go mapping (EC-to-GO term correspondence, from geneontology.org)
-- ProteInfer clustered-split TFRecords (~60 MB) for train/val/test accession lists
-- Price-149 CSV (~30 KB) from the CLEAN repository
+- ec2go mapping (EC-to-GO term correspondence, from geneontology.org; ~350 KB)
+- ProteInfer clustered-split TFRecords (~900 MB) for train/val/test accession lists
+- Price-149 table (~60 KB) from the CLEAN repository
 
-It then builds the DIAMOND index and four JSONL splits (train / validation / test / price149). Total disk: ~3 GB.
+It then builds the DIAMOND index and four JSONL splits (train / validation / test / price149). Final data directory: ~5 GB (the uncompressed SwissProt flat file alone is ~3.4 GB).
 
 ## Quick Start
 

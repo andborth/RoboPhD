@@ -2,12 +2,12 @@
 #
 # Setup data for the protein GO-term prediction example (Molecular Function sub-ontology).
 #
-# Downloads (~800 MB total):
-#   - SwissProt 2022_01 release (UniProtKB curated subset, FASTA + flat file)
-#   - Gene Ontology (go-basic.obo)
-#   - EC-to-GO mapping (ec2go, from geneontology.org)
-#   - ProteInfer clustered split (UniRef50-based, train/dev/test TFRecords)
-#   - Price-149 challenging held-out set (CLEAN paper, EC labels)
+# Downloads (~2.5 GB total):
+#   - SwissProt 2022_01 release tarball (~1.4 GB; UniProtKB curated subset, FASTA + flat file)
+#   - Gene Ontology go-basic.obo (~30 MB)
+#   - EC-to-GO mapping (ec2go, from geneontology.org; ~350 KB)
+#   - ProteInfer clustered split TFRecords (~900 MB; UniRef50-based train/dev/test)
+#   - Price-149 challenging held-out set (CLEAN paper, EC labels; ~60 KB)
 #
 # Builds:
 #   - DIAMOND index over SwissProt (~5 min one-time)
@@ -69,7 +69,7 @@ SWISSPROT_FASTA="$DATA/uniprot_sprot.fasta"
 SWISSPROT_DAT="$DATA/uniprot_sprot.dat"
 
 if [[ ! -f "$SWISSPROT_FASTA" ]]; then
-    echo "[2/8] Downloading SwissProt $SWISSPROT_RELEASE (~90 MB)..."
+    echo "[2/8] Downloading SwissProt $SWISSPROT_RELEASE release tarball (~1.4 GB)..."
     curl -fL --retry 3 \
         "https://ftp.uniprot.org/pub/databases/uniprot/previous_releases/release-${SWISSPROT_RELEASE}/knowledgebase/uniprot_sprot-only${SWISSPROT_RELEASE}.tar.gz" \
         -o "$DATA/sprot.tar.gz"
@@ -145,7 +145,7 @@ PROTEINFER_DIR="$DATA/proteinfer"
 PROTEINFER_BASE="https://storage.googleapis.com/brain-genomics-public/research/proteins/proteinfer/datasets/swissprot/clustered"
 
 if [[ ! -f "$PROTEINFER_DIR/test.tfrecord" ]]; then
-    echo "[6/8] Downloading ProteInfer clustered-split TFRecords (~60 MB)..."
+    echo "[6/8] Downloading ProteInfer clustered-split TFRecords (~900 MB)..."
     mkdir -p "$PROTEINFER_DIR"
     for split in train dev test; do
         if [[ ! -f "$PROTEINFER_DIR/${split}.tfrecord" ]]; then
