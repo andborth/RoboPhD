@@ -28,7 +28,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent.parent))
 sys.path.insert(0, str(HERE))
 
-from RoboPhD import optimize_anything, eval_candidate, eval_run, RoboPhDConfig, GEPAConfig, AutoresearchConfig, RoboPhDEvalConfig
+from RoboPhD import optimize_anything, RoboPhDConfig, GEPAConfig, AutoresearchConfig
 
 
 logging.basicConfig(
@@ -64,6 +64,9 @@ def parse_args():
 
     # Resume / extend
     parser.add_argument("--eval-only", action="store_true", help="Skip optimization; evaluate best agent from --resume dir on test set")
+    parser.add_argument("--eval-agent", type=str, default=None,
+                        help="Name of agent in the run's agent_pool to evaluate (requires --eval-only). "
+                             "Defaults to the best-ELO agent.")
     parser.add_argument("--resume", type=str, default=None, help="Path to experiment directory to resume")
     parser.add_argument("--extend", type=int, default=None, help="Add N more iterations to a resumed run")
     parser.add_argument("--from-iteration", type=int, default=None, help="Restart from a specific iteration")
@@ -74,29 +77,33 @@ def parse_args():
 def main():
     args = parse_args()
 
+    if args.eval_agent and not args.eval_only:
+        raise SystemExit("--eval-agent requires --eval-only")
+
     from evaluator import SudokuEvaluator, load_dataset
+    from test_eval_candidate import test_eval, _load_candidate_from_run_dir
 
     evaluator = SudokuEvaluator()
 
-    # --eval-only: skip optimization, evaluate best agent from a prior run
+    # --eval-only: skip optimization, evaluate an agent from a prior run on the test set.
+    # Delegates to test_eval_candidate.test_eval() for canonical sudoku test-eval behavior:
+    # 10 repeats per puzzle, per-puzzle median aggregation (mean of medians),
+    # max_workers=1, and a 1s per-solve timeout (see _PER_SOLVE_TIMEOUT_SECONDS).
     if args.eval_only:
         if not args.resume:
             raise SystemExit("--eval-only requires --resume <experiment_dir>")
-        ds = load_dataset()
-        test_data = ds["test"]
-        eval_result = eval_run(
-            evaluator=evaluator, dataset=test_data, experiment_dir=args.resume,
-            config=RoboPhDEvalConfig(test_repeats=10),
-        )
-        logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
-        test_path = Path(args.resume) / "test_results.json"
+        run_dir = Path(args.resume)
+        candidate, agent_name = _load_candidate_from_run_dir(run_dir, agent_name=args.eval_agent)
+        logger.info(f"Evaluating agent: {agent_name}")
+
+        _, results = test_eval(evaluator, candidate, agent_name=agent_name)
+
+        if args.eval_agent:
+            test_path = run_dir / f"test_results_{args.eval_agent}.json"
+        else:
+            test_path = run_dir / "test_results.json"
         with open(test_path, "w") as f:
-            json.dump({
-                "mean_test_score": eval_result.mean_score,
-                "total_test_score": eval_result.total_score,
-                "total_test_problems": eval_result.num_examples,
-                "test_eval_cost_usd": evaluator.total_eval_cost,
-            }, f, indent=2)
+            json.dump(results, f, indent=2)
         logger.info(f"Test results saved to {test_path}")
         return
 
@@ -171,21 +178,12 @@ def main():
         if not result.completed_normally:
             logger.info("Skipping test-set evaluation -- run ended early due to failure")
         else:
-            test_data = ds["test"]
-            logger.info(f"Test evaluation: {len(test_data)} problems")
-            eval_result = eval_candidate(
-                evaluator=evaluator,
-                dataset=test_data,
-                candidate=result.best_candidate,
-                config=RoboPhDEvalConfig(test_repeats=10),
+            # Delegate to canonical sudoku test-eval: 10 repeats, per-puzzle median,
+            # max_workers=1, 1s per-solve timeout.
+            _, test_results = test_eval(
+                evaluator, result.best_candidate, agent_name="best_candidate"
             )
-            logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
 
-            test_results = {
-                "mean_test_score": eval_result.mean_score,
-                "total_test_score": eval_result.total_score,
-                "total_test_problems": eval_result.num_examples,
-            }
             test_path = result.experiment_dir / "test_results.json"
             with open(test_path, "w") as f:
                 json.dump(test_results, f, indent=2)

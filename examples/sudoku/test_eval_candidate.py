@@ -22,7 +22,7 @@ import logging
 import statistics
 import sys
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent.parent))
@@ -31,6 +31,13 @@ sys.path.insert(0, str(HERE))
 from RoboPhD import eval_candidate, RoboPhDEvalConfig
 
 logger = logging.getLogger(__name__)
+
+
+# The sudoku score is max(0, 1 - elapsed * 100) — any solve past 10ms scores 0.
+# Per-solve timeout is set to 100× that cutoff: generous enough that no correct
+# solve which would score >0 ever hits it, tight enough to bound wall-clock on
+# slow agents at ~5.5 hours for a full 2000 × 10-repeat run.
+_PER_SOLVE_TIMEOUT_SECONDS = 1
 
 
 def mean_of_medians(per_example_scores, num_unique):
@@ -47,8 +54,19 @@ def mean_of_medians(per_example_scores, num_unique):
     return sum(medians) / len(medians), medians
 
 
-def test_eval(evaluator, candidate, test_repeats: int = 10) -> Tuple[float, Dict[str, Any]]:
-    """Run the test-set evaluation and return (median_score, full_results_dict)."""
+def test_eval(
+    evaluator,
+    candidate,
+    test_repeats: int = 10,
+    agent_name: Optional[str] = None,
+) -> Tuple[float, Dict[str, Any]]:
+    """Run the test-set evaluation and return (median_score, full_results_dict).
+
+    The returned results dict always includes these fields (in addition to
+    the score totals): ``test_repeats``, ``aggregation``, ``test_eval_cost_usd``,
+    and ``evaluated_agent`` (when ``agent_name`` is provided). This is the
+    canonical shape consumers of sudoku test_results.json should expect.
+    """
     from evaluator import load_dataset
     test_data = load_dataset()["test"]
     num_unique = len(test_data)
@@ -58,7 +76,16 @@ def test_eval(evaluator, candidate, test_repeats: int = 10) -> Tuple[float, Dict
         evaluator=evaluator,
         dataset=test_data,
         candidate=candidate,
-        config=RoboPhDEvalConfig(test_repeats=test_repeats),
+        config=RoboPhDEvalConfig(
+            test_repeats=test_repeats,
+            # max_workers=1 is required for correct scoring: solves are timed via
+            # time.process_time(), which on Darwin/Linux returns process-wide CPU
+            # time (sum across all threads). Parallel workers contend on CPU and
+            # inflate each other's measured elapsed, which drags max(0, 1 - elapsed*100)
+            # toward 0. Serial execution gives each solve an uncontaminated measurement.
+            max_workers=1,
+            eval_timeout=_PER_SOLVE_TIMEOUT_SECONDS,
+        ),
     )
 
     score, _ = mean_of_medians(eval_result.per_example_scores, num_unique)
@@ -70,24 +97,38 @@ def test_eval(evaluator, candidate, test_repeats: int = 10) -> Tuple[float, Dict
         "total_test_problems": num_unique,
         "test_repeats": test_repeats,
         "aggregation": "per_puzzle_median_then_mean",
+        "test_eval_cost_usd": evaluator.total_eval_cost,
     }
+    if agent_name is not None:
+        results["evaluated_agent"] = agent_name
     return score, results
 
 
-def _load_candidate_from_run_dir(run_dir: Path) -> Dict[str, str]:
-    """Extract the best candidate from a GEPA or RoboPhD run directory."""
-    # GEPA writes best_candidate.json at the top level
+def _load_candidate_from_run_dir(
+    run_dir: Path, agent_name: Optional[str] = None
+) -> Tuple[Dict[str, str], str]:
+    """Extract a candidate from a GEPA or RoboPhD run directory.
+
+    Returns (candidate_dict, resolved_agent_name). When agent_name is None,
+    selects the best-ELO agent (RoboPhD) or best_agent/ (GEPA). When
+    agent_name is provided, it must be a key in the RoboPhD checkpoint's
+    agent_pool — GEPA runs don't carry a named pool, so agent_name is
+    RoboPhD-only.
+    """
+    # Named-agent lookup is RoboPhD-specific (GEPA has no agent_pool).
+    if agent_name is not None:
+        return _load_named_agent(run_dir, agent_name)
+
+    # Unnamed: prefer GEPA artifacts if present, otherwise fall through
+    # to RoboPhD best-ELO resolution.
     gepa_best = run_dir / "best_candidate.json"
     if gepa_best.exists():
         with open(gepa_best) as f:
-            return json.load(f)
-
-    # GEPA also materializes a best_agent/ directory
+            return json.load(f), "best_candidate"
     gepa_agent_dir = run_dir / "best_agent"
     if gepa_agent_dir.exists():
-        return {"agent.py": (gepa_agent_dir / "agent.py").read_text()}
+        return {"agent.py": (gepa_agent_dir / "agent.py").read_text()}, "best_agent"
 
-    # RoboPhD: read checkpoint.json, find highest ELO agent, load from agents/<name>/
     checkpoint = run_dir / "checkpoint.json"
     if checkpoint.exists():
         with open(checkpoint) as f:
@@ -97,12 +138,45 @@ def _load_candidate_from_run_dir(run_dir: Path) -> Dict[str, str]:
             best_name = max(records.items(), key=lambda kv: kv[1]["elo"])[0]
             agent_dir = run_dir / "agents" / best_name
             if agent_dir.exists():
-                return {"agent.py": (agent_dir / "agent.py").read_text()}
+                return {"agent.py": (agent_dir / "agent.py").read_text()}, best_name
 
     raise FileNotFoundError(
         f"Could not find a best candidate in {run_dir}. "
         f"Expected best_candidate.json, best_agent/, or checkpoint.json + agents/"
     )
+
+
+def _load_named_agent(run_dir: Path, agent_name: str) -> Tuple[Dict[str, str], str]:
+    """Load a specifically-named agent from a RoboPhD run's agent_pool."""
+    checkpoint = run_dir / "checkpoint.json"
+    if not checkpoint.exists():
+        raise FileNotFoundError(
+            f"--eval-agent is only supported on RoboPhD runs (requires checkpoint.json). "
+            f"Not found in: {run_dir}"
+        )
+    with open(checkpoint) as f:
+        cp = json.load(f)
+
+    # Distinguish malformed/schema-drifted checkpoint from a bad agent name:
+    # a missing agent_pool key is a checkpoint integrity issue, whereas an
+    # empty agent_pool is a legitimate (if unusual) state that can surface
+    # a "not found" error.
+    if "agent_pool" not in cp:
+        raise FileNotFoundError(
+            f"Checkpoint at {checkpoint} has no agent_pool key (schema error)."
+        )
+    agent_pool = cp["agent_pool"]
+    if agent_name not in agent_pool:
+        available = sorted(agent_pool.keys())
+        raise FileNotFoundError(
+            f"Agent '{agent_name}' not found in agent_pool of {run_dir}. "
+            f"Available ({len(available)}): {', '.join(available)}"
+        )
+    package_dir = agent_pool[agent_name].get("package_dir", f"agents/{agent_name}")
+    agent_dir = run_dir / package_dir
+    if not agent_dir.exists():
+        raise FileNotFoundError(f"Agent directory does not exist: {agent_dir}")
+    return {"agent.py": (agent_dir / "agent.py").read_text()}, agent_name
 
 
 def main():
@@ -111,8 +185,13 @@ def main():
     )
     parser.add_argument("run_dir", type=Path, help="GEPA or RoboPhD run directory")
     parser.add_argument("--test-repeats", type=int, default=10)
+    parser.add_argument("--eval-agent", type=str, default=None,
+                        help="Name of agent to evaluate from the run's agent_pool. "
+                             "RoboPhD runs only. Defaults to the best-ELO agent.")
     parser.add_argument("--output", type=Path, default=None,
-                        help="Where to write test_results.json (default: <run_dir>/test_results.json)")
+                        help="Where to write test_results.json (default: "
+                             "<run_dir>/test_results.json, or test_results_<NAME>.json "
+                             "when --eval-agent is set)")
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -122,11 +201,20 @@ def main():
 
     from evaluator import SudokuEvaluator
     evaluator = SudokuEvaluator()
-    candidate = _load_candidate_from_run_dir(args.run_dir)
+    candidate, agent_name = _load_candidate_from_run_dir(args.run_dir, agent_name=args.eval_agent)
+    logger.info(f"Evaluating agent: {agent_name}")
 
-    median_score, results = test_eval(evaluator, candidate, test_repeats=args.test_repeats)
+    median_score, results = test_eval(
+        evaluator, candidate, test_repeats=args.test_repeats, agent_name=agent_name
+    )
 
-    output_path = args.output or (args.run_dir / "test_results.json")
+    if args.output:
+        output_path = args.output
+    elif args.eval_agent:
+        output_path = args.run_dir / f"test_results_{args.eval_agent}.json"
+    else:
+        output_path = args.run_dir / "test_results.json"
+
     with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
     logger.info(f"Test results saved to {output_path}")
