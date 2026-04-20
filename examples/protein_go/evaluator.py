@@ -277,7 +277,6 @@ class ProteinGOEvaluator:
                 "sequence_length": len(sequence),
                 "ground_truth": ground_truth,
                 "cost_usd": tracker.total,
-                "accession": example.get("id", ""),
                 "predictions": {},
             }
 
@@ -323,8 +322,9 @@ class ProteinGOEvaluator:
             "num_predictions_raw": n_raw,
             "num_predictions_valid": n_valid,
             "num_ground_truth_terms": len(ground_truth),
-            # Structured fields for downstream batch CAFA Fmax aggregation:
-            "accession": example.get("id", ""),
+            # Structured field for downstream batch CAFA Fmax aggregation (callers
+            # pair this with the source dataset by list index to recover the
+            # accession — the eval_result's per_example_diagnostics preserves order).
             "predictions": predictions,
             # Human-readable forms for the evolution AI:
             "ground_truth.md": _format_go_list("Ground-truth GO-MFO terms", ground_truth),

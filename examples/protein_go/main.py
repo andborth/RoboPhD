@@ -169,14 +169,24 @@ def _run_cafa_fmax(eval_result, test_data, out_dir: Path):
     """
     from evaluator import compute_cafa_fmax_batch
 
+    # eval_result.per_example_diagnostics is ordered to match `test_data`, so
+    # we recover each protein's accession by index rather than storing it
+    # redundantly in every diagnostic dict (the per-problem directory is
+    # already named by accession).
+    if len(eval_result.per_example_diagnostics) != len(test_data):
+        logger.warning(
+            "Diagnostics/test_data length mismatch (%d vs %d); skipping CAFA Fmax.",
+            len(eval_result.per_example_diagnostics), len(test_data),
+        )
+        return None
+
     predictions_by_protein = {}
-    for diag in eval_result.per_example_diagnostics:
+    for ex, diag in zip(test_data, eval_result.per_example_diagnostics):
         if not isinstance(diag, dict):
             continue
-        accession = diag.get("accession")
         preds = diag.get("predictions")
-        if accession and isinstance(preds, dict) and preds:
-            predictions_by_protein[accession] = preds
+        if isinstance(preds, dict) and preds:
+            predictions_by_protein[ex["id"]] = preds
 
     if not predictions_by_protein:
         logger.warning("No per-protein predictions found in diagnostics; skipping CAFA Fmax.")
