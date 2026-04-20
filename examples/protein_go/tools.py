@@ -225,6 +225,13 @@ def _run_diamond(sequence: str, top_k: int = 100) -> List[Dict[str, Any]]:
             "--outfmt", "6", "sseqid", "pident", "evalue", "qcovhsp", "bitscore",
             "--quiet",
             "--sensitive",
+            # Bound DIAMOND to 2 threads per subprocess. Evaluator runs many
+            # queries in parallel (default max_workers=8), and DIAMOND's default
+            # is to grab every CPU thread, which causes heavy oversubscription
+            # and thermal throttling. A single query against a 183K DB finishes
+            # in well under a second even single-threaded, so 2 is a comfortable
+            # middle ground.
+            "--threads", "2",
         ]
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
