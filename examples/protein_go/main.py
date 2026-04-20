@@ -210,9 +210,14 @@ def main():
         cost_budget=args.cost_budget,
     )
 
-    train = load_protein_go("train")
     val = load_protein_go("validation")
-    logger.info(f"Dataset: {len(train)} train + {len(val)} val")
+    # Evolution pool = ProteInfer dev split (val.jsonl). ProteInfer train is
+    # the BLAST reference corpus (populated into the DIAMOND DB by setup.sh);
+    # sampling train proteins as evolution examples would self-hit the DB and
+    # trivialize the task. Dev is UniRef50-disjoint from train, so evolution
+    # signal lands in the same homology regime as the test set.
+    logger.info(f"Evolution pool: {len(val)} proteins (ProteInfer dev split); "
+                f"BLAST DB is the ProteInfer-train subset of SwissProt.")
 
     # --eval-only: skip optimization, evaluate best agent from a prior run
     if args.eval_only:
@@ -246,27 +251,30 @@ def main():
         if passed:
             logger.warning(f"Flags ignored by {args.engine} engine: {', '.join(sorted(passed))}")
 
+    # All three engines evolve on `val` (the ProteInfer dev split).
+    # For GEPA / Autoresearch: leaving val_dataset=None triggers build_val_split
+    # (RoboPhD/engines/__init__.py) to shuffle `dataset` and slice [:val_size]
+    # as the selection set and [val_size:] as the minibatch / feedback pool.
+    # With default val_size=100 and len(val)=2000 that's a 100/1900 split, both
+    # drawn from ProteInfer dev and therefore homology-resistant to the
+    # train-only BLAST DB.
+    dataset = val
+
     if args.engine == "gepa":
         cfg = GEPAConfig(
             evaluation_budget=args.evaluation_budget,
-            val_dataset=val,
             max_workers=args.max_workers,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
-        dataset = train
     elif args.engine == "autoresearch":
         cfg = AutoresearchConfig(
             evaluation_budget=args.evaluation_budget,
-            val_dataset=val,
             max_workers=args.max_workers,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
-        dataset = train
     else:
-        # RoboPhD: validation-free; pool both splits as the training set
-        dataset = train + val
         engine_overrides = {}
         if args.engine_config:
             engine_overrides = json.loads(args.engine_config)

@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
-SWISSPROT_DB = DATA_DIR / "swissprot.dmnd"            # DIAMOND index
+SWISSPROT_DB = DATA_DIR / "swissprot_train.dmnd"      # DIAMOND index (ProteInfer-train subset)
 SWISSPROT_PARSED = DATA_DIR / "swissprot_entries.pkl"  # accession -> entry dict
 GO_OBO = DATA_DIR / "go-basic.obo"                     # GO ontology
 

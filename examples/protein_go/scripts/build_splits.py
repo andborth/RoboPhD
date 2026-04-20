@@ -1,30 +1,34 @@
 #!/usr/bin/env python3
-"""Build train/validation/test/price149 JSONL splits for the protein-GO benchmark.
+"""Build validation/test/price149 JSONL splits for the protein-GO benchmark.
 
 Split source: ProteInfer's UniRef50-clustered split (Sanderson et al. 2023).
-No test sequence has >50% identity to any train sequence, which makes BLAST-
-based homology transfer genuinely difficult and tests generalization to
+No sequence in dev/test has >50% identity to any train sequence, which makes
+BLAST-based homology transfer genuinely difficult and tests generalization to
 remote-homology cases. This is the canonical hard-split used by ProteInfer,
 ProtNote, ProtEx, and ProtGO.
 
+ProteInfer train is the BLAST reference *corpus* (built into the DIAMOND DB by
+filter_fasta_by_accessions.py), not an evaluation set — no train.jsonl is
+written. Evolution queries come from dev (val.jsonl); final eval comes from
+test (test.jsonl); Price-149 is a separate homology-resistant secondary eval.
+
 Pipeline:
-  1. Read ProteInfer's train/dev/test TFRecords (lightweight via tfrecord
-     package, no TensorFlow required) to get the canonical (accession, split)
-     mapping.
+  1. Read ProteInfer's dev/test TFRecords (lightweight via tfrecord package,
+     no TensorFlow required) to get the canonical (accession, split) mapping.
   2. Intersect each split with the parsed SwissProt pickle (for annotations,
      descriptions, metadata) and the FASTA (for sequences).
   3. Filter to entries with experimentally-supported MFO labels and valid
      sequences (length 50-2000, standard amino acids only).
   4. Subsample each split to the requested sizes.
-  5. For Price-149: parse the raw CSV, map EC numbers to GO-MFO terms via
+  5. For Price-149: parse the raw table, map EC numbers to GO-MFO terms via
      ec2go, filter to sequences where mapping succeeds and produces at least
      one MFO term.
 
 Output JSONL format (all splits, including Price-149):
   {"accession": str, "sequence": str, "go_terms_mfo": list[str]}
 
-For Price-149, "accession" is the identifier from the CLEAN CSV (e.g.
-"P0A825"); "go_terms_mfo" is derived from EC labels via ec2go mapping.
+For Price-149, "accession" is the RefSeq WP_* identifier from the CLEAN table;
+"go_terms_mfo" is derived from EC labels via ec2go mapping.
 """
 
 import argparse
@@ -36,7 +40,9 @@ import random
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+from proteinfer_io import read_proteinfer_accessions
 
 logger = logging.getLogger(__name__)
 
@@ -87,51 +93,6 @@ def is_valid_sequence(seq: str) -> bool:
 # ---------------------------------------------------------------------------
 # ProteInfer TFRecord reading
 # ---------------------------------------------------------------------------
-
-def read_proteinfer_accessions(tfrecord_path: Path) -> Set[str]:
-    """Read a ProteInfer TFRecord and return the set of UniProt accessions.
-
-    ProteInfer's TFRecord schema contains (at minimum):
-      - 'id':       bytes feature, e.g. b'sp|P0AEX9|MALE_ECOLI' or b'P0AEX9'
-      - 'sequence': bytes feature (the amino-acid sequence)
-      - 'labels':   bytes feature, comma-separated GO/EC labels
-
-    We only need the accession here; annotations come from our parsed SwissProt
-    pickle (which uses SwissProt 2022_01 labels, richer than ProteInfer's
-    original 2019 labels).
-    """
-    try:
-        from tfrecord.reader import tfrecord_loader
-    except ImportError:
-        sys.exit("tfrecord package not installed. Run: pip install tfrecord")
-
-    accessions: Set[str] = set()
-    description = {"id": "byte"}
-
-    for record in tfrecord_loader(str(tfrecord_path), None, description):
-        raw_id = record["id"]
-        if isinstance(raw_id, (bytes, bytearray)):
-            id_str = raw_id.decode("utf-8", errors="ignore")
-        else:
-            # tfrecord may return ndarray of bytes
-            try:
-                id_str = bytes(raw_id).decode("utf-8", errors="ignore")
-            except Exception:
-                continue
-
-        # Extract accession from various possible formats
-        if "|" in id_str:
-            # e.g. "sp|P0AEX9|MALE_ECOLI"
-            parts = id_str.split("|")
-            if len(parts) >= 2:
-                accessions.add(parts[1])
-        else:
-            # Plain accession
-            accessions.add(id_str.strip())
-
-    logger.info(f"Read {len(accessions)} accessions from {tfrecord_path.name}")
-    return accessions
-
 
 # ---------------------------------------------------------------------------
 # Eligibility filter for SwissProt-based splits
@@ -354,13 +315,11 @@ def main():
                         help="Path to ec2go mapping file")
     parser.add_argument("--price149-csv", required=True, type=Path,
                         help="Path to Price-149 raw CSV")
-    parser.add_argument("--train-out", required=True, type=Path)
     parser.add_argument("--val-out", required=True, type=Path)
     parser.add_argument("--test-out", required=True, type=Path)
     parser.add_argument("--price149-out", required=True, type=Path)
-    parser.add_argument("--train-size", type=int, default=3000)
-    parser.add_argument("--val-size", type=int, default=500)
-    parser.add_argument("--test-size", type=int, default=1200)
+    parser.add_argument("--val-size", type=int, default=2000)
+    parser.add_argument("--test-size", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
@@ -375,13 +334,16 @@ def main():
 
     # --- ProteInfer-aligned splits ---
     # Per-split RNG so reordering split_configs never silently changes which
-    # proteins land in each split. The offsets ("train"/"dev"/"test") are
-    # fixed names, not positional indices, so the mapping is stable across
-    # reorderings or if a split is temporarily skipped.
+    # proteins land in each split. The offsets ("dev"/"test") are fixed names,
+    # not positional indices, so the mapping is stable across reorderings or
+    # if a split is temporarily skipped.
+    #
+    # Note: "train" is not written. ProteInfer train is the BLAST reference
+    # corpus (populated into the DIAMOND DB by filter_fasta_by_accessions.py
+    # via train.tfrecord), not an evaluation set.
     split_configs = [
-        ("train", args.train_size, args.train_out),
-        ("dev",   args.val_size,   args.val_out),
-        ("test",  args.test_size,  args.test_out),
+        ("dev",  args.val_size,  args.val_out),
+        ("test", args.test_size, args.test_out),
     ]
 
     for split_name, target_size, out_path in split_configs:

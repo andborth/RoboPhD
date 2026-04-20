@@ -10,9 +10,12 @@
 #   - Price-149 challenging held-out set (CLEAN paper, EC labels; ~60 KB)
 #
 # Builds:
-#   - DIAMOND index over SwissProt (~5 min one-time)
 #   - Parsed SwissProt entries pickle (accession -> name, organism, GO terms, ...)
-#   - Train / validation / test JSONL splits aligned with ProteInfer's clustered split
+#   - swissprot_train.fasta: SwissProt filtered to ProteInfer-train accessions
+#   - DIAMOND index over swissprot_train.fasta (~3-5 min one-time)
+#     (train-only DB matches the published ProteInfer / ProtNote / ProtEx / ProtGO
+#      protocol and prevents test proteins from self-hitting the BLAST database)
+#   - Validation / test JSONL splits aligned with ProteInfer dev / test
 #   - Price-149 JSONL with EC labels mapped to GO-MFO terms via ec2go
 #
 # Total runtime: ~20-30 min on a fast connection.
@@ -83,56 +86,43 @@ fi
 
 
 # ---------------------------------------------------------------------------
-# 3. Build DIAMOND index
-# ---------------------------------------------------------------------------
-
-DIAMOND_DB="$DATA/swissprot.dmnd"
-if [[ ! -f "$DIAMOND_DB" ]]; then
-    echo "[3/8] Building DIAMOND index (~3-5 min)..."
-    diamond makedb --in "$SWISSPROT_FASTA" --db "$DIAMOND_DB" --quiet
-else
-    echo "[3/8] DIAMOND index already built, skipping"
-fi
-
-
-# ---------------------------------------------------------------------------
-# 4. Parse SwissProt flat file to pickle dict
+# 3. Parse SwissProt flat file to pickle dict
 # ---------------------------------------------------------------------------
 
 PARSED_PKL="$DATA/swissprot_entries.pkl"
 if [[ ! -f "$PARSED_PKL" ]]; then
-    echo "[4/8] Parsing SwissProt flat file (~3-5 min)..."
+    echo "[3/8] Parsing SwissProt flat file (~3-5 min)..."
     python3 "$HERE/scripts/parse_swissprot.py" \
         --input "$SWISSPROT_DAT" \
         --output "$PARSED_PKL"
 else
-    echo "[4/8] Parsed SwissProt already present, skipping"
+    echo "[3/8] Parsed SwissProt already present, skipping"
 fi
 
 
 # ---------------------------------------------------------------------------
-# 5. Download GO ontology and ec2go mapping
+# 4. Download GO ontology and ec2go mapping
 # ---------------------------------------------------------------------------
 
 GO_OBO="$DATA/go-basic.obo"
 if [[ ! -f "$GO_OBO" ]]; then
-    echo "[5/8] Downloading GO ontology..."
+    echo "[4/8] Downloading GO ontology..."
     curl -fL --retry 3 "http://purl.obolibrary.org/obo/go/go-basic.obo" -o "$GO_OBO"
 else
-    echo "[5/8] GO ontology already present, skipping"
+    echo "[4/8] GO ontology already present, skipping"
 fi
 
 EC2GO="$DATA/ec2go.txt"
 if [[ ! -f "$EC2GO" ]]; then
-    echo "[5/8] Downloading ec2go mapping (EC number -> GO term)..."
+    echo "[4/8] Downloading ec2go mapping (EC number -> GO term)..."
     curl -fL --retry 3 "http://current.geneontology.org/ontology/external2go/ec2go" -o "$EC2GO"
 else
-    echo "[5/8] ec2go mapping already present, skipping"
+    echo "[4/8] ec2go mapping already present, skipping"
 fi
 
 
 # ---------------------------------------------------------------------------
-# 6. Download ProteInfer clustered-split TFRecords
+# 5. Download ProteInfer clustered-split TFRecords
 # ---------------------------------------------------------------------------
 #
 # ProteInfer (Sanderson et al. 2023) constructs a UniRef50-based clustered split
@@ -145,7 +135,7 @@ PROTEINFER_DIR="$DATA/proteinfer"
 PROTEINFER_BASE="https://storage.googleapis.com/brain-genomics-public/research/proteins/proteinfer/datasets/swissprot/clustered"
 
 if [[ ! -f "$PROTEINFER_DIR/test.tfrecord" ]]; then
-    echo "[6/8] Downloading ProteInfer clustered-split TFRecords (~900 MB)..."
+    echo "[5/8] Downloading ProteInfer clustered-split TFRecords (~900 MB)..."
     mkdir -p "$PROTEINFER_DIR"
     for split in train dev test; do
         if [[ ! -f "$PROTEINFER_DIR/${split}.tfrecord" ]]; then
@@ -154,41 +144,73 @@ if [[ ! -f "$PROTEINFER_DIR/test.tfrecord" ]]; then
         fi
     done
 else
-    echo "[6/8] ProteInfer split already downloaded, skipping"
+    echo "[5/8] ProteInfer split already downloaded, skipping"
 fi
 
 
 # ---------------------------------------------------------------------------
-# 7. Download Price-149 (CLEAN paper's homology-resistant held-out set)
+# 6. Download Price-149 (CLEAN paper's homology-resistant held-out set)
 # ---------------------------------------------------------------------------
 #
 # Price-149 is 149 enzymes experimentally characterized by Price et al. and used
 # as a "hard case" benchmark by CLEAN (Yu et al. 2023). Labels are EC numbers;
-# we map them to GO-MFO via the ec2go file in step 5.
+# we map them to GO-MFO via the ec2go file in step 4.
 
 PRICE149_CSV="$DATA/price149_raw.csv"
 if [[ ! -f "$PRICE149_CSV" ]]; then
-    echo "[7/8] Downloading Price-149 from CLEAN repository..."
-    # Note: the file is extension-.csv but actually tab-separated.
+    echo "[6/8] Downloading Price-149 from CLEAN repository..."
+    # Note: the file has a .csv extension but is actually tab-separated.
     # build_splits.py reads it with delimiter="\t".
     curl -fL --retry 3 \
         "https://raw.githubusercontent.com/tttianhao/CLEAN/main/app/data/datasets/price.csv" \
         -o "$PRICE149_CSV"
 else
-    echo "[7/8] Price-149 already downloaded, skipping"
+    echo "[6/8] Price-149 already downloaded, skipping"
 fi
 
 
 # ---------------------------------------------------------------------------
-# 8. Build train / validation / test / price149 JSONL splits
+# 7. Filter FASTA to ProteInfer train and build DIAMOND index
 # ---------------------------------------------------------------------------
+#
+# The DIAMOND DB is built from ProteInfer's train accessions only, NOT the full
+# SwissProt. This matches the published protocol and prevents test/dev proteins
+# from self-hitting the BLAST DB during evaluation — the key defect that would
+# otherwise trivialize the task via 100%-identity self-lookup.
 
-TRAIN_JSONL="$DATA/train.jsonl"
+SWISSPROT_TRAIN_FASTA="$DATA/swissprot_train.fasta"
+DIAMOND_DB="$DATA/swissprot_train.dmnd"
+
+if [[ ! -f "$SWISSPROT_TRAIN_FASTA" ]]; then
+    echo "[7/8] Filtering SwissProt FASTA to ProteInfer train subset (~1 min)..."
+    python3 "$HERE/scripts/filter_fasta_by_accessions.py" \
+        --input "$SWISSPROT_FASTA" \
+        --tfrecord "$PROTEINFER_DIR/train.tfrecord" \
+        --output "$SWISSPROT_TRAIN_FASTA"
+else
+    echo "[7/8] Filtered train FASTA already present, skipping"
+fi
+
+if [[ ! -f "$DIAMOND_DB" ]]; then
+    echo "[7/8] Building DIAMOND index on train subset (~1-2 min)..."
+    diamond makedb --in "$SWISSPROT_TRAIN_FASTA" --db "$DIAMOND_DB" --quiet
+else
+    echo "[7/8] DIAMOND index already built, skipping"
+fi
+
+
+# ---------------------------------------------------------------------------
+# 8. Build validation / test / price149 JSONL splits
+# ---------------------------------------------------------------------------
+#
+# Note: no train.jsonl is written. ProteInfer train is the BLAST reference
+# corpus (populated into the DIAMOND DB in step 7), not an evaluation set.
+
 VAL_JSONL="$DATA/validation.jsonl"
 TEST_JSONL="$DATA/test.jsonl"
 PRICE149_JSONL="$DATA/price149.jsonl"
 
-if [[ ! -f "$TRAIN_JSONL" || ! -f "$VAL_JSONL" || ! -f "$TEST_JSONL" || ! -f "$PRICE149_JSONL" ]]; then
+if [[ ! -f "$VAL_JSONL" || ! -f "$TEST_JSONL" || ! -f "$PRICE149_JSONL" ]]; then
     echo "[8/8] Building JSONL splits..."
     python3 "$HERE/scripts/build_splits.py" \
         --parsed "$PARSED_PKL" \
@@ -196,13 +218,11 @@ if [[ ! -f "$TRAIN_JSONL" || ! -f "$VAL_JSONL" || ! -f "$TEST_JSONL" || ! -f "$P
         --proteinfer-dir "$PROTEINFER_DIR" \
         --ec2go "$EC2GO" \
         --price149-csv "$PRICE149_CSV" \
-        --train-out "$TRAIN_JSONL" \
         --val-out "$VAL_JSONL" \
         --test-out "$TEST_JSONL" \
         --price149-out "$PRICE149_JSONL" \
-        --train-size 3000 \
-        --val-size 500 \
-        --test-size 1200 \
+        --val-size 2000 \
+        --test-size 1000 \
         --seed 0
 else
     echo "[8/8] Splits already built, skipping"

@@ -26,13 +26,13 @@ bash examples/protein_go/setup.sh
 ```
 
 The setup script downloads ~2.5 GB:
-- SwissProt 2022_01 release tarball (~1.4 GB) for the BLAST database and annotations
+- SwissProt 2022_01 release tarball (~1.4 GB) for protein annotations and the BLAST reference
 - GO ontology (go-basic.obo, ~30 MB)
 - ec2go mapping (EC-to-GO term correspondence, from geneontology.org; ~350 KB)
-- ProteInfer clustered-split TFRecords (~900 MB) for train/val/test accession lists
+- ProteInfer clustered-split TFRecords (~900 MB) for train/dev/test accession lists
 - Price-149 table (~60 KB) from the CLEAN repository
 
-It then builds the DIAMOND index and four JSONL splits (train / validation / test / price149). Final data directory: ~5 GB (the uncompressed SwissProt flat file alone is ~3.4 GB).
+It then filters the SwissProt FASTA to ProteInfer-train accessions only, builds a DIAMOND index on that subset (`swissprot_train.dmnd`), and writes three JSONL splits (`validation.jsonl`, `test.jsonl`, `price149.jsonl`). No `train.jsonl` is written — ProteInfer train is the BLAST reference corpus, not an evaluation set. Final data directory: ~5 GB (the uncompressed SwissProt flat file alone is ~3.4 GB).
 
 ## Quick Start
 
@@ -88,7 +88,9 @@ GO-MFO prediction is the canonical task of the [CAFA challenges](https://biofunc
 
 ### Two difficulty regimes
 
-**Primary: ProteInfer clustered split** — train/validation/test are drawn from ProteInfer's (Sanderson et al., 2023) UniRef50-based clustered split of SwissProt. No sequence in validation or test has >50% identity to any sequence in training. This is substantially harder than a random split because BLAST-based homology transfer cannot simply look up near-identical homologs; agents have to reason about moderate-identity evidence. ProteInfer itself reports Fmax ≈ 0.68 on this split (CNN-based, no LLM); BLAST-only baselines hit roughly 0.55-0.60. This is the same split used by ProtNote, ProtEx, ProtGO, and subsequent GO-prediction papers.
+**Primary: ProteInfer clustered split** — train/dev/test are drawn from ProteInfer's (Sanderson et al., 2023) UniRef50-based clustered split of SwissProt. No sequence in dev or test has >50% identity to any sequence in training. This is substantially harder than a random split because BLAST-based homology transfer cannot simply look up near-identical homologs; agents have to reason about moderate-identity evidence. ProteInfer itself reports Fmax ≈ 0.68 on this split (CNN-based, no LLM); BLAST-only baselines hit roughly 0.55-0.60. This is the same split used by ProtNote, ProtEx, ProtGO, and subsequent GO-prediction papers.
+
+In this example, ProteInfer train is the BLAST reference corpus (used to build `swissprot_train.dmnd`); ProteInfer dev is the evolution pool (`validation.jsonl`, queries against the train DB); ProteInfer test is the final held-out eval (`test.jsonl`). All three splits are UniRef50-disjoint, so dev and test see the same BLAST-difficulty regime.
 
 **Secondary: Price-149** — 149 enzymes assembled by Price et al. and popularized by CLEAN (Yu et al., 2023) as a homology-resistant held-out set. These proteins were selected specifically because homology-based annotation methods fail on them. Labels are EC numbers; we map them to GO-MFO terms via the ec2go file published by the GO consortium. This is the harder test — CLEAN reports F1 ≈ 0.50 for contrastive-learning methods on Price-149, and BLASTp alone drops substantially below that.
 
@@ -101,6 +103,9 @@ The BLAST database and SwissProt entries are pinned to SwissProt release 2022_01
 ## Architecture Notes
 
 - **Single-file agent** — `seeds/baseline/agent.py` defines `predict(sequence, blast, uniprot, go_ancestors, sequence_features, llm, embed) -> dict`. Returns `{"GO:XXXXXXX": confidence_in_[0,1], ...}`.
+- **Train-only BLAST DB** — DIAMOND is indexed on the ProteInfer train subset of SwissProt (~183K proteins), not the full ~567K. Matches the published protocol (ProteInfer, ProtNote, ProtEx, ProtGO) and prevents test/dev proteins from self-hitting the DB at 100% identity — the key defect that would otherwise trivialize the task by letting agents read ground truth off a self-lookup.
+- **ProteInfer dev drives evolution** — per-iteration Elo examples (RoboPhD) and minibatches (GEPA / Autoresearch) come from `validation.jsonl` (the ProteInfer dev split). Dev is UniRef50-disjoint from train, so queries against the train-only DB land in the same homology regime as test — the evolution signal matches the test distribution.
+- **ProteInfer train is a reference corpus, not an eval set** — `setup.sh` uses `train.tfrecord` accessions to build `swissprot_train.fasta` → DIAMOND DB. No `train.jsonl` is written; the train accession list never leaves the DB-build step.
 - **DIAMOND caching** — Per-process in-memory cache of DIAMOND results keyed by sequence hash. First call per sequence runs DIAMOND live (~0.5s); subsequent calls within the same run are dict lookups.
 - **Cost budget** — $0.10 per protein. Only `llm()` and `embed()` count; BLAST and UniProt lookups are free. Over-budget correct predictions are penalized to 0.9 (same as ARC-AGI / DocFinQA).
 - **Two scoring paths** — Per-protein Fmax during evolution (smooth signal for Elo); batch CAFA Fmax for the headline test number. Correlated but not identical; both reported.

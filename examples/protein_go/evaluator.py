@@ -474,10 +474,12 @@ def compute_cafa_fmax_batch(
 # Dataset loading
 # ---------------------------------------------------------------------------
 
-_SPLITS = ("train", "validation", "test", "price149")
+# ProteInfer train is the BLAST reference corpus (populated into the DIAMOND DB
+# by setup.sh), not an evaluation set — no train.jsonl is written.
+_SPLITS = ("validation", "test", "price149")
 
 
-def load_protein_go(split: str = "train") -> List[Dict[str, Any]]:
+def load_protein_go(split: str = "validation") -> List[Dict[str, Any]]:
     """Load the protein-GO benchmark split built by setup.sh.
 
     Each example: {id, sequence, go_terms_mfo (list[str])}
