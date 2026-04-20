@@ -185,8 +185,14 @@ def _run_cafa_fmax(eval_result, test_data, out_dir: Path):
         if not isinstance(diag, dict):
             continue
         preds = diag.get("predictions")
-        if isinstance(preds, dict) and preds:
-            predictions_by_protein[ex["id"]] = preds
+        if not (isinstance(preds, dict) and preds):
+            continue
+        accession = ex.get("id", "")
+        if not accession:
+            # Skip entries without an accession — would otherwise collide under
+            # the empty-string dict key and silently clobber each other.
+            continue
+        predictions_by_protein[accession] = preds
 
     if not predictions_by_protein:
         logger.warning("No per-protein predictions found in diagnostics; skipping CAFA Fmax.")
