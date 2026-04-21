@@ -21,8 +21,15 @@ loop reads a pre-built list; a true streaming path would require
 restructuring the main loop.
 
 First-time setup: downloads ~600MB of ESM-2 150M weights into the user's
-torch.hub cache. Runtime: ~45-90min on laptop CPU, ~15-30min on MPS with
-length-bucketed batching, minutes on CUDA.
+torch.hub cache. Runtime with length-bucketed batching:
+
+  - CPU:       ~4-6 hours (FP32, no GPU hardware)
+  - MPS:       ~3-4 hours (FP32 default — FP16 is slower on MPS, see --fp16)
+  - CUDA:      ~5-15 minutes (FP16 default)
+
+MPS numbers calibrated on a 48 GB M-series Mac with the default batch
+size (48) under plugged-in power; may be slower on battery or with Low
+Power Mode enabled.
 """
 
 from __future__ import annotations
@@ -118,10 +125,12 @@ def main() -> None:
                         help="Output .json file, row-aligned list of accessions")
     parser.add_argument("--model-name", default="esm2_t30_150M_UR50D",
                         help="fair-esm pretrained model name. Default: 150M params, 640-dim.")
-    parser.add_argument("--batch-size", type=int, default=32,
-                        help="Batch size for embedding. Works well with length-bucketed "
-                             "order (the default below) because every batch pads to a "
-                             "near-uniform length. Lower if you hit OOM on very long batches.")
+    parser.add_argument("--batch-size", type=int, default=48,
+                        help="Batch size for embedding. Default picked from an MPS sweep on a "
+                             "48 GB M-series Mac (no OOM, best tok/s): FP32 b=48 beat b=32 "
+                             "(+2%%) and b=64 (+6%%); MPS appears to saturate somewhere between "
+                             "48 and 64. Works well with length-bucketed order (every batch "
+                             "pads to a near-uniform length). Lower if you hit OOM.")
     parser.add_argument("--length-bucketed", action=argparse.BooleanOptionalAction, default=True,
                         help="Sort all sequences by length descending before batching, so each "
                              "batch pads to a near-uniform length. Dramatic speedup over unsorted "
@@ -134,12 +143,14 @@ def main() -> None:
                              "ESM-2 was trained on contexts up to 1024 tokens total.")
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda", "mps"],
                         help="Torch device. 'auto' picks cuda > mps > cpu.")
-    parser.add_argument("--fp16", action=argparse.BooleanOptionalAction, default=True,
-                        help="Run the forward pass in FP16 on GPU/MPS devices. Roughly 2x "
-                             "throughput and 2x less memory pressure, with negligible "
-                             "embedding-quality loss for cosine-similarity retrieval. "
-                             "Automatically disabled on CPU (not worth it). "
-                             "Use --no-fp16 to force FP32 on GPU/MPS for reproducibility / debugging.")
+    parser.add_argument("--fp16", action=argparse.BooleanOptionalAction, default=None,
+                        help="Use FP16 forward pass. Default: auto — FP16 on CUDA (~2x "
+                             "throughput), FP32 on MPS and CPU. An MPS sweep (48GB M-series "
+                             "Mac, ESM-2 150M) measured FP16 consistently ~16%% SLOWER than "
+                             "FP32 across batch sizes 32/48/64 due to PyTorch-MPS-transformer "
+                             "op-boundary up/downcast overhead (known PyTorch MPS quirk). On "
+                             "CPU, no FP16 hardware exists so FP32 always wins. Use "
+                             "--fp16 / --no-fp16 to override the auto choice explicitly.")
     parser.add_argument("--log-every", type=int, default=500,
                         help="Log progress every N sequences.")
     args = parser.parse_args()
@@ -168,17 +179,24 @@ def main() -> None:
     model.eval()
     model = model.to(device)
 
-    # FP16 halves memory pressure and roughly doubles throughput on MPS/CUDA.
-    # Not beneficial on CPU (no dedicated FP16 hardware in typical x86 / ARM
-    # CPUs; CPU runs prefer FP32). Output embeddings are still emitted as
-    # FP32 after an upcast inside embed_batch().
-    use_fp16 = args.fp16 and device in ("cuda", "mps")
+    # FP16 resolution:
+    #   --fp16 (explicit): force FP16 on GPU/MPS; no-op on CPU
+    #   --no-fp16 (explicit): force FP32 everywhere
+    #   (auto, default): FP16 on CUDA (2x speedup), FP32 on MPS (known
+    #     PyTorch-MPS-transformer quirk makes FP16 ~16% slower than FP32 at
+    #     every batch size we measured — see --fp16 help), FP32 on CPU.
+    if args.fp16 is None:
+        use_fp16 = device == "cuda"
+        reason = "auto"
+    else:
+        use_fp16 = args.fp16 and device != "cpu"
+        reason = "explicit --fp16" if args.fp16 else "explicit --no-fp16"
+
     if use_fp16:
         model = model.half()
-        logger.info(f"Model converted to FP16 ({device})")
+        logger.info(f"Model converted to FP16 ({device}, {reason})")
     else:
-        logger.info(f"Model kept in FP32 "
-                    f"({'CPU path' if device == 'cpu' else 'FP16 disabled by flag'})")
+        logger.info(f"Model kept in FP32 ({device}, {reason})")
 
     batch_converter = alphabet.get_batch_converter()
     repr_layer = model.num_layers  # final layer (30 for 150M)

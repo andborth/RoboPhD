@@ -23,8 +23,8 @@ export OPENROUTER_API_KEY="sk-or-..."              # for the default solver (Gem
 export OPENAI_API_KEY="your_key"                   # for embeddings (text-embedding-3-small)
                                                    # and if you override --model to an OpenAI model
 
-# 5. Download data and build splits (~60-90 min, one-time, CPU;
-#    much faster on CUDA/MPS — step 9 computes ESM-2 embeddings)
+# 5. Download data and build splits (one-time; dominated by step 9's ESM sweep:
+#    ~4-6h on CPU, ~3-4h on MPS, ~15-30min on CUDA)
 bash examples/protein_go/setup.sh
 ```
 

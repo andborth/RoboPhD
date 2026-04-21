@@ -20,8 +20,11 @@
 #   - ESM-2 150M embedding cache over swissprot_train.fasta (~470MB .npy)
 #     — backs the agent's esm_nearest() tool; precomputed once
 #
-# Total runtime: ~60-90 min on laptop CPU (dominated by step 9's ESM sweep);
-# much faster on CUDA/MPS.
+# Total runtime (dominated by step 9's ESM sweep):
+#   - CPU:  ~4-6 hours
+#   - MPS:  ~3-4 hours (FP32 default; see scripts/compute_esm_embeddings.py
+#                       for why FP16 is not used on MPS)
+#   - CUDA: ~15-30 minutes (FP16 default)
 #
 # Requirements:
 #   - DIAMOND binary on PATH (conda install -c bioconda diamond)
@@ -257,15 +260,16 @@ fi
 # Populates the cache queried at runtime by the agent's esm_nearest() tool
 # (BLAST-analogue in embedding space). First run downloads ~600MB of ESM-2
 # weights into the torch.hub cache; the embedding sweep over ~183K train
-# proteins takes ~45-90 min on laptop CPU, minutes on CUDA/MPS. Output:
-# ~470MB .npy matrix + ~5MB .json accession index. Total extra ~1.1GB
-# resident memory per evaluator process at runtime (weights + matrix).
+# proteins takes ~4-6 hours on laptop CPU, ~3-4 hours on MPS, or ~15-30 min
+# on CUDA. Output: ~470MB .npy matrix + ~5MB .json accession index. Total
+# extra ~1.1GB resident memory per evaluator process at runtime (weights +
+# matrix).
 
 ESM_EMBEDDINGS_NPY="$DATA/esm_train_embeddings.npy"
 ESM_ACCESSIONS_JSON="$DATA/esm_train_accessions.json"
 
 if [[ ! -f "$ESM_EMBEDDINGS_NPY" || ! -f "$ESM_ACCESSIONS_JSON" ]]; then
-    echo "[9/9] Computing ESM-2 150M embeddings for ProteInfer-train (~45-90 min CPU, minutes on GPU)..."
+    echo "[9/9] Computing ESM-2 150M embeddings for ProteInfer-train (CPU ~4-6h, MPS ~3-4h, CUDA ~15-30min)..."
     python3 "$HERE/scripts/compute_esm_embeddings.py" \
         --input-fasta "$SWISSPROT_TRAIN_FASTA" \
         --output-embeddings "$ESM_EMBEDDINGS_NPY" \
