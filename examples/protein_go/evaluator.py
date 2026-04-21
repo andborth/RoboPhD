@@ -36,14 +36,16 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import litellm
 
 from RoboPhD.eval_utils import retry_on_rate_limit, exec_with_stdout_capture
+from RoboPhD.scoring import fmax_with_ancestor_closure
 from tools import (
-    make_blast, make_uniprot, make_go_ancestors, make_sequence_features,
-    propagate_to_mfo_ancestors,
+    make_blast, make_uniprot, make_go_ancestors, make_score,
+    make_sequence_features, propagate_to_mfo_ancestors,
+    load_go_dag,
 )
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "gpt-4.1-mini"
+DEFAULT_SOLVER_MODEL = "openrouter/google/gemini-3.1-flash-lite-preview"
 DEFAULT_EMBED_MODEL = "text-embedding-3-small"
 
 HERE = Path(__file__).resolve().parent
@@ -72,19 +74,30 @@ class CostTracker:
         return self.llm_cost + self.embed_cost
 
 
-def make_tracked_llm(model: str, tracker: CostTracker) -> Callable[..., str]:
-    """Return an llm(prompt) -> str callable with cost tracking and rate limit retry."""
+def make_tracked_llm(
+    model: str,
+    tracker: CostTracker,
+    reasoning_effort: Optional[str] = None,
+) -> Callable[..., str]:
+    """Return an llm(prompt) -> str callable with cost tracking and rate limit retry.
+
+    When `reasoning_effort` is set (and the underlying model supports it — e.g.
+    OpenRouter-routed Gemini 3.1 Flash Lite), it is passed through via
+    `extra_body={"reasoning": {"effort": reasoning_effort}}`. Matches the pattern
+    used by examples/arc_agi_1/evaluator.py.
+    """
 
     def llm(prompt: str, temperature: float = 0.0) -> str:
-        resp = retry_on_rate_limit(
-            lambda: litellm.completion(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                timeout=300,
-                num_retries=0,
-            )
-        )
+        kwargs: Dict[str, Any] = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature,
+            "timeout": 300,
+            "num_retries": 0,
+        }
+        if reasoning_effort:
+            kwargs["extra_body"] = {"reasoning": {"effort": reasoning_effort}}
+        resp = retry_on_rate_limit(lambda: litellm.completion(**kwargs))
         try:
             cost = litellm.completion_cost(completion_response=resp)
         except Exception:
@@ -135,6 +148,7 @@ def _run_agent(agent_code: str, sequence: str, tools: Dict[str, Callable]) -> Tu
             tools["sequence_features"],
             tools["llm"],
             tools["embed"],
+            tools["score"],
         )
 
     namespace, stdout = exec_with_stdout_capture(agent_code, then=_call_predict)
@@ -169,33 +183,19 @@ def _per_protein_fmax(
 ) -> Tuple[float, float, float, float]:
     """Compute max F1 over confidence thresholds for a single protein.
 
-    Returns (fmax, best_precision, best_recall, best_threshold).
-    Both predictions and ground truth are propagated to MFO ancestors.
-    Thresholds are integer-stepped (tau = i/100 for i in 1..99) to match
-    cafaeval's internal behavior and avoid floating-point drift.
+    Thin adapter over RoboPhD.scoring.fmax_with_ancestor_closure — the
+    canonical implementation. Returns the legacy 4-tuple shape
+    (fmax, best_precision, best_recall, best_threshold) consumed by the
+    evaluator's per-example path; the framework helper returns a richer
+    dict used directly by the agent-callable `score()` tool.
     """
-    if not predictions:
-        return 0.0, 0.0, 0.0, 0.0
-    gt_set = propagate_to_mfo_ancestors(set(ground_truth))
-    if not gt_set:
-        return 0.0, 0.0, 0.0, 0.0
-
-    best = (0.0, 0.0, 0.0, 0.0)
-    for i in range(1, 100):
-        tau = i / 100
-        above = {g for g, s in predictions.items() if s >= tau}
-        if not above:
-            continue
-        pred_set = propagate_to_mfo_ancestors(above)
-        tp = len(pred_set & gt_set)
-        if tp == 0:
-            continue
-        precision = tp / len(pred_set)
-        recall = tp / len(gt_set)
-        f1 = 2 * precision * recall / (precision + recall)
-        if f1 > best[0]:
-            best = (f1, precision, recall, tau)
-    return best
+    result = fmax_with_ancestor_closure(predictions, ground_truth, load_go_dag())
+    return (
+        result["fmax"],
+        result["precision_at_best"],
+        result["recall_at_best"],
+        result["best_tau"],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -212,15 +212,17 @@ class ProteinGOEvaluator:
 
     def __init__(
         self,
-        model: str = DEFAULT_MODEL,
+        model: str = DEFAULT_SOLVER_MODEL,
         embed_model: str = DEFAULT_EMBED_MODEL,
         cost_budget: float = 0.10,
         over_budget_penalty: float = 0.9,
+        reasoning_effort: Optional[str] = "medium",
     ):
         self.model = model
         self.embed_model = embed_model
         self.cost_budget = cost_budget
         self.over_budget_penalty = over_budget_penalty
+        self.reasoning_effort = reasoning_effort
 
         self._eval_count = 0
         self._total_cost = 0.0
@@ -260,8 +262,11 @@ class ProteinGOEvaluator:
             "uniprot": make_uniprot(),
             "go_ancestors": make_go_ancestors(),
             "sequence_features": make_sequence_features(),
-            "llm": make_tracked_llm(self.model, tracker),
+            "llm": make_tracked_llm(
+                self.model, tracker, reasoning_effort=self.reasoning_effort,
+            ),
             "embed": make_tracked_embed(self.embed_model, tracker),
+            "score": make_score(),
         }
 
         # Run the agent

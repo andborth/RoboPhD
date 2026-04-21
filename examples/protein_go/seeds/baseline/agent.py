@@ -1,7 +1,7 @@
 import re
 
 
-def predict(sequence, blast, uniprot, go_ancestors, sequence_features, llm, embed):
+def predict(sequence, blast, uniprot, go_ancestors, sequence_features, llm, embed, score):
     """Predict GO Molecular Function terms for a protein sequence.
 
     Returns: dict mapping GO term IDs to confidence scores in [0, 1].
@@ -38,4 +38,14 @@ def predict(sequence, blast, uniprot, go_ancestors, sequence_features, llm, embe
                 predictions[go_id] = 0.3  # low confidence for LLM-only
 
     print(f"Final predictions: {len(predictions)} terms")
+
+    # Self-check: run score() against the top BLAST hit's labels treated as
+    # a hypothesized ground truth. Purely diagnostic — the real GT is unseen.
+    if hits:
+        self_check = score(predictions, hits[0].get("go_terms", []))
+        print(
+            f"score() vs top-hit labels: fmax={self_check['fmax']:.2f} "
+            f"@ tau={self_check['best_tau']:.2f}"
+        )
+
     return predictions

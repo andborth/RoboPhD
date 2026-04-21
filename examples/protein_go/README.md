@@ -19,7 +19,9 @@ conda install -c bioconda diamond
 
 # 4. Set API keys
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"   # for evolution (Claude Code)
-export OPENAI_API_KEY="your_key"                   # for gpt-4.1-mini and embeddings
+export OPENROUTER_API_KEY="sk-or-..."              # for the default solver (Gemini 3.1 Flash Lite)
+export OPENAI_API_KEY="your_key"                   # for embeddings (text-embedding-3-small)
+                                                   # and if you override --model to an OpenAI model
 
 # 5. Download data and build splits (~20-30 min, one-time)
 bash examples/protein_go/setup.sh
@@ -70,7 +72,11 @@ python examples/protein_go/main.py --engine gepa
 python examples/protein_go/main.py --engine autoresearch
 
 # Different solver model
+python examples/protein_go/main.py --model claude-haiku-4-5-20251001
 python examples/protein_go/main.py --model gpt-4.1
+
+# Reasoning effort for the default solver (Gemini 3.1 Flash Lite; medium by default)
+python examples/protein_go/main.py --reasoning-effort high
 
 # Custom engine config
 python examples/protein_go/main.py --engine-config '{"include_evolution_rankings": false}'

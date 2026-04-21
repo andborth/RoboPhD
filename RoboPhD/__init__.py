@@ -19,6 +19,7 @@ from .api import (
     OptimizeResult, EvalResult,
     RoboPhDConfig, GEPAConfig, AutoresearchConfig, RoboPhDEvalConfig,
 )
+from .scoring import fmax_with_ancestor_closure
 
 __all__ = [
     'ParallelAgentResearcher',
@@ -33,4 +34,5 @@ __all__ = [
     'GEPAConfig',
     'AutoresearchConfig',
     'RoboPhDEvalConfig',
+    'fmax_with_ancestor_closure',
 ]

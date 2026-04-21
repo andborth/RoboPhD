@@ -71,7 +71,15 @@ def parse_args():
                         default="robophd", help="Optimization engine")
 
     # Task-specific
-    parser.add_argument("--model", default="gpt-4.1-mini", help="LLM for the agent's llm() callable")
+    parser.add_argument("--model", default="openrouter/google/gemini-3.1-flash-lite-preview",
+                        help="LLM for the agent's llm() callable. Default matches arc_agi_1's sibling tier.")
+    parser.add_argument("--reasoning-effort", default="medium",
+                        choices=["none", "low", "medium", "high"],
+                        help="Reasoning effort for OpenRouter-routed reasoning-capable models "
+                             "(passed as extra_body={\"reasoning\":{\"effort\": ...}}). "
+                             "Use 'none' to suppress the extra_body entirely — required when "
+                             "overriding --model to an Anthropic/OpenAI model that doesn't "
+                             "accept the reasoning extra_body.")
     parser.add_argument("--embed-model", default="text-embedding-3-small",
                         help="Model for embeddings")
     parser.add_argument("--cost-budget", type=float, default=0.10,
@@ -136,6 +144,11 @@ def _write_split_report(
         "total_per_protein_score": eval_result.total_score,
         "total_proteins": eval_result.num_examples,
         "eval_cost_usd": evaluator.total_cost,
+        # Disclose the solver under which this result was produced so
+        # cross-run comparisons can account for solver-model changes
+        # (matches the sudoku 'aggregation' marker pattern).
+        "solver_model": evaluator.model,
+        "reasoning_effort": evaluator.reasoning_effort,
     }
 
     if not args.skip_cafa_fmax:
@@ -220,10 +233,14 @@ def main():
     objective = (HERE / "objective.md").read_text().strip()
     background = (HERE / "background.md").read_text().strip()
 
+    # Map argparse's "none" sentinel to None so make_tracked_llm skips the
+    # reasoning extra_body entirely for non-reasoning-capable solvers.
+    reasoning_effort = None if args.reasoning_effort == "none" else args.reasoning_effort
     evaluator = ProteinGOEvaluator(
         model=args.model,
         embed_model=args.embed_model,
         cost_budget=args.cost_budget,
+        reasoning_effort=reasoning_effort,
     )
 
     val = load_protein_go("validation")

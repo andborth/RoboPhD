@@ -25,6 +25,8 @@ import threading
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+from RoboPhD.scoring import fmax_with_ancestor_closure
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,6 +37,7 @@ logger = logging.getLogger(__name__)
 DATA_DIR = Path(__file__).resolve().parent / "data"
 SWISSPROT_DB = DATA_DIR / "swissprot_train.dmnd"      # DIAMOND index (ProteInfer-train subset)
 SWISSPROT_PARSED = DATA_DIR / "swissprot_entries.pkl"  # accession -> entry dict
+SWISSPROT_FASTA = DATA_DIR / "uniprot_sprot.fasta"     # full SwissProt FASTA (used for sequence lookup)
 GO_OBO = DATA_DIR / "go-basic.obo"                     # GO ontology
 
 
@@ -47,6 +50,9 @@ _diamond_cache_lock = threading.Lock()
 
 _uniprot_dict: Optional[Dict[str, Dict[str, Any]]] = None
 _uniprot_dict_lock = threading.Lock()
+
+_sequence_dict: Optional[Dict[str, str]] = None  # accession -> amino-acid sequence (full SwissProt)
+_sequence_dict_lock = threading.Lock()
 
 _go_dag: Optional[Dict[str, List[str]]] = None  # go_id -> list of ancestor go_ids (MFO only)
 _go_dag_lock = threading.Lock()
@@ -131,12 +137,60 @@ def _load_uniprot_dict() -> Dict[str, Dict[str, Any]]:
         return _uniprot_dict
 
 
+def _load_sequences() -> Dict[str, str]:
+    """Load {accession: amino_acid_sequence} from the full SwissProt FASTA.
+
+    Lazy, once per process. Populates `_sequence_dict` for use by `make_uniprot()`
+    and `_run_diamond()` so hit results and entry lookups can include the raw
+    sequence of each homolog.
+
+    Memory: ~90MB resident after loading all ~567K SwissProt sequences. Held
+    process-wide; if you spawn many evaluator instances in the same Python
+    process, they share this cache (not per-instance).
+    """
+    global _sequence_dict
+    with _sequence_dict_lock:
+        if _sequence_dict is not None:
+            return _sequence_dict
+        if not SWISSPROT_FASTA.exists():
+            raise FileNotFoundError(
+                f"SwissProt FASTA not found at {SWISSPROT_FASTA}. "
+                f"Run setup.sh first."
+            )
+        logger.info(f"Loading SwissProt sequences from {SWISSPROT_FASTA}...")
+        sequences: Dict[str, str] = {}
+        accession: Optional[str] = None
+        seq_parts: List[str] = []
+        with open(SWISSPROT_FASTA) as f:
+            for line in f:
+                line = line.rstrip()
+                if line.startswith(">"):
+                    if accession and seq_parts:
+                        sequences[accession] = "".join(seq_parts)
+                    # Header: ">sp|P12345|NAME_SPECIES Description ..."
+                    parts = line[1:].split("|")
+                    accession = parts[1] if len(parts) >= 2 else None
+                    seq_parts = []
+                elif accession is not None:
+                    seq_parts.append(line)
+            if accession and seq_parts:
+                sequences[accession] = "".join(seq_parts)
+        _sequence_dict = sequences
+        logger.info(f"Loaded {len(_sequence_dict)} SwissProt sequences")
+        return _sequence_dict
+
+
 # ---------------------------------------------------------------------------
 # GO DAG loading
 # ---------------------------------------------------------------------------
 
-def _load_go_dag() -> Dict[str, List[str]]:
-    """Parse the GO OBO file, restrict to MFO, compute transitive ancestors."""
+def load_go_dag() -> Dict[str, List[str]]:
+    """Parse the GO OBO file, restrict to MFO, compute transitive ancestors.
+
+    Public by design: callers outside tools.py (evaluator.py, make_score) depend
+    on it, so renames must be coordinated. Returns the same cached singleton
+    across calls; safe to call repeatedly.
+    """
     global _go_dag
     with _go_dag_lock:
         if _go_dag is not None:
@@ -247,6 +301,7 @@ def _run_diamond(sequence: str, top_k: int = 100) -> List[Dict[str, Any]]:
             return []
 
     uniprot = _load_uniprot_dict()
+    sequences = _load_sequences()
     hits: List[Dict[str, Any]] = []
     for line in result.stdout.strip().split("\n"):
         if not line:
@@ -264,6 +319,7 @@ def _run_diamond(sequence: str, top_k: int = 100) -> List[Dict[str, Any]]:
             "bit_score": float(parts[4]),
             "go_terms": entry.get("go_terms_mfo", []),
             "description": entry.get("description", ""),
+            "sequence": sequences.get(accession, ""),
         })
     return hits
 
@@ -300,11 +356,21 @@ def make_blast() -> Callable[..., List[Dict[str, Any]]]:
 
 
 def make_uniprot() -> Callable[[str], Dict[str, Any]]:
-    """Create a uniprot() callable."""
+    """Create a uniprot() callable. Each returned entry is enriched with the
+    protein's raw amino-acid sequence (from the SwissProt FASTA) under the
+    `sequence` key, on top of the metadata fields in the parsed pickle."""
 
     def uniprot(accession: str) -> Dict[str, Any]:
         entries = _load_uniprot_dict()
-        return entries.get(accession, {})
+        sequences = _load_sequences()
+        entry = entries.get(accession)
+        if entry is None:
+            return {}
+        # Return a shallow copy with the sequence overlaid so we don't mutate
+        # the cached pickle-sourced dict.
+        enriched = dict(entry)
+        enriched["sequence"] = sequences.get(accession, "")
+        return enriched
 
     return uniprot
 
@@ -313,7 +379,7 @@ def make_go_ancestors() -> Callable[[str], List[str]]:
     """Create a go_ancestors() callable."""
 
     def go_ancestors(go_id: str) -> List[str]:
-        dag = _load_go_dag()
+        dag = load_go_dag()
         return list(dag.get(go_id, []))
 
     return go_ancestors
@@ -324,13 +390,30 @@ def make_sequence_features() -> Callable[[str], Dict[str, Any]]:
     return _sequence_features
 
 
+def make_score() -> Callable[[Dict[str, float], List[str]], Dict[str, Any]]:
+    """Create a score(predictions, hypothesized_gt) callable.
+
+    Thin adapter over `RoboPhD.scoring.fmax_with_ancestor_closure`: captures
+    the loaded MFO ancestor DAG at factory time and delegates scoring to the
+    canonical framework helper. Contains zero F1-sweep logic — the
+    computation is shared with the evaluator's per-example scoring path.
+    """
+    # DAG dict is a module-wide cached singleton via load_go_dag().
+    dag = load_go_dag()
+
+    def score(predictions: Dict[str, float], hypothesized_gt: List[str]) -> Dict[str, Any]:
+        return fmax_with_ancestor_closure(predictions, hypothesized_gt, dag)
+
+    return score
+
+
 # ---------------------------------------------------------------------------
 # GO hierarchy helper used by scoring (not exposed to agent)
 # ---------------------------------------------------------------------------
 
 def propagate_to_mfo_ancestors(go_terms: set) -> set:
     """Augment a set of GO terms with all MFO ancestors."""
-    dag = _load_go_dag()
+    dag = load_go_dag()
     result = set(go_terms)
     for term in list(go_terms):
         result.update(dag.get(term, []))
