@@ -39,7 +39,8 @@ from RoboPhD.eval_utils import retry_on_rate_limit, exec_with_stdout_capture
 from RoboPhD.scoring import fmax_with_ancestor_closure
 from tools import (
     make_blast, make_uniprot, make_go_ancestors, make_score,
-    make_sequence_features, propagate_to_mfo_ancestors,
+    make_sequence_features, make_esm_embed, make_esm_nearest,
+    propagate_to_mfo_ancestors,
     load_go_dag,
 )
 
@@ -149,6 +150,8 @@ def _run_agent(agent_code: str, sequence: str, tools: Dict[str, Callable]) -> Tu
             tools["llm"],
             tools["embed"],
             tools["score"],
+            tools["esm_embed"],
+            tools["esm_nearest"],
         )
 
     namespace, stdout = exec_with_stdout_capture(agent_code, then=_call_predict)
@@ -267,6 +270,8 @@ class ProteinGOEvaluator:
             ),
             "embed": make_tracked_embed(self.embed_model, tracker),
             "score": make_score(),
+            "esm_embed": make_esm_embed(),
+            "esm_nearest": make_esm_nearest(),
         }
 
         # Run the agent

@@ -23,7 +23,8 @@ export OPENROUTER_API_KEY="sk-or-..."              # for the default solver (Gem
 export OPENAI_API_KEY="your_key"                   # for embeddings (text-embedding-3-small)
                                                    # and if you override --model to an OpenAI model
 
-# 5. Download data and build splits (~20-30 min, one-time)
+# 5. Download data and build splits (~60-90 min, one-time, CPU;
+#    much faster on CUDA/MPS — step 9 computes ESM-2 embeddings)
 bash examples/protein_go/setup.sh
 ```
 
@@ -34,7 +35,7 @@ The setup script downloads ~2.5 GB:
 - ProteInfer clustered-split TFRecords (~900 MB) for train/dev/test accession lists
 - Price-149 table (~60 KB) from the CLEAN repository
 
-It then filters the SwissProt FASTA to ProteInfer-train accessions only, builds a DIAMOND index on that subset (`swissprot_train.dmnd`), and writes three JSONL splits (`validation.jsonl`, `test.jsonl`, `price149.jsonl`). No `train.jsonl` is written — ProteInfer train is the BLAST reference corpus, not an evaluation set. Final data directory: ~5 GB (the uncompressed SwissProt flat file alone is ~3.4 GB).
+It then filters the SwissProt FASTA to ProteInfer-train accessions only, builds a DIAMOND index on that subset (`swissprot_train.dmnd`), writes three JSONL splits (`validation.jsonl`, `test.jsonl`, `price149.jsonl`), and precomputes ESM-2 150M embeddings over the train subset (`esm_train_embeddings.npy`, ~470MB; powers the agent's `esm_nearest()` tool). No `train.jsonl` is written — ProteInfer train is the BLAST reference corpus, not an evaluation set. Final data directory: ~5.5 GB (the uncompressed SwissProt flat file alone is ~3.4 GB). At runtime each evaluator process holds an extra ~1.1 GB resident (~600MB ESM model weights + ~470MB embedding cache) on top of the existing ~500MB.
 
 ## Quick Start
 

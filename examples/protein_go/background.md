@@ -19,6 +19,7 @@ Available tools:
       description:     str, short function comment from SwissProt
       sequence:        str, the hit's amino-acid sequence (same alphabet
                        as the query; useful for few-shot prompting)
+      organism:        str, full species name (e.g. "Homo sapiens")
     Context: BLAST identity below ~25% is the "twilight zone" where
     homology-based label transfer becomes unreliable.
     Example return:
@@ -26,7 +27,8 @@ Available tools:
         "query_coverage": 95.0, "bit_score": 312.5,
         "go_terms": ["GO:0004672", "GO:0005524"],
         "description": "Serine/threonine-protein kinase catalyzing...",
-        "sequence": "MKVLWAALLV..."},
+        "sequence": "MKVLWAALLV...",
+        "organism": "Homo sapiens"},
        ...]
 
   uniprot(accession) -> dict
@@ -90,6 +92,49 @@ Available tools:
     and will not produce meaningful biochemical similarity over raw
     amino-acid strings.
 
+  esm_embed(sequence) -> list[float]
+    ESM-2 150M protein language model embedding of `sequence`. The model
+    is trained on ~250M UniRef50 protein sequences (Meta 2022); the
+    returned vector is a mean-pooled, L2-normalized representation from
+    the final transformer layer. Returns list[float] of length 640.
+    First call per process loads the model weights (~600MB, ~5-10s cold
+    start). Subsequent calls: ~100ms/query on CPU, <10ms on GPU/MPS.
+    Pure computation; free (does not count against the cost budget).
+    Note: ESM-2 is a *protein* LM — the embedding space is trained on
+    amino-acid sequences, not English. It is distinct from embed(),
+    which is a text embedder (text-embedding-3-small).
+    Example return:
+      [0.0231, -0.0174, 0.0511, ...]  # 640 floats, L2-normalized
+
+  esm_nearest(sequence, top_k=50, min_similarity=0.0) -> list[dict]
+    Embed `sequence` with ESM-2 150M and return the top_k nearest
+    ProteInfer-train proteins by cosine similarity against the
+    precomputed train-subset embedding cache (populated by
+    setup.sh step 9). `min_similarity` drops hits below the cosine
+    threshold before the top-K truncation (embedding-space analogue
+    of blast()'s min_identity). Shape parallels blast() hits for
+    drop-in composition: same accession / go_terms / description /
+    sequence / organism fields, with `cosine_similarity` in place
+    of `identity`. Pure computation; free. First call per process
+    triggers the same model-load + cache-load as esm_embed(). The
+    query embedding is cached by sequence hash, so back-to-back
+    esm_embed() + esm_nearest() on the same sequence pays a single
+    forward pass.
+    Each hit:
+      accession:           str, UniProt accession
+      cosine_similarity:   float in [-1, 1], cosine similarity to the query
+      go_terms:            list[str], MFO-only experimentally-supported
+      description:         str, short function comment
+      sequence:            str, amino-acid sequence of the homolog
+      organism:            str, full species name
+    Example return:
+      [{"accession": "P12345", "cosine_similarity": 0.74,
+        "go_terms": ["GO:0004672"],
+        "description": "Serine/threonine kinase...",
+        "sequence": "MKVLWAALLV...",
+        "organism": "Homo sapiens"},
+       ...]
+
   score(predictions, hypothesized_gt) -> dict
     Compute the same max-F1-over-thresholds score the evaluator uses,
     but against a user-supplied list of GO terms rather than the real
@@ -145,7 +190,7 @@ Worked example of the scoring computation:
   the wrong term GO:0005524 falls below the >=tau cutoff, since its score
   is exactly 0.30). The sweep is `for i in range(1, 100): tau = i / 100`.
 
-A per-protein cost budget of $0.10 is enforced. Correct predictions within budget are scored normally. Predictions that exceed the budget are penalized by a 0.9 multiplier. Only llm() and embed() calls count against the budget; blast(), uniprot(), go_ancestors(), sequence_features(), and score() are free.
+A per-protein cost budget of $0.10 is enforced. Correct predictions within budget are scored normally. Predictions that exceed the budget are penalized by a 0.9 multiplier. Only llm() and embed() calls count against the budget; blast(), uniprot(), go_ancestors(), sequence_features(), score(), esm_embed(), and esm_nearest() are free.
 
 Headline benchmark score: After evolution, the best agent is evaluated on the held-out test set using CAFA-evaluator (Piovesan et al., 2024), the official scoring tool for the CAFA challenges. This produces a Fmax number directly comparable to published protein function prediction methods. The per-protein score above is what drives evolution; CAFA Fmax is the final reported metric.
 

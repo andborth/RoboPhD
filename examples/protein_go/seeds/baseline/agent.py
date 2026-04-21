@@ -1,7 +1,8 @@
 import re
 
 
-def predict(sequence, blast, uniprot, go_ancestors, sequence_features, llm, embed, score):
+def predict(sequence, blast, uniprot, go_ancestors, sequence_features,
+            llm, embed, score, esm_embed, esm_nearest):
     """Predict GO Molecular Function terms for a protein sequence.
 
     Returns: dict mapping GO term IDs to confidence scores in [0, 1].

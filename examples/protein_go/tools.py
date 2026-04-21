@@ -39,6 +39,9 @@ SWISSPROT_DB = DATA_DIR / "swissprot_train.dmnd"      # DIAMOND index (ProteInfe
 SWISSPROT_PARSED = DATA_DIR / "swissprot_entries.pkl"  # accession -> entry dict
 SWISSPROT_FASTA = DATA_DIR / "uniprot_sprot.fasta"     # full SwissProt FASTA (used for sequence lookup)
 GO_OBO = DATA_DIR / "go-basic.obo"                     # GO ontology
+ESM_EMBEDDINGS_NPY = DATA_DIR / "esm_train_embeddings.npy"    # ProteInfer-train ESM-2 150M cache
+ESM_ACCESSIONS_JSON = DATA_DIR / "esm_train_accessions.json"  # row-aligned accession index
+ESM_MODEL_NAME = "esm2_t30_150M_UR50D"  # 150M params, 640-dim, 30 layers
 
 
 # ---------------------------------------------------------------------------
@@ -56,6 +59,29 @@ _sequence_dict_lock = threading.Lock()
 
 _go_dag: Optional[Dict[str, List[str]]] = None  # go_id -> list of ancestor go_ids (MFO only)
 _go_dag_lock = threading.Lock()
+
+# ESM-2 caches — precomputed embeddings over ProteInfer-train and the lazily-
+# loaded model itself.
+_esm_embeddings: Optional[Any] = None   # numpy.ndarray of shape (N, 640), float32
+_esm_accessions: Optional[List[str]] = None
+_esm_cache_lock = threading.Lock()
+
+_esm_model: Optional[Any] = None
+_esm_batch_converter: Optional[Any] = None
+_esm_repr_layer: Optional[int] = None
+_esm_device: Optional[str] = None
+_esm_model_lock = threading.Lock()
+
+# Serializes actual ESM forward passes across worker threads. PyTorch model
+# objects are not thread-safe under concurrent inference; sharing one model
+# across parallel evaluator workers requires serialization (especially on
+# CUDA/MPS where 8× concurrent calls risks OOM).
+_esm_inference_lock = threading.Lock()
+
+# Per-query embedding cache keyed by sequence hash. Agents that call both
+# esm_embed(seq) and esm_nearest(seq) on the same sequence get one forward
+# pass instead of two. Thread-safe via the inference lock on population.
+_esm_embed_cache: Dict[str, Any] = {}  # sha1 -> numpy.ndarray (640,) float32
 
 
 # ---------------------------------------------------------------------------
@@ -320,6 +346,7 @@ def _run_diamond(sequence: str, top_k: int = 100) -> List[Dict[str, Any]]:
             "go_terms": entry.get("go_terms_mfo", []),
             "description": entry.get("description", ""),
             "sequence": sequences.get(accession, ""),
+            "organism": entry.get("organism", ""),
         })
     return hits
 
@@ -405,6 +432,203 @@ def make_score() -> Callable[[Dict[str, float], List[str]], Dict[str, Any]]:
         return fmax_with_ancestor_closure(predictions, hypothesized_gt, dag)
 
     return score
+
+
+# ---------------------------------------------------------------------------
+# ESM-2 embeddings — precomputed train cache + lazy model
+# ---------------------------------------------------------------------------
+
+def _load_esm_cache():
+    """Load the precomputed (embeddings_matrix, accessions_list) cache.
+
+    Lazy, once per process. Both outputs are written by
+    scripts/compute_esm_embeddings.py during setup.sh step 9.
+
+    Memory: ~470MB resident (183K × 640 float32). Held process-wide.
+    """
+    global _esm_embeddings, _esm_accessions
+    with _esm_cache_lock:
+        if _esm_embeddings is not None and _esm_accessions is not None:
+            return _esm_embeddings, _esm_accessions
+        if not ESM_EMBEDDINGS_NPY.exists() or not ESM_ACCESSIONS_JSON.exists():
+            raise FileNotFoundError(
+                f"ESM-2 cache not found at {ESM_EMBEDDINGS_NPY} / {ESM_ACCESSIONS_JSON}. "
+                f"Run setup.sh (step 9) to precompute embeddings over the ProteInfer-train "
+                f"subset of SwissProt."
+            )
+        import json
+        import numpy as np
+        logger.info(f"Loading ESM embeddings from {ESM_EMBEDDINGS_NPY}...")
+        _esm_embeddings = np.load(ESM_EMBEDDINGS_NPY)
+        with open(ESM_ACCESSIONS_JSON) as f:
+            _esm_accessions = json.load(f)
+        logger.info(f"Loaded ESM cache: {_esm_embeddings.shape[0]} proteins × "
+                    f"{_esm_embeddings.shape[1]}-dim")
+        return _esm_embeddings, _esm_accessions
+
+
+def _load_esm_model():
+    """Load the ESM-2 150M model into memory.
+
+    Lazy, once per process. First call downloads ~600MB of weights into
+    torch.hub cache; subsequent calls reuse the cached weights. Held
+    process-wide (~600MB model + ~140MB cached activations).
+    """
+    global _esm_model, _esm_batch_converter, _esm_repr_layer, _esm_device
+    with _esm_model_lock:
+        if _esm_model is not None:
+            return _esm_model, _esm_batch_converter, _esm_repr_layer, _esm_device
+        try:
+            import esm
+            import torch
+        except ImportError as e:
+            raise ImportError(
+                "fair-esm / torch not installed. Run:\n"
+                "    pip install -r examples/protein_go/requirements.txt"
+            ) from e
+
+        # Device: cuda > mps > cpu
+        if torch.cuda.is_available():
+            device = "cuda"
+        elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+            device = "mps"
+        else:
+            device = "cpu"
+
+        logger.info(f"Loading ESM model {ESM_MODEL_NAME!r} onto {device}...")
+        model_fn = getattr(esm.pretrained, ESM_MODEL_NAME)
+        model, alphabet = model_fn()
+        model.eval()
+        model = model.to(device)
+
+        _esm_model = model
+        _esm_batch_converter = alphabet.get_batch_converter()
+        _esm_repr_layer = model.num_layers  # 30 for the 150M variant
+        _esm_device = device
+        logger.info(f"ESM model ready (repr_layer={_esm_repr_layer}, "
+                    f"embed_dim={model.embed_dim})")
+        return _esm_model, _esm_batch_converter, _esm_repr_layer, _esm_device
+
+
+def _embed_query(sequence: str, max_length: int = 1022):
+    """Run ESM-2 forward pass on a single query, return an (embed_dim,)
+    L2-normalized float32 numpy vector.
+
+    Results are cached by sha1(sequence[:max_length]) for the lifetime of the
+    process, so agents calling both esm_embed() and esm_nearest() on the same
+    sequence pay a single forward pass. Forward passes are serialized across
+    threads via `_esm_inference_lock` because PyTorch models are not
+    thread-safe under concurrent inference (notably on CUDA/MPS).
+    """
+    import numpy as np
+    import torch
+
+    seq = sequence[:max_length] if max_length and len(sequence) > max_length else sequence
+    cache_key = hashlib.sha1(seq.encode()).hexdigest()[:16]
+
+    # Fast path: cache hit (no lock needed for reads of immutable arrays)
+    cached = _esm_embed_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    model, batch_converter, repr_layer, device = _load_esm_model()
+
+    # Serialize the forward pass: PyTorch modules are not thread-safe.
+    # Also prevents duplicate work if multiple threads hit the same cache
+    # miss simultaneously (double-checked locking pattern).
+    with _esm_inference_lock:
+        cached = _esm_embed_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        _, _, tokens = batch_converter([("query", seq)])
+        tokens = tokens.to(device)
+        with torch.no_grad():
+            out = model(tokens, repr_layers=[repr_layer])
+        reps = out["representations"][repr_layer]  # (1, seq_len, dim)
+        # Residue indices: [1, len(seq)+1) — skip BOS at 0 and EOS at len(seq)+1.
+        vec = reps[0, 1 : len(seq) + 1].mean(dim=0)
+        vec = vec / (vec.norm() + 1e-12)
+        result = vec.cpu().numpy().astype(np.float32)
+        _esm_embed_cache[cache_key] = result
+        return result
+
+
+def make_esm_embed() -> Callable[[str], List[float]]:
+    """Create an esm_embed(sequence) -> list[float] callable.
+
+    Embeds the query sequence with ESM-2 150M, mean-pools over residues,
+    L2-normalizes. Returns a 640-dim list of floats suitable for cosine
+    similarity (a dot product on L2-normalized vectors).
+    """
+
+    def esm_embed(sequence: str) -> List[float]:
+        vec = _embed_query(sequence)
+        return vec.tolist()
+
+    return esm_embed
+
+
+def make_esm_nearest() -> Callable[..., List[Dict[str, Any]]]:
+    """Create an esm_nearest(sequence, top_k=50, min_similarity=0.0) callable.
+
+    Embeds the query and returns the top-K nearest ProteInfer-train proteins
+    by cosine similarity. Return shape parallels blast() hits — same fields
+    (accession, go_terms, description, sequence, organism) with
+    cosine_similarity in place of identity — so agents can compose both
+    retrievers uniformly. `min_similarity` is the embedding-space analogue
+    of blast()'s min_identity: hits below the threshold are dropped before
+    the top-K truncation.
+    """
+
+    def esm_nearest(
+        sequence: str,
+        top_k: int = 50,
+        min_similarity: float = 0.0,
+    ) -> List[Dict[str, Any]]:
+        import numpy as np
+
+        embeddings, accessions = _load_esm_cache()
+        uniprot_dict = _load_uniprot_dict()
+        sequences = _load_sequences()
+
+        query_vec = _embed_query(sequence)
+        # embeddings is already L2-normalized row-wise at setup time,
+        # and query_vec is L2-normalized by _embed_query — so the
+        # dot product equals cosine similarity.
+        sims = embeddings @ query_vec  # shape (N,)
+
+        # Filter by threshold first, then top-K. Partition on the
+        # surviving subset for efficiency.
+        if min_similarity > 0.0:
+            mask = sims >= min_similarity
+            survivor_idx = np.nonzero(mask)[0]
+            if survivor_idx.size == 0:
+                return []
+            survivor_sims = sims[survivor_idx]
+            k = min(top_k, survivor_idx.size)
+            part = np.argpartition(-survivor_sims, k - 1)[:k]
+            order = part[np.argsort(-survivor_sims[part])]
+            idx = survivor_idx[order]
+        else:
+            k = min(top_k, sims.shape[0])
+            idx = np.argpartition(-sims, k - 1)[:k]
+            idx = idx[np.argsort(-sims[idx])]
+
+        hits: List[Dict[str, Any]] = []
+        for i in idx:
+            acc = accessions[int(i)]
+            entry = uniprot_dict.get(acc, {})
+            hits.append({
+                "accession": acc,
+                "cosine_similarity": float(sims[int(i)]),
+                "go_terms": entry.get("go_terms_mfo", []),
+                "description": entry.get("description", ""),
+                "sequence": sequences.get(acc, ""),
+                "organism": entry.get("organism", ""),
+            })
+        return hits
+
+    return esm_nearest
 
 
 # ---------------------------------------------------------------------------

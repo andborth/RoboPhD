@@ -17,12 +17,16 @@
 #      protocol and prevents test proteins from self-hitting the BLAST database)
 #   - Validation / test JSONL splits aligned with ProteInfer dev / test
 #   - Price-149 JSONL with EC labels mapped to GO-MFO terms via ec2go
+#   - ESM-2 150M embedding cache over swissprot_train.fasta (~470MB .npy)
+#     — backs the agent's esm_nearest() tool; precomputed once
 #
-# Total runtime: ~20-30 min on a fast connection.
+# Total runtime: ~60-90 min on laptop CPU (dominated by step 9's ESM sweep);
+# much faster on CUDA/MPS.
 #
 # Requirements:
 #   - DIAMOND binary on PATH (conda install -c bioconda diamond)
-#   - Python with biopython, tfrecord (pip install biopython tfrecord)
+#   - Python with biopython, tfrecord, fair-esm
+#     (pip install -r examples/protein_go/requirements.txt)
 #   - curl, gunzip
 #
 set -euo pipefail
@@ -45,14 +49,14 @@ if ! command -v diamond >/dev/null 2>&1; then
     echo "Install with: conda install -c bioconda diamond"
     exit 1
 fi
-echo "[1/8] DIAMOND found: $(diamond --version 2>&1 | head -1)"
+echo "[1/9] DIAMOND found: $(diamond --version 2>&1 | head -1)"
 
 if ! python3 -c "import Bio" 2>/dev/null; then
     echo "ERROR: biopython not installed."
     echo "Install with: pip install biopython"
     exit 1
 fi
-echo "[1/8] biopython found"
+echo "[1/9] biopython found"
 
 if ! python3 -c "import tfrecord" 2>/dev/null; then
     echo "ERROR: tfrecord package not installed."
@@ -60,7 +64,16 @@ if ! python3 -c "import tfrecord" 2>/dev/null; then
     echo "(Lightweight TFRecord reader — does not require TensorFlow.)"
     exit 1
 fi
-echo "[1/8] tfrecord found"
+echo "[1/9] tfrecord found"
+
+if ! python3 -c "import esm" 2>/dev/null; then
+    echo "ERROR: fair-esm not installed."
+    echo "Install with: pip install -r examples/protein_go/requirements.txt"
+    echo "(ESM-2 150M is needed by step 9's embedding-cache build and by the"
+    echo " agent's esm_embed() / esm_nearest() tools at runtime.)"
+    exit 1
+fi
+echo "[1/9] fair-esm found"
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +85,7 @@ SWISSPROT_FASTA="$DATA/uniprot_sprot.fasta"
 SWISSPROT_DAT="$DATA/uniprot_sprot.dat"
 
 if [[ ! -f "$SWISSPROT_FASTA" ]]; then
-    echo "[2/8] Downloading SwissProt $SWISSPROT_RELEASE release tarball (~1.4 GB)..."
+    echo "[2/9] Downloading SwissProt $SWISSPROT_RELEASE release tarball (~1.4 GB)..."
     curl -fL --retry 3 \
         "https://ftp.uniprot.org/pub/databases/uniprot/previous_releases/release-${SWISSPROT_RELEASE}/knowledgebase/uniprot_sprot-only${SWISSPROT_RELEASE}.tar.gz" \
         -o "$DATA/sprot.tar.gz"
@@ -81,7 +94,7 @@ if [[ ! -f "$SWISSPROT_FASTA" ]]; then
     gunzip "$DATA/uniprot_sprot.fasta.gz"
     gunzip "$DATA/uniprot_sprot.dat.gz"
 else
-    echo "[2/8] SwissProt already present, skipping"
+    echo "[2/9] SwissProt already present, skipping"
 fi
 
 
@@ -91,12 +104,12 @@ fi
 
 PARSED_PKL="$DATA/swissprot_entries.pkl"
 if [[ ! -f "$PARSED_PKL" ]]; then
-    echo "[3/8] Parsing SwissProt flat file (~3-5 min)..."
+    echo "[3/9] Parsing SwissProt flat file (~3-5 min)..."
     python3 "$HERE/scripts/parse_swissprot.py" \
         --input "$SWISSPROT_DAT" \
         --output "$PARSED_PKL"
 else
-    echo "[3/8] Parsed SwissProt already present, skipping"
+    echo "[3/9] Parsed SwissProt already present, skipping"
 fi
 
 
@@ -106,18 +119,18 @@ fi
 
 GO_OBO="$DATA/go-basic.obo"
 if [[ ! -f "$GO_OBO" ]]; then
-    echo "[4/8] Downloading GO ontology..."
+    echo "[4/9] Downloading GO ontology..."
     curl -fL --retry 3 "http://purl.obolibrary.org/obo/go/go-basic.obo" -o "$GO_OBO"
 else
-    echo "[4/8] GO ontology already present, skipping"
+    echo "[4/9] GO ontology already present, skipping"
 fi
 
 EC2GO="$DATA/ec2go.txt"
 if [[ ! -f "$EC2GO" ]]; then
-    echo "[4/8] Downloading ec2go mapping (EC number -> GO term)..."
+    echo "[4/9] Downloading ec2go mapping (EC number -> GO term)..."
     curl -fL --retry 3 "http://current.geneontology.org/ontology/external2go/ec2go" -o "$EC2GO"
 else
-    echo "[4/8] ec2go mapping already present, skipping"
+    echo "[4/9] ec2go mapping already present, skipping"
 fi
 
 
@@ -135,7 +148,7 @@ PROTEINFER_DIR="$DATA/proteinfer"
 PROTEINFER_BASE="https://storage.googleapis.com/brain-genomics-public/research/proteins/proteinfer/datasets/swissprot/clustered"
 
 if [[ ! -f "$PROTEINFER_DIR/test.tfrecord" ]]; then
-    echo "[5/8] Downloading ProteInfer clustered-split TFRecords (~900 MB)..."
+    echo "[5/9] Downloading ProteInfer clustered-split TFRecords (~900 MB)..."
     mkdir -p "$PROTEINFER_DIR"
     for split in train dev test; do
         if [[ ! -f "$PROTEINFER_DIR/${split}.tfrecord" ]]; then
@@ -144,7 +157,7 @@ if [[ ! -f "$PROTEINFER_DIR/test.tfrecord" ]]; then
         fi
     done
 else
-    echo "[5/8] ProteInfer split already downloaded, skipping"
+    echo "[5/9] ProteInfer split already downloaded, skipping"
 fi
 
 
@@ -158,14 +171,14 @@ fi
 
 PRICE149_CSV="$DATA/price149_raw.csv"
 if [[ ! -f "$PRICE149_CSV" ]]; then
-    echo "[6/8] Downloading Price-149 from CLEAN repository..."
+    echo "[6/9] Downloading Price-149 from CLEAN repository..."
     # Note: the file has a .csv extension but is actually tab-separated.
     # build_splits.py reads it with delimiter="\t".
     curl -fL --retry 3 \
         "https://raw.githubusercontent.com/tttianhao/CLEAN/main/app/data/datasets/price.csv" \
         -o "$PRICE149_CSV"
 else
-    echo "[6/8] Price-149 already downloaded, skipping"
+    echo "[6/9] Price-149 already downloaded, skipping"
 fi
 
 
@@ -182,20 +195,20 @@ SWISSPROT_TRAIN_FASTA="$DATA/swissprot_train.fasta"
 DIAMOND_DB="$DATA/swissprot_train.dmnd"
 
 if [[ ! -f "$SWISSPROT_TRAIN_FASTA" ]]; then
-    echo "[7/8] Filtering SwissProt FASTA to ProteInfer train subset (~1 min)..."
+    echo "[7/9] Filtering SwissProt FASTA to ProteInfer train subset (~1 min)..."
     python3 "$HERE/scripts/filter_fasta_by_accessions.py" \
         --input "$SWISSPROT_FASTA" \
         --tfrecord "$PROTEINFER_DIR/train.tfrecord" \
         --output "$SWISSPROT_TRAIN_FASTA"
 else
-    echo "[7/8] Filtered train FASTA already present, skipping"
+    echo "[7/9] Filtered train FASTA already present, skipping"
 fi
 
 if [[ ! -f "$DIAMOND_DB" ]]; then
-    echo "[7/8] Building DIAMOND index on train subset (~1-2 min)..."
+    echo "[7/9] Building DIAMOND index on train subset (~1-2 min)..."
     diamond makedb --in "$SWISSPROT_TRAIN_FASTA" --db "$DIAMOND_DB" --quiet
 else
-    echo "[7/8] DIAMOND index already built, skipping"
+    echo "[7/9] DIAMOND index already built, skipping"
 fi
 
 
@@ -211,7 +224,7 @@ TEST_JSONL="$DATA/test.jsonl"
 PRICE149_JSONL="$DATA/price149.jsonl"
 
 if [[ ! -f "$VAL_JSONL" || ! -f "$TEST_JSONL" || ! -f "$PRICE149_JSONL" ]]; then
-    echo "[8/8] Building JSONL splits..."
+    echo "[8/9] Building JSONL splits..."
     python3 "$HERE/scripts/build_splits.py" \
         --parsed "$PARSED_PKL" \
         --fasta "$SWISSPROT_FASTA" \
@@ -225,7 +238,32 @@ if [[ ! -f "$VAL_JSONL" || ! -f "$TEST_JSONL" || ! -f "$PRICE149_JSONL" ]]; then
         --test-size 1000 \
         --seed 0
 else
-    echo "[8/8] Splits already built, skipping"
+    echo "[8/9] Splits already built, skipping"
+fi
+
+
+# ---------------------------------------------------------------------------
+# 9. Precompute ESM-2 150M embeddings over the ProteInfer-train subset
+# ---------------------------------------------------------------------------
+#
+# Populates the cache queried at runtime by the agent's esm_nearest() tool
+# (BLAST-analogue in embedding space). First run downloads ~600MB of ESM-2
+# weights into the torch.hub cache; the embedding sweep over ~183K train
+# proteins takes ~45-90 min on laptop CPU, minutes on CUDA/MPS. Output:
+# ~470MB .npy matrix + ~5MB .json accession index. Total extra ~1.1GB
+# resident memory per evaluator process at runtime (weights + matrix).
+
+ESM_EMBEDDINGS_NPY="$DATA/esm_train_embeddings.npy"
+ESM_ACCESSIONS_JSON="$DATA/esm_train_accessions.json"
+
+if [[ ! -f "$ESM_EMBEDDINGS_NPY" || ! -f "$ESM_ACCESSIONS_JSON" ]]; then
+    echo "[9/9] Computing ESM-2 150M embeddings for ProteInfer-train (~45-90 min CPU, minutes on GPU)..."
+    python3 "$HERE/scripts/compute_esm_embeddings.py" \
+        --input-fasta "$SWISSPROT_TRAIN_FASTA" \
+        --output-embeddings "$ESM_EMBEDDINGS_NPY" \
+        --output-accessions "$ESM_ACCESSIONS_JSON"
+else
+    echo "[9/9] ESM embeddings already present, skipping"
 fi
 
 
