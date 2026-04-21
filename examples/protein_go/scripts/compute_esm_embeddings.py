@@ -83,20 +83,26 @@ def embed_batch(
     device: str,
 ) -> np.ndarray:
     """Embed one batch of (accession, sequence) pairs and return an (N, dim)
-    float32 numpy array of mean-pooled, L2-normalized embeddings."""
+    float32 numpy array of mean-pooled, L2-normalized embeddings.
+
+    If the model weights are FP16, the forward pass runs in FP16; we upcast
+    the mean-pooled vector to FP32 before normalization so the denominator
+    can't lose precision on small norms. Output is always FP32.
+    """
     import torch
 
     _, _, tokens = batch_converter(batch)
     tokens = tokens.to(device)
     with torch.no_grad():
         out = model(tokens, repr_layers=[repr_layer])
-    reps = out["representations"][repr_layer]  # (N, seq_len, dim)
+    reps = out["representations"][repr_layer]  # (N, seq_len, dim), dtype matches model
 
     results = np.empty((len(batch), reps.shape[-1]), dtype=np.float32)
     for i, (_, seq) in enumerate(batch):
         # Tokens include BOS at index 0 and EOS at index len(seq)+1.
-        # Mean-pool over the actual residue positions only.
-        protein_repr = reps[i, 1 : len(seq) + 1].mean(dim=0)
+        # Mean-pool over the actual residue positions only. Upcast to FP32
+        # before the L2 normalize for numerical safety if reps is FP16.
+        protein_repr = reps[i, 1 : len(seq) + 1].mean(dim=0).float()
         protein_repr = protein_repr / (protein_repr.norm() + 1e-12)
         results[i] = protein_repr.cpu().numpy().astype(np.float32)
     return results
@@ -128,6 +134,12 @@ def main() -> None:
                              "ESM-2 was trained on contexts up to 1024 tokens total.")
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda", "mps"],
                         help="Torch device. 'auto' picks cuda > mps > cpu.")
+    parser.add_argument("--fp16", action=argparse.BooleanOptionalAction, default=True,
+                        help="Run the forward pass in FP16 on GPU/MPS devices. Roughly 2x "
+                             "throughput and 2x less memory pressure, with negligible "
+                             "embedding-quality loss for cosine-similarity retrieval. "
+                             "Automatically disabled on CPU (not worth it). "
+                             "Use --no-fp16 to force FP32 on GPU/MPS for reproducibility / debugging.")
     parser.add_argument("--log-every", type=int, default=500,
                         help="Log progress every N sequences.")
     args = parser.parse_args()
@@ -155,6 +167,19 @@ def main() -> None:
     model, alphabet = model_fn()
     model.eval()
     model = model.to(device)
+
+    # FP16 halves memory pressure and roughly doubles throughput on MPS/CUDA.
+    # Not beneficial on CPU (no dedicated FP16 hardware in typical x86 / ARM
+    # CPUs; CPU runs prefer FP32). Output embeddings are still emitted as
+    # FP32 after an upcast inside embed_batch().
+    use_fp16 = args.fp16 and device in ("cuda", "mps")
+    if use_fp16:
+        model = model.half()
+        logger.info(f"Model converted to FP16 ({device})")
+    else:
+        logger.info(f"Model kept in FP32 "
+                    f"({'CPU path' if device == 'cpu' else 'FP16 disabled by flag'})")
+
     batch_converter = alphabet.get_batch_converter()
     repr_layer = model.num_layers  # final layer (30 for 150M)
     logger.info(f"Model loaded in {time.time() - t0:.1f}s; "
@@ -196,11 +221,22 @@ def main() -> None:
     accessions: List[str] = []
     all_embeddings: List[np.ndarray] = []
 
+    # Pre-compute total token work for an honest ETA. Length-bucketed
+    # order means seq/sec rate is NOT constant: it starts low (longest
+    # sequences first) and climbs as batches shorten. Tokens-of-work
+    # per second, however, stays roughly constant — so a token-based ETA
+    # gives an accurate projection from iteration 1. +2 per sequence for
+    # BOS/EOS tokens, matching what batch_converter adds.
+    total_tokens = sum(len(seq) + 2 for _, seq in all_records)
+    logger.info(f"Total tokens to process: {total_tokens / 1e6:.1f}M "
+                f"(avg {total_tokens / total:.0f} per sequence)")
+
     # Log at explicit milestones so the predicate is correct regardless of
     # whether batch_size happens to divide log_every evenly.
     next_log_at = args.log_every
 
     n_seen = 0
+    tokens_done = 0
     t_start = time.time()
     for start in range(0, total, args.batch_size):
         batch = all_records[start : start + args.batch_size]
@@ -209,12 +245,17 @@ def main() -> None:
         for acc, _ in batch:
             accessions.append(acc)
         n_seen += len(batch)
+        tokens_done += sum(len(seq) + 2 for _, seq in batch)
         if n_seen >= next_log_at or n_seen == total:
-            rate = n_seen / max(time.time() - t_start, 1e-6)
-            eta = (total - n_seen) / max(rate, 1e-6)
-            logger.info(f"Embedded {n_seen}/{total} ({rate:.1f}/s, "
+            elapsed = max(time.time() - t_start, 1e-6)
+            seq_rate = n_seen / elapsed
+            tok_rate = tokens_done / elapsed
+            remaining_tokens = total_tokens - tokens_done
+            eta_sec = remaining_tokens / max(tok_rate, 1e-6)
+            logger.info(f"Embedded {n_seen}/{total} "
+                        f"({seq_rate:.1f} seq/s, {tok_rate:.0f} tok/s, "
                         f"current_batch_len={len(batch[0][1])}, "
-                        f"ETA {eta/60:.1f} min)")
+                        f"ETA {eta_sec / 60:.1f} min)")
             # Advance past whatever milestone we just crossed.
             next_log_at = ((n_seen // args.log_every) + 1) * args.log_every
 
