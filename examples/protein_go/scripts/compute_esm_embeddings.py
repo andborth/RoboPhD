@@ -11,8 +11,18 @@ Outputs a (N, 640) float32 numpy matrix plus a JSON index of N accessions
 layer 30 (the final hidden state) and L2-normalizes each row so cosine
 similarity is a plain dot product at query time.
 
+Scope: by default, reads the entire FASTA into memory up front to enable
+length-bucketed batching. That costs O(N) Python-string memory — ~200MB
+for 183K SwissProt proteins, fine for this use case. If you ever point
+this at a much larger FASTA (UniRef90 has ~100M entries), you'll need to
+refactor to stream batches or shard the input. `--no-length-bucketed`
+avoids the sort but still materializes everything because the batching
+loop reads a pre-built list; a true streaming path would require
+restructuring the main loop.
+
 First-time setup: downloads ~600MB of ESM-2 150M weights into the user's
-torch.hub cache. Runtime: ~45-90min on laptop CPU, minutes on CUDA/MPS.
+torch.hub cache. Runtime: ~45-90min on laptop CPU, ~15-30min on MPS with
+length-bucketed batching, minutes on CUDA.
 """
 
 from __future__ import annotations
@@ -186,6 +196,10 @@ def main() -> None:
     accessions: List[str] = []
     all_embeddings: List[np.ndarray] = []
 
+    # Log at explicit milestones so the predicate is correct regardless of
+    # whether batch_size happens to divide log_every evenly.
+    next_log_at = args.log_every
+
     n_seen = 0
     t_start = time.time()
     for start in range(0, total, args.batch_size):
@@ -195,13 +209,14 @@ def main() -> None:
         for acc, _ in batch:
             accessions.append(acc)
         n_seen += len(batch)
-        # Log at ~every args.log_every sequences
-        if n_seen % args.log_every < args.batch_size or n_seen == total:
+        if n_seen >= next_log_at or n_seen == total:
             rate = n_seen / max(time.time() - t_start, 1e-6)
             eta = (total - n_seen) / max(rate, 1e-6)
             logger.info(f"Embedded {n_seen}/{total} ({rate:.1f}/s, "
                         f"current_batch_len={len(batch[0][1])}, "
                         f"ETA {eta/60:.1f} min)")
+            # Advance past whatever milestone we just crossed.
+            next_log_at = ((n_seen // args.log_every) + 1) * args.log_every
 
     matrix = np.concatenate(all_embeddings, axis=0)
     assert matrix.shape[0] == len(accessions), (
