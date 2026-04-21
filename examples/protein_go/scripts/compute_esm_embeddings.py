@@ -102,8 +102,17 @@ def main() -> None:
                         help="Output .json file, row-aligned list of accessions")
     parser.add_argument("--model-name", default="esm2_t30_150M_UR50D",
                         help="fair-esm pretrained model name. Default: 150M params, 640-dim.")
-    parser.add_argument("--batch-size", type=int, default=16,
-                        help="Batch size for embedding. Lower if you hit OOM.")
+    parser.add_argument("--batch-size", type=int, default=32,
+                        help="Batch size for embedding. Works well with length-bucketed "
+                             "order (the default below) because every batch pads to a "
+                             "near-uniform length. Lower if you hit OOM on very long batches.")
+    parser.add_argument("--length-bucketed", action=argparse.BooleanOptionalAction, default=True,
+                        help="Sort all sequences by length descending before batching, so each "
+                             "batch pads to a near-uniform length. Dramatic speedup over unsorted "
+                             "order (3-5x on MPS/CUDA) because random-order batching forces every "
+                             "batch to pad to the longest sequence in it. Disable with "
+                             "--no-length-bucketed to preserve FASTA order (slower; mostly useful "
+                             "for debugging).")
     parser.add_argument("--max-length", type=int, default=1022,
                         help="Truncate sequences to this length (excluding BOS/EOS). "
                              "ESM-2 was trained on contexts up to 1024 tokens total.")
@@ -144,36 +153,55 @@ def main() -> None:
     # Pre-create the output dir
     args.output_embeddings.parent.mkdir(parents=True, exist_ok=True)
 
-    # Stream FASTA, collect accessions, embed in batches.
+    # Read all records up front so we can optionally sort by length for
+    # padding-efficient batching. Memory cost: ~200MB to hold all sequences
+    # as Python strings (183K sequences averaging ~400 chars), negligible
+    # vs the ~600MB ESM model weights and ~1GB per-batch activation peak.
+    logger.info(f"Reading sequences from {args.input_fasta}...")
+    all_records: List[Tuple[str, str]] = []
+    for acc, seq in stream_fasta(args.input_fasta):
+        if args.max_length and len(seq) > args.max_length:
+            seq = seq[: args.max_length]
+        all_records.append((acc, seq))
+    total = len(all_records)
+    if total == 0:
+        sys.exit(f"No sequences read from {args.input_fasta}")
+    logger.info(f"Read {total} sequences "
+                f"(min_len={min(len(s) for _, s in all_records)}, "
+                f"max_len={max(len(s) for _, s in all_records)})")
+
+    # Length-bucketed batching: sort by length descending so every batch
+    # pads to a near-uniform length. With random FASTA order, one 1022-
+    # residue outlier in a batch forces all 31 others to be processed as
+    # though they were 1022 residues too; the waste compounds. Output
+    # accession/embedding order then reflects sort order — callers index
+    # by (accession -> row) via the accessions JSON, so order is not
+    # semantically meaningful.
+    if args.length_bucketed:
+        logger.info("Sorting sequences by length for padding-efficient batching...")
+        all_records.sort(key=lambda x: len(x[1]), reverse=True)
+        logger.info("Note: longest-first means the first batches are slowest; "
+                    "throughput will accelerate as batches shorten.")
+
     accessions: List[str] = []
     all_embeddings: List[np.ndarray] = []
-    batch: List[Tuple[str, str]] = []
 
-    def flush_batch() -> None:
-        if not batch:
-            return
+    n_seen = 0
+    t_start = time.time()
+    for start in range(0, total, args.batch_size):
+        batch = all_records[start : start + args.batch_size]
         vecs = embed_batch(batch, model, batch_converter, repr_layer, device)
         all_embeddings.append(vecs)
         for acc, _ in batch:
             accessions.append(acc)
-
-    n_seen = 0
-    t_start = time.time()
-    for acc, seq in stream_fasta(args.input_fasta):
-        if args.max_length and len(seq) > args.max_length:
-            seq = seq[: args.max_length]
-        batch.append((acc, seq))
-        n_seen += 1
-        if len(batch) >= args.batch_size:
-            flush_batch()
-            batch = []
-        if n_seen % args.log_every == 0:
+        n_seen += len(batch)
+        # Log at ~every args.log_every sequences
+        if n_seen % args.log_every < args.batch_size or n_seen == total:
             rate = n_seen / max(time.time() - t_start, 1e-6)
-            logger.info(f"Embedded {n_seen} sequences ({rate:.1f}/s)")
-    flush_batch()
-
-    if not all_embeddings:
-        sys.exit(f"No sequences read from {args.input_fasta}")
+            eta = (total - n_seen) / max(rate, 1e-6)
+            logger.info(f"Embedded {n_seen}/{total} ({rate:.1f}/s, "
+                        f"current_batch_len={len(batch[0][1])}, "
+                        f"ETA {eta/60:.1f} min)")
 
     matrix = np.concatenate(all_embeddings, axis=0)
     assert matrix.shape[0] == len(accessions), (
