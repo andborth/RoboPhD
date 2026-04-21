@@ -4,8 +4,14 @@ biopython
 # DataFrame schema — if cafaeval changes shape, update that access site.
 cafaeval
 tfrecord
+# torch: backend for fair-esm. Listed explicitly because recent fair-esm
+# packaging doesn't always pull torch transitively (observed on clean
+# conda envs). Pick the right variant for your hardware:
+#   CPU-only:  pip install torch
+#   CUDA:      pip install torch --index-url https://download.pytorch.org/whl/cu121
+#   ROCm, etc: see https://pytorch.org/get-started/locally/
+torch
 # fair-esm: Meta's ESM-2 protein language model. Used by the esm_embed /
 # esm_nearest agent tools and the one-time setup.sh step that precomputes
-# embeddings over the ProteInfer-train subset of SwissProt. Pulls in torch
-# as a transitive dep (~2 GB install).
+# embeddings over the ProteInfer-train subset of SwissProt.
 fair-esm

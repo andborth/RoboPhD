@@ -66,6 +66,14 @@ if ! python3 -c "import tfrecord" 2>/dev/null; then
 fi
 echo "[1/9] tfrecord found"
 
+if ! python3 -c "import torch" 2>/dev/null; then
+    echo "ERROR: torch not installed (required by fair-esm)."
+    echo "Install with: pip install -r examples/protein_go/requirements.txt"
+    echo "(Or pick a platform-specific wheel: https://pytorch.org/get-started/locally/)"
+    exit 1
+fi
+echo "[1/9] torch found"
+
 if ! python3 -c "import esm" 2>/dev/null; then
     echo "ERROR: fair-esm not installed."
     echo "Install with: pip install -r examples/protein_go/requirements.txt"
