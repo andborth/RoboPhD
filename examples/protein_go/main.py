@@ -31,6 +31,7 @@ import json
 import logging
 import sys
 from pathlib import Path
+from typing import Dict, Optional
 
 HERE = Path(__file__).resolve().parent
 
@@ -104,6 +105,12 @@ def parse_args():
     parser.add_argument("--eval-only", action="store_true",
                         help="Skip optimization; evaluate best agent from --resume dir on the "
                              "splits requested via --eval-test-set / --eval-price149")
+    parser.add_argument("--eval-agent", type=str, default=None,
+                        help="Name of a specific agent from the --resume run's agent_pool to "
+                             "evaluate (e.g. 'seed_407zcoan' to baseline the seed). Requires "
+                             "--eval-only. Defaults to the best-ELO agent. Output file is "
+                             "suffixed with the agent name so results don't overwrite the "
+                             "default 'test_results.json' / 'price149_results.json'.")
     parser.add_argument("--skip-cafa-fmax", action="store_true",
                         help="Skip the batch CAFA Fmax computation during test eval (per-protein only)")
 
@@ -125,6 +132,43 @@ _EVAL_SPLITS = [
     ("test",     "eval_test_set",  "Test (ProteInfer clustered)", "test_results.json",     "cafa_eval"),
     ("price149", "eval_price149",  "Price-149",                   "price149_results.json", "cafa_eval_price149"),
 ]
+
+
+def _load_named_agent(run_dir: Path, agent_name: str) -> Dict[str, str]:
+    """Load a specifically-named agent's source from a RoboPhD run's agent_pool.
+
+    Returns the candidate dict keyed by the task's file_mapping
+    (for protein_go that's just {"agent.py": source}). Surfaces a clear
+    error listing available names if the lookup fails.
+    """
+    checkpoint = run_dir / "checkpoint.json"
+    if not checkpoint.exists():
+        raise FileNotFoundError(
+            f"--eval-agent requires a RoboPhD run with a checkpoint.json. "
+            f"Not found in: {run_dir}"
+        )
+    with open(checkpoint) as f:
+        cp = json.load(f)
+    # Distinguish malformed/schema-drifted checkpoint from a bad agent name:
+    # a missing agent_pool key is a checkpoint integrity issue, whereas an
+    # empty agent_pool is a legitimate (if unusual) state that can surface
+    # a "not found" error.
+    if "agent_pool" not in cp:
+        raise FileNotFoundError(
+            f"Checkpoint at {checkpoint} has no agent_pool key (schema error)."
+        )
+    agent_pool = cp["agent_pool"]
+    if agent_name not in agent_pool:
+        available = sorted(agent_pool.keys())
+        raise SystemExit(
+            f"Agent '{agent_name}' not found in agent_pool of {run_dir}.\n"
+            f"Available ({len(available)}): {', '.join(available)}"
+        )
+    package_dir = agent_pool[agent_name].get("package_dir", f"agents/{agent_name}")
+    agent_dir = run_dir / package_dir
+    if not agent_dir.exists():
+        raise FileNotFoundError(f"Agent directory does not exist: {agent_dir}")
+    return {"agent.py": (agent_dir / "agent.py").read_text()}
 
 
 def _write_split_report(
@@ -252,7 +296,10 @@ def main():
     logger.info(f"Evolution pool: {len(val)} proteins (ProteInfer dev split); "
                 f"BLAST DB is the ProteInfer-train subset of SwissProt.")
 
-    # --eval-only: skip optimization, evaluate best agent from a prior run
+    if args.eval_agent and not args.eval_only:
+        raise SystemExit("--eval-agent requires --eval-only")
+
+    # --eval-only: skip optimization, evaluate an agent from a prior run
     if args.eval_only:
         if not args.resume:
             raise SystemExit("--eval-only requires --resume <experiment_dir>")
@@ -261,12 +308,34 @@ def main():
             # Unadorned --eval-only defaults to the test split (ProteInfer clustered).
             requested = [_EVAL_SPLITS[0]]
         resume_dir = Path(args.resume)
+
+        # Load the named agent up front so we fail fast if the name is wrong,
+        # before spending time on dataset loading or inference.
+        named_candidate: Optional[Dict[str, str]] = None
+        if args.eval_agent:
+            named_candidate = _load_named_agent(resume_dir, args.eval_agent)
+            logger.info(f"Evaluating named agent: {args.eval_agent}")
+        else:
+            logger.info("Evaluating best-ELO agent (pass --eval-agent <name> to override)")
+
         for split, _attr, label, results_filename, cafa_subdir in requested:
             data = load_protein_go(split)
             logger.info(f"{label} evaluation: {len(data)} proteins")
-            eval_result = eval_run(
-                evaluator=evaluator, dataset=data, experiment_dir=args.resume
-            )
+            if named_candidate is not None:
+                eval_result = eval_candidate(
+                    evaluator=evaluator, dataset=data, candidate=named_candidate,
+                    config=RoboPhDEvalConfig(max_workers=args.max_workers),
+                )
+            else:
+                eval_result = eval_run(
+                    evaluator=evaluator, dataset=data, experiment_dir=args.resume
+                )
+            # Suffix output filenames with the agent name so named-agent
+            # runs don't overwrite the default best-ELO results on disk.
+            if args.eval_agent:
+                stem = Path(results_filename).stem  # 'test_results' etc.
+                results_filename = f"{stem}_{args.eval_agent}.json"
+                cafa_subdir = f"{cafa_subdir}_{args.eval_agent}"
             _write_split_report(
                 eval_result=eval_result, data=data, evaluator=evaluator,
                 args=args, output_dir=resume_dir,
