@@ -147,36 +147,18 @@ def _load_candidate_from_run_dir(
 
 
 def _load_named_agent(run_dir: Path, agent_name: str) -> Tuple[Dict[str, str], str]:
-    """Load a specifically-named agent from a RoboPhD run's agent_pool."""
-    checkpoint = run_dir / "checkpoint.json"
-    if not checkpoint.exists():
-        raise FileNotFoundError(
-            f"--eval-agent is only supported on RoboPhD runs (requires checkpoint.json). "
-            f"Not found in: {run_dir}"
-        )
-    with open(checkpoint) as f:
-        cp = json.load(f)
+    """Load a specifically-named agent from a RoboPhD run's agent_pool.
 
-    # Distinguish malformed/schema-drifted checkpoint from a bad agent name:
-    # a missing agent_pool key is a checkpoint integrity issue, whereas an
-    # empty agent_pool is a legitimate (if unusual) state that can surface
-    # a "not found" error.
-    if "agent_pool" not in cp:
-        raise FileNotFoundError(
-            f"Checkpoint at {checkpoint} has no agent_pool key (schema error)."
-        )
-    agent_pool = cp["agent_pool"]
-    if agent_name not in agent_pool:
-        available = sorted(agent_pool.keys())
-        raise FileNotFoundError(
-            f"Agent '{agent_name}' not found in agent_pool of {run_dir}. "
-            f"Available ({len(available)}): {', '.join(available)}"
-        )
-    package_dir = agent_pool[agent_name].get("package_dir", f"agents/{agent_name}")
-    agent_dir = run_dir / package_dir
-    if not agent_dir.exists():
-        raise FileNotFoundError(f"Agent directory does not exist: {agent_dir}")
-    return {"agent.py": (agent_dir / "agent.py").read_text()}, agent_name
+    Thin wrapper over the shared RoboPhD.runner_utils.find_named_agent
+    that adds the sudoku-specific step of reading the agent source from
+    disk and packaging it as a candidate dict. Preserves this module's
+    existing (candidate, name) return shape so _load_candidate_from_run_dir
+    and its callers don't need to change.
+    """
+    from RoboPhD.runner_utils import find_named_agent
+
+    name, agent_dir = find_named_agent(run_dir, agent_name)
+    return {"agent.py": (agent_dir / "agent.py").read_text()}, name
 
 
 def main():

@@ -43,6 +43,7 @@ from RoboPhD import (
     optimize_anything, eval_candidate, eval_run,
     RoboPhDConfig, GEPAConfig, AutoresearchConfig, RoboPhDEvalConfig,
 )
+from RoboPhD.runner_utils import find_named_agent
 
 logging.basicConfig(
     level=logging.INFO,
@@ -132,43 +133,6 @@ _EVAL_SPLITS = [
     ("test",     "eval_test_set",  "Test (ProteInfer clustered)", "test_results.json",     "cafa_eval"),
     ("price149", "eval_price149",  "Price-149",                   "price149_results.json", "cafa_eval_price149"),
 ]
-
-
-def _load_named_agent(run_dir: Path, agent_name: str) -> Dict[str, str]:
-    """Load a specifically-named agent's source from a RoboPhD run's agent_pool.
-
-    Returns the candidate dict keyed by the task's file_mapping
-    (for protein_go that's just {"agent.py": source}). Surfaces a clear
-    error listing available names if the lookup fails.
-    """
-    checkpoint = run_dir / "checkpoint.json"
-    if not checkpoint.exists():
-        raise FileNotFoundError(
-            f"--eval-agent requires a RoboPhD run with a checkpoint.json. "
-            f"Not found in: {run_dir}"
-        )
-    with open(checkpoint) as f:
-        cp = json.load(f)
-    # Distinguish malformed/schema-drifted checkpoint from a bad agent name:
-    # a missing agent_pool key is a checkpoint integrity issue, whereas an
-    # empty agent_pool is a legitimate (if unusual) state that can surface
-    # a "not found" error.
-    if "agent_pool" not in cp:
-        raise FileNotFoundError(
-            f"Checkpoint at {checkpoint} has no agent_pool key (schema error)."
-        )
-    agent_pool = cp["agent_pool"]
-    if agent_name not in agent_pool:
-        available = sorted(agent_pool.keys())
-        raise SystemExit(
-            f"Agent '{agent_name}' not found in agent_pool of {run_dir}.\n"
-            f"Available ({len(available)}): {', '.join(available)}"
-        )
-    package_dir = agent_pool[agent_name].get("package_dir", f"agents/{agent_name}")
-    agent_dir = run_dir / package_dir
-    if not agent_dir.exists():
-        raise FileNotFoundError(f"Agent directory does not exist: {agent_dir}")
-    return {"agent.py": (agent_dir / "agent.py").read_text()}
 
 
 def _write_split_report(
@@ -309,14 +273,24 @@ def main():
             requested = [_EVAL_SPLITS[0]]
         resume_dir = Path(args.resume)
 
-        # Load the named agent up front so we fail fast if the name is wrong,
-        # before spending time on dataset loading or inference.
+        # Resolve the named agent up front so we fail fast if the name is wrong,
+        # before spending time on dataset loading or inference. CLI layer
+        # translates the library's FileNotFoundError into SystemExit so the
+        # user sees a clean error message with the available-names list.
         named_candidate: Optional[Dict[str, str]] = None
         if args.eval_agent:
-            named_candidate = _load_named_agent(resume_dir, args.eval_agent)
+            try:
+                _, agent_dir = find_named_agent(resume_dir, args.eval_agent)
+            except FileNotFoundError as e:
+                raise SystemExit(str(e))
+            named_candidate = {"agent.py": (agent_dir / "agent.py").read_text()}
             logger.info(f"Evaluating named agent: {args.eval_agent}")
         else:
             logger.info("Evaluating best-ELO agent (pass --eval-agent <name> to override)")
+
+        # Shared eval config — both the named-candidate and best-ELO paths
+        # need to respect --max-workers. eval_run also accepts a config.
+        eval_cfg = RoboPhDEvalConfig(max_workers=args.max_workers)
 
         for split, _attr, label, results_filename, cafa_subdir in requested:
             data = load_protein_go(split)
@@ -324,11 +298,12 @@ def main():
             if named_candidate is not None:
                 eval_result = eval_candidate(
                     evaluator=evaluator, dataset=data, candidate=named_candidate,
-                    config=RoboPhDEvalConfig(max_workers=args.max_workers),
+                    config=eval_cfg,
                 )
             else:
                 eval_result = eval_run(
-                    evaluator=evaluator, dataset=data, experiment_dir=args.resume
+                    evaluator=evaluator, dataset=data, experiment_dir=args.resume,
+                    config=eval_cfg,
                 )
             # Suffix output filenames with the agent name so named-agent
             # runs don't overwrite the default best-ELO results on disk.

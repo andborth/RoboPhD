@@ -248,6 +248,50 @@ def find_best_agent(run_dir: Path) -> Tuple[str, Path]:
     return best_id, agent_dir
 
 
+def find_named_agent(run_dir: Path, agent_name: str) -> Tuple[str, Path]:
+    """Find a specific named agent from a run's agent_pool.
+
+    Symmetric to find_best_agent but looks up by explicit name rather than
+    ELO. Used by --eval-agent CLI surfaces (currently sudoku and protein_go)
+    so the user can baseline the seed, inspect a specific iteration's agent,
+    or compare any two agents on the same held-out data.
+
+    Returns (agent_name, agent_dir). Raises FileNotFoundError consistently
+    for any lookup failure: missing checkpoint.json, missing agent_pool key
+    (schema drift), unknown agent name, or missing agent directory on disk.
+    For the unknown-name case the message includes the sorted list of
+    available agent_pool keys so CLI callers can surface it directly without
+    reformatting.
+    """
+    log = logging.getLogger(__name__)
+    checkpoint_path = Path(run_dir) / "checkpoint.json"
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(f"No checkpoint.json found in {run_dir}")
+
+    with open(checkpoint_path) as f:
+        ckpt = json.load(f)
+
+    # Distinguish malformed/schema-drifted checkpoint from a bad agent name:
+    # a missing agent_pool key is a checkpoint integrity issue, whereas an
+    # empty or populated agent_pool that doesn't contain the name is a
+    # legitimate "not found" path.
+    if "agent_pool" not in ckpt:
+        raise FileNotFoundError(
+            f"Checkpoint at {checkpoint_path} has no agent_pool key (schema error)."
+        )
+    agent_pool = ckpt["agent_pool"]
+    if agent_name not in agent_pool:
+        available = sorted(agent_pool.keys())
+        raise FileNotFoundError(
+            f"Agent '{agent_name}' not found in agent_pool of {run_dir}.\n"
+            f"Available ({len(available)}): {', '.join(available)}"
+        )
+
+    perf_records = ckpt.get("performance_records", {})
+    agent_dir = _resolve_agent_dir(run_dir, agent_name, agent_pool, perf_records, log)
+    return agent_name, agent_dir
+
+
 def find_last_winner(run_dir: Path) -> Tuple[str, Path, bool]:
     """Find the agent that won the last completed iteration.
 
