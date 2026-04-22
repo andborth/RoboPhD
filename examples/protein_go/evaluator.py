@@ -41,7 +41,9 @@ import litellm
 # pattern used in examples/docfinqa/evaluator.py.
 litellm.suppress_debug_info = True
 
-from RoboPhD.eval_utils import retry_on_rate_limit, exec_with_stdout_capture
+from RoboPhD.eval_utils import (
+    retry_on_rate_limit, exec_with_stdout_capture, extract_response_cost,
+)
 from RoboPhD.scoring import fmax_with_ancestor_closure
 from tools import (
     make_blast, make_uniprot, make_go_ancestors, make_score,
@@ -81,36 +83,6 @@ class CostTracker:
         return self.llm_cost + self.embed_cost
 
 
-def _extract_response_cost(resp, model: str) -> float:
-    """Best-effort cost extraction from a litellm response.
-
-    litellm.completion_cost(resp) raises "This model isn't mapped yet" when
-    the provider returns a dated/versioned model name that doesn't match any
-    key in litellm's pricing DB. OpenRouter does this: a request for
-    `openrouter/google/gemini-3.1-flash-lite-preview` returns responses with
-    `resp.model` like `google/gemini-3.1-flash-lite-preview-20260303`.
-
-    The actual billed cost is still available in the response — OpenRouter
-    populates `resp.usage.cost` and litellm mirrors it in
-    `resp._hidden_params["response_cost"]`. Try the direct-from-provider
-    sources first, then fall back to a pricing lookup with the model name
-    we originally passed (which IS in litellm's DB), then zero.
-    """
-    usage_cost = getattr(getattr(resp, "usage", None), "cost", None)
-    if usage_cost is not None and usage_cost > 0:
-        return float(usage_cost)
-    hidden = getattr(resp, "_hidden_params", None) or {}
-    hp_cost = hidden.get("response_cost")
-    if hp_cost is not None and hp_cost > 0:
-        return float(hp_cost)
-    try:
-        return float(
-            litellm.completion_cost(completion_response=resp, model=model) or 0.0
-        )
-    except Exception:
-        return 0.0
-
-
 def make_tracked_llm(
     model: str,
     tracker: CostTracker,
@@ -135,7 +107,7 @@ def make_tracked_llm(
         if reasoning_effort:
             kwargs["extra_body"] = {"reasoning": {"effort": reasoning_effort}}
         resp = retry_on_rate_limit(lambda: litellm.completion(**kwargs))
-        cost = _extract_response_cost(resp, model)
+        cost = extract_response_cost(resp, model)
         text = resp.choices[0].message.content or ""
         tracker.llm_cost += cost
         tracker.llm_calls += 1
@@ -153,7 +125,7 @@ def make_tracked_embed(model: str, tracker: CostTracker) -> Callable[[str], List
         resp = retry_on_rate_limit(
             lambda: litellm.embedding(model=model, input=[text], timeout=300, num_retries=0)
         )
-        tracker.embed_cost += _extract_response_cost(resp, model)
+        tracker.embed_cost += extract_response_cost(resp, model)
         tracker.embed_calls += 1
         return resp.data[0]["embedding"]
 

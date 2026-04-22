@@ -14,7 +14,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import litellm
-from RoboPhD.eval_utils import retry_on_rate_limit, exec_with_stdout_capture
+from RoboPhD.eval_utils import (
+    retry_on_rate_limit, exec_with_stdout_capture, extract_response_cost,
+)
 
 litellm.suppress_debug_info = True
 
@@ -93,11 +95,11 @@ class TrackedLLM:
         content = msg.content or ""
         reasoning = getattr(msg, "reasoning_content", None) or ""
 
-        # Cost: try litellm's DB first, fall back to provider-reported cost
-        try:
-            cost = litellm.completion_cost(completion_response=resp)
-        except Exception:
-            cost = getattr(resp.usage, "cost", None) or 0.0
+        # Cost: shared helper tries usage.cost / _hidden_params.response_cost
+        # (OpenRouter populates these with actual billed cost) before falling
+        # back to litellm's pricing DB. Handles the dated-model-name quirk
+        # where litellm's auto-lookup silently returns 0 or raises.
+        cost = extract_response_cost(resp, self.model_id)
 
         call_data = {
             "prompt": prompt,

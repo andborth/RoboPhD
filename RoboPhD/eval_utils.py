@@ -67,6 +67,65 @@ def retry_on_rate_limit(fn, max_retries=5, base_delay=0.5):
             raise
 
 
+# Dedupe warning keys for extract_response_cost's final-fallback path.
+# Module-global so warnings fire once per (model, error_type) per process
+# rather than once per call.
+_cost_lookup_warned: set = set()
+
+
+def extract_response_cost(resp, model: str) -> float:
+    """Best-effort cost extraction from a litellm completion/embedding response.
+
+    ``litellm.completion_cost(resp)`` raises ``"This model isn't mapped yet"``
+    when the provider returns a dated or versioned model name that isn't in
+    litellm's pricing database. OpenRouter is a frequent offender: a request
+    for ``openrouter/google/gemini-3.1-flash-lite-preview`` comes back with
+    ``resp.model`` like ``google/gemini-3.1-flash-lite-preview-20260303``, and
+    the dated suffix isn't indexed even when the undated alias is.
+
+    The actual billed cost is still available in the response — OpenRouter
+    populates ``resp.usage.cost`` and litellm mirrors it as
+    ``resp._hidden_params["response_cost"]``. Try those provider-direct
+    sources first, then fall back to a pricing lookup with the model name the
+    caller originally passed (which typically IS in litellm's DB), then 0.
+
+    Terminates on ``is not None`` rather than ``> 0``: a legitimate zero-cost
+    call (free tier, zero-token completion) should be reported as $0 rather
+    than passed along as "cost unknown" to subsequent sources.
+
+    Warns once per (model, error type) when the final fallback returns 0 so
+    pricing-DB regressions surface loudly without per-call log spam.
+    """
+    usage_cost = getattr(getattr(resp, "usage", None), "cost", None)
+    if usage_cost is not None:
+        return float(usage_cost)
+    hidden = getattr(resp, "_hidden_params", None) or {}
+    hp_cost = hidden.get("response_cost")
+    if hp_cost is not None:
+        return float(hp_cost)
+    # Final fallback: explicit-model pricing lookup. Local import so tasks
+    # that never hit this helper (e.g. cant_be_late) don't take a litellm
+    # import cost.
+    try:
+        import litellm
+        return float(
+            litellm.completion_cost(completion_response=resp, model=model) or 0.0
+        )
+    except Exception as e:
+        key = (model, type(e).__name__)
+        if key not in _cost_lookup_warned:
+            _cost_lookup_warned.add(key)
+            logger.warning(
+                "extract_response_cost: falling back to $0.00 for model=%r "
+                "(%s: %s). Cost tracking will under-report this model until "
+                "either the provider populates usage.cost / "
+                "_hidden_params.response_cost on the response, or the model "
+                "is added to litellm's pricing DB.",
+                model, type(e).__name__, str(e)[:200],
+            )
+        return 0.0
+
+
 def exec_with_stdout_capture(code: str, extra_namespace: dict = None, then=None) -> tuple:
     """Execute Python code with print() output captured.
 
