@@ -277,43 +277,26 @@ def main():
         # before spending time on dataset loading or inference. CLI layer
         # translates the library's FileNotFoundError into SystemExit so the
         # user sees a clean error message with the available-names list.
-        named_candidate: Optional[Dict[str, str]] = None
+        # When --eval-agent is not set, eval_run handles engine-agnostic
+        # resolution (best_candidate.json / best_agent/ for GEPA/autoresearch;
+        # checkpoint + agent_pool for RoboPhD).
+        override_candidate: Optional[Dict[str, str]] = None
         if args.eval_agent:
             try:
                 _, agent_dir = find_named_agent(resume_dir, args.eval_agent)
             except FileNotFoundError as e:
                 raise SystemExit(str(e))
-            named_candidate = {"agent.py": (agent_dir / "agent.py").read_text()}
+            override_candidate = {"agent.py": (agent_dir / "agent.py").read_text()}
             logger.info(f"Evaluating named agent: {args.eval_agent}")
-        else:
-            # GEPA and Autoresearch runs don't have checkpoint.json /
-            # agent_pool — both write best_candidate.json (preferred) and
-            # best_agent/ at the run root. Detect those artifacts first so
-            # --eval-only works on any non-RoboPhD engine; fall through to
-            # RoboPhD's eval_run (which uses checkpoint.json) only when
-            # neither engine-agnostic artifact is present.
-            best_json = resume_dir / "best_candidate.json"
-            best_dir = resume_dir / "best_agent"
-            if best_json.exists():
-                with open(best_json) as f:
-                    named_candidate = json.load(f)
-                logger.info(f"Evaluating best_candidate.json from {resume_dir.name}")
-            elif best_dir.exists() and (best_dir / "agent.py").exists():
-                named_candidate = {"agent.py": (best_dir / "agent.py").read_text()}
-                logger.info(f"Evaluating best_agent/ from {resume_dir.name}")
-            else:
-                logger.info("Evaluating best-ELO agent (pass --eval-agent <name> to override)")
 
-        # Shared eval config — both the named-candidate and best-ELO paths
-        # need to respect --max-workers. eval_run also accepts a config.
         eval_cfg = RoboPhDEvalConfig(max_workers=args.max_workers)
 
         for split, _attr, label, results_filename, cafa_subdir in requested:
             data = load_protein_go(split)
             logger.info(f"{label} evaluation: {len(data)} proteins")
-            if named_candidate is not None:
+            if override_candidate is not None:
                 eval_result = eval_candidate(
-                    evaluator=evaluator, dataset=data, candidate=named_candidate,
+                    evaluator=evaluator, dataset=data, candidate=override_candidate,
                     config=eval_cfg,
                 )
             else:

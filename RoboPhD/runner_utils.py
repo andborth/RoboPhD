@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Set, Tuple
 
 from RoboPhD.debug_logging import maybe_debug_log
 from RoboPhD.config import SUPPORTED_MODELS
+from RoboPhD.candidate_utils import extract_candidate
 from RoboPhD.eval_utils import run_parallel_eval
 
 
@@ -290,6 +291,83 @@ def find_named_agent(run_dir: Path, agent_name: str) -> Tuple[str, Path]:
     perf_records = ckpt.get("performance_records", {})
     agent_dir = _resolve_agent_dir(run_dir, agent_name, agent_pool, perf_records, log)
     return agent_name, agent_dir
+
+
+def load_best_candidate(
+    run_dir: Path,
+    file_mapping: Dict[str, str] | None = None,
+) -> Tuple[Dict[str, str], str]:
+    """Load the best candidate from any engine's run directory.
+
+    Engine-agnostic: GEPA and Autoresearch both write best_candidate.json
+    and best_agent/ at the run root; RoboPhD writes checkpoint.json +
+    agent_pool. Tries those in order and returns the first match.
+
+    Returns (candidate_dict, label) where label is one of:
+      - "best_candidate" — loaded from best_candidate.json
+      - "best_agent"     — loaded from best_agent/<files...>
+      - <agent_name>     — loaded from the highest-ELO checkpoint agent
+
+    Callers use `label` for user-facing identification (log lines, output
+    filename suffixes); `eval_run` ignores it, sudoku test_eval uses it
+    to distinguish output files.
+
+    file_mapping controls how non-flat candidates are read from disk:
+      - best_candidate.json: ignored (the file IS the candidate dict)
+      - best_agent/: used by extract_candidate when provided; if None,
+        auto-falls-back only when the directory contains exactly a single
+        agent.py (today's single-file tasks — sudoku, protein_go). A
+        multi-file best_agent/ with no explicit mapping raises rather
+        than silently dropping files.
+      - checkpoint (ELO fallthrough): used by extract_candidate; if None,
+        read from checkpoint.task_config.
+
+    Engines writing best_candidate.json must write a flat file_mapping
+    dict (keys = component names, values = text). Wrapped shapes like
+    {"candidate": {...}, "score": ...} will be rejected here rather than
+    failing deep in the evaluator.
+    """
+    run_dir = Path(run_dir)
+
+    best_json = run_dir / "best_candidate.json"
+    if best_json.exists():
+        with open(best_json) as f:
+            candidate = json.load(f)
+        if not isinstance(candidate, dict) or not all(
+            isinstance(k, str) and isinstance(v, str) for k, v in candidate.items()
+        ):
+            raise ValueError(
+                f"{best_json} is not a flat {{str: str}} candidate dict. "
+                f"Engines writing best_candidate.json must write the candidate directly, "
+                f"not wrapped in an outer envelope."
+            )
+        return candidate, "best_candidate"
+
+    best_dir = run_dir / "best_agent"
+    if best_dir.exists():
+        if file_mapping is not None:
+            return extract_candidate(best_dir, file_mapping), "best_agent"
+        files = sorted(p.name for p in best_dir.iterdir() if p.is_file())
+        if files == ["agent.py"]:
+            return {"agent.py": (best_dir / "agent.py").read_text()}, "best_agent"
+        raise ValueError(
+            f"{best_dir} contains {files}; cannot infer candidate shape without "
+            f"an explicit file_mapping. Pass file_mapping to load_best_candidate."
+        )
+
+    # RoboPhD ELO fallthrough: checkpoint.json + agent_pool.
+    agent_name, agent_dir = find_best_agent(run_dir)
+    mapping = file_mapping
+    if mapping is None:
+        from RoboPhD.researcher import ParallelAgentResearcher
+        checkpoint = ParallelAgentResearcher.load_checkpoint(run_dir)
+        mapping = checkpoint.get("task_config", {}).get("file_mapping")
+        if not mapping:
+            raise ValueError(
+                f"Checkpoint at {run_dir} missing file_mapping in task_config; "
+                f"pass file_mapping explicitly to load_best_candidate."
+            )
+    return extract_candidate(agent_dir, mapping), agent_name
 
 
 def find_last_winner(run_dir: Path) -> Tuple[str, Path, bool]:

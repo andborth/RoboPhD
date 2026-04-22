@@ -757,37 +757,23 @@ def eval_run(
 ) -> EvalResult:
     """Evaluate the best agent from a completed optimization run.
 
-    Extracts the highest-ELO agent from the checkpoint, then runs
-    ``eval_candidate()`` on it. Typical use: test-set evaluation after
-    ``optimize_anything()`` finishes.
+    Engine-agnostic: GEPA and Autoresearch write ``best_candidate.json`` and
+    ``best_agent/`` at the run root — those are preferred when present. The
+    RoboPhD ELO path falls through to the highest-ELO agent in the checkpoint.
+    Typical use: test-set evaluation after ``optimize_anything()`` finishes.
 
     Args:
         evaluator: Same evaluator used during optimization.
         dataset: Test examples to evaluate on.
-        experiment_dir: Path to the experiment directory (contains checkpoint.json).
+        experiment_dir: Path to the experiment directory.
         config: Evaluation configuration. If None, uses ``RoboPhDEvalConfig()`` defaults.
 
     Returns:
         EvalResult with mean_score, per_example_scores, and diagnostics.
     """
-    from RoboPhD.runner_utils import find_best_agent
-    from RoboPhD.candidate_utils import extract_candidate
-    from RoboPhD.researcher import ParallelAgentResearcher
+    from RoboPhD.runner_utils import load_best_candidate
 
     experiment_dir = Path(experiment_dir)
-    agent_name, agent_dir = find_best_agent(experiment_dir)
-
-    # Recover file_mapping from checkpoint
-    checkpoint = ParallelAgentResearcher.load_checkpoint(experiment_dir)
-    task_config = checkpoint.get("task_config", {})
-    file_mapping = task_config.get("file_mapping")
-    if not file_mapping:
-        raise ValueError(
-            f"Checkpoint missing file_mapping in task_config: {experiment_dir}. "
-            f"Cannot determine agent artifact structure."
-        )
-
-    best_candidate = extract_candidate(agent_dir, file_mapping)
-    logger.info(f"Evaluating best agent: {agent_name}")
-
+    best_candidate, label = load_best_candidate(experiment_dir)
+    logger.info(f"Evaluating {label} from {experiment_dir.name}")
     return eval_candidate(evaluator, dataset, best_candidate, config)

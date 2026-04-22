@@ -107,43 +107,20 @@ def test_eval(
 def _load_candidate_from_run_dir(
     run_dir: Path, agent_name: Optional[str] = None
 ) -> Tuple[Dict[str, str], str]:
-    """Extract a candidate from a GEPA or RoboPhD run directory.
+    """Extract a candidate from any engine's run directory.
 
     Returns (candidate_dict, resolved_agent_name). When agent_name is None,
-    selects the best-ELO agent (RoboPhD) or best_agent/ (GEPA). When
+    delegates to the shared engine-agnostic resolver in runner_utils (which
+    handles best_candidate.json / best_agent/ / best-ELO agent). When
     agent_name is provided, it must be a key in the RoboPhD checkpoint's
-    agent_pool — GEPA runs don't carry a named pool, so agent_name is
-    RoboPhD-only.
+    agent_pool — GEPA / Autoresearch runs don't carry a named pool, so
+    agent_name is RoboPhD-only.
     """
-    # Named-agent lookup is RoboPhD-specific (GEPA has no agent_pool).
     if agent_name is not None:
         return _load_named_agent(run_dir, agent_name)
 
-    # Unnamed: prefer GEPA artifacts if present, otherwise fall through
-    # to RoboPhD best-ELO resolution.
-    gepa_best = run_dir / "best_candidate.json"
-    if gepa_best.exists():
-        with open(gepa_best) as f:
-            return json.load(f), "best_candidate"
-    gepa_agent_dir = run_dir / "best_agent"
-    if gepa_agent_dir.exists():
-        return {"agent.py": (gepa_agent_dir / "agent.py").read_text()}, "best_agent"
-
-    checkpoint = run_dir / "checkpoint.json"
-    if checkpoint.exists():
-        with open(checkpoint) as f:
-            cp = json.load(f)
-        records = cp.get("performance_records", {})
-        if records:
-            best_name = max(records.items(), key=lambda kv: kv[1]["elo"])[0]
-            agent_dir = run_dir / "agents" / best_name
-            if agent_dir.exists():
-                return {"agent.py": (agent_dir / "agent.py").read_text()}, best_name
-
-    raise FileNotFoundError(
-        f"Could not find a best candidate in {run_dir}. "
-        f"Expected best_candidate.json, best_agent/, or checkpoint.json + agents/"
-    )
+    from RoboPhD.runner_utils import load_best_candidate
+    return load_best_candidate(run_dir)
 
 
 def _load_named_agent(run_dir: Path, agent_name: str) -> Tuple[Dict[str, str], str]:
