@@ -286,7 +286,22 @@ def main():
             named_candidate = {"agent.py": (agent_dir / "agent.py").read_text()}
             logger.info(f"Evaluating named agent: {args.eval_agent}")
         else:
-            logger.info("Evaluating best-ELO agent (pass --eval-agent <name> to override)")
+            # GEPA runs don't have checkpoint.json / agent_pool — they write
+            # best_candidate.json (preferred) or best_agent/ at the run root.
+            # Detect those artifacts first so --eval-only works on GEPA runs;
+            # fall through to RoboPhD's eval_run (which uses checkpoint.json)
+            # only when neither GEPA artifact is present.
+            gepa_best_json = resume_dir / "best_candidate.json"
+            gepa_best_dir = resume_dir / "best_agent"
+            if gepa_best_json.exists():
+                with open(gepa_best_json) as f:
+                    named_candidate = json.load(f)
+                logger.info(f"Evaluating GEPA best_candidate.json from {resume_dir.name}")
+            elif gepa_best_dir.exists() and (gepa_best_dir / "agent.py").exists():
+                named_candidate = {"agent.py": (gepa_best_dir / "agent.py").read_text()}
+                logger.info(f"Evaluating GEPA best_agent/ from {resume_dir.name}")
+            else:
+                logger.info("Evaluating best-ELO agent (pass --eval-agent <name> to override)")
 
         # Shared eval config — both the named-candidate and best-ELO paths
         # need to respect --max-workers. eval_run also accepts a config.
