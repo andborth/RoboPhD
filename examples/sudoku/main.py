@@ -19,6 +19,7 @@ Usage:
 import argparse
 import json
 import logging
+import statistics
 import sys
 from pathlib import Path
 
@@ -29,6 +30,82 @@ sys.path.insert(0, str(HERE.parent.parent))
 sys.path.insert(0, str(HERE))
 
 from RoboPhD import optimize_anything, RoboPhDConfig, GEPAConfig, AutoresearchConfig
+
+
+class WarmupMedianEvaluator:
+    """Evolution-time wrapper: W warmup solves (discarded) + N timed solves → median.
+
+    Each wrapper call on (candidate, example):
+      1. Runs `warmup` untimed solves. Primes CPU state for this specific
+         puzzle-solver combination — branch predictor learns the puzzle's
+         constraint tree, shared lookup tables hit L1/L2 cache, CPU clock
+         boosts, object pools allocate.
+      2. Runs `timed_repeats` (odd, default 9) timed solves, collecting each
+         solve's (score, diagnostics).
+      3. Returns the median score and the diagnostics of the solve whose
+         score equals the median. An odd repeat count guarantees the median
+         is one of the measured scores, so the representative solve's
+         diagnostics are internally consistent with the returned score.
+
+    Rationale: sudoku's score is `max(0, 1 - elapsed * 100)` with a hard 10ms
+    cutoff. A cold-state solve can easily push past 10ms and score 0 even for
+    a healthy agent, because CPU branch predictor, caches, and frequency
+    scaling all need a few iterations to adapt. Without priming, whichever
+    agent runs second in an iteration inherits a warm CPU state and gets a
+    systematic score advantage over the agent that runs first.
+
+    This wrapper eliminates that by priming each (agent, puzzle) pair with a
+    few untimed warmup solves before the timed measurements. The median
+    across timed repeats further absorbs any residual per-repeat variance.
+
+    Only used during evolution — test evaluation uses a separate aggregation
+    path (``test_eval_candidate.test_eval``) that does its own repeats-and-
+    median logic via an interleaved dispatch over the full test set.
+    """
+
+    def __init__(self, base, warmup: int = 2, timed_repeats: int = 9):
+        if timed_repeats % 2 == 0:
+            raise ValueError(
+                "timed_repeats must be odd so the median is an exact element of the sample"
+            )
+        self._base = base
+        self._warmup = warmup
+        self._timed = timed_repeats
+
+    def __call__(self, candidate, example, *, problem_dir=None):
+        # Warmup — discard scores.
+        for _ in range(self._warmup):
+            self._base(candidate, example, problem_dir=problem_dir)
+
+        # Timed solves — keep all (score, diag) pairs.
+        results = []
+        for _ in range(self._timed):
+            score, diag = self._base(candidate, example, problem_dir=problem_dir)
+            results.append((score, diag if isinstance(diag, dict) else {}))
+
+        scores = [s for s, _ in results]
+        # statistics.median on an odd-length list returns sorted(scores)[N//2]
+        # by definition — no arithmetic — so the returned value is bit-identical
+        # to one of the input scores and == comparison is safe.
+        median_score = statistics.median(scores)
+        representative_diag = next(d for s, d in results if s == median_score)
+
+        # Sum costs across all 9 timed calls. Correct for sudoku because every
+        # solve has cost_usd=0 (no LLM). If this wrapper is ever reused on a
+        # task with cost-bearing solves, summing here 9× the real per-call cost
+        # — switch to taking the representative's cost only, or divide by N.
+        total_cost = 0.0
+        for _, d in results:
+            try:
+                total_cost += float(d.get("cost_usd", 0.0))
+            except (TypeError, ValueError):
+                pass
+
+        return median_score, {**representative_diag, "cost_usd": total_cost}
+
+    def __getattr__(self, name):
+        # Delegate stateful attrs (total_eval_cost, total_evaluations, _lock) to base
+        return getattr(self._base, name)
 
 
 logging.basicConfig(
@@ -83,11 +160,15 @@ def main():
     from evaluator import SudokuEvaluator, load_dataset
     from test_eval_candidate import test_eval, _load_candidate_from_run_dir
 
-    evaluator = SudokuEvaluator()
+    base_evaluator = SudokuEvaluator()
+    # Evolution wraps the base evaluator for warmup + per-puzzle median aggregation.
+    # Test-eval paths below pass the unwrapped base_evaluator — test_eval already
+    # handles its own repeats and median; wrapping would double-nest.
+    evolution_evaluator = WarmupMedianEvaluator(base_evaluator)
 
     # --eval-only: skip optimization, evaluate an agent from a prior run on the test set.
     # Delegates to test_eval_candidate.test_eval() for canonical sudoku test-eval behavior:
-    # 10 repeats per puzzle, per-puzzle median aggregation (mean of medians),
+    # 9 repeats per puzzle, per-puzzle median aggregation (mean of medians),
     # max_workers=1, and a 1s per-solve timeout (see _PER_SOLVE_TIMEOUT_SECONDS).
     if args.eval_only:
         if not args.resume:
@@ -96,7 +177,7 @@ def main():
         candidate, agent_name = _load_candidate_from_run_dir(run_dir, agent_name=args.eval_agent)
         logger.info(f"Evaluating agent: {agent_name}")
 
-        _, results = test_eval(evaluator, candidate, agent_name=agent_name)
+        _, results = test_eval(base_evaluator, candidate, agent_name=agent_name)
 
         if args.eval_agent:
             test_path = run_dir / f"test_results_{args.eval_agent}.json"
@@ -106,6 +187,8 @@ def main():
             json.dump(results, f, indent=2)
         logger.info(f"Test results saved to {test_path}")
         return
+
+    evaluator = evolution_evaluator  # evolution path uses the wrapper
 
     objective = (HERE / "objective.md").read_text().strip()
     background = (HERE / "background.md").read_text().strip()
@@ -178,10 +261,11 @@ def main():
         if not result.completed_normally:
             logger.info("Skipping test-set evaluation -- run ended early due to failure")
         else:
-            # Delegate to canonical sudoku test-eval: 10 repeats, per-puzzle median,
-            # max_workers=1, 1s per-solve timeout.
+            # Delegate to canonical sudoku test-eval: 9 repeats, per-puzzle median,
+            # max_workers=1, 1s per-solve timeout. Use the unwrapped base evaluator —
+            # test_eval does its own repeats and median; wrapping would double-nest.
             _, test_results = test_eval(
-                evaluator, result.best_candidate, agent_name="best_candidate"
+                base_evaluator, result.best_candidate, agent_name="best_candidate"
             )
 
             test_path = result.experiment_dir / "test_results.json"

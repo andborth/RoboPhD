@@ -6,7 +6,7 @@ Used by both RoboPhD (via examples/sudoku/main.py --eval-test-set) and GEPA
 (via the wrapper in this file) to score a best candidate on the held-out
 test set under identical conditions:
 
-    - 10 repeats per puzzle
+    - 9 repeats per puzzle (odd so the per-puzzle median is an exact sample)
     - per-puzzle median across repeats (kills timing outliers)
     - mean of medians as headline score
 
@@ -57,7 +57,7 @@ def mean_of_medians(per_example_scores, num_unique):
 def test_eval(
     evaluator,
     candidate,
-    test_repeats: int = 10,
+    test_repeats: int = 9,
     agent_name: Optional[str] = None,
 ) -> Tuple[float, Dict[str, Any]]:
     """Run the test-set evaluation and return (median_score, full_results_dict).
@@ -184,7 +184,7 @@ def main():
         description="Test-eval a candidate with mean-of-medians aggregation"
     )
     parser.add_argument("run_dir", type=Path, help="GEPA or RoboPhD run directory")
-    parser.add_argument("--test-repeats", type=int, default=10)
+    parser.add_argument("--test-repeats", type=int, default=9)
     parser.add_argument("--eval-agent", type=str, default=None,
                         help="Name of agent to evaluate from the run's agent_pool. "
                              "RoboPhD runs only. Defaults to the best-ELO agent.")
