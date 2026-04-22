@@ -35,6 +35,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import litellm
 
+# Silence litellm's "Provider List: https://docs.litellm.ai/docs/providers"
+# stderr chatter that fires on every call for multi-slash model strings
+# (e.g. openrouter/google/gemini-3.1-flash-lite-preview). Matches the
+# pattern used in examples/docfinqa/evaluator.py.
+litellm.suppress_debug_info = True
+
 from RoboPhD.eval_utils import retry_on_rate_limit, exec_with_stdout_capture
 from RoboPhD.scoring import fmax_with_ancestor_closure
 from tools import (
