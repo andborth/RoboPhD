@@ -81,11 +81,13 @@ pip install -r examples/arc_agi_1/requirements.txt  # for ARC-AGI (dspy, dataset
 # See: https://docs.anthropic.com/en/docs/claude-code
 
 # 3. Set API keys
-export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"   # for evolution (Claude Code)
-export OPENAI_API_KEY="sk-..."                     # for DocFinQA (gpt-4.1-mini + embeddings)
-export OPENROUTER_API_KEY="sk-or-..."              # for ARC-AGI (Gemini via OpenRouter)
+# Evolution itself uses Claude Code CLI (Claude Max auth) — no API key needed.
+export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."  # GEPA engine + Text2SQL example
+export OPENAI_API_KEY="sk-..."                     # DocFinQA (gpt-4.1-mini + embeddings)
+export OPENROUTER_API_KEY="sk-or-..."              # ARC-AGI (Gemini via OpenRouter)
+# The Anthropic key is not needed for the default RoboPhD ELO engine or autoresearch.
 # Recommended: link your Google API key at https://openrouter.ai/settings/integrations
-# to get your own Gemini rate limits (otherwise you share limits with all OpenRouter users)
+# to get your own Gemini rate limits (otherwise you share limits with all OpenRouter users).
 
 # 4. DocFinQA — financial document QA (easiest to start with)
 python examples/docfinqa/main.py --num-iterations 2

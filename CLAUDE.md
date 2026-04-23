@@ -35,20 +35,23 @@ Each example is self-contained: `main.py` (entry point), `evaluator.py` (scoring
 
 ### Environment Setup
 ```bash
-export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"
 pip install -r requirements.txt
+
+# Install Claude Code CLI (required for evolution — uses Claude Max auth, not an API key)
+# See: https://docs.anthropic.com/en/docs/claude-code
 
 # For GEPA and ARC-AGI (adds gepa, dspy, datasets, cloudpickle)
 pip install -r requirements-gepa.txt
+
+# Anthropic API key — required for the GEPA engine and for the Text2SQL example
+# (default eval model: haiku-4.5). Not needed for the default RoboPhD ELO engine or autoresearch.
+export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."
 
 # For ARC-AGI: OpenRouter API key (routes to Gemini)
 export OPENROUTER_API_KEY="sk-or-..."
 
 # For DocFinQA: OpenAI API key (gpt-4.1-mini + embeddings)
 export OPENAI_API_KEY="sk-..."
-
-# Install Claude Code CLI (required for evolution)
-# See: https://docs.anthropic.com/en/docs/claude-code
 ```
 
 ### Running Evolution

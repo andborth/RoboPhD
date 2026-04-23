@@ -40,9 +40,16 @@ pip install -r examples/arc_agi_1/requirements.txt
 
 ## Step 3: Configure API Keys
 
+Evolution itself uses the Claude Code CLI (Claude Max auth); see Step 4. The keys below are only for
+the GEPA reflection model and for per-example solvers.
+
 ```bash
 # Add to your shell profile (~/.bashrc, ~/.zshrc, etc.)
-export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_anthropic_api_key_here"
+
+# For the GEPA engine only (reflection model).
+# Not needed for the default RoboPhD ELO engine or autoresearch.
+# Also needed for the Text2SQL example (default eval model is haiku-4.5).
+export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."
 
 # For ARC-AGI (Gemini solver via OpenRouter)
 export OPENROUTER_API_KEY="sk-or-..."

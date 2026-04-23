@@ -20,17 +20,17 @@ bash benchmark_resources/download_bird.sh
 
 This downloads the BIRD benchmark data (~2 GB) to `benchmark_resources/datasets/`.
 
-### 3. Set API keys
+### 3. Set API key
 
 ```bash
-# For the evolution AI (Claude Code)
-export ANTHROPIC_API_KEY="sk-ant-..."
-
-# Or use the RoboPhD-specific key
+# Text2SQL's default eval model is haiku-4.5 (called via litellm inside evaluator.py).
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."
 ```
 
-The default eval model (`haiku-4.5`) uses the same Anthropic key.
+Evolution itself uses the Claude Code CLI (Claude Max auth) and does not need this key.
+`evaluator.py` passes the resolved key directly to `litellm.completion(api_key=...)` rather than
+exporting it, so it stays out of the process environment and does not affect any Claude Code CLI
+subprocesses spawned by the evolution loop.
 
 ## Quick Start
 
