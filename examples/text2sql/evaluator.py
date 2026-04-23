@@ -198,19 +198,27 @@ def make_tracked_llm(model: str, tracker: CostTracker):
     """
     import os
 
-    # Bridge ANTHROPIC_API_KEY_FOR_ROBOPHD → ANTHROPIC_API_KEY so litellm finds it.
-    if not os.environ.get("ANTHROPIC_API_KEY") and os.environ.get("ANTHROPIC_API_KEY_FOR_ROBOPHD"):
-        os.environ["ANTHROPIC_API_KEY"] = os.environ["ANTHROPIC_API_KEY_FOR_ROBOPHD"]
+    # Resolve an explicit api_key for Anthropic models and pass it to litellm,
+    # rather than mutating os.environ["ANTHROPIC_API_KEY"]. The env mutation
+    # would leak into Claude Code CLI subprocesses spawned later in the run
+    # and could divert them onto API billing.
+    api_key: Optional[str] = None
+    if "claude" in model.lower() or model.startswith("anthropic/"):
+        api_key = (
+            os.environ.get("ANTHROPIC_API_KEY")
+            or os.environ.get("ANTHROPIC_API_KEY_FOR_ROBOPHD")
+        )
 
     def llm(prompt: str) -> str:
-        resp = retry_on_rate_limit(
-            lambda: litellm.completion(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                timeout=300,
-                num_retries=0,
-            )
-        )
+        kwargs: Dict[str, Any] = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "timeout": 300,
+            "num_retries": 0,
+        }
+        if api_key:
+            kwargs["api_key"] = api_key
+        resp = retry_on_rate_limit(lambda: litellm.completion(**kwargs))
         try:
             cost = litellm.completion_cost(completion_response=resp)
         except Exception:
