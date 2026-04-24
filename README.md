@@ -200,12 +200,10 @@ python examples/arc_agi_1/main.py --resume <dir> --extend 5
 ## Requirements
 
 - Python 3.10+
-- Claude Code CLI (required for evolution)
-- `pip install -r requirements-gepa.txt` (for ARC-AGI dataset loading)
-- For ARC-AGI: `OPENROUTER_API_KEY` environment variable
-- For Text2SQL: `ANTHROPIC_API_KEY_FOR_ROBOPHD` + ~50GB for BIRD dataset
-- For DocFinQA: OpenAI API key (for gpt-4.1-mini and embeddings)
-- For Can't Be Late: trace data via `bash examples/cant_be_late/download_traces.sh`
+- Claude Code CLI (required for evolution — uses Claude Max auth)
+- `pip install -r requirements-gepa.txt` (only if using `--engine gepa`)
+
+Per-example requirements (solver API keys, dataset downloads, extra pip installs) are documented in each `examples/<domain>/README.md`.
 
 ## Acknowledgments
 

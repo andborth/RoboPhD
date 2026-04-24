@@ -18,10 +18,10 @@ conda install -c bioconda diamond
 # Or: see https://github.com/bbuchfink/diamond/releases for binary downloads
 
 # 4. Set API keys
-export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"   # for evolution (Claude Code)
 export OPENROUTER_API_KEY="sk-or-..."              # for the default solver (Gemini 3.1 Flash Lite)
-export OPENAI_API_KEY="your_key"                   # for embeddings (text-embedding-3-small)
+export OPENAI_API_KEY="sk-..."                     # for embeddings (text-embedding-3-small),
                                                    # and if you override --model to an OpenAI model
+export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."  # only if using --engine gepa (reflection model)
 
 # 5. Download data and build splits (one-time; dominated by step 9's ESM sweep:
 #    ~4-6h on CPU, ~3-4h on MPS, ~15-30min on CUDA)

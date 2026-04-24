@@ -10,8 +10,9 @@ Pure algorithmic optimization — no LLM calls needed for the solver. Only Claud
 # Install core dependencies (from repo root)
 pip install -r requirements.txt
 
-# Set API key for evolution
-export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"
+# Only if using --engine gepa (reflection model); the default ELO engine uses
+# the Claude Code CLI's Claude Max auth and needs no API key.
+export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."
 
 # Download trace data (~151MB)
 bash examples/cant_be_late/download_traces.sh

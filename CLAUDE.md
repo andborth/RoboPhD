@@ -40,19 +40,14 @@ pip install -r requirements.txt
 # Install Claude Code CLI (required for evolution — uses Claude Max auth, not an API key)
 # See: https://docs.anthropic.com/en/docs/claude-code
 
-# For GEPA and ARC-AGI (adds gepa, dspy, datasets, cloudpickle)
+# For the GEPA engine (adds gepa, dspy, datasets, cloudpickle)
 pip install -r requirements-gepa.txt
 
-# Anthropic API key — required for the GEPA engine and for the Text2SQL example
-# (default eval model: haiku-4.5). Not needed for the default RoboPhD ELO engine or autoresearch.
+# For the GEPA engine: Anthropic API key for the reflection model
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."
-
-# For ARC-AGI: OpenRouter API key (routes to Gemini)
-export OPENROUTER_API_KEY="sk-or-..."
-
-# For DocFinQA: OpenAI API key (gpt-4.1-mini + embeddings)
-export OPENAI_API_KEY="sk-..."
 ```
+
+Per-example setup (solver API keys, dataset downloads, extra pip installs) lives in each `examples/<domain>/README.md`.
 
 ### Running Evolution
 
@@ -232,11 +227,7 @@ python examples/cant_be_late/main.py --engine-config '{
 - **Session errors**: Check Claude CLI authentication with `claude --version`
 
 ### Domain-Specific Issues
-- **ARC-AGI**: Requires `requirements-gepa.txt` (dspy, datasets) and `OPENROUTER_API_KEY`. Default solver: Gemini 3.1 Flash Lite via OpenRouter.
-- **Can't Be Late**: Requires trace data download via `bash examples/cant_be_late/download_traces.sh`. No LLM calls — pure algorithmic optimization.
-- **DocFinQA**: Requires OpenAI API key for `gpt-4.1-mini` and `text-embedding-3-small`. Dataset from HuggingFace.
-- **Text2SQL**: Requires BIRD dataset via `bash benchmark_resources/download_bird.sh`. Default eval model: `haiku-4.5`.
-- **Sudoku**: Requires HuggingFace `datasets` package. No API keys needed for the solver.
+Domain-specific setup, datasets, and troubleshooting live in each example's README (`examples/<domain>/README.md`).
 
 ## License
 

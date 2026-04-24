@@ -9,9 +9,8 @@ Evolve agents that answer numerical questions over long financial documents (SEC
 pip install -r requirements.txt
 
 # Set API keys
-export ANTHROPIC_API_KEY_FOR_ROBOPHD="your_key"   # for evolution (Claude Code)
-# OpenAI API key (for gpt-4.1-mini and text-embedding-3-small)
-# Set via OPENAI_API_KEY or litellm's environment variables
+export OPENAI_API_KEY="sk-..."                     # for the solver (gpt-4.1-mini + text-embedding-3-small)
+export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."  # only if using --engine gepa (reflection model)
 ```
 
 No data download needed — dataset loads automatically from HuggingFace.
