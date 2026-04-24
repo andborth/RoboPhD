@@ -7,7 +7,7 @@ RoboPhD evolves AI agents to improve task performance without human intervention
 
 ## Key Results
 
-Tested across five benchmarks with diverse task types — abstract reasoning, cloud scheduling, SQL generation, financial document QA, and puzzle-solving speed. All runs use a fixed budget of 1,500 evaluations. Scores show test set performance; numbers in parentheses are agent lines of code.
+Tested across six benchmarks with diverse task types — abstract reasoning, cloud scheduling, SQL generation, financial document QA, puzzle-solving speed, and protein function prediction. All runs use a fixed budget of 1,500 evaluations. Scores show test set performance; numbers in parentheses are agent lines of code.
 
 | Benchmark | Seed | RoboPhD | GEPA | Autoresearch |
 |-----------|------|---------|------|--------------|
@@ -16,10 +16,11 @@ Tested across five benchmarks with diverse task types — abstract reasoning, cl
 | [Text2SQL (BIRD)](https://bird-bench.github.io/) (%) | 52.2 (96) | **64.5** (602) | 60.4 (498) | 60.7 (265) |
 | [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) (%) | 17.7 (29) | **50.4** (825) | 40.0 (207) | 48.2 (198) |
 | [Sudoku](https://huggingface.co/datasets/sapientinc/sudoku-extreme) (%) | 0.0 (25) | **90.3** (329) | 83.2 (151) | 87.4 (243) |
+| [Protein GO (Price-149)](https://github.com/tttianhao/CLEAN) (%) | 48.4 (53) | **65.9** (682) | 55.7 (317) | 57.7 (200) |
 
-*Can't Be Late scores are negative costs (higher = better).*
+*Can't Be Late scores are negative costs (higher = better). Protein GO scored as canonical CAFA Fmax on the homology-resistant Price-149 split (Yu et al., 2023).*
 
-Using a single default configuration, RoboPhD outperforms both GEPA and Autoresearch on four of five benchmarks, losing only on Can't Be Late — the simplest task, where the winning solution required just 87 lines of code. On the four complex benchmarks, RoboPhD's multi-iteration Elo competition produces substantially larger agents (up to 1,000+ lines) that combine strategies discovered across many evolutionary cycles.
+Using a single default configuration, RoboPhD outperforms both GEPA and Autoresearch on five of six benchmarks, losing only on Can't Be Late — the simplest task, where the winning solution required just 87 lines of code. On the five complex benchmarks, RoboPhD's multi-iteration Elo competition produces substantially larger agents (up to 1,000+ lines) that combine strategies discovered across many evolutionary cycles.
 
 ## How It Works
 
@@ -66,6 +67,7 @@ RoboPhD uses AI throughout:
 | Text2SQL | BIRD | `agent.py` + `analyze_db.py` — SQL generation with `llm()` + `test_sql()` | Claude Haiku 4.5 |
 | DocFinQA | DocFinQA (ACL 2024) | `agent.py` — retrieval + QA pipeline | GPT-4.1-mini + text-embedding-3-small |
 | Sudoku | [sapientinc/sudoku-extreme](https://huggingface.co/datasets/sapientinc/sudoku-extreme) | `agent.py` — Python solver with `solve()` | Pure algorithmic (no LLM) |
+| Protein GO | [ProteInfer](https://github.com/google-research/proteinfer) + [Price-149 (CLEAN)](https://github.com/tttianhao/CLEAN) | `agent.py` — GO-MFO prediction with BLAST / ESM / LLM tools | Gemini 3.1 Flash Lite + text-embedding-3-small + ESM-2 |
 
 Each domain has a self-contained example under [`examples/`](examples/) with evaluator, seed agent, and documentation. More examples coming soon.
 
@@ -217,6 +219,9 @@ RoboPhD builds on several excellent open-source projects and benchmarks:
 - [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) (Reddy et al., 2024) — long-context financial QA benchmark
 - [Can't Be Late](https://github.com/UCB-ADRS/ADRS) (Wu et al., 2024) — cloud spot instance scheduling
 - [Sudoku via GEPA](https://blog.mariusvach.com/posts/gepa-sudoku-solver) (Vach, 2026) — blog post demonstrating GEPA-evolved Sudoku solvers; inspired the benchmark
+- [ProteInfer](https://github.com/google-research/proteinfer) (Sanderson et al., 2023) — deep protein function prediction; source of the clustered-split training corpus and test set
+- [CLEAN / Price-149](https://github.com/tttianhao/CLEAN) (Yu et al., 2023) — homology-resistant 149-protein benchmark; used as the headline Protein GO score
+- [CAFA-evaluator](https://github.com/BioComputingUP/CAFA-evaluator) (Piovesan et al., 2024) — canonical CAFA Fmax scoring implementation
 
 ## Citation
 
