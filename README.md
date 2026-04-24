@@ -78,35 +78,16 @@ Each domain has a self-contained example under [`examples/`](examples/) with eva
 git clone https://github.com/andborth/RoboPhD.git
 cd RoboPhD
 pip install -r requirements.txt
-pip install -r requirements-gepa.txt  # for GEPA engine support
-pip install -r examples/arc_agi_1/requirements.txt  # for ARC-AGI (dspy, datasets)
 
-# 2. Install Claude Code CLI (required for evolution)
+# 2. Install Claude Code CLI (evolution uses Claude Max auth — no API key needed)
 # See: https://docs.anthropic.com/en/docs/claude-code
 
-# 3. Set API keys
-# Evolution itself uses Claude Code CLI (Claude Max auth) — no API key needed.
-export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."  # GEPA engine + Text2SQL example
-export OPENAI_API_KEY="sk-..."                     # DocFinQA (gpt-4.1-mini + embeddings)
-export OPENROUTER_API_KEY="sk-or-..."              # ARC-AGI (Gemini via OpenRouter)
-# The Anthropic key is not needed for the default RoboPhD ELO engine or autoresearch.
-# Recommended: link your Google API key at https://openrouter.ai/settings/integrations
-# to get your own Gemini rate limits (otherwise you share limits with all OpenRouter users).
-
-# 4. DocFinQA — financial document QA (easiest to start with)
+# 3. Run a smoke test on DocFinQA (the easiest domain to start with)
+export OPENAI_API_KEY="sk-..."   # DocFinQA solver: gpt-4.1-mini + text-embedding-3-small
 python examples/docfinqa/main.py --num-iterations 2
-
-# 5. ARC-AGI-1 — abstract reasoning (requires OpenRouter key above)
-python examples/arc_agi_1/main.py --num-iterations 2
-
-# 6. Can't Be Late — cloud scheduling (no solver API key needed)
-bash examples/cant_be_late/download_traces.sh
-python examples/cant_be_late/main.py --num-iterations 2
-
-# 7. Text2SQL — SQL generation from natural language (BIRD benchmark)
-bash benchmark_resources/download_bird.sh
-python examples/text2sql/main.py --num-iterations 2
 ```
+
+For the other five domains (ARC-AGI, Can't Be Late, Text2SQL, Sudoku, Protein GO), see the corresponding `examples/<domain>/README.md` — each documents its own API keys, data downloads, and extra pip installs.
 
 ## Optimize Anything API
 
