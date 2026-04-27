@@ -52,6 +52,14 @@ class RoboPhDConfig:
     evolution_timeout: int = 3600
     """Seconds per evolution session (Claude Code CLI subprocess)."""
 
+    # Meta-evolution
+    meta_evolution_strategy: Optional[str] = None
+    """Meta-evolution strategy name (e.g. ``train_a_winner``); ``None`` disables meta-evolution."""
+    meta_evolution_first_iteration: int = 4
+    """First iteration at which meta-evolution fires."""
+    meta_evolution_cadence: int = 3
+    """Iterations between meta-evolution firings (firing at ``first``, ``first + cadence``, ...)."""
+
     # Parallelism
     max_workers: Optional[int] = None
     """Thread pool size for concurrent evaluation. None = Python default."""
@@ -593,6 +601,9 @@ def optimize_task(
             "evolution_model": cfg.evolution_model,
             "evolution_timeout": cfg.evolution_timeout,
             "examples_per_iteration": cfg.examples_per_iteration,
+            "meta_evolution_strategy": cfg.meta_evolution_strategy,
+            "meta_evolution_first_iteration": cfg.meta_evolution_first_iteration,
+            "meta_evolution_cadence": cfg.meta_evolution_cadence,
             "agents_directory": str(seed_agent_path.parent),
             "initial_agents": [seed_agent_path.name],
         }

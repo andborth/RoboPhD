@@ -96,6 +96,9 @@ def parse_args():
                         help="Random seed for reproducibility")
     parser.add_argument("--engine-config", type=str, default=None,
                         help="JSON overrides (e.g. evolution_strategy, evolution_model, examples_per_iteration)")
+    parser.add_argument("--meta-evolution-strategy", default=None,
+                        help="Meta-evolution strategy (e.g. train_a_winner); default off. "
+                             "Cadence and first iteration default to (3, 4); override via --engine-config.")
 
     # Test evaluation
     parser.add_argument("--eval-test-set", action="store_true",
@@ -322,7 +325,7 @@ def main():
 
     # Build config based on engine choice
     if args.engine in ("gepa", "autoresearch"):
-        _robophd_flags = {"--num-iterations", "--engine-config", "--resume", "--extend", "--from-iteration"}
+        _robophd_flags = {"--num-iterations", "--engine-config", "--resume", "--extend", "--from-iteration", "--meta-evolution-strategy"}
         passed = {f for f in _robophd_flags if any(a == f or a.startswith(f + "=") for a in sys.argv)}
         if passed:
             logger.warning(f"Flags ignored by {args.engine} engine: {', '.join(sorted(passed))}")
@@ -360,6 +363,7 @@ def main():
             max_workers=args.max_workers,
             parent_experiments_dir=args.runs_dir,
             random_seed=args.random_seed,
+            meta_evolution_strategy=args.meta_evolution_strategy,
             engine_overrides=engine_overrides or None,
         )
         if args.resume:

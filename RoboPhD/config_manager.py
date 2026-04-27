@@ -20,6 +20,11 @@ from typing import Any, Dict, List, Optional, Tuple
 IMMUTABLE_PARAMS = [
     "domain", "dataset", "random_seed",
     "initial_agents", "agents_directory",
+    # Meta-evolution control: locked at iteration 1 so the meta-agent can be told the
+    # cadence honestly and rely on a single strategy across all firings.
+    "meta_evolution_strategy",
+    "meta_evolution_first_iteration",
+    "meta_evolution_cadence",
 ]
 
 
@@ -73,7 +78,9 @@ class ConfigManager:
             "evolution_strategy": "use_your_judgment",
 
             # Meta-evolution parameters
-            "meta_evolution_strategy": None,       # Which meta-evolution strategy to use
+            "meta_evolution_strategy": None,       # Which meta-evolution strategy to use (None = off)
+            "meta_evolution_first_iteration": 4,   # First iteration at which meta-evolution fires
+            "meta_evolution_cadence": 3,           # Iterations between meta-evolution firings
             "meta_evolution_model": "opus-4.7",    # Model for meta-evolution
             "meta_evolution_domain": None,         # Override domain name for meta-evo prompts (e.g., "codegen" when domain="external")
             "dollar_budget": None,         # Total budget in dollars (default: no limit)
@@ -288,6 +295,8 @@ class ConfigManager:
 
             # Meta-evolution self-reference (circular dependency)
             "meta_evolution_strategy",
+            "meta_evolution_first_iteration",
+            "meta_evolution_cadence",
             "meta_evolution_model",
             "dollar_budget",
             "evaluation_budget",

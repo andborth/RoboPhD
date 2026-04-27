@@ -65,7 +65,15 @@ class MetaEvolutionManager:
     and proposing configuration changes for K+1 and beyond.
     """
 
-    def __init__(self, experiment_dir: Path, config_manager: ConfigManager, domain_name: str, domain=None):
+    def __init__(
+        self,
+        experiment_dir: Path,
+        config_manager: ConfigManager,
+        domain_name: str,
+        domain=None,
+        session_id: Optional[str] = None,
+        initial_firing_complete: bool = False,
+    ):
         """
         Initialize Meta-Evolution Manager.
 
@@ -74,6 +82,15 @@ class MetaEvolutionManager:
             config_manager: Configuration manager for the experiment
             domain_name: Domain identifier (e.g., "codegen", "text2sql")
             domain: Optional domain object for deriving header from task metadata
+            session_id: Optional pre-existing Claude Code session ID. Restored from
+                checkpoint on resume. If the initial firing did NOT complete (see
+                ``initial_firing_complete``), this id will be discarded and a fresh
+                one minted at the next firing — the abandoned transcript stays on
+                disk for diagnostics.
+            initial_firing_complete: True iff a prior firing successfully passed
+                ``_parse_and_validate_outputs`` (so the persistent session contains
+                the strategy + task background and follow-up prompts are safe).
+                Restored from checkpoint on resume.
         """
         self.experiment_dir = experiment_dir
         self.config_manager = config_manager
@@ -84,27 +101,52 @@ class MetaEvolutionManager:
         self.strategies_dir = Path("RoboPhD/meta_evolution_strategies")  # Source directory
         self.output_dir = experiment_dir / "meta_evolution_output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        # Persistent Claude Code session shared across all firings within the run.
+        self.session_id: Optional[str] = session_id
+        self.initial_firing_complete: bool = initial_firing_complete
+
+    def get_session_id(self) -> Optional[str]:
+        """Return the Claude Code session id used by meta-evolution, or None if not yet started."""
+        return self.session_id
+
+    def is_initial_firing_complete(self) -> bool:
+        """Return True iff a prior firing successfully completed validation (follow-up safe)."""
+        return self.initial_firing_complete
 
     def should_run_meta_evolution(self, iteration: int) -> bool:
         """
         Check if meta-evolution should run for this iteration.
 
+        Fires when iteration >= first_iteration and (iteration - first) % cadence == 0.
+        First/cadence are read from config and locked at iteration 1 (IMMUTABLE_PARAMS).
+
         Args:
             iteration: Current iteration number
 
         Returns:
-            True if meta_evolution_strategy is configured and not "none"
+            True if meta-evolution should run this iteration.
         """
         config = self.config_manager.get_config(iteration)
         strategy = config.get("meta_evolution_strategy")
-        return strategy is not None and strategy != "none"
+        if strategy is None or strategy == "none":
+            return False
+        first = config.get("meta_evolution_first_iteration", 4)
+        cadence = config.get("meta_evolution_cadence", 3)
+        if iteration < first:
+            return False
+        return (iteration - first) % cadence == 0
 
     def run_meta_evolution(
         self,
         iteration: int
     ) -> MetaEvolutionResult:
         """
-        Execute meta-evolution for this iteration using fresh session.
+        Execute meta-evolution for this iteration.
+
+        All firings within a run share one continuous Claude Code session
+        (`self.session_id`). The first firing carries the full setup (strategy,
+        task background, cadence info); subsequent firings deliver brief status
+        updates and rely on the in-session memory of prior decisions.
 
         Args:
             iteration: Current iteration number
@@ -115,13 +157,26 @@ class MetaEvolutionManager:
         config = self.config_manager.get_config(iteration)
         strategy_name = config["meta_evolution_strategy"]
         model = config.get("meta_evolution_model", "opus-4.5")
+        cadence = config.get("meta_evolution_cadence", 3)
+        first_iteration = config.get("meta_evolution_first_iteration", 4)
 
-        # Generate fresh session ID for this meta-evolution call
-        session_id = str(uuid.uuid4())
+        # If the initial firing hasn't completed, this firing IS the initial firing.
+        # Mint a fresh session id (discarding any abandoned id from a prior crashed
+        # attempt — its transcript stays on disk for diagnostics) so Claude starts
+        # with a clean conversation.
+        is_first_firing = not self.initial_firing_complete
+        if is_first_firing:
+            self.session_id = str(uuid.uuid4())
+        else:
+            assert self.session_id is not None, (
+                "Invariant: initial_firing_complete=True implies session_id is set"
+            )
 
+        firing_label = "Initial firing" if is_first_firing else "Follow-up firing"
         logger.info(f"\n{'=' * 60}")
-        logger.info(f"🧬 META-EVOLUTION (Iteration {iteration}) | Strategy: {strategy_name} | Model: {model}")
-        logger.info(f"Session ID: {session_id}")
+        logger.info(f"🧬 META-EVOLUTION (Iteration {iteration}) | Strategy: {strategy_name} | "
+                    f"{firing_label} | Model: {model}")
+        logger.info(f"Session ID: {self.session_id}")
         logger.info(f"{'=' * 60}\n")
 
         # Create iteration-specific output directory
@@ -138,63 +193,78 @@ class MetaEvolutionManager:
             'cache_read': 0
         }
 
-        # PHASE 1: Planning and Implementation
-        logger.info("📋 Phase 1: Planning, reasoning, and implementation...")
-        context = self._gather_context(iteration, config)
-        strategy = self._load_meta_strategy(strategy_name)
-
-        cost_data = self._execute_planning_and_implementation(
-            strategy=strategy,
-            context=context,
-            iteration=iteration,
-            iteration_output=iteration_output,
-            model=model,
-            session_id=session_id
-        )
+        # PHASE 1: Planning and Implementation (initial OR follow-up firing)
+        if is_first_firing:
+            logger.info("📋 Phase 1: Initial planning, reasoning, and implementation...")
+            context = self._gather_context(iteration, config)
+            strategy = self._load_meta_strategy(strategy_name)
+            cost_data = self._execute_planning_and_implementation(
+                strategy=strategy,
+                context=context,
+                iteration=iteration,
+                iteration_output=iteration_output,
+                model=model,
+                session_id=self.session_id,
+                cadence=cadence,
+                first_iteration=first_iteration,
+            )
+        else:
+            logger.info("📋 Phase 1: Follow-up status update (resuming session)...")
+            context = self._gather_context(iteration, config)
+            cost_data = self._execute_followup_firing(
+                iteration=iteration,
+                iteration_output=iteration_output,
+                model=model,
+                session_id=self.session_id,
+                cadence=cadence,
+                context=context,
+            )
         self._accumulate_costs(total_cost_data, cost_data)
 
-        # PHASE 2: Validation (check reasoning.md exists)
-        logger.info("✅ Phase 2: Validating reasoning.md...")
+        # Validate reasoning.md exists; correct if missing (cheap inline check).
         reasoning_path = iteration_output / "reasoning.md"
         if not reasoning_path.exists():
             logger.warning("⚠️  reasoning.md not found, prompting for correction...")
             cost_data = self._prompt_for_correction(
                 iteration=iteration,
                 model=model,
-                error_message="reasoning.md is missing. Please create it as specified in Step 1.",
-                session_id=session_id,
+                error_message="reasoning.md is missing. Please create it as specified.",
+                session_id=self.session_id,
                 working_dir=iteration_output
             )
             self._accumulate_costs(total_cost_data, cost_data)
-
-            # Re-check after correction
             if not reasoning_path.exists():
                 raise RuntimeError("Planning failed to create reasoning.md even after correction attempt")
 
         logger.info(f"✓ reasoning.md created ({reasoning_path.stat().st_size} bytes): {os.path.relpath(reasoning_path)}")
 
-        # PHASE 3: Validation and installation
-        logger.info("✅ Phase 3: Validating and installing outputs...")
+        # PHASE 2: Validation and installation of artifacts
+        logger.info("✅ Phase 2: Validating and installing outputs...")
         meta_config_schedule, config_delta = self._parse_and_validate_outputs(
             iteration=iteration,
             model=model,
             total_cost_data=total_cost_data,
-            session_id=session_id,
+            session_id=self.session_id,
             working_dir=iteration_output
         )
 
-        # PHASE 4: Reflection
-        logger.info("💭 Phase 4: Requesting meta-evolution reflection...")
+        # Validation succeeded — the session now contains a complete planning
+        # round (strategy + task background + validated artifacts). Future firings
+        # are safe to use the brief follow-up prompt against this session.
+        self.initial_firing_complete = True
+
+        # PHASE 3: Reflection
+        logger.info("💭 Phase 3: Requesting meta-evolution reflection...")
         cost_data = self._request_reflection(
             iteration=iteration,
             model=model,
-            session_id=session_id,
+            session_id=self.session_id,
             working_dir=iteration_output,
         )
         self._accumulate_costs(total_cost_data, cost_data)
 
         # Save session transcript summary
-        self._save_session_transcript(session_id, iteration_output)
+        self._save_session_transcript(self.session_id, iteration_output)
 
         logger.info(f"\n{'=' * 60}")
         logger.info(f"✓ Meta-evolution complete for iteration {iteration}")
@@ -470,7 +540,7 @@ class MetaEvolutionManager:
         model: str,
         session_id: str,
         working_dir: Path,
-        session_created: bool = False
+        resume_session: bool = False
     ) -> Dict[str, Any]:
         """
         Call Claude Code CLI with the given prompt.
@@ -480,7 +550,9 @@ class MetaEvolutionManager:
             model: Model to use (API name like "sonnet-4.5")
             session_id: Session ID for this meta-evolution call
             working_dir: Working directory for Claude Code (iteration-specific output dir)
-            session_created: True if this is a continuation of an existing session
+            resume_session: True → use ``--resume <session_id>`` (continue an existing
+                Claude Code session). False → use ``--session-id <session_id>`` to
+                create a new session with that explicit id.
 
         Returns:
             Dictionary with cost and usage information
@@ -501,11 +573,9 @@ class MetaEvolutionManager:
         ]
 
         # Use explicit session management to prevent interference
-        if session_created:
-            # Resume existing session by ID
+        if resume_session:
             cmd.extend(["--resume", session_id])
         else:
-            # Create new session with explicit ID
             cmd.extend(["--session-id", session_id])
 
         cmd.extend([
@@ -617,7 +687,7 @@ Remember:
             model=model,
             session_id=session_id,
             working_dir=working_dir,
-            session_created=True  # Always a continuation when correcting
+            resume_session=True  # Corrections always continue the active session
         )
 
     def _execute_planning_and_implementation(
@@ -627,13 +697,16 @@ Remember:
         iteration: int,
         iteration_output: Path,
         model: str,
-        session_id: str
+        session_id: str,
+        cadence: int,
+        first_iteration: int,
     ) -> Dict[str, Any]:
         """
-        Execute planning and implementation in a single round.
+        Execute initial-firing planning and implementation.
 
-        Sends full context, asks Claude to create reasoning.md with analysis,
-        then implement new strategies and configuration changes.
+        Sends full context (strategy + cadence info + task background + reports),
+        asks Claude to create reasoning.md and implement strategies/config changes.
+        This is the FIRST firing only; subsequent firings use _execute_followup_firing.
 
         Args:
             strategy: Meta-evolution strategy text
@@ -641,7 +714,9 @@ Remember:
             iteration: Current iteration number
             iteration_output: Output directory for this iteration
             model: Model to use
-            session_id: Session ID for this meta-evolution call
+            session_id: Session ID (will be created with --session-id)
+            cadence: Iterations between firings (used in cadence paragraph)
+            first_iteration: First firing iteration (used in cadence paragraph)
 
         Returns:
             Cost data dictionary
@@ -650,6 +725,19 @@ Remember:
         strategy_with_budget = strategy.replace(
             "**Budget Status**:",
             budget_info
+        )
+
+        cadence_paragraph = (
+            "## Single-Session Meta-Evolution\n\n"
+            "This Claude Code session will persist across all future meta-evolution firings in this run. "
+            "You will receive brief status updates each time a new firing occurs. "
+            f"**Cadence: you are called every {cadence} iterations** "
+            f"(first firing at iter {first_iteration}, then iter {first_iteration + cadence}, "
+            f"{first_iteration + 2 * cadence}, …). "
+            f"Plan your `meta_config_schedule.json` decisions with this {cadence}-iteration horizon "
+            f"in mind — any change you propose will run for ~{cadence} iterations before you see "
+            "its effect and can revise.\n\n"
+            "---\n"
         )
 
         # Write CLAUDE.md with domain background to parent (meta_evolution_output/).
@@ -666,6 +754,7 @@ Remember:
             logger.info(f"CLAUDE.md written to: {claude_md_path}")
 
         prompt = f"""
+{cadence_paragraph}
 {strategy_with_budget}
 
 ## Current State (Iteration {iteration})
@@ -806,7 +895,69 @@ Framework will:
             model=model,
             session_id=session_id,
             working_dir=iteration_output,
-            session_created=False  # First call
+            resume_session=False  # Initial firing creates the session
+        )
+
+    def _execute_followup_firing(
+        self,
+        iteration: int,
+        iteration_output: Path,
+        model: str,
+        session_id: str,
+        cadence: int,
+        context: Dict,
+    ) -> Dict[str, Any]:
+        """
+        Execute a follow-up meta-evolution firing within the existing session.
+
+        Sends a brief status update referencing the latest iteration's reports
+        and asks for the standard artifacts. The strategy text and task background
+        are NOT re-fed — Claude has them from the initial firing.
+
+        Args:
+            iteration: Current iteration number
+            iteration_output: Output directory for this iteration
+            model: Model to use
+            session_id: Persistent session id (will be resumed with --resume)
+            cadence: Iterations between firings (used to mention next firing)
+            context: Gathered context (used for budget formatting)
+
+        Returns:
+            Cost data dictionary
+        """
+        budget_info = self._format_budget_status(context["budget"], iteration)
+
+        prompt = f"""## Meta-Evolution Firing — Iteration {iteration}
+
+Iteration {iteration} has just completed. Updated reports for this iteration:
+- Interim report: `iteration_{iteration:03d}/interim_report.md`
+- Cost report: `iteration_{iteration:03d}/cost_report.md`
+- Error analysis: `iteration_{iteration:03d}/error_analysis_report.md`
+
+{budget_info}
+
+Next firing: iteration {iteration + cadence} (or run end if budget exhausts first).
+
+Please produce the standard artifacts in `meta_evolution_output/iteration_{iteration:03d}/`:
+- `reasoning.md` — your analysis and plan (reference your prior decisions and what the new data shows)
+- `meta_config_schedule.json` — config changes for upcoming iterations (REQUIRED, can be empty `{{}}` if no changes)
+- `config_delta.json` (optional) — immediate parameter change starting next iteration (persists until overwritten)
+- `new_strategies/<name>/strategy.md` (optional) — any new evolution strategies
+
+After completing, respond with: "META-EVOLUTION ITERATION {iteration} COMPLETE"
+"""
+
+        # Save follow-up prompt for debugging and reproducibility
+        meta_prompt_file = iteration_output / "meta_evolution_prompt.md"
+        meta_prompt_file.write_text(prompt)
+        logger.info(f"Meta-evolution follow-up prompt saved to: {meta_prompt_file}")
+
+        return self._call_claude_code(
+            prompt=prompt,
+            model=model,
+            session_id=session_id,
+            working_dir=iteration_output,
+            resume_session=True  # Follow-up firings resume the persistent session
         )
 
     def _gather_context(self, iteration: int, config: Dict[str, Any]) -> Dict:
@@ -1517,7 +1668,7 @@ After saving the reflection, respond with: "REFLECTION COMPLETE"
                 model=model,
                 session_id=session_id,
                 working_dir=working_dir,
-                session_created=True  # Continuation
+                resume_session=True  # Reflection continues the active session
             )
 
             reflection_file = working_dir / "meta_evolution_reflection.md"

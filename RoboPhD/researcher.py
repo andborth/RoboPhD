@@ -736,6 +736,14 @@ class ParallelAgentResearcher:
             self.iteration_fresh_evals = resume_checkpoint.get('iteration_fresh_evals', [])
             self.evolution_times = resume_checkpoint.get('evolution_times', [])
             self.meta_evolution_times = resume_checkpoint.get('meta_evolution_times', [])
+            # Persistent meta-evolution session id (one Claude Code session shared across all firings).
+            # The "initial_firing_complete" flag tracks whether a prior firing got past validation —
+            # if False but session_id is set, the prior session was abandoned mid-firing and a fresh
+            # session will be minted at the next firing.
+            self.meta_evolution_session_id = resume_checkpoint.get('meta_evolution_session_id')
+            self.meta_evolution_initial_firing_complete = resume_checkpoint.get(
+                'meta_evolution_initial_firing_complete', False
+            )
             self.zero_accuracy_cases = [tuple(e) for e in resume_checkpoint.get('zero_accuracy_cases', [])]
             self.exception_failures = [tuple(e) for e in resume_checkpoint.get('exception_failures', [])]
             self.five_hour_limit_incidents = [tuple(e) for e in resume_checkpoint.get('five_hour_limit_incidents', [])]
@@ -817,6 +825,9 @@ class ParallelAgentResearcher:
             self.current_iteration_evolution_cost = None
             self.evolution_times = []
             self.meta_evolution_times = []
+            # Persistent meta-evolution session id (lazily minted on first firing).
+            self.meta_evolution_session_id = None
+            self.meta_evolution_initial_firing_complete = False
             self.zero_accuracy_cases = []
             self.exception_failures = []
             self.five_hour_limit_incidents = []
@@ -853,13 +864,18 @@ class ParallelAgentResearcher:
         # Update evolver with domain (created before _load_data)
         self.evolver.domain = self.domain
 
-        # Initialize meta-evolution manager (after _load_data so self.domain exists)
+        # Initialize meta-evolution manager (after _load_data so self.domain exists).
+        # Pass the resumed session id and completion flag so meta-evolution continues
+        # the same Claude Code session across run boundaries (unless the prior session
+        # was abandoned mid-firing, in which case the manager mints a fresh id).
         from RoboPhD.meta_evolution_manager import MetaEvolutionManager
         self.meta_evolution_manager = MetaEvolutionManager(
             experiment_dir=self.experiment_dir,
             config_manager=self.config_manager,
             domain_name=config.get("meta_evolution_domain", self.domain_name),
             domain=self.domain,
+            session_id=self.meta_evolution_session_id,
+            initial_firing_complete=self.meta_evolution_initial_firing_complete,
         )
 
         # Pass references to evolver for Deep Focus
@@ -2908,6 +2924,7 @@ class ParallelAgentResearcher:
             # PHASE 2: Run meta-evolution if configured
             if self.meta_evolution_manager.should_run_meta_evolution(iteration):
                 meta_start_time = time.time()
+                meta_failure = None
                 try:
                     # Run meta-evolution
                     meta_result = self.meta_evolution_manager.run_meta_evolution(iteration)
@@ -2933,9 +2950,6 @@ class ParallelAgentResearcher:
                         )
                         logger.info(f"✓ Applied immediate config delta: {meta_result.config_delta}")
 
-                    # Save checkpoint again with meta-evolution results
-                    self._save_checkpoint(iteration)
-
                     # Validate after meta-evolution
                     is_valid, errors = self.config_manager.validate_consistency(iteration)
                     if not is_valid:
@@ -2943,22 +2957,47 @@ class ParallelAgentResearcher:
                         for error in errors:
                             logger.error(f"  - {error}")
                         raise RuntimeError("Meta-evolution broke config consistency")
-
                 except Exception as e:
-                    # Meta-evolution failed - iteration work is already saved
+                    # Capture failure to handle outside finally (so finally can persist
+                    # the manager's session state before any termination return).
+                    meta_failure = e
                     logger.error(f"❌ Meta-evolution failed: {e}")
-                    logger.info("Triggering graceful termination...")
+                finally:
+                    # Always capture the manager's session state — even if the firing
+                    # crashed mid-way — so subsequent in-process firings AND resumed
+                    # runs reuse the same session id (or know to mint a fresh one).
+                    self.meta_evolution_session_id = self.meta_evolution_manager.get_session_id()
+                    self.meta_evolution_initial_firing_complete = (
+                        self.meta_evolution_manager.is_initial_firing_complete()
+                    )
+                    self.meta_evolution_times[iteration - 1] = time.time() - meta_start_time
+                    # Persist captured session state (including session_id) before any
+                    # potential termination. Wrap in try so a checkpoint failure doesn't
+                    # mask the original meta-evolution exception.
+                    try:
+                        self._save_checkpoint(iteration)
+                    except Exception as save_err:
+                        if meta_failure is not None:
+                            # Double failure: meta-evolution crashed AND we couldn't
+                            # persist the captured session state. The session id minted
+                            # in this firing is now only in memory; a resumed run will
+                            # mint a fresh session and abandon this transcript.
+                            logger.error(
+                                f"Double failure — checkpoint save failed after meta-evolution "
+                                f"failure: {save_err}. Captured session state lost; resume will "
+                                f"mint a fresh session id."
+                            )
+                        else:
+                            logger.warning(f"Failed to save checkpoint after meta-evolution: {save_err}")
 
-                    # Generate final report
+                if meta_failure is not None:
+                    # Iteration work is already saved (line 2914) and the meta-evolution
+                    # session state was just persisted in the finally above.
+                    logger.info("Triggering graceful termination...")
                     self.process_reaper.stop()
                     self.report_generator.generate_final_report(start_time)
-
-                    # Exit gracefully
                     print(f"\n🏁 Ending experiment after {iteration} iterations due to meta-evolution failure")
                     return True
-                finally:
-                    # Update meta-evolution time (even if it failed)
-                    self.meta_evolution_times[iteration - 1] = time.time() - meta_start_time
             # else: meta-evolution not run - time remains 0 (already initialized above)
 
             # Check budget and maybe terminate
@@ -3391,21 +3430,19 @@ class ParallelAgentResearcher:
             'task_config': self.task_config,
         }
 
-        # Preserve meta_evolution_session_id and meta_evolution_session_created if they exist.
-        # Currently unused — meta-evolution creates a fresh session each iteration.
-        # This scaffolding would be needed for cross-iteration session persistence.
-        checkpoint_file = self.experiment_dir / 'checkpoint.json'
-        if checkpoint_file.exists():
-            try:
-                with open(checkpoint_file, 'r') as f:
-                    existing_checkpoint = json.load(f)
-                    if 'meta_evolution_session_id' in existing_checkpoint:
-                        checkpoint['meta_evolution_session_id'] = existing_checkpoint['meta_evolution_session_id']
-                    if 'meta_evolution_session_created' in existing_checkpoint:
-                        checkpoint['meta_evolution_session_created'] = existing_checkpoint['meta_evolution_session_created']
-            except:
-                pass  # If reading fails, just proceed without preserving
+        # Persist meta-evolution session id and completion flag so resumed runs
+        # continue the same Claude Code session across all firings (or, if the prior
+        # session was abandoned mid-firing, know to mint a fresh one).
+        # Asymmetry: session_id is gated on `is not None` to keep early-iteration
+        # checkpoints clean (no null field before any firing), while
+        # initial_firing_complete is ALWAYS written — False is meaningful state
+        # ("we got partway and abandoned a session") that resume must distinguish
+        # from "key absent" (legacy checkpoint pre-dating this field).
+        if self.meta_evolution_session_id is not None:
+            checkpoint['meta_evolution_session_id'] = self.meta_evolution_session_id
+        checkpoint['meta_evolution_initial_firing_complete'] = self.meta_evolution_initial_firing_complete
 
+        checkpoint_file = self.experiment_dir / 'checkpoint.json'
         with open(checkpoint_file, 'w') as f:
             json.dump(checkpoint, f, indent=2, default=str)
 
