@@ -15,7 +15,7 @@ __author__ = "RoboPhD Authors"
 
 from .researcher import ParallelAgentResearcher, ParallelAgentEvolver
 from .api import (
-    optimize_anything, optimize_task, eval_candidate, eval_run,
+    optimize_anything, eval_candidate, eval_run,
     OptimizeResult, EvalResult,
     RoboPhDConfig, GEPAConfig, AutoresearchConfig, RoboPhDEvalConfig,
 )
@@ -25,7 +25,6 @@ __all__ = [
     'ParallelAgentResearcher',
     'ParallelAgentEvolver',
     'optimize_anything',
-    'optimize_task',
     'eval_candidate',
     'eval_run',
     'OptimizeResult',
