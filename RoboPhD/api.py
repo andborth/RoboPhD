@@ -452,11 +452,15 @@ def optimize_anything(
         config_manager = ConfigManager()
         researcher_config = {
             "domain": "external",
+            "meta_evolution_domain": task_name,
             "evolution_strategy": cfg.evolution_strategy,
             "evolution_model": cfg.evolution_model,
             "evolution_timeout": cfg.evolution_timeout,
             "eval_timeout": cfg.eval_timeout,
             "examples_per_iteration": cfg.examples_per_iteration,
+            "meta_evolution_strategy": cfg.meta_evolution_strategy,
+            "meta_evolution_first_iteration": cfg.meta_evolution_first_iteration,
+            "meta_evolution_cadence": cfg.meta_evolution_cadence,
             "agents_directory": str(seed_dir.parent),
             "initial_agents": [seed_agent_name],
         }
