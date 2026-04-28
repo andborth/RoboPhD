@@ -741,7 +741,12 @@ class ReportGenerator:
             report_lines.append(f"- {param_name}: {value}")
         report_lines.append("")
 
-        # Task Configuration (from task defaults + --task-config overrides)
+        # Task Configuration (from task defaults + --task-config overrides).
+        # Skip long-form static fields like `background` and `objective` — they don't
+        # change between iterations and bloat every report (meta-evolution reads each
+        # iteration's interim_report.md every firing, so each KB of static text pushes
+        # useful signal further down in context).
+        TASK_CONFIG_SKIP = {"background", "objective"}
         task_config = getattr(self.researcher, 'task_config', {})
         if task_config:
             report_lines.append("### Task Configuration")
@@ -749,6 +754,8 @@ class ReportGenerator:
             report_lines.append("Task-specific parameters (from task defaults + --task-config overrides):")
             report_lines.append("")
             for param_name in sorted(task_config.keys()):
+                if param_name in TASK_CONFIG_SKIP:
+                    continue
                 value = task_config[param_name]
                 if param_name.endswith('_model') and value:
                     value = self._format_model_name(value)
