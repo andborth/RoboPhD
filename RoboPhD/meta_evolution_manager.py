@@ -61,7 +61,11 @@ These reports are generated after each iteration at `../iteration_NNN/` (relativ
 
 ## CLI Tools
 
-`jq` and `tree` are installed and available."""
+`jq` and `tree` are installed and available.
+
+## Horizon
+
+The run may be extended beyond the current iteration count. Don't treat any iteration as "final" or optimize for a specific end point — make decisions based on strategy performance trends, not on how many iterations remain."""
 
 
 class MetaEvolutionManager:
