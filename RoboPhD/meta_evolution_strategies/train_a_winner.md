@@ -90,39 +90,32 @@ recent error patterns.
 
 ## Input Sources
 
-You have full read access to everything below.
+You have full read access to the experiment directory. **For exact paths, see `CLAUDE.md` in your working directory** — it documents the on-disk layout authoritatively.
 
-### Produced by Meta-Evolution
+### Produced by Meta-Evolution (your own prior firings)
 
-- `../../meta_evolution_output/iteration_XXX/reasoning.md` — prior meta-evolution analysis
-- `../../meta_evolution_output/iteration_XXX/meta_evolution_reflection.md` — prior self-assessment
+- **reasoning.md** — your analysis at each prior firing
+- **meta_evolution_reflection.md** — your self-assessment after each prior firing
 
-### Produced by Evolution
+### Produced by Evolution (per-iteration)
 
-- `../../evolution_output/iteration_XXX/reasoning.md`
-- `../../evolution_output/iteration_XXX/evolution_reflection.md` — **start here**
-- `../../evolution_output/iteration_XXX/session_summary.md` (readable markdown summary of the evolution session — assistant reasoning and tool call summaries)
+Each evolution iteration produces, in order:
 
-**Understanding evolution artifacts** — each evolution iteration produces these in order:
-
-1. **reasoning.md**: Planning document written before agent creation. Contains error analysis, strategic decisions, and rationale for the approach.
-
-2. **Agent artifacts** (per the task's file_mapping): The agent files created based on the reasoning.
-
-3. **evolution_reflection.md**: Written after the agent is created and tested in a deep focus round (tested against prior agents on a set of questions). Contains self-assessment, what worked, what was challenging, and suggestions for improvement. **Start here** — it's the most informative single document.
-
-4. **session_summary.md**: Readable markdown summary of the full evolution session — includes all assistant reasoning verbatim and one-line tool call summaries. **Use this** when reflection/reasoning aren't enough and you need to see the full narrative of what the AI thought and did.
+1. **reasoning.md** — planning document written before agent creation. Error analysis, strategic decisions, rationale for the approach.
+2. **Agent artifacts** (per the task's file_mapping) — the agent files created from the reasoning.
+3. **evolution_reflection.md** — written after the agent is tested in a deep-focus round. Self-assessment of what worked, what was challenging, and suggestions for improvement. **Start here** — it's the most informative single document.
+4. **session_summary.md** — readable markdown summary of the full evolution session, including assistant reasoning verbatim and one-line tool call summaries. **Use this** when reflection/reasoning aren't enough and you need the full narrative.
 
 ### Iteration Reports and Analysis
 
-- `../../iteration_XXX/interim_report.md`
-- `../../iteration_XXX/error_analysis_report.md`
+- **interim_report.md** — performance ranking table, winners, ELO progression, iteration timing
+- **error_analysis_report.md** — per-problem score divergences across competing agents
 
 ### Other
 
-- `../../checkpoint.json` (includes `config_change_history`)
-- `../../evolution_strategies/` — installed strategies for this experiment
-- **Bash tools**: `diff`, `jq`, `tree`, standard Unix tools
+- The run **checkpoint** includes `config_change_history` showing the full configuration trajectory.
+- The installed evolution strategies directory shows which strategies are currently available.
+- **Bash tools**: `diff`, `jq`, `tree`, standard Unix tools.
 
 ## Output Requirements
 
@@ -179,17 +172,13 @@ Document your strategy-focused analysis:
 
 ### 2. New Evolution Strategy (Step 2 — Required)
 
-You **must** create exactly one new evolution strategy in:
-`new_strategies/strategy_name/`
+You **must** create exactly one new evolution strategy. The per-firing prompt names the exact directory to write it to (a `new_strategies/<strategy_name>/` subdirectory under your iteration's output).
 
 Each strategy package includes:
 - `strategy.md` — Main strategy prompt (instructions given to the evolution AI)
 - Optional: `strategy_tools/` — Helper scripts to improve evolution decisions
 
-**If your strategy includes tools**: They will be available locally during execution in `strategy_tools/`. The evolution working directory is `../../evolution_output/iteration_XXX/`, so evolution can reference tools with relative paths:
-```bash
-python strategy_tools/analysis_tool.py --input ../../evolution_output/ --output my_analysis.json
-```
+**If your strategy includes tools**: When written into the strategy.md instructions, reference them as `strategy_tools/<script>.py`. They are symlinked into the evolution working directory at runtime, so the evolution AI invokes them with that relative path regardless of its actual cwd.
 
 ### 3. meta_config_schedule.json (Step 2 — Required)
 
