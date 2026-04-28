@@ -178,7 +178,7 @@ Each strategy package includes:
 - `strategy.md` — Main strategy prompt (instructions given to the evolution AI)
 - Optional: `strategy_tools/` — Helper scripts to improve evolution decisions
 
-**If your strategy includes tools**: When written into the strategy.md instructions, reference them as `strategy_tools/<script>.py`. They are symlinked into the evolution working directory at runtime, so the evolution AI invokes them with that relative path regardless of its actual cwd.
+**If your strategy includes tools**: When writing the strategy.md instructions, reference them as `strategy_tools/<script>.py`. At evolution time they are automatically symlinked into the evolution AI's working directory, so the relative invocation just works.
 
 ### 3. meta_config_schedule.json (Step 2 — Required)
 
