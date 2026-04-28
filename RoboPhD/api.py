@@ -520,6 +520,52 @@ def optimize_anything(
     return result
 
 
+def _build_result(experiment_dir: Path, file_mapping: Dict[str, str], completed_normally: bool) -> OptimizeResult:
+    """Extract OptimizeResult from a completed experiment directory."""
+    from RoboPhD.candidate_utils import extract_candidate
+    from RoboPhD.runner_utils import find_best_agent
+    from RoboPhD.researcher import ParallelAgentResearcher
+
+    agent_name, agent_dir = find_best_agent(experiment_dir)
+    best_candidate = extract_candidate(agent_dir, file_mapping)
+
+    checkpoint = ParallelAgentResearcher.load_checkpoint(experiment_dir)
+    best_perf = checkpoint["performance_records"][agent_name]
+    best_score = best_perf["elo"]
+
+    # Build all_candidates list from agent pool + performance records
+    all_candidates = []
+    for aid, aperf in checkpoint["performance_records"].items():
+        agent_info = checkpoint["agent_pool"].get(aid, {})
+        pkg_dir = agent_info.get("package_dir")
+        candidate = None
+        if pkg_dir:
+            agent_path = experiment_dir / pkg_dir
+            if agent_path.exists():
+                candidate = extract_candidate(agent_path, file_mapping)
+        all_candidates.append({
+            "name": aid,
+            "candidate": candidate,
+            "elo": aperf.get("elo", 1500),
+            "mean_score": aperf.get("mean_score", 0.0),
+            "test_count": aperf.get("test_count", 0),
+        })
+    all_candidates.sort(key=lambda x: x["elo"], reverse=True)
+
+    num_iterations = checkpoint.get("last_completed_iteration", 0)
+    total_evals = sum(checkpoint.get("iteration_fresh_evals", []))
+
+    return OptimizeResult(
+        best_candidate=best_candidate,
+        best_score=best_score,
+        experiment_dir=experiment_dir,
+        all_candidates=all_candidates,
+        num_iterations_completed=num_iterations,
+        total_evaluations=total_evals,
+        completed_normally=completed_normally,
+    )
+
+
 def eval_candidate(
     evaluator: Callable,
     dataset: List[Dict],

@@ -45,9 +45,16 @@ When creating strategies with `strategy_tools/`, these tools are **symlinked int
 - Reference them with imperative language in strategy.md (e.g., "Run `python strategy_tools/analyze_failures.py ...`" not "If the tool is available...")
 - The symlink will exist — do NOT include fallback instructions suggesting the tool might be missing
 
+## Working Directory
+
+Your working directory is the run's `meta_evolution_output/` directory, which is stable across all firings within a run (so the persistent Claude Code session can be resumed each iteration). Iteration-specific subdirectories live as children:
+- `iteration_NNN/` — per-firing output (reasoning.md, meta_config_schedule.json, new_strategies/, etc.)
+- `../iteration_NNN/` — per-iteration outputs from the main run (interim_report.md, cost_report.md, error_analysis_report.md, agent dirs)
+- `../evolution_strategies/` — installed evolution strategies (yours land here after validation)
+
 ## Per-Iteration Reports
 
-These reports are generated after each iteration at `../../iteration_NNN/` (relative to the evolution working dir):
+These reports are generated after each iteration at `../iteration_NNN/` (relative to your working dir):
 - `error_analysis_report.md` — cross-agent score comparison & failure summary
 - `error_index.json` — raw per-problem score data (source for the report)
 - `cost_report.md` — per-agent LLM cost breakdown (tokens, cache hits, USD)
@@ -228,9 +235,9 @@ class MetaEvolutionManager:
             cost_data = self._prompt_for_correction(
                 iteration=iteration,
                 model=model,
-                error_message="reasoning.md is missing. Please create it as specified.",
+                error_message=f"reasoning.md is missing. Please create it at iteration_{iteration:03d}/reasoning.md as specified.",
                 session_id=self.session_id,
-                working_dir=iteration_output
+                working_dir=self.output_dir
             )
             self._accumulate_costs(total_cost_data, cost_data)
             if not reasoning_path.exists():
@@ -245,7 +252,7 @@ class MetaEvolutionManager:
             model=model,
             total_cost_data=total_cost_data,
             session_id=self.session_id,
-            working_dir=iteration_output
+            working_dir=self.output_dir
         )
 
         # Validation succeeded — the session now contains a complete planning
@@ -259,12 +266,19 @@ class MetaEvolutionManager:
             iteration=iteration,
             model=model,
             session_id=self.session_id,
-            working_dir=iteration_output,
+            working_dir=self.output_dir,
+            iteration_dir=iteration_output,
         )
         self._accumulate_costs(total_cost_data, cost_data)
 
-        # Save session transcript summary
-        self._save_session_transcript(self.session_id, iteration_output)
+        # Save per-firing session transcript summary. Lookup uses self.output_dir
+        # (matches the cwd Claude CLI saw); output is per-firing so each iteration
+        # keeps its own snapshot.
+        self._save_session_transcript(
+            self.session_id,
+            lookup_dir=self.output_dir,
+            output_path=iteration_output / "session_summary.md",
+        )
 
         logger.info(f"\n{'=' * 60}")
         logger.info(f"✓ Meta-evolution complete for iteration {iteration}")
@@ -549,7 +563,11 @@ class MetaEvolutionManager:
             prompt: Prompt to send to Claude Code
             model: Model to use (API name like "sonnet-4.5")
             session_id: Session ID for this meta-evolution call
-            working_dir: Working directory for Claude Code (iteration-specific output dir)
+            working_dir: Working directory (cwd) for Claude Code. Must stay STABLE
+                across all firings within a run — Claude CLI hashes cwd to locate
+                the on-disk session transcript at ~/.claude/projects/<sanitized>/.
+                Meta-evolution uses self.output_dir (meta_evolution_output/) for
+                this reason; iteration-specific subdirs live as `iteration_NNN/`.
             resume_session: True → use ``--resume <session_id>`` (continue an existing
                 Claude Code session). False → use ``--session-id <session_id>`` to
                 create a new session with that explicit id.
@@ -674,9 +692,9 @@ Your implementation has validation errors:
 
 Please fix these issues and recreate the required files.
 
-Remember:
-- At least one of `meta_config_schedule.json` or `config_delta.json` is REQUIRED
-- Strategies go in `meta_evolution_output/iteration_{iteration:03d}/new_strategies/strategy_name/`
+Remember (paths relative to your meta_evolution_output/ working dir):
+- At least one of `iteration_{iteration:03d}/meta_config_schedule.json` or `iteration_{iteration:03d}/config_delta.json` is REQUIRED
+- Strategies go in `iteration_{iteration:03d}/new_strategies/strategy_name/`
 - Each strategy needs `strategy.md` with valid YAML frontmatter (name and description fields)
 - Python tools must have valid syntax
 """
@@ -810,7 +828,7 @@ Complete both steps below.
 
 Analyze the system's evolution performance and document your reasoning.
 
-Create: `reasoning.md`
+Create: `iteration_{iteration:03d}/reasoning.md`
 
 Include:
 1. **Performance Analysis**: What patterns do you see in recent iterations?
@@ -826,16 +844,16 @@ Include:
 Implement the plan from your reasoning.md:
 
 1. **New Evolution Strategies** (as directed by the strategy above): Create strategy packages in:
-   `new_strategies/strategy_name/`
-   - Put ALL new strategies in the `new_strategies/` directory
+   `iteration_{iteration:03d}/new_strategies/strategy_name/`
+   - Put ALL new strategies under `iteration_{iteration:03d}/new_strategies/`
    - Each subdirectory under `new_strategies/` represents one strategy
    - Each strategy needs: `strategy.md` with YAML frontmatter (name, description fields)
    - Optional: `strategy_tools/` directory with Python/shell scripts for complex workflows
-   - Review `../../evolution_strategies/` for examples and patterns
+   - Review `../evolution_strategies/` for examples and patterns
    - The meta-evolution strategy above specifies how many strategies to create
 
 2. **Configuration Changes** (required): Create:
-   `meta_config_schedule.json`
+   `iteration_{iteration:03d}/meta_config_schedule.json`
    - Configuration changes for upcoming iterations
    - Must be consistent with reasoning.md
    - This file is REQUIRED even if no strategies are created
@@ -889,12 +907,16 @@ Framework will:
         meta_prompt_file.write_text(prompt)
         logger.info(f"Meta-evolution prompt saved to: {meta_prompt_file}")
 
-        # Single call for planning and implementation
+        # Single call for planning and implementation. cwd is the parent
+        # `meta_evolution_output/` so the persistent Claude Code session has a
+        # stable working dir across all firings within this run (Claude CLI
+        # stores transcripts under a hash of cwd; varying cwd would make
+        # `--resume` fail with "no conversation found").
         return self._call_claude_code(
             prompt=prompt,
             model=model,
             session_id=session_id,
-            working_dir=iteration_output,
+            working_dir=self.output_dir,
             resume_session=False  # Initial firing creates the session
         )
 
@@ -929,20 +951,20 @@ Framework will:
 
         prompt = f"""## Meta-Evolution Firing — Iteration {iteration}
 
-Iteration {iteration} has just completed. Updated reports for this iteration:
-- Interim report: `iteration_{iteration:03d}/interim_report.md`
-- Cost report: `iteration_{iteration:03d}/cost_report.md`
-- Error analysis: `iteration_{iteration:03d}/error_analysis_report.md`
+Iteration {iteration} has just completed. Updated reports for this iteration (paths relative to your meta_evolution_output/ working dir):
+- Interim report: `../iteration_{iteration:03d}/interim_report.md`
+- Cost report: `../iteration_{iteration:03d}/cost_report.md`
+- Error analysis: `../iteration_{iteration:03d}/error_analysis_report.md`
 
 {budget_info}
 
 Next firing: iteration {iteration + cadence} (or run end if budget exhausts first).
 
-Please produce the standard artifacts in `meta_evolution_output/iteration_{iteration:03d}/`:
-- `reasoning.md` — your analysis and plan (reference your prior decisions and what the new data shows)
-- `meta_config_schedule.json` — config changes for upcoming iterations (REQUIRED, can be empty `{{}}` if no changes)
-- `config_delta.json` (optional) — immediate parameter change starting next iteration (persists until overwritten)
-- `new_strategies/<name>/strategy.md` (optional) — any new evolution strategies
+Please produce the standard artifacts in `iteration_{iteration:03d}/`:
+- `iteration_{iteration:03d}/reasoning.md` — your analysis and plan (reference your prior decisions and what the new data shows)
+- `iteration_{iteration:03d}/meta_config_schedule.json` — config changes for upcoming iterations (REQUIRED, can be empty `{{}}` if no changes)
+- `iteration_{iteration:03d}/config_delta.json` (optional) — immediate parameter change starting next iteration (persists until overwritten)
+- `iteration_{iteration:03d}/new_strategies/<name>/strategy.md` (optional) — any new evolution strategies
 
 After completing, respond with: "META-EVOLUTION ITERATION {iteration} COMPLETE"
 """
@@ -956,7 +978,7 @@ After completing, respond with: "META-EVOLUTION ITERATION {iteration} COMPLETE"
             prompt=prompt,
             model=model,
             session_id=session_id,
-            working_dir=iteration_output,
+            working_dir=self.output_dir,
             resume_session=True  # Follow-up firings resume the persistent session
         )
 
@@ -1620,6 +1642,7 @@ This report is cumulative and includes performance data across all iterations.""
         model: str,
         session_id: str,
         working_dir: Path,
+        iteration_dir: Path,
     ) -> Dict[str, Any]:
         """
         Request reflection from Claude about meta-evolution process.
@@ -1643,7 +1666,7 @@ This report is cumulative and includes performance data across all iterations.""
             Errors are logged but do not raise exceptions - reflection should
             never break the research run.
         """
-        prompt = """Thanks for your help with this project. Looking back at the entire process so far, is there advice you could offer to future instances working on this task?
+        prompt = f"""Thanks for your help with this project. Looking back at the entire process so far, is there advice you could offer to future instances working on this task?
 
 This might lead to changes in the prompt which will make future meta-evolution sessions more efficient or help them better achieve their objectives.
 
@@ -1657,7 +1680,7 @@ Please consider:
 
 **Keep your reflection concise - 300 lines or less.**
 
-Save your reflection to a file called `meta_evolution_reflection.md`.
+Save your reflection to `iteration_{iteration:03d}/meta_evolution_reflection.md`.
 
 After saving the reflection, respond with: "REFLECTION COMPLETE"
 """
@@ -1671,7 +1694,7 @@ After saving the reflection, respond with: "REFLECTION COMPLETE"
                 resume_session=True  # Reflection continues the active session
             )
 
-            reflection_file = working_dir / "meta_evolution_reflection.md"
+            reflection_file = iteration_dir / "meta_evolution_reflection.md"
             if reflection_file.exists():
                 logger.info(f"✓ Meta-evolution reflection saved: {os.path.relpath(reflection_file)}")
             else:
@@ -1683,26 +1706,29 @@ After saving the reflection, respond with: "REFLECTION COMPLETE"
             logger.warning(f"Failed to request meta-evolution reflection: {e}")
             return {'total_cost': 0.0, 'calls': 0}
 
-    def _save_session_transcript(self, session_id: str, working_dir: Path):
+    def _save_session_transcript(self, session_id: str, lookup_dir: Path, output_path: Path):
         """
-        Summarize Claude Code session transcript and save to meta-evolution output directory.
+        Summarize Claude Code session transcript and save it.
 
         Args:
             session_id: Claude Code session ID
-            working_dir: Iteration output directory (used as Claude CLI working dir)
+            lookup_dir: Directory whose path-hash Claude CLI used to store the
+                transcript under ~/.claude/projects/<sanitized>/. Must match the
+                cwd= passed to Claude CLI (self.output_dir for meta-evolution).
+            output_path: Where to write the human-readable summary.
 
-        Errors are logged but do not raise exceptions - transcript saving
-        should never break the research run.
+        Errors are logged but do not raise exceptions — transcript saving should
+        never break the research run.
         """
         try:
             from RoboPhD.utilities.transcript_summarizer import find_transcript, summarize_transcript
 
-            chat_file = find_transcript(working_dir, session_id)
+            chat_file = find_transcript(lookup_dir, session_id)
             if not chat_file:
                 logger.warning(f"Session transcript not found for session {session_id}")
                 return
 
-            summary_path = summarize_transcript(chat_file, working_dir / "session_summary.md")
+            summary_path = summarize_transcript(chat_file, output_path)
             summary_size = summary_path.stat().st_size
             logger.info(f"Saved session summary: {os.path.relpath(summary_path)} ({summary_size/1024:.1f} KB)")
 
