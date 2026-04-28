@@ -1671,7 +1671,7 @@ This report is cumulative and includes performance data across all iterations.""
 Please consider:
 - What patterns or insights from this iteration's data are worth emphasizing for next time?
 - What was challenging or time-consuming about the analysis or implementation?
-- Were the provided tools/reports (interim_report.md, error_analysis_report.md, cost_report.md) helpful? Anything you wished you had?
+- Were the provided tools and reports helpful? Anything you wished you had?
 - What would you do differently in the next firing?
 - Any prompt or tooling changes worth flagging for the human maintainer of this system?
 
