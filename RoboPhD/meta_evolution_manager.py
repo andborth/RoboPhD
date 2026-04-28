@@ -1593,14 +1593,16 @@ This report is cumulative and includes performance data across all iterations.""
 
         logger.info("✓ No weighted_random_configs conflicts in meta_config_schedule")
 
-        # Re-discover strategies after all corrections
-        # (Claude may have created strategies during correction prompts)
+        # Re-discover strategies after all corrections — Claude may have created
+        # additional strategies while fixing validation errors. Only log if the
+        # set actually changed (no point announcing a rescan that found nothing new).
         if new_strategies_dir.exists():
+            previous_strategy_names = strategy_names
             strategy_names = [
                 d.name for d in new_strategies_dir.iterdir()
                 if d.is_dir() and not d.name.startswith('.')
             ]
-            if strategy_names:
+            if set(strategy_names) != set(previous_strategy_names):
                 logger.info(f"Re-discovered {len(strategy_names)} strategies after corrections: {strategy_names}")
 
         # Validate each discovered strategy
