@@ -1666,17 +1666,14 @@ This report is cumulative and includes performance data across all iterations.""
             Errors are logged but do not raise exceptions - reflection should
             never break the research run.
         """
-        prompt = f"""Thanks for your help with this project. Looking back at the entire process so far, is there advice you could offer to future instances working on this task?
-
-This might lead to changes in the prompt which will make future meta-evolution sessions more efficient or help them better achieve their objectives.
+        prompt = f"""Take a moment to reflect on this firing's work. You're in a persistent session — your next firing (a few iterations from now) will have this iteration's context already in memory, so this reflection serves two purposes: an audit-trail checkpoint for the human reviewing the run, and a chance to consolidate the insights you most want to carry forward.
 
 Please consider:
-- What approaches worked well?
-- What was challenging or time-consuming?
-- Were the provided tools helpful? Did you encounter difficulties using them?
-- Is any tool missing that would have helped? This could either be a script you wish you had or a library that you wish was installed.
-- What would you do differently?
-- Any suggestions for improving the instructions you were given?
+- What patterns or insights from this iteration's data are worth emphasizing for next time?
+- What was challenging or time-consuming about the analysis or implementation?
+- Were the provided tools/reports (interim_report.md, error_analysis_report.md, cost_report.md) helpful? Anything you wished you had?
+- What would you do differently in the next firing?
+- Any prompt or tooling changes worth flagging for the human maintainer of this system?
 
 **Keep your reflection concise - 300 lines or less.**
 
