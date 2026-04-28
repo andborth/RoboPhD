@@ -65,7 +65,11 @@ These reports are generated after each iteration at `../iteration_NNN/` (relativ
 
 ## Horizon
 
-The run may be extended beyond the current iteration count. Don't treat any iteration as "final" or optimize for a specific end point — make decisions based on strategy performance trends, not on how many iterations remain."""
+The run may be extended beyond the current iteration count. Don't treat any iteration as "final" or optimize for a specific end point — make decisions based on strategy performance trends, not on how many iterations remain.
+
+## Configuration Persistence
+
+Configurations persist across iterations once set. A `meta_config_schedule.json` entry like `{{"4": {{"evolution_strategy": "X"}}}}` does NOT mean "use X at iteration 4 only" — it means "starting at iteration 4, use X until another entry overrides it." To restrict X to a single iteration, schedule both the change AND the revert: `{{"4": {{"evolution_strategy": "X"}}, "5": {{"evolution_strategy": "Y"}}}}`."""
 
 
 class MetaEvolutionManager:
