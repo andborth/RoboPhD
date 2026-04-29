@@ -1094,8 +1094,31 @@ class ParallelAgentResearcher:
                     except (IndexError, ValueError):
                         continue
 
-        # Archive if there's anything to archive (iterations, evolution_output, or meta_evolution_output)
-        if iterations_to_archive or evolution_dirs_to_archive or meta_evolution_dirs_to_archive:
+        # Find evolution strategies installed at iter >= from_iteration. Strategies
+        # installed by meta-evolution are named "iter{N}_<original>" (see
+        # _install_strategy_package); seed strategies have no iter prefix and are
+        # left in place. Mirrors the agent-archival logic, just driven by the
+        # name prefix instead of a created_iteration field.
+        strategies_to_archive = []
+        evolution_strategies_dir = self.experiment_dir / "evolution_strategies"
+        if evolution_strategies_dir.exists():
+            for item in evolution_strategies_dir.iterdir():
+                if item.is_dir() and item.name.startswith('iter'):
+                    # Parse iter{N}_... prefix
+                    try:
+                        prefix, _, _ = item.name.partition('_')
+                        if not prefix.startswith('iter'):
+                            continue
+                        iter_num = int(prefix[len('iter'):])
+                        if iter_num >= from_iteration:
+                            strategies_to_archive.append(item)
+                    except (IndexError, ValueError):
+                        continue
+
+        # Archive if there's anything to archive (iterations, evolution_output,
+        # meta_evolution_output, or per-iteration strategies)
+        if (iterations_to_archive or evolution_dirs_to_archive
+                or meta_evolution_dirs_to_archive or strategies_to_archive):
             # Create archive directory with timestamp
             archive_dir = self.experiment_dir / f"archived_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             archive_dir.mkdir(exist_ok=True)
@@ -1147,6 +1170,17 @@ class ParallelAgentResearcher:
                     # This is more reliable for complex directory structures with subdirectories
                     shutil.copytree(str(meta_evo_dir), str(dest), dirs_exist_ok=True, symlinks=True)
                     shutil.rmtree(str(meta_evo_dir))
+
+            # Archive per-iteration evolution strategies if any
+            if strategies_to_archive:
+                print(f"📦 Archiving {len(strategies_to_archive)} evolution strategies created at iter ≥ {from_iteration} to {archive_dir.name}/")
+                archive_strategies = archive_dir / "evolution_strategies"
+                archive_strategies.mkdir(exist_ok=True)
+                for strat_dir in strategies_to_archive:
+                    dest = archive_strategies / strat_dir.name
+                    print(f"  Moving evolution_strategies/{strat_dir.name} to archive...")
+                    shutil.copytree(str(strat_dir), str(dest), dirs_exist_ok=True, symlinks=True)
+                    shutil.rmtree(str(strat_dir))
 
         # Archive and remove agents created in archived iterations
         agents_to_archive = []
