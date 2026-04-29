@@ -375,6 +375,27 @@ class MetaEvolutionManager:
 
         return eval_cost + evolution_cost + meta_evolution_cost
 
+    def _calculate_evals_consumed(self, through_iteration: int) -> int:
+        """
+        Calculate total fresh evaluator calls consumed through specified iteration.
+
+        Reads `iteration_fresh_evals` from the checkpoint (a list whose i-th entry
+        is the fresh-eval count for iteration i+1). Mirrors the budget calculation
+        in researcher.py's evaluation-budget-exhaustion check.
+
+        Args:
+            through_iteration: Sum fresh evals for iterations 1..through_iteration.
+
+        Returns:
+            Total fresh evaluations consumed.
+        """
+        checkpoint_path = self.experiment_dir / "checkpoint.json"
+        with open(checkpoint_path) as f:
+            checkpoint = json.load(f)
+
+        fresh_evals = checkpoint.get("iteration_fresh_evals", [])
+        return sum(fresh_evals[:through_iteration])
+
     def _load_meta_strategy(self, strategy_name: str) -> str:
         """
         Load meta-evolution strategy from source directory.
@@ -971,8 +992,8 @@ Next firing: iteration {iteration + cadence} (or run end if budget exhausts firs
 Please produce the standard artifacts in `iteration_{iteration:03d}/`:
 - `iteration_{iteration:03d}/reasoning.md` — your analysis and plan (reference your prior decisions and what the new data shows)
 - `iteration_{iteration:03d}/meta_config_schedule.json` — config changes for upcoming iterations (REQUIRED, can be empty `{{}}` if no changes)
-- `iteration_{iteration:03d}/config_delta.json` (optional) — immediate parameter change starting next iteration (persists until overwritten)
-- `iteration_{iteration:03d}/new_strategies/<name>/strategy.md` (optional) — any new evolution strategies
+- `iteration_{iteration:03d}/config_delta.json` — immediate parameter change starting next iteration; include only if your strategy authorizes parameter changes.
+- `iteration_{iteration:03d}/new_strategies/<name>/strategy.md` — a new evolution strategy; include only if your strategy authorizes creating new evolution strategies.
 
 After completing, respond with: "META-EVOLUTION ITERATION {iteration} COMPLETE"
 """
@@ -994,20 +1015,29 @@ After completing, respond with: "META-EVOLUTION ITERATION {iteration} COMPLETE"
         """
         Gather information for meta-evolution analysis.
 
-        Returns dictionary with interim reports and budget.
+        Returns dictionary with interim reports and budget (both dollar and
+        evaluation budgets, when set).
         """
-        # Get budget information
-        budget = config.get("dollar_budget")
+        # Dollar budget (optional)
+        dollar_budget = config.get("dollar_budget")
         total_cost = self._calculate_total_cost(iteration)
-        budget_remaining = (budget - total_cost) if budget else None
+        dollar_remaining = (dollar_budget - total_cost) if dollar_budget else None
+
+        # Evaluation budget (typically set; default 1500 for the example mains)
+        eval_budget = config.get("evaluation_budget")
+        eval_consumed = self._calculate_evals_consumed(iteration)
+        eval_remaining = (eval_budget - eval_consumed) if eval_budget else None
 
         context = {
             "current_iteration": iteration,
             "interim_reports": [],
             "budget": {
-                "total": budget,
-                "consumed": total_cost,
-                "remaining": budget_remaining
+                "dollar_total": dollar_budget,
+                "dollar_consumed": total_cost,
+                "dollar_remaining": dollar_remaining,
+                "eval_total": eval_budget,
+                "eval_consumed": eval_consumed,
+                "eval_remaining": eval_remaining,
             }
         }
 
@@ -1088,19 +1118,32 @@ After completing, respond with: "META-EVOLUTION ITERATION {iteration} COMPLETE"
             return json.load(f)
 
     def _format_budget_status(self, budget_info: Dict, iteration: int) -> str:
-        """Format budget status for injection into strategy prompt."""
-        total = budget_info["total"]
-        consumed = budget_info["consumed"]
-        remaining = budget_info["remaining"]
+        """Format budget status (evaluation and dollar budgets) for the prompt."""
+        lines = []
 
-        if total is None:
-            return "**Budget Status**: No budget limit set"
+        eval_total = budget_info.get("eval_total")
+        if eval_total is not None:
+            eval_consumed = budget_info["eval_consumed"]
+            eval_remaining = budget_info["eval_remaining"]
+            lines.append(
+                f"- **Evaluations**: {eval_consumed} / {eval_total} consumed "
+                f"({eval_remaining} remaining)"
+            )
 
-        return f"""**Budget Status**:
-- **Total budget**: ${total:.2f}
-- **Consumed so far**: ${consumed:.2f}
-- **Remaining**: ${remaining:.2f}
-- **Iterations completed**: {iteration}"""
+        dollar_total = budget_info.get("dollar_total")
+        if dollar_total is not None:
+            dollar_consumed = budget_info["dollar_consumed"]
+            dollar_remaining = budget_info["dollar_remaining"]
+            lines.append(
+                f"- **Dollars**: ${dollar_consumed:.2f} / ${dollar_total:.2f} "
+                f"(${dollar_remaining:.2f} remaining)"
+            )
+
+        if not lines:
+            return "**Budget Status**: No budget limits set"
+
+        lines.append(f"- **Iterations completed**: {iteration}")
+        return "**Budget Status**:\n" + "\n".join(lines)
 
     def _format_interim_reports(self, reports: List[Dict]) -> str:
         """Format interim reports reference for prompt."""
