@@ -69,7 +69,15 @@ The run may be extended beyond the current iteration count. Don't treat any iter
 
 ## Configuration Persistence
 
-Configurations persist across iterations once set. A `meta_config_schedule.json` entry like `{{"4": {{"evolution_strategy": "X"}}}}` does NOT mean "use X at iteration 4 only" — it means "starting at iteration 4, use X until another entry overrides it." To restrict X to a single iteration, schedule both the change AND the revert: `{{"4": {{"evolution_strategy": "X"}}, "5": {{"evolution_strategy": "Y"}}}}`."""
+Configurations persist across iterations once set. A `meta_config_schedule.json` entry like `{{"4": {{"evolution_strategy": "X"}}}}` does NOT mean "use X at iteration 4 only" — it means "starting at iteration 4, use X until another entry overrides it." To restrict X to a single iteration, schedule both the change AND the revert: `{{"4": {{"evolution_strategy": "X"}}, "5": {{"evolution_strategy": "Y"}}}}`.
+
+## Strategy Naming
+
+When you create a new evolution strategy at `iteration_NNN/new_strategies/<name>/`, the system installs it as `evolution_strategies/iter{{N}}_<name>/` — your name is automatically prefixed with `iter{{N}}_` to keep each firing's contribution unique (mirroring how evolved agents get an iter prefix). **Reference the prefixed form in `meta_config_schedule.json`.**
+
+For example, if at iteration 7 you create `new_strategies/cost_mechanism_aware/`, it installs as `evolution_strategies/iter7_cost_mechanism_aware/`. Your schedule should reference `"evolution_strategy": "iter7_cost_mechanism_aware"`, not `"cost_mechanism_aware"`.
+
+If you reference a name that doesn't resolve, you'll get a correction prompt with the full list of installed strategies and the prefixed form of any strategy you just created."""
 
 
 class MetaEvolutionManager:
@@ -475,16 +483,104 @@ class MetaEvolutionManager:
 
         return errors
 
-    def _install_strategy_package(self, strategy_name: str, iteration: int):
+    def _installed_strategy_names(self) -> set:
+        """Return the set of strategy names currently in ``evolution_strategies/``."""
+        strategies_dir = self.experiment_dir / "evolution_strategies"
+        if not strategies_dir.exists():
+            return set()
+        return {d.name for d in strategies_dir.iterdir() if d.is_dir()}
+
+    def _find_unresolved_strategy_refs(self, meta_config_schedule: Dict) -> List:
+        """
+        Walk a meta_config_schedule for evolution_strategy references that don't
+        resolve to an installed strategy.
+
+        Checks both top-level ``evolution_strategy`` values and entries inside
+        ``weighted_random_configs``. The literal string ``"none"`` is allowed
+        (means "skip evolution this iteration").
+
+        Args:
+            meta_config_schedule: Parsed schedule dict from
+                meta_config_schedule.json.
+
+        Returns:
+            List of (iter_str, strategy_name, location) tuples for each
+            unresolved reference. Empty list = all references resolve.
+        """
+        installed = self._installed_strategy_names()
+        unresolved = []
+        for iter_str, delta in meta_config_schedule.items():
+            if not isinstance(delta, dict):
+                continue
+            if "evolution_strategy" in delta:
+                name = delta["evolution_strategy"]
+                if name and name != "none" and name not in installed:
+                    unresolved.append((iter_str, name, "evolution_strategy"))
+            if "weighted_random_configs" in delta:
+                for entry_idx, entry in enumerate(delta.get("weighted_random_configs") or []):
+                    if isinstance(entry, list) and len(entry) >= 1:
+                        config_dict = entry[0]
+                        if isinstance(config_dict, dict) and "evolution_strategy" in config_dict:
+                            name = config_dict["evolution_strategy"]
+                            if name and name != "none" and name not in installed:
+                                unresolved.append(
+                                    (iter_str, name, f"weighted_random_configs[{entry_idx}]")
+                                )
+        return unresolved
+
+    def _format_unresolved_strategy_error(
+        self, unresolved: List, iteration: int, installed_this_firing: set
+    ) -> str:
+        """Build a data-rich correction prompt listing what was wrong + what's available."""
+        lines = ["Your meta_config_schedule.json references strategies that don't exist:"]
+        for iter_str, name, loc in unresolved:
+            lines.append(f"- Iteration {iter_str} ({loc}): \"{name}\" — not found")
+
+        installed = sorted(self._installed_strategy_names())
+        if installed:
+            lines.append("")
+            lines.append("Strategies currently installed:")
+            for name in installed:
+                lines.append(f"- {name}")
+
+        if installed_this_firing:
+            lines.append("")
+            lines.append("Strategies just created in this firing (now installed with iter prefix):")
+            prefix = f"iter{iteration}_"
+            for prefixed in sorted(installed_this_firing):
+                unprefixed = prefixed[len(prefix):] if prefixed.startswith(prefix) else prefixed
+                lines.append(f"- {unprefixed} → {prefixed}")
+
+        lines.append("")
+        lines.append(
+            "Reminder: new strategies are installed with the iter{N}_ prefix. "
+            "Reference one of the names above and update meta_config_schedule.json."
+        )
+        return "\n".join(lines)
+
+    def _install_strategy_package(self, strategy_name: str, iteration: int) -> str:
         """
         Install validated strategy package to evolution_strategies/ directory.
 
-        Copies strategy from meta_evolution_output/iteration_XXX/new_strategies/NAME/
-        to <experiment_dir>/evolution_strategies/NAME/
+        Mirrors the agent-naming convention in _generate_agent_id: the installed
+        directory name is prefixed with ``iter{iteration}_`` so each firing's
+        strategy lands at a unique path. This eliminates the silent-overwrite
+        cycle that occurred when meta-evolution wrote successive revisions of
+        a same-named strategy across firings.
+
+        The meta-agent should reference the prefixed name in
+        ``meta_config_schedule.json`` (see META_EVOLUTION_ENVIRONMENT_GUIDE).
+        Validation in _parse_and_validate_outputs catches references that
+        forget the prefix and re-prompts for correction.
 
         Args:
-            strategy_name: Name of strategy to install
-            iteration: Iteration that created this strategy
+            strategy_name: Unprefixed name as written by meta-evolution
+                (the directory name under iteration_NNN/new_strategies/).
+            iteration: Iteration that created this strategy. Used to mint the
+                unique installed name.
+
+        Returns:
+            The installed (prefixed) name, e.g. "iter4_cost_mechanism_aware".
         """
         source_dir = (
             self.output_dir /
@@ -493,14 +589,19 @@ class MetaEvolutionManager:
             strategy_name
         )
 
-        dest_dir = self.experiment_dir / "evolution_strategies" / strategy_name
+        installed_name = f"iter{iteration}_{strategy_name}"
+        dest_dir = self.experiment_dir / "evolution_strategies" / installed_name
 
-        logger.info(f"Installing strategy '{strategy_name}' to evolution_strategies/")
+        logger.info(
+            f"Installing strategy '{strategy_name}' to evolution_strategies/{installed_name}/"
+        )
 
         # Create evolution_strategies directory if it doesn't exist
         dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
-        # Copy strategy package
+        # Defensive: if a directory with this prefixed name somehow already exists
+        # (e.g., the meta-agent ran twice for the same iteration after a checkpoint
+        # restore), remove it before re-installing.
         if dest_dir.exists():
             import shutil
             shutil.rmtree(dest_dir)
@@ -508,7 +609,8 @@ class MetaEvolutionManager:
         import shutil
         shutil.copytree(source_dir, dest_dir)
 
-        logger.info(f"✓ Installed strategy '{strategy_name}'")
+        logger.info(f"✓ Installed strategy '{installed_name}'")
+        return installed_name
 
     def _update_meta_evolution_costs(self, iteration: int, cost_data: Dict) -> None:
         """
@@ -1657,6 +1759,7 @@ This report is cumulative and includes performance data across all iterations.""
                 logger.info(f"Re-discovered {len(strategy_names)} strategies after corrections: {strategy_names}")
 
         # Validate each discovered strategy
+        installed_this_firing = set()
         for strategy_name in strategy_names:
             strategy_dir = new_strategies_dir / strategy_name
             errors = self._validate_strategy_package(strategy_dir)
@@ -1684,8 +1787,42 @@ This report is cumulative and includes performance data across all iterations.""
                         "\n".join(f"  - {e}" for e in errors)
                     )
 
-            # Install validated strategy
-            self._install_strategy_package(strategy_name, iteration)
+            # Install validated strategy (prefixed with iter{N}_; capture installed name)
+            installed_this_firing.add(
+                self._install_strategy_package(strategy_name, iteration)
+            )
+
+        # Validate that every evolution_strategy reference in the schedule resolves
+        # to an installed strategy. The installer prefixes new strategies with
+        # iter{N}_ — references that forget the prefix won't resolve. Catches the
+        # case where the meta-agent writes the schedule before realizing the
+        # convention.
+        unresolved = self._find_unresolved_strategy_refs(meta_config_schedule)
+        if unresolved:
+            error_msg = self._format_unresolved_strategy_error(
+                unresolved, iteration, installed_this_firing
+            )
+            logger.warning(f"⚠️  Unresolved strategy references in meta_config_schedule")
+            logger.warning("Prompting for correction...")
+
+            cost_data = self._prompt_for_correction(
+                iteration=iteration,
+                model=model,
+                error_message=error_msg,
+                session_id=session_id,
+                working_dir=working_dir,
+            )
+            self._accumulate_costs(total_cost_data, cost_data)
+
+            # Reload and re-validate. If still unresolved, fail loudly.
+            with open(config_file) as f:
+                meta_config_schedule = json.load(f)
+            unresolved = self._find_unresolved_strategy_refs(meta_config_schedule)
+            if unresolved:
+                raise RuntimeError(
+                    "meta_config_schedule.json still references unresolved strategies "
+                    f"after correction: {unresolved}"
+                )
 
         return meta_config_schedule, config_delta
 
