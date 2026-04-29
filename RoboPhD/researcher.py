@@ -1104,15 +1104,14 @@ class ParallelAgentResearcher:
         if evolution_strategies_dir.exists():
             for item in evolution_strategies_dir.iterdir():
                 if item.is_dir() and item.name.startswith('iter'):
-                    # Parse iter{N}_... prefix
+                    # Parse iter{N}_... prefix. Outer filter guarantees the prefix
+                    # portion starts with "iter"; only the int() can fail.
                     try:
                         prefix, _, _ = item.name.partition('_')
-                        if not prefix.startswith('iter'):
-                            continue
                         iter_num = int(prefix[len('iter'):])
                         if iter_num >= from_iteration:
                             strategies_to_archive.append(item)
-                    except (IndexError, ValueError):
+                    except ValueError:
                         continue
 
         # Archive if there's anything to archive (iterations, evolution_output,
