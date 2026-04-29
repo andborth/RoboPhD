@@ -599,10 +599,19 @@ class MetaEvolutionManager:
         # Create evolution_strategies directory if it doesn't exist
         dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
-        # Defensive: if a directory with this prefixed name somehow already exists
-        # (e.g., the meta-agent ran twice for the same iteration after a checkpoint
-        # restore), remove it before re-installing.
+        # Recovery path: if a directory with this prefixed name already exists,
+        # the most likely cause is a mid-firing crash between install and
+        # initial_firing_complete=True — on resume, the same iteration's firing
+        # runs again and re-installs at the same prefixed path. Log loudly (the
+        # state is unusual) but proceed, since the new install supersedes the
+        # crashed partial.
         if dest_dir.exists():
+            logger.warning(
+                f"Strategy directory {dest_dir} already exists; replacing. "
+                f"This typically indicates iteration {iteration}'s meta-evolution "
+                f"is running again after a mid-firing crash + resume. The prior "
+                f"partial install will be overwritten."
+            )
             import shutil
             shutil.rmtree(dest_dir)
 
