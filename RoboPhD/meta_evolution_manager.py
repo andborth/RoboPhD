@@ -993,7 +993,7 @@ Produce the artifacts for this firing in `iteration_{iteration:03d}/`. Per your 
 - `meta_config_schedule.json` (REQUIRED) — can be `{{}}` if no changes
 - `new_strategies/<name>/strategy.md` and/or `config_delta.json` — only if your strategy authorizes them
 
-See `CLAUDE.md` (already in your context) for: cadence, strategy-package structure, naming convention, schedule format, schedule semantics, forbidden parameters, weighted-random override, and the framework's post-firing actions.
+See `CLAUDE.md` (already in your context) for: cadence, strategy-package structure, naming convention, schedule format, schedule semantics, and the framework's post-firing actions.
 """
 
         # Save meta-evolution prompt for debugging and reproducibility
@@ -1054,11 +1054,10 @@ Iteration {iteration} has just completed. Updated reports for this iteration (pa
 
 Next firing: iteration {iteration + cadence} (or run end if budget exhausts first).
 
-Please produce the standard artifacts in `iteration_{iteration:03d}/`:
-- `iteration_{iteration:03d}/reasoning.md` — your analysis and plan (reference your prior decisions and what the new data shows)
-- `iteration_{iteration:03d}/meta_config_schedule.json` — config changes for upcoming iterations (REQUIRED, can be empty `{{}}` if no changes)
-- `iteration_{iteration:03d}/config_delta.json` — immediate parameter change starting next iteration; include only if your strategy authorizes parameter changes.
-- `iteration_{iteration:03d}/new_strategies/<name>/strategy.md` — a new evolution strategy; include only if your strategy authorizes creating new evolution strategies.
+Produce the artifacts for this firing in `iteration_{iteration:03d}/`. Per your strategy:
+- `reasoning.md` (REQUIRED) — your analysis, formatted per your strategy's instructions
+- `meta_config_schedule.json` (REQUIRED) — can be `{{}}` if no changes
+- `new_strategies/<name>/strategy.md` and/or `config_delta.json` — only if your strategy authorizes them
 
 After completing, respond with: "META-EVOLUTION ITERATION {iteration} COMPLETE"
 """
