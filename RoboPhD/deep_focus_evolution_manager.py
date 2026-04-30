@@ -998,7 +998,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             "--print", prompt,
             "--output-format", "json",  # Get JSON output for cost tracking
             "--permission-mode", "bypassPermissions",  # Allow automation without prompts
-            "--settings", claude_cli_settings()  # Proactively compact when context gets low
+            "--settings", claude_cli_settings()  # autoCompact + repo-read deny
         ])
 
         logger.debug(f"Calling Claude Code: {' '.join(cmd[:4])}...")
@@ -1042,7 +1042,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
                             "--print", prompt,
                             "--output-format", "json",
                             "--permission-mode", "bypassPermissions",
-                            "--settings", claude_cli_settings()
+                            "--settings", claude_cli_settings()  # autoCompact + repo-read deny
                         ])
 
                         # Retry with the corrected command (also handles rate limits)
