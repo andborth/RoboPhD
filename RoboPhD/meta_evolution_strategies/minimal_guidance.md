@@ -26,4 +26,4 @@ In `reasoning.md`, answer: is evolution still producing new winning agents? If y
 
 ## Required Outputs
 
-Create the artifacts specified in the OUTPUT REQUIREMENTS above. At minimum: `reasoning.md` and `meta_config_schedule.json` (which can be `{}` if you propose no schedule changes).
+At minimum, produce `reasoning.md` (your analysis) and `meta_config_schedule.json` (which can be `{}` if you propose no schedule changes).

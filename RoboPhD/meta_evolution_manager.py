@@ -35,15 +35,11 @@ class MetaEvolutionResult(NamedTuple):
 META_EVOLUTION_ENVIRONMENT_GUIDE = """\
 # Meta-Evolution Environment
 
-## Strategy Tools
+## Cadence
 
-When creating strategies with `strategy_tools/`, these tools are **symlinked into the evolution working directory** as `strategy_tools/`. Reference them as `python strategy_tools/<script>.py` in your strategy.md instructions.
+You are called every {cadence} iterations: first firing at iter {first_iteration}, then iter {first_plus_cadence}, {first_plus_2cadence}, … Plan your `meta_config_schedule.json` decisions with this {cadence}-iteration horizon in mind — any change you propose will run for ~{cadence} iterations before you see its effect and can revise.
 
-**Important for strategy_tools:**
-- Tools should use only stdlib and libraries already installed in the environment
-- Include `--help` support so Claude can discover usage
-- Reference them with imperative language in strategy.md (e.g., "Run `python strategy_tools/analyze_failures.py ...`" not "If the tool is available...")
-- The symlink will exist — do NOT include fallback instructions suggesting the tool might be missing
+The Claude Code session persists across all firings within a run; subsequent firings deliver brief status updates against this same session.
 
 ## Working Directory
 
@@ -61,23 +57,76 @@ These reports are generated after each iteration at `../iteration_NNN/` (relativ
 
 ## CLI Tools
 
-`jq` and `tree` are installed and available.
+{cli_tools}
 
-## Horizon
+## Required Outputs
 
-The run may be extended beyond the current iteration count. Don't treat any iteration as "final" or optimize for a specific end point — make decisions based on strategy performance trends, not on how many iterations remain.
+Each firing must produce, at minimum:
+- `iteration_NNN/reasoning.md` — your analysis. The format and content are whatever your meta-evolution strategy specifies.
+- `iteration_NNN/meta_config_schedule.json` — config changes for upcoming iterations. Can be empty (`{{}}`) if you propose no schedule changes; the file itself must exist.
 
-## Configuration Persistence
+Optional, only if your strategy authorizes:
+- `iteration_NNN/config_delta.json` — immediate parameter change starting next iteration (persists until overwritten).
+- `iteration_NNN/new_strategies/<name>/strategy.md` — a new evolution strategy.
 
-Configurations persist across iterations once set. A `meta_config_schedule.json` entry like `{{"4": {{"evolution_strategy": "X"}}}}` does NOT mean "use X at iteration 4 only" — it means "starting at iteration 4, use X until another entry overrides it." To restrict X to a single iteration, schedule both the change AND the revert: `{{"4": {{"evolution_strategy": "X"}}, "5": {{"evolution_strategy": "Y"}}}}`.
+Missing required outputs trigger a correction prompt within the same session; persistent failure terminates the run.
+
+## Strategy Packages
+
+If you create a new evolution strategy, it lives at `iteration_NNN/new_strategies/<name>/` as a package containing:
+- `strategy.md` (required) — YAML frontmatter with `name` and `description` fields, followed by instructions for the evolution AI on how to create agents.
+- `strategy_tools/` (optional) — Python helper scripts the evolution AI can run (custom error analysis, state tracking, specialized reports). Details below.
+
+Review existing strategies under `../evolution_strategies/` for patterns and structure to follow. The format and content of `reasoning.md` is whatever your meta-evolution strategy specifies.
+
+### Strategy tools details
+
+When you include `strategy_tools/` in a package, those tools are **symlinked into the evolution working directory** as `strategy_tools/`. Reference them as `python strategy_tools/<script>.py` in your strategy.md instructions.
+
+- Tools should use only stdlib and libraries already installed in the environment
+- Include `--help` support so Claude can discover usage
+- Reference them with imperative language in strategy.md (e.g., "Run `python strategy_tools/analyze_failures.py ...`" not "If the tool is available...")
+- The symlink will exist — do NOT include fallback instructions suggesting the tool might be missing
 
 ## Strategy Naming
+
+Pick a hyphenated, lowercase name for your strategy (e.g. `cost_mechanism_aware`) — it ends up in installed paths and the schedule, so legibility matters.
 
 When you create a new evolution strategy at `iteration_NNN/new_strategies/<name>/`, the system installs it as `evolution_strategies/iter{{N}}_<name>/` — your name is automatically prefixed with `iter{{N}}_` to keep each firing's contribution unique (mirroring how evolved agents get an iter prefix). **Reference the prefixed form in `meta_config_schedule.json`.**
 
 For example, if at iteration 7 you create `new_strategies/cost_mechanism_aware/`, it installs as `evolution_strategies/iter7_cost_mechanism_aware/`. Your schedule should reference `"evolution_strategy": "iter7_cost_mechanism_aware"`, not `"cost_mechanism_aware"`.
 
-If you reference a name that doesn't resolve, you'll get a correction prompt with the full list of installed strategies and the prefixed form of any strategy you just created."""
+If you reference a name that doesn't resolve, you'll get a correction prompt with the full list of installed strategies and the prefixed form of any strategy you just created.
+
+## Configuration Persistence
+
+Configurations persist across iterations once set. A `meta_config_schedule.json` entry like `{{"4": {{"evolution_strategy": "X"}}}}` does NOT mean "use X at iteration 4 only" — it means "starting at iteration 4, use X until another entry overrides it." To restrict X to a single iteration, schedule both the change AND the revert: `{{"4": {{"evolution_strategy": "X"}}, "5": {{"evolution_strategy": "Y"}}}}`.
+
+## Schedule Format
+
+`meta_config_schedule.json` is a top-level mapping from iteration-number strings to delta dicts. Example:
+
+```json
+{{
+  "11": {{"evolution_strategy": "iter11_my_strategy"}},
+  "13": {{"evolution_strategy": "iter4_my_other_strategy"}}
+}}
+```
+
+Iteration 11 starts using `iter11_my_strategy` (a strategy you just created); iteration 12 inherits it (no override scheduled); iteration 13 switches to `iter4_my_other_strategy` (an older strategy you created in a prior firing). See Configuration Persistence above for the inheritance rule.
+
+## Horizon
+
+The run may be extended beyond the current iteration count. Don't treat any iteration as "final" or optimize for a specific end point — make decisions based on strategy performance trends, not on how many iterations remain.
+
+## Framework Behavior (post-firing)
+
+After your firing completes, the framework will:
+- Discover strategies by scanning `iteration_NNN/new_strategies/` for subdirectories
+- Validate each strategy package (frontmatter, syntax) and prompt you to correct any errors
+- Install valid strategies to `evolution_strategies/iter{{N}}_<name>/`
+- Validate that every `evolution_strategy` reference in your schedule resolves to an installed strategy; prompt for correction if not
+- Integrate `meta_config_schedule` via ConfigManager (your changes take effect at their scheduled iterations)"""
 
 
 class MetaEvolutionManager:
@@ -830,13 +879,7 @@ Your implementation has validation errors:
 
 {error_message}
 
-Please fix these issues and recreate the required files.
-
-Remember (paths relative to your meta_evolution_output/ working dir):
-- At least one of `iteration_{iteration:03d}/meta_config_schedule.json` or `iteration_{iteration:03d}/config_delta.json` is REQUIRED
-- Strategies go in `iteration_{iteration:03d}/new_strategies/strategy_name/`
-- Each strategy needs `strategy.md` with valid YAML frontmatter (name and description fields)
-- Python tools must have valid syntax
+Please fix these issues in `iteration_{iteration:03d}/`. See `CLAUDE.md` for the strategy-package structure and schedule rules if needed.
 """
 
         # Resume session and prompt for correction
@@ -885,34 +928,57 @@ Remember (paths relative to your meta_evolution_output/ working dir):
             budget_info
         )
 
-        cadence_paragraph = (
-            "## Single-Session Meta-Evolution\n\n"
-            "This Claude Code session will persist across all future meta-evolution firings in this run. "
-            "You will receive brief status updates each time a new firing occurs. "
-            f"**Cadence: you are called every {cadence} iterations** "
-            f"(first firing at iter {first_iteration}, then iter {first_iteration + cadence}, "
-            f"{first_iteration + 2 * cadence}, …). "
-            f"Plan your `meta_config_schedule.json` decisions with this {cadence}-iteration horizon "
-            f"in mind — any change you propose will run for ~{cadence} iterations before you see "
-            "its effect and can revise.\n\n"
-            "---\n"
-        )
-
         # Write CLAUDE.md with domain background to parent (meta_evolution_output/).
         # Claude Code traverses up to find it, so all iteration subdirs inherit it.
+        # The GUIDE template uses .format() placeholders for cadence values; all
+        # other curly braces in the template are doubled ({{ }}) so they survive
+        # formatting unchanged.
+        #
+        # Write-once-per-run: the `if not exists` guard means a resumed run with
+        # initial_firing_complete=False (which mints a fresh session) inherits the
+        # prior run's CLAUDE.md. This is intentional and safe — cadence and
+        # first_iteration are IMMUTABLE_PARAMS, so the inherited file is still
+        # correct. If you ever add a re-write path here, first verify that
+        # nothing relies on CLAUDE.md staying stable across same-run firings.
         claude_md_path = self.output_dir / "CLAUDE.md"
         if not claude_md_path.exists():
+            # Detect available CLI tools (mirrors deep_focus_evolution_manager:209).
+            # Don't claim tools are available if they aren't — meta-agent will try
+            # to use them and fail.
+            import shutil
+            available_tools = []
+            missing_tools = []
+            for tool in ["jq", "tree"]:
+                (available_tools if shutil.which(tool) else missing_tools).append(tool)
+            if missing_tools:
+                logger.warning(
+                    "Recommended CLI tools not found: %s. Install for better meta-evolution results.",
+                    ", ".join(missing_tools),
+                )
+            cli_tools_text = (
+                "Available: " + ", ".join(f"`{t}`" for t in available_tools)
+                if available_tools
+                else "(none of the recommended tools — `jq`, `tree` — detected on this system)"
+            )
+
             sections = []
             if self._task_background:
                 sections.append(f"# Domain Background\n\n{self._task_background}")
             if self._task_objective:
                 sections.append(f"# Domain Objective\n\n{self._task_objective}")
-            sections.append(META_EVOLUTION_ENVIRONMENT_GUIDE.replace("__PYTHON_EXECUTABLE__", sys.executable))
+            sections.append(
+                META_EVOLUTION_ENVIRONMENT_GUIDE.format(
+                    cadence=cadence,
+                    first_iteration=first_iteration,
+                    first_plus_cadence=first_iteration + cadence,
+                    first_plus_2cadence=first_iteration + 2 * cadence,
+                    cli_tools=cli_tools_text,
+                )
+            )
             claude_md_path.write_text("\n\n".join(sections))
             logger.info(f"CLAUDE.md written to: {claude_md_path}")
 
         prompt = f"""
-{cadence_paragraph}
 {strategy_with_budget}
 
 ## Current State (Iteration {iteration})
@@ -920,126 +986,14 @@ Remember (paths relative to your meta_evolution_output/ working dir):
 ### Recent Performance
 {self._format_interim_reports(context.get("interim_reports", []))}
 
-## Understanding Evolution Strategies
-
-If you propose creating new evolution strategies, you need to understand their structure.
-
-### Evolution Strategy Structure
-
-Each strategy is a package in `evolution_strategies/strategy_name/`:
-
-**Required:**
-- `strategy.md` - Main strategy prompt with:
-  - YAML frontmatter: `name` and `description` fields
-  - Instructions for evolution AI on how to create agents
-  - Typical sections: Context, Strategy approach, Required outputs, Success metrics
-
-**Optional but Powerful:**
-- `strategy_tools/` - Helper scripts for complex workflows
-  - **Example**: Custom error analysis scripts that generate specialized reports
-  - Evolution AI calls these via bash commands in the strategy
-  - Can maintain state across iterations via JSON files
-
-### Existing Strategies (for reference)
-
-Review strategies in `evolution_strategies/` to understand patterns:
-- Refinement-based approaches
-- Cross-pollination of successful patterns
-- Research-driven with academic paper integration
-- Judgment-based with different focus areas
-
-Examine their `strategy.md` files to see structure and best practices.
-
-### When Proposing New Strategies
-
-In your `reasoning.md`, be specific:
-- **Name**: What to call it (hyphenated, lowercase)
-- **Core Idea**: What makes it different from existing strategies
-- **Implementation Approach**: Key sections the strategy.md will need
-- **Strategy Tools**: What helper scripts would make this strategy more effective
-  - Consider: specialized error analysis, state tracking across iterations
-- **Expected Benefits**: Why this will improve evolution outcomes
-
 ## Your Task
 
-Complete both steps below.
+Produce the artifacts for this firing in `iteration_{iteration:03d}/`. Per your strategy:
+- `reasoning.md` (REQUIRED) — your analysis, formatted per your strategy's instructions
+- `meta_config_schedule.json` (REQUIRED) — can be `{{}}` if no changes
+- `new_strategies/<name>/strategy.md` and/or `config_delta.json` — only if your strategy authorizes them
 
-### Step 1: Planning and Reasoning
-
-Analyze the system's evolution performance and document your reasoning.
-
-Create: `iteration_{iteration:03d}/reasoning.md`
-
-Include:
-1. **Performance Analysis**: What patterns do you see in recent iterations?
-2. **Strategy Assessment**: Which strategies are working? Which aren't?
-3. **Opportunities Identified**: What gaps or patterns suggest new approaches?
-4. **Proposed Actions**:
-   - New evolution strategies to create (if any)
-   - Configuration changes to make
-   - Expected impact and rationale
-
-### Step 2: Implementation
-
-Implement the plan from your reasoning.md:
-
-1. **New Evolution Strategies** (as directed by the strategy above): Create strategy packages in:
-   `iteration_{iteration:03d}/new_strategies/strategy_name/`
-   - Put ALL new strategies under `iteration_{iteration:03d}/new_strategies/`
-   - Each subdirectory under `new_strategies/` represents one strategy
-   - Each strategy needs: `strategy.md` with YAML frontmatter (name, description fields)
-   - Optional: `strategy_tools/` directory with Python/shell scripts for complex workflows
-   - Review `../evolution_strategies/` for examples and patterns
-   - The meta-evolution strategy above specifies how many strategies to create
-
-2. **Configuration Changes** (required): Create:
-   `iteration_{iteration:03d}/meta_config_schedule.json`
-   - Configuration changes for upcoming iterations
-   - Must be consistent with reasoning.md
-   - This file is REQUIRED even if no strategies are created
-   - Format: {{"<iteration>": {{"param": value}}, ...}}
-
-Example meta_config_schedule.json:
-{{
-  "12": {{
-    "use_weighted_random": true,
-    "weighted_random_configs": [
-      [{{"evolution_strategy": "refinement"}}, 25],
-      [{{"evolution_strategy": "cross_pollination"}}, 50],
-      [{{"evolution_strategy": "none"}}, 25]
-    ]
-  }},
-  "15": {{
-    "examples_per_iteration": 10
-  }}
-}}
-
-**Forbidden Parameters** (do NOT include in meta_config_schedule.json):
-- Initial config: `initial_agents`, `agents_directory`, `strategies_directory`
-- Dataset: `dataset`
-- Meta-evolution self-reference: `meta_evolution_strategy`, `meta_evolution_model`, `dollar_budget`
-
-These create circular dependencies or modify immutable system state.
-
-**CRITICAL: Weighted Random Override Behavior**
-If `use_weighted_random: true` is enabled (either in current config or inherited from previous iteration):
-- Weighted random selection applies BEFORE meta_config_schedule
-- To use a specific `evolution_strategy` for an iteration, you MUST explicitly set `use_weighted_random: false` in that iteration's config
-- Example: If you want iteration 9 to use "evidence_driven_refinement", you must include:
-  {{
-    "9": {{
-      "use_weighted_random": false,
-      "evolution_strategy": "evidence_driven_refinement",
-      ...
-    }}
-  }}
-- Without `use_weighted_random: false`, the weighted random pool will override your intended strategy
-
-Framework will:
-- Discover strategies by scanning `new_strategies/` for subdirectories
-- Validate both strategies and config
-- Install valid strategies to evolution_strategies/
-- Integrate meta_config_schedule via ConfigManager
+See `CLAUDE.md` (already in your context) for: cadence, strategy-package structure, naming convention, schedule format, schedule semantics, forbidden parameters, weighted-random override, and the framework's post-firing actions.
 """
 
         # Save meta-evolution prompt for debugging and reproducibility
