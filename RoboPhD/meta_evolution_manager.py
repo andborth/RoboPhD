@@ -62,7 +62,7 @@ These reports are generated after each iteration at `../iteration_NNN/` (relativ
 ## Required Outputs
 
 Each firing must produce, at minimum:
-- `iteration_NNN/reasoning.md` — your analysis. The format and content are whatever your meta-evolution strategy specifies.
+- `iteration_NNN/reasoning.md` — your analysis. Each meta-evolution strategy is expected to specify what reasoning.md should contain; follow your strategy's instructions. (If your strategy doesn't specify, document your decisions and rationale at your own discretion.)
 - `iteration_NNN/meta_config_schedule.json` — config changes for upcoming iterations. Can be empty (`{{}}`) if you propose no schedule changes; the file itself must exist.
 
 Optional, only if your strategy authorizes:
