@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 from RoboPhD.domains.base import SampledProblems, EvaluationResult
 from RoboPhD.config import CLAUDE_CLI_MODEL_MAP, get_lmstudio_env
-from utilities.claude_cli import call_claude_cli, RateLimitExceeded
+from utilities.claude_cli import call_claude_cli, claude_cli_settings, RateLimitExceeded
 
 logger = logging.getLogger(__name__)
 
@@ -998,7 +998,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             "--print", prompt,
             "--output-format", "json",  # Get JSON output for cost tracking
             "--permission-mode", "bypassPermissions",  # Allow automation without prompts
-            "--settings", '{"autoCompact": true}'  # Proactively compact when context gets low
+            "--settings", claude_cli_settings()  # Proactively compact when context gets low
         ])
 
         logger.debug(f"Calling Claude Code: {' '.join(cmd[:4])}...")
@@ -1042,7 +1042,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
                             "--print", prompt,
                             "--output-format", "json",
                             "--permission-mode", "bypassPermissions",
-                            "--settings", '{"autoCompact": true}'
+                            "--settings", claude_cli_settings()
                         ])
 
                         # Retry with the corrected command (also handles rate limits)

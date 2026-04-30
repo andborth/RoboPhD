@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Any
 
 from RoboPhD.config_manager import ConfigManager, ConfigSource
-from utilities.claude_cli import call_claude_cli, RateLimitExceeded
+from utilities.claude_cli import call_claude_cli, claude_cli_settings, RateLimitExceeded
 
 logger = logging.getLogger(__name__)
 
@@ -790,7 +790,7 @@ class MetaEvolutionManager:
             "--print", prompt,
             "--output-format", "json",  # Get JSON output for cost tracking
             "--permission-mode", "bypassPermissions",  # Allow automation without prompts
-            "--settings", '{"autoCompact": true}'  # Proactively compact when context gets low
+            "--settings", claude_cli_settings()  # autoCompact + repo-read deny
         ])
 
         logger.debug(f"Calling Claude Code: {' '.join(cmd[:4])}...")

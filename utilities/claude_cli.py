@@ -21,6 +21,41 @@ class RateLimitExceeded(Exception):
     pass
 
 
+# Repo root: utilities/ is at <repo>/utilities/, so .parent.parent → repo root.
+REPO_ROOT = Path(__file__).parent.parent.resolve()
+
+
+def claude_cli_settings() -> str:
+    """Return the standard --settings JSON for evolution / meta-evolution Claude CLI calls.
+
+    Includes a permissions.deny rule preventing the Claude Code agent from
+    using its Read tool on any file inside the repo. Run dirs live OUTSIDE
+    the repo (under ``../robophd_runs/``), so they're unaffected.
+
+    What this blocks (the intent):
+    - Reading evaluator code (which reveals test-set composition)
+    - Reading benchmark_resources/ (test queries + ground-truth SQL)
+    - Reading examples/*/data/ (per-task test/train trace pools)
+    - Reading framework source that exposes test-set selection logic
+
+    What this does NOT block:
+    - Subprocess file I/O (the evaluator opening DB files, the agent's
+      solve() function querying via symlinks, Bash invocations of
+      python/sqlite3/etc.). Permission deny applies only to the agent's
+      own tool calls.
+    - The Bash hole: an agent that deliberately runs `bash cat /repo/file`
+      would bypass the Read deny. Documented tradeoff; OS-level
+      sandboxing is the only fix and is out of scope here.
+    """
+    settings = {
+        "autoCompact": True,
+        "permissions": {
+            "deny": [f"Read(/{REPO_ROOT}/**)"],
+        },
+    }
+    return json.dumps(settings)
+
+
 def parse_envrc_exports(cwd: Path) -> Dict[str, str]:
     """
     Walk up from cwd to filesystem root, find the first .envrc file,
