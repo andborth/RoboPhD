@@ -45,7 +45,8 @@ The Claude Code session persists across all firings within a run; subsequent fir
 
 Your working directory is the run's `meta_evolution_output/` directory, which is stable across all firings within a run (so the persistent Claude Code session can be resumed each iteration). Iteration-specific subdirectories live as children:
 - `iteration_NNN/` — per-firing output (reasoning.md, meta_config_schedule.json, new_strategies/, etc.)
-- `../iteration_NNN/` — per-iteration outputs from the main run (interim_report.md, cost_report.md, error_analysis_report.md, agent dirs)
+- `../iteration_NNN/` — per-iteration outputs from the main run: interim_report.md, cost_report.md, error_analysis_report.md, plus `agent_<name>/` subdirectories holding each participating agent's per-problem evaluation outputs (NOT the agent code).
+- `../agents/<name>/` — installed agent packages (the actual agent code).
 - `../evolution_strategies/` — installed evolution strategies (yours land here after validation)
 
 ## Per-Iteration Reports
