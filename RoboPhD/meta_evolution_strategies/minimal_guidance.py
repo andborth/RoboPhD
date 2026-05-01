@@ -34,3 +34,42 @@ In `reasoning.md`, answer: is evolution still producing new winning agents? If y
 
 At minimum, produce `reasoning.md` (your analysis) and `meta_config_schedule.json` (which can be `{}` if you propose no schedule changes).
 """
+
+    def followup_firing_prompt(
+        self,
+        *,
+        iteration: int,
+        cadence: int,
+        budget_status: str,
+        domain_background: str,
+        domain_objective: str,
+    ) -> str:
+        """Follow-up firing prompt with the status-quo directive re-injected.
+
+        The persistent session retains the initial firing's strategy body, but
+        across many firings the directive can lose salience and the agent can
+        drift into "do nothing" reasoning that protects the current leader.
+        Re-injecting the paragraph at the moment of decision keeps "always
+        looking for ways to beat the incumbent" top-of-mind alongside the
+        latest iteration's reports.
+        """
+        return f"""## Meta-Evolution Firing — Iteration {iteration}
+
+Iteration {iteration} has just completed. Updated reports for this iteration (paths relative to your meta_evolution_output/ working dir):
+- Interim report: `../iteration_{iteration:03d}/interim_report.md`
+- Cost report: `../iteration_{iteration:03d}/cost_report.md`
+- Error analysis: `../iteration_{iteration:03d}/error_analysis_report.md`
+
+{budget_status}
+
+Next firing: iteration {iteration + cadence} (or run end if budget exhausts first).
+
+Remember: you should never be satisfied with the status quo. Although sometimes the best move is to do nothing, you are always looking for ways to help evolution produce an agent that beats the incumbent. The clearest signal that evolution has stalled and could use your input: it is no longer producing new agents that win iterations.
+
+Produce the artifacts for this firing in `iteration_{iteration:03d}/`. Per your strategy:
+- `reasoning.md` (REQUIRED) — your analysis, formatted per your strategy's instructions
+- `meta_config_schedule.json` (REQUIRED) — can be `{{}}` if no changes
+- `new_strategies/<name>/strategy.md` and/or `config_delta.json` — only if your strategy authorizes them
+
+After completing, respond with: "META-EVOLUTION ITERATION {iteration} COMPLETE"
+"""

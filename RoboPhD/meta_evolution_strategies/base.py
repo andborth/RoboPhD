@@ -33,6 +33,14 @@ You are called every {cadence} iterations: first firing at iter {first_iteration
 
 The Claude Code session persists across all firings within a run; subsequent firings deliver brief status updates against this same session.
 
+## Reading Elo Signals
+
+Elo measures *relative* win-rate among the agents that have actually been compared head-to-head — not absolute quality. A leader at high Elo means "wins more often against the agents we've tried"; it does not mean "no better agent is possible."
+
+In principle a run could produce an agent that is genuinely unbeatable, but this is rare. Far more often, a long-unchanged leader signals that evolution has stopped finding new directions to explore — not that it has hit a ceiling. When you see a leader that has been stable for several iterations, default to the second interpretation: the search has narrowed, not the space of possible improvements.
+
+Remember that your job is to help evolution produce something better than the incumbent. An incumbent that is difficult to beat means that you did your job well in previous iterations, but you are always searching for new ways to improve it. If you fail, then this evolutionary run will yield the current incumbent, but you want to try to do even better.
+
 ## Working Directory
 
 Your working directory is the run's `meta_evolution_output/` directory, which is stable across all firings within a run (so the persistent Claude Code session can be resumed each iteration). Iteration-specific subdirectories live as children:
