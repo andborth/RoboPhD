@@ -1,8 +1,14 @@
----
-name: minimal_guidance
-description: Lightweight meta-evolution that advises rather than directs the evolution agent
----
+"""Minimal Guidance meta-evolution strategy."""
 
+from RoboPhD.meta_evolution_strategies.base import MetaEvolutionStrategy
+
+
+class MinimalGuidance(MetaEvolutionStrategy):
+    name = "minimal_guidance"
+    description = "Lightweight meta-evolution that advises rather than directs the evolution agent"
+
+    def instructions_for_llm(self) -> str:
+        return """\
 # Minimal Guidance
 
 You are meta-evolution for this run. Like evolution, your ultimate objective is to help produce an agent that achieves a higher score on examples it hasn't seen yet — but you pursue this indirectly, by building an evolutionary agent which has the best possible guidance and information sources rather than acting directly. The evolution agent is also an Opus model and is generally able to reason for itself; your role is to **support, not replace, its decision-making**.
@@ -13,7 +19,7 @@ You are meta-evolution for this run. Like evolution, your ultimate objective is 
 
 ## Your Task
 
-Sometimes your cross-iteration perspective lets you spot something evolution has overlooked, or you can give it reporting that would improve its next decision. Sometimes when you can see that things are going great, the right call is to do nothing and continue with previous evolution strategies.  
+Sometimes your cross-iteration perspective lets you spot something evolution has overlooked, or you can give it reporting that would improve its next decision. Sometimes when you can see that things are going great, the right call is to do nothing and continue with previous evolution strategies.
 
 However, you should never be satisfied with the status quo.  Although sometimes the best move is to do nothing, you are always looking for ways to help evolution produce an agent that beats the incumbent. The clearest signal that evolution has stalled and could use your input: it is no longer producing new agents that win iterations.
 
@@ -27,3 +33,4 @@ In `reasoning.md`, answer: is evolution still producing new winning agents? If y
 ## Required Outputs
 
 At minimum, produce `reasoning.md` (your analysis) and `meta_config_schedule.json` (which can be `{}` if you propose no schedule changes).
+"""

@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Any
 
 from RoboPhD.config_manager import ConfigManager, ConfigSource
+from RoboPhD.meta_evolution_strategies import MetaEvolutionStrategy, load_strategy
 from utilities.claude_cli import call_claude_cli, claude_cli_settings, RateLimitExceeded
 
 logger = logging.getLogger(__name__)
@@ -31,103 +32,6 @@ class MetaEvolutionResult(NamedTuple):
     meta_config_schedule: Optional[Dict[str, Any]]
     config_delta: Optional[Dict[str, Any]]
     cost_data: Dict[str, Any]
-
-META_EVOLUTION_ENVIRONMENT_GUIDE = """\
-# Meta-Evolution Environment
-
-## Cadence
-
-You are called every {cadence} iterations: first firing at iter {first_iteration}, then iter {first_plus_cadence}, {first_plus_2cadence}, … Plan your `meta_config_schedule.json` decisions with this {cadence}-iteration horizon in mind — any change you propose will run for ~{cadence} iterations before you see its effect and can revise.
-
-The Claude Code session persists across all firings within a run; subsequent firings deliver brief status updates against this same session.
-
-## Working Directory
-
-Your working directory is the run's `meta_evolution_output/` directory, which is stable across all firings within a run (so the persistent Claude Code session can be resumed each iteration). Iteration-specific subdirectories live as children:
-- `iteration_NNN/` — per-firing output (reasoning.md, meta_config_schedule.json, new_strategies/, etc.)
-- `../iteration_NNN/` — per-iteration outputs from the main run: interim_report.md, cost_report.md, error_analysis_report.md, plus `agent_<name>/` subdirectories holding each participating agent's per-problem evaluation outputs (NOT the agent code).
-- `../agents/<name>/` — installed agent packages (the actual agent code).
-- `../evolution_strategies/` — installed evolution strategies (yours land here after validation)
-
-## Per-Iteration Reports
-
-These reports are generated after each iteration at `../iteration_NNN/` (relative to your working dir):
-- `error_analysis_report.md` — cross-agent score comparison & failure summary
-- `error_index.json` — raw per-problem score data (source for the report)
-- `cost_report.md` — per-agent LLM cost breakdown (tokens, cache hits, USD)
-
-## CLI Tools
-
-{cli_tools}
-
-## Required Outputs
-
-Each firing must produce, at minimum:
-- `iteration_NNN/reasoning.md` — your analysis. Each meta-evolution strategy is expected to specify what reasoning.md should contain; follow your strategy's instructions. (If your strategy doesn't specify, document your decisions and rationale at your own discretion.)
-- `iteration_NNN/meta_config_schedule.json` — config changes for upcoming iterations. Can be empty (`{{}}`) if you propose no schedule changes; the file itself must exist.
-
-Optional, only if your strategy authorizes:
-- `iteration_NNN/config_delta.json` — immediate parameter change starting next iteration (persists until overwritten).
-- `iteration_NNN/new_strategies/<name>/strategy.md` — a new evolution strategy.
-
-Missing required outputs trigger a correction prompt within the same session; persistent failure terminates the run.
-
-## Strategy Packages
-
-If you create a new evolution strategy, it lives at `iteration_NNN/new_strategies/<name>/` as a package containing:
-- `strategy.md` (required) — YAML frontmatter with `name` and `description` fields, followed by instructions for the evolution AI on how to create agents.
-- `strategy_tools/` (optional) — Python helper scripts the evolution AI can run (custom error analysis, state tracking, specialized reports). Details below.
-
-Review existing strategies under `../evolution_strategies/` for patterns and structure to follow. The format and content of `reasoning.md` is whatever your meta-evolution strategy specifies.
-
-### Strategy tools details
-
-When you include `strategy_tools/` in a package, those tools are **symlinked into the evolution working directory** as `strategy_tools/`. Reference them as `python strategy_tools/<script>.py` in your strategy.md instructions.
-
-- Tools should use only stdlib and libraries already installed in the environment
-- Include `--help` support so Claude can discover usage
-- Reference them with imperative language in strategy.md (e.g., "Run `python strategy_tools/analyze_failures.py ...`" not "If the tool is available...")
-- The symlink will exist — do NOT include fallback instructions suggesting the tool might be missing
-
-## Strategy Naming
-
-Pick a hyphenated, lowercase name for your strategy (e.g. `cost_mechanism_aware`) — it ends up in installed paths and the schedule, so legibility matters.
-
-When you create a new evolution strategy at `iteration_NNN/new_strategies/<name>/`, the system installs it as `evolution_strategies/iter{{N}}_<name>/` — your name is automatically prefixed with `iter{{N}}_` to keep each firing's contribution unique (mirroring how evolved agents get an iter prefix). **Reference the prefixed form in `meta_config_schedule.json`.**
-
-For example, if at iteration 7 you create `new_strategies/cost_mechanism_aware/`, it installs as `evolution_strategies/iter7_cost_mechanism_aware/`. Your schedule should reference `"evolution_strategy": "iter7_cost_mechanism_aware"`, not `"cost_mechanism_aware"`.
-
-If you reference a name that doesn't resolve, you'll get a correction prompt with the full list of installed strategies and the prefixed form of any strategy you just created.
-
-## Configuration Persistence
-
-Configurations persist across iterations once set. A `meta_config_schedule.json` entry like `{{"4": {{"evolution_strategy": "X"}}}}` does NOT mean "use X at iteration 4 only" — it means "starting at iteration 4, use X until another entry overrides it." To restrict X to a single iteration, schedule both the change AND the revert: `{{"4": {{"evolution_strategy": "X"}}, "5": {{"evolution_strategy": "Y"}}}}`.
-
-## Schedule Format
-
-`meta_config_schedule.json` is a top-level mapping from iteration-number strings to delta dicts. Example:
-
-```json
-{{
-  "11": {{"evolution_strategy": "iter11_my_strategy"}},
-  "13": {{"evolution_strategy": "iter4_my_other_strategy"}}
-}}
-```
-
-Iteration 11 starts using `iter11_my_strategy` (a strategy you just created); iteration 12 inherits it (no override scheduled); iteration 13 switches to `iter4_my_other_strategy` (an older strategy you created in a prior firing). See Configuration Persistence above for the inheritance rule.
-
-## Horizon
-
-The run may be extended beyond the current iteration count. Don't treat any iteration as "final" or optimize for a specific end point — make decisions based on strategy performance trends, not on how many iterations remain.
-
-## Framework Behavior (post-firing)
-
-After your firing completes, the framework will:
-- Discover strategies by scanning `iteration_NNN/new_strategies/` for subdirectories
-- Validate each strategy package (frontmatter, syntax) and prompt you to correct any errors
-- Install valid strategies to `evolution_strategies/iter{{N}}_<name>/`
-- Validate that every `evolution_strategy` reference in your schedule resolves to an installed strategy; prompt for correction if not
-- Integrate `meta_config_schedule` via ConfigManager (your changes take effect at their scheduled iterations)"""
 
 
 class MetaEvolutionManager:
@@ -171,7 +75,6 @@ class MetaEvolutionManager:
         self._domain = domain
         self._task_background = getattr(domain, 'task_background', '') if domain else ''
         self._task_objective = getattr(domain, 'task_objective', '') if domain else ''
-        self.strategies_dir = Path("RoboPhD/meta_evolution_strategies")  # Source directory
         self.output_dir = experiment_dir / "meta_evolution_output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
         # Persistent Claude Code session shared across all firings within the run.
@@ -266,13 +169,14 @@ class MetaEvolutionManager:
             'cache_read': 0
         }
 
+        strategy_obj = load_strategy(strategy_name)
+
         # PHASE 1: Planning and Implementation (initial OR follow-up firing)
         if is_first_firing:
             logger.info("📋 Phase 1: Initial planning, reasoning, and implementation...")
             context = self._gather_context(iteration, config)
-            strategy = self._load_meta_strategy(strategy_name)
             cost_data = self._execute_planning_and_implementation(
-                strategy=strategy,
+                strategy_obj=strategy_obj,
                 context=context,
                 iteration=iteration,
                 iteration_output=iteration_output,
@@ -285,6 +189,7 @@ class MetaEvolutionManager:
             logger.info("📋 Phase 1: Follow-up status update (resuming session)...")
             context = self._gather_context(iteration, config)
             cost_data = self._execute_followup_firing(
+                strategy_obj=strategy_obj,
                 iteration=iteration,
                 iteration_output=iteration_output,
                 model=model,
@@ -329,6 +234,7 @@ class MetaEvolutionManager:
         # PHASE 3: Reflection
         logger.info("💭 Phase 3: Requesting meta-evolution reflection...")
         cost_data = self._request_reflection(
+            strategy_obj=strategy_obj,
             iteration=iteration,
             model=model,
             session_id=self.session_id,
@@ -453,43 +359,6 @@ class MetaEvolutionManager:
 
         fresh_evals = checkpoint.get("iteration_fresh_evals", [])
         return sum(fresh_evals[:through_iteration])
-
-    def _load_meta_strategy(self, strategy_name: str) -> str:
-        """
-        Load meta-evolution strategy from source directory.
-
-        Meta-evolution strategies are NOT copied to experiment directory -
-        they're loaded directly from RoboPhD/meta_evolution_strategies/
-        (unlike evolution strategies which ARE copied).
-
-        Model is controlled by meta_evolution_model config parameter,
-        NOT by the strategy file.
-
-        Args:
-            strategy_name: Name of meta-evolution strategy
-
-        Returns:
-            Strategy instructions (str)
-
-        Raises:
-            ValueError: If strategy file not found
-        """
-        strategy_path = self.strategies_dir / f"{strategy_name}.md"
-
-        if not strategy_path.exists():
-            raise ValueError(
-                f"Meta-evolution strategy '{strategy_name}' not found at {strategy_path}"
-            )
-
-        content = strategy_path.read_text()
-
-        # Strip YAML frontmatter if present (just name/description metadata)
-        if content.startswith("---"):
-            parts = content.split("---", 2)
-            if len(parts) >= 3:
-                content = parts[2]  # Instructions without frontmatter
-
-        return content
 
     def _validate_strategy_package(self, strategy_dir: Path) -> List[str]:
         """
@@ -619,7 +488,8 @@ class MetaEvolutionManager:
         a same-named strategy across firings.
 
         The meta-agent should reference the prefixed name in
-        ``meta_config_schedule.json`` (see META_EVOLUTION_ENVIRONMENT_GUIDE).
+        ``meta_config_schedule.json`` (see the meta-evolution environment guide
+        rendered into ``meta_evolution_output/CLAUDE.md``).
         Validation in _parse_and_validate_outputs catches references that
         forget the prefix and re-prompts for correction.
 
@@ -894,7 +764,7 @@ Please fix these issues in `iteration_{iteration:03d}/`. See `CLAUDE.md` for the
 
     def _execute_planning_and_implementation(
         self,
-        strategy: str,
+        strategy_obj: MetaEvolutionStrategy,
         context: Dict,
         iteration: int,
         iteration_output: Path,
@@ -911,7 +781,7 @@ Please fix these issues in `iteration_{iteration:03d}/`. See `CLAUDE.md` for the
         This is the FIRST firing only; subsequent firings use _execute_followup_firing.
 
         Args:
-            strategy: Meta-evolution strategy text
+            strategy_obj: Meta-evolution strategy instance
             context: Gathered context (rankings, reports, budget)
             iteration: Current iteration number
             iteration_output: Output directory for this iteration
@@ -924,16 +794,9 @@ Please fix these issues in `iteration_{iteration:03d}/`. See `CLAUDE.md` for the
             Cost data dictionary
         """
         budget_info = self._format_budget_status(context["budget"], iteration)
-        strategy_with_budget = strategy.replace(
-            "**Budget Status**:",
-            budget_info
-        )
 
         # Write CLAUDE.md with domain background to parent (meta_evolution_output/).
         # Claude Code traverses up to find it, so all iteration subdirs inherit it.
-        # The GUIDE template uses .format() placeholders for cadence values; all
-        # other curly braces in the template are doubled ({{ }}) so they survive
-        # formatting unchanged.
         #
         # Write-once-per-run: the `if not exists` guard means a resumed run with
         # initial_firing_complete=False (which mints a fresh session) inherits the
@@ -962,40 +825,24 @@ Please fix these issues in `iteration_{iteration:03d}/`. See `CLAUDE.md` for the
                 else "(none of the recommended tools — `jq`, `tree` — detected on this system)"
             )
 
-            sections = []
-            if self._task_background:
-                sections.append(f"# Domain Background\n\n{self._task_background}")
-            if self._task_objective:
-                sections.append(f"# Domain Objective\n\n{self._task_objective}")
-            sections.append(
-                META_EVOLUTION_ENVIRONMENT_GUIDE.format(
+            claude_md_path.write_text(
+                strategy_obj.claude_md_section(
+                    domain_background=self._task_background,
+                    domain_objective=self._task_objective,
                     cadence=cadence,
                     first_iteration=first_iteration,
-                    first_plus_cadence=first_iteration + cadence,
-                    first_plus_2cadence=first_iteration + 2 * cadence,
                     cli_tools=cli_tools_text,
                 )
             )
-            claude_md_path.write_text("\n\n".join(sections))
             logger.info(f"CLAUDE.md written to: {claude_md_path}")
 
-        prompt = f"""
-{strategy_with_budget}
-
-## Current State (Iteration {iteration})
-
-### Recent Performance
-{self._format_interim_reports(context.get("interim_reports", []))}
-
-## Your Task
-
-Produce the artifacts for this firing in `iteration_{iteration:03d}/`. Per your strategy:
-- `reasoning.md` (REQUIRED) — your analysis, formatted per your strategy's instructions
-- `meta_config_schedule.json` (REQUIRED) — can be `{{}}` if no changes
-- `new_strategies/<name>/strategy.md` and/or `config_delta.json` — only if your strategy authorizes them
-
-See `CLAUDE.md` (already in your context) for: cadence, strategy-package structure, naming convention, schedule format, schedule semantics, and the framework's post-firing actions.
-"""
+        prompt = strategy_obj.initial_firing_prompt(
+            iteration=iteration,
+            interim_reports=self._format_interim_reports(context.get("interim_reports", [])),
+            budget_status=budget_info,
+            domain_background=self._task_background,
+            domain_objective=self._task_objective,
+        )
 
         # Save meta-evolution prompt for debugging and reproducibility
         meta_prompt_file = iteration_output / "meta_evolution_prompt.md"
@@ -1017,6 +864,7 @@ See `CLAUDE.md` (already in your context) for: cadence, strategy-package structu
 
     def _execute_followup_firing(
         self,
+        strategy_obj: MetaEvolutionStrategy,
         iteration: int,
         iteration_output: Path,
         model: str,
@@ -1032,6 +880,7 @@ See `CLAUDE.md` (already in your context) for: cadence, strategy-package structu
         are NOT re-fed — Claude has them from the initial firing.
 
         Args:
+            strategy_obj: Meta-evolution strategy instance
             iteration: Current iteration number
             iteration_output: Output directory for this iteration
             model: Model to use
@@ -1044,24 +893,13 @@ See `CLAUDE.md` (already in your context) for: cadence, strategy-package structu
         """
         budget_info = self._format_budget_status(context["budget"], iteration)
 
-        prompt = f"""## Meta-Evolution Firing — Iteration {iteration}
-
-Iteration {iteration} has just completed. Updated reports for this iteration (paths relative to your meta_evolution_output/ working dir):
-- Interim report: `../iteration_{iteration:03d}/interim_report.md`
-- Cost report: `../iteration_{iteration:03d}/cost_report.md`
-- Error analysis: `../iteration_{iteration:03d}/error_analysis_report.md`
-
-{budget_info}
-
-Next firing: iteration {iteration + cadence} (or run end if budget exhausts first).
-
-Produce the artifacts for this firing in `iteration_{iteration:03d}/`. Per your strategy:
-- `reasoning.md` (REQUIRED) — your analysis, formatted per your strategy's instructions
-- `meta_config_schedule.json` (REQUIRED) — can be `{{}}` if no changes
-- `new_strategies/<name>/strategy.md` and/or `config_delta.json` — only if your strategy authorizes them
-
-After completing, respond with: "META-EVOLUTION ITERATION {iteration} COMPLETE"
-"""
+        prompt = strategy_obj.followup_firing_prompt(
+            iteration=iteration,
+            cadence=cadence,
+            budget_status=budget_info,
+            domain_background=self._task_background,
+            domain_objective=self._task_objective,
+        )
 
         # Save follow-up prompt for debugging and reproducibility
         meta_prompt_file = iteration_output / "meta_evolution_prompt.md"
@@ -1791,6 +1629,7 @@ This report is cumulative and includes performance data across all iterations.""
 
     def _request_reflection(
         self,
+        strategy_obj: MetaEvolutionStrategy,
         iteration: int,
         model: str,
         session_id: str,
@@ -1807,6 +1646,7 @@ This report is cumulative and includes performance data across all iterations.""
         The reflection is saved to meta_evolution_reflection.md.
 
         Args:
+            strategy_obj: Meta-evolution strategy instance (provides reflection prompt)
             iteration: Current iteration number
             model: Model to use for the reflection
             session_id: Session ID for this meta-evolution call
@@ -1819,21 +1659,7 @@ This report is cumulative and includes performance data across all iterations.""
             Errors are logged but do not raise exceptions - reflection should
             never break the research run.
         """
-        prompt = f"""Take a moment to reflect on this firing's work. You're in a persistent session — your next firing (a few iterations from now) will have this iteration's context already in memory, so this reflection serves two purposes: an audit-trail checkpoint for the human reviewing the run, and a chance to consolidate the insights you most want to carry forward.
-
-Please consider:
-- What patterns or insights from this iteration's data are worth emphasizing for next time?
-- What was challenging or time-consuming about the analysis or implementation?
-- Were the provided tools and reports helpful? Anything you wished you had?
-- What would you do differently in the next firing?
-- Any prompt or tooling changes worth flagging for the human maintainer of this system?
-
-**Keep your reflection concise - 300 lines or less.**
-
-Save your reflection to `iteration_{iteration:03d}/meta_evolution_reflection.md`.
-
-After saving the reflection, respond with: "REFLECTION COMPLETE"
-"""
+        prompt = strategy_obj.reflection_prompt(iteration=iteration)
 
         try:
             cost_data = self._call_claude_code(

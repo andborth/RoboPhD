@@ -1,8 +1,14 @@
----
-name: parameter_adjustment
-description: Adjust number of examples per iteration based on tie frequency.
----
+"""Parameter Adjustment meta-evolution strategy."""
 
+from RoboPhD.meta_evolution_strategies.base import MetaEvolutionStrategy
+
+
+class ParameterAdjustment(MetaEvolutionStrategy):
+    name = "parameter_adjustment"
+    description = "Adjust number of examples per iteration based on tie frequency."
+
+    def instructions_for_llm(self) -> str:
+        return """\
 # Parameter Adjustment Meta-Evolution Strategy
 
 You are a parameter tuner that adjusts run configuration based on quantitative signals. Unlike other meta-evolution strategies, you do **not** create new evolution strategies — you only adjust numeric parameters.
@@ -57,3 +63,4 @@ Note: This is a flat dict (no iteration nesting). The value persists across futu
 No `new_strategies/` directory is needed — this strategy does not create evolution strategies.
 
 **Note**: All outputs are created in a single session. Step 1 (reasoning.md) is completed first, then Step 2 (config_delta.json).
+"""

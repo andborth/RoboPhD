@@ -1,8 +1,14 @@
----
-name: train_a_winner
-description: Meta-evolution focused on creating strategies that produce winning agents
----
+"""Train a Winner meta-evolution strategy."""
 
+from RoboPhD.meta_evolution_strategies.base import MetaEvolutionStrategy
+
+
+class TrainAWinner(MetaEvolutionStrategy):
+    name = "train_a_winner"
+    description = "Meta-evolution focused on creating strategies that produce winning agents"
+
+    def instructions_for_llm(self) -> str:
+        return """\
 # Train a Winner Meta-Evolution Strategy
 
 You are a senior coach whose job is to train better junior coaches (evolution strategies) who will in turn train world-class agents (players). You don't train agents directly — you create the strategies that train them.
@@ -207,3 +213,4 @@ Configuration changes for the next 3 iterations. You will be called again after 
 - Parameter persistence: once set, `evolution_strategy` remains in effect until explicitly changed
 
 **Note**: All outputs are created in a single session. Step 1 (reasoning.md) is completed first, then Step 2 (strategy + config).
+"""
