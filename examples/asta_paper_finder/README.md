@@ -94,15 +94,34 @@ python examples/asta_paper_finder/main.py --engine autoresearch
 
 ## Status
 
-This example is a recent addition. What's verified:
+### Done
 
 - [x] Scaffold matches existing examples (main.py, evaluator.py, seed, objective.md, background.md, requirements.txt)
 - [x] Dataset loads (66 validation, 267 test) via astabench's loader
-- [x] `inspect.eval()` runs end-to-end on a 1-sample dataset; sample-level errors surface in diagnostics
+- [x] `inspect.eval()` runs end-to-end on a 1-sample dataset; sample-level errors surface cleanly into diagnostics (`error`, `agent_stdout`, `agent_output`, `cost_usd`, `usage`, `score_type`, `tool_source`)
 - [x] One full eval cycle measured at ~8s wall-clock (most of which is Inspect's per-task overhead)
+- [x] Seed demonstrates the three calling conventions evolution will mutate: tool-by-name lookup from `state.tools`, Inspect-tracked `get_model().generate()`, JSON output to `state.output.completion`
 
-Open before treating scores as authoritative:
+### Blocked on credentials
 
-- [ ] End-to-end run with a working `ASTA_TOOL_KEY` (any S2 API key unblocks `tool_source=search`; AI2's MCP key unblocks `tool_source=mcp`)
-- [ ] Standard-Tools allowlist enforcement (AST scan in evaluator) — currently absent; evolution could in principle import outside the allowed set
-- [ ] Backfill `background.md` with the live MCP tool list (signatures, return shapes) once the MCP key is in hand
+- [ ] **`ASTA_TOOL_KEY`** — request form is pending with AI2 (https://allenai-web-dev.allen.ai/asta/resources/mcp). Unblocks `tool_source=mcp` (the leaderboard's Standard tier). Until it arrives, smoke-testing with `tool_source=search` requires a personal Semantic Scholar key (free, ~5 min at https://www.semanticscholar.org/product/api) set into the same `ASTA_TOOL_KEY` env var; that path produces structurally-correct scores but uses S2's public surface, not the MCP corpus.
+
+### Verification (do once a key is in hand)
+
+- [ ] Confirm seed produces nonzero score on at least one sample of each `score_type` (specific, metadata, semantic). Expected to be low — the seed is a one-search, one-rerank baseline. Rough lower bound: > 0.0 on metadata/specific (paper_search alone often hits the gold ID for "the BART paper"–style queries).
+- [ ] Measure realistic per-eval latency at concurrency. The 8s observed in dev was a single sample with a 429 short-circuit; real runs with the LLM judge on `semantic_f1` queries (48/66 of validation) will be slower. Probe with `--max-workers 4` against ~20 samples and report wall-clock.
+- [ ] Confirm `usage` and `cost_usd` populate correctly when LLM calls actually run. The current pipeline reads `log.stats.model_usage` and prices via `litellm.cost_per_token`; both paths are cold until a real solver call lands.
+- [ ] Enumerate the live MCP tool surface (`for t in make_asta_mcp_tools(...): print(ToolDef(t).name, ToolDef(t).parameters)`) and backfill `background.md` with signatures, return shapes, and short usage notes for each — same treatment `protein_go/background.md` gives its tool kit.
+
+### Code work
+
+- [ ] **Standard-Tools allowlist (AST scan).** Currently absent. The evaluator should reject candidates that import outside `{json, re, asyncio, dataclasses, ..., inspect_ai.*, astabench.tools.*}`. Without this, evolution could in principle introduce `import openai` or a custom search backend and silently lose cost-accounting fidelity / the Standard Tools badge. ~30 lines of `ast.parse` walking.
+- [ ] **Per-eval cost cap.** Other examples (DocFinQA, ARC-AGI) cap per-problem solver cost at ~$0.10 with a soft penalty for overruns. PaperFinder's per-eval cost has a hard floor (the judge LLM on semantic queries is outside our control) and a soft ceiling (the agent's own LLM calls). Decide whether to add a budget similar to docfinqa's, and where the ceiling lives.
+- [ ] **Decide on TaskState bypass.** If 8s/eval × 1500 budget is acceptable, leave `inspect.eval()` per call as-is. If we want to push throughput, switch to constructing TaskState manually and calling the scorer in-process. Profile first.
+- [ ] **Submission tarball pipeline.** Out of scope for v1 but: the leaderboard accepts tarballs of `.eval` log files. Each `inspect.eval()` call already writes one to the evaluator's `_log_dir`. A separate "package for submission" path could collect logs from a full test-set run.
+
+### Design questions to revisit
+
+- [ ] **Held-out thermometer split.** PLAN.md flagged this. Currently we're feeding all 66 validation samples to evolution, which is a lot of reuse (1500 budget / 66 examples ≈ 22.7× per-example reuse). Decide whether to hold out ~16 as a thermometer the evolution AI can't see, or accept the reuse.
+- [ ] **Score-type stratification in ELO.** RoboPhD's ELO sees a single float per match. The PaperFindingBench scorer reports means *grouped by* `score_type`. Two options: (a) sample ELO matches stratified by score_type so each group gets balanced exposure, (b) trust that optimizing the marginal mean tracks the headline. (b) is the simpler default; revisit if evolution overfits to semantic queries (the largest group).
+- [ ] **Whether to add `paper_finder` (high-level MCP tool) to the allowlist.** It exists; using it would make our agent essentially an `ai2i_paper_finder` lookalike. Defeats the purpose for evolution but might be defensible as a baseline benchmark. Lean: exclude.
