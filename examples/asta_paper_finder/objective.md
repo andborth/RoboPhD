@@ -1,0 +1,1 @@
+Maximize PaperFindingBench adjusted micro-F1 on the AstaBench validation split, using only the Standard tools (Asta MCP corpus). Per-query cost is part of the leaderboard's Pareto ranking, so prefer cheaper structures when score is comparable.
