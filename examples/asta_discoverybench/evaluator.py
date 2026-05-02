@@ -321,9 +321,21 @@ class DiscoveryBenchEvaluator:
     ) -> tuple[float, dict]:
         diagnostics: dict[str, Any] = {
             "agent_stdout": agent_stdout,
-            "sample_id": example.id,
+            "sample_id": str(example.id),
             "split": example.metadata.get("split", "real"),
         }
+
+        # Expose the gold hypothesis + workflow to evolution. The AGENT
+        # never sees state.target at runtime; this only flows into the
+        # post-hoc diagnostics that evolution reads when deciding how to
+        # mutate the next candidate. With this, evolution can compare
+        # what the agent emitted (agent_output) against what was
+        # expected (gold_hypothesis) and learn from specific failures.
+        target = example.target
+        if isinstance(target, list) and len(target) >= 1:
+            diagnostics["gold_hypothesis.md"] = str(target[0])
+            if len(target) >= 2 and target[1]:
+                diagnostics["gold_workflow.md"] = str(target[1])
 
         if not getattr(log, "samples", None):
             diagnostics["error"] = "no samples in eval log"
@@ -368,9 +380,43 @@ class DiscoveryBenchEvaluator:
         var_score = (var_rel.get("var") or {}).get("score") or {}
         if isinstance(var_score, dict):
             diagnostics["var_f1"] = var_score.get("f1")
-        rel_score = (var_rel.get("rel") or {}).get("score")
+        rel_obj = var_rel.get("rel") or {}
+        rel_score = rel_obj.get("score")
         if rel_score is not None:
             diagnostics["rel_score"] = rel_score
+
+        # Expose the judge's per-dimension explanations. These are the
+        # most directly actionable signal evolution can get: the judge
+        # literally tells us which variables matched/missed and whether
+        # the relationship form was right. Surfaced as a single
+        # `judge_explanation.md` so RoboPhD writes one readable file.
+        explanation_lines = []
+        var_explanation = var_score.get("explanation") if isinstance(var_score, dict) else None
+        if var_explanation:
+            explanation_lines.append(
+                f"## Variables (f1={var_score.get('f1')}, "
+                f"intersection={var_score.get('intersection')}, "
+                f"sizeA={var_score.get('sizeA')}, sizeB={var_score.get('sizeB')})\n\n"
+                + str(var_explanation)
+            )
+        # rel.answer is the LLM judge's raw response — JSON-stringified
+        # `{"answer": "A) very similar", "explanation": "..."}`. Try to
+        # parse the explanation field out of it.
+        rel_answer = rel_obj.get("answer")
+        if rel_answer:
+            try:
+                parsed = json.loads(rel_answer)
+                rel_expl = parsed.get("explanation", "")
+                rel_verdict = parsed.get("answer", "")
+            except (json.JSONDecodeError, AttributeError, TypeError):
+                rel_expl = str(rel_answer)
+                rel_verdict = ""
+            explanation_lines.append(
+                f"## Relationship (score={rel_score}, verdict={rel_verdict!r})\n\n"
+                + rel_expl
+            )
+        if explanation_lines:
+            diagnostics["judge_explanation.md"] = "\n\n".join(explanation_lines)
 
         # Cost split: agent vs judge
         agent_cost_usd = 0.0

@@ -255,8 +255,16 @@ class PaperFinderEvaluator:
             "score_type": example.metadata.get("score_type"),
             "tool_source": self.tool_source,
             "agent_stdout": agent_stdout,
-            "sample_id": example.id,
+            "sample_id": str(example.id),
         }
+
+        # Expose the gold scorer criteria to evolution. The AGENT never
+        # sees state.target at runtime; this only flows into post-hoc
+        # diagnostics that evolution reads when deciding how to mutate.
+        # For specific/metadata queries the target is the gold corpus_id
+        # list; for semantic queries it's the relevance criteria dict.
+        if example.target:
+            diagnostics["gold_criteria.md"] = str(example.target)
 
         # samples is None if eval failed catastrophically
         if not getattr(log, "samples", None):
