@@ -98,11 +98,17 @@ def main():
     val = load_paper_finder("validation")
     logger.info(f"Validation set: {len(val)} samples")
 
+    # RoboPhD's ExternalEvaluatorDomain JSON-serializes each example to
+    # compute a stable id; Inspect's Sample is a pydantic model and isn't
+    # directly JSON-serializable. Flatten to plain dicts at the boundary;
+    # the evaluator reconstructs Sample.
+    val = [s.model_dump() for s in val]
+
     # --eval-only: skip optimization, just evaluate the best agent on the test set
     if args.eval_only:
         if not args.resume:
             raise SystemExit("--eval-only requires --resume <experiment_dir>")
-        test_data = load_paper_finder("test")
+        test_data = [s.model_dump() for s in load_paper_finder("test")]
         logger.info(f"Test set: {len(test_data)} samples")
         eval_result = eval_run(evaluator=evaluator, dataset=test_data, experiment_dir=args.resume)
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
@@ -175,7 +181,7 @@ def main():
         if not result.completed_normally:
             logger.info("Skipping test-set evaluation -- run ended early due to failure")
         else:
-            test_data = load_paper_finder("test")
+            test_data = [s.model_dump() for s in load_paper_finder("test")]
             logger.info(f"Test evaluation: {len(test_data)} samples")
             eval_result = eval_candidate(
                 evaluator=evaluator,

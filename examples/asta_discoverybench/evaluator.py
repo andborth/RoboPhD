@@ -61,6 +61,14 @@ JUDGE_MODEL_SHORT = "gpt-4o-2024-08-06"
 DEFAULT_COST_BUDGET = 0.10
 COST_BREACH_PENALTY = 0.9
 
+# Inspect-AI's `inspect.eval()` (and its async counterpart `eval_async`)
+# raise "Multiple concurrent calls to eval_async are not allowed" if two
+# evaluations are in flight simultaneously in the same process. RoboPhD's
+# default --max-workers is >1, so we serialize at this layer with a
+# process-global lock. Workers can do other work in parallel; only the
+# inspect.eval critical section is serial.
+_INSPECT_EVAL_LOCK = threading.Lock()
+
 
 def _check_upstream_judge_model() -> None:
     """Warn if the upstream scorer no longer references JUDGE_MODEL_SHORT.
@@ -216,11 +224,23 @@ class DiscoveryBenchEvaluator:
         self._cost_lock = threading.Lock()
 
     # -- RoboPhD evaluator contract -----------------------------------------
+    # RoboPhD invokes the evaluator object directly:
+    #   evaluator(candidate, example, problem_dir=...) -> (score, diagnostics)
 
-    def evaluate(self, candidate: dict, example: Sample) -> tuple[float, dict]:
+    def __call__(self, candidate: dict, example, *, problem_dir=None) -> tuple[float, dict]:
+        return self.evaluate(candidate, example, problem_dir=problem_dir)
+
+    def evaluate(self, candidate: dict, example, *, problem_dir=None) -> tuple[float, dict]:
         agent_code = candidate.get("agent.py", "")
         if not agent_code:
             return 0.0, {"error": "candidate missing agent.py"}
+
+        # RoboPhD's domain layer wants JSON-serializable examples (it
+        # SHA256s them for stable IDs), so main.py converts Sample to
+        # dict via .model_dump() before passing to optimize_anything().
+        # Reconstruct here.
+        if isinstance(example, dict):
+            example = Sample(**example)
 
         try:
             solver_factory = _import_candidate_solver(agent_code)
@@ -237,7 +257,7 @@ class DiscoveryBenchEvaluator:
 
         captured = io.StringIO()
         try:
-            with redirect_stdout(captured):
+            with _INSPECT_EVAL_LOCK, redirect_stdout(captured):
                 logs = inspect_eval(
                     task,
                     model=self.model,
@@ -299,10 +319,17 @@ class DiscoveryBenchEvaluator:
             score_metadata.update(md)
             break  # single scorer; first entry wins
 
-        # Per-dimension HMS pieces (if surfaced by score_discoverybench)
-        for k in ("context_score", "var_score", "rel_score"):
-            if k in score_metadata:
-                diagnostics[k] = score_metadata[k]
+        # Per-dimension HMS pieces (the scorer's metadata structure is
+        # {context_score, var_rel: {var: {score: {f1: ...}}, rel: {score: ...}}, HMS}).
+        if "context_score" in score_metadata:
+            diagnostics["context_score"] = score_metadata["context_score"]
+        var_rel = score_metadata.get("var_rel") or {}
+        var_score = (var_rel.get("var") or {}).get("score") or {}
+        if isinstance(var_score, dict):
+            diagnostics["var_f1"] = var_score.get("f1")
+        rel_score = (var_rel.get("rel") or {}).get("score")
+        if rel_score is not None:
+            diagnostics["rel_score"] = rel_score
 
         # Cost split: agent vs judge
         agent_cost_usd = 0.0
@@ -336,6 +363,11 @@ class DiscoveryBenchEvaluator:
             self.total_eval_cost += agent_cost_usd + judge_cost_usd
 
         diagnostics["score"] = score_value
+        # RoboPhD's domain layer reads `cost_usd` from diagnostics and
+        # surfaces it as `eval_cost` in cost reports. Report total run
+        # spend (agent + judge); evolution sees the agent-only number
+        # via the cap penalty, but humans tracking $ want the total.
+        diagnostics["cost_usd"] = agent_cost_usd + judge_cost_usd
         diagnostics["agent_cost_usd"] = agent_cost_usd
         diagnostics["judge_cost_usd"] = judge_cost_usd
         diagnostics["cost_breached"] = cost_breached

@@ -1,15 +1,20 @@
 """Baseline DiscoveryBench solver.
 
 Demonstrates the calling conventions evolution can mutate:
-  - Copying Sample.files into the Docker sandbox via sandbox().write_file()
-  - Calling python_session for stateful Python (pandas, etc.)
+  - Calling python_session for stateful Python (pandas, etc.) inside
+    the Docker sandbox
   - Calling the Inspect-tracked LLM via get_model().generate()
   - Emitting {hypothesis, workflow} JSON for the scorer
 
-The seed is a one-shot baseline: copy data → describe → ask LLM to draft a
-hypothesis from the description. It does no real analysis. Evolution is
-expected to introduce statistical tests, multi-step reasoning, and
-score-type-appropriate strategies. See background.md for the full surface.
+Sample.files are auto-mounted into the sandbox by Inspect at evaluation
+time, so the agent finds them at their declared paths under /workspace
+without any explicit copy.
+
+The seed is a one-shot baseline: discover the CSVs via python_session,
+describe the first one, ask the LLM to draft a hypothesis. It does no
+real analysis. Evolution is expected to introduce statistical tests,
+multi-step reasoning, and score-type-appropriate strategies. See
+background.md for the full surface.
 """
 
 import json
@@ -17,7 +22,6 @@ import json
 from inspect_ai.model import get_model
 from inspect_ai.solver import Generate, TaskState, solver
 from inspect_ai.tool import ToolDef
-from inspect_ai.util import sandbox
 
 
 def _get_tool(state: TaskState, name: str):
@@ -49,24 +53,20 @@ def make_solver():
         datasets = state.metadata["metadata"]["datasets"]
         print(f"[{state.sample_id}] {query[:120]!r}")
 
-        # --- 1. Copy CSVs into the sandbox (NOT auto-mounted) -------------
-        for sb_path, host_path in (state.files or {}).items():
-            with open(host_path, "rb") as f:
-                await sandbox().write_file(f"/workspace/{sb_path}", f.read())
-        print(f"  copied {len(state.files or {})} file(s) into sandbox")
-
-        # --- 2. python_session: load + describe one CSV (stateful) -------
         py = _get_tool(state, "python_session")
-        first = next(iter((state.files or {}).keys()), None)
-        described = ""
-        if first:
-            described = await py(code=(
-                f"import pandas as pd\n"
-                f"df = pd.read_csv('/workspace/{first}')\n"
-                f"print('shape:', df.shape)\n"
-                f"print(df.describe(include='all').to_string())\n"
-            ))
-            print(f"  python_session described df ({len(described)} chars)")
+
+        # --- 1. python_session: discover the mounted CSV(s) and describe.
+        # Inspect auto-mounts Sample.files into the sandbox; we glob to
+        # find them rather than hardcoding paths.
+        described = await py(code=(
+            "import glob, pandas as pd\n"
+            "csvs = sorted(glob.glob('/workspace/**/*.csv', recursive=True))\n"
+            "print('csvs:', csvs)\n"
+            "df = pd.read_csv(csvs[0])\n"
+            "print('shape:', df.shape)\n"
+            "print(df.describe(include='all').to_string())\n"
+        ))
+        print(f"  python_session described df ({len(described)} chars)")
 
         # --- 3. Inspect-tracked LLM call: draft hypothesis JSON ---------
         ds_summary_lines = []

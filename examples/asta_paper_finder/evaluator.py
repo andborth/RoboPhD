@@ -44,6 +44,14 @@ from astabench.evals.paper_finder.task import (
 
 logger = logging.getLogger(__name__)
 
+# Inspect-AI's `inspect.eval()` (and its async counterpart `eval_async`)
+# raise "Multiple concurrent calls to eval_async are not allowed" if two
+# evaluations are in flight simultaneously in the same process. RoboPhD's
+# default --max-workers is >1, so we serialize at this layer with a
+# process-global lock. Workers can do other work in parallel; only the
+# inspect.eval critical section is serial.
+_INSPECT_EVAL_LOCK = threading.Lock()
+
 
 def load_paper_finder(split: str = "validation") -> list[Sample]:
     """Load the PaperFindingBench split as a list of Inspect Samples.
@@ -159,11 +167,23 @@ class PaperFinderEvaluator:
         self._cost_lock = threading.Lock()
 
     # -- RoboPhD evaluator contract ------------------------------------------
+    # RoboPhD invokes the evaluator object directly:
+    #   evaluator(candidate, example, problem_dir=...) -> (score, diagnostics)
 
-    def evaluate(self, candidate: dict, example: Sample) -> tuple[float, dict]:
+    def __call__(self, candidate: dict, example, *, problem_dir=None) -> tuple[float, dict]:
+        return self.evaluate(candidate, example, problem_dir=problem_dir)
+
+    def evaluate(self, candidate: dict, example, *, problem_dir=None) -> tuple[float, dict]:
         agent_code = candidate.get("agent.py", "")
         if not agent_code:
             return 0.0, {"error": "candidate missing agent.py"}
+
+        # RoboPhD's domain layer wants JSON-serializable examples (it
+        # SHA256s them for stable IDs), so main.py converts Sample to
+        # dict via .model_dump() before passing to optimize_anything().
+        # Reconstruct here.
+        if isinstance(example, dict):
+            example = Sample(**example)
 
         try:
             solver_factory = _import_candidate_solver(agent_code)
@@ -195,7 +215,7 @@ class PaperFinderEvaluator:
         # mirroring docfinqa/protein_go's agent_stdout convention).
         captured = io.StringIO()
         try:
-            with redirect_stdout(captured):
+            with _INSPECT_EVAL_LOCK, redirect_stdout(captured):
                 logs = inspect_eval(
                     task,
                     model=self.model,

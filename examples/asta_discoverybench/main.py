@@ -182,6 +182,13 @@ def main():
         f"examples/iter={examples_per_iter} budget={regime_budget} iters={regime_iterations}"
     )
 
+    # RoboPhD's ExternalEvaluatorDomain JSON-serializes each example to
+    # compute a stable id (SHA256 of the dict). Inspect's Sample is a
+    # pydantic model and isn't directly JSON-serializable, so flatten to
+    # plain dicts at the boundary; the evaluator reconstructs Sample.
+    train = [s.model_dump() for s in train]
+    test = [s.model_dump() for s in test]
+
     # --eval-only: skip optimization, evaluate the best agent from --resume on test.
     if args.eval_only:
         if not args.resume:
