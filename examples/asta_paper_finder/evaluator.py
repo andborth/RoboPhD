@@ -84,29 +84,35 @@ def _import_candidate_solver(agent_code: str) -> Any:
     """Materialize candidate agent.py into a temp module and return its
     @solver factory function (must be exported as `make_solver`).
 
-    A unique module name per call avoids Python's import cache holding onto
-    a previous candidate's namespace across evaluations.
+    Cleans up both the temp file and the sys.modules entry after the
+    factory is captured. Function.__globals__ keeps a direct reference to
+    the module's __dict__ so the factory remains executable after the
+    sys.modules cleanup.
     """
     mod_name = f"_paper_finder_candidate_{uuid.uuid4().hex}"
-    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
-        f.write(agent_code)
-        path = f.name
+    fd, path = tempfile.mkstemp(suffix=".py")
     try:
+        with os.fdopen(fd, "w") as f:
+            f.write(agent_code)
         spec = importlib.util.spec_from_file_location(mod_name, path)
         mod = importlib.util.module_from_spec(spec)
         sys.modules[mod_name] = mod
-        spec.loader.exec_module(mod)
-        if not hasattr(mod, "make_solver"):
-            raise RuntimeError(
-                "candidate agent.py must define a function named `make_solver` "
-                "decorated with @solver (see seeds/baseline/agent.py)"
-            )
-        return mod.make_solver
+        try:
+            spec.loader.exec_module(mod)
+            if not hasattr(mod, "make_solver"):
+                raise RuntimeError(
+                    "candidate agent.py must define a function named "
+                    "`make_solver` decorated with @solver "
+                    "(see seeds/baseline/agent.py)"
+                )
+            return mod.make_solver
+        finally:
+            sys.modules.pop(mod_name, None)
     finally:
-        # Keep the file on disk while the module is loaded; cleanup happens
-        # implicitly when the temp dir is reaped at process exit. Aggressive
-        # unlink can race with import machinery on some platforms.
-        pass
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
 
 
 class PaperFinderEvaluator:
@@ -129,9 +135,22 @@ class PaperFinderEvaluator:
         # Default to MCP if ASTA_TOOL_KEY is set, else fall back to search-only
         # for offline development. This is honest about which mode you're in
         # via the diagnostics["tool_source"] field per evaluation.
+        explicit_choice = tool_source is not None
         if tool_source is None:
             tool_source = "mcp" if os.environ.get("ASTA_TOOL_KEY") else "search"
         self.tool_source = tool_source
+
+        # Surface the silent-fallback case loudly. A user expecting
+        # leaderboard-tier scores who forgets ASTA_TOOL_KEY would
+        # otherwise get search-tier results without realizing it.
+        if not explicit_choice and tool_source == "search":
+            logger.warning(
+                "ASTA_TOOL_KEY is not set; falling back to tool_source='search' "
+                "(public Semantic Scholar). Scores will NOT match the AstaBench "
+                "leaderboard — the Standard tier requires the Asta MCP corpus. "
+                "Set ASTA_TOOL_KEY for leaderboard-comparable runs, or pass "
+                "tool_source='search' explicitly to silence this warning."
+            )
 
         # inspect.eval() insists on a log dir; use a per-evaluator temp dir
         # so multiple parallel evaluators don't fight over the same path.
@@ -222,6 +241,14 @@ class PaperFinderEvaluator:
             diagnostics["error"] = err_msg[:1000]
 
         scores = getattr(sample_log, "scores", None) or {}
+        # PaperFindingBench attaches a single scorer per sample; multiple
+        # scorer entries would mean the upstream task definition changed
+        # and we'd be silently picking whichever lands first.
+        if len(scores) > 1:
+            logger.warning(
+                f"Sample {example.id} produced {len(scores)} scores; "
+                f"expected 1. Using first floatable. Names: {list(scores)}"
+            )
         score_value = 0.0
         for sc in scores.values():
             v = getattr(sc, "value", 0)

@@ -104,21 +104,36 @@ def _check_docker_available() -> None:
 def _import_candidate_solver(agent_code: str) -> Any:
     """Materialize candidate agent.py into a temp module and return its
     @solver factory function (must be exported as `make_solver`).
+
+    Cleans up both the temp file and the sys.modules entry after the
+    factory is captured. Function.__globals__ keeps a direct reference to
+    the module's __dict__ so the factory remains executable after the
+    sys.modules cleanup.
     """
     mod_name = f"_discoverybench_candidate_{uuid.uuid4().hex}"
-    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
-        f.write(agent_code)
-        path = f.name
-    spec = importlib.util.spec_from_file_location(mod_name, path)
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[mod_name] = mod
-    spec.loader.exec_module(mod)
-    if not hasattr(mod, "make_solver"):
-        raise RuntimeError(
-            "candidate agent.py must define a function named `make_solver` "
-            "decorated with @solver (see seeds/baseline/agent.py)"
-        )
-    return mod.make_solver
+    fd, path = tempfile.mkstemp(suffix=".py")
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(agent_code)
+        spec = importlib.util.spec_from_file_location(mod_name, path)
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[mod_name] = mod
+        try:
+            spec.loader.exec_module(mod)
+            if not hasattr(mod, "make_solver"):
+                raise RuntimeError(
+                    "candidate agent.py must define a function named "
+                    "`make_solver` decorated with @solver "
+                    "(see seeds/baseline/agent.py)"
+                )
+            return mod.make_solver
+        finally:
+            sys.modules.pop(mod_name, None)
+    finally:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
 
 
 # ---------------------------------------------------------------------------
@@ -229,8 +244,16 @@ class DiscoveryBenchEvaluator:
             err_msg = getattr(sample_err, "message", None) or str(sample_err)
             diagnostics["error"] = err_msg[:1000]
 
-        # HMS score and per-dimension breakdown
+        # HMS score and per-dimension breakdown.
+        # DiscoveryBench attaches a single scorer per sample; multiple
+        # scorer entries would mean the upstream task definition changed
+        # and we'd be silently picking whichever lands first.
         scores = getattr(sample_log, "scores", None) or {}
+        if len(scores) > 1:
+            logger.warning(
+                f"Sample {example.id} produced {len(scores)} scores; "
+                f"expected 1. Using first floatable. Names: {list(scores)}"
+            )
         score_value = 0.0
         score_metadata: dict[str, Any] = {}
         for sc in scores.values():
