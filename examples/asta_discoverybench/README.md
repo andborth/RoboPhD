@@ -90,10 +90,12 @@ python examples/asta_discoverybench/main.py --regime 2 --engine gepa
 
 ## Cost notes
 
-- Per-example judge cost is fixed at ~$0.029 (5 fixed gpt-4o-2024-08-06 calls per sample). This is evaluator overhead, **not** counted against the agent's $0.10 cap.
+- Per-example **agent** budget is $0.10 (capped; score multiplied by 0.9 on breach). This is the number evolution optimizes against.
+- Per-example **judge** cost is fixed at ~$0.029 (5 fixed gpt-4o-2024-08-06 calls per sample). This is evaluator overhead, **not** counted against the agent's cap.
+- **Asymmetry to be aware of**: cost reports (`cost_report.md`, `eval_cost` in `result.json`) show the **total** (agent + judge). The cap and the reports are not the same number — a sample with `eval_cost = 0.04` might have `agent_cost_usd = 0.011` and `judge_cost_usd = 0.029`, comfortably under the $0.10 cap. The breakdown is in the per-problem diagnostics: `agent_cost_usd`, `judge_cost_usd`, `cost_breached`.
 - A full real/test sweep (239 samples) costs ~$7 just in judge tokens.
 - Regime 2 phase B at 750 evals + real/test sweep ≈ $30–$60 total ($25 judge across the run + $7 final test + agent's own LLM spend at GPT-5 Mini rates).
-- Wall-clock dominates: 4–10s sandbox warm-start per sample + agent execution time. A 750-eval run with `--max-workers 4` is ~30–90 minutes wall-clock.
+- Wall-clock: 4–10s sandbox warm-start per sample + agent execution + 5 judge calls ≈ ~50s/sample observed.
 
 ## Files
 
@@ -117,8 +119,8 @@ python examples/asta_discoverybench/main.py --regime 2 --engine gepa
 
 ### Open
 
-- [ ] **End-to-end smoke test with Docker installed.** Currently blocked on Docker setup; the evaluator pre-flights `docker info` and fails fast with a clear message until that's done.
-- [ ] **Verify `python_session` calling convention** — first real sample run will confirm whether `await py(code=...)` returns a string and behaves statefully across calls within a sample.
+- [x] End-to-end smoke test (Regime 3A, 3 samples / 1 iteration; mean HMS 0.07; ~50s/sample wall-clock; total $0.04)
+- [ ] **Real parallelism**. `--max-workers > 1` is currently a no-op for throughput because Inspect-AI's `eval_async` rejects concurrent calls in the same process; we serialize with a lock. For Regime 1 (1500 evals × 50s ≈ 21 hours serial), real parallelism would mean running each `inspect.eval()` in a subprocess. ~half-day of engineering, ~3 hours wall-clock for Regime 1 with 8-way subprocess parallelism. Defer until the full Regime 1 run is on the agenda.
 - [ ] **Standard Tools allowlist (AST scan).** Currently absent (same gap as `asta_paper_finder`); evolution could in principle import outside the allowed set.
-- [ ] **Cost-cap penalty observation.** Verify in a real run that an artificially-inflated agent triggers `cost_breached: True` and `score *= 0.9`.
+- [ ] **Cost-cap penalty observation.** Verify in a real evolved-agent run that an over-budget agent triggers `cost_breached: True` and `score *= 0.9`.
 - [ ] **HMS variance characterization.** The judge has no temperature controls and `num_retries=1`. Worth a 2× replicate over 5 samples to measure run-to-run variance before trusting individual numbers.

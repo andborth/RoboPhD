@@ -47,9 +47,14 @@ logger = logging.getLogger(__name__)
 # Inspect-AI's `inspect.eval()` (and its async counterpart `eval_async`)
 # raise "Multiple concurrent calls to eval_async are not allowed" if two
 # evaluations are in flight simultaneously in the same process. RoboPhD's
-# default --max-workers is >1, so we serialize at this layer with a
-# process-global lock. Workers can do other work in parallel; only the
-# inspect.eval critical section is serial.
+# default --max-workers is >1, so we serialize with a process-global lock.
+#
+# Practically, this makes --max-workers a no-op for *throughput*: the
+# inspect.eval call dominates per-evaluation wall-clock, so concurrency
+# reduces to ~1. RoboPhD's `--max-workers` argument is preserved for API
+# compatibility but does not deliver parallelism for this evaluator. To
+# restore real parallelism, the inspect.eval call would need to run in
+# a subprocess per worker (see "Open" in README.md).
 _INSPECT_EVAL_LOCK = threading.Lock()
 
 
@@ -181,9 +186,16 @@ class PaperFinderEvaluator:
         # RoboPhD's domain layer wants JSON-serializable examples (it
         # SHA256s them for stable IDs), so main.py converts Sample to
         # dict via .model_dump() before passing to optimize_anything().
-        # Reconstruct here.
+        # Reconstruct here, and fail loud on anything else (a programmatic
+        # caller bypassing main.py would otherwise hit a deep AttributeError
+        # later instead of seeing the boundary mismatch).
         if isinstance(example, dict):
             example = Sample(**example)
+        elif not isinstance(example, Sample):
+            raise TypeError(
+                f"evaluate() expects Sample or dict (from Sample.model_dump); "
+                f"got {type(example).__name__}"
+            )
 
         try:
             solver_factory = _import_candidate_solver(agent_code)

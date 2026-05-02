@@ -64,36 +64,68 @@ COST_BREACH_PENALTY = 0.9
 # Inspect-AI's `inspect.eval()` (and its async counterpart `eval_async`)
 # raise "Multiple concurrent calls to eval_async are not allowed" if two
 # evaluations are in flight simultaneously in the same process. RoboPhD's
-# default --max-workers is >1, so we serialize at this layer with a
-# process-global lock. Workers can do other work in parallel; only the
-# inspect.eval critical section is serial.
+# default --max-workers is >1, so we serialize with a process-global lock.
+#
+# Practically, this makes --max-workers a no-op for *throughput*: the
+# inspect.eval call dominates per-evaluation wall-clock (~50s/sample is
+# almost entirely inside the lock), so concurrency reduces to ~1.
+# RoboPhD's `--max-workers` argument is preserved for API compatibility
+# but does not deliver parallelism for this evaluator. To restore real
+# parallelism, the inspect.eval call would need to run in a subprocess
+# per worker (see "Open" in README.md).
 _INSPECT_EVAL_LOCK = threading.Lock()
 
 
-def _check_upstream_judge_model() -> None:
-    """Warn if the upstream scorer no longer references JUDGE_MODEL_SHORT.
+def _check_upstream_invariants() -> None:
+    """Warn if upstream astabench drifts away from the structures we depend on.
 
-    Brittle by design — better to log a warning than to silently
-    misclassify cost when astabench updates.
+    Brittle by design — better a single startup warning than silent
+    misclassification when astabench updates. Two things we depend on:
+
+    1. The judge model. Source: astabench.evals.discoverybench.task.score_discoverybench
+       passes `llm_used="gpt-4o-2024-08-06"` to run_eval_gold_vs_gen_NL_hypo_workflow.
+       If upstream version-bumps the judge, JUDGE_MODEL_SHORT is wrong and our
+       agent-vs-judge cost split silently misclassifies the new judge as agent spend.
+
+    2. The Score.metadata structure. Source: astabench.evals.discoverybench.eval_utils
+       returns a dict whose top-level includes `context_score` and `var_rel`, with
+       `var_rel` containing `var.score.f1` and `rel.score`. _extract_score_and_diagnostics
+       indexes those paths to surface per-dimension HMS in diagnostics; if upstream
+       restructures the dict, those fields silently become None.
     """
     try:
         import inspect as _inspect
         from astabench.evals.discoverybench import task as _task
-        src = _inspect.getsource(_task)
-        if JUDGE_MODEL_SHORT not in src:
+        from astabench.evals.discoverybench import eval_utils as _eval_utils
+
+        task_src = _inspect.getsource(_task)
+        eval_src = _inspect.getsource(_eval_utils)
+
+        if JUDGE_MODEL_SHORT not in task_src:
             logger.warning(
                 f"Upstream astabench.evals.discoverybench.task no longer "
                 f"references {JUDGE_MODEL_SHORT!r} — the judge model may have "
                 f"changed. Update JUDGE_MODEL_SHORT in this evaluator or "
                 f"agent/judge cost classification will be wrong."
             )
+        # Per-dim metadata structure — both names appear in the upstream
+        # eval_utils source (in the dict construction). If they're absent,
+        # the structure has changed and our extraction needs updating.
+        for marker in ("context_score", "var_rel"):
+            if marker not in eval_src:
+                logger.warning(
+                    f"Upstream astabench.evals.discoverybench.eval_utils no "
+                    f"longer references {marker!r} — Score.metadata structure "
+                    f"may have changed. Per-dim HMS extraction in "
+                    f"_extract_score_and_diagnostics needs review."
+                )
     except Exception:
         # Source inspection is best-effort. If it fails, assume the
-        # constant is still correct rather than spamming false warnings.
+        # invariants still hold rather than spamming false warnings.
         pass
 
 
-_check_upstream_judge_model()
+_check_upstream_invariants()
 
 
 # ---------------------------------------------------------------------------
@@ -238,9 +270,16 @@ class DiscoveryBenchEvaluator:
         # RoboPhD's domain layer wants JSON-serializable examples (it
         # SHA256s them for stable IDs), so main.py converts Sample to
         # dict via .model_dump() before passing to optimize_anything().
-        # Reconstruct here.
+        # Reconstruct here, and fail loud on anything else (a programmatic
+        # caller bypassing main.py would otherwise hit a deep AttributeError
+        # later instead of seeing the boundary mismatch).
         if isinstance(example, dict):
             example = Sample(**example)
+        elif not isinstance(example, Sample):
+            raise TypeError(
+                f"evaluate() expects Sample or dict (from Sample.model_dump); "
+                f"got {type(example).__name__}"
+            )
 
         try:
             solver_factory = _import_candidate_solver(agent_code)
@@ -319,8 +358,10 @@ class DiscoveryBenchEvaluator:
             score_metadata.update(md)
             break  # single scorer; first entry wins
 
-        # Per-dimension HMS pieces (the scorer's metadata structure is
-        # {context_score, var_rel: {var: {score: {f1: ...}}, rel: {score: ...}}, HMS}).
+        # Per-dimension HMS pieces. Source: astabench.evals.discoverybench.eval_utils
+        # returns metadata = {context_score, var_rel: {var: {score: {f1, ...}},
+        # rel: {score, ...}}, HMS, ...}. _check_upstream_invariants() at module
+        # import time warns if these key names disappear from the upstream source.
         if "context_score" in score_metadata:
             diagnostics["context_score"] = score_metadata["context_score"]
         var_rel = score_metadata.get("var_rel") or {}
