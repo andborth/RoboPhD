@@ -75,6 +75,10 @@ COST_BREACH_PENALTY = 0.9
 # per worker (see "Open" in README.md).
 _INSPECT_EVAL_LOCK = threading.Lock()
 
+# Flag to ensure the "explanation extraction silently empty" debug log
+# fires at most once per process. Per-evaluation logs would spam.
+_explanation_drift_logged = False
+
 
 def _check_upstream_invariants() -> None:
     """Warn if upstream astabench drifts away from the structures we depend on.
@@ -89,9 +93,12 @@ def _check_upstream_invariants() -> None:
 
     2. The Score.metadata structure. Source: astabench.evals.discoverybench.eval_utils
        returns a dict whose top-level includes `context_score` and `var_rel`, with
-       `var_rel` containing `var.score.f1` and `rel.score`. _extract_score_and_diagnostics
-       indexes those paths to surface per-dimension HMS in diagnostics; if upstream
-       restructures the dict, those fields silently become None.
+       `var_rel` containing `var.score.f1` and `rel.score`. The judge prose lives
+       in inner-dict keys: var.score has "explanation" and "f1"/"intersection"/etc.,
+       rel has "answer" (a JSON-stringified judge response with "answer"/"explanation"
+       fields). _extract_score_and_diagnostics indexes those paths to surface
+       per-dimension HMS and judge prose; if upstream restructures the dict, those
+       fields silently become None and judge_explanation.md goes empty.
     """
     try:
         import inspect as _inspect
@@ -108,10 +115,12 @@ def _check_upstream_invariants() -> None:
                 f"changed. Update JUDGE_MODEL_SHORT in this evaluator or "
                 f"agent/judge cost classification will be wrong."
             )
-        # Per-dim metadata structure — both names appear in the upstream
-        # eval_utils source (in the dict construction). If they're absent,
-        # the structure has changed and our extraction needs updating.
-        for marker in ("context_score", "var_rel"):
+        # Both top-level keys (context_score, var_rel) and the inner keys
+        # we extract from var.score (f1, explanation) and rel (answer)
+        # appear as quoted string literals in upstream eval_utils source.
+        # Quotes prevent false positives from generic English usage of
+        # words like "explanation" in comments.
+        for marker in ('context_score', 'var_rel', '"f1"', '"explanation"', '"answer"'):
             if marker not in eval_src:
                 logger.warning(
                     f"Upstream astabench.evals.discoverybench.eval_utils no "
@@ -408,13 +417,36 @@ class DiscoveryBenchEvaluator:
                 parsed = json.loads(rel_answer)
                 rel_expl = parsed.get("explanation", "")
                 rel_verdict = parsed.get("answer", "")
-            except (json.JSONDecodeError, AttributeError, TypeError):
+            except (json.JSONDecodeError, AttributeError, TypeError) as e:
+                # Drift signal: the upstream judge's response is no longer
+                # JSON-shaped (e.g., switched to plain text). We fall back
+                # to raw text so judge_explanation.md still has content,
+                # but log so a future code review can spot the change.
+                logger.debug(
+                    "rel_answer not JSON-parseable (%s); falling back to raw "
+                    "text. Verdict will be empty in judge_explanation.md.",
+                    type(e).__name__,
+                )
                 rel_expl = str(rel_answer)
                 rel_verdict = ""
             explanation_lines.append(
                 f"## Relationship (score={rel_score}, verdict={rel_verdict!r})\n\n"
                 + rel_expl
             )
+        # Drift signal #2: var_rel was populated (so the scoring path ran)
+        # but neither var nor rel produced a usable explanation. That
+        # almost certainly means the inner-dict key names ("explanation",
+        # "answer") changed upstream. Log once per process so it's
+        # visible in run logs without spamming per-evaluation.
+        global _explanation_drift_logged
+        if var_rel and not explanation_lines and not _explanation_drift_logged:
+            logger.debug(
+                "var_rel populated but no var.score.explanation or "
+                "rel.answer found — judge metadata key names may have "
+                "changed upstream. _check_upstream_invariants() should "
+                "have warned at import time."
+            )
+            _explanation_drift_logged = True
         if explanation_lines:
             diagnostics["judge_explanation.md"] = "\n\n".join(explanation_lines)
 

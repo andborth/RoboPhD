@@ -119,6 +119,7 @@ python examples/asta_paper_finder/main.py --engine autoresearch
 - [ ] **Per-eval cost cap.** Other examples (DocFinQA, ARC-AGI) cap per-problem solver cost at ~$0.10 with a soft penalty for overruns. PaperFinder's per-eval cost has a hard floor (the judge LLM on semantic queries is outside our control) and a soft ceiling (the agent's own LLM calls). Decide whether to add a budget similar to docfinqa's, and where the ceiling lives.
 - [ ] **Decide on TaskState bypass.** If 8s/eval × 1500 budget is acceptable, leave `inspect.eval()` per call as-is. If we want to push throughput, switch to constructing TaskState manually and calling the scorer in-process. Profile first.
 - [ ] **Submission tarball pipeline.** Out of scope for v1 but: the leaderboard accepts tarballs of `.eval` log files. Each `inspect.eval()` call already writes one to the evaluator's `_log_dir`. A separate "package for submission" path could collect logs from a full test-set run.
+- [ ] **Judge-explanation surfacing** (parallel to `asta_discoverybench`'s `judge_explanation.md`). Currently only `gold_criteria.md` is exposed to evolution; the LLM judge's per-paper relevance verdicts (which paper was kept/dropped and why on `semantic_f1` queries) aren't surfaced. Defer until MCP is unblocked and we can test against the real scorer surface — but if PaperFinder ever runs at scale via the `search` fallback first, evolution will be working with weaker per-evaluation signal than DiscoveryBench's.
 
 ### Design questions to revisit
 
