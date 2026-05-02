@@ -1,0 +1,1 @@
+Evolve a DiscoveryBench agent that, given a research question and one or more data files, produces a hypothesis describing the relationship between variables in the data and the analysis workflow that supports it. Maximize the per-example score on held-out queries; cost matters secondarily.

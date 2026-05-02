@@ -1,0 +1,318 @@
+"""
+DiscoveryBench evaluator for AstaBench (Standard tools tier, Docker sandbox).
+
+Each candidate is an Inspect `@solver` factory exported as `make_solver` in
+agent.py. The evaluator runs the candidate against one DiscoveryBench
+sample at a time via `inspect.eval()` with a 1-sample dataset, attaches
+the `python_session` tool inside a Docker sandbox, and returns the HMS
+score along with cost/usage diagnostics.
+
+Bypassing inspect.eval() and constructing TaskState manually was
+considered for lower per-call latency but rejected — the Docker sandbox
+lifecycle, AstaBench's submission tarball machinery, and the scorer's
+gpt-4o judge calls all assume an Inspect-driven runtime.
+
+Cost accounting splits agent vs judge:
+  - `judge_cost_usd`: 5 fixed gpt-4o-2024-08-06 calls per sample
+    (≈$0.029); excluded from the per-example cap because it's outside
+    agent control.
+  - `agent_cost_usd`: everything else (the candidate's own
+    `get_model().generate()` calls and any wrapped out-of-band calls).
+    Capped at $0.10/sample with a 0.9 score multiplier on breach.
+"""
+
+import importlib.util
+import io
+import json
+import logging
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import threading
+import uuid
+from contextlib import redirect_stdout
+from importlib import resources
+from typing import Any
+
+from inspect_ai import Task, eval as inspect_eval
+from inspect_ai.dataset import MemoryDataset, Sample
+from inspect_ai.solver import use_tools
+
+from astabench.evals.discoverybench.task import (
+    load_discoverybench_hf,
+    json_to_sample,
+    score_discoverybench,
+)
+from astabench.tools import python_session
+
+logger = logging.getLogger(__name__)
+
+
+JUDGE_MODEL = "openai/gpt-4o-2024-08-06"
+DEFAULT_COST_BUDGET = 0.10
+COST_BREACH_PENALTY = 0.9
+
+
+# ---------------------------------------------------------------------------
+# Public dataset loaders
+# ---------------------------------------------------------------------------
+
+def load_real(split: str = "validation") -> list[Sample]:
+    """Load DiscoveryBench real/ samples via AstaBench's loader.
+
+    `split` is "validation" (25) or "test" (239).
+    """
+    raw = load_discoverybench_hf(split=split)
+    return [json_to_sample(x, split=split) for x in raw]
+
+
+def load_synth(split: str):
+    """Re-export from load_synth.py for a unified import surface."""
+    from load_synth import load_synth as _load
+    return _load(split)
+
+
+# ---------------------------------------------------------------------------
+# Docker pre-flight
+# ---------------------------------------------------------------------------
+
+def _check_docker_available() -> None:
+    """Raise a clear error if Docker isn't installed or the daemon isn't running."""
+    if shutil.which("docker") is None:
+        raise RuntimeError(
+            "Docker is not installed. DiscoveryBench requires a running Docker "
+            "daemon for the python_session sandbox. See examples/asta_discoverybench/"
+            "README.md for setup options (Docker Desktop / colima / OrbStack)."
+        )
+    try:
+        subprocess.run(
+            ["docker", "info"], check=True, capture_output=True, timeout=10
+        )
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+        raise RuntimeError(
+            "Docker daemon is not responding. DiscoveryBench requires a running "
+            "Docker daemon. See examples/asta_discoverybench/README.md for setup."
+        ) from e
+
+
+# ---------------------------------------------------------------------------
+# Candidate import
+# ---------------------------------------------------------------------------
+
+def _import_candidate_solver(agent_code: str) -> Any:
+    """Materialize candidate agent.py into a temp module and return its
+    @solver factory function (must be exported as `make_solver`).
+    """
+    mod_name = f"_discoverybench_candidate_{uuid.uuid4().hex}"
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
+        f.write(agent_code)
+        path = f.name
+    spec = importlib.util.spec_from_file_location(mod_name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[mod_name] = mod
+    spec.loader.exec_module(mod)
+    if not hasattr(mod, "make_solver"):
+        raise RuntimeError(
+            "candidate agent.py must define a function named `make_solver` "
+            "decorated with @solver (see seeds/baseline/agent.py)"
+        )
+    return mod.make_solver
+
+
+# ---------------------------------------------------------------------------
+# Sandbox compose path
+# ---------------------------------------------------------------------------
+
+def _sandbox_compose_path() -> str:
+    """Path to AstaBench's docker compose file used by `python_session`."""
+    return (resources.files("astabench.util.sandbox") / "sandbox_compose.yaml").as_posix()
+
+
+# ---------------------------------------------------------------------------
+# Evaluator
+# ---------------------------------------------------------------------------
+
+class DiscoveryBenchEvaluator:
+    """RoboPhD evaluator for DiscoveryBench.
+
+    Contract: evaluate(candidate, example) -> (float_score, diagnostics_dict).
+
+    `candidate` is a {"agent.py": "<source>"} mapping (RoboPhD's standard
+    file_mapping shape).
+    `example` is an Inspect Sample loaded via load_real() or load_synth().
+    """
+
+    def __init__(
+        self,
+        model: str = "openai/gpt-5-mini",
+        cost_budget: float = DEFAULT_COST_BUDGET,
+        log_dir: str | None = None,
+        skip_docker_check: bool = False,
+    ):
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise RuntimeError(
+                "OPENAI_API_KEY is not set. The DiscoveryBench scorer judges "
+                "hypotheses with gpt-4o-2024-08-06, and the default solver "
+                "model is GPT-5 Mini — both go through OpenAI. Set the env "
+                "var before running."
+            )
+        if not skip_docker_check:
+            _check_docker_available()
+
+        self.model = model
+        self.cost_budget = cost_budget
+        self._log_dir = log_dir or tempfile.mkdtemp(prefix="discoverybench_eval_")
+        self.total_eval_cost = 0.0
+        self._cost_lock = threading.Lock()
+
+    # -- RoboPhD evaluator contract -----------------------------------------
+
+    def evaluate(self, candidate: dict, example: Sample) -> tuple[float, dict]:
+        agent_code = candidate.get("agent.py", "")
+        if not agent_code:
+            return 0.0, {"error": "candidate missing agent.py"}
+
+        try:
+            solver_factory = _import_candidate_solver(agent_code)
+        except Exception as e:
+            return 0.0, {"error": f"candidate import failed: {type(e).__name__}: {e}"}
+
+        task = Task(
+            dataset=MemoryDataset([example]),
+            solver=solver_factory(),
+            setup=[use_tools(python_session())],
+            scorer=score_discoverybench(),
+            sandbox=("docker", _sandbox_compose_path()),
+        )
+
+        captured = io.StringIO()
+        try:
+            with redirect_stdout(captured):
+                logs = inspect_eval(
+                    task,
+                    model=self.model,
+                    display="none",
+                    log_dir=self._log_dir,
+                    log_format="json",
+                    log_level="warning",
+                )
+        except Exception as e:
+            return 0.0, {
+                "error": f"inspect.eval crashed: {type(e).__name__}: {e}",
+                "agent_stdout": captured.getvalue(),
+            }
+
+        log = logs[0]
+        return self._extract_score_and_diagnostics(log, example, captured.getvalue())
+
+    # -- Result extraction --------------------------------------------------
+
+    def _extract_score_and_diagnostics(
+        self, log, example: Sample, agent_stdout: str
+    ) -> tuple[float, dict]:
+        diagnostics: dict[str, Any] = {
+            "agent_stdout": agent_stdout,
+            "sample_id": example.id,
+            "split": example.metadata.get("split", "real"),
+        }
+
+        if not getattr(log, "samples", None):
+            diagnostics["error"] = "no samples in eval log"
+            return 0.0, diagnostics
+
+        sample_log = log.samples[0]
+
+        sample_err = getattr(sample_log, "error", None)
+        if sample_err is not None:
+            err_msg = getattr(sample_err, "message", None) or str(sample_err)
+            diagnostics["error"] = err_msg[:1000]
+
+        # HMS score and per-dimension breakdown
+        scores = getattr(sample_log, "scores", None) or {}
+        score_value = 0.0
+        score_metadata: dict[str, Any] = {}
+        for sc in scores.values():
+            v = getattr(sc, "value", 0)
+            try:
+                score_value = float(v)
+            except (TypeError, ValueError):
+                score_value = 0.0
+            md = getattr(sc, "metadata", None) or {}
+            score_metadata.update(md)
+            break  # single scorer; first entry wins
+
+        # Per-dimension HMS pieces (if surfaced by score_discoverybench)
+        for k in ("context_score", "var_score", "rel_score"):
+            if k in score_metadata:
+                diagnostics[k] = score_metadata[k]
+
+        # Cost split: agent vs judge
+        agent_cost_usd = 0.0
+        judge_cost_usd = 0.0
+        usage_summary: dict[str, Any] = {}
+        try:
+            stats = getattr(log, "stats", None)
+            model_usage = getattr(stats, "model_usage", None) if stats else None
+            if model_usage:
+                for model_name, u in model_usage.items():
+                    counts = {
+                        "input_tokens": getattr(u, "input_tokens", 0),
+                        "output_tokens": getattr(u, "output_tokens", 0),
+                        "total_tokens": getattr(u, "total_tokens", 0),
+                    }
+                    usage_summary[model_name] = counts
+                    cost = self._estimate_cost(model_name, counts)
+                    if self._is_judge_model(model_name):
+                        judge_cost_usd += cost
+                    else:
+                        agent_cost_usd += cost
+        except Exception:
+            pass
+
+        # Cost cap penalty
+        cost_breached = agent_cost_usd > self.cost_budget
+        if cost_breached:
+            score_value = score_value * COST_BREACH_PENALTY
+
+        with self._cost_lock:
+            self.total_eval_cost += agent_cost_usd + judge_cost_usd
+
+        diagnostics["score"] = score_value
+        diagnostics["agent_cost_usd"] = agent_cost_usd
+        diagnostics["judge_cost_usd"] = judge_cost_usd
+        diagnostics["cost_breached"] = cost_breached
+        diagnostics["cost_budget"] = self.cost_budget
+        diagnostics["usage"] = usage_summary
+        diagnostics["agent_output"] = (
+            getattr(sample_log.output, "completion", "")[:1000]
+            if sample_log.output else ""
+        )
+
+        return score_value, diagnostics
+
+    # -- Cost helpers -------------------------------------------------------
+
+    @staticmethod
+    def _is_judge_model(model_name: str) -> bool:
+        # Inspect surfaces model usage under the canonical name including provider
+        # prefix sometimes ("openai/gpt-4o-2024-08-06") and sometimes without.
+        n = model_name.lower()
+        return "gpt-4o-2024-08-06" in n
+
+    @staticmethod
+    def _estimate_cost(model_name: str, counts: dict) -> float:
+        try:
+            import litellm
+        except ImportError:
+            return 0.0
+        try:
+            pin, pout = litellm.cost_per_token(
+                model=model_name,
+                prompt_tokens=counts.get("input_tokens", 0),
+                completion_tokens=counts.get("output_tokens", 0),
+            )
+            return (pin or 0.0) + (pout or 0.0)
+        except Exception:
+            return 0.0
