@@ -50,9 +50,42 @@ from astabench.tools import python_session
 logger = logging.getLogger(__name__)
 
 
-JUDGE_MODEL = "openai/gpt-4o-2024-08-06"
+# IMPORTANT: this must match what the upstream scorer uses for judging.
+# Source: astabench.evals.discoverybench.task.score_discoverybench passes
+# `llm_used="gpt-4o-2024-08-06"` to run_eval_gold_vs_gen_NL_hypo_workflow.
+# If the upstream version-bumps the judge model, this constant must
+# update too — otherwise our agent-vs-judge cost split silently
+# misclassifies the new judge as agent spend, breaching the cap. We
+# do an import-time check below to surface that drift loudly.
+JUDGE_MODEL_SHORT = "gpt-4o-2024-08-06"
 DEFAULT_COST_BUDGET = 0.10
 COST_BREACH_PENALTY = 0.9
+
+
+def _check_upstream_judge_model() -> None:
+    """Warn if the upstream scorer no longer references JUDGE_MODEL_SHORT.
+
+    Brittle by design — better to log a warning than to silently
+    misclassify cost when astabench updates.
+    """
+    try:
+        import inspect as _inspect
+        from astabench.evals.discoverybench import task as _task
+        src = _inspect.getsource(_task)
+        if JUDGE_MODEL_SHORT not in src:
+            logger.warning(
+                f"Upstream astabench.evals.discoverybench.task no longer "
+                f"references {JUDGE_MODEL_SHORT!r} — the judge model may have "
+                f"changed. Update JUDGE_MODEL_SHORT in this evaluator or "
+                f"agent/judge cost classification will be wrong."
+            )
+    except Exception:
+        # Source inspection is best-effort. If it fails, assume the
+        # constant is still correct rather than spamming false warnings.
+        pass
+
+
+_check_upstream_judge_model()
 
 
 # ---------------------------------------------------------------------------
@@ -319,10 +352,10 @@ class DiscoveryBenchEvaluator:
 
     @staticmethod
     def _is_judge_model(model_name: str) -> bool:
-        # Inspect surfaces model usage under the canonical name including provider
-        # prefix sometimes ("openai/gpt-4o-2024-08-06") and sometimes without.
-        n = model_name.lower()
-        return "gpt-4o-2024-08-06" in n
+        # Inspect surfaces model usage with provider prefix sometimes
+        # ("openai/gpt-4o-2024-08-06") and sometimes without; substring
+        # match handles both. JUDGE_MODEL_SHORT is the source of truth.
+        return JUDGE_MODEL_SHORT.lower() in model_name.lower()
 
     @staticmethod
     def _estimate_cost(model_name: str, counts: dict) -> float:

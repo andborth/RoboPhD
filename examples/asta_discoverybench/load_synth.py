@@ -149,11 +149,20 @@ def load_synth(split: Literal["train", "dev", "test"]) -> list[Sample]:
       train: 550 scoreable samples
       dev:   153 scoreable samples
       test:    0 scoreable samples — synth/test is the upstream held-out
-               competition set with `true_hypothesis` removed; use synth/dev
-               for held-out evaluation locally.
+               competition set with `true_hypothesis` removed; passing
+               "test" here raises ValueError. Use synth/dev for held-out
+               evaluation locally, or real/test for the leaderboard.
     """
     if split not in ("train", "dev", "test"):
         raise ValueError(f"split must be train/dev/test, got {split!r}")
+    if split == "test":
+        raise ValueError(
+            "synth/test has no scoreable samples — upstream withholds "
+            "`true_hypothesis` so it can't be judged locally. Use "
+            "synth/dev (153 scoreable) for held-out synth evaluation, or "
+            "real/test (239) via load_real('test') for the leaderboard "
+            "metric."
+        )
 
     synth_root = _ensure_repo_cached()
     split_dir = synth_root / split
