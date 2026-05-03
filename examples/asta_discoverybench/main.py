@@ -219,6 +219,15 @@ def main():
     if args.engine_config:
         engine_overrides.update(json.loads(args.engine_config))
 
+    # Per-example timeout: RoboPhD's default is 300s, but DiscoveryBench
+    # evaluations include ~5 judge LLM calls + sandboxed Python + the
+    # agent's own LLM calls, all serialized through the inspect.eval
+    # lock. Evolved agents that do multi-step analysis can blow past 300s
+    # easily. Match arc_agi_1 and use 600s. (Verified in run
+    # asta_discoverybench_r3_experiment_20260502_141553: 5 timeouts at
+    # 300s on iterations 4 and 8 with the default.)
+    EVAL_TIMEOUT = 600
+
     if args.engine == "gepa":
         cfg = GEPAConfig(
             evaluation_budget=evaluation_budget,
@@ -226,6 +235,7 @@ def main():
             max_workers=args.max_workers,
             seed=args.random_seed,
             parent_experiments_dir=args.runs_dir,
+            eval_timeout=EVAL_TIMEOUT,
         )
         dataset = train
     elif args.engine == "autoresearch":
@@ -235,6 +245,7 @@ def main():
             max_workers=args.max_workers,
             seed=args.random_seed,
             parent_experiments_dir=args.runs_dir,
+            eval_timeout=EVAL_TIMEOUT,
         )
         dataset = train
     else:
@@ -247,6 +258,7 @@ def main():
             random_seed=args.random_seed,
             meta_evolution_strategy=args.meta_evolution_strategy,
             engine_overrides=engine_overrides,
+            eval_timeout=EVAL_TIMEOUT,
         )
         if args.resume:
             cfg.experiment_dir = args.resume

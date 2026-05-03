@@ -125,6 +125,14 @@ def main():
 
     seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
 
+    # Per-example timeout: RoboPhD's default is 300s. PaperFinder's
+    # semantic-query scoring can fan out into many judge LLM calls
+    # (one per predicted paper × relevance criterion), and our
+    # inspect.eval lock serializes everything. 600s matches arc_agi_1
+    # and DiscoveryBench. Worth revisiting once we have real run data
+    # against the MCP path.
+    EVAL_TIMEOUT = 600
+
     if args.engine == "gepa":
         cfg = GEPAConfig(
             evaluation_budget=args.evaluation_budget,
@@ -132,6 +140,7 @@ def main():
             max_workers=args.max_workers,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
+            eval_timeout=EVAL_TIMEOUT,
         )
         dataset = val
     elif args.engine == "autoresearch":
@@ -141,6 +150,7 @@ def main():
             max_workers=args.max_workers,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
+            eval_timeout=EVAL_TIMEOUT,
         )
         dataset = val
     else:
@@ -154,6 +164,7 @@ def main():
             random_seed=args.random_seed,
             meta_evolution_strategy=args.meta_evolution_strategy,
             engine_overrides=engine_overrides or None,
+            eval_timeout=EVAL_TIMEOUT,
         )
         if args.resume:
             cfg.experiment_dir = args.resume
