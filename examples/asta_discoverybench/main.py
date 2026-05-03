@@ -8,20 +8,10 @@ Targets the AstaBench Data-Analysis category leaderboard. Real validation
 samples (550 train / 153 dev / 200 test) for distribution-padding the
 small real/train.
 
-Three training regimes (--regime):
-  1: Synth-only   — train on synth/train (550); test on synth/dev (153) +
-                    real/train (25) + real/test (239). 1500 evals,
-                    20 examples/iter. synth/test is upstream's held-out
-                    competition set with no gold, so we use synth/dev as
-                    the local synth-side test signal instead.
-  2: Mixed        — 85% synth + 15% real per iteration. Two phases.
-                    --phase experiment: 85 synth + 15 real, 750 evals.
-                    --phase final:      85 synth + 25 real, 750 evals.
-                    Test on real/test for final.
-  3: Real-only    — train on real/train. Two phases.
-                    --phase experiment: 15 real, 15 iters @ 3 examples/iter.
-                    --phase final:      25 real, 15 iters @ 3 examples/iter.
-                    Test on real/test for final.
+Three training regimes (--regime {1,2,3}). See the "Training regimes"
+section in README.md for the train/test composition, budgets, reuse,
+and "when to pick which" guidance. Each regime supports
+--phase {experiment,final} (regime 1 ignores --phase).
 
 Credentials required:
     HF_ACCESS_TOKEN  — gated allenai/asta-bench dataset (real/ split metadata)
@@ -130,7 +120,7 @@ def parse_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     p.add_argument("--regime", type=int, choices=[1, 2, 3], default=2,
-                   help="Training regime (see module docstring)")
+                   help="Training regime (see README.md 'Training regimes' section)")
     p.add_argument("--phase", choices=["experiment", "final"], default="experiment",
                    help="Phase within regimes 2 and 3 (ignored for regime 1)")
 

@@ -55,6 +55,34 @@ python -c "from astabench.evals.discoverybench.task import load_discoverybench_h
 
 The synth split is fetched from the public `allenai/discoverybench` GitHub repo on first use (`load_synth.py` does a shallow git clone into `~/.cache/robophd/discoverybench_synth/`).
 
+## Training regimes
+
+Three regimes are wired in (`--regime {1,2,3}`). They differ in what the agent gets to train on, how much budget evolution gets, and what test set we report against. Pick based on what question you're trying to answer.
+
+| Regime | Train pool | Test set | Iter | Examples/iter | Eval budget | Per-ex reuse |
+| --- | --- | --- | --- | --- | --- | --- |
+| **1** synth-only | synth/train (550) | synth/dev (153) + real/val (25) + real/test (239) | ~19 | 20 | 1500 | 0.54× |
+| **2A** mixed, experiment | 85 synth + 15 real = 100 | 10 held-out real | ~19 | 10 | 750 | 1.9× |
+| **2B** mixed, final | 85 synth + all 25 real = 110 | real/test (239) | ~19 | 10 | 750 | 1.7× |
+| **3A** real-only, experiment | 15 of real/val | 10 held-out real | 15 | 3 | iter-bounded | 3.0× |
+| **3B** real-only, final | all 25 real/val | real/test (239) | 15 | 3 | iter-bounded | 1.8× |
+
+### When to use which
+
+**Regime 1** — answer "does evolution learn anything in-distribution from a large synth pool, and does it transfer at all to real?" Tests broadly: in-distribution synth/dev plus the cross-distribution real splits. Cheapest per-eval, but scores against synth aren't directly comparable to the leaderboard.
+
+**Regime 2** — the main "real" run. The 85:15 synth-to-real ratio gives evolution distributional padding (so a 25-real-sample pool doesn't memorize) while keeping the gold real-distribution exposure stable. Phase A uses 15 random real for training and the other 10 as held-out (cheap experimentation, 100 example pool); Phase B uses all 25 real for training and reports against the leaderboard-comparable real/test (239 samples).
+
+**Regime 3** — the "no synth at all, just see what 25 examples can do" baseline. Phase A is for sanity-checking the loop on tiny pools; Phase B is the leaderboard-comparable real-only number. Reuse is high (3.0× / 1.8×) so overfit risk is real, but it isolates the real-distribution learning signal.
+
+### Held-out splits (`--phase experiment`)
+
+For regimes 2 and 3, `--phase experiment` randomly splits real/val into 15 train / 10 test using `--random-seed` (default 0). To re-evaluate a specific candidate against the same 10 held-out samples a prior run used, pass the same seed (and use `--eval-agent <name>` to target the candidate).
+
+### A note on synth/test
+
+`synth/test` (200 samples) is upstream's held-out competition set with `true_hypothesis` removed — it can't be scored locally. `load_synth("test")` raises rather than returning empty. Use `synth/dev` (153 scoreable) when you want a held-out synth signal.
+
 ## Running
 
 Three regimes (`--regime`):
