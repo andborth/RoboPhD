@@ -60,10 +60,21 @@ def _regime_dataset(regime: int, phase: str | None, seed: int):
 
     train_pool is what RoboPhD samples from each iteration. test_pool is
     the held-out evaluation set surfaced via --eval-test-set.
+
+    Sampling uses two independent RNGs both seeded from `seed`:
+      - real_rng draws the 15-train / 10-test split of real/validation
+        in regime 2A and 3A. Same seed → same held-out 10 across
+        regimes and across phases.
+      - synth_rng draws the 85-sample synth subset in regime 2.
+        Same seed → same 85 across phases 2A and 2B.
+    Decoupling the two RNGs means the synth draw doesn't perturb the
+    real draw (and vice versa), so each is a pure function of the seed.
+    A new --random-seed rotates both.
     """
     from evaluator import load_real, load_synth
 
-    rng = random.Random(seed)
+    real_rng = random.Random(seed)
+    synth_rng = random.Random(seed)
 
     if regime == 1:
         # Synth-only. Train on synth/train (550), held-out test on synth/dev
@@ -78,15 +89,19 @@ def _regime_dataset(regime: int, phase: str | None, seed: int):
         synth_train = load_synth("train")
         real_train = load_real("validation")  # AstaBench's "validation" = paper's "train"
 
-        # 85 fixed random synth (seeded) — same selection across both phases of
-        # regime 2, so the synth subset is stable when comparing phase A→B.
-        synth_subset = rng.sample(synth_train, 85)
+        # Decoupled RNGs: real_rng's state is identical to regime 3A's at
+        # the same --random-seed, so 2A and 3A draw the same held-out 10.
+        # synth_rng is independent, so the 85-synth subset is identical
+        # across phases 2A and 2B (same seed → same draw).
+        if phase == "experiment":
+            real_subset_idx = real_rng.sample(range(len(real_train)), 15)
+            real_subset = [real_train[i] for i in real_subset_idx]
+            real_held_out = [real_train[i] for i in range(len(real_train)) if i not in real_subset_idx]
+
+        synth_subset = synth_rng.sample(synth_train, 85)
 
         if phase == "experiment":
             # 85 synth + 15 real (subset); test on the other 10 real.
-            real_subset_idx = rng.sample(range(len(real_train)), 15)
-            real_subset = [real_train[i] for i in real_subset_idx]
-            real_held_out = [real_train[i] for i in range(len(real_train)) if i not in real_subset_idx]
             train = synth_subset + real_subset
             test = real_held_out
         else:  # final
@@ -97,7 +112,7 @@ def _regime_dataset(regime: int, phase: str | None, seed: int):
     if regime == 3:
         real_train = load_real("validation")
         if phase == "experiment":
-            real_subset_idx = rng.sample(range(len(real_train)), 15)
+            real_subset_idx = real_rng.sample(range(len(real_train)), 15)
             train = [real_train[i] for i in real_subset_idx]
             test = [real_train[i] for i in range(len(real_train)) if i not in real_subset_idx]
         else:  # final

@@ -75,9 +75,37 @@ Three regimes are wired in (`--regime {1,2,3}`). They differ in what the agent g
 
 **Regime 3** — the "no synth at all, just see what 25 examples can do" baseline. Phase A is for sanity-checking the loop on tiny pools; Phase B is the leaderboard-comparable real-only number. Reuse is high (3.0× / 1.8×) so overfit risk is real, but it isolates the real-distribution learning signal.
 
-### Held-out splits (`--phase experiment`)
+### Sampling and `--random-seed`
 
-For regimes 2 and 3, `--phase experiment` randomly splits real/val into 15 train / 10 test using `--random-seed` (default 0). To re-evaluate a specific candidate against the same 10 held-out samples a prior run used, pass the same seed (and use `--eval-agent <name>` to target the candidate).
+Two independent RNGs both seeded from `--random-seed` (default 0) drive the random sampling:
+
+| RNG | Used in | Draws |
+| --- | --- | --- |
+| `real_rng` | Regime 2A, Regime 3A | 15-train / 10-held-out split of real/validation |
+| `synth_rng` | Regime 2A, Regime 2B | 85-sample subset of synth/train |
+
+Decoupling the two RNGs means each draw is a pure function of the seed alone, so the following invariants all hold simultaneously:
+
+| Invariant | At seed=0 | At any other seed |
+| --- | --- | --- |
+| Two runs of the same regime+phase → same draws | ✓ | ✓ |
+| **Regime 2A held-out 10 == Regime 3A held-out 10** | ✓ | ✓ |
+| **Regime 2A 85-synth subset == Regime 2B 85-synth subset** | ✓ | ✓ |
+
+The first invariant means determinism within a regime. The second means **evolved-agent comparisons across regime 2A and regime 3A are meaningful** — you can run the same agent through both regimes' `--eval-test-set` paths and compare scores on the same 10 held-out samples. The third means the 2A → 2B "experiment then final" workflow sees a stable synth pool.
+
+#### Rotating seeds for replication
+
+Passing a different `--random-seed` rotates **both** the real-split (in 2A/3A) and the synth subset (in 2). This is the right way to replicate or stress-test results across multiple seeds:
+
+```bash
+# Three seeds, each rotates everything:
+python examples/asta_discoverybench/main.py --regime 3 --phase experiment --random-seed 0
+python examples/asta_discoverybench/main.py --regime 3 --phase experiment --random-seed 1
+python examples/asta_discoverybench/main.py --regime 3 --phase experiment --random-seed 2
+```
+
+To re-evaluate a specific candidate against the same 10 held-out samples a prior run used, pass the same `--random-seed` along with `--eval-agent <name> --eval-only --resume <prior-run-dir>`.
 
 ### A note on synth/test
 
