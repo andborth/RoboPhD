@@ -267,6 +267,7 @@ class DiscoveryBenchEvaluator:
         skip_docker_check: bool = False,
         subprocess_isolation: bool = True,
         eval_timeout: int = 600,
+        apply_cost_penalty: bool = True,
     ):
         if not os.environ.get("OPENAI_API_KEY"):
             raise RuntimeError(
@@ -281,6 +282,14 @@ class DiscoveryBenchEvaluator:
         self.model = model
         self.cost_budget = cost_budget
         self.subprocess_isolation = subprocess_isolation
+        # Whether to multiply score by 0.9 when agent_cost_usd > cost_budget.
+        # True for training (RoboPhD's ELO competition) — the soft penalty
+        # nudges evolution toward cheaper agents. False for test paths
+        # (eval_candidate / eval_run / --eval-test-set / --eval-only /
+        # --eval-agent) — test scores are raw HMS so the agent lands at
+        # its true point on the Pareto cost-vs-score curve. cost_breached
+        # is recorded in diagnostics in both modes for the audit trail.
+        self.apply_cost_penalty = apply_cost_penalty
 
         # Subprocess kill-after timeout MUST be less than RoboPhD's
         # eval_timeout. RoboPhD's reaper writes "EVAL TIMEOUT" and scores
@@ -341,6 +350,7 @@ class DiscoveryBenchEvaluator:
                 "example": example_dict,
                 "model": self.model,
                 "cost_budget": self.cost_budget,
+                "apply_cost_penalty": self.apply_cost_penalty,
             }, inf, default=str)
             inf_path = inf.name
         out_path = inf_path + ".out"
@@ -623,9 +633,12 @@ class DiscoveryBenchEvaluator:
         except Exception:
             pass
 
-        # Cost cap penalty
+        # Cost cap penalty. Applied during training (apply_cost_penalty=True)
+        # to nudge evolution toward cheaper agents; suppressed at test time
+        # so reported scores are raw HMS for the Pareto curve.
         cost_breached = agent_cost_usd > self.cost_budget
-        if cost_breached:
+        cost_penalty_applied = cost_breached and self.apply_cost_penalty
+        if cost_penalty_applied:
             score_value = score_value * COST_BREACH_PENALTY
 
         with self._cost_lock:
@@ -640,6 +653,7 @@ class DiscoveryBenchEvaluator:
         diagnostics["agent_cost_usd"] = agent_cost_usd
         diagnostics["judge_cost_usd"] = judge_cost_usd
         diagnostics["cost_breached"] = cost_breached
+        diagnostics["cost_penalty_applied"] = cost_penalty_applied
         diagnostics["cost_budget"] = self.cost_budget
         diagnostics["usage"] = usage_summary
         diagnostics["agent_output"] = (

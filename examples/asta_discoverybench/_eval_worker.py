@@ -60,6 +60,8 @@ def main() -> int:
             skip_docker_check=True,
             # We ARE the subprocess — don't recurse.
             subprocess_isolation=False,
+            # Default True for missing-key compatibility with older parents.
+            apply_cost_penalty=params.get("apply_cost_penalty", True),
         )
         score, diagnostics = evaluator.evaluate(params["candidate"], params["example"])
     except Exception:

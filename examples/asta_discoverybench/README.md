@@ -146,9 +146,18 @@ python examples/asta_discoverybench/main.py --regime 2 --engine gepa
 
 ## Cost notes
 
-- Per-example **agent** budget is $0.10 (capped; score multiplied by 0.9 on breach). This is the number evolution optimizes against.
+- Per-example **agent** budget is $0.10. The agent's spend is capped only at training time; see "When the cap fires" below.
 - Per-example **judge** cost is fixed at ~$0.029 (5 fixed gpt-4o-2024-08-06 calls per sample). This is evaluator overhead, **not** counted against the agent's cap.
-- **Asymmetry to be aware of**: cost reports (`cost_report.md`, `eval_cost` in `result.json`) show the **total** (agent + judge). The cap and the reports are not the same number — a sample with `eval_cost = 0.04` might have `agent_cost_usd = 0.011` and `judge_cost_usd = 0.029`, comfortably under the $0.10 cap. The breakdown is in the per-problem diagnostics: `agent_cost_usd`, `judge_cost_usd`, `cost_breached`.
+- **Asymmetry to be aware of**: cost reports (`cost_report.md`, `eval_cost` in `result.json`) show the **total** (agent + judge). The cap and the reports are not the same number — a sample with `eval_cost = 0.04` might have `agent_cost_usd = 0.011` and `judge_cost_usd = 0.029`, comfortably under the $0.10 cap. The breakdown is in the per-problem diagnostics: `agent_cost_usd`, `judge_cost_usd`, `cost_breached`, `cost_penalty_applied`.
+
+### When the cap fires
+
+The cap is a **training-time soft penalty**, not a test-time score modifier:
+
+- **Training (RoboPhD ELO competition).** When `agent_cost_usd > $0.10`, the score for that ELO match is multiplied by 0.9. This nudges evolution toward cheaper agents — the soft penalty makes expensive runs lose head-to-head matches more often, even when their HMS would otherwise be slightly higher. Per-problem records show `cost_breached: true` and `cost_penalty_applied: true`.
+- **Test (`--eval-only`, `--eval-agent`, `--eval-test-set`).** The reported HMS is **raw** — no penalty, regardless of breach. The agent's cost is recorded so it can be placed at its true point on the Pareto cost-vs-score curve, but cost does not modify the score. Per-problem records show `cost_breached: <whatever happened>` and `cost_penalty_applied: false` always.
+
+The intent: evolution is guided by the soft penalty toward better cost discipline, but the headline number we report (and the leaderboard data point) is the raw HMS at whatever cost the evolved artifact actually incurs. Two separate evaluator instances inside `main.py` enforce the asymmetry: one with `apply_cost_penalty=True` for training, one with `apply_cost_penalty=False` for all test paths.
 - A full real/test sweep (239 samples) costs ~$7 just in judge tokens.
 - Regime 2 phase B at 750 evals + real/test sweep ≈ $30–$60 total ($25 judge across the run + $7 final test + agent's own LLM spend at GPT-5 Mini rates).
 - Wall-clock: 4–10s sandbox warm-start per sample + agent execution + 5 judge calls ≈ ~50s/sample observed.

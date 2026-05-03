@@ -129,6 +129,72 @@ def _regime_dataset(regime: int, phase: str | None, seed: int):
 # CLI
 # ---------------------------------------------------------------------------
 
+def _write_test_results(
+    eval_result,
+    evaluator,
+    output_dir: Path,
+    agent_name: str,
+    regime: int,
+    phase: str | None,
+    summary_filename: str,
+):
+    """Write a summary JSON plus a sibling .per_problem.json for a test eval.
+
+    Walks `eval_result.per_example_diagnostics` to extract per-problem
+    fields (sample_id, score, agent_cost_usd, judge_cost_usd, ...) so
+    the agent-vs-judge cost split isn't lost when we summarize. Without
+    this, the inspect.eval logs in the temp dir are the only source of
+    truth for the cost breakdown — and they get reaped on process exit.
+    """
+    per_problem = []
+    total_agent_cost = 0.0
+    total_judge_cost = 0.0
+    diagnostics_list = eval_result.per_example_diagnostics or []
+    scores_list = eval_result.per_example_scores or []
+    for i, diag in enumerate(diagnostics_list):
+        diag = diag or {}
+        score = scores_list[i] if i < len(scores_list) else None
+        agent_c = diag.get("agent_cost_usd") or 0.0
+        judge_c = diag.get("judge_cost_usd") or 0.0
+        total_agent_cost += agent_c
+        total_judge_cost += judge_c
+        err = diag.get("error")
+        per_problem.append({
+            "sample_id": diag.get("sample_id"),
+            "score": score,
+            "agent_cost_usd": agent_c,
+            "judge_cost_usd": judge_c,
+            "total_cost_usd": agent_c + judge_c,
+            "cost_breached": diag.get("cost_breached"),
+            "cost_penalty_applied": diag.get("cost_penalty_applied"),
+            "split": diag.get("split"),
+            "context_score": diag.get("context_score"),
+            "var_f1": diag.get("var_f1"),
+            "rel_score": diag.get("rel_score"),
+            "error": (err[:500] if err else None),
+        })
+
+    summary_path = output_dir / summary_filename
+    with open(summary_path, "w") as f:
+        json.dump({
+            "agent": agent_name,
+            "regime": regime,
+            "phase": phase,
+            "mean_test_score": eval_result.mean_score,
+            "total_test_score": eval_result.total_score,
+            "total_test_problems": eval_result.num_examples,
+            "test_eval_cost_usd": evaluator.total_eval_cost,
+            "test_eval_agent_cost_usd": total_agent_cost,
+            "test_eval_judge_cost_usd": total_judge_cost,
+        }, f, indent=2)
+
+    per_problem_path = summary_path.with_suffix(".per_problem.json")
+    with open(per_problem_path, "w") as f:
+        json.dump(per_problem, f, indent=2)
+
+    return summary_path, per_problem_path
+
+
 def parse_args():
     p = argparse.ArgumentParser(
         description="Evolve DiscoveryBench agents on AstaBench (Standard tools, Docker sandbox)",
@@ -194,10 +260,22 @@ def main():
     # leak the thread (see evaluator.py for the reasoning).
     EVAL_TIMEOUT = 600
 
+    # Two evaluator instances. Training uses the cost penalty (a soft
+    # signal nudging evolution toward cheaper agents); test paths report
+    # raw HMS so evolved agents land at their true point on the Pareto
+    # cost-vs-score curve. Same model, same cost_budget, same eval_timeout.
     evaluator = DiscoveryBenchEvaluator(
         model=args.model,
         cost_budget=args.cost_budget,
         eval_timeout=EVAL_TIMEOUT,
+        apply_cost_penalty=True,  # training: penalty fires
+    )
+    test_evaluator = DiscoveryBenchEvaluator(
+        model=args.model,
+        cost_budget=args.cost_budget,
+        eval_timeout=EVAL_TIMEOUT,
+        apply_cost_penalty=False,  # test: raw HMS, no penalty
+        skip_docker_check=True,    # parent already pre-flighted via training evaluator
     )
 
     train, test, examples_per_iter, regime_budget, regime_iterations = (
@@ -236,9 +314,9 @@ def main():
                 raise SystemExit(str(e))
             candidate = {"agent.py": (agent_dir / "agent.py").read_text()}
             logger.info(f"Evaluating named agent: {args.eval_agent} from {agent_dir}")
-            eval_result = eval_candidate(evaluator=evaluator, dataset=test, candidate=candidate)
+            eval_result = eval_candidate(evaluator=test_evaluator, dataset=test, candidate=candidate)
         else:
-            eval_result = eval_run(evaluator=evaluator, dataset=test, experiment_dir=args.resume)
+            eval_result = eval_run(evaluator=test_evaluator, dataset=test, experiment_dir=args.resume)
 
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
         # Suffix the filename when --eval-agent is set so per-agent eval
@@ -246,18 +324,17 @@ def main():
         results_filename = (
             f"test_results_{args.eval_agent}.json" if args.eval_agent else "test_results.json"
         )
-        test_path = Path(args.resume) / results_filename
-        with open(test_path, "w") as f:
-            json.dump({
-                "agent": args.eval_agent or "best",
-                "regime": args.regime,
-                "phase": args.phase,
-                "mean_test_score": eval_result.mean_score,
-                "total_test_score": eval_result.total_score,
-                "total_test_problems": eval_result.num_examples,
-                "test_eval_cost_usd": evaluator.total_eval_cost,
-            }, f, indent=2)
-        logger.info(f"Test results saved to {test_path}")
+        summary_path, per_problem_path = _write_test_results(
+            eval_result=eval_result,
+            evaluator=test_evaluator,
+            output_dir=Path(args.resume),
+            agent_name=args.eval_agent or "best",
+            regime=args.regime,
+            phase=args.phase,
+            summary_filename=results_filename,
+        )
+        logger.info(f"Test summary:    {summary_path}")
+        logger.info(f"Test per-problem: {per_problem_path}")
         return
 
     seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
@@ -329,21 +406,22 @@ def main():
         else:
             logger.info(f"Test evaluation: {len(test)} samples")
             eval_result = eval_candidate(
-                evaluator=evaluator,
+                evaluator=test_evaluator,
                 dataset=test,
                 candidate=result.best_candidate,
             )
             logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
-            test_results = {
-                "mean_test_score": eval_result.mean_score,
-                "total_test_score": eval_result.total_score,
-                "total_test_problems": eval_result.num_examples,
-                "test_eval_cost_usd": evaluator.total_eval_cost,
-            }
-            test_path = result.experiment_dir / "test_results.json"
-            with open(test_path, "w") as f:
-                json.dump(test_results, f, indent=2)
-            logger.info(f"Test results saved to {test_path}")
+            summary_path, per_problem_path = _write_test_results(
+                eval_result=eval_result,
+                evaluator=test_evaluator,
+                output_dir=result.experiment_dir,
+                agent_name="best",
+                regime=args.regime,
+                phase=args.phase,
+                summary_filename="test_results.json",
+            )
+            logger.info(f"Test summary:    {summary_path}")
+            logger.info(f"Test per-problem: {per_problem_path}")
 
 
 if __name__ == "__main__":
