@@ -290,6 +290,19 @@ class PaperFinderEvaluator:
                 f"got {type(example).__name__}"
             )
 
+        # Note: unlike asta_discoverybench, PaperFinder does NOT strip
+        # any fields from example.metadata before passing to the solver.
+        # AstaBench's json_to_sample for paper_finder puts {query,
+        # score_type, raw_query} into metadata, and a leaderboard agent
+        # would receive all three. score_type in particular is a
+        # legitimate input — agents should branch on
+        # specific/metadata/semantic queries because they call for
+        # different retrieval strategies (narrow lookup vs author-filter
+        # vs broad retrieval + evidence). The leak risk that motivated
+        # the DiscoveryBench allowlist (synth-vs-real distribution
+        # signal added by our own load_synth) doesn't apply here —
+        # we don't load any non-AstaBench data.
+
         try:
             solver_factory = _import_candidate_solver(agent_code)
         except Exception as e:

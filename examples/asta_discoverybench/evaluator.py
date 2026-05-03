@@ -70,9 +70,16 @@ COST_BREACH_PENALTY = 0.9
 # them from a *copy* of the example before constructing the Task; the
 # originals stay on `example.metadata` for diagnostics extraction.
 #
-# Aligned with AstaBench's own json_to_sample for paper_finder: it only
-# exposes `query`, `score_type`, `raw_query`. For DiscoveryBench, the
-# upstream json_to_sample exposes only `query` and `metadata`.
+# This allowlist must stay aligned with AstaBench's own json_to_sample
+# for DiscoveryBench:
+#   astabench/evals/discoverybench/task.py:json_to_sample
+# That function constructs Sample with metadata={"query", "metadata"}.
+# If a future astabench version adds new fields to real samples (e.g. a
+# "context" field), update this allowlist to include them — otherwise
+# the agent will be silently denied access to fields a leaderboard
+# agent would receive. Allowlist (not denylist) chosen because new
+# fields default to hidden, which is the safer failure mode for
+# leakage but the noisier one for missed inputs.
 AGENT_VISIBLE_METADATA_KEYS = frozenset({"query", "metadata"})
 
 # Inspect-AI's `inspect.eval()` raises if two evaluations are in flight
