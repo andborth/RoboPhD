@@ -317,9 +317,21 @@ class DiscoveryBenchEvaluator:
         future constructor field added to DiscoveryBenchEvaluator must
         also be added here, but only here — not at every call site.
 
-        The new instance always skips docker_check (the parent already
-        pre-flighted), and inherits the rest of the config unless an
-        override is given.
+        Defaults applied to the sibling:
+          - skip_docker_check defaults to True (the parent already
+            pre-flighted Docker and re-checking adds latency). A caller
+            who wants the sibling to re-check anyway — e.g., a
+            long-lived test evaluator running hours after the parent —
+            can override with `with_overrides(skip_docker_check=False)`.
+
+        Not propagated:
+          - log_dir is NOT inherited. Each instance gets its own fresh
+            tempdir (via the constructor's None default). This is
+            intentional — log_dir is internal scratch space for each
+            evaluator's own inspect.eval() calls and we don't aggregate
+            or cross-read across evaluators. If a future caller wants
+            two evaluators sharing a log_dir for some reason, they can
+            override explicitly with `with_overrides(log_dir=...)`.
         """
         base = {
             "model": self.model,
