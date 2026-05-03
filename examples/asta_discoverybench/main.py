@@ -158,6 +158,12 @@ def parse_args():
 
     p.add_argument("--eval-test-set", action="store_true")
     p.add_argument("--eval-only", action="store_true")
+    p.add_argument("--eval-agent", type=str, default=None,
+                   help="Name of a specific agent from the --resume run's agent_pool to "
+                        "evaluate (e.g. 'seed_rzvfojwy' to baseline the seed, or "
+                        "'iter7_robust_pronounced_v1'). Requires --eval-only. Defaults to "
+                        "the best-ELO agent. Output file is suffixed with the agent name "
+                        "so results don't overwrite the default best-ELO results.")
     p.add_argument("--resume", type=str, default=None)
     p.add_argument("--extend", type=int, default=None)
     p.add_argument("--from-iteration", type=int, default=None)
@@ -193,15 +199,43 @@ def main():
     train = [s.model_dump() for s in train]
     test = [s.model_dump() for s in test]
 
-    # --eval-only: skip optimization, evaluate the best agent from --resume on test.
+    if args.eval_agent and not args.eval_only:
+        raise SystemExit("--eval-agent requires --eval-only")
+
+    # --eval-only: skip optimization, evaluate an agent from --resume on test.
+    # By default uses the best-ELO agent (via eval_run); --eval-agent overrides
+    # to a specific named agent (via find_named_agent + eval_candidate). Note
+    # that the test set composition for regimes 2 and 3 phase=experiment
+    # depends on --random-seed; pass the same seed used for the original run
+    # to get the same held-out 10 examples.
     if args.eval_only:
         if not args.resume:
             raise SystemExit("--eval-only requires --resume <experiment_dir>")
-        eval_result = eval_run(evaluator=evaluator, dataset=test, experiment_dir=args.resume)
+
+        if args.eval_agent:
+            from RoboPhD.runner_utils import find_named_agent
+            try:
+                _, agent_dir = find_named_agent(Path(args.resume), args.eval_agent)
+            except FileNotFoundError as e:
+                raise SystemExit(str(e))
+            candidate = {"agent.py": (agent_dir / "agent.py").read_text()}
+            logger.info(f"Evaluating named agent: {args.eval_agent} from {agent_dir}")
+            eval_result = eval_candidate(evaluator=evaluator, dataset=test, candidate=candidate)
+        else:
+            eval_result = eval_run(evaluator=evaluator, dataset=test, experiment_dir=args.resume)
+
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
-        test_path = Path(args.resume) / "test_results.json"
+        # Suffix the filename when --eval-agent is set so per-agent eval
+        # runs don't overwrite the default best-ELO results on disk.
+        results_filename = (
+            f"test_results_{args.eval_agent}.json" if args.eval_agent else "test_results.json"
+        )
+        test_path = Path(args.resume) / results_filename
         with open(test_path, "w") as f:
             json.dump({
+                "agent": args.eval_agent or "best",
+                "regime": args.regime,
+                "phase": args.phase,
                 "mean_test_score": eval_result.mean_score,
                 "total_test_score": eval_result.total_score,
                 "total_test_problems": eval_result.num_examples,
