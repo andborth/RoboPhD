@@ -34,6 +34,7 @@ import threading
 import uuid
 from contextlib import redirect_stdout
 from importlib import resources
+from pathlib import Path
 from typing import Any
 
 from inspect_ai import Task, eval as inspect_eval
@@ -61,19 +62,16 @@ JUDGE_MODEL_SHORT = "gpt-4o-2024-08-06"
 DEFAULT_COST_BUDGET = 0.10
 COST_BREACH_PENALTY = 0.9
 
-# Inspect-AI's `inspect.eval()` (and its async counterpart `eval_async`)
-# raise "Multiple concurrent calls to eval_async are not allowed" if two
-# evaluations are in flight simultaneously in the same process. RoboPhD's
-# default --max-workers is >1, so we serialize with a process-global lock.
+# Inspect-AI's `inspect.eval()` raises if two evaluations are in flight
+# in the same Python process. To get real parallelism across RoboPhD's
+# worker threads we route each call through a subprocess (see
+# `_eval_worker.py`). Each subprocess has its own process-global state,
+# so workers don't fight over the eval_async singleton.
 #
-# Practically, this makes --max-workers a no-op for *throughput*: the
-# inspect.eval call dominates per-evaluation wall-clock (~50s/sample is
-# almost entirely inside the lock), so concurrency reduces to ~1.
-# RoboPhD's `--max-workers` argument is preserved for API compatibility
-# but does not deliver parallelism for this evaluator. To restore real
-# parallelism, the inspect.eval call would need to run in a subprocess
-# per worker (see "Open" in README.md).
-_INSPECT_EVAL_LOCK = threading.Lock()
+# `subprocess_isolation=False` falls back to in-process execution. That
+# path is correct for single-threaded callers (smoke tests, the
+# subprocess worker calling itself) but will deadlock/error if multiple
+# threads enter it concurrently.
 
 # Flag to ensure the "explanation extraction silently empty" debug log
 # fires at most once per process. Per-evaluation logs would spam.
@@ -247,6 +245,8 @@ class DiscoveryBenchEvaluator:
         cost_budget: float = DEFAULT_COST_BUDGET,
         log_dir: str | None = None,
         skip_docker_check: bool = False,
+        subprocess_isolation: bool = True,
+        subprocess_timeout: int = 900,
     ):
         if not os.environ.get("OPENAI_API_KEY"):
             raise RuntimeError(
@@ -260,6 +260,13 @@ class DiscoveryBenchEvaluator:
 
         self.model = model
         self.cost_budget = cost_budget
+        self.subprocess_isolation = subprocess_isolation
+        # Subprocess kill-after timeout. Should exceed RoboPhD's eval_timeout
+        # so that under normal slow-eval conditions RoboPhD's per-eval reaper
+        # owns the timeout decision (and writes a clean "Evaluation timed out"
+        # error.md), not us. We only kill if RoboPhD's reaper has somehow
+        # missed a wedged subprocess.
+        self.subprocess_timeout = subprocess_timeout
         self._log_dir = log_dir or tempfile.mkdtemp(prefix="discoverybench_eval_")
         self.total_eval_cost = 0.0
         self._cost_lock = threading.Lock()
@@ -269,7 +276,81 @@ class DiscoveryBenchEvaluator:
     #   evaluator(candidate, example, problem_dir=...) -> (score, diagnostics)
 
     def __call__(self, candidate: dict, example, *, problem_dir=None) -> tuple[float, dict]:
+        if self.subprocess_isolation:
+            return self._evaluate_via_subprocess(candidate, example)
         return self.evaluate(candidate, example, problem_dir=problem_dir)
+
+    def _evaluate_via_subprocess(self, candidate: dict, example) -> tuple[float, dict]:
+        """Run one evaluation in a fresh Python subprocess.
+
+        Each subprocess imports inspect-ai/astabench (~7s overhead) but
+        has its own process-global state, so concurrent calls from
+        RoboPhD's worker threads don't collide on inspect.eval_async's
+        singleton check. This is what lets --max-workers > 1 actually
+        deliver parallelism.
+        """
+        if isinstance(example, dict):
+            example_dict = example
+        elif hasattr(example, "model_dump"):
+            example_dict = example.model_dump()
+        else:
+            return 0.0, {
+                "error": f"_evaluate_via_subprocess expects Sample or dict; got {type(example).__name__}"
+            }
+
+        worker_path = Path(__file__).resolve().parent / "_eval_worker.py"
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as inf:
+            json.dump({
+                "candidate": candidate,
+                "example": example_dict,
+                "model": self.model,
+                "cost_budget": self.cost_budget,
+            }, inf, default=str)
+            inf_path = inf.name
+        out_path = inf_path + ".out"
+
+        try:
+            try:
+                result = subprocess.run(
+                    [sys.executable, str(worker_path), inf_path, out_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=self.subprocess_timeout,
+                )
+            except subprocess.TimeoutExpired as e:
+                return 0.0, {
+                    "error": f"subprocess timed out after {self.subprocess_timeout}s",
+                    "subprocess_stderr": (e.stderr or "")[-2000:] if e.stderr else "",
+                }
+            if result.returncode != 0:
+                return 0.0, {
+                    "error": f"subprocess failed (exit {result.returncode})",
+                    "subprocess_stderr": result.stderr[-2000:] if result.stderr else "",
+                }
+            try:
+                with open(out_path) as f:
+                    payload = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError) as e:
+                return 0.0, {
+                    "error": f"subprocess produced no valid output: {type(e).__name__}: {e}",
+                    "subprocess_stderr": result.stderr[-2000:] if result.stderr else "",
+                }
+
+            score = float(payload.get("score", 0.0))
+            diagnostics = payload.get("diagnostics", {}) or {}
+            # Aggregate cost on the parent side too so total_eval_cost is correct.
+            cost = (diagnostics.get("agent_cost_usd", 0.0) or 0.0) + (
+                diagnostics.get("judge_cost_usd", 0.0) or 0.0
+            )
+            with self._cost_lock:
+                self.total_eval_cost += cost
+            return score, diagnostics
+        finally:
+            for p in (inf_path, out_path):
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
 
     def evaluate(self, candidate: dict, example, *, problem_dir=None) -> tuple[float, dict]:
         agent_code = candidate.get("agent.py", "")
@@ -305,7 +386,7 @@ class DiscoveryBenchEvaluator:
 
         captured = io.StringIO()
         try:
-            with _INSPECT_EVAL_LOCK, redirect_stdout(captured):
+            with redirect_stdout(captured):
                 logs = inspect_eval(
                     task,
                     model=self.model,

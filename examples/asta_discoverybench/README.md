@@ -120,7 +120,7 @@ python examples/asta_discoverybench/main.py --regime 2 --engine gepa
 ### Open
 
 - [x] End-to-end smoke test (Regime 3A, 3 samples / 1 iteration; mean HMS 0.07; ~50s/sample wall-clock; total $0.04)
-- [ ] **Real parallelism**. `--max-workers > 1` is currently a no-op for throughput because Inspect-AI's `eval_async` rejects concurrent calls in the same process; we serialize with a lock. For Regime 1 (1500 evals × 50s ≈ 21 hours serial), real parallelism would mean running each `inspect.eval()` in a subprocess. ~half-day of engineering, ~3 hours wall-clock for Regime 1 with 8-way subprocess parallelism. Defer until the full Regime 1 run is on the agenda.
+- [x] **Real parallelism via subprocess isolation.** Each evaluation runs in its own Python subprocess (`_eval_worker.py`), bypassing Inspect-AI's `eval_async` process-global singleton lock. `--max-workers 8` is the new default; verified 2× speedup on a 3-sample iteration vs the previous serialized lock. Each subprocess pays ~7s of cold imports (inspect-ai + astabench + torch); at ~80s/eval that's ~9% overhead, acceptable for the parallelism gain.
 - [ ] **Standard Tools allowlist (AST scan).** Currently absent (same gap as `asta_paper_finder`); evolution could in principle import outside the allowed set.
 - [ ] **Cost-cap penalty observation.** Verify in a real evolved-agent run that an over-budget agent triggers `cost_breached: True` and `score *= 0.9`.
 - [ ] **HMS variance characterization.** The judge has no temperature controls and `num_retries=1`. Worth a 2× replicate over 5 samples to measure run-to-run variance before trusting individual numbers.

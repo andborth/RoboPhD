@@ -44,18 +44,16 @@ from astabench.evals.paper_finder.task import (
 
 logger = logging.getLogger(__name__)
 
-# Inspect-AI's `inspect.eval()` (and its async counterpart `eval_async`)
-# raise "Multiple concurrent calls to eval_async are not allowed" if two
-# evaluations are in flight simultaneously in the same process. RoboPhD's
-# default --max-workers is >1, so we serialize with a process-global lock.
+# Inspect-AI's `inspect.eval()` raises if two evaluations are in flight
+# in the same Python process. To get real parallelism across RoboPhD's
+# worker threads we route each call through a subprocess (see
+# `_eval_worker.py`). Each subprocess has its own process-global state,
+# so workers don't fight over the eval_async singleton.
 #
-# Practically, this makes --max-workers a no-op for *throughput*: the
-# inspect.eval call dominates per-evaluation wall-clock, so concurrency
-# reduces to ~1. RoboPhD's `--max-workers` argument is preserved for API
-# compatibility but does not deliver parallelism for this evaluator. To
-# restore real parallelism, the inspect.eval call would need to run in
-# a subprocess per worker (see "Open" in README.md).
-_INSPECT_EVAL_LOCK = threading.Lock()
+# `subprocess_isolation=False` falls back to in-process execution. That
+# path is correct for single-threaded callers (smoke tests, the
+# subprocess worker calling itself) but will deadlock/error if multiple
+# threads enter it concurrently.
 
 
 def load_paper_finder(split: str = "validation") -> list[Sample]:
@@ -143,8 +141,12 @@ class PaperFinderEvaluator:
         model: str = "openai/gpt-4o-mini",
         tool_source: str | None = None,
         log_dir: str | None = None,
+        subprocess_isolation: bool = True,
+        subprocess_timeout: int = 900,
     ):
         self.model = model
+        self.subprocess_isolation = subprocess_isolation
+        self.subprocess_timeout = subprocess_timeout
         # Default to MCP if ASTA_TOOL_KEY is set, else fall back to search-only
         # for offline development. This is honest about which mode you're in
         # via the diagnostics["tool_source"] field per evaluation.
@@ -176,7 +178,77 @@ class PaperFinderEvaluator:
     #   evaluator(candidate, example, problem_dir=...) -> (score, diagnostics)
 
     def __call__(self, candidate: dict, example, *, problem_dir=None) -> tuple[float, dict]:
+        if self.subprocess_isolation:
+            return self._evaluate_via_subprocess(candidate, example)
         return self.evaluate(candidate, example, problem_dir=problem_dir)
+
+    def _evaluate_via_subprocess(self, candidate: dict, example) -> tuple[float, dict]:
+        """Run one evaluation in a fresh Python subprocess.
+
+        Mirror of the DiscoveryBench implementation. See its docstring
+        for the rationale: each subprocess has its own inspect.eval
+        process-global state, so RoboPhD's parallel worker threads can
+        actually overlap work instead of serializing through one lock.
+        """
+        if isinstance(example, dict):
+            example_dict = example
+        elif hasattr(example, "model_dump"):
+            example_dict = example.model_dump()
+        else:
+            return 0.0, {
+                "error": f"_evaluate_via_subprocess expects Sample or dict; got {type(example).__name__}"
+            }
+
+        worker_path = Path(__file__).resolve().parent / "_eval_worker.py"
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as inf:
+            json.dump({
+                "candidate": candidate,
+                "example": example_dict,
+                "model": self.model,
+                "tool_source": self.tool_source,
+            }, inf, default=str)
+            inf_path = inf.name
+        out_path = inf_path + ".out"
+
+        try:
+            try:
+                result = subprocess.run(
+                    [sys.executable, str(worker_path), inf_path, out_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=self.subprocess_timeout,
+                )
+            except subprocess.TimeoutExpired as e:
+                return 0.0, {
+                    "error": f"subprocess timed out after {self.subprocess_timeout}s",
+                    "subprocess_stderr": (e.stderr or "")[-2000:] if e.stderr else "",
+                }
+            if result.returncode != 0:
+                return 0.0, {
+                    "error": f"subprocess failed (exit {result.returncode})",
+                    "subprocess_stderr": result.stderr[-2000:] if result.stderr else "",
+                }
+            try:
+                with open(out_path) as f:
+                    payload = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError) as e:
+                return 0.0, {
+                    "error": f"subprocess produced no valid output: {type(e).__name__}: {e}",
+                    "subprocess_stderr": result.stderr[-2000:] if result.stderr else "",
+                }
+
+            score = float(payload.get("score", 0.0))
+            diagnostics = payload.get("diagnostics", {}) or {}
+            cost = float(diagnostics.get("cost_usd", 0.0) or 0.0)
+            with self._cost_lock:
+                self.total_eval_cost += cost
+            return score, diagnostics
+        finally:
+            for p in (inf_path, out_path):
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
 
     def evaluate(self, candidate: dict, example, *, problem_dir=None) -> tuple[float, dict]:
         agent_code = candidate.get("agent.py", "")
@@ -227,7 +299,7 @@ class PaperFinderEvaluator:
         # mirroring docfinqa/protein_go's agent_stdout convention).
         captured = io.StringIO()
         try:
-            with _INSPECT_EVAL_LOCK, redirect_stdout(captured):
+            with redirect_stdout(captured):
                 logs = inspect_eval(
                     task,
                     model=self.model,

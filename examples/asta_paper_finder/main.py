@@ -67,8 +67,11 @@ def parse_args():
     p.add_argument("--tool-source", choices=["mcp", "search", "auto"], default="auto",
                    help="Tool kit: 'mcp' (Asta MCP, Standard tier), 'search' (public S2 fallback), or 'auto' (mcp if ASTA_TOOL_KEY set)")
 
-    p.add_argument("--max-workers", type=int, default=4,
-                   help="Parallel eval workers (default 4; Asta MCP rate limit ~4 req/sec)")
+    p.add_argument("--max-workers", type=int, default=8,
+                   help="Parallel eval workers. Each evaluation runs in its "
+                        "own subprocess to bypass inspect.eval's process-global "
+                        "singleton lock. The Asta MCP rate limit (~4 req/sec on "
+                        "the default key) may be the binding constraint above 8.")
     p.add_argument("--runs-dir", default="../robophd_runs")
     p.add_argument("--random-seed", type=int, default=None)
     p.add_argument("--engine-config", type=str, default=None)
