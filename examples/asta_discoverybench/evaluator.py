@@ -307,6 +307,31 @@ class DiscoveryBenchEvaluator:
         self.total_eval_cost = 0.0
         self._cost_lock = threading.Lock()
 
+    # -- Construction helpers -----------------------------------------------
+
+    def with_overrides(self, **overrides: Any) -> "DiscoveryBenchEvaluator":
+        """Return a sibling evaluator inheriting this one's config.
+
+        Centralizes the "shared config, selective override" pattern that
+        main.py uses to create paired training-vs-test evaluators. Any
+        future constructor field added to DiscoveryBenchEvaluator must
+        also be added here, but only here — not at every call site.
+
+        The new instance always skips docker_check (the parent already
+        pre-flighted), and inherits the rest of the config unless an
+        override is given.
+        """
+        base = {
+            "model": self.model,
+            "cost_budget": self.cost_budget,
+            "eval_timeout": self.eval_timeout,
+            "apply_cost_penalty": self.apply_cost_penalty,
+            "subprocess_isolation": self.subprocess_isolation,
+            "skip_docker_check": True,
+        }
+        base.update(overrides)
+        return DiscoveryBenchEvaluator(**base)
+
     # -- RoboPhD evaluator contract -----------------------------------------
     # RoboPhD invokes the evaluator object directly:
     #   evaluator(candidate, example, problem_dir=...) -> (score, diagnostics)

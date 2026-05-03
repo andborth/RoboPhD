@@ -263,20 +263,16 @@ def main():
     # Two evaluator instances. Training uses the cost penalty (a soft
     # signal nudging evolution toward cheaper agents); test paths report
     # raw HMS so evolved agents land at their true point on the Pareto
-    # cost-vs-score curve. Same model, same cost_budget, same eval_timeout.
+    # cost-vs-score curve. The test instance is derived via with_overrides
+    # so any future constructor field added to DiscoveryBenchEvaluator
+    # automatically propagates from training to test config.
     evaluator = DiscoveryBenchEvaluator(
         model=args.model,
         cost_budget=args.cost_budget,
         eval_timeout=EVAL_TIMEOUT,
         apply_cost_penalty=True,  # training: penalty fires
     )
-    test_evaluator = DiscoveryBenchEvaluator(
-        model=args.model,
-        cost_budget=args.cost_budget,
-        eval_timeout=EVAL_TIMEOUT,
-        apply_cost_penalty=False,  # test: raw HMS, no penalty
-        skip_docker_check=True,    # parent already pre-flighted via training evaluator
-    )
+    test_evaluator = evaluator.with_overrides(apply_cost_penalty=False)
 
     train, test, examples_per_iter, regime_budget, regime_iterations = (
         _regime_dataset(args.regime, args.phase, args.random_seed)
