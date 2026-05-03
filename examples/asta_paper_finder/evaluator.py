@@ -351,6 +351,13 @@ class PaperFinderEvaluator:
             "sample_id": str(example.id),
         }
 
+        # Save the agent-visible query into the problem dir so a reader of
+        # any per-problem dir can see what the agent was asked. Mirrors
+        # the convention used in asta_discoverybench.
+        raw_query = example.metadata.get("raw_query") or ""
+        if raw_query:
+            diagnostics["query.md"] = str(raw_query)
+
         # Expose the gold scorer criteria to evolution. The AGENT never
         # sees state.target at runtime; this only flows into post-hoc
         # diagnostics that evolution reads when deciding how to mutate.

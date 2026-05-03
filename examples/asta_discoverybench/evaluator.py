@@ -62,6 +62,19 @@ JUDGE_MODEL_SHORT = "gpt-4o-2024-08-06"
 DEFAULT_COST_BUDGET = 0.10
 COST_BREACH_PENALTY = 0.9
 
+# Metadata fields that should reach the agent at runtime. Anything else
+# (split / domain / question_type / difficulty added by load_synth) is
+# evaluator-side bookkeeping and would let the agent build a runtime
+# synth-vs-real branch detector — which silently overfits to the
+# training mixture instead of learning the underlying task. We strip
+# them from a *copy* of the example before constructing the Task; the
+# originals stay on `example.metadata` for diagnostics extraction.
+#
+# Aligned with AstaBench's own json_to_sample for paper_finder: it only
+# exposes `query`, `score_type`, `raw_query`. For DiscoveryBench, the
+# upstream json_to_sample exposes only `query` and `metadata`.
+AGENT_VISIBLE_METADATA_KEYS = frozenset({"query", "metadata"})
+
 # Inspect-AI's `inspect.eval()` raises if two evaluations are in flight
 # in the same Python process. To get real parallelism across RoboPhD's
 # worker threads we route each call through a subprocess (see
@@ -393,13 +406,26 @@ class DiscoveryBenchEvaluator:
                 f"got {type(example).__name__}"
             )
 
+        # Build the agent-visible Sample with only the metadata fields a real
+        # AstaBench DiscoveryBench query would carry. The evaluator's
+        # diagnostics extraction below still reads from the *original*
+        # example.metadata, so split/domain/etc. remain visible to
+        # evolution post-hoc — they just stop flowing through
+        # TaskState.metadata to the runtime solver. (See
+        # AGENT_VISIBLE_METADATA_KEYS for rationale.)
+        agent_visible_metadata = {
+            k: v for k, v in (example.metadata or {}).items()
+            if k in AGENT_VISIBLE_METADATA_KEYS
+        }
+        example_for_solver = example.model_copy(update={"metadata": agent_visible_metadata})
+
         try:
             solver_factory = _import_candidate_solver(agent_code)
         except Exception as e:
             return 0.0, {"error": f"candidate import failed: {type(e).__name__}: {e}"}
 
         task = Task(
-            dataset=MemoryDataset([example]),
+            dataset=MemoryDataset([example_for_solver]),
             solver=solver_factory(),
             setup=[use_tools(python_session())],
             scorer=score_discoverybench(),
@@ -436,6 +462,20 @@ class DiscoveryBenchEvaluator:
             "sample_id": str(example.id),
             "split": example.metadata.get("split", "real"),
         }
+
+        # Save the agent-visible inputs (query + datasets metadata) into
+        # the problem dir so a reader of any per-problem dir can see
+        # exactly what the agent was asked. Mirrors the convention of
+        # other examples where the question/document inputs are written
+        # alongside the agent's output.
+        query = example.metadata.get("query", "")
+        if query:
+            diagnostics["query.md"] = str(query)
+        inner_metadata = example.metadata.get("metadata")
+        if inner_metadata:
+            diagnostics["metadata.md"] = (
+                "```json\n" + json.dumps(inner_metadata, indent=2, default=str) + "\n```"
+            )
 
         # Expose the gold hypothesis + workflow to evolution. The AGENT
         # never sees state.target at runtime; this only flows into the

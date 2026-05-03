@@ -15,8 +15,8 @@ with one CSV (`nls_raw.csv`, ~6000 rows × 61 columns of NLSY79 survey data) and
 | `state.metadata["query"]` | str | The natural-language research question |
 | `state.metadata["metadata"]["datasets"]` | list[dict] | Per-CSV: `{name, description, columns: {raw: [{name, description}, ...]}}` |
 | `state.files` | dict[str, str] | `{sandbox_relative_path: host_absolute_path}` — **NOT auto-mounted into the sandbox; you must copy them in** |
-| `state.metadata["split"]` | str | `"real"` or `"synth"` |
-| `state.metadata["question_type"]`, `state.metadata["difficulty"]` | str/int | Synth-only metadata; absent on real |
+
+`state.metadata` is intentionally limited to those two keys regardless of which split the example came from. The training mixture (real vs synth) is hidden from the runtime solver — branching on the source distribution would overfit to the training mixture rather than the underlying task. Evolution can still see split/domain/difficulty in post-hoc per-problem diagnostics (used for failure-pattern analysis), but the agent itself should produce hypotheses from query + datasets + the data alone.
 
 Gold (hidden from the agent, surfaced to the scorer): `state.target == [gold_hypothesis_str, gold_workflow_str]`. Synth has `gold_workflow=""`.
 
