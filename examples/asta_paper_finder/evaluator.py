@@ -142,11 +142,20 @@ class PaperFinderEvaluator:
         tool_source: str | None = None,
         log_dir: str | None = None,
         subprocess_isolation: bool = True,
-        subprocess_timeout: int = 900,
+        eval_timeout: int = 600,
     ):
         self.model = model
         self.subprocess_isolation = subprocess_isolation
-        self.subprocess_timeout = subprocess_timeout
+        # Subprocess kill-after timeout MUST be less than RoboPhD's
+        # eval_timeout. RoboPhD's reaper writes "EVAL TIMEOUT" and scores
+        # 0, but cannot interrupt Python threads — the thread keeps
+        # blocking on subprocess.run until our subprocess_timeout fires.
+        # If subprocess_timeout > eval_timeout, the gap leaves Docker/MCP/
+        # judge-LLM resources tied up after RoboPhD gave up. Buffer of 30s
+        # gives Python time to SIGKILL the subprocess and the thread to
+        # return cleanly.
+        self.eval_timeout = eval_timeout
+        self.subprocess_timeout = max(eval_timeout - 30, 60)
         # Default to MCP if ASTA_TOOL_KEY is set, else fall back to search-only
         # for offline development. This is honest about which mode you're in
         # via the diagnostics["tool_source"] field per evaluation.
@@ -201,6 +210,13 @@ class PaperFinderEvaluator:
 
         worker_path = Path(__file__).resolve().parent / "_eval_worker.py"
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as inf:
+            # `default=str` is a defensive belt-and-braces: candidates SHOULD
+            # be `{"agent.py": "<source>"}` and examples should round-trip
+            # through Sample.model_dump() cleanly. If a future caller passes
+            # objects that aren't JSON-native, default=str silently
+            # stringifies them so the worker can still parse the JSON.
+            # Known fidelity loss; the right fix is to enforce
+            # JSON-serializable types at the boundary, not to remove default=str.
             json.dump({
                 "candidate": candidate,
                 "example": example_dict,
@@ -209,6 +225,11 @@ class PaperFinderEvaluator:
             }, inf, default=str)
             inf_path = inf.name
         out_path = inf_path + ".out"
+
+        # Note: `subprocess_stderr` in the diagnostic dict is truncated to the
+        # last 2000 chars to avoid bloating context for downstream evolution.
+        # For deep-traceback debugging, re-run with subprocess_isolation=False
+        # to see the full traceback in-process.
 
         try:
             try:

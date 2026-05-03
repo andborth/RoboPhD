@@ -100,8 +100,15 @@ def main():
     objective = (HERE / "objective.md").read_text().strip()
     background = (HERE / "background.md").read_text().strip()
 
+    # Per-example timeout: must match the value passed to RoboPhDConfig
+    # below. The evaluator derives a slightly-shorter subprocess_timeout
+    # internally so subprocesses get killed BEFORE RoboPhD's reaper would
+    # leak the thread.
+    EVAL_TIMEOUT = 600
+
     tool_source = None if args.tool_source == "auto" else args.tool_source
-    evaluator = PaperFinderEvaluator(model=args.model, tool_source=tool_source)
+    evaluator = PaperFinderEvaluator(model=args.model, tool_source=tool_source,
+                                     eval_timeout=EVAL_TIMEOUT)
     logger.info(f"Evaluator tool_source={evaluator.tool_source}")
 
     val = load_paper_finder("validation")
@@ -154,14 +161,6 @@ def main():
         return
 
     seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
-
-    # Per-example timeout: RoboPhD's default is 300s. PaperFinder's
-    # semantic-query scoring can fan out into many judge LLM calls
-    # (one per predicted paper × relevance criterion), and our
-    # inspect.eval lock serializes everything. 600s matches arc_agi_1
-    # and DiscoveryBench. Worth revisiting once we have real run data
-    # against the MCP path.
-    EVAL_TIMEOUT = 600
 
     if args.engine == "gepa":
         cfg = GEPAConfig(

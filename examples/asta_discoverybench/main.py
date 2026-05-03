@@ -183,9 +183,16 @@ def main():
     objective = (HERE / "objective.md").read_text().strip()
     background = (HERE / "background.md").read_text().strip()
 
+    # Per-example timeout: must match the value passed to RoboPhDConfig
+    # below. The evaluator derives a slightly-shorter subprocess_timeout
+    # internally so subprocesses get killed BEFORE RoboPhD's reaper would
+    # leak the thread (see evaluator.py for the reasoning).
+    EVAL_TIMEOUT = 600
+
     evaluator = DiscoveryBenchEvaluator(
         model=args.model,
         cost_budget=args.cost_budget,
+        eval_timeout=EVAL_TIMEOUT,
     )
 
     train, test, examples_per_iter, regime_budget, regime_iterations = (
@@ -256,15 +263,6 @@ def main():
     engine_overrides: dict = {"examples_per_iteration": examples_per_iter}
     if args.engine_config:
         engine_overrides.update(json.loads(args.engine_config))
-
-    # Per-example timeout: RoboPhD's default is 300s, but DiscoveryBench
-    # evaluations include ~5 judge LLM calls + sandboxed Python + the
-    # agent's own LLM calls, all serialized through the inspect.eval
-    # lock. Evolved agents that do multi-step analysis can blow past 300s
-    # easily. Match arc_agi_1 and use 600s. (Verified in run
-    # asta_discoverybench_r3_experiment_20260502_141553: 5 timeouts at
-    # 300s on iterations 4 and 8 with the default.)
-    EVAL_TIMEOUT = 600
 
     if args.engine == "gepa":
         cfg = GEPAConfig(

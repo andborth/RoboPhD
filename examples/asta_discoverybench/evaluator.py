@@ -246,7 +246,7 @@ class DiscoveryBenchEvaluator:
         log_dir: str | None = None,
         skip_docker_check: bool = False,
         subprocess_isolation: bool = True,
-        subprocess_timeout: int = 900,
+        eval_timeout: int = 600,
     ):
         if not os.environ.get("OPENAI_API_KEY"):
             raise RuntimeError(
@@ -261,12 +261,19 @@ class DiscoveryBenchEvaluator:
         self.model = model
         self.cost_budget = cost_budget
         self.subprocess_isolation = subprocess_isolation
-        # Subprocess kill-after timeout. Should exceed RoboPhD's eval_timeout
-        # so that under normal slow-eval conditions RoboPhD's per-eval reaper
-        # owns the timeout decision (and writes a clean "Evaluation timed out"
-        # error.md), not us. We only kill if RoboPhD's reaper has somehow
-        # missed a wedged subprocess.
-        self.subprocess_timeout = subprocess_timeout
+
+        # Subprocess kill-after timeout MUST be less than RoboPhD's
+        # eval_timeout. RoboPhD's reaper writes "EVAL TIMEOUT" and scores
+        # 0, but cannot interrupt Python threads — the thread keeps
+        # blocking on subprocess.run until our subprocess_timeout fires.
+        # If subprocess_timeout > eval_timeout, the gap leaves Docker and
+        # judge-LLM resources tied up after RoboPhD gave up, with each
+        # leaked thread burning a CPU core (see the warning that fires at
+        # the start of the next iteration). Buffer of 30s gives Python
+        # time to SIGKILL the subprocess and the thread to return cleanly.
+        self.eval_timeout = eval_timeout
+        self.subprocess_timeout = max(eval_timeout - 30, 60)
+
         self._log_dir = log_dir or tempfile.mkdtemp(prefix="discoverybench_eval_")
         self.total_eval_cost = 0.0
         self._cost_lock = threading.Lock()
@@ -300,6 +307,15 @@ class DiscoveryBenchEvaluator:
 
         worker_path = Path(__file__).resolve().parent / "_eval_worker.py"
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as inf:
+            # `default=str` is a defensive belt-and-braces: candidates SHOULD
+            # be `{"agent.py": "<source>"}` and examples should round-trip
+            # through Sample.model_dump() cleanly. If a future caller passes
+            # objects that aren't JSON-native (Path, datetime, custom class),
+            # default=str silently stringifies them so the worker can still
+            # parse the JSON. This is a known fidelity loss; if it ever
+            # bites a debugging session, the right fix is to enforce
+            # JSON-serializable types at the boundary, not to remove
+            # default=str.
             json.dump({
                 "candidate": candidate,
                 "example": example_dict,
@@ -309,6 +325,12 @@ class DiscoveryBenchEvaluator:
             inf_path = inf.name
         out_path = inf_path + ".out"
 
+        # Note: `subprocess_stderr` in the diagnostic dict is truncated to the
+        # last 2000 chars to avoid bloating context for downstream evolution.
+        # For deep-traceback debugging during incident response, set the
+        # SUBPROCESS_STDERR_FULL env var (read by no code yet — placeholder
+        # for the convention) or read raw stderr by re-running with the
+        # in-process path (subprocess_isolation=False).
         try:
             try:
                 result = subprocess.run(
