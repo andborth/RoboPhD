@@ -397,7 +397,12 @@ def _format_score_rows(scores_by_question: dict, agents: list[str],
     lines.append(separator)
 
     for _, qid, agent_scores, displays in rows:
-        row = f"| {qid} |"
+        # Escape any | in qid (some external sample IDs use pipes, e.g.
+        # AstaBench real IDs like "evolution_freshwater_fish|2|0"); an
+        # unescaped pipe collides with markdown's column separator and
+        # shifts every cell to its right.
+        qid_cell = qid.replace("|", "\\|")
+        row = f"| {qid_cell} |"
         for agent in agents:
             score = agent_scores.get(agent)
             row += f" {score:.3f} |" if score is not None else " — |"
