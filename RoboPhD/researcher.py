@@ -3393,16 +3393,22 @@ class ParallelAgentResearcher:
         # Cost insights
         report_lines.extend(["", "---", "", "## Cost Insights", ""])
 
-        # Most expensive agents
-        agent_costs = [(agent, agent_totals[agent]['eval']) for agent in all_agents]
-        agent_costs.sort(key=lambda x: x[1], reverse=True)
+        # Most expensive agents — ordered by cost per non-cached problem so
+        # heavy-cache agents aren't artificially deflated by zero-cost reuse.
+        agent_costs = []
+        for agent in all_agents:
+            cost = agent_totals[agent]['eval']
+            if eval_cache_stats and agent in eval_cache_stats:
+                fresh = eval_cache_stats[agent].get('fresh', len(sorted_contexts))
+            else:
+                fresh = len(sorted_contexts)
+            avg = (cost / fresh) if fresh > 0 else 0.0
+            agent_costs.append((agent, cost, avg))
+        agent_costs.sort(key=lambda x: x[2], reverse=True)
 
         report_lines.append("### Most Expensive Agents")
-        context_label_singular = "problem"
-        for i, (agent, cost) in enumerate(agent_costs, 1):
-            pct = (cost / total_eval * 100) if total_eval > 0 else 0
-            avg = cost / len(sorted_contexts) if sorted_contexts else 0
-            report_lines.append(f"{i}. {agent}: ${cost:.2f} ({pct:.1f}%, avg ${avg:.2f}/{context_label_singular})")
+        for i, (agent, cost, avg) in enumerate(agent_costs, 1):
+            report_lines.append(f"{i}. {agent}: ${cost:.2f} (avg ${avg:.3f}/problem)")
         report_lines.append("")
 
         # Write report
