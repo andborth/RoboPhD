@@ -19,7 +19,7 @@ background.md for the full surface.
 
 import json
 
-from inspect_ai.model import get_model
+from inspect_ai.model import GenerateConfig, get_model
 from inspect_ai.solver import Generate, TaskState, solver
 from inspect_ai.tool import ToolDef
 
@@ -88,7 +88,7 @@ def make_solver():
             f"any supporting numeric evidence. The workflow describes the "
             f"analysis steps that support the hypothesis."
         )
-        resp = await get_model().generate(prompt)
+        resp = await get_model().generate(prompt, config=GenerateConfig(temperature=1.0))
         try:
             output = json.loads(_strip_code_fence(resp.completion))
             assert isinstance(output, dict)

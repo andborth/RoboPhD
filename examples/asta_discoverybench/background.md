@@ -68,10 +68,12 @@ Always copy files from `state.files` into `/workspace/` before reading them in `
 Use Inspect's tracked model API so usage flows into the `.eval` log:
 
 ```python
-from inspect_ai.model import get_model
-resp = await get_model().generate("Your prompt here")
+from inspect_ai.model import GenerateConfig, get_model
+resp = await get_model().generate("Your prompt here", config=GenerateConfig(temperature=1.0))
 text = resp.completion
 ```
+
+`config` is optional; pass a `GenerateConfig` to set sampling parameters such as `temperature`. See `inspect_ai.model.GenerateConfig` for the full set.
 
 Default model is **GPT-5 Mini** (`openai/gpt-5-mini`). Evolution may switch via the model string. **Do not** import `openai` / `anthropic` / `litellm` directly. If you must (e.g., to use a model not in Inspect's registry), wrap the call with `record_model_usage_with_inspect(model_name, ModelUsage(...))` afterward, or you silently underreport cost.
 
