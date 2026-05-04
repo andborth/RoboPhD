@@ -41,6 +41,8 @@ The scorer accepts a raw-text fallback (no JSON → `gen_hypo=text`, `gen_workfl
 
 ## API surfaces
 
+These are the only Inspect entries the solver code (agent.py) should touch — don't import additional Inspect tools or third-party search/analysis backends.
+
 ### `python_session` — the only `state.tools` entry
 
 ```python
@@ -75,7 +77,7 @@ text = resp.completion
 
 `config` is optional; pass a `GenerateConfig` to set sampling parameters such as `temperature`. See `inspect_ai.model.GenerateConfig` for the full set.
 
-Default model is **GPT-5.4 Mini** (`openai/gpt-5.4-mini`). Evolution may switch via the model string. **Do not** import `openai` / `anthropic` / `litellm` directly. If you must (e.g., to use a model not in Inspect's registry), wrap the call with `record_model_usage_with_inspect(model_name, ModelUsage(...))` afterward, or you silently underreport cost.
+The configured model (currently **GPT-5.4 Mini**) is the one returned by a bare `get_model()` call — no arguments. Don't pass a model string to `get_model()` and don't import `openai` / `anthropic` / `litellm` directly. All LLM calls must go through `get_model()` so usage flows into the Inspect tracker and cost is reported correctly.
 
 ## Scoring (Hierarchical Matching Score)
 
@@ -85,7 +87,7 @@ HMS = context_score × var_f1 × rel_score
 
 Each factor comes from a separate judge LLM call comparing the agent's hypothesis to the gold:
 
-- **`context_score ∈ {0, 1}`** — does the hypothesis carry the same scope/boundary conditions as the gold? (E.g., "for adults" matters.) Multiplicative gate: 0 here zeros HMS regardless of var/rel.
+- **`context_score ∈ {0, 1}`** — does the hypothesis carry the same scope/boundary conditions as the gold? (E.g., "in arid regions" matters.) Multiplicative gate: 0 here zeros HMS regardless of var/rel.
 - **`var_f1 ∈ [0, 1]`** — F1 over the set of dependent and independent variables, fuzzy-matched.
 - **`rel_score ∈ {0, 0.5, 1.0}`** — 1.0 if the form of the relationship matches very well, 0.5 if similar but more general, 0.0 if different.
 
@@ -93,30 +95,13 @@ Each factor comes from a separate judge LLM call comparing the agent's hypothesi
 
 ## Per-example cost cap
 
-The agent has a **$0.10 per-example budget** for its own LLM and tool spend. If the agent's `agent_cost_usd` exceeds the cap, the example score is multiplied by 0.9 (same penalty as docfinqa / protein_go / ARC-AGI). Cost is computed from `get_model().generate()` token usage and any wrapped out-of-band calls.
-
-**Judge cost is excluded from the cap.** The DiscoveryBench scorer runs ~5 LLM judge calls per evaluation (≈$0.015–0.020/sample at gpt-4o-2024-08-06 prices). Those calls are evaluator-side overhead the agent has no way to influence, so they don't count against the $0.10 budget. The judge spend is reported separately as `other_cost` in result.json and gets its own column in `cost_report.md` / `interim_report.md` / `final_report.md`. Evolution and meta-evolution see only agent-side spend (`eval_cost`); judge overhead is captured for accounting but doesn't pollute the optimization signal.
-
-Practical implication: at GPT-5.4 Mini rates, $0.10 covers many tool-aided reasoning rounds. Runaway loops (e.g. 30+ rounds of `python_session` + LLM critique with long context) will breach.
-
-## Standard Tools constraint
-
-Allowed in evolved code:
-- `python_session` (the entry in `state.tools`)
-- The `sandbox()` API for file ops
-- `get_model()` for LLM calls
-- The Python standard library
-
-Disallowed:
-- Importing additional Inspect tools or third-party search/analysis backends
-- Reading files outside `state.files`
-- Bypassing Inspect's model tracker without `record_model_usage_with_inspect`
+The agent's LLM spend is capped at **$0.10 per example** (only `get_model()` calls are metered — `python_session` and `sandbox()` don't count). Exceeding the cap multiplies the example score by 0.9. Judge calls run by the scorer are evaluator-side and excluded.
 
 ## Diagnostics
 
-`print()` output from the solver is captured into `agent_stdout`. Use brief, structured prints (`f"[step=load] rows={n}"`) to track which path the agent took on each example — useful when reading later iterations.
+`print()` output from the solver is captured into `agent_stdout`.
 
-The per-dimension HMS pieces (`context_score`, `var_score`, `rel_score`) are surfaced in the diagnostics dict alongside the headline score, so when an evolved agent gains 0.05 HMS you can see whether the win came from better scope-matching or better variable-naming.
+The per-dimension HMS pieces (`context_score`, `var_score`, `rel_score`) are surfaced in the diagnostics dict alongside the headline score.
 
 ## A note on score distributions
 
