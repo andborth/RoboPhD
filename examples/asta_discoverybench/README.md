@@ -1,6 +1,6 @@
 # DiscoveryBench (AstaBench)
 
-Evolves Inspect-AI `@solver` agents on AstaBench's DiscoveryBench task (Data Analysis category, Standard tools tier). Real validation = 25 samples, real test = 239 samples. The DiscoveryBench paper ships an additional public **synth/** split (903 samples total; **703 are scoreable** — `synth/train`=550 and `synth/dev`=153; `synth/test`=200 has gold withheld as an upstream held-out competition set) which we use for distribution-padding in some training regimes.
+Evolves Inspect-AI `@solver` agents on AstaBench's DiscoveryBench task (Data Analysis category, Standard tools tier). Real validation = 25 samples, real test = 239 samples. The DiscoveryBench paper ships an additional public **synth/** split (903 samples total; **703 are scoreable** — `synth/train`=550 and `synth/dev`=153; `synth/test`=200 has gold withheld as an upstream held-out competition set) which we use to distribution-pad the small real pool during training.
 
 For the current state of the art and the bar we're aiming at, see the live leaderboard: https://huggingface.co/spaces/allenai/asta-bench-leaderboard (DiscoveryBench tab). Reference numbers there are in flux as agents are added; we deliberately don't quote specific HMS targets here or in `background.md` to avoid anchoring evolution on a number.
 
@@ -55,93 +55,65 @@ python -c "from astabench.evals.discoverybench.task import load_discoverybench_h
 
 The synth split is fetched from the public `allenai/discoverybench` GitHub repo on first use (`load_synth.py` does a shallow git clone into `~/.cache/robophd/discoverybench_synth/`).
 
-## Training regimes
+## Dataset
 
-Three regimes are wired in (`--regime {1,2,3}`). They differ in what the agent gets to train on, how much budget evolution gets, and what test set we report against. Pick based on what question you're trying to answer.
+Single training configuration; `--phase` only varies the test set:
 
-| Regime | Train pool | Test set | Iter | Examples/iter | Eval budget | Per-ex reuse |
-| --- | --- | --- | --- | --- | --- | --- |
-| **1** synth-only | synth/train (550) | synth/dev (153) + real/val (25) + real/test (239) | ~19 | 20 | 1500 | 0.54× |
-| **2A** mixed, experiment | 85 synth + 15 real = 100 | 10 held-out real | ~19 | 10 | 750 | 1.9× |
-| **2B** mixed, final | 85 synth + all 25 real = 110 | real/test (239) | ~19 | 10 | 750 | 1.7× |
-| **3A** real-only, experiment | 15 of real/val | 10 held-out real | 15 | 3 | iter-bounded | 3.0× |
-| **3B** real-only, final | all 25 real/val | real/test (239) | 15 | 3 | iter-bounded | 1.8× |
+| Phase | Train pool | Test set | Iter | Examples/iter | Total evals |
+| --- | --- | --- | --- | --- | --- |
+| **experiment** | 175 synth + all 25 real/val = **200** | 24-sample fixed sub-sample (~10%) of real/test | 15 | 20 | 300 |
+| **final** | same 200 | all **239** real/test (leaderboard metric) | 15 | 20 | 300 |
 
-### When to use which
+`--num-synth-train N` (default 175) overrides the synth count for ablations: `--num-synth-train 0` gives a real-only train pool (25 examples), `--num-synth-train 525` is closer to the full synth/train (550 scoreable).
 
-**Regime 1** — answer "does evolution learn anything in-distribution from a large synth pool, and does it transfer at all to real?" Tests broadly: in-distribution synth/dev plus the cross-distribution real splits. Cheapest per-eval, but scores against synth aren't directly comparable to the leaderboard.
+### Sampling
 
-**Regime 2** — the main "real" run. The 85:15 synth-to-real ratio gives evolution distributional padding (so a 25-real-sample pool doesn't memorize) while keeping the gold real-distribution exposure stable. Phase A uses 15 random real for training and the other 10 as held-out (cheap experimentation, 100 example pool); Phase B uses all 25 real for training and reports against the leaderboard-comparable real/test (239 samples).
+Pool composition is **deterministic** — driven by a hardcoded `SPLIT_SEED = 42`, independent of `--random-seed`. Two independent `random.Random(SPLIT_SEED)` instances:
 
-**Regime 3** — the "no synth at all, just see what 25 examples can do" baseline. Phase A is for sanity-checking the loop on tiny pools; Phase B is the leaderboard-comparable real-only number. Reuse is high (3.0× / 1.8×) so overfit risk is real, but it isolates the real-distribution learning signal.
+- `synth_rng` — picks the synth subset out of `synth/train`'s 550.
+- `test_rng` — picks the experiment-phase 24-sample test subset out of `real/test`'s 239.
 
-### Sampling and `--random-seed`
+Independent RNGs mean changing `--num-synth-train` doesn't perturb the test sample selection (and vice versa). So `--phase experiment` always tests against the same 24 samples regardless of what other flags you pass — including `--random-seed`.
 
-Two independent RNGs both seeded from `--random-seed` (default 0) drive the random sampling:
+### `--random-seed`
 
-| RNG | Used in | Draws |
-| --- | --- | --- |
-| `real_rng` | Regime 2A, Regime 3A | 15-train / 10-held-out split of real/validation |
-| `synth_rng` | Regime 2A, Regime 2B | 85-sample subset of synth/train |
-
-Decoupling the two RNGs means each draw is a pure function of the seed alone, so the following invariants all hold simultaneously:
-
-| Invariant | At seed=0 | At any other seed |
-| --- | --- | --- |
-| Two runs of the same regime+phase → same draws | ✓ | ✓ |
-| **Regime 2A held-out 10 == Regime 3A held-out 10** | ✓ | ✓ |
-| **Regime 2A 85-synth subset == Regime 2B 85-synth subset** | ✓ | ✓ |
-
-The first invariant means determinism within a regime. The second means **evolved-agent comparisons across regime 2A and regime 3A are meaningful** — you can run the same agent through both regimes' `--eval-test-set` paths and compare scores on the same 10 held-out samples. The third means the 2A → 2B "experiment then final" workflow sees a stable synth pool.
-
-#### Rotating seeds for replication
-
-Passing a different `--random-seed` rotates **both** the real-split (in 2A/3A) and the synth subset (in 2). This is the right way to replicate or stress-test results across multiple seeds:
-
-```bash
-# Three seeds, each rotates everything:
-python examples/asta_discoverybench/main.py --regime 3 --phase experiment --random-seed 0
-python examples/asta_discoverybench/main.py --regime 3 --phase experiment --random-seed 1
-python examples/asta_discoverybench/main.py --regime 3 --phase experiment --random-seed 2
-```
-
-To re-evaluate a specific candidate against the same 10 held-out samples a prior run used, pass the same `--random-seed` along with `--eval-agent <name> --eval-only --resume <prior-run-dir>`.
+`--random-seed` (default `None` → fresh seed each run, logged on startup as `🎲 Random seed: <N>` and persisted in the experiment dir's checkpoint) only controls **RoboPhD-internal** RNG: which examples get drawn from the train pool each iteration, ELO matchup pairing, evolution strategy random choices, etc. It does **not** affect the train/test pool composition.
 
 ### A note on synth/test
 
-`synth/test` (200 samples) is upstream's held-out competition set with `true_hypothesis` removed — it can't be scored locally. `load_synth("test")` raises rather than returning empty. Use `synth/dev` (153 scoreable) when you want a held-out synth signal.
+`synth/test` (200 samples) is upstream's held-out competition set with `true_hypothesis` removed — it can't be scored locally. `load_synth("test")` raises rather than returning empty. Use `synth/dev` (153 scoreable) if you want a held-out synth signal.
 
 ## Running
 
-Three regimes (`--regime`):
-
 ```bash
-# Regime 1 — synth-only, 1500 evals, 20 examples/iter.
-# Test broadly: synth/test + real/train + real/test.
-python examples/asta_discoverybench/main.py --regime 1 --eval-test-set
+# Default: phase=experiment, 175 synth + 25 real train pool, 24-sample held-out test.
+python examples/asta_discoverybench/main.py --eval-test-set
 
-# Regime 2 — mixed (85% synth, 15% real), 750 evals, 10 examples/iter.
-# Phase A: experimentation against held-out real subset.
-python examples/asta_discoverybench/main.py --regime 2 --phase experiment
-# Phase B: final, evaluating on real/test.
-python examples/asta_discoverybench/main.py --regime 2 --phase final --eval-test-set
+# Final: train on the same 200, evaluate against all 239 real/test.
+python examples/asta_discoverybench/main.py --phase final --eval-test-set
 
-# Regime 3 — real-only, 15 fixed iterations × 3 examples/iter.
-python examples/asta_discoverybench/main.py --regime 3 --phase experiment
-python examples/asta_discoverybench/main.py --regime 3 --phase final --eval-test-set
+# Re-evaluate a prior run's best agent on the experiment-phase test set:
+python examples/asta_discoverybench/main.py --eval-only --resume <prior-run-dir>
+
+# Re-evaluate against the full real/test (writes to test_results_final.json,
+# distinct from test_results_experiment.json so they don't clobber):
+python examples/asta_discoverybench/main.py --eval-only --resume <prior-run-dir> --phase final
 ```
 
 Default model: `openai/gpt-5-mini`. Default per-example agent cost cap: `$0.10` (score multiplied by 0.9 if breached; judge cost excluded).
 
 ```bash
 # Override model:
-python examples/asta_discoverybench/main.py --regime 2 --model openai/gpt-5
+python examples/asta_discoverybench/main.py --model openai/gpt-5
 
 # Override cost cap:
-python examples/asta_discoverybench/main.py --regime 2 --cost-budget 0.20
+python examples/asta_discoverybench/main.py --cost-budget 0.20
+
+# Synth-padding ablation (real-only train pool):
+python examples/asta_discoverybench/main.py --num-synth-train 0
 
 # Other engines:
-python examples/asta_discoverybench/main.py --regime 2 --engine gepa
+python examples/asta_discoverybench/main.py --engine gepa
 ```
 
 ## Cost notes
@@ -159,12 +131,12 @@ The cap is a **training-time soft penalty**, not a test-time score modifier:
 
 The intent: evolution is guided by the soft penalty toward better cost discipline, but the headline number we report (and the leaderboard data point) is the raw HMS at whatever cost the evolved artifact actually incurs. Two separate evaluator instances inside `main.py` enforce the asymmetry: one with `apply_cost_penalty=True` for training, one with `apply_cost_penalty=False` for all test paths.
 - A full real/test sweep (239 samples) costs ~$7 just in judge tokens.
-- Regime 2 phase B at 750 evals + real/test sweep ≈ $30–$60 total ($25 judge across the run + $7 final test + agent's own LLM spend at GPT-5 Mini rates).
+- A 300-eval training run + final test sweep ≈ $15–$25 total ($6 judge across the 300 evals + $7 final test + agent's own LLM spend at GPT-5 Mini rates).
 - Wall-clock: 4–10s sandbox warm-start per sample + agent execution + 5 judge calls ≈ ~50s/sample observed.
 
 ## Files
 
-- `main.py` — `optimize_anything()` entry point with `--regime` selection
+- `main.py` — `optimize_anything()` entry point; `--phase {experiment,final}` swaps the test set, `--num-synth-train N` controls synth padding
 - `evaluator.py` — `DiscoveryBenchEvaluator`; runs `inspect.eval()` on a 1-sample dataset per evaluation, attaches Docker sandbox + `python_session`, splits cost into agent vs judge
 - `load_synth.py` — fetches DiscoveryBench's public synth split from GitHub on first use, normalizes the column-metadata path to match real
 - `seeds/baseline/agent.py` — minimal `@solver` factory exported as `make_solver`. Demonstrates file copy, stateful Python, Inspect-tracked LLM, JSON output. Scores near zero by design.
@@ -179,12 +151,12 @@ The intent: evolution is guided by the soft penalty toward better cost disciplin
 - [x] Scaffold matches existing examples (main.py, evaluator.py, load_synth.py, seed, objective, background, requirements)
 - [x] Real loader works via `astabench.evals.discoverybench.task.load_discoverybench_hf`
 - [x] Synth loader (`load_synth.py`) shallow-clones the public repo on first use; scoreable counts: 550 train / 153 dev / 0 test (synth/test is upstream's held-out competition set with no gold; load_synth("test") returns 0 samples)
-- [x] Three-regime CLI per the design doc
+- [x] Single-configuration CLI: `--phase {experiment,final}` + `--num-synth-train N` (default 175)
 - [x] Cost-cap with judge filtered out
 
 ### Open
 
-- [x] End-to-end smoke test (Regime 3A, 3 samples / 1 iteration; mean HMS 0.07; ~50s/sample wall-clock; total $0.04)
+- [x] End-to-end smoke test (3 samples / 1 iteration; mean HMS 0.07; ~50s/sample wall-clock; total $0.04)
 - [x] **Real parallelism via subprocess isolation.** Each evaluation runs in its own Python subprocess (`_eval_worker.py`), bypassing Inspect-AI's `eval_async` process-global singleton lock. `--max-workers 8` is the new default; verified 2× speedup on a 3-sample iteration vs the previous serialized lock. Each subprocess pays ~7s of cold imports (inspect-ai + astabench + torch); at ~80s/eval that's ~9% overhead, acceptable for the parallelism gain.
 - [ ] **Standard Tools allowlist (AST scan).** Currently absent (same gap as `asta_paper_finder`); evolution could in principle import outside the allowed set.
 - [ ] **Cost-cap penalty observation.** Verify in a real evolved-agent run that an over-budget agent triggers `cost_breached: True` and `score *= 0.9`.

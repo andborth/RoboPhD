@@ -4,14 +4,16 @@ Evolve DiscoveryBench agents (AstaBench, Standard tools tier) using
 RoboPhD's optimize_anything() API.
 
 Targets the AstaBench Data-Analysis category leaderboard. Real validation
-= 25 samples, real test = 239. Synth (public) provides an additional 903
-samples (550 train / 153 dev / 200 test) for distribution-padding the
-small real/train.
+= 25 samples, real test = 239. Synth (public) provides an additional 703
+scoreable samples (550 train / 153 dev) for distribution-padding the
+small real pool.
 
-Three training regimes (--regime {1,2,3}). See the "Training regimes"
-section in README.md for the train/test composition, budgets, reuse,
-and "when to pick which" guidance. Each regime supports
---phase {experiment,final} (regime 1 ignores --phase).
+Train pool: --num-synth-train (default 175) synth samples + all 25
+real/validation. Test set depends on --phase: experiment → 24 fixed
+samples (~10%) of real/test, final → all 239 of real/test. Both pool
+and the experiment test draws use a fixed split seed (42), independent
+of --random-seed; --random-seed (default None → fresh per run) only
+affects RoboPhD's per-iteration draws.
 
 Credentials required:
     HF_ACCESS_TOKEN  — gated allenai/asta-bench dataset (real/ split metadata)
@@ -51,78 +53,57 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Regime configuration
+# Dataset configuration
 # ---------------------------------------------------------------------------
 
-def _regime_dataset(regime: int, phase: str | None, seed: int):
+# Fixed seed for train/test pool construction. Independent of
+# --random-seed; --random-seed only affects RoboPhD per-iteration draws.
+SPLIT_SEED = 42
+
+
+def _build_dataset(phase: str, num_synth_train: int):
     """Build (train_pool, test_pool, examples_per_iter, evaluation_budget,
-    num_iterations) for the named regime.
+    num_iterations).
 
-    train_pool is what RoboPhD samples from each iteration. test_pool is
-    the held-out evaluation set surfaced via --eval-test-set.
+    Train pool = `num_synth_train` synth samples (drawn with SPLIT_SEED
+    from synth/train's 550 scoreable) + all 25 real/validation.
 
-    Sampling uses two independent RNGs both seeded from `seed`:
-      - real_rng draws the 15-train / 10-test split of real/validation
-        in regime 2A and 3A. Same seed → same held-out 10 across
-        regimes and across phases.
-      - synth_rng draws the 85-sample synth subset in regime 2.
-        Same seed → same 85 across phases 2A and 2B.
-    Decoupling the two RNGs means the synth draw doesn't perturb the
-    real draw (and vice versa), so each is a pure function of the seed.
-    A new --random-seed rotates both.
+    Test pool depends on phase:
+      - experiment: 24 samples (~10%) drawn with SPLIT_SEED from
+        real/test's 239. Cheap enough to run as part of every
+        --eval-test-set check while remaining a meaningful held-out set.
+      - final: all 239 real/test samples (the leaderboard metric).
+
+    Two independent random.Random(SPLIT_SEED) instances (synth_rng,
+    test_rng) keep the synth draw and the test draw isolated, so
+    changing --num-synth-train doesn't perturb the test composition.
     """
     from evaluator import load_real, load_synth
 
-    real_rng = random.Random(seed)
-    synth_rng = random.Random(seed)
+    synth_rng = random.Random(SPLIT_SEED)
+    test_rng = random.Random(SPLIT_SEED)
 
-    if regime == 1:
-        # Synth-only. Train on synth/train (550), held-out test on synth/dev
-        # (153) + real/validation (25) + real/test (239).
-        # synth/test is upstream's held-out competition set with no gold,
-        # so it can't be scored locally and we don't include it.
-        train = load_synth("train")
-        test = load_synth("dev") + load_real("validation") + load_real("test")
-        return train, test, 20, 1500, 999  # iters bounded by budget
+    synth_train = load_synth("train")            # 550 scoreable
+    real_train = load_real("validation")         # 25
+    real_test = load_real("test")                # 239
 
-    if regime == 2:
-        synth_train = load_synth("train")
-        real_train = load_real("validation")  # AstaBench's "validation" = paper's "train"
+    if not (0 <= num_synth_train <= len(synth_train)):
+        raise SystemExit(
+            f"--num-synth-train={num_synth_train} out of range; "
+            f"synth/train has {len(synth_train)} scoreable samples"
+        )
 
-        # Decoupled RNGs: real_rng's state is identical to regime 3A's at
-        # the same --random-seed, so 2A and 3A draw the same held-out 10.
-        # synth_rng is independent, so the 85-synth subset is identical
-        # across phases 2A and 2B (same seed → same draw).
-        if phase == "experiment":
-            real_subset_idx = real_rng.sample(range(len(real_train)), 15)
-            real_subset = [real_train[i] for i in real_subset_idx]
-            real_held_out = [real_train[i] for i in range(len(real_train)) if i not in real_subset_idx]
+    synth_subset = synth_rng.sample(synth_train, num_synth_train)
+    train = synth_subset + real_train
 
-        synth_subset = synth_rng.sample(synth_train, 85)
+    if phase == "experiment":
+        test = test_rng.sample(real_test, 24)
+    else:  # final
+        test = real_test
 
-        if phase == "experiment":
-            # 85 synth + 15 real (subset); test on the other 10 real.
-            train = synth_subset + real_subset
-            test = real_held_out
-        else:  # final
-            train = synth_subset + real_train
-            test = load_real("test")
-        return train, test, 10, 750, 999
-
-    if regime == 3:
-        real_train = load_real("validation")
-        if phase == "experiment":
-            real_subset_idx = real_rng.sample(range(len(real_train)), 15)
-            train = [real_train[i] for i in real_subset_idx]
-            test = [real_train[i] for i in range(len(real_train)) if i not in real_subset_idx]
-        else:  # final
-            train = real_train
-            test = load_real("test")
-        # Iteration-bounded: examples/iter=3, num_iterations=15 → 180 evals.
-        # Set evaluation_budget high enough not to bind.
-        return train, test, 3, 999_999, 15
-
-    raise ValueError(f"unknown regime: {regime}")
+    # Iteration-bounded: examples/iter=20, num_iterations=15 → 300 evals.
+    # Set evaluation_budget high enough not to bind.
+    return train, test, 20, 999_999, 15
 
 
 # ---------------------------------------------------------------------------
@@ -134,7 +115,6 @@ def _write_test_results(
     evaluator,
     output_dir: Path,
     agent_name: str,
-    regime: int,
     phase: str | None,
     summary_filename: str,
 ):
@@ -178,7 +158,6 @@ def _write_test_results(
     with open(summary_path, "w") as f:
         json.dump({
             "agent": agent_name,
-            "regime": regime,
             "phase": phase,
             "mean_test_score": eval_result.mean_score,
             "total_test_score": eval_result.total_score,
@@ -200,16 +179,18 @@ def parse_args():
         description="Evolve DiscoveryBench agents on AstaBench (Standard tools, Docker sandbox)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    p.add_argument("--regime", type=int, choices=[1, 2, 3], default=2,
-                   help="Training regime (see README.md 'Training regimes' section)")
     p.add_argument("--phase", choices=["experiment", "final"], default="experiment",
-                   help="Phase within regimes 2 and 3 (ignored for regime 1)")
+                   help="experiment: 24-sample held-out test (~10%% of real/test). "
+                        "final: all 239 real/test samples (leaderboard metric).")
+    p.add_argument("--num-synth-train", type=int, default=175,
+                   help="Number of synth/train samples to mix into the train pool. "
+                        "real/validation's 25 samples are always included.")
 
     p.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd")
     p.add_argument("--num-iterations", type=int, default=None,
-                   help="Override regime's iteration cap")
+                   help="Override the default iteration cap (15)")
     p.add_argument("--evaluation-budget", type=int, default=None,
-                   help="Override regime's evaluation budget")
+                   help="Override the default evaluation budget (iter-bounded)")
 
     p.add_argument("--model", default="openai/gpt-5-mini",
                    help="Inspect model string for the candidate solver's LLM calls")
@@ -230,7 +211,12 @@ def parse_args():
                         "comfortable default on M-series Macs; tune up to ~16 "
                         "if your OpenAI tier supports the resulting RPS.")
     p.add_argument("--runs-dir", default="../robophd_runs")
-    p.add_argument("--random-seed", type=int, default=0)
+    p.add_argument("--random-seed", type=int, default=None,
+                   help="Seed for RoboPhD's per-iteration draws and other "
+                        "internal RNG. Default None resolves to a fresh seed "
+                        "each run (logged and persisted in checkpoint). The "
+                        "train/test pool composition is independent of this "
+                        "flag (driven by a fixed SPLIT_SEED).")
     p.add_argument("--engine-config", type=str, default=None)
     p.add_argument("--meta-evolution-strategy", default=None)
 
@@ -277,12 +263,12 @@ def main():
     )
     test_evaluator = evaluator.with_overrides(apply_cost_penalty=False)
 
-    train, test, examples_per_iter, regime_budget, regime_iterations = (
-        _regime_dataset(args.regime, args.phase, args.random_seed)
+    train, test, examples_per_iter, default_budget, default_iterations = (
+        _build_dataset(args.phase, args.num_synth_train)
     )
     logger.info(
-        f"Regime {args.regime}/{args.phase}: train={len(train)} test={len(test)} "
-        f"examples/iter={examples_per_iter} budget={regime_budget} iters={regime_iterations}"
+        f"Phase {args.phase}: train={len(train)} test={len(test)} "
+        f"examples/iter={examples_per_iter} budget={default_budget} iters={default_iterations}"
     )
 
     # RoboPhD's ExternalEvaluatorDomain JSON-serializes each example to
@@ -297,10 +283,9 @@ def main():
 
     # --eval-only: skip optimization, evaluate an agent from --resume on test.
     # By default uses the best-ELO agent (via eval_run); --eval-agent overrides
-    # to a specific named agent (via find_named_agent + eval_candidate). Note
-    # that the test set composition for regimes 2 and 3 phase=experiment
-    # depends on --random-seed; pass the same seed used for the original run
-    # to get the same held-out 10 examples.
+    # to a specific named agent (via find_named_agent + eval_candidate). The
+    # test set composition is fixed (driven by SPLIT_SEED, not --random-seed),
+    # so --eval-only against the same --phase always sees the same samples.
     if args.eval_only:
         if not args.resume:
             raise SystemExit("--eval-only requires --resume <experiment_dir>")
@@ -318,17 +303,19 @@ def main():
             eval_result = eval_run(evaluator=test_evaluator, dataset=test, experiment_dir=args.resume)
 
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
-        # Suffix the filename when --eval-agent is set so per-agent eval
-        # runs don't overwrite the default best-ELO results on disk.
+        # Phase-distinct filenames so back-to-back experiment/final eval-only
+        # runs against the same --resume dir don't clobber each other; agent
+        # name is also suffixed when --eval-agent is set.
         results_filename = (
-            f"test_results_{args.eval_agent}.json" if args.eval_agent else "test_results.json"
+            f"test_results_{args.phase}_{args.eval_agent}.json"
+            if args.eval_agent
+            else f"test_results_{args.phase}.json"
         )
         summary_path, per_problem_path = _write_test_results(
             eval_result=eval_result,
             evaluator=test_evaluator,
             output_dir=Path(args.resume),
             agent_name=args.eval_agent or "best",
-            regime=args.regime,
             phase=args.phase,
             summary_filename=results_filename,
         )
@@ -338,8 +325,8 @@ def main():
 
     seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
 
-    num_iterations = args.num_iterations if args.num_iterations is not None else regime_iterations
-    evaluation_budget = args.evaluation_budget if args.evaluation_budget is not None else regime_budget
+    num_iterations = args.num_iterations if args.num_iterations is not None else default_iterations
+    evaluation_budget = args.evaluation_budget if args.evaluation_budget is not None else default_budget
 
     engine_overrides: dict = {"examples_per_iteration": examples_per_iter}
     if args.engine_config:
@@ -350,7 +337,7 @@ def main():
             evaluation_budget=evaluation_budget,
             val_dataset=test,
             max_workers=args.max_workers,
-            seed=args.random_seed,
+            seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
             eval_timeout=EVAL_TIMEOUT,
         )
@@ -360,7 +347,7 @@ def main():
             evaluation_budget=evaluation_budget,
             val_dataset=test,
             max_workers=args.max_workers,
-            seed=args.random_seed,
+            seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
             eval_timeout=EVAL_TIMEOUT,
         )
@@ -391,7 +378,7 @@ def main():
         objective=objective,
         background=background,
         config=cfg,
-        task_name=f"asta_discoverybench_r{args.regime}_{args.phase or 'all'}",
+        task_name="asta_discoverybench",
     )
 
     logger.info(f"Optimization complete: {result.num_iterations_completed} iterations, "
@@ -415,9 +402,8 @@ def main():
                 evaluator=test_evaluator,
                 output_dir=result.experiment_dir,
                 agent_name="best",
-                regime=args.regime,
                 phase=args.phase,
-                summary_filename="test_results.json",
+                summary_filename=f"test_results_{args.phase}.json",
             )
             logger.info(f"Test summary:    {summary_path}")
             logger.info(f"Test per-problem: {per_problem_path}")
