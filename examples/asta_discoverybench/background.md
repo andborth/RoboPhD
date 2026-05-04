@@ -116,13 +116,6 @@ Disallowed:
 
 The per-dimension HMS pieces (`context_score`, `var_score`, `rel_score`) are surfaced in the diagnostics dict alongside the headline score, so when an evolved agent gains 0.05 HMS you can see whether the win came from better scope-matching or better variable-naming.
 
-## Headline benchmark target
+## A note on score distributions
 
-| Tier | Reference agent | HMS | Notes |
-| --- | --- | --- | --- |
-| Various | Reflexion (Oracle) + GPT-4o | **0.245** | Best in DiscoveryBench paper |
-| Various | ReAct + GPT-4o | 0.154 | Standard ReAct ceiling per paper |
-| Various | CodeGen + GPT-4o | 0.155 | Code-first agent in paper |
-| Various | Llama-3 baselines | 0.11–0.13 | Open-weight reference |
-
-The leaderboard shows different points; treat 0.20–0.22 HMS as a reasonable target for an evolved Standard-tools agent on real/test (paper ceiling 0.245, and we shouldn't expect to match Reflexion's oracle setup). HMS values land on coarse points (0, 0.5, 1.0 per dimension), so per-sample scores cluster — you'll see 0.0 / 0.3 / 0.5 / 0.6 / 1.0 more often than smooth distributions.
+HMS values land on coarse points (0, 0.5, 1.0 per dimension), so per-sample scores cluster — you'll see 0.0 / 0.3 / 0.5 / 0.6 / 1.0 more often than smooth distributions.

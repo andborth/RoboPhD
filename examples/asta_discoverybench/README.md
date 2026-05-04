@@ -2,7 +2,7 @@
 
 Evolves Inspect-AI `@solver` agents on AstaBench's DiscoveryBench task (Data Analysis category, Standard tools tier). Real validation = 25 samples, real test = 239 samples. The DiscoveryBench paper ships an additional public **synth/** split (903 samples total; **703 are scoreable** — `synth/train`=550 and `synth/dev`=153; `synth/test`=200 has gold withheld as an upstream held-out competition set) which we use for distribution-padding in some training regimes.
 
-DiscoveryBench paper baselines: ReAct + GPT-4o = 15.4% HMS; Reflexion (oracle) + GPT-4o = 24.5% HMS. The Standard-tier ceiling per paper is in the low-to-mid 20s; we target ~20–22% HMS on real/test.
+For the current state of the art and the bar we're aiming at, see the live leaderboard: https://huggingface.co/spaces/allenai/asta-bench-leaderboard (DiscoveryBench tab). Reference numbers there are in flux as agents are added; we deliberately don't quote specific HMS targets here or in `background.md` to avoid anchoring evolution on a number.
 
 ## Setup
 
