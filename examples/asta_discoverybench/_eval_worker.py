@@ -14,7 +14,7 @@ Protocol:
 Input JSON shape:
   {"candidate": {"agent.py": "..."},
    "example": {<Sample.model_dump()>},
-   "model": "openai/gpt-5-mini",
+   "model": "openai/gpt-5.4-mini",
    "cost_budget": 0.10}
 
 Output JSON shape:

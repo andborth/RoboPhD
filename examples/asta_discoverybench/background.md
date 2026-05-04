@@ -75,7 +75,7 @@ text = resp.completion
 
 `config` is optional; pass a `GenerateConfig` to set sampling parameters such as `temperature`. See `inspect_ai.model.GenerateConfig` for the full set.
 
-Default model is **GPT-5 Mini** (`openai/gpt-5-mini`). Evolution may switch via the model string. **Do not** import `openai` / `anthropic` / `litellm` directly. If you must (e.g., to use a model not in Inspect's registry), wrap the call with `record_model_usage_with_inspect(model_name, ModelUsage(...))` afterward, or you silently underreport cost.
+Default model is **GPT-5.4 Mini** (`openai/gpt-5.4-mini`). Evolution may switch via the model string. **Do not** import `openai` / `anthropic` / `litellm` directly. If you must (e.g., to use a model not in Inspect's registry), wrap the call with `record_model_usage_with_inspect(model_name, ModelUsage(...))` afterward, or you silently underreport cost.
 
 ## Scoring (Hierarchical Matching Score)
 
@@ -97,7 +97,7 @@ The agent has a **$0.10 per-example budget** for its own LLM and tool spend. If 
 
 **Judge cost is excluded from the cap.** The DiscoveryBench scorer runs ~5 LLM judge calls per evaluation (≈$0.015–0.020/sample at gpt-4o-2024-08-06 prices). Those calls are evaluator-side overhead the agent has no way to influence, so they don't count against the $0.10 budget. The judge spend is reported separately as `other_cost` in result.json and gets its own column in `cost_report.md` / `interim_report.md` / `final_report.md`. Evolution and meta-evolution see only agent-side spend (`eval_cost`); judge overhead is captured for accounting but doesn't pollute the optimization signal.
 
-Practical implication: at GPT-5 Mini rates, $0.10 covers many tool-aided reasoning rounds. Runaway loops (e.g. 30+ rounds of `python_session` + LLM critique with long context) will breach.
+Practical implication: at GPT-5.4 Mini rates, $0.10 covers many tool-aided reasoning rounds. Runaway loops (e.g. 30+ rounds of `python_session` + LLM critique with long context) will breach.
 
 ## Standard Tools constraint
 

@@ -261,7 +261,7 @@ class DiscoveryBenchEvaluator:
 
     def __init__(
         self,
-        model: str = "openai/gpt-5-mini",
+        model: str = "openai/gpt-5.4-mini",
         cost_budget: float = DEFAULT_COST_BUDGET,
         log_dir: str | None = None,
         skip_docker_check: bool = False,
@@ -273,7 +273,7 @@ class DiscoveryBenchEvaluator:
             raise RuntimeError(
                 "OPENAI_API_KEY is not set. The DiscoveryBench scorer judges "
                 "hypotheses with gpt-4o-2024-08-06, and the default solver "
-                "model is GPT-5 Mini — both go through OpenAI. Set the env "
+                "model is GPT-5.4 Mini — both go through OpenAI. Set the env "
                 "var before running."
             )
         if not skip_docker_check:

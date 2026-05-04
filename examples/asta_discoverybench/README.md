@@ -39,7 +39,7 @@ On the **first** evaluator run, AstaBench's image is pulled (~2–2.5 GB; one-ti
 export HF_ACCESS_TOKEN="hf_..."
 export HF_TOKEN="hf_..."
 
-# OpenAI: powers both the solver model (gpt-5-mini default) and the
+# OpenAI: powers both the solver model (gpt-5.4-mini default) and the
 # scorer's gpt-4o-2024-08-06 judge. Must be set.
 export OPENAI_API_KEY="sk-..."
 ```
@@ -100,7 +100,7 @@ python examples/asta_discoverybench/main.py --eval-only --resume <prior-run-dir>
 python examples/asta_discoverybench/main.py --eval-only --resume <prior-run-dir> --phase final
 ```
 
-Default model: `openai/gpt-5-mini`. Default per-example agent cost cap: `$0.10` (score multiplied by 0.9 if breached; judge cost excluded).
+Default model: `openai/gpt-5.4-mini`. Default per-example agent cost cap: `$0.10` (score multiplied by 0.9 if breached; judge cost excluded).
 
 ```bash
 # Override model:
@@ -131,7 +131,7 @@ The cap is a **training-time soft penalty**, not a test-time score modifier:
 
 The intent: evolution is guided by the soft penalty toward better cost discipline, but the headline number we report (and the leaderboard data point) is the raw HMS at whatever cost the evolved artifact actually incurs. Two separate evaluator instances inside `main.py` enforce the asymmetry: one with `apply_cost_penalty=True` for training, one with `apply_cost_penalty=False` for all test paths.
 - A full real/test sweep (239 samples) costs ~$7 just in judge tokens.
-- A 300-eval training run + final test sweep ≈ $15–$25 total ($6 judge across the 300 evals + $7 final test + agent's own LLM spend at GPT-5 Mini rates).
+- A 300-eval training run + final test sweep ≈ $15–$25 total ($6 judge across the 300 evals + $7 final test + agent's own LLM spend at GPT-5.4 Mini rates).
 - Wall-clock: 4–10s sandbox warm-start per sample + agent execution + 5 judge calls ≈ ~50s/sample observed.
 
 ## Files

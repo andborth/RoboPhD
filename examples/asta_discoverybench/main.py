@@ -17,7 +17,7 @@ affects RoboPhD's per-iteration draws.
 
 Credentials required:
     HF_ACCESS_TOKEN  — gated allenai/asta-bench dataset (real/ split metadata)
-    OPENAI_API_KEY   — solver model (gpt-5-mini default) + judge (gpt-4o-2024-08-06)
+    OPENAI_API_KEY   — solver model (gpt-5.4-mini default) + judge (gpt-4o-2024-08-06)
 
 Setup:
     Docker daemon must be running. See README.md.
@@ -192,7 +192,7 @@ def parse_args():
     p.add_argument("--evaluation-budget", type=int, default=None,
                    help="Override the default evaluation budget (iter-bounded)")
 
-    p.add_argument("--model", default="openai/gpt-5-mini",
+    p.add_argument("--model", default="openai/gpt-5.4-mini",
                    help="Inspect model string for the candidate solver's LLM calls")
     p.add_argument("--cost-budget", type=float, default=0.10,
                    help="Per-example AGENT cost cap. During training (RoboPhD "
