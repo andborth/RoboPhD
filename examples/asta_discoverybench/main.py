@@ -214,11 +214,14 @@ def parse_args():
     p.add_argument("--model", default="openai/gpt-5-mini",
                    help="Inspect model string for the candidate solver's LLM calls")
     p.add_argument("--cost-budget", type=float, default=0.10,
-                   help="Per-example AGENT cost cap; score *= 0.9 if breached. "
-                        "Note: this is agent-only; judge-LLM cost (~$0.029/sample, "
-                        "5 fixed gpt-4o calls) is excluded. Cost reports show "
-                        "the total (agent+judge), so a sample may show "
-                        "eval_cost > 0.10 without breaching the cap.")
+                   help="Per-example AGENT cost cap. During training (RoboPhD "
+                        "ELO), score *= 0.9 if agent spend exceeds the cap; at "
+                        "test time the score is raw HMS regardless of breach. "
+                        "Judge-LLM cost (~$0.015-0.020/sample, 5 fixed gpt-4o "
+                        "calls) is tracked separately as `other_cost` — it's "
+                        "kept out of the optimization signal and excluded from "
+                        "the cap. `eval_cost` in reports is agent-only and "
+                        "matches the cap-relevant number.")
 
     p.add_argument("--max-workers", type=int, default=8,
                    help="Parallel eval workers. Each evaluation runs in its "
