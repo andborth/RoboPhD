@@ -241,7 +241,7 @@ class ExternalEvaluatorDomain(DomainInterface):
             return EvaluationResult(
                 average_score=average_score, total=total, score_sum=score_sum,
                 results=results,
-                metadata={"fresh_count": 0, "cached_count": cached_count, "eval_cost": 0.0},
+                metadata={"fresh_count": 0, "cached_count": cached_count, "eval_cost": 0.0, "other_cost": 0.0},
             )
 
         # --- Warn about leaked threads from prior timeouts ---
@@ -284,12 +284,25 @@ class ExternalEvaluatorDomain(DomainInterface):
                     eid = problem_id
 
                 # Extract cost from diagnostics (e.g., AIME evaluator
-                # returns cost_usd from litellm.completion_cost)
+                # returns cost_usd from litellm.completion_cost). The
+                # `cost_usd` key is the agent-only signal evolution sees
+                # (persisted as `eval_cost`); `other_cost_usd` is optional
+                # evaluator-side overhead (e.g., a fixed scoring-time LLM
+                # judge) surfaced separately as `other_cost` so it doesn't
+                # pollute the agent-cost signal. Most evaluators don't
+                # populate other_cost_usd; it stays 0 and report columns
+                # for it stay hidden.
                 cost_usd = 0.0
+                other_cost = 0.0
                 if isinstance(diagnostics, dict):
                     raw = diagnostics.get("cost_usd", 0.0)
                     try:
                         cost_usd = float(raw)
+                    except (TypeError, ValueError):
+                        pass
+                    raw_other = diagnostics.get("other_cost_usd", 0.0)
+                    try:
+                        other_cost = float(raw_other)
                     except (TypeError, ValueError):
                         pass
 
@@ -298,6 +311,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                     "question_id": eid,
                     "score": score,
                     "eval_cost": cost_usd,
+                    "other_cost": other_cost,
                     "error": has_error,
                 }
 
@@ -411,9 +425,15 @@ class ExternalEvaluatorDomain(DomainInterface):
         total = len(results)
         average_score = (score_sum / total) if total else 0.0
 
-        # Aggregate evaluation costs from fresh results
+        # Aggregate evaluation costs from fresh results. `other_cost` is the
+        # optional evaluator-side-overhead bucket (e.g., DiscoveryBench's
+        # judge-LLM spend); it's tracked separately so it doesn't appear in
+        # the agent-cost signal evolution / meta-evolution optimize against.
         total_eval_cost = sum(
             r.get("eval_cost", 0.0) for r in results if not r.get("cached")
+        )
+        total_other_cost = sum(
+            r.get("other_cost", 0.0) for r in results if not r.get("cached")
         )
 
         # Write evaluation.json for compatibility
@@ -437,6 +457,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                 "fresh_count": fresh_count,
                 "cached_count": cached_count,
                 "eval_cost": total_eval_cost,
+                "other_cost": total_other_cost,
             },
         )
 

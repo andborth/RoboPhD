@@ -1180,18 +1180,26 @@ class ReportGenerator:
             total_meta_evolution_tokens_in = sum(ic.get('meta_evolution_tokens_in', 0) for ic in self.researcher.iteration_claude_costs)
             total_meta_evolution_tokens_out = sum(ic.get('meta_evolution_tokens_out', 0) for ic in self.researcher.iteration_claude_costs)
 
+            # Evaluator-side overhead (e.g., DiscoveryBench's judge LLM
+            # spend). Tracked separately so it doesn't appear in the
+            # agent-cost signal evolution / meta-evolution see, but
+            # included in the grand total since it's still real $$.
+            total_other_cost = sum(ic.get('other_cost', 0.0) for ic in self.researcher.iteration_claude_costs)
+
             total_cli_cost = total_evolution_cost + total_meta_evolution_cost
             total_cli_calls = total_evolution_calls + total_meta_evolution_calls
             total_cli_tokens_in = total_evolution_tokens_in + total_meta_evolution_tokens_in
             total_cli_tokens_out = total_evolution_tokens_out + total_meta_evolution_tokens_out
 
-            # Grand total (Eval + CLI)
-            grand_total_cost = total_eval_cost + total_cli_cost
+            # Grand total (Eval + CLI + Other)
+            grand_total_cost = total_eval_cost + total_cli_cost + total_other_cost
 
             # Overall summary
             report_lines.append(f"- **Total Cost**: ${grand_total_cost:.2f}")
             report_lines.append(f"  - **Evaluation Cost**: ${total_eval_cost:.2f}")
             report_lines.append(f"  - **Evolution CLI Cost**: ${total_cli_cost:.2f}")
+            if total_other_cost > 0:
+                report_lines.append(f"  - **Other (evaluator overhead) Cost**: ${total_other_cost:.2f}")
             report_lines.append(f"- **Total CLI Calls**: {total_cli_calls}")
             report_lines.append(f"- **Total CLI Input Tokens**: {total_cli_tokens_in:,}")
             report_lines.append(f"- **Total CLI Output Tokens**: {total_cli_tokens_out:,}")
@@ -1206,6 +1214,7 @@ class ReportGenerator:
             eval_pct = (total_eval_cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
             evolution_pct = (total_evolution_cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
             meta_evolution_pct = (total_meta_evolution_cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
+            other_pct = (total_other_cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
 
             report_lines.append(
                 f"| Evaluation | ${total_eval_cost:.2f} | {eval_pct:.1f}% | "
@@ -1220,6 +1229,11 @@ class ReportGenerator:
                     f"| Meta-Evolution (CLI) | ${total_meta_evolution_cost:.2f} | {meta_evolution_pct:.1f}% | "
                     f"{total_meta_evolution_calls} | {total_meta_evolution_tokens_in:,} | {total_meta_evolution_tokens_out:,} |"
                 )
+            if total_other_cost > 0:
+                report_lines.append(
+                    f"| Other (evaluator overhead) | ${total_other_cost:.2f} | {other_pct:.1f}% | "
+                    f"- | - | - |"
+                )
             report_lines.append(
                 f"| **Total** | **${grand_total_cost:.2f}** | **100%** | "
                 f"**{total_cli_calls}** | **{total_cli_tokens_in:,}** | **{total_cli_tokens_out:,}** |"
@@ -1229,7 +1243,8 @@ class ReportGenerator:
             cost_drivers = [
                 ('Evaluation', eval_pct),
                 ('Evolution', evolution_pct),
-                ('Meta-Evolution', meta_evolution_pct)
+                ('Meta-Evolution', meta_evolution_pct),
+                ('Other', other_pct),
             ]
             max_driver = max(cost_drivers, key=lambda x: x[1])
             report_lines.append(f"\n**Answer: {max_driver[0]} drives {max_driver[1]:.1f}% of total costs**")
@@ -1244,6 +1259,15 @@ class ReportGenerator:
             # Check if we have fresh eval data
             has_fresh = hasattr(self.researcher, 'iteration_fresh_evals') and self.researcher.iteration_fresh_evals
 
+            # Show "Other" column only when at least one iteration has
+            # non-zero evaluator-side overhead (e.g., DiscoveryBench's
+            # judge LLM). Other examples that don't surface other_cost
+            # keep the prior report shape unchanged.
+            has_other = any(
+                ic.get('other_cost', 0.0) > 0
+                for ic in self.researcher.iteration_claude_costs
+            )
+
             # Build dynamic header
             header_cols = ["Iter", "Total", "**Eval**", "**Evo**", "Iter Eval", "1st Draft"]
             for i in range(num_df_rounds):
@@ -1251,6 +1275,8 @@ class ReportGenerator:
                 draft_label = f"Draft {i+2}"
                 header_cols.extend([round_label, draft_label])
             header_cols.extend(["Refl", "Meta"])
+            if has_other:
+                header_cols.append("Other")
             if has_fresh:
                 header_cols.append("Fresh")
             header_cols.extend(["Strategy", "Meta-strategy"])
@@ -1268,6 +1294,7 @@ class ReportGenerator:
                 'first_draft': 0.0,
                 'reflection': 0.0,
                 'meta_evolution': 0.0,
+                'other': 0.0,
             }
             # Per-round accumulators
             round_totals_eval = [0.0] * num_df_rounds
@@ -1317,10 +1344,11 @@ class ReportGenerator:
                     reflection = evolution_breakdown.get('reflection', {}).get('cost', 0.0)
 
                 meta_evolution_cost = cost_dict.get('meta_evolution_cost', 0.0)
+                other_cost_iter = cost_dict.get('other_cost', 0.0)
 
                 total_eval_iter = eval_base + sum(round_evals)
                 total_evolution_iter = first_draft + sum(round_drafts) + reflection
-                total_cost = total_eval_iter + total_evolution_iter + meta_evolution_cost
+                total_cost = total_eval_iter + total_evolution_iter + meta_evolution_cost + other_cost_iter
 
                 totals['total_cost'] += total_cost
                 totals['total_eval'] += total_eval_iter
@@ -1328,6 +1356,7 @@ class ReportGenerator:
                 totals['first_draft'] += first_draft
                 totals['reflection'] += reflection
                 totals['meta_evolution'] += meta_evolution_cost
+                totals['other'] += other_cost_iter
                 for i in range(num_df_rounds):
                     round_totals_eval[i] += round_evals[i]
                     round_totals_draft[i] += round_drafts[i]
@@ -1345,6 +1374,8 @@ class ReportGenerator:
                 for i in range(num_df_rounds):
                     row_vals.extend([fmt(round_evals[i]), fmt(round_drafts[i])])
                 row_vals.extend([fmt(reflection), fmt(meta_evolution_cost)])
+                if has_other:
+                    row_vals.append(fmt(other_cost_iter))
                 if has_fresh:
                     row_vals.append(str(fresh_val) if fresh_val > 0 else "-")
                 row_vals.extend([strategy_display, meta_strategy_display])
@@ -1360,6 +1391,8 @@ class ReportGenerator:
             for i in range(num_df_rounds):
                 total_vals.extend([f"${round_totals_eval[i]:.2f}", f"${round_totals_draft[i]:.2f}"])
             total_vals.extend([f"${totals['reflection']:.2f}", f"${totals['meta_evolution']:.2f}"])
+            if has_other:
+                total_vals.append(f"**${totals['other']:.2f}**")
             if has_fresh:
                 total_vals.append(f"**{total_fresh}**")
             total_vals.extend(["-", "-"])

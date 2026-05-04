@@ -427,12 +427,12 @@ class DiscoveryBenchEvaluator:
 
             score = float(payload.get("score", 0.0))
             diagnostics = payload.get("diagnostics", {}) or {}
-            # Aggregate cost on the parent side too so total_eval_cost is correct.
-            cost = (diagnostics.get("agent_cost_usd", 0.0) or 0.0) + (
-                diagnostics.get("judge_cost_usd", 0.0) or 0.0
-            )
+            # Aggregate agent-only cost on the parent side so total_eval_cost
+            # matches the eval_cost signal RoboPhD persists. Judge spend
+            # is captured per-problem in judge_cost_usd / other_cost_usd.
+            agent_only_cost = diagnostics.get("agent_cost_usd", 0.0) or 0.0
             with self._cost_lock:
-                self.total_eval_cost += cost
+                self.total_eval_cost += agent_only_cost
             return score, diagnostics
         finally:
             for p in (inf_path, out_path):
@@ -678,15 +678,22 @@ class DiscoveryBenchEvaluator:
         if cost_penalty_applied:
             score_value = score_value * COST_BREACH_PENALTY
 
+        # Track agent-only on the evaluator's running total so it matches
+        # what flows into RoboPhD's eval_cost. Judge spend is captured
+        # in per-problem judge_cost_usd diagnostics for audit.
         with self._cost_lock:
-            self.total_eval_cost += agent_cost_usd + judge_cost_usd
+            self.total_eval_cost += agent_cost_usd
 
         diagnostics["score"] = score_value
-        # RoboPhD's domain layer reads `cost_usd` from diagnostics and
-        # surfaces it as `eval_cost` in cost reports. Report total run
-        # spend (agent + judge); evolution sees the agent-only number
-        # via the cap penalty, but humans tracking $ want the total.
-        diagnostics["cost_usd"] = agent_cost_usd + judge_cost_usd
+        # RoboPhD's domain reads `cost_usd` → `eval_cost` (agent-only signal
+        # evolution and meta-evolution see) and `other_cost_usd` →
+        # `other_cost` (evaluator-side overhead surfaced separately so it
+        # doesn't pollute the cost signal evolution optimizes against).
+        # The 5 fixed gpt-4o judge calls per sample are evaluator overhead —
+        # the agent has no way to influence them — so they go into
+        # other_cost. The $0.10 cost cap applies to agent spend only.
+        diagnostics["cost_usd"] = agent_cost_usd
+        diagnostics["other_cost_usd"] = judge_cost_usd
         diagnostics["agent_cost_usd"] = agent_cost_usd
         diagnostics["judge_cost_usd"] = judge_cost_usd
         diagnostics["cost_breached"] = cost_breached

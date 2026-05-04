@@ -1647,6 +1647,7 @@ class ParallelAgentResearcher:
         # Initialize cost tracking for this iteration
         iteration_cost_dict = {
             'eval_cost': 0.0,
+            'other_cost': 0.0,  # evaluator-side overhead (e.g., judge LLM); excluded from agent-cost signal
             'eval_tokens_in': 0,
             'eval_tokens_out': 0,
             'evolution_cost': 0.0,
@@ -1717,8 +1718,10 @@ class ParallelAgentResearcher:
                         'score': r.get('score', 0),
                         'total': 1,
                         'error': r.get('error'),
-                        # Include eval_cost for cost reporting
+                        # Include eval_cost (agent-only) and other_cost
+                        # (evaluator-side overhead) for cost reporting.
                         'eval_cost': r.get('eval_cost', 0.0),
+                        'other_cost': r.get('other_cost', 0.0),
                     })
 
                 # Calculate agent metrics
@@ -1759,6 +1762,11 @@ class ParallelAgentResearcher:
                     iteration_cost_dict['eval_cost'] += metadata['eval_cost']
                     iteration_cost_dict['eval_tokens_in'] += metadata.get('eval_tokens_in', 0)
                     iteration_cost_dict['eval_tokens_out'] += metadata.get('eval_tokens_out', 0)
+                # Accumulate evaluator-side overhead (e.g., judge-LLM cost
+                # for DiscoveryBench). Tracked separately so it doesn't
+                # appear in the agent-cost signal evolution / meta-evolution see.
+                if metadata.get('other_cost'):
+                    iteration_cost_dict['other_cost'] += metadata['other_cost']
 
                 # Extract per-context costs from metadata for cost report
                 if metadata.get('costs_by_context'):
@@ -3272,6 +3280,7 @@ class ParallelAgentResearcher:
                         cost_matrix[context_name] = {}
                     cost_matrix[context_name][agent_id] = {
                         'eval': costs.get('eval', 0.0),
+                        'other': costs.get('other', 0.0),
                     }
             else:
                 for result in results_by_agent.get(agent_id, []):
@@ -3280,35 +3289,49 @@ class ParallelAgentResearcher:
                     if context_name not in cost_matrix:
                         cost_matrix[context_name] = {}
                     eval_cost = result.get('eval_cost', 0.0)
+                    other_cost = result.get('other_cost', 0.0)
                     cost_matrix[context_name][agent_id] = {
                         'eval': eval_cost,
+                        'other': other_cost,
                     }
 
         sorted_contexts = sorted(all_contexts)
 
         # Calculate totals
         total_eval = 0.0
+        total_other = 0.0
         ctx_totals = {}
-        agent_totals = {agent: {'eval': 0.0} for agent in all_agents}
+        agent_totals = {agent: {'eval': 0.0, 'other': 0.0} for agent in all_agents}
 
         for ctx_name in sorted_contexts:
-            ctx_totals[ctx_name] = {'eval': 0.0}
+            ctx_totals[ctx_name] = {'eval': 0.0, 'other': 0.0}
             for agent_id in all_agents:
                 if agent_id in cost_matrix.get(ctx_name, {}):
                     costs = cost_matrix[ctx_name][agent_id]
                     ctx_totals[ctx_name]['eval'] += costs['eval']
+                    ctx_totals[ctx_name]['other'] += costs.get('other', 0.0)
                     agent_totals[agent_id]['eval'] += costs['eval']
+                    agent_totals[agent_id]['other'] += costs.get('other', 0.0)
                     total_eval += costs['eval']
+                    total_other += costs.get('other', 0.0)
 
         num_tests = sum(len(results) for results in results_by_agent.values())
 
         context_label = "Problems"
 
+        # Show "Other" column only when at least one cost is non-zero
+        # (e.g., DiscoveryBench's judge LLM). Other examples don't surface
+        # other_cost so their report shape stays unchanged.
+        has_other = total_other > 0
+
         # Generate markdown report
         report_lines = [
             f"# Cost Analysis - Iteration {iteration}",
             "",
-            f"**Total Evaluation Cost: ${total_eval:.2f}**",
+            f"**Total Evaluation Cost: ${total_eval:.2f}**" + (
+                f" (+ Other ${total_other:.2f} = ${total_eval + total_other:.2f} grand total)"
+                if has_other else ""
+            ),
             "",
             f"**Agents Tested**: {len(all_agents)} agents",
             f"**{context_label} Tested**: {len(sorted_contexts)} {context_label.lower()}",
@@ -3321,41 +3344,47 @@ class ParallelAgentResearcher:
             s.get('cached', 0) > 0 for s in eval_cache_stats.values()
         )
 
+        # Build header dynamically: optionally include Other column
+        cols = ["Agent", "Eval Cost"]
+        if has_other:
+            cols.append("Other")
         if has_cache:
-            header = "| Agent | Eval Cost | Cached | Total |"
-            separator = "|-------|-----------|--------|-------|"
+            cols.extend(["Cached", "Total"])
         else:
-            header = "| Agent | Eval Cost |"
-            separator = "|-------|-----------|"
+            cols.append("Total")
+        header = "| " + " | ".join(cols) + " |"
+        separator = "|" + "|".join(["-" * max(len(c), 3) for c in cols]) + "|"
 
         report_lines.extend(["## Agent Cost Summary", "", header, separator])
 
         for agent_id in all_agents:
             at = agent_totals[agent_id]
+            agent_total = at['eval'] + at['other']
+            row = [agent_id, f"${at['eval']:.2f}"]
+            if has_other:
+                row.append(f"${at['other']:.2f}")
             if has_cache:
                 cs = eval_cache_stats.get(agent_id, {})
                 cached = cs.get('cached', 0)
                 total_problems = cached + cs.get('fresh', 0)
                 cache_str = f"{cached}/{total_problems}" if cached > 0 else "-"
-                report_lines.append(
-                    f"| {agent_id} | ${at['eval']:.2f} | {cache_str} | **${at['eval']:.2f}** |"
-                )
+                row.extend([cache_str, f"**${agent_total:.2f}**"])
             else:
-                report_lines.append(
-                    f"| {agent_id} | **${at['eval']:.2f}** |"
-                )
+                row.append(f"**${agent_total:.2f}**")
+            report_lines.append("| " + " | ".join(row) + " |")
 
         # Total row
+        grand_total = total_eval + total_other
+        total_row = ["**Total**", f"**${total_eval:.2f}**"]
+        if has_other:
+            total_row.append(f"**${total_other:.2f}**")
         if has_cache:
             total_cached = sum(s.get('cached', 0) for s in eval_cache_stats.values())
             total_all = sum(s.get('cached', 0) + s.get('fresh', 0) for s in eval_cache_stats.values())
-            report_lines.append(
-                f"| **Total** | **${total_eval:.2f}** | **{total_cached}/{total_all}** | **${total_eval:.2f}** |"
-            )
+            total_row.extend([f"**{total_cached}/{total_all}**", f"**${grand_total:.2f}**"])
         else:
-            report_lines.append(
-                f"| **Total** | **${total_eval:.2f}** |"
-            )
+            total_row.append(f"**${grand_total:.2f}**")
+        report_lines.append("| " + " | ".join(total_row) + " |")
 
         # Cost insights
         report_lines.extend(["", "---", "", "## Cost Insights", ""])

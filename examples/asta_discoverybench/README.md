@@ -147,8 +147,8 @@ python examples/asta_discoverybench/main.py --regime 2 --engine gepa
 ## Cost notes
 
 - Per-example **agent** budget is $0.10. The agent's spend is capped only at training time; see "When the cap fires" below.
-- Per-example **judge** cost is fixed at ~$0.029 (5 fixed gpt-4o-2024-08-06 calls per sample). This is evaluator overhead, **not** counted against the agent's cap.
-- **Asymmetry to be aware of**: cost reports (`cost_report.md`, `eval_cost` in `result.json`) show the **total** (agent + judge). The cap and the reports are not the same number — a sample with `eval_cost = 0.04` might have `agent_cost_usd = 0.011` and `judge_cost_usd = 0.029`, comfortably under the $0.10 cap. The breakdown is in the per-problem diagnostics: `agent_cost_usd`, `judge_cost_usd`, `cost_breached`, `cost_penalty_applied`.
+- Per-example **judge** cost is ~$0.015–0.020 (5 fixed gpt-4o-2024-08-06 calls per sample). This is evaluator overhead, **not** counted against the agent's cap.
+- **Reports separate agent and judge cost.** `eval_cost` (in `result.json`, the "Eval" column of `cost_report.md` and `interim_report.md`) is **agent-only**. Judge spend goes into `other_cost` (the "Other" column, only shown when non-zero). The headline `Total` column sums all buckets — `Eval + Evo + Meta + Other` — so the run-level cost is honest, but evolution and meta-evolution see only `eval_cost` and aren't biased by the fixed judge overhead. The per-problem breakdown is in `agent_cost_usd`, `judge_cost_usd`, `cost_breached`, `cost_penalty_applied`.
 
 ### When the cap fires
 

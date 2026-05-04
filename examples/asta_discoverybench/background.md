@@ -93,7 +93,7 @@ Each factor comes from a separate judge LLM call comparing the agent's hypothesi
 
 The agent has a **$0.10 per-example budget** for its own LLM and tool spend. If the agent's `agent_cost_usd` exceeds the cap, the example score is multiplied by 0.9 (same penalty as docfinqa / protein_go / ARC-AGI). Cost is computed from `get_model().generate()` token usage and any wrapped out-of-band calls.
 
-**Don't worry about judge cost** — the 5 fixed gpt-4o judge calls per evaluation are evaluator overhead, not agent spend. The evaluator filters them out before applying the cap.
+**Judge cost is excluded from the cap.** The DiscoveryBench scorer runs ~5 LLM judge calls per evaluation (≈$0.015–0.020/sample at gpt-4o-2024-08-06 prices). Those calls are evaluator-side overhead the agent has no way to influence, so they don't count against the $0.10 budget. The judge spend is reported separately as `other_cost` in result.json and gets its own column in `cost_report.md` / `interim_report.md` / `final_report.md`. Evolution and meta-evolution see only agent-side spend (`eval_cost`); judge overhead is captured for accounting but doesn't pollute the optimization signal.
 
 Practical implication: at GPT-5 Mini rates, $0.10 covers many tool-aided reasoning rounds. Runaway loops (e.g. 30+ rounds of `python_session` + LLM critique with long context) will breach.
 
