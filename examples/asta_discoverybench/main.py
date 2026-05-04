@@ -204,12 +204,13 @@ def parse_args():
                         "the cap. `eval_cost` in reports is agent-only and "
                         "matches the cap-relevant number.")
 
-    p.add_argument("--max-workers", type=int, default=8,
+    p.add_argument("--max-workers", type=int, default=12,
                    help="Parallel eval workers. Each evaluation runs in its "
                         "own subprocess to bypass inspect.eval's process-global "
-                        "singleton lock, so this is real parallelism. 8 is a "
-                        "comfortable default on M-series Macs; tune up to ~16 "
-                        "if your OpenAI tier supports the resulting RPS.")
+                        "singleton lock, so this is real parallelism. 12 fits "
+                        "20 examples/iteration in ~2 waves on M-series Macs; "
+                        "tune up to ~20 if your OpenAI tier supports the "
+                        "resulting RPS.")
     p.add_argument("--runs-dir", default="../robophd_runs")
     p.add_argument("--random-seed", type=int, default=None,
                    help="Seed for RoboPhD's per-iteration draws and other "
