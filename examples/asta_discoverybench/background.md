@@ -2,11 +2,11 @@
 
 Each example is a data-driven discovery task: a research **query** (a question about a phenomenon), one or more **CSV data files**, dataset descriptions, and a hidden **gold hypothesis + analysis workflow**. The agent loads the data, analyzes it, and emits a hypothesis JSON. The scorer judges the hypothesis along three dimensions and produces a single Hierarchical Matching Score (HMS).
 
-Example query (from real/train):
+Example query (illustrative — fictional):
 
-> *"Does increased time preference lead to higher BMI?"*
+> *"Do songbirds with longer beaks consume larger seeds in arid regions?"*
 
-with one CSV (`nls_raw.csv`, ~6000 rows × 61 columns of NLSY79 survey data) and a gold hypothesis along the lines of *"Higher time preference associated with higher BMI for 1989 data."*
+with one CSV (`bird_observations.csv`, ~2000 rows of foraging records: `beak_length_mm`, `seed_size_g`, `region`, `species`, `observation_date`, ...) and a hidden gold hypothesis along the lines of *"In arid biomes, beak length correlates positively with mean seed size consumed among ground-feeding species; the relationship weakens in temperate regions."*
 
 ## Where the inputs live in the solver state
 
@@ -22,12 +22,12 @@ Gold (hidden from the agent, surfaced to the scorer): `state.target == [gold_hyp
 
 ## Required output schema
 
-Write a JSON string to `state.output.completion`:
+Write a JSON string to `state.output.completion`. Example (illustrative — fictional):
 
 ```json
 {
-  "hypothesis": "Time preference is positively associated with BMI in adults from the NLSY79 cohort. The relationship is moderate (β≈0.12, p<0.01) and persists after controlling for age, sex, and education.",
-  "workflow": "1. Load nls_raw.csv. 2. Filter to age ≥ 18 (n≈4500). 3. OLS regression of BMI ~ time_preference + controls. 4. Inspect coefficient + 95% CI."
+  "hypothesis": "In arid-region observations of ground-feeding species (n≈800), mean consumed seed size increases with beak length (β≈0.04 g/mm, p<0.01); the relationship is absent in temperate samples after controlling for species and observation year.",
+  "workflow": "1. Load bird_observations.csv. 2. Filter to ground-feeding species in arid regions. 3. OLS of seed_size_g ~ beak_length_mm + species + observation_year. 4. Repeat in temperate subset for comparison."
 }
 ```
 
@@ -87,7 +87,7 @@ Each factor comes from a separate judge LLM call comparing the agent's hypothesi
 - **`var_f1 ∈ [0, 1]`** — F1 over the set of dependent and independent variables, fuzzy-matched.
 - **`rel_score ∈ {0, 0.5, 1.0}`** — 1.0 if the form of the relationship matches very well, 0.5 if similar but more general, 0.0 if different.
 
-**Worked example**: the gold says *"Higher time preference is associated with higher BMI in adults"*. An agent emits *"Higher time preference is associated with higher BMI"* — names the right variables and relationship, but misses the "in adults" scope. → `context_score=0` → `HMS=0` regardless of var/rel quality. Specifying scope is as important as naming variables.
+**Worked example** (illustrative — fictional): the gold says *"In arid regions, beak length correlates with seed size in ground-feeding species"*. An agent emits *"Beak length correlates with seed size in ground-feeding species"* — names the right variables and relationship, but drops the "in arid regions" scope. → `context_score=0` → `HMS=0` regardless of var/rel quality. Specifying scope is as important as naming variables.
 
 ## Per-example cost cap
 
