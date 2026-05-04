@@ -141,7 +141,7 @@ The intent: evolution is guided by the soft penalty toward better cost disciplin
 - `load_synth.py` — fetches DiscoveryBench's public synth split from GitHub on first use, normalizes the column-metadata path to match real
 - `seeds/baseline/agent.py` — minimal `@solver` factory exported as `make_solver`. Demonstrates file copy, stateful Python, Inspect-tracked LLM, JSON output. Scores near zero by design.
 - `objective.md` — what evolution should optimize
-- `background.md` — task spec, output schema, sandbox idioms, scoring breakdown, cost cap, Standard Tools constraint
+- `background.md` — task spec, output schema, sandbox idioms, scoring breakdown, cost cap
 - `requirements.txt` — astabench (which bundles inspect_ai)
 
 ## Status
@@ -158,6 +158,6 @@ The intent: evolution is guided by the soft penalty toward better cost disciplin
 
 - [x] End-to-end smoke test (3 samples / 1 iteration; mean HMS 0.07; ~50s/sample wall-clock; total $0.04)
 - [x] **Real parallelism via subprocess isolation.** Each evaluation runs in its own Python subprocess (`_eval_worker.py`), bypassing Inspect-AI's `eval_async` process-global singleton lock. `--max-workers 8` is the new default; verified 2× speedup on a 3-sample iteration vs the previous serialized lock. Each subprocess pays ~7s of cold imports (inspect-ai + astabench + torch); at ~80s/eval that's ~9% overhead, acceptable for the parallelism gain.
-- [ ] **Standard Tools allowlist (AST scan).** Currently absent (same gap as `asta_paper_finder`); evolution could in principle import outside the allowed set.
+- [ ] **Solver-import allowlist (AST scan).** Currently absent (same gap as `asta_paper_finder`); evolution could in principle import outside the allowed set documented in `background.md`'s API surfaces section.
 - [ ] **Cost-cap penalty observation.** Verify in a real evolved-agent run that an over-budget agent triggers `cost_breached: True` and `score *= 0.9`.
 - [ ] **HMS variance characterization.** The judge has no temperature controls and `num_retries=1`. Worth a 2× replicate over 5 samples to measure run-to-run variance before trusting individual numbers.
