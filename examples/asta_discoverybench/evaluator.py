@@ -685,13 +685,15 @@ class DiscoveryBenchEvaluator:
             self.total_eval_cost += agent_cost_usd
 
         diagnostics["score"] = score_value
-        # RoboPhD's domain reads `cost_usd` → `eval_cost` (agent-only signal
-        # evolution and meta-evolution see) and `other_cost_usd` →
-        # `other_cost` (evaluator-side overhead surfaced separately so it
-        # doesn't pollute the cost signal evolution optimizes against).
-        # The 5 fixed gpt-4o judge calls per sample are evaluator overhead —
-        # the agent has no way to influence them — so they go into
-        # other_cost. The $0.10 cost cap applies to agent spend only.
+        # RoboPhD's domain reads `cost_usd` → `eval_cost` (the agent-only
+        # signal evolution and meta-evolution see) and `other_cost_usd` →
+        # `other_cost` (the bucket for costs the agent isn't responsible
+        # for, kept out of the optimization signal but still tallied in
+        # totals). The 5 fixed gpt-4o judge calls per sample are something
+        # the agent can't influence at all — so they belong in other_cost,
+        # not eval_cost. See RoboPhD/domains/external/domain.py for the
+        # full bucket convention. The $0.10 cost cap applies to agent
+        # spend only.
         diagnostics["cost_usd"] = agent_cost_usd
         diagnostics["other_cost_usd"] = judge_cost_usd
         diagnostics["agent_cost_usd"] = agent_cost_usd

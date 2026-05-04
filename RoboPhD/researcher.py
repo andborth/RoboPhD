@@ -1647,7 +1647,11 @@ class ParallelAgentResearcher:
         # Initialize cost tracking for this iteration
         iteration_cost_dict = {
             'eval_cost': 0.0,
-            'other_cost': 0.0,  # evaluator-side overhead (e.g., judge LLM); excluded from agent-cost signal
+            # Bucket for costs the agent isn't responsible for and we
+            # don't want included in the optimization signal. See
+            # RoboPhD/domains/external/domain.py for the convention
+            # ("if the agent can't influence it, it goes here").
+            'other_cost': 0.0,
             'eval_tokens_in': 0,
             'eval_tokens_out': 0,
             'evolution_cost': 0.0,

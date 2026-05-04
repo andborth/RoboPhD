@@ -284,14 +284,27 @@ class ExternalEvaluatorDomain(DomainInterface):
                     eid = problem_id
 
                 # Extract cost from diagnostics (e.g., AIME evaluator
-                # returns cost_usd from litellm.completion_cost). The
-                # `cost_usd` key is the agent-only signal evolution sees
-                # (persisted as `eval_cost`); `other_cost_usd` is optional
-                # evaluator-side overhead (e.g., a fixed scoring-time LLM
-                # judge) surfaced separately as `other_cost` so it doesn't
-                # pollute the agent-cost signal. Most evaluators don't
-                # populate other_cost_usd; it stays 0 and report columns
-                # for it stay hidden.
+                # returns cost_usd from litellm.completion_cost).
+                #
+                # `cost_usd` is the agent-only signal evolution and
+                # meta-evolution see (persisted as `eval_cost`).
+                #
+                # `other_cost_usd` is the bucket for run costs we
+                # explicitly DO NOT want included in the optimization
+                # signal — real $$ being spent that is neither evolution
+                # (those go in evolution_cost / meta_evolution_cost) nor
+                # something the agent is responsible for (the agent's own
+                # LLM/tool spend → cost_usd → eval_cost). Today's only
+                # consumer is DiscoveryBench's per-sample judge LLM, but
+                # the bucket is appropriate for anything similar: data-
+                # egress fees, test-set scoring overhead, evaluation-side
+                # infrastructure costs — anything where we want the cost
+                # accurately reported in totals but kept out of any
+                # signal evolution might try to minimize. The convention
+                # is "if the agent can't influence it, it goes here."
+                #
+                # Most evaluators don't populate other_cost_usd; it stays
+                # 0 and the "Other" report columns stay hidden.
                 cost_usd = 0.0
                 other_cost = 0.0
                 if isinstance(diagnostics, dict):
