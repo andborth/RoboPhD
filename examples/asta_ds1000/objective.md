@@ -1,0 +1,1 @@
+Evolve a DS-1000 agent that, given a Python data-science problem prompt, produces a `<code>...</code>` block whose contents make the hidden test program's `result` variable match the reference under all hidden test inputs. Maximize the per-example score on held-out problems; cost matters secondarily.

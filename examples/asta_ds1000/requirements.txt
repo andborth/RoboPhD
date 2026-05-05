@@ -1,0 +1,12 @@
+# DS-1000 (AstaBench) example.
+#
+# astabench bundles inspect_ai, the python_session tool, the AstaBench
+# DS-1000 wrapper (with the canonical 100/900 val/test split), and the
+# Docker sandbox compose file.
+#
+# inspect_evals provides the canonical DS-1000 scorer (binary C/I per
+# sample) that AstaBench's wrapper inherits via task_with(). Listed
+# explicitly because it isn't a declared dependency of astabench in
+# the version we pin.
+astabench==0.5.3
+inspect_evals
