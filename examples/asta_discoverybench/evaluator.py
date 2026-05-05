@@ -59,8 +59,19 @@ logger = logging.getLogger(__name__)
 # misclassifies the new judge as agent spend, breaching the cap. We
 # do an import-time check below to surface that drift loudly.
 JUDGE_MODEL_SHORT = "gpt-4o-2024-08-06"
-DEFAULT_COST_BUDGET = 0.10
-COST_BREACH_PENALTY = 0.9
+
+# Per-example score during training (apply_cost_penalty=True):
+#   score = SCORE_SCALE * HMS - cost_penalty
+#   cost_penalty = min(1.0, max(0, agent_cost_usd - MIN_COST_THRESHOLD)
+#                          / (COST_PENALTY_SATURATION - MIN_COST_THRESHOLD))
+# At MIN_COST_THRESHOLD the penalty is 0 (free zone for trivial agents).
+# At COST_PENALTY_SATURATION the penalty hits its max of 1.0.
+# SCORE_SCALE puts HMS on a [0, 100] axis so the [0, 1] penalty acts as
+# a tiebreaker that never overrides HMS differences ≥ 0.01. Test scores
+# remain raw HMS in [0, 1] — leaderboard parity.
+SCORE_SCALE = 100.0
+MIN_COST_THRESHOLD = 0.01
+COST_PENALTY_SATURATION = 1.0
 
 # Metadata fields that should reach the agent at runtime. Anything else
 # (split / domain / question_type / difficulty added by load_synth) is
@@ -261,12 +272,13 @@ class DiscoveryBenchEvaluator:
 
     def __init__(
         self,
-        cost_budget: float = DEFAULT_COST_BUDGET,
         log_dir: str | None = None,
         skip_docker_check: bool = False,
         subprocess_isolation: bool = True,
         eval_timeout: int = 600,
         apply_cost_penalty: bool = True,
+        min_cost_threshold: float = MIN_COST_THRESHOLD,
+        cost_penalty_saturation: float = COST_PENALTY_SATURATION,
     ):
         # Hard requirement: every provider key the registry references
         # must be set, even if the seed only exercises one. Evolution can
@@ -301,16 +313,16 @@ class DiscoveryBenchEvaluator:
         from model_registry import GPT_5_4_MINI as _DEFAULT_MODEL
         self._default_model = _DEFAULT_MODEL
 
-        self.cost_budget = cost_budget
         self.subprocess_isolation = subprocess_isolation
-        # Whether to multiply score by 0.9 when agent_cost_usd > cost_budget.
-        # True for training (RoboPhD's ELO competition) — the soft penalty
-        # nudges evolution toward cheaper agents. False for test paths
-        # (eval_candidate / eval_run / --eval-test-set / --eval-only /
-        # --eval-agent) — test scores are raw HMS so the agent lands at
-        # its true point on the Pareto cost-vs-score curve. cost_breached
-        # is recorded in diagnostics in both modes for the audit trail.
+        # When True (training): per-example score is SCORE_SCALE*HMS minus
+        # a bounded cost penalty (see _extract_score_and_diagnostics).
+        # When False (test paths — eval_candidate / eval_run /
+        # --eval-test-set / --eval-only / --eval-agent): score is raw HMS
+        # in [0, 1] for leaderboard parity. agent_cost_usd is recorded in
+        # diagnostics in both modes for the audit trail.
         self.apply_cost_penalty = apply_cost_penalty
+        self.min_cost_threshold = min_cost_threshold
+        self.cost_penalty_saturation = cost_penalty_saturation
 
         # Subprocess kill-after timeout MUST be less than RoboPhD's
         # eval_timeout. RoboPhD's reaper writes "EVAL TIMEOUT" and scores
@@ -355,11 +367,12 @@ class DiscoveryBenchEvaluator:
             override explicitly with `with_overrides(log_dir=...)`.
         """
         base = {
-            "cost_budget": self.cost_budget,
             "eval_timeout": self.eval_timeout,
             "apply_cost_penalty": self.apply_cost_penalty,
             "subprocess_isolation": self.subprocess_isolation,
             "skip_docker_check": True,
+            "min_cost_threshold": self.min_cost_threshold,
+            "cost_penalty_saturation": self.cost_penalty_saturation,
         }
         base.update(overrides)
         return DiscoveryBenchEvaluator(**base)
@@ -405,8 +418,9 @@ class DiscoveryBenchEvaluator:
             json.dump({
                 "candidate": candidate,
                 "example": example_dict,
-                "cost_budget": self.cost_budget,
                 "apply_cost_penalty": self.apply_cost_penalty,
+                "min_cost_threshold": self.min_cost_threshold,
+                "cost_penalty_saturation": self.cost_penalty_saturation,
             }, inf, default=str)
             inf_path = inf.name
         out_path = inf_path + ".out"
@@ -695,13 +709,21 @@ class DiscoveryBenchEvaluator:
         except Exception:
             pass
 
-        # Cost cap penalty. Applied during training (apply_cost_penalty=True)
-        # to nudge evolution toward cheaper agents; suppressed at test time
-        # so reported scores are raw HMS for the Pareto curve.
-        cost_breached = agent_cost_usd > self.cost_budget
-        cost_penalty_applied = cost_breached and self.apply_cost_penalty
-        if cost_penalty_applied:
-            score_value = score_value * COST_BREACH_PENALTY
+        # Cost penalty (training only). HMS is rescaled to [0, SCORE_SCALE]
+        # and a bounded penalty in [0, 1] is subtracted, proportional to
+        # cost above min_cost_threshold up to cost_penalty_saturation.
+        # The penalty's [0, 1] range is two orders of magnitude smaller
+        # than the score scale, so it acts as a tiebreaker and never
+        # reorders agents whose HMS differs by ≥ 1/SCORE_SCALE = 0.01.
+        # Test paths skip this — score stays raw HMS in [0, 1] for
+        # leaderboard parity.
+        if self.apply_cost_penalty:
+            cost_excess = max(0.0, agent_cost_usd - self.min_cost_threshold)
+            cost_excess_range = self.cost_penalty_saturation - self.min_cost_threshold
+            cost_penalty = min(1.0, cost_excess / cost_excess_range)
+            score_value = SCORE_SCALE * score_value - cost_penalty
+        else:
+            cost_penalty = 0.0
 
         # Track agent-only on the evaluator's running total so it matches
         # what flows into RoboPhD's eval_cost. Judge spend is captured
@@ -723,9 +745,9 @@ class DiscoveryBenchEvaluator:
         diagnostics["other_cost_usd"] = judge_cost_usd
         diagnostics["agent_cost_usd"] = agent_cost_usd
         diagnostics["judge_cost_usd"] = judge_cost_usd
-        diagnostics["cost_breached"] = cost_breached
-        diagnostics["cost_penalty_applied"] = cost_penalty_applied
-        diagnostics["cost_budget"] = self.cost_budget
+        diagnostics["cost_penalty"] = cost_penalty            # actual subtracted, [0, 1]
+        diagnostics["min_cost_threshold"] = self.min_cost_threshold
+        diagnostics["cost_penalty_saturation"] = self.cost_penalty_saturation
         diagnostics["usage"] = usage_summary
         diagnostics["agent_output"] = (
             getattr(sample_log.output, "completion", "")[:1000]

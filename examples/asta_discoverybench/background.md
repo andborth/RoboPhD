@@ -99,9 +99,23 @@ Each factor comes from a separate judge LLM call comparing the agent's hypothesi
 
 **Worked example** (illustrative — fictional): the gold says *"In arid regions, beak length correlates with seed size in ground-feeding species"*. An agent emits *"Beak length correlates with seed size in ground-feeding species"* — names the right variables and relationship, but drops the "in arid regions" scope. → `context_score=0` → `HMS=0` regardless of var/rel quality. Specifying scope is as important as naming variables.
 
-## Per-example cost cap
+## Per-example score
 
-The agent's LLM spend is capped at **$0.10 per example** (only `get_model()` calls are metered — `python_session` and `sandbox()` don't count). The budget is shared across whichever of the three models you call; spend it however you like. Exceeding the cap multiplies the example score by 0.9. Judge calls run by the scorer are evaluator-side and excluded.
+Per-example agent LLM spend (only `get_model()` calls; `python_session` and `sandbox()` don't count) is folded into the score. Cheaper agents have an edge when HMS is tied:
+
+```
+score = 100 * HMS - cost_penalty
+cost_penalty = min(1.0, max(0, agent_cost_usd - 0.01) / 0.99)
+```
+
+So:
+
+- HMS sits on a `[0, 100]` axis, `cost_penalty` on a `[0, 1]` axis. The penalty is two orders of magnitude smaller than the score, so it never reorders agents whose HMS differs by ≥ 0.01.
+- Per-example cost ≤ $0.01 → no penalty (free zone for trivial agents).
+- Cost in $0.01–$1.00 → penalty grows linearly in the excess.
+- Cost ≥ $1.00 → penalty saturated at 1.0.
+
+Judge calls run by the scorer are evaluator-side and excluded from `agent_cost_usd`.
 
 ## Diagnostics
 

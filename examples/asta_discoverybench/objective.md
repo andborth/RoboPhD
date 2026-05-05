@@ -1,1 +1,3 @@
-Evolve a DiscoveryBench agent that, given a research question and one or more data files, produces a hypothesis describing the relationship between variables in the data and the analysis workflow that supports it. Maximize the per-example score on held-out queries; cost matters secondarily.
+Evolve a DiscoveryBench agent that, given a research question and one or more data files, produces a hypothesis describing the relationship between variables in the data and the analysis workflow that supports it.
+
+Your primary goal is simple: maximize the per-example score on held-out queries. The scoring function (above in Domain Background) is designed to encode this objective directly — HMS is the dominant signal and cost acts only as a tiebreaker between agents at the same HMS. Don't worry at all about per-example costs below $0.01 — those sit in the free zone with no penalty. Above $0.01, feel free to go as high as you want if you see an opportunity to get a higher HMS.

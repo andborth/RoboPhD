@@ -157,8 +157,7 @@ def _write_test_results(
             "agent_cost_usd": agent_c,
             "judge_cost_usd": judge_c,
             "total_cost_usd": agent_c + judge_c,
-            "cost_breached": diag.get("cost_breached"),
-            "cost_penalty_applied": diag.get("cost_penalty_applied"),
+            "cost_penalty": diag.get("cost_penalty"),
             "split": diag.get("split"),
             "context_score": diag.get("context_score"),
             "var_f1": diag.get("var_f1"),
@@ -205,16 +204,6 @@ def parse_args():
                    help="Override the default iteration cap (15)")
     p.add_argument("--evaluation-budget", type=int, default=None,
                    help="Override the default evaluation budget (iter-bounded)")
-
-    p.add_argument("--cost-budget", type=float, default=0.10,
-                   help="Per-example AGENT cost cap. During training (RoboPhD "
-                        "ELO), score *= 0.9 if agent spend exceeds the cap; at "
-                        "test time the score is raw HMS regardless of breach. "
-                        "Judge-LLM cost (~$0.015-0.020/sample, 5 fixed gpt-4o "
-                        "calls) is tracked separately as `other_cost` — it's "
-                        "kept out of the optimization signal and excluded from "
-                        "the cap. `eval_cost` in reports is agent-only and "
-                        "matches the cap-relevant number.")
 
     p.add_argument("--max-workers", type=int, default=12,
                    help="Parallel eval workers. Each evaluation runs in its "
@@ -269,7 +258,6 @@ def main():
     # so any future constructor field added to DiscoveryBenchEvaluator
     # automatically propagates from training to test config.
     evaluator = DiscoveryBenchEvaluator(
-        cost_budget=args.cost_budget,
         eval_timeout=EVAL_TIMEOUT,
         apply_cost_penalty=True,  # training: penalty fires
     )
