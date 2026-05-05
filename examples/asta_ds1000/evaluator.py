@@ -22,6 +22,7 @@ Two deliberate properties:
    scorer (which runs after the solver) sees the canonical metadata.
 """
 
+import base64
 import importlib.util
 import io
 import json
@@ -40,10 +41,12 @@ from typing import Any
 
 from inspect_ai import Task, eval as inspect_eval
 from inspect_ai.dataset import MemoryDataset, Sample
+from inspect_ai.scorer import Score, Scorer, accuracy, scorer, stderr
 from inspect_ai.solver import solver, use_tools
+from inspect_ai.util import sandbox
 
 from astabench.tools import python_session
-from inspect_evals.ds1000.ds1000 import ds1000_scorer
+from inspect_evals.ds1000.ds1000 import ds1000_scorer, postprocess
 
 logger = logging.getLogger(__name__)
 
@@ -229,6 +232,118 @@ def _wrap_with_metadata_scrub(inner_solver):
 
 
 # ---------------------------------------------------------------------------
+# Diagnostic-artifact-capturing scorer wrapper
+# ---------------------------------------------------------------------------
+
+# Probe that re-runs the agent's code and the reference's generate_test_case(1)
+# in a fresh namespace so we can capture both `result` values for side-by-side
+# comparison. Mirrors what test_execution does internally but skips the assert,
+# so we get the agent's actual output even on logic mismatches.
+_VALUE_PROBE_TEMPLATE = """
+{code_context}
+solution = {solution!r}
+_test_input, _expected = generate_test_case(1)
+_actual = '<not captured>'
+try:
+    _code = exec_context.replace('[insert]', solution)
+    _env = {{'test_input': _test_input}}
+    exec(_code, _env)
+    _actual = _env.get('result')
+except BaseException as _e:
+    _actual = f'<exec failed: {{type(_e).__name__}}: {{_e}}>'
+print('===EXPECTED===')
+print(repr(_expected)[:4000])
+print('===ACTUAL===')
+print(repr(_actual)[:4000])
+"""
+
+
+@scorer(metrics=[accuracy(), stderr()])
+def _ds1000_scorer_with_artifacts() -> Scorer:
+    """Wrap the canonical ds1000_scorer to also capture diagnostic artifacts.
+
+    Two pieces, both best-effort (any failure is silent):
+
+    1. **Matplotlib PNG capture**: read /ds1000/output.png (agent's render)
+       and /ds1000/ans.png (reference render) as bytes; base64-encode and
+       stash in Score.metadata under '__actual_png_b64' / '__expected_png_b64'.
+       The double-underscore prefix marks them for parent-side decoding by
+       Ds1000Evaluator._write_png_artifacts (binary files don't fit the
+       diagnostic-key-as-string convention).
+
+    2. **Value-based capture (non-Matplotlib)**: run a probe that mirrors
+       test_execution but captures `result` instead of asserting. Stashes
+       repr(actual) and repr(expected) (each capped to 4KB) in Score.metadata
+       under 'actual_repr' / 'expected_repr'.
+
+    The value probe runs even on Matplotlib problems, but `expected_result`
+    is None for them (image-based comparison) — useful as a confirmation
+    signal.
+    """
+    inner = ds1000_scorer()
+
+    async def score(state, target):
+        result = await inner(state, target)
+        artifacts: dict[str, Any] = {}
+        sb = sandbox()
+
+        # 1. Matplotlib PNG capture. Silent miss for non-Matplotlib problems
+        # (file not found is the dominant outcome there).
+        for src_name, dst_key in (
+            ("output.png", "__actual_png_b64"),
+            ("ans.png", "__expected_png_b64"),
+        ):
+            try:
+                data = await sb.read_file(f"/ds1000/{src_name}", text=False)
+                if data:
+                    artifacts[dst_key] = base64.b64encode(data).decode("ascii")
+            except Exception:
+                pass
+
+        # 2. Value-based capture via probe. We pull code_context from
+        # state.metadata (which the metadata-scrubbing solver wrapper has
+        # already restored by the time the scorer runs).
+        cc = state.metadata.get("code_context", "") if state.metadata else ""
+        if cc and "exec_context" in cc and "generate_test_case" in cc:
+            try:
+                solution = postprocess(state.output.completion or "")
+                probe = _VALUE_PROBE_TEMPLATE.format(
+                    code_context=cc,
+                    solution=solution,
+                )
+                probe_path = f"/ds1000/_probe_{state.sample_id}.py"
+                await sb.write_file(probe_path, probe)
+                probe_res = await sb.exec(
+                    ["python", probe_path], cwd="/ds1000", timeout=30
+                )
+                if probe_res and probe_res.success and probe_res.stdout:
+                    out = probe_res.stdout
+                    if "===EXPECTED===" in out and "===ACTUAL===" in out:
+                        expected_part = (
+                            out.split("===EXPECTED===", 1)[1]
+                            .split("===ACTUAL===", 1)[0]
+                            .strip()
+                        )
+                        actual_part = out.split("===ACTUAL===", 1)[1].strip()
+                        if expected_part:
+                            artifacts["expected_repr"] = expected_part[:4000]
+                        if actual_part:
+                            artifacts["actual_repr"] = actual_part[:4000]
+            except Exception:
+                pass
+
+        merged = {**(result.metadata or {}), **artifacts}
+        return Score(
+            value=result.value,
+            answer=result.answer,
+            explanation=result.explanation,
+            metadata=merged,
+        )
+
+    return score
+
+
+# ---------------------------------------------------------------------------
 # Sandbox compose path
 # ---------------------------------------------------------------------------
 
@@ -314,8 +429,34 @@ class Ds1000Evaluator:
 
     def __call__(self, candidate: dict, example, *, problem_dir=None) -> tuple[float, dict]:
         if self.subprocess_isolation:
-            return self._evaluate_via_subprocess(candidate, example)
-        return self.evaluate(candidate, example, problem_dir=problem_dir)
+            score, diagnostics = self._evaluate_via_subprocess(candidate, example)
+        else:
+            score, diagnostics = self.evaluate(candidate, example, problem_dir=problem_dir)
+        # Decode any PNG artifacts (Matplotlib problems) and write to
+        # problem_dir as binary files. Strips the b64 keys regardless,
+        # since they don't fit ExternalEvaluatorDomain's str-only file
+        # convention and would otherwise persist as huge text blobs.
+        self._write_png_artifacts(diagnostics, problem_dir)
+        return score, diagnostics
+
+    @staticmethod
+    def _write_png_artifacts(diagnostics: dict, problem_dir: Any) -> None:
+        """Pop PNG b64 entries from diagnostics; write decoded bytes to
+        problem_dir/{actual,expected}_output.png if problem_dir is set.
+        Always pops the keys (so they don't bloat persisted diagnostics)
+        even when problem_dir is None.
+        """
+        for src_key, dst_name in (
+            ("__actual_png_b64", "actual_output.png"),
+            ("__expected_png_b64", "expected_output.png"),
+        ):
+            b64_data = diagnostics.pop(src_key, None)
+            if not b64_data or not problem_dir:
+                continue
+            try:
+                Path(problem_dir, dst_name).write_bytes(base64.b64decode(b64_data))
+            except Exception as e:
+                logger.warning("failed to write %s to %s: %s", dst_name, problem_dir, e)
 
     def _evaluate_via_subprocess(self, candidate: dict, example) -> tuple[float, dict]:
         """Run one evaluation in a fresh Python subprocess.
@@ -412,7 +553,7 @@ class Ds1000Evaluator:
             dataset=MemoryDataset([example]),
             solver=wrapped_solver,
             setup=[use_tools(python_session())],
-            scorer=ds1000_scorer(),
+            scorer=_ds1000_scorer_with_artifacts(),
             sandbox=("docker", _sandbox_compose_path()),
         )
 
@@ -474,6 +615,7 @@ class Ds1000Evaluator:
         scores = getattr(sample_log, "scores", None) or {}
         score_value = 0.0
         score_explanation = ""
+        score_metadata: dict[str, Any] = {}
         for sc in scores.values():
             v = getattr(sc, "value", None)
             if v == SCORE_C:
@@ -488,12 +630,25 @@ class Ds1000Evaluator:
                 )
                 score_value = 0.0
             score_explanation = getattr(sc, "explanation", "") or ""
+            score_metadata = getattr(sc, "metadata", None) or {}
             break  # single scorer; first entry wins
 
         # The scorer's explanation contains the test program's stdout
         # and stderr — most actionable signal for diagnosing failures.
         if score_explanation:
             diagnostics["test_result.md"] = str(score_explanation)
+
+        # Diagnostic artifacts from the wrapped scorer. expected/actual
+        # repr go through the standard string-diagnostic-as-file path;
+        # PNG b64 keys (double-underscore prefix) are decoded and written
+        # as binary by __call__'s _write_png_artifacts step before returning.
+        if score_metadata.get("expected_repr"):
+            diagnostics["expected_output.md"] = str(score_metadata["expected_repr"])
+        if score_metadata.get("actual_repr"):
+            diagnostics["actual_output.md"] = str(score_metadata["actual_repr"])
+        for b64_key in ("__actual_png_b64", "__expected_png_b64"):
+            if score_metadata.get(b64_key):
+                diagnostics[b64_key] = score_metadata[b64_key]
 
         # Agent's emitted completion (verbatim, before postprocess).
         completion = ""
