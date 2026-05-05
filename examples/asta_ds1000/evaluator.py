@@ -79,12 +79,18 @@ def _check_upstream_invariants() -> None:
     Brittle by design — a one-time startup warning beats silent scoring
     bugs when the upstream package version-bumps.
 
-    Two assumptions:
+    Three assumptions:
       1. The scorer returns string `"C"` (correct) or `"I"` (incorrect).
          Source: inspect_evals/ds1000/ds1000.py:107.
       2. The scorer reads `state.metadata["code_context"]` to construct
          the test program (line 89). Our metadata-scrubbing wrapper
          depends on this — we restore the key before the scorer runs.
+      3. `postprocess(text) -> str` exists with the standard signature.
+         Our value-capture probe imports it (line 47) and calls it on
+         the agent's completion to extract the code body the scorer
+         would see. A signature change (e.g., adding required kwargs)
+         would silently break the probe path; renames would fail at
+         import time, which is loud enough.
     """
     try:
         import inspect as _inspect
@@ -107,6 +113,12 @@ def _check_upstream_invariants() -> None:
                 "Upstream inspect_evals.ds1000 scorer no longer reads "
                 "state.metadata['code_context'] — metadata scrubbing "
                 "wrapper assumptions are stale."
+            )
+        if "def postprocess(code: str)" not in src:
+            logger.warning(
+                "Upstream inspect_evals.ds1000.postprocess no longer has "
+                "signature `(code: str) -> str` — value-capture probe "
+                "may misformat solutions."
             )
     except Exception:
         # Source inspection is best-effort.
@@ -235,27 +247,33 @@ def _wrap_with_metadata_scrub(inner_solver):
 # Diagnostic-artifact-capturing scorer wrapper
 # ---------------------------------------------------------------------------
 
-# Probe that re-runs the agent's code and the reference's generate_test_case(1)
-# in a fresh namespace so we can capture both `result` values for side-by-side
-# comparison. Mirrors what test_execution does internally but skips the assert,
-# so we get the agent's actual output even on logic mismatches.
-_VALUE_PROBE_TEMPLATE = """
-{code_context}
-solution = {solution!r}
+# Probe body (everything after `solution = <repr>`). Static — built by
+# concatenation so we never run str.format / % over arbitrary Python.
+# code_context can legitimately contain f-strings, dict literals, and
+# format-spec patterns ({n:>5}, {x!r}); using .format() to substitute
+# the template would raise KeyError on those and the outer try/except
+# would swallow it, dropping the artifact silently.
+_VALUE_PROBE_BODY = """
 _test_input, _expected = generate_test_case(1)
 _actual = '<not captured>'
 try:
     _code = exec_context.replace('[insert]', solution)
-    _env = {{'test_input': _test_input}}
+    _env = {'test_input': _test_input}
     exec(_code, _env)
     _actual = _env.get('result')
 except BaseException as _e:
-    _actual = f'<exec failed: {{type(_e).__name__}}: {{_e}}>'
+    _actual = f'<exec failed: {type(_e).__name__}: {_e}>'
 print('===EXPECTED===')
 print(repr(_expected)[:4000])
 print('===ACTUAL===')
 print(repr(_actual)[:4000])
 """
+
+
+# Tracks whether we've already logged a probe-execution failure
+# (issue 3 mitigation: silent-fail bucket gets one warning per process,
+# not per evaluation).
+_probe_failure_logged = False
 
 
 @scorer(metrics=[accuracy(), stderr()])
@@ -304,13 +322,24 @@ def _ds1000_scorer_with_artifacts() -> Scorer:
         # state.metadata (which the metadata-scrubbing solver wrapper has
         # already restored by the time the scorer runs).
         cc = state.metadata.get("code_context", "") if state.metadata else ""
-        if cc and "exec_context" in cc and "generate_test_case" in cc:
+        if (
+            cc
+            and "exec_context" in cc
+            and "generate_test_case" in cc
+            and "[insert]" in cc
+        ):
+            global _probe_failure_logged
             try:
                 solution = postprocess(state.output.completion or "")
-                probe = _VALUE_PROBE_TEMPLATE.format(
-                    code_context=cc,
-                    solution=solution,
-                )
+                # Build by concatenation — never .format() over `cc` because
+                # arbitrary Python source has braces that would be
+                # misinterpreted as format specs.
+                probe = cc + "\nsolution = " + repr(solution) + _VALUE_PROBE_BODY
+                # Note: probe file persists in the sandbox after this scoring
+                # pass. Bounded harmless since each sample gets a fresh
+                # container and the container is torn down at sample end.
+                # If container reuse is ever introduced, add an explicit
+                # cleanup after `sb.exec` returns.
                 probe_path = f"/ds1000/_probe_{state.sample_id}.py"
                 await sb.write_file(probe_path, probe)
                 probe_res = await sb.exec(
@@ -329,8 +358,26 @@ def _ds1000_scorer_with_artifacts() -> Scorer:
                             artifacts["expected_repr"] = expected_part[:4000]
                         if actual_part:
                             artifacts["actual_repr"] = actual_part[:4000]
-            except Exception:
-                pass
+                elif not _probe_failure_logged:
+                    _probe_failure_logged = True
+                    logger.warning(
+                        "Value probe returned non-success or empty stdout for "
+                        "sample %s. Subsequent failures will be silent. "
+                        "Stderr: %s",
+                        state.sample_id,
+                        (getattr(probe_res, "stderr", "") or "")[:500],
+                    )
+            except Exception as e:
+                if not _probe_failure_logged:
+                    _probe_failure_logged = True
+                    logger.warning(
+                        "Value probe raised %s for sample %s. Subsequent "
+                        "failures will be silent. Probable causes: upstream "
+                        "DS-1000 renamed exec_context/generate_test_case, or "
+                        "code_context structure changed.",
+                        type(e).__name__,
+                        state.sample_id,
+                    )
 
         merged = {**(result.metadata or {}), **artifacts}
         return Score(
