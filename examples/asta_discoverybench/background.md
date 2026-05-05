@@ -105,7 +105,7 @@ Per-example agent LLM spend (only `get_model()` calls; `python_session` and `san
 
 ```
 score = 100 * HMS - cost_penalty
-cost_penalty = min(1.0, max(0, agent_cost_usd - 0.01) / 0.99)
+cost_penalty = min(1.0, max(0, agent_cost_usd - 0.01) / ($1.00 - $0.01))
 ```
 
 So:

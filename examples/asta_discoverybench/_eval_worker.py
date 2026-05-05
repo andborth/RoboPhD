@@ -54,21 +54,15 @@ def main() -> int:
         # Import after argv parsing so usage errors don't pay the import cost.
         from evaluator import DiscoveryBenchEvaluator
 
-        # Use the evaluator's defaults when the parent didn't provide a key
-        # (compatibility with older parents that haven't been updated to
-        # send min_cost_threshold / cost_penalty_saturation).
-        evaluator_kwargs = {
+        evaluator = DiscoveryBenchEvaluator(
             # Parent already pre-flighted Docker; don't re-check per worker.
-            "skip_docker_check": True,
+            skip_docker_check=True,
             # We ARE the subprocess — don't recurse.
-            "subprocess_isolation": False,
-            "apply_cost_penalty": params.get("apply_cost_penalty", True),
-        }
-        if "min_cost_threshold" in params:
-            evaluator_kwargs["min_cost_threshold"] = params["min_cost_threshold"]
-        if "cost_penalty_saturation" in params:
-            evaluator_kwargs["cost_penalty_saturation"] = params["cost_penalty_saturation"]
-        evaluator = DiscoveryBenchEvaluator(**evaluator_kwargs)
+            subprocess_isolation=False,
+            apply_cost_penalty=params["apply_cost_penalty"],
+            min_cost_threshold=params["min_cost_threshold"],
+            cost_penalty_saturation=params["cost_penalty_saturation"],
+        )
         score, diagnostics = evaluator.evaluate(params["candidate"], params["example"])
     except Exception:
         traceback.print_exc(file=sys.stderr)

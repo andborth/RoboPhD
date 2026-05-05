@@ -321,6 +321,21 @@ class DiscoveryBenchEvaluator:
         # in [0, 1] for leaderboard parity. agent_cost_usd is recorded in
         # diagnostics in both modes for the audit trail.
         self.apply_cost_penalty = apply_cost_penalty
+        # Catch the misconfiguration class up-front: equal endpoints would
+        # divide by zero when computing cost_penalty; crossed endpoints
+        # would give a negative ramp width and produce huge penalties for
+        # tiny costs (sign-flip). Negative threshold would mean every
+        # agent pays a penalty — likely not intended either.
+        if min_cost_threshold < 0:
+            raise ValueError(
+                f"min_cost_threshold must be >= 0; got {min_cost_threshold}"
+            )
+        if min_cost_threshold >= cost_penalty_saturation:
+            raise ValueError(
+                f"min_cost_threshold ({min_cost_threshold}) must be strictly "
+                f"less than cost_penalty_saturation ({cost_penalty_saturation}); "
+                f"otherwise the cost-penalty ramp has zero or negative width"
+            )
         self.min_cost_threshold = min_cost_threshold
         self.cost_penalty_saturation = cost_penalty_saturation
 
