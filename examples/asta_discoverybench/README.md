@@ -55,6 +55,8 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 export GOOGLE_API_KEY="..."
 ```
 
+Note: `model_registry.py` resolves all three handles eagerly at import time. The Anthropic provider in particular validates its key at `get_model()` construction, so any ad-hoc script that does `from model_registry import GPT_5_4_MINI` (or even `import model_registry`) needs all three keys set in the shell — not just the one for the model you intend to call.
+
 `ASTA_TOOL_KEY` is **not** required for DiscoveryBench (no Asta MCP tools).
 
 Verify the dataset half:
