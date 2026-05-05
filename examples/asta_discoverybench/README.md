@@ -97,6 +97,15 @@ Independent RNGs mean changing `--num-synth-train` doesn't perturb the test samp
 
 `synth/test` (200 samples) is upstream's held-out competition set with `true_hypothesis` removed — it can't be scored locally. `load_synth("test")` raises rather than returning empty. Use `synth/dev` (153 scoreable) if you want a held-out synth signal.
 
+### Real vs synth distributions
+
+`real/` and `synth/` differ structurally on every surface metric we've measured — query length, conjunction-list density, templated-opener share, dataset width, sample-ID format, dataset/theme diversity. `synth/train` and `synth/dev` are statistically indistinguishable from each other except for theme vocabulary; both differ from `real/test`. Two examples to ground the contrast:
+
+- *real/test, archaeology|8|0*: "In which millenium did amber had the highest value and in what time interval did it peak?"
+- *synth/dev, ancient-civilizations_0_2__m2__q50*: "Does the cultural development index in ancient civilizations display a statistically significant correlation with each of the following variables: government structure complexity, trade intensity ratio, educational reach, societal values towards science, external trade level, social cohesion index, external conflict presence?"
+
+The leaderboard scores on `real/test`, so agent performance on synth-only evaluation is not a substitute for performance on the real splits. See [real_vs_synth.md](real_vs_synth.md) for full metric tables, sample queries from every real dataset, and the synth metadata-variant structure.
+
 ## Running
 
 ```bash
