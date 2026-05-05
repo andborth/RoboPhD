@@ -293,6 +293,14 @@ class DiscoveryBenchEvaluator:
         if not skip_docker_check:
             _check_docker_available()
 
+        # Resolve registry handles at construction time (after the env-var
+        # check so the friendly error fires first if keys are missing).
+        # Storing self._default_model surfaces any registry-resolution
+        # failure here rather than waiting for the first .generate()
+        # inside _run_eval.
+        from model_registry import GPT_5_4_MINI as _DEFAULT_MODEL
+        self._default_model = _DEFAULT_MODEL
+
         self.cost_budget = cost_budget
         self.subprocess_isolation = subprocess_isolation
         # Whether to multiply score by 0.9 when agent_cost_usd > cost_budget.
@@ -501,15 +509,14 @@ class DiscoveryBenchEvaluator:
         # bare get_model() calls inside the solver). Sanctioned agents
         # always go through the named handles in model_registry.py and
         # never call bare get_model(), so this default is never consulted
-        # for sanctioned agents — but Inspect still requires it.
-        from model_registry import GPT_5_4_MINI as _DEFAULT_MODEL
-
+        # for sanctioned agents — but Inspect still requires it. Resolved
+        # in __init__ as self._default_model.
         captured = io.StringIO()
         try:
             with redirect_stdout(captured):
                 logs = inspect_eval(
                     task,
-                    model=_DEFAULT_MODEL,
+                    model=self._default_model,
                     display="none",
                     log_dir=self._log_dir,
                     log_format="json",

@@ -39,23 +39,23 @@ On the **first** evaluator run, AstaBench's image is pulled (~2–2.5 GB; one-ti
 export HF_ACCESS_TOKEN="hf_..."
 export HF_TOKEN="hf_..."
 
-# OpenAI: powers gpt-5.4-mini (one of three available solver models) and
-# the scorer's gpt-4o-2024-08-06 judge. Must be set.
+# All three solver-provider keys are required at evaluator startup,
+# even for seed-only smoke tests. Evolution can produce an agent that
+# uses any of the three models at any iteration; failing loudly at
+# startup beats discovering a missing key as a 401 mid-run.
+
+# OpenAI: powers gpt-5.4-mini (one of three solver models) and the
+# scorer's gpt-4o-2024-08-06 judge.
 export OPENAI_API_KEY="sk-..."
 
-# Anthropic: powers claude-haiku-4-5-20251001 (a second available solver
-# model). Required if any evolved agent calls Claude; the seed only uses
-# OpenAI, so for seed-only smoke tests this is optional.
+# Anthropic: powers claude-haiku-4-5-20251001.
 export ANTHROPIC_API_KEY="sk-ant-..."
 
-# Google AI Studio: powers gemini-3.1-flash-lite-preview (the third
-# available solver model). Same conditional requirement as Anthropic.
+# Google AI Studio: powers gemini-3.1-flash-lite-preview.
 export GOOGLE_API_KEY="..."
 ```
 
 `ASTA_TOOL_KEY` is **not** required for DiscoveryBench (no Asta MCP tools).
-
-Evolved agents may pick any of the three models (or mix across calls) per the registry documented in `background.md`. To let evolution explore that space freely, set all three provider keys before running.
 
 Verify the dataset half:
 ```bash
