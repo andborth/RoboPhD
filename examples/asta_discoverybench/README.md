@@ -39,12 +39,23 @@ On the **first** evaluator run, AstaBench's image is pulled (~2–2.5 GB; one-ti
 export HF_ACCESS_TOKEN="hf_..."
 export HF_TOKEN="hf_..."
 
-# OpenAI: powers both the solver model (gpt-5.4-mini default) and the
-# scorer's gpt-4o-2024-08-06 judge. Must be set.
+# OpenAI: powers gpt-5.4-mini (one of three available solver models) and
+# the scorer's gpt-4o-2024-08-06 judge. Must be set.
 export OPENAI_API_KEY="sk-..."
+
+# Anthropic: powers claude-haiku-4-5-20251001 (a second available solver
+# model). Required if any evolved agent calls Claude; the seed only uses
+# OpenAI, so for seed-only smoke tests this is optional.
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Google AI Studio: powers gemini-3.1-flash-lite-preview (the third
+# available solver model). Same conditional requirement as Anthropic.
+export GOOGLE_API_KEY="..."
 ```
 
 `ASTA_TOOL_KEY` is **not** required for DiscoveryBench (no Asta MCP tools).
+
+Evolved agents may pick any of the three models (or mix across calls) per the registry documented in `background.md`. To let evolution explore that space freely, set all three provider keys before running.
 
 Verify the dataset half:
 ```bash
@@ -104,12 +115,9 @@ python examples/asta_discoverybench/main.py --eval-only --resume <prior-run-dir>
 python examples/asta_discoverybench/main.py --eval-only --resume <prior-run-dir> --phase synth-holdout
 ```
 
-Default model: `openai/gpt-5.4-mini`. Default per-example agent cost cap: `$0.10` (score multiplied by 0.9 if breached; judge cost excluded).
+The seed agent calls `GPT_5_4_MINI` from `model_registry.py`. Evolved agents may pick from any of the three handles documented in `background.md` (`GPT_5_4_MINI`, `CLAUDE_HAIKU_4_5`, `GEMINI_3_1_FLASH_LITE_PREVIEW`). Default per-example agent cost cap: `$0.10` (score multiplied by 0.9 if breached; judge cost excluded).
 
 ```bash
-# Override model:
-python examples/asta_discoverybench/main.py --model openai/gpt-5
-
 # Override cost cap:
 python examples/asta_discoverybench/main.py --cost-budget 0.20
 
@@ -142,6 +150,7 @@ The intent: evolution is guided by the soft penalty toward better cost disciplin
 
 - `main.py` — `optimize_anything()` entry point; `--phase {experiment,final}` swaps the test set, `--num-synth-train N` controls synth padding
 - `evaluator.py` — `DiscoveryBenchEvaluator`; runs `inspect.eval()` on a 1-sample dataset per evaluation, attaches Docker sandbox + `python_session`, splits cost into agent vs judge
+- `model_registry.py` — pre-resolved `Model` handles (`GPT_5_4_MINI`, `CLAUDE_HAIKU_4_5`, `GEMINI_3_1_FLASH_LITE_PREVIEW`) imported by the seed and any evolved agent. Lives outside the candidate's `file_mapping` so evolution can use the handles but can't substitute different model strings.
 - `load_synth.py` — fetches DiscoveryBench's public synth split from GitHub on first use, normalizes the column-metadata path to match real
 - `seeds/baseline/agent.py` — minimal `@solver` factory exported as `make_solver`. Demonstrates file copy, stateful Python, Inspect-tracked LLM, JSON output. Scores near zero by design.
 - `objective.md` — what evolution should optimize

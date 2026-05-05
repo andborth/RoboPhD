@@ -19,9 +19,15 @@ background.md for the full surface.
 
 import json
 
-from inspect_ai.model import GenerateConfig, get_model
+from inspect_ai.model import GenerateConfig
 from inspect_ai.solver import Generate, TaskState, solver
 from inspect_ai.tool import ToolDef
+
+# Pre-resolved Model handles. Pick one per call, or mix across calls.
+# The $0.10 per-example budget is shared across whichever you use.
+# See model_registry.py for the full list (CLAUDE_HAIKU_4_5,
+# GEMINI_3_1_FLASH_LITE_PREVIEW).
+from model_registry import GPT_5_4_MINI
 
 
 def _get_tool(state: TaskState, name: str):
@@ -88,7 +94,7 @@ def make_solver():
             f"any supporting numeric evidence. The workflow describes the "
             f"analysis steps that support the hypothesis."
         )
-        resp = await get_model().generate(prompt, config=GenerateConfig(temperature=1.0))
+        resp = await GPT_5_4_MINI.generate(prompt, config=GenerateConfig(temperature=1.0))
         try:
             output = json.loads(_strip_code_fence(resp.completion))
             assert isinstance(output, dict)

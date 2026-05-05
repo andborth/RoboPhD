@@ -206,8 +206,6 @@ def parse_args():
     p.add_argument("--evaluation-budget", type=int, default=None,
                    help="Override the default evaluation budget (iter-bounded)")
 
-    p.add_argument("--model", default="openai/gpt-5.4-mini",
-                   help="Inspect model string for the candidate solver's LLM calls")
     p.add_argument("--cost-budget", type=float, default=0.10,
                    help="Per-example AGENT cost cap. During training (RoboPhD "
                         "ELO), score *= 0.9 if agent spend exceeds the cap; at "
@@ -271,7 +269,6 @@ def main():
     # so any future constructor field added to DiscoveryBenchEvaluator
     # automatically propagates from training to test config.
     evaluator = DiscoveryBenchEvaluator(
-        model=args.model,
         cost_budget=args.cost_budget,
         eval_timeout=EVAL_TIMEOUT,
         apply_cost_penalty=True,  # training: penalty fires

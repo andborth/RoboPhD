@@ -67,17 +67,23 @@ Always copy files from `state.files` into `/workspace/` before reading them in `
 
 ## LLM calls
 
-Use Inspect's tracked model API so usage flows into the `.eval` log:
+Three model handles are available, imported from `model_registry`:
+
+- `GPT_5_4_MINI`
+- `CLAUDE_HAIKU_4_5`
+- `GEMINI_3_1_FLASH_LITE_PREVIEW`
 
 ```python
-from inspect_ai.model import GenerateConfig, get_model
-resp = await get_model().generate("Your prompt here", config=GenerateConfig(temperature=1.0))
+from inspect_ai.model import GenerateConfig
+from model_registry import GPT_5_4_MINI, CLAUDE_HAIKU_4_5, GEMINI_3_1_FLASH_LITE_PREVIEW
+
+resp = await GPT_5_4_MINI.generate(
+    "Your prompt here", config=GenerateConfig(temperature=1.0)
+)
 text = resp.completion
 ```
 
-`config` is optional; pass a `GenerateConfig` to set sampling parameters such as `temperature`. See `inspect_ai.model.GenerateConfig` for the full set.
-
-The configured model (currently **GPT-5.4 Mini**) is the one returned by a bare `get_model()` call — no arguments. Don't pass a model string to `get_model()` and don't import `openai` / `anthropic` / `litellm` directly. All LLM calls must go through `get_model()` so usage flows into the Inspect tracker and cost is reported correctly.
+Use one of these when you want to make an LLM call. You can decide to use only one of these models, or you can mix them across calls. `config` is optional; pass a `GenerateConfig` to set sampling parameters such as `temperature`. See `inspect_ai.model.GenerateConfig` for the full set. All LLM calls must go through one of the three handles above.
 
 ## Scoring (Hierarchical Matching Score)
 
@@ -95,7 +101,7 @@ Each factor comes from a separate judge LLM call comparing the agent's hypothesi
 
 ## Per-example cost cap
 
-The agent's LLM spend is capped at **$0.10 per example** (only `get_model()` calls are metered — `python_session` and `sandbox()` don't count). Exceeding the cap multiplies the example score by 0.9. Judge calls run by the scorer are evaluator-side and excluded.
+The agent's LLM spend is capped at **$0.10 per example** (only `get_model()` calls are metered — `python_session` and `sandbox()` don't count). The budget is shared across whichever of the three models you call; spend it however you like. Exceeding the cap multiplies the example score by 0.9. Judge calls run by the scorer are evaluator-side and excluded.
 
 ## Diagnostics
 

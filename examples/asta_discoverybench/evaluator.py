@@ -261,7 +261,6 @@ class DiscoveryBenchEvaluator:
 
     def __init__(
         self,
-        model: str = "openai/gpt-5.4-mini",
         cost_budget: float = DEFAULT_COST_BUDGET,
         log_dir: str | None = None,
         skip_docker_check: bool = False,
@@ -269,17 +268,31 @@ class DiscoveryBenchEvaluator:
         eval_timeout: int = 600,
         apply_cost_penalty: bool = True,
     ):
-        if not os.environ.get("OPENAI_API_KEY"):
+        # Hard requirement: every provider key the registry references
+        # must be set, even if the seed only exercises one. Evolution can
+        # produce an agent that calls Claude or Gemini at any iteration,
+        # and the failure mode if the key is missing is a 401 mid-run
+        # (worst time to discover the gap). Fail loudly at startup
+        # instead.
+        missing = [k for k in (
+            "OPENAI_API_KEY",       # gpt-5.4-mini + gpt-4o-2024-08-06 judge
+            "ANTHROPIC_API_KEY",    # claude-haiku-4-5-20251001
+            "GOOGLE_API_KEY",       # gemini-3.1-flash-lite-preview
+        ) if not os.environ.get(k)]
+        if missing:
             raise RuntimeError(
-                "OPENAI_API_KEY is not set. The DiscoveryBench scorer judges "
-                "hypotheses with gpt-4o-2024-08-06, and the default solver "
-                "model is GPT-5.4 Mini — both go through OpenAI. Set the env "
-                "var before running."
+                f"Missing required env vars: {', '.join(missing)}. "
+                f"DiscoveryBench evolution may pick any of three solver "
+                f"models (gpt-5.4-mini, claude-haiku-4-5-20251001, "
+                f"gemini-3.1-flash-lite-preview); all three provider keys "
+                f"must be set before running, or evolution will fail "
+                f"mid-run when it produces an agent that uses a model "
+                f"with no key configured. The DiscoveryBench scorer also "
+                f"requires OpenAI for its gpt-4o-2024-08-06 judge."
             )
         if not skip_docker_check:
             _check_docker_available()
 
-        self.model = model
         self.cost_budget = cost_budget
         self.subprocess_isolation = subprocess_isolation
         # Whether to multiply score by 0.9 when agent_cost_usd > cost_budget.
@@ -334,7 +347,6 @@ class DiscoveryBenchEvaluator:
             override explicitly with `with_overrides(log_dir=...)`.
         """
         base = {
-            "model": self.model,
             "cost_budget": self.cost_budget,
             "eval_timeout": self.eval_timeout,
             "apply_cost_penalty": self.apply_cost_penalty,
@@ -385,7 +397,6 @@ class DiscoveryBenchEvaluator:
             json.dump({
                 "candidate": candidate,
                 "example": example_dict,
-                "model": self.model,
                 "cost_budget": self.cost_budget,
                 "apply_cost_penalty": self.apply_cost_penalty,
             }, inf, default=str)
@@ -486,12 +497,19 @@ class DiscoveryBenchEvaluator:
             sandbox=("docker", _sandbox_compose_path()),
         )
 
+        # inspect.eval requires a `model` arg (used as the default for any
+        # bare get_model() calls inside the solver). Sanctioned agents
+        # always go through the named handles in model_registry.py and
+        # never call bare get_model(), so this default is never consulted
+        # for sanctioned agents — but Inspect still requires it.
+        from model_registry import GPT_5_4_MINI as _DEFAULT_MODEL
+
         captured = io.StringIO()
         try:
             with redirect_stdout(captured):
                 logs = inspect_eval(
                     task,
-                    model=self.model,
+                    model=_DEFAULT_MODEL,
                     display="none",
                     log_dir=self._log_dir,
                     log_format="json",

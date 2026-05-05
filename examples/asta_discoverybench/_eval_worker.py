@@ -14,8 +14,8 @@ Protocol:
 Input JSON shape:
   {"candidate": {"agent.py": "..."},
    "example": {<Sample.model_dump()>},
-   "model": "openai/gpt-5.4-mini",
-   "cost_budget": 0.10}
+   "cost_budget": 0.10,
+   "apply_cost_penalty": true}
 
 Output JSON shape:
   {"score": <float>, "diagnostics": <dict>}
@@ -54,7 +54,6 @@ def main() -> int:
         from evaluator import DiscoveryBenchEvaluator
 
         evaluator = DiscoveryBenchEvaluator(
-            model=params["model"],
             cost_budget=params["cost_budget"],
             # Parent already pre-flighted Docker; don't re-check per worker.
             skip_docker_check=True,
