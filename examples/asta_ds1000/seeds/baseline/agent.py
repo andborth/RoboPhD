@@ -14,8 +14,15 @@ Evolution is expected to add things like:
   - syntactic post-processing (strip markdown fences, balance brackets)
 """
 
-from inspect_ai.model import GenerateConfig, get_model
+from inspect_ai.model import GenerateConfig
 from inspect_ai.solver import Generate, TaskState, solver
+
+# Pre-resolved Model handles. Pick one per call, or mix across calls.
+# The cost penalty applied during training is computed against the
+# total agent_cost_usd across whichever models you use. See
+# model_registry.py for the full list (CLAUDE_HAIKU_4_5,
+# GEMINI_3_1_FLASH_LITE_PREVIEW).
+from model_registry import GPT_5_4_MINI
 
 
 def _wrap_in_code_tags(text: str) -> str:
@@ -39,7 +46,7 @@ def make_solver():
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         print(f"[{state.sample_id}] library={state.metadata.get('library', '?')}")
 
-        resp = await get_model().generate(
+        resp = await GPT_5_4_MINI.generate(
             state.input,
             config=GenerateConfig(temperature=0.0),
         )

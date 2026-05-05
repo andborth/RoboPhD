@@ -55,8 +55,18 @@ logger = logging.getLogger(__name__)
 _unpriced_models_warned: set[str] = set()
 
 
-DEFAULT_COST_BUDGET = 0.06
-COST_BREACH_PENALTY = 0.9
+# Per-example score during training (apply_cost_penalty=True):
+#   score = SCORE_SCALE * raw_score - cost_penalty
+#   cost_penalty = min(1.0, max(0, agent_cost_usd - MIN_COST_THRESHOLD)
+#                          / (COST_PENALTY_SATURATION - MIN_COST_THRESHOLD))
+# raw_score is binary (1.0 for "C" / 0.0 for "I"). At MIN_COST_THRESHOLD
+# the penalty is 0 (free zone for trivial agents); at COST_PENALTY_SATURATION
+# it hits its max of 1.0. SCORE_SCALE puts raw_score on a [0, 100] axis
+# so the [0, 1] penalty acts as a tiebreaker that never overrides
+# correctness gaps. Test scores remain raw 0/1 — leaderboard parity.
+SCORE_SCALE = 100.0
+MIN_COST_THRESHOLD = 0.01      # matches DiscoveryBench
+COST_PENALTY_SATURATION = 1.0  # matches DiscoveryBench
 
 # Keys in state.metadata the agent must NOT see. The scorer reads
 # `code_context`; we keep it on the Sample but pop it from state.metadata
@@ -416,31 +426,78 @@ class Ds1000Evaluator:
 
     def __init__(
         self,
-        model: str = "openai/gpt-5.4-mini",
-        cost_budget: float = DEFAULT_COST_BUDGET,
         log_dir: str | None = None,
         skip_docker_check: bool = False,
         subprocess_isolation: bool = True,
         eval_timeout: int = 600,
         apply_cost_penalty: bool = True,
+        min_cost_threshold: float = MIN_COST_THRESHOLD,
+        cost_penalty_saturation: float = COST_PENALTY_SATURATION,
     ):
+        # Hard requirement: every provider key the registry references
+        # must be set, even if the seed only uses one. Evolution can
+        # produce an agent that calls Claude or Gemini at any iteration,
+        # and the failure mode if the key is missing is a 401 mid-run
+        # (worst time to discover the gap). Fail loudly at startup
+        # instead. ANTHROPIC accepts either ANTHROPIC_API_KEY or
+        # ANTHROPIC_API_KEY_FOR_ROBOPHD per RoboPhD convention; the
+        # FOR_ROBOPHD variant lets the user's Claude Code CLI keep
+        # using its own subscription credentials while RoboPhD uses a
+        # separate API key (see model_registry.py).
+        missing = []
         if not os.environ.get("OPENAI_API_KEY"):
+            missing.append("OPENAI_API_KEY")
+        if not (os.environ.get("ANTHROPIC_API_KEY") or
+                os.environ.get("ANTHROPIC_API_KEY_FOR_ROBOPHD")):
+            missing.append("ANTHROPIC_API_KEY (or ANTHROPIC_API_KEY_FOR_ROBOPHD)")
+        if not os.environ.get("GOOGLE_API_KEY"):
+            missing.append("GOOGLE_API_KEY")
+        if missing:
             raise RuntimeError(
-                "OPENAI_API_KEY is not set. The default solver model is "
-                "GPT-5.4 Mini via OpenAI. Set the env var before running."
+                f"Missing required env vars: {', '.join(missing)}. "
+                f"DS-1000 evolution may pick any of three solver models "
+                f"(gpt-5.4-mini, claude-haiku-4-5-20251001, "
+                f"gemini-3.1-flash-lite-preview); all three provider keys "
+                f"must be set before running, or evolution will fail "
+                f"mid-run when it produces an agent that uses a model "
+                f"with no key configured."
             )
         if not skip_docker_check:
             _check_docker_available()
 
-        self.model = model
-        self.cost_budget = cost_budget
+        # Resolve registry handles at construction time (after the env-var
+        # check so the friendly error fires first if keys are missing).
+        # Storing self._default_model surfaces any registry-resolution
+        # failure here rather than waiting for the first .generate()
+        # inside inspect.eval.
+        from model_registry import GPT_5_4_MINI as _DEFAULT_MODEL
+        self._default_model = _DEFAULT_MODEL
+
         self.subprocess_isolation = subprocess_isolation
-        # True for training (RoboPhD's ELO competition) — soft penalty
-        # nudges evolution toward cheaper agents. False for test paths
+        # True for training (RoboPhD's ELO competition): score is
+        # SCORE_SCALE * raw_score - cost_penalty. False for test paths
         # (eval_candidate / eval_run / --eval-test-set / --eval-only) —
-        # test scores are raw 0/1 so the agent lands at its true point
-        # on the Pareto cost-vs-score curve.
+        # score is raw 0/1 so the agent lands at its true point on the
+        # Pareto cost-vs-score curve. agent_cost_usd is recorded in
+        # diagnostics in both modes for the audit trail.
         self.apply_cost_penalty = apply_cost_penalty
+        # Catch the misconfiguration class up-front: equal endpoints
+        # would divide by zero when computing cost_penalty; crossed
+        # endpoints would give a negative ramp width and produce huge
+        # penalties for tiny costs (sign-flip). Negative threshold
+        # would mean every agent pays a penalty — likely not intended.
+        if min_cost_threshold < 0:
+            raise ValueError(
+                f"min_cost_threshold must be >= 0; got {min_cost_threshold}"
+            )
+        if min_cost_threshold >= cost_penalty_saturation:
+            raise ValueError(
+                f"min_cost_threshold ({min_cost_threshold}) must be strictly "
+                f"less than cost_penalty_saturation ({cost_penalty_saturation}); "
+                f"otherwise the cost-penalty ramp has zero or negative width"
+            )
+        self.min_cost_threshold = min_cost_threshold
+        self.cost_penalty_saturation = cost_penalty_saturation
 
         # Subprocess kill-after timeout MUST be less than RoboPhD's
         # eval_timeout so the subprocess gets SIGKILLed before RoboPhD's
@@ -462,10 +519,10 @@ class Ds1000Evaluator:
         field added to Ds1000Evaluator must also be added here.
         """
         base = {
-            "model": self.model,
-            "cost_budget": self.cost_budget,
             "eval_timeout": self.eval_timeout,
             "apply_cost_penalty": self.apply_cost_penalty,
+            "min_cost_threshold": self.min_cost_threshold,
+            "cost_penalty_saturation": self.cost_penalty_saturation,
             "subprocess_isolation": self.subprocess_isolation,
             "skip_docker_check": True,
         }
@@ -526,9 +583,9 @@ class Ds1000Evaluator:
             json.dump({
                 "candidate": candidate,
                 "example": example_dict,
-                "model": self.model,
-                "cost_budget": self.cost_budget,
                 "apply_cost_penalty": self.apply_cost_penalty,
+                "min_cost_threshold": self.min_cost_threshold,
+                "cost_penalty_saturation": self.cost_penalty_saturation,
             }, inf, default=str)
             inf_path = inf.name
         out_path = inf_path + ".out"
@@ -609,7 +666,7 @@ class Ds1000Evaluator:
             with redirect_stdout(captured):
                 logs = inspect_eval(
                     task,
-                    model=self.model,
+                    model=self._default_model,
                     display="none",
                     log_dir=self._log_dir,
                     log_format="json",
@@ -722,22 +779,45 @@ class Ds1000Evaluator:
         except Exception:
             pass
 
-        cost_breached = agent_cost_usd > self.cost_budget
-        cost_penalty_applied = cost_breached and self.apply_cost_penalty
-        if cost_penalty_applied:
-            score_value = score_value * COST_BREACH_PENALTY
+        # Cost penalty (training only). raw_score is rescaled to
+        # [0, SCORE_SCALE] and a bounded penalty in [0, 1] is subtracted,
+        # proportional to cost above min_cost_threshold up to
+        # cost_penalty_saturation. The penalty's [0, 1] range is two
+        # orders of magnitude smaller than the score scale, so it acts as
+        # a tiebreaker and never reorders agents whose raw scores differ
+        # (DS-1000 raw is binary 1.0/0.0). Test paths skip this — score
+        # stays raw 0/1 for leaderboard parity.
+        raw_score = score_value
+        if self.apply_cost_penalty:
+            cost_excess = max(0.0, agent_cost_usd - self.min_cost_threshold)
+            cost_excess_range = self.cost_penalty_saturation - self.min_cost_threshold
+            cost_penalty = min(1.0, cost_excess / cost_excess_range)
+            score_value = SCORE_SCALE * raw_score - cost_penalty
+        else:
+            cost_penalty = 0.0
 
         with self._cost_lock:
             self.total_eval_cost += agent_cost_usd
 
-        diagnostics["score"] = score_value
+        diagnostics["score"] = score_value           # post-penalty (training) or raw (test)
+        diagnostics["raw_score"] = raw_score         # always 1.0 or 0.0 — pre-penalty
+        diagnostics["cost_penalty"] = cost_penalty   # [0, 1] subtracted on training; 0.0 on test
         diagnostics["cost_usd"] = agent_cost_usd
         diagnostics["agent_cost_usd"] = agent_cost_usd
-        diagnostics["cost_breached"] = cost_breached
-        diagnostics["cost_penalty_applied"] = cost_penalty_applied
-        diagnostics["cost_budget"] = self.cost_budget
         diagnostics["usage"] = usage_summary
         diagnostics["library"] = (example.metadata or {}).get("library")
+        # Numeric fields (raw_score, cost_penalty) are skipped by
+        # ExternalEvaluatorDomain's str-only file persistence. Surface
+        # them as a readable per-key file so failure forensics can
+        # distinguish "wrong answer" (raw_score=0) from "correct but
+        # expensive" (raw_score=1, cost_penalty>0) without re-running.
+        diagnostics["cost_breakdown.md"] = (
+            f"raw_score:        {raw_score}\n"
+            f"agent_cost_usd:   ${agent_cost_usd:.6f}\n"
+            f"cost_penalty:     {cost_penalty:.4f}\n"
+            f"penalty_applied:  {self.apply_cost_penalty}\n"
+            f"final score:      {score_value}\n"
+        )
 
         return score_value, diagnostics
 

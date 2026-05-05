@@ -31,11 +31,22 @@ On the **first** evaluator run, AstaBench's image is pulled (~2–2.5 GB; one-ti
 
 ### 3. Credentials
 
+DS-1000 evolution may pick any of three solver models (GPT-5.4 Mini, Claude Haiku 4.5, Gemini 3.1 Flash Lite Preview). All three provider keys must be set before running, even if your seed only uses one — evolution can produce an agent that uses any of the three at any iteration, and a 401 mid-run is the worst time to discover a missing key.
+
 ```bash
-# OpenAI: powers the solver model (gpt-5.4-mini default). DS-1000 has
-# no judge LLM, so this is the only credential needed.
+# OpenAI — seed model (gpt-5.4-mini)
 export OPENAI_API_KEY="sk-..."
+
+# Anthropic — claude-haiku-4-5-20251001. Prefer ANTHROPIC_API_KEY_FOR_ROBOPHD
+# so your Claude Code CLI sessions (which read ANTHROPIC_API_KEY) keep using
+# their normal subscription credentials. Either env var works.
+export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."
+
+# Google — gemini-3.1-flash-lite-preview
+export GOOGLE_API_KEY="..."
 ```
+
+The Anthropic provider validates its key at `model_registry` import time (asymmetric vs OpenAI/Google, which validate lazily on first `.generate()`), so importing the registry hard-fails if the Anthropic key is missing.
 
 No `HF_ACCESS_TOKEN` needed — DS-1000 uses the public `xlangai/DS-1000` HuggingFace dataset.
 
@@ -80,14 +91,14 @@ python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir>
 python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir> --phase final
 ```
 
-Default model: `openai/gpt-5.4-mini`. Default per-example agent cost cap: `$0.06` (score multiplied by 0.9 if breached at training time).
+Default models: GPT-5.4 Mini, Claude Haiku 4.5, Gemini 3.1 Flash Lite Preview (registry; the seed picks GPT-5.4 Mini, evolution may pick any of the three).
 
 ```bash
-# Override model:
-python examples/asta_ds1000/main.py --model openai/gpt-5
+# Tighten the cost-penalty endpoints (ablation):
+python examples/asta_ds1000/main.py --cost-threshold 0.005 --cost-saturation 0.5
 
-# Override cost cap:
-python examples/asta_ds1000/main.py --cost-budget 0.02
+# Smaller per-iteration sample for cheaper iteration:
+python examples/asta_ds1000/main.py --examples-per-iteration 5
 
 # Other engines (RoboPhD is the focus; GEPA / Autoresearch should work
 # conceptually since the evaluator and seed are engine-agnostic, but
@@ -120,9 +131,35 @@ Our `evaluator.py` wraps the candidate's solver in a higher-order function (`_wr
 
 This is deliberate — we enforce the no-leakage invariant in code rather than rely on `background.md` warnings, because warning the evolution AI off a key inadvertently advertises that interesting content lives there. See the `feedback_enforce_dont_describe` memory for the principle.
 
+### Cost-penalty math
+
+During training the per-example score is:
+
+```
+score = 100 · raw_score − cost_penalty
+cost_penalty = clip((agent_spend − $0.01) / ($1.00 − $0.01), 0, 1)
+```
+
+`raw_score` is the binary 0/1 from the canonical scorer. The penalty's `[0, 1]` range is two orders of magnitude smaller than the score axis, so it acts as a tiebreaker between correctness-tied agents — it never reorders agents whose correctness differs. Worked examples at leaderboard reference points:
+
+| Per-eval spend | Cost penalty |
+| --- | --- |
+| $0.001 (cheap seed) | 0.000 (free zone) |
+| $0.02 (leaderboard floor) | 0.010 |
+| $0.04 (median competitive) | 0.030 |
+| $0.10 | 0.091 |
+| $0.25 (leaderboard top) | 0.242 |
+| $1.00 | 1.000 (saturated) |
+
+Per-problem `result.json` carries `raw_score` (the 0/1 outcome before any penalty) and `cost_penalty` (the [0,1] value subtracted) so failure analysis can distinguish "wrong answer" from "correct but expensive" without back-deriving the formula.
+
 ### Cost-penalty asymmetry
 
-The training evaluator applies `score *= 0.9` if agent spend exceeds `cost_budget`. The test evaluator (derived via `with_overrides(apply_cost_penalty=False)` in `main.py`) does not. The leaderboard test number is therefore raw 0/1 accuracy regardless of breach.
+The training evaluator applies the formula above. The test evaluator (derived via `with_overrides(apply_cost_penalty=False)` in `main.py`) does not — test scores are raw 0/1 in `[0, 1]` for leaderboard parity. The leaderboard test number is therefore raw accuracy regardless of training-time spend.
+
+### Model registry
+
+Three pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside the candidate's `file_mapping`, which only contains `agent.py`): `GPT_5_4_MINI`, `CLAUDE_HAIKU_4_5`, `GEMINI_3_1_FLASH_LITE_PREVIEW`. Evolved agents `from model_registry import` whichever they want and call `.generate()`; the underlying model strings are not part of the evolvable artifact, so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — an agent produced at iteration 4 might use Claude Haiku, and a 401 mid-run is a worse failure mode than a startup error.
 
 ### Subprocess isolation
 
@@ -138,7 +175,7 @@ DS-1000 is **much cheaper per evaluation than DiscoveryBench**:
 
 Rough budget for a full training run + experiment-phase test:
 
-- 300 training evals × ~$0.005/eval = ~$1.50 (well under the $0.06 cap)
+- 300 training evals × ~$0.005/eval = ~$1.50 (well in the cost-penalty free zone)
 - 90-sample experiment-phase test × ~$0.005 = ~$0.45
 - Total: ~$2 for a complete experiment-phase run
 

@@ -4,9 +4,19 @@ Builds two synthetic candidates against the same DS-1000 sample:
   A. Emits the reference solution → must score 1.0
   B. Emits `result = None` → must score 0.0
 
-If either fails, the evaluator is broken — debug before running any
-optimization. Runs in-process (subprocess_isolation=False) for clean
-tracebacks.
+Constructs the evaluator with apply_cost_penalty=False (test-path
+semantics), so A's score is the raw 1.0/0.0 from the scorer rather
+than the training-path 100·raw_score − cost_penalty.
+
+If either gate fails, the evaluator is broken — debug before running
+any optimization. Runs in-process (subprocess_isolation=False) for
+clean tracebacks.
+
+Requires all three provider keys (OPENAI_API_KEY, ANTHROPIC_API_KEY
+or ANTHROPIC_API_KEY_FOR_ROBOPHD, GOOGLE_API_KEY). The evaluator's
+__init__ hard-fails with a friendly RuntimeError if any are missing
+— that's intentional. If your dev env can't run this gate, it can't
+run the real thing.
 """
 
 import os
@@ -59,7 +69,7 @@ agent_a = make_agent_source(f"<code>\n{reference_code}\n</code>")
 agent_b = make_agent_source("<code>\nresult = None\n</code>")
 
 # In-process evaluator for clean tracebacks.
-evaluator = Ds1000Evaluator(subprocess_isolation=False)
+evaluator = Ds1000Evaluator(subprocess_isolation=False, apply_cost_penalty=False)
 
 print("== Candidate A (reference solution) ==")
 score_a, diag_a = evaluator.evaluate({"agent.py": agent_a}, sample_dict)

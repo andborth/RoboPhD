@@ -51,7 +51,7 @@ Outside the tags (i.e., in `state.output.completion` before `<code>` or after `<
 
 ## API surfaces
 
-These are the only Inspect entries the solver code (agent.py) should touch — don't import additional Inspect tools or third-party search/analysis backends.
+The solver code (agent.py) should only use these Inspect entries — don't import additional Inspect tools or third-party search/analysis backends.
 
 ### `python_session` — the only `state.tools` entry
 
@@ -74,15 +74,23 @@ Most DS-1000 problems don't need files, but the API is available.
 
 ## LLM calls
 
-Use Inspect's tracked model API so usage flows into the `.eval` log:
+Three model handles are available, imported from `model_registry`:
+
+- `GPT_5_4_MINI`
+- `CLAUDE_HAIKU_4_5`
+- `GEMINI_3_1_FLASH_LITE_PREVIEW`
 
 ```python
-from inspect_ai.model import GenerateConfig, get_model
-resp = await get_model().generate("Your prompt here", config=GenerateConfig(temperature=0.0))
+from inspect_ai.model import GenerateConfig
+from model_registry import GPT_5_4_MINI, CLAUDE_HAIKU_4_5, GEMINI_3_1_FLASH_LITE_PREVIEW
+
+resp = await GPT_5_4_MINI.generate(
+    "Your prompt here", config=GenerateConfig(temperature=0.0)
+)
 text = resp.completion
 ```
 
-`config` is optional; pass a `GenerateConfig` to set sampling parameters such as `temperature`. The configured model (currently **GPT-5.4 Mini**) is the one returned by a bare `get_model()` call — no arguments. Don't pass a model string to `get_model()` and don't import `openai` / `anthropic` / `litellm` directly. All LLM calls must go through `get_model()` so usage flows into the Inspect tracker and cost is reported correctly.
+Use one of these when you want to make an LLM call. You can decide to use only one of these models, or you can mix them across calls. `config` is optional; pass a `GenerateConfig` to set sampling parameters such as `temperature`. See `inspect_ai.model.GenerateConfig` for the full set. All LLM calls must go through one of the three handles above.
 
 ## Scoring
 
@@ -90,9 +98,9 @@ The agent's `<code>` block is extracted, concatenated with hidden setup and test
 
 A subset of problems additionally enforce **style/idiom constraints on the submitted code itself**. Two flavors appear: (1) forbidding Python control-flow constructs like `for`/`while` to push toward library calls, and (2) requiring a specific library function name to appear in the solution, ruling out manual reimplementations. The constraint is sometimes flagged in the prompt ("without using X", "the efficient way", "not one by one") but is more often implicit in the spirit of the question: asking *"how do I do X with NumPy"* invites a NumPy-idiomatic answer, and a workaround that bypasses the library can fail even when the output is correct. When this happens, the per-problem `test_result.md` shows an assertion raised from a `test_string` function (versus correctness failures, which raise from `test_execution`). Both outcomes score 0.0; the traceback tells the agent whether to fix the *answer* or the *form*.
 
-## Per-example cost cap
+## Per-example score
 
-The agent's LLM spend is capped at **$0.06 per example** (only `get_model()` calls are metered — `python_session` and `sandbox()` don't count). Exceeding the cap multiplies the example score by 0.9.
+During training, the per-example score is `100 × (0 or 1) − cost_penalty`, where the binary part is correctness and `cost_penalty ∈ [0, 1]` is a bounded function of agent LLM spend (only `get_model()` calls are metered — `python_session` and `sandbox()` don't count). Spend below **$0.01** incurs zero penalty (free zone). Above $0.01 the penalty ramps linearly, hitting its maximum of 1.0 at **$1.00** of per-example agent spend; further spend incurs no extra penalty. The penalty's [0, 1] range is two orders of magnitude smaller than the score scale, so it acts as a tiebreaker between correctness-tied agents — it never overrides a real correctness gap.
 
 ## Diagnostics
 

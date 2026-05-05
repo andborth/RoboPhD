@@ -118,9 +118,9 @@ def _write_test_results(
         per_problem.append({
             "sample_id": diag.get("sample_id"),
             "score": score,
+            "raw_score": diag.get("raw_score"),
+            "cost_penalty": diag.get("cost_penalty"),
             "agent_cost_usd": agent_c,
-            "cost_breached": diag.get("cost_breached"),
-            "cost_penalty_applied": diag.get("cost_penalty_applied"),
             "library": diag.get("library"),
             "error": (err[:500] if err else None),
         })
@@ -156,17 +156,19 @@ def parse_args():
     p.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd")
     p.add_argument("--num-iterations", type=int, default=None,
                    help="Override the default iteration cap (15)")
+    p.add_argument("--examples-per-iteration", type=int, default=None,
+                   help="Override the default per-iteration sample size (20)")
     p.add_argument("--evaluation-budget", type=int, default=None,
                    help="Override the default evaluation budget (iter-bounded)")
 
-    p.add_argument("--model", default="openai/gpt-5.4-mini",
-                   help="Inspect model string for the candidate solver's LLM calls")
-    p.add_argument("--cost-budget", type=float, default=0.06,
-                   help="Per-example AGENT cost cap. During training (RoboPhD "
-                        "ELO), score *= 0.9 if agent spend exceeds the cap; at "
-                        "test time the score is raw 0/1 regardless of breach. "
-                        "DS-1000 has no judge LLM, so agent cost is the only "
-                        "cost bucket.")
+    p.add_argument("--cost-threshold", type=float, default=None,
+                   help="Per-example agent spend below this is in the free zone "
+                        "(no penalty). Default $0.01.")
+    p.add_argument("--cost-saturation", type=float, default=None,
+                   help="Per-example agent spend at this level (or above) "
+                        "incurs the maximum cost penalty of 1.0. Default $1.00. "
+                        "The penalty ramps linearly between threshold and "
+                        "saturation. Test-path scores are raw 0/1 regardless.")
 
     p.add_argument("--max-workers", type=int, default=12,
                    help="Parallel eval workers. Each evaluation runs in its "
@@ -209,21 +211,30 @@ def main():
     # would leak the thread.
     EVAL_TIMEOUT = 600
 
-    # Two evaluator instances. Training uses the cost penalty (a soft
-    # signal nudging evolution toward cheaper agents); test paths report
+    # Two evaluator instances. Training applies the bounded cost penalty
+    # (a tiebreaker between correctness-tied agents); test paths report
     # raw 0/1 so evolved agents land at their true point on the Pareto
     # cost-vs-score curve.
+    from evaluator import MIN_COST_THRESHOLD, COST_PENALTY_SATURATION
     evaluator = Ds1000Evaluator(
-        model=args.model,
-        cost_budget=args.cost_budget,
         eval_timeout=EVAL_TIMEOUT,
         apply_cost_penalty=True,  # training: penalty fires
+        min_cost_threshold=(
+            args.cost_threshold if args.cost_threshold is not None
+            else MIN_COST_THRESHOLD
+        ),
+        cost_penalty_saturation=(
+            args.cost_saturation if args.cost_saturation is not None
+            else COST_PENALTY_SATURATION
+        ),
     )
     test_evaluator = evaluator.with_overrides(apply_cost_penalty=False)
 
     train, test, examples_per_iter, default_budget, default_iterations = (
         _build_dataset(args.phase)
     )
+    if args.examples_per_iteration is not None:
+        examples_per_iter = args.examples_per_iteration
     logger.info(
         f"Phase {args.phase}: train={len(train)} test={len(test)} "
         f"examples/iter={examples_per_iter} budget={default_budget} iters={default_iterations}"

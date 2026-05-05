@@ -6,6 +6,12 @@ must complete without an `error` diagnostic and report a non-zero
 agent cost. Score-based assertions are deliberately omitted —
 n=3 is too noisy to threshold meaningfully — but a broken chain
 will surface as an `error` field in diagnostics, which we do gate on.
+
+Requires all three provider keys (OPENAI_API_KEY, ANTHROPIC_API_KEY
+or ANTHROPIC_API_KEY_FOR_ROBOPHD, GOOGLE_API_KEY). The evaluator's
+__init__ hard-fails with a friendly RuntimeError if any are missing
+— that's intentional. If your dev env can't run this gate, it can't
+run the real thing.
 """
 
 import sys

@@ -14,9 +14,9 @@ Protocol:
 Input JSON shape:
   {"candidate": {"agent.py": "..."},
    "example": {<Sample.model_dump()>},
-   "model": "openai/gpt-5.4-mini",
-   "cost_budget": 0.06,
-   "apply_cost_penalty": true}
+   "apply_cost_penalty": true,
+   "min_cost_threshold": 0.01,
+   "cost_penalty_saturation": 1.0}
 
 Output JSON shape:
   {"score": <float>, "diagnostics": <dict>}
@@ -49,11 +49,13 @@ def main() -> int:
         from evaluator import Ds1000Evaluator
 
         evaluator = Ds1000Evaluator(
-            model=params["model"],
-            cost_budget=params["cost_budget"],
+            # Parent already pre-flighted Docker; don't re-check per worker.
             skip_docker_check=True,
+            # We ARE the subprocess — don't recurse.
             subprocess_isolation=False,
-            apply_cost_penalty=params.get("apply_cost_penalty", True),
+            apply_cost_penalty=params["apply_cost_penalty"],
+            min_cost_threshold=params["min_cost_threshold"],
+            cost_penalty_saturation=params["cost_penalty_saturation"],
         )
         score, diagnostics = evaluator.evaluate(params["candidate"], params["example"])
     except Exception:
