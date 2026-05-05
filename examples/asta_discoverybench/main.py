@@ -73,6 +73,9 @@ def _build_dataset(phase: str, num_synth_train: int):
         real/test's 239. Cheap enough to run as part of every
         --eval-test-set check while remaining a meaningful held-out set.
       - final: all 239 real/test samples (the leaderboard metric).
+      - synth-holdout: the synth/train samples not used for training
+        (550 - num_synth_train; 375 at the default knob). In-distribution
+        sanity check before committing to a real/test sweep.
 
     Two independent random.Random(SPLIT_SEED) instances (synth_rng,
     test_rng) keep the synth draw and the test draw isolated, so
@@ -93,11 +96,20 @@ def _build_dataset(phase: str, num_synth_train: int):
             f"synth/train has {len(synth_train)} scoreable samples"
         )
 
+    if phase == "synth-holdout" and num_synth_train >= len(synth_train):
+        raise SystemExit(
+            f"--phase synth-holdout requires --num-synth-train < {len(synth_train)} "
+            f"(synth/train pool size); got {num_synth_train}, leaving 0 holdout samples"
+        )
+
     synth_subset = synth_rng.sample(synth_train, num_synth_train)
     train = synth_subset + real_train
 
     if phase == "experiment":
         test = test_rng.sample(real_test, 24)
+    elif phase == "synth-holdout":
+        used_synth_ids = {s.id for s in synth_subset}
+        test = [s for s in synth_train if s.id not in used_synth_ids]
     else:  # final
         test = real_test
 
@@ -179,9 +191,11 @@ def parse_args():
         description="Evolve DiscoveryBench agents on AstaBench (Standard tools, Docker sandbox)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    p.add_argument("--phase", choices=["experiment", "final"], default="experiment",
+    p.add_argument("--phase", choices=["experiment", "final", "synth-holdout"], default="experiment",
                    help="experiment: 24-sample held-out test (~10%% of real/test). "
-                        "final: all 239 real/test samples (leaderboard metric).")
+                        "final: all 239 real/test samples (leaderboard metric). "
+                        "synth-holdout: synth/train samples not used for training "
+                        "(550 - --num-synth-train).")
     p.add_argument("--num-synth-train", type=int, default=175,
                    help="Number of synth/train samples to mix into the train pool. "
                         "real/validation's 25 samples are always included.")

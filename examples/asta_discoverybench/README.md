@@ -63,6 +63,7 @@ Single training configuration; `--phase` only varies the test set:
 | --- | --- | --- | --- | --- | --- |
 | **experiment** | 175 synth + all 25 real/val = **200** | 24-sample fixed sub-sample (~10%) of real/test | 15 | 20 | 300 |
 | **final** | same 200 | all **239** real/test (leaderboard metric) | 15 | 20 | 300 |
+| **synth-holdout** | same 200 | **375** synth/train samples not in the train pool (550 − `--num-synth-train`) | 15 | 20 | 300 |
 
 `--num-synth-train N` (default 175) overrides the synth count for ablations: `--num-synth-train 0` gives a real-only train pool (25 examples), `--num-synth-train 525` is closer to the full synth/train (550 scoreable).
 
@@ -98,6 +99,9 @@ python examples/asta_discoverybench/main.py --eval-only --resume <prior-run-dir>
 # Re-evaluate against the full real/test (writes to test_results_final.json,
 # distinct from test_results_experiment.json so they don't clobber):
 python examples/asta_discoverybench/main.py --eval-only --resume <prior-run-dir> --phase final
+
+# Synth in-distribution sanity check before committing to a real/test sweep:
+python examples/asta_discoverybench/main.py --eval-only --resume <prior-run-dir> --phase synth-holdout
 ```
 
 Default model: `openai/gpt-5.4-mini`. Default per-example agent cost cap: `$0.10` (score multiplied by 0.9 if breached; judge cost excluded).
