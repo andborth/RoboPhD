@@ -8,12 +8,13 @@ Targets the AstaBench Data-Analysis category leaderboard. Real validation
 scoreable samples (550 train / 153 dev) for distribution-padding the
 small real pool.
 
-Train pool: --num-synth-train (default 175) synth samples + all 25
-real/validation. Test set depends on --phase: experiment → 24 fixed
-samples (~10%) of real/test, final → all 239 of real/test. Both pool
-and the experiment test draws use a fixed split seed (42), independent
-of --random-seed; --random-seed (default None → fresh per run) only
-affects RoboPhD's per-iteration draws.
+Train pool: --num-synth-train (default 0, real-only) synth samples
+plus all 25 real/validation. Test set depends on --phase: experiment
+→ 24 fixed samples (~10%) of real/test, final → all 239 of real/test,
+synth-holdout → synth/train minus the synth used for training. Both
+pool and the experiment test draws use a fixed split seed (42),
+independent of --random-seed; --random-seed (default None → fresh per
+run) only affects RoboPhD's per-iteration draws.
 
 Credentials required (all three solver providers must be set so
 evolution doesn't 401 mid-run if it picks a non-default model):
@@ -117,9 +118,11 @@ def _build_dataset(phase: str, num_synth_train: int):
     else:  # final
         test = real_test
 
-    # Iteration-bounded: examples/iter=20, num_iterations=15 → 300 evals.
-    # Set evaluation_budget high enough not to bind.
-    return train, test, 20, 999_999, 15
+    # Iteration-bounded: examples/iter=5, num_iterations=12 → 60 evals.
+    # Set evaluation_budget high enough not to bind. Both
+    # examples_per_iter and num_iterations are CLI-overridable
+    # via --examples-per-iteration and --num-iterations.
+    return train, test, 5, 999_999, 12
 
 
 # ---------------------------------------------------------------------------
@@ -199,23 +202,27 @@ def parse_args():
                         "final: all 239 real/test samples (leaderboard metric). "
                         "synth-holdout: synth/train samples not used for training "
                         "(550 - --num-synth-train).")
-    p.add_argument("--num-synth-train", type=int, default=175,
+    p.add_argument("--num-synth-train", type=int, default=0,
                    help="Number of synth/train samples to mix into the train pool. "
-                        "real/validation's 25 samples are always included.")
+                        "real/validation's 25 samples are always included. Default "
+                        "0 = real-only train pool; pass a positive value to add "
+                        "synth padding for ablations.")
 
     p.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd")
     p.add_argument("--num-iterations", type=int, default=None,
-                   help="Override the default iteration cap (15)")
+                   help="Override the default iteration cap (12)")
+    p.add_argument("--examples-per-iteration", type=int, default=None,
+                   help="Override the default examples drawn per iteration (5)")
     p.add_argument("--evaluation-budget", type=int, default=None,
                    help="Override the default evaluation budget (iter-bounded)")
 
     p.add_argument("--max-workers", type=int, default=12,
                    help="Parallel eval workers. Each evaluation runs in its "
                         "own subprocess to bypass inspect.eval's process-global "
-                        "singleton lock, so this is real parallelism. 12 fits "
-                        "20 examples/iteration in ~2 waves on M-series Macs; "
-                        "tune up to ~20 if your OpenAI tier supports the "
-                        "resulting RPS.")
+                        "singleton lock, so this is real parallelism. 12 is a "
+                        "comfortable default on M-series Macs; tune higher if "
+                        "you increase --examples-per-iteration and your OpenAI "
+                        "tier supports the resulting RPS.")
     p.add_argument("--runs-dir", default="../robophd_runs")
     p.add_argument("--random-seed", type=int, default=None,
                    help="Seed for RoboPhD's per-iteration draws and other "
@@ -331,6 +338,9 @@ def main():
 
     num_iterations = args.num_iterations if args.num_iterations is not None else default_iterations
     evaluation_budget = args.evaluation_budget if args.evaluation_budget is not None else default_budget
+    examples_per_iter = (
+        args.examples_per_iteration if args.examples_per_iteration is not None else examples_per_iter
+    )
 
     engine_overrides: dict = {"examples_per_iteration": examples_per_iter}
     if args.engine_config:

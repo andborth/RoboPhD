@@ -77,11 +77,11 @@ Single training configuration; `--phase` only varies the test set:
 
 | Phase | Train pool | Test set | Iter | Examples/iter | Total evals |
 | --- | --- | --- | --- | --- | --- |
-| **experiment** | 175 synth + all 25 real/val = **200** | 24-sample fixed sub-sample (~10%) of real/test | 15 | 20 | 300 |
-| **final** | same 200 | all **239** real/test (leaderboard metric) | 15 | 20 | 300 |
-| **synth-holdout** | same 200 | **375** synth/train samples not in the train pool (550 − `--num-synth-train`) | 15 | 20 | 300 |
+| **experiment** | all 25 real/val (no synth padding by default) | 24-sample fixed sub-sample (~10%) of real/test | 12 | 5 | 60 |
+| **final** | same 25 | all **239** real/test (leaderboard metric) | 12 | 5 | 60 |
+| **synth-holdout** | same 25 | **550** synth/train samples not in the train pool (550 − `--num-synth-train`) | 12 | 5 | 60 |
 
-`--num-synth-train N` (default 175) overrides the synth count for ablations: `--num-synth-train 0` gives a real-only train pool (25 examples), `--num-synth-train 525` is closer to the full synth/train (550 scoreable).
+`--num-synth-train N` (default 0, real-only) lets you pad the train pool with synth samples for ablations: e.g. `--num-synth-train 175` gives a 200-example mixed train pool, `--num-synth-train 525` is closer to the full synth/train (550 scoreable). `--num-iterations` (default 12) and `--examples-per-iteration` (default 5) shape evolution's per-iteration budget.
 
 ### Sampling
 
@@ -112,10 +112,10 @@ The leaderboard scores on `real/test`, so agent performance on synth-only evalua
 ## Running
 
 ```bash
-# Default: phase=experiment, 175 synth + 25 real train pool, 24-sample held-out test.
+# Default: phase=experiment, real-only 25-sample train pool, 24-sample held-out test, 60 evals total.
 python examples/asta_discoverybench/main.py --eval-test-set
 
-# Final: train on the same 200, evaluate against all 239 real/test.
+# Final: train on the same 25, evaluate against all 239 real/test.
 python examples/asta_discoverybench/main.py --phase final --eval-test-set
 
 # Re-evaluate a prior run's best agent on the experiment-phase test set:
@@ -132,8 +132,11 @@ python examples/asta_discoverybench/main.py --eval-only --resume <prior-run-dir>
 The seed agent calls `GPT_5_4_MINI` from `model_registry.py`. Evolved agents may pick from any of the three handles documented in `background.md` (`GPT_5_4_MINI`, `CLAUDE_HAIKU_4_5`, `GEMINI_3_1_FLASH_LITE_PREVIEW`).
 
 ```bash
-# Synth-padding ablation (real-only train pool):
-python examples/asta_discoverybench/main.py --num-synth-train 0
+# Synth-padding ablation (mix in 175 synth examples for a 200-example train pool):
+python examples/asta_discoverybench/main.py --num-synth-train 175
+
+# Larger per-iteration sample, more iterations:
+python examples/asta_discoverybench/main.py --examples-per-iteration 20 --num-iterations 15
 
 # Other engines:
 python examples/asta_discoverybench/main.py --engine gepa
@@ -150,7 +153,7 @@ python examples/asta_discoverybench/main.py --engine gepa
 - Per-example **judge** cost is ~$0.015–0.020 (5 fixed gpt-4o-2024-08-06 calls per sample). Evaluator overhead, kept out of `agent_cost_usd` and out of the optimization signal.
 - **Reports separate agent and judge cost.** `eval_cost` (in `result.json`, the "Eval" column of `cost_report.md` and `interim_report.md`) is **agent-only**. Judge spend goes into `other_cost` (the "Other" column, only shown when non-zero). The headline `Total` column sums all buckets — `Eval + Evo + Meta + Other`. Per-problem breakdown is in `agent_cost_usd`, `judge_cost_usd`, `cost_penalty`.
 - A full real/test sweep (239 samples) costs ~$7 just in judge tokens.
-- A 300-eval training run + final test sweep ≈ $15–$25 total ($6 judge across the 300 evals + $7 final test + agent's own LLM spend at GPT-5.4 Mini rates).
+- A default 60-eval training run + final test sweep ≈ $9–$11 total (~$1.20 judge across the 60 evals + $7 final test + agent's own LLM spend at GPT-5.4 Mini rates). Larger configurations (`--examples-per-iteration` / `--num-iterations`) scale roughly linearly.
 - Wall-clock: 4–10s sandbox warm-start per sample + agent execution + 5 judge calls ≈ ~50s/sample observed.
 
 ## Files
@@ -171,7 +174,7 @@ python examples/asta_discoverybench/main.py --engine gepa
 - [x] Scaffold matches existing examples (main.py, evaluator.py, load_synth.py, seed, objective, background, requirements)
 - [x] Real loader works via `astabench.evals.discoverybench.task.load_discoverybench_hf`
 - [x] Synth loader (`load_synth.py`) shallow-clones the public repo on first use; scoreable counts: 550 train / 153 dev / 0 test (synth/test is upstream's held-out competition set with no gold; load_synth("test") returns 0 samples)
-- [x] Single-configuration CLI: `--phase {experiment,final}` + `--num-synth-train N` (default 175)
+- [x] Single-configuration CLI: `--phase {experiment,final,synth-holdout}` + `--num-synth-train N` (default 0) + `--examples-per-iteration` (default 5) + `--num-iterations` (default 12)
 - [x] Cost-cap with judge filtered out
 
 ### Open
