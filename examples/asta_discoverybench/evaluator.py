@@ -14,11 +14,12 @@ gpt-4o judge calls all assume an Inspect-driven runtime.
 
 Cost accounting splits agent vs judge:
   - `judge_cost_usd`: 5 fixed gpt-4o-2024-08-06 calls per sample
-    (≈$0.029); excluded from the per-example cap because it's outside
+    (≈$0.029); excluded from the cost penalty because it's outside
     agent control.
   - `agent_cost_usd`: everything else (the candidate's own
     `get_model().generate()` calls and any wrapped out-of-band calls).
-    Capped at $0.10/sample with a 0.9 score multiplier on breach.
+    Subject to a bounded continuous cost penalty during training (see
+    SCORE_SCALE / MIN_COST_THRESHOLD / COST_PENALTY_SATURATION below).
 """
 
 import importlib.util
@@ -761,8 +762,8 @@ class DiscoveryBenchEvaluator:
         # totals). The 5 fixed gpt-4o judge calls per sample are something
         # the agent can't influence at all — so they belong in other_cost,
         # not eval_cost. See RoboPhD/domains/external/domain.py for the
-        # full bucket convention. The $0.10 cost cap applies to agent
-        # spend only.
+        # full bucket convention. The cost penalty applies to agent spend
+        # only.
         diagnostics["cost_usd"] = agent_cost_usd
         diagnostics["other_cost_usd"] = judge_cost_usd
         diagnostics["agent_cost_usd"] = agent_cost_usd

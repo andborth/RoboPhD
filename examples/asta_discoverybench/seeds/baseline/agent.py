@@ -12,9 +12,7 @@ without any explicit copy.
 
 The seed is a one-shot baseline: discover the CSVs via python_session,
 describe the first one, ask the LLM to draft a hypothesis. It does no
-real analysis. Evolution is expected to introduce statistical tests,
-multi-step reasoning, and score-type-appropriate strategies. See
-background.md for the full surface.
+real analysis. See background.md for the full surface.
 """
 
 import json
@@ -24,8 +22,9 @@ from inspect_ai.solver import Generate, TaskState, solver
 from inspect_ai.tool import ToolDef
 
 # Pre-resolved Model handles. Pick one per call, or mix across calls.
-# The $0.10 per-example budget is shared across whichever you use.
-# See model_registry.py for the full list (CLAUDE_HAIKU_4_5,
+# The cost penalty applied during training is computed against the
+# total agent_cost_usd across whichever models you use. See
+# model_registry.py for the full list (CLAUDE_HAIKU_4_5,
 # GEMINI_3_1_FLASH_LITE_PREVIEW).
 from model_registry import GPT_5_4_MINI
 

@@ -164,7 +164,7 @@ python examples/asta_discoverybench/main.py --engine gepa
 - `load_synth.py` — fetches DiscoveryBench's public synth split from GitHub on first use, normalizes the column-metadata path to match real
 - `seeds/baseline/agent.py` — minimal `@solver` factory exported as `make_solver`. Demonstrates file copy, stateful Python, Inspect-tracked LLM, JSON output. Scores near zero by design.
 - `objective.md` — what evolution should optimize
-- `background.md` — task spec, output schema, sandbox idioms, scoring breakdown, cost cap
+- `background.md` — task spec, output schema, sandbox idioms, scoring breakdown, cost penalty
 - `requirements.txt` — astabench (which bundles inspect_ai)
 
 ## Status
