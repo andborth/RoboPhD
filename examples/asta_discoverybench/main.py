@@ -15,9 +15,13 @@ and the experiment test draws use a fixed split seed (42), independent
 of --random-seed; --random-seed (default None → fresh per run) only
 affects RoboPhD's per-iteration draws.
 
-Credentials required:
-    HF_ACCESS_TOKEN  — gated allenai/asta-bench dataset (real/ split metadata)
-    OPENAI_API_KEY   — solver model (gpt-5.4-mini default) + judge (gpt-4o-2024-08-06)
+Credentials required (all three solver providers must be set so
+evolution doesn't 401 mid-run if it picks a non-default model):
+    HF_ACCESS_TOKEN                              — gated allenai/asta-bench dataset
+    OPENAI_API_KEY                               — gpt-5.4-mini + gpt-4o-2024-08-06 judge
+    ANTHROPIC_API_KEY_FOR_ROBOPHD (or
+                  ANTHROPIC_API_KEY)             — claude-haiku-4-5-20251001
+    GOOGLE_API_KEY                               — gemini-3.1-flash-lite-preview
 
 Setup:
     Docker daemon must be running. See README.md.

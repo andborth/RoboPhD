@@ -16,6 +16,8 @@ applied during training (see background.md) is computed against the
 sum of agent_cost_usd across whichever models you use.
 """
 
+import os
+
 from inspect_ai.model import get_model
 
 # Internal — strings stay private so agent.py doesn't import them.
@@ -23,13 +25,27 @@ _GPT_5_4_MINI_ID = "openai/gpt-5.4-mini"
 _CLAUDE_HAIKU_4_5_ID = "anthropic/claude-haiku-4-5-20251001"
 _GEMINI_3_1_FLASH_LITE_PREVIEW_ID = "google/gemini-3.1-flash-lite-preview"
 
+# RoboPhD convention: prefer ANTHROPIC_API_KEY_FOR_ROBOPHD over
+# ANTHROPIC_API_KEY so the user's Claude Code CLI sessions (which read
+# ANTHROPIC_API_KEY) keep using their normal subscription credentials,
+# while RoboPhD evaluations use a separate API key. We pass the
+# resolved key to inspect_ai's get_model(api_key=...) explicitly rather
+# than mutating os.environ, since the env mutation would leak to any
+# Claude Code subprocesses spawned later in the run. Same pattern as
+# examples/text2sql/evaluator.py:208-210.
+_ANTHROPIC_API_KEY = (
+    os.environ.get("ANTHROPIC_API_KEY")
+    or os.environ.get("ANTHROPIC_API_KEY_FOR_ROBOPHD")
+)
+
 # Public handles — pre-resolved Model objects. Provider key validation
 # is asymmetric: OpenAI and Google initialize their clients lazily on
-# first .generate() call, but the Anthropic provider validates
-# ANTHROPIC_API_KEY at get_model() construction time. Importing this
-# module therefore requires all three keys to be set in the
-# environment, even if you only intend to call one of the three
-# handles. See README.md "Credentials" for the user-facing version.
+# first .generate() call, but the Anthropic provider validates its key
+# at get_model() construction time. Importing this module therefore
+# requires all three provider keys to be available (Anthropic via
+# either ANTHROPIC_API_KEY or ANTHROPIC_API_KEY_FOR_ROBOPHD), even if
+# you only intend to call one of the three handles. See README.md
+# "Credentials" for the user-facing version.
 GPT_5_4_MINI = get_model(_GPT_5_4_MINI_ID)
-CLAUDE_HAIKU_4_5 = get_model(_CLAUDE_HAIKU_4_5_ID)
+CLAUDE_HAIKU_4_5 = get_model(_CLAUDE_HAIKU_4_5_ID, api_key=_ANTHROPIC_API_KEY)
 GEMINI_3_1_FLASH_LITE_PREVIEW = get_model(_GEMINI_3_1_FLASH_LITE_PREVIEW_ID)

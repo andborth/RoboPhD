@@ -48,14 +48,17 @@ export HF_TOKEN="hf_..."
 # scorer's gpt-4o-2024-08-06 judge.
 export OPENAI_API_KEY="sk-..."
 
-# Anthropic: powers claude-haiku-4-5-20251001.
-export ANTHROPIC_API_KEY="sk-ant-..."
+# Anthropic: powers claude-haiku-4-5-20251001. Either env var works;
+# ANTHROPIC_API_KEY_FOR_ROBOPHD is the preferred RoboPhD convention so
+# your Claude Code CLI sessions (which read ANTHROPIC_API_KEY) keep
+# using their own subscription credentials.
+export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."
 
 # Google AI Studio: powers gemini-3.1-flash-lite-preview.
 export GOOGLE_API_KEY="..."
 ```
 
-Note: `model_registry.py` resolves all three handles eagerly at import time. The Anthropic provider in particular validates its key at `get_model()` construction, so any ad-hoc script that does `from model_registry import GPT_5_4_MINI` (or even `import model_registry`) needs all three keys set in the shell — not just the one for the model you intend to call.
+Note: `model_registry.py` resolves all three handles eagerly at import time. The Anthropic provider in particular validates its key at `get_model()` construction, so any ad-hoc script that does `from model_registry import GPT_5_4_MINI` (or even `import model_registry`) needs all three providers' keys set in the shell — not just the one for the model you intend to call. The Anthropic key is read explicitly and passed to `get_model(api_key=...)`, so we avoid mutating `os.environ["ANTHROPIC_API_KEY"]` (mutating it would leak the API-billing key into Claude Code subprocesses spawned later by evolution).
 
 `ASTA_TOOL_KEY` is **not** required for DiscoveryBench (no Asta MCP tools).
 

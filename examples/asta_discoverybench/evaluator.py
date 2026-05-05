@@ -285,12 +285,19 @@ class DiscoveryBenchEvaluator:
         # produce an agent that calls Claude or Gemini at any iteration,
         # and the failure mode if the key is missing is a 401 mid-run
         # (worst time to discover the gap). Fail loudly at startup
-        # instead.
-        missing = [k for k in (
-            "OPENAI_API_KEY",       # gpt-5.4-mini + gpt-4o-2024-08-06 judge
-            "ANTHROPIC_API_KEY",    # claude-haiku-4-5-20251001
-            "GOOGLE_API_KEY",       # gemini-3.1-flash-lite-preview
-        ) if not os.environ.get(k)]
+        # instead. ANTHROPIC accepts either ANTHROPIC_API_KEY or
+        # ANTHROPIC_API_KEY_FOR_ROBOPHD per RoboPhD convention; the
+        # FOR_ROBOPHD variant lets the user's Claude Code CLI keep
+        # using its own subscription credentials while RoboPhD uses a
+        # separate API key (see model_registry.py).
+        missing = []
+        if not os.environ.get("OPENAI_API_KEY"):
+            missing.append("OPENAI_API_KEY")
+        if not (os.environ.get("ANTHROPIC_API_KEY") or
+                os.environ.get("ANTHROPIC_API_KEY_FOR_ROBOPHD")):
+            missing.append("ANTHROPIC_API_KEY (or ANTHROPIC_API_KEY_FOR_ROBOPHD)")
+        if not os.environ.get("GOOGLE_API_KEY"):
+            missing.append("GOOGLE_API_KEY")
         if missing:
             raise RuntimeError(
                 f"Missing required env vars: {', '.join(missing)}. "
