@@ -152,8 +152,8 @@ python examples/asta_discoverybench/main.py --engine gepa
 
 - Per-example **judge** cost is ~$0.015–0.020 (5 fixed gpt-4o-2024-08-06 calls per sample). Evaluator overhead, kept out of `agent_cost_usd` and out of the optimization signal.
 - **Reports separate agent and judge cost.** `eval_cost` (in `result.json`, the "Eval" column of `cost_report.md` and `interim_report.md`) is **agent-only**. Judge spend goes into `other_cost` (the "Other" column, only shown when non-zero). The headline `Total` column sums all buckets — `Eval + Evo + Meta + Other`. Per-problem breakdown is in `agent_cost_usd`, `judge_cost_usd`, `cost_penalty`.
-- A full real/test sweep (239 samples) costs ~$7 just in judge tokens.
-- A default 60-eval training run + final test sweep ≈ $9–$11 total (~$1.20 judge across the 60 evals + $7 final test + agent's own LLM spend at GPT-5.4 Mini rates). Larger configurations (`--examples-per-iteration` / `--num-iterations`) scale roughly linearly.
+- A full real/test sweep (239 samples) costs ~$5 in judge tokens plus ~$2 in agent spend (at the free-zone $0.01/eval).
+- A default training run is **240 evals** (12 iterations × 20 evals/iter — 5 examples/iter × (3 baselines + 1 deep-focus candidate)). Default training run + final test sweep ≈ $14–$17 total: ~$5 judge + ~$2.40 agent across the 240 training evals, plus ~$7 for the final 239-sample test sweep. Larger configurations (`--examples-per-iteration` / `--num-iterations`) scale roughly linearly.
 - Wall-clock: 4–10s sandbox warm-start per sample + agent execution + 5 judge calls ≈ ~50s/sample observed.
 
 ## Files
