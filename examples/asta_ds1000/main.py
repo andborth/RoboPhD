@@ -67,6 +67,12 @@ SPLIT_SEED = 42
 # hits over 15 iterations vs ~3 at 20/iter.
 DEFAULT_EXAMPLES_PER_ITERATION = 10
 
+# Default iteration cap. Same single-source-of-truth pattern as
+# DEFAULT_EXAMPLES_PER_ITERATION above — referenced from
+# _build_dataset's return tuple and from the argparse help text via
+# f-string interpolation, so changing this constant updates both.
+DEFAULT_NUM_ITERATIONS = 15
+
 
 def _build_dataset(phase: str):
     """Build (train_pool, test_pool, examples_per_iter, evaluation_budget,
@@ -93,9 +99,9 @@ def _build_dataset(phase: str):
         test = test_full
 
     # Iteration-bounded: examples/iter=DEFAULT_EXAMPLES_PER_ITERATION,
-    # num_iterations=15 → 150 evals at the default. Set evaluation_budget
-    # high enough not to bind.
-    return train, test, DEFAULT_EXAMPLES_PER_ITERATION, 999_999, 15
+    # num_iterations=DEFAULT_NUM_ITERATIONS → 150 evals at the default.
+    # Set evaluation_budget high enough not to bind.
+    return train, test, DEFAULT_EXAMPLES_PER_ITERATION, 999_999, DEFAULT_NUM_ITERATIONS
 
 
 # ---------------------------------------------------------------------------
@@ -165,7 +171,7 @@ def parse_args():
 
     p.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd")
     p.add_argument("--num-iterations", type=int, default=None,
-                   help="Override the default iteration cap (15)")
+                   help=f"Override the default iteration cap ({DEFAULT_NUM_ITERATIONS})")
     p.add_argument("--examples-per-iteration", type=int, default=None,
                    help=f"Override the default per-iteration sample size ({DEFAULT_EXAMPLES_PER_ITERATION})")
     p.add_argument("--evaluation-budget", type=int, default=None,

@@ -31,6 +31,12 @@ _GPT_5_4_MINI_ID = "openai/gpt-5.4-mini"
 _GPT_5_4_ID = "openai/gpt-5.4-2026-03-05"
 _CLAUDE_HAIKU_4_5_ID = "anthropic/claude-haiku-4-5-20251001"
 _CLAUDE_SONNET_4_6_ID = "anthropic/claude-sonnet-4-6"
+# Note: the Anthropic IDs are asymmetric in date-stamping (Haiku
+# is stamped, Sonnet is not). This mirrors the actual upstream
+# model-ID conventions — DO NOT "normalize" them by adding a
+# date stamp to Sonnet or removing it from Haiku without
+# verifying the resulting strings still resolve. Inspect-AI
+# routes to whatever the provider's canonical id is.
 _GEMINI_3_1_FLASH_LITE_PREVIEW_ID = "google/gemini-3.1-flash-lite-preview"
 _GEMINI_3_FLASH_PREVIEW_ID = "google/gemini-3-flash-preview"
 
