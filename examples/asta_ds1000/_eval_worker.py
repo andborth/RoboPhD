@@ -15,7 +15,7 @@ Input JSON shape:
   {"candidate": {"agent.py": "..."},
    "example": {<Sample.model_dump()>},
    "apply_cost_penalty": true,
-   "min_cost_threshold": 0.01,
+   "min_cost_threshold": 0.02,
    "cost_penalty_saturation": 1.0}
 
 Output JSON shape:

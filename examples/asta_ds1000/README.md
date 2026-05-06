@@ -143,18 +143,18 @@ During training the per-example score is:
 
 ```
 score = 100 · raw_score − cost_penalty
-cost_penalty = clip((agent_spend − $0.01) / ($1.00 − $0.01), 0, 1)
+cost_penalty = clip((agent_spend − $0.02) / ($1.00 − $0.02), 0, 1)
 ```
 
-`raw_score` is the binary 0/1 from the canonical scorer. The penalty's `[0, 1]` range is two orders of magnitude smaller than the score axis, so it acts as a tiebreaker between correctness-tied agents — it never reorders agents whose correctness differs. Worked examples at leaderboard reference points:
+`raw_score` is the binary 0/1 from the canonical scorer. The penalty's `[0, 1]` range is two orders of magnitude smaller than the score axis, so it acts as a tiebreaker between correctness-tied agents — it never reorders agents whose correctness differs. The free-zone width ($0.02) is calibrated so the typical "cheap" leaderboard entries sit flat in the free zone — selection pressure between cheap-vs-cheap matchups stays accuracy-driven (resolved via `random_agent_wins_ties` on true ties) rather than collapsing into sub-cent cost differences. Worked examples at leaderboard reference points:
 
 | Per-eval spend | Cost penalty |
 | --- | --- |
 | $0.001 (cheap seed) | 0.000 (free zone) |
-| $0.02 (leaderboard floor) | 0.010 |
-| $0.04 (median competitive) | 0.030 |
-| $0.10 | 0.091 |
-| $0.25 (leaderboard top) | 0.242 |
+| $0.02 (leaderboard floor) | 0.000 (at threshold) |
+| $0.04 (median competitive) | 0.020 |
+| $0.10 | 0.082 |
+| $0.25 (leaderboard top) | 0.235 |
 | $1.00 | 1.000 (saturated) |
 
 Per-problem `result.json` carries `raw_score` (the 0/1 outcome before any penalty) and `cost_penalty` (the [0,1] value subtracted) so failure analysis can distinguish "wrong answer" from "correct but expensive" without back-deriving the formula.

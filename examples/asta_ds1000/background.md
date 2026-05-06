@@ -100,7 +100,7 @@ A subset of problems additionally enforce **style/idiom constraints on the submi
 
 ## Per-example score
 
-During training, the per-example score is `100 × (0 or 1) − cost_penalty`, where the binary part is correctness and `cost_penalty ∈ [0, 1]` is a bounded function of agent LLM spend (only `get_model()` calls are metered — `python_session` and `sandbox()` don't count). Spend below **$0.01** incurs zero penalty (free zone). Above $0.01 the penalty ramps linearly, hitting its maximum of 1.0 at **$1.00** of per-example agent spend; further spend incurs no extra penalty. The penalty's [0, 1] range is two orders of magnitude smaller than the score scale, so it acts as a tiebreaker between correctness-tied agents — it never overrides a real correctness gap.
+During training, the per-example score is `100 × (0 or 1) − cost_penalty`, where the binary part is correctness and `cost_penalty ∈ [0, 1]` is a bounded function of agent LLM spend (only `get_model()` calls are metered — `python_session` and `sandbox()` don't count). Spend below **$0.02** incurs zero penalty (free zone). Above $0.02 the penalty ramps linearly, hitting its maximum of 1.0 at **$1.00** of per-example agent spend; further spend incurs no extra penalty. The penalty's [0, 1] range is two orders of magnitude smaller than the score scale, so it acts as a tiebreaker between correctness-tied agents — it never overrides a real correctness gap.
 
 ## Diagnostics
 

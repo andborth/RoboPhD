@@ -65,7 +65,14 @@ _unpriced_models_warned: set[str] = set()
 # so the [0, 1] penalty acts as a tiebreaker that never overrides
 # correctness gaps. Test scores remain raw 0/1 — leaderboard parity.
 SCORE_SCALE = 100.0
-MIN_COST_THRESHOLD = 0.01      # matches DiscoveryBench
+# Free-zone width set to $0.02 (one notch above DiscoveryBench's $0.01)
+# so the typical "cheap" leaderboard entries (~$0.02/problem) sit flat
+# in the free zone — keeping cost from acting as a near-deterministic
+# tiebreaker on the binary 0/1 correctness scores at small per-iteration
+# task counts. With n=10 binary tasks correctness ties are common; if
+# every cheap-vs-cheap matchup were resolved by sub-cent cost diffs the
+# selection step would become approximately accuracy-blind.
+MIN_COST_THRESHOLD = 0.02
 COST_PENALTY_SATURATION = 1.0  # matches DiscoveryBench
 
 # Keys in state.metadata the agent must NOT see. The scorer reads
@@ -455,12 +462,12 @@ class Ds1000Evaluator:
         if missing:
             raise RuntimeError(
                 f"Missing required env vars: {', '.join(missing)}. "
-                f"DS-1000 evolution may pick any of three solver models "
-                f"(gpt-5.4-mini, claude-haiku-4-5-20251001, "
-                f"gemini-3.1-flash-lite-preview); all three provider keys "
-                f"must be set before running, or evolution will fail "
-                f"mid-run when it produces an agent that uses a model "
-                f"with no key configured."
+                f"DS-1000 evolution may pick any of six solver models "
+                f"across three providers (OpenAI, Anthropic, Google); "
+                f"see model_registry.py for the full handle list. All "
+                f"three provider keys must be set before running, or "
+                f"evolution will fail mid-run when it produces an agent "
+                f"that uses a model with no key configured."
             )
         if not skip_docker_check:
             _check_docker_available()
