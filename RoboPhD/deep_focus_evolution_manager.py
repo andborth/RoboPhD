@@ -164,6 +164,12 @@ class DeepFocusEvolutionManager:
         self.experiment_dir = experiment_dir
         self.current_iteration = current_iteration
 
+        # Drop the sandbox settings into this iteration's cwd. Claude
+        # CLI only loads .claude/settings.local.json from the cwd it's
+        # invoked with (no walk-up), so each iteration needs its own copy.
+        from RoboPhD.researcher import install_iteration_sandbox
+        install_iteration_sandbox(working_dir, experiment_dir)
+
         # Generate unique session ID for this evolution run
         self.session_id = str(uuid.uuid4())
 

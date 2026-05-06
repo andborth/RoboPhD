@@ -77,6 +77,11 @@ class MetaEvolutionManager:
         self._task_objective = getattr(domain, 'task_objective', '') if domain else ''
         self.output_dir = experiment_dir / "meta_evolution_output"
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        # Drop the sandbox settings into the meta-evolution cwd. Claude
+        # CLI requires .claude/settings.local.json AT cwd (no walk-up),
+        # and meta_evolution invokes Claude with cwd=output_dir.
+        from RoboPhD.researcher import install_iteration_sandbox
+        install_iteration_sandbox(self.output_dir, experiment_dir)
         # Persistent Claude Code session shared across all firings within the run.
         self.session_id: Optional[str] = session_id
         self.initial_firing_complete: bool = initial_firing_complete

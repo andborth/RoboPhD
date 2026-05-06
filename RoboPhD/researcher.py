@@ -68,6 +68,32 @@ import psutil
 logger = logging.getLogger(__name__)
 
 
+SANDBOX_SETTINGS_RELPATH = ".claude/settings.local.json"
+
+
+def install_iteration_sandbox(working_dir: Path, experiment_dir: Path) -> None:
+    """Copy the experiment's sandbox settings into a working_dir.
+
+    Claude CLI does NOT walk up from cwd to find ``.claude/settings.local.json``
+    — confirmed empirically. The settings file must sit AT the cwd Claude
+    is invoked with. So evolution managers call this at the top of each
+    evolve_agent / meta_evolution firing to drop the sandbox config into
+    that iteration's working dir.
+
+    The experiment-level file at ``<experiment_dir>/.claude/settings.local.json``
+    is the template (written once by ``_install_evolution_sandbox``); this
+    helper just copies it. If the template doesn't exist (e.g., the
+    experiment was created before the sandbox feature), this is a no-op
+    so old experiments still work on resume.
+    """
+    src = experiment_dir / SANDBOX_SETTINGS_RELPATH
+    if not src.exists():
+        return
+    dst_dir = working_dir / ".claude"
+    dst_dir.mkdir(exist_ok=True)
+    (dst_dir / "settings.local.json").write_text(src.read_text())
+
+
 def _install_evolution_sandbox(
     experiment_dir: Path,
     extra_read_paths: Optional[List[str]] = None,
@@ -75,12 +101,12 @@ def _install_evolution_sandbox(
     """Configure the per-experiment Claude CLI sandbox.
 
     Two side effects, both anchored at experiment-dir creation:
-      1. Write <experiment_dir>/.claude/settings.local.json with a
-         PreToolUse hook that points at utilities/sandbox_hook.py.
-         Claude CLI walks up from each iteration's cwd to discover
-         this file and applies the hook for every tool call in the
-         session. Read scope = the experiment dir; write scope = the
-         tool's cwd.
+      1. Write <experiment_dir>/.claude/settings.local.json as a
+         template. Evolution managers copy this into each iteration's
+         working dir at the top of every evolve_agent / meta_evolution
+         firing via :func:`install_iteration_sandbox`. (Claude CLI
+         doesn't walk up to find settings, so the file must live AT
+         the cwd it's invoked with.)
       2. Start a daemon thread that tails
          <experiment_dir>/sandbox_denials.jsonl and emits each new
          denial through the standard logger as a WARNING. This makes
