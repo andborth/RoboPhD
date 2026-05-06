@@ -3558,6 +3558,31 @@ class ParallelAgentResearcher:
             report_lines.append(f"{i}. {agent}: ${cost:.2f} (avg ${avg:.3f}/problem)")
         report_lines.append("")
 
+        # Top 3 most expensive tasks per agent (eval cost only, fresh runs only).
+        # Cached tasks have $0 eval cost from reuse and don't reflect agent behavior,
+        # so we filter them out. Skip the whole section if every agent's tasks are zero.
+        per_agent_top = []
+        for agent_id in all_agents:
+            tasks = [
+                (ctx, cost_matrix[ctx][agent_id]['eval'])
+                for ctx in sorted_contexts
+                if agent_id in cost_matrix.get(ctx, {})
+                and cost_matrix[ctx][agent_id]['eval'] > 0
+            ]
+            tasks.sort(key=lambda x: x[1], reverse=True)
+            per_agent_top.append((agent_id, tasks[:3]))
+
+        if any(top for _, top in per_agent_top):
+            report_lines.append("### Top 3 Most Expensive Tasks per Agent")
+            report_lines.append("")
+            for agent_id, top in per_agent_top:
+                if not top:
+                    continue
+                report_lines.append(f"**{agent_id}**")
+                for i, (ctx, cost) in enumerate(top, 1):
+                    report_lines.append(f"{i}. {ctx}: ${cost:.2f}")
+                report_lines.append("")
+
         # Write report
         cost_report_path = iteration_dir / "cost_report.md"
         with open(cost_report_path, 'w') as f:
