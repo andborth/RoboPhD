@@ -31,18 +31,24 @@ On the **first** evaluator run, AstaBench's image is pulled (~2–2.5 GB; one-ti
 
 ### 3. Credentials
 
-DS-1000 evolution may pick any of three solver models (GPT-5.4 Mini, Claude Haiku 4.5, Gemini 3.1 Flash Lite Preview). All three provider keys must be set before running, even if your seed only uses one — evolution can produce an agent that uses any of the three at any iteration, and a 401 mid-run is the worst time to discover a missing key.
+DS-1000 evolution may pick any of six solver models, paired by family into a cheap/fast tier and a stronger/slower tier:
+
+- OpenAI: GPT-5.4 Mini / GPT-5.4 (full)
+- Anthropic: Claude Haiku 4.5 / Claude Sonnet 4.6
+- Google: Gemini 3.1 Flash Lite Preview / Gemini 3 Flash Preview
+
+All three provider keys must be set before running, even if your seed only uses one — evolution can produce an agent that uses any of the six at any iteration, and a 401 mid-run is the worst time to discover a missing key.
 
 ```bash
-# OpenAI — seed model (gpt-5.4-mini)
+# OpenAI — seed model (gpt-5.4-mini); evolution may also pick gpt-5.4 (full)
 export OPENAI_API_KEY="sk-..."
 
-# Anthropic — claude-haiku-4-5-20251001. Prefer ANTHROPIC_API_KEY_FOR_ROBOPHD
+# Anthropic — Haiku 4.5 / Sonnet 4.6. Prefer ANTHROPIC_API_KEY_FOR_ROBOPHD
 # so your Claude Code CLI sessions (which read ANTHROPIC_API_KEY) keep using
 # their normal subscription credentials. Either env var works.
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."
 
-# Google — gemini-3.1-flash-lite-preview
+# Google — Gemini 3.1 Flash Lite Preview / Flash Image Preview
 export GOOGLE_API_KEY="..."
 ```
 
@@ -91,7 +97,7 @@ python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir>
 python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir> --phase final
 ```
 
-Default models: GPT-5.4 Mini, Claude Haiku 4.5, Gemini 3.1 Flash Lite Preview (registry; the seed picks GPT-5.4 Mini, evolution may pick any of the three).
+Default models: six handles in `model_registry.py`, paired by family into a mini/standard tier (the seed picks GPT-5.4 Mini; evolution may pick any of the six per call).
 
 ```bash
 # Tighten the cost-penalty endpoints (ablation):
@@ -159,7 +165,15 @@ The training evaluator applies the formula above. The test evaluator (derived vi
 
 ### Model registry
 
-Three pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside the candidate's `file_mapping`, which only contains `agent.py`): `GPT_5_4_MINI`, `CLAUDE_HAIKU_4_5`, `GEMINI_3_1_FLASH_LITE_PREVIEW`. Evolved agents `from model_registry import` whichever they want and call `.generate()`; the underlying model strings are not part of the evolvable artifact, so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — an agent produced at iteration 4 might use Claude Haiku, and a 401 mid-run is a worse failure mode than a startup error.
+Six pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside the candidate's `file_mapping`, which only contains `agent.py`), paired by family:
+
+- OpenAI: `GPT_5_4_MINI`, `GPT_5_4`
+- Anthropic: `CLAUDE_HAIKU_4_5`, `CLAUDE_SONNET_4_6`
+- Google: `GEMINI_3_1_FLASH_LITE_PREVIEW`, `GEMINI_3_FLASH_PREVIEW`
+
+Pairing same-family handles by tier (mini/standard) lets evolution choose between cheap-and-fast or stronger-and-slower per call. Evolved agents `from model_registry import` whichever they want and call `.generate()`; the underlying model strings are not part of the evolvable artifact, so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — an agent produced at iteration 4 might use Claude Sonnet, and a 401 mid-run is a worse failure mode than a startup error.
+
+Provider-prefix translation: Inspect-AI requires `google/...` to route Google models, but litellm prices them under `gemini/...`. `evaluator.py:_estimate_cost` normalizes at the cost-pricing boundary (translates `google/` → `gemini/`) so cost tracking works for the Gemini handles. Without this, Gemini calls would silently price as $0 — the once-per-process "model priced at $0 despite tokens" warning would fire as the symptom.
 
 ### Subprocess isolation
 

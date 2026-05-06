@@ -833,6 +833,11 @@ class Ds1000Evaluator:
         means litellm's pricing table doesn't know about a recent
         model, in which case the cost cap silently never fires. Loud
         failure beats silently-zero spend tracking.
+
+        Provider-prefix translation: Inspect-AI requires `google/...`
+        for routing Google models, but litellm prices them under
+        `gemini/...`. We normalize at the cost-pricing boundary so
+        the registry's `google/...` strings price correctly.
         """
         try:
             import litellm
@@ -840,9 +845,14 @@ class Ds1000Evaluator:
             return 0.0
         input_tokens = counts.get("input_tokens", 0)
         output_tokens = counts.get("output_tokens", 0)
+        litellm_name = (
+            "gemini/" + model_name[len("google/"):]
+            if model_name.startswith("google/")
+            else model_name
+        )
         try:
             pin, pout = litellm.cost_per_token(
-                model=model_name,
+                model=litellm_name,
                 prompt_tokens=input_tokens,
                 completion_tokens=output_tokens,
             )

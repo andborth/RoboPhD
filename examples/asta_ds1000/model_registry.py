@@ -1,14 +1,20 @@
 """Model registry for DS-1000 evolved agents.
 
-Exports three pre-resolved Inspect-AI Model handles. Evolved agents
-import these handles and call `.generate(...)` on them; the underlying
-provider/model strings live here, OUTSIDE the evolvable artifact
-(agent.py is the only file in a candidate's file_mapping). This keeps
-evolution from substituting an arbitrary provider/model.
+Exports six pre-resolved Inspect-AI Model handles, paired by family
+into a cheap/fast tier and a stronger/slower tier:
+
+  OpenAI:    GPT_5_4_MINI                  / GPT_5_4
+  Anthropic: CLAUDE_HAIKU_4_5              / CLAUDE_SONNET_4_6
+  Google:    GEMINI_3_1_FLASH_LITE_PREVIEW / GEMINI_3_FLASH_PREVIEW
+
+Evolved agents import these handles and call `.generate(...)` on them;
+the underlying provider/model strings live here, OUTSIDE the evolvable
+artifact (agent.py is the only file in a candidate's file_mapping).
+This keeps evolution from substituting an arbitrary provider/model.
 
 Usage from agent.py:
 
-    from model_registry import GPT_5_4_MINI, CLAUDE_HAIKU_4_5
+    from model_registry import GPT_5_4_MINI, CLAUDE_SONNET_4_6
     resp = await GPT_5_4_MINI.generate("...", config=GenerateConfig(...))
 
 Pick one per call, or mix across calls. The per-example cost penalty
@@ -22,8 +28,11 @@ from inspect_ai.model import get_model
 
 # Internal — strings stay private so agent.py doesn't import them.
 _GPT_5_4_MINI_ID = "openai/gpt-5.4-mini"
+_GPT_5_4_ID = "openai/gpt-5.4-2026-03-05"
 _CLAUDE_HAIKU_4_5_ID = "anthropic/claude-haiku-4-5-20251001"
+_CLAUDE_SONNET_4_6_ID = "anthropic/claude-sonnet-4-6"
 _GEMINI_3_1_FLASH_LITE_PREVIEW_ID = "google/gemini-3.1-flash-lite-preview"
+_GEMINI_3_FLASH_PREVIEW_ID = "google/gemini-3-flash-preview"
 
 # RoboPhD convention: prefer ANTHROPIC_API_KEY_FOR_ROBOPHD over
 # ANTHROPIC_API_KEY so the user's Claude Code CLI sessions (which read
@@ -44,8 +53,11 @@ _ANTHROPIC_API_KEY = (
 # at get_model() construction time. Importing this module therefore
 # requires all three provider keys to be available (Anthropic via
 # either ANTHROPIC_API_KEY or ANTHROPIC_API_KEY_FOR_ROBOPHD), even if
-# you only intend to call one of the three handles. See README.md
+# you only intend to call one of the six handles. See README.md
 # "Credentials" for the user-facing version.
 GPT_5_4_MINI = get_model(_GPT_5_4_MINI_ID)
+GPT_5_4 = get_model(_GPT_5_4_ID)
 CLAUDE_HAIKU_4_5 = get_model(_CLAUDE_HAIKU_4_5_ID, api_key=_ANTHROPIC_API_KEY)
+CLAUDE_SONNET_4_6 = get_model(_CLAUDE_SONNET_4_6_ID, api_key=_ANTHROPIC_API_KEY)
 GEMINI_3_1_FLASH_LITE_PREVIEW = get_model(_GEMINI_3_1_FLASH_LITE_PREVIEW_ID)
+GEMINI_3_FLASH_PREVIEW = get_model(_GEMINI_3_FLASH_PREVIEW_ID)

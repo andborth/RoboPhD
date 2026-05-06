@@ -74,15 +74,15 @@ Most DS-1000 problems don't need files, but the API is available.
 
 ## LLM calls
 
-Three model handles are available, imported from `model_registry`:
+Six model handles are available, imported from `model_registry`. They pair by family into a cheap/fast tier and a stronger/slower tier:
 
-- `GPT_5_4_MINI`
-- `CLAUDE_HAIKU_4_5`
-- `GEMINI_3_1_FLASH_LITE_PREVIEW`
+- `GPT_5_4_MINI`, `GPT_5_4`
+- `CLAUDE_HAIKU_4_5`, `CLAUDE_SONNET_4_6`
+- `GEMINI_3_1_FLASH_LITE_PREVIEW`, `GEMINI_3_FLASH_PREVIEW`
 
 ```python
 from inspect_ai.model import GenerateConfig
-from model_registry import GPT_5_4_MINI, CLAUDE_HAIKU_4_5, GEMINI_3_1_FLASH_LITE_PREVIEW
+from model_registry import GPT_5_4_MINI, CLAUDE_SONNET_4_6, GEMINI_3_FLASH_PREVIEW
 
 resp = await GPT_5_4_MINI.generate(
     "Your prompt here", config=GenerateConfig(temperature=0.0)
@@ -90,7 +90,7 @@ resp = await GPT_5_4_MINI.generate(
 text = resp.completion
 ```
 
-Use one of these when you want to make an LLM call. You can decide to use only one of these models, or you can mix them across calls. `config` is optional; pass a `GenerateConfig` to set sampling parameters such as `temperature`. See `inspect_ai.model.GenerateConfig` for the full set. All LLM calls must go through one of the three handles above.
+Use one of these when you want to make an LLM call. You can decide to use only one model, or mix them across calls — for example, route easy problems to a mini-tier handle and hard problems to a stronger-tier handle. `config` is optional; pass a `GenerateConfig` to set sampling parameters such as `temperature`. See `inspect_ai.model.GenerateConfig` for the full set. All LLM calls must go through one of the six handles above.
 
 ## Scoring
 

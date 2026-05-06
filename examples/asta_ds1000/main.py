@@ -58,6 +58,15 @@ logger = logging.getLogger(__name__)
 # --random-seed only affects RoboPhD's per-iteration draws.
 SPLIT_SEED = 42
 
+# Default per-iteration sample size. Single source of truth: referenced
+# from _build_dataset's return tuple AND from the argparse help text,
+# so changing this constant updates both the run-time default and the
+# user-facing default-listed-in-help. 10 (down from 20) reduces the
+# cross-iteration overfit pressure documented in
+# robophd-asta_ds1000-001's reflections — each problem expected ~1.5
+# hits over 15 iterations vs ~3 at 20/iter.
+DEFAULT_EXAMPLES_PER_ITERATION = 10
+
 
 def _build_dataset(phase: str):
     """Build (train_pool, test_pool, examples_per_iter, evaluation_budget,
@@ -83,9 +92,10 @@ def _build_dataset(phase: str):
     else:  # final
         test = test_full
 
-    # Iteration-bounded: examples/iter=20, num_iterations=15 → 300 evals.
-    # Set evaluation_budget high enough not to bind.
-    return train, test, 20, 999_999, 15
+    # Iteration-bounded: examples/iter=DEFAULT_EXAMPLES_PER_ITERATION,
+    # num_iterations=15 → 150 evals at the default. Set evaluation_budget
+    # high enough not to bind.
+    return train, test, DEFAULT_EXAMPLES_PER_ITERATION, 999_999, 15
 
 
 # ---------------------------------------------------------------------------
@@ -157,7 +167,7 @@ def parse_args():
     p.add_argument("--num-iterations", type=int, default=None,
                    help="Override the default iteration cap (15)")
     p.add_argument("--examples-per-iteration", type=int, default=None,
-                   help="Override the default per-iteration sample size (20)")
+                   help=f"Override the default per-iteration sample size ({DEFAULT_EXAMPLES_PER_ITERATION})")
     p.add_argument("--evaluation-budget", type=int, default=None,
                    help="Override the default evaluation budget (iter-bounded)")
 
