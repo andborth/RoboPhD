@@ -67,6 +67,18 @@ BASH_PASSTHROUGH = {
     "sleep", "yes", "seq",
 }
 
+# Bash control-flow keywords. shlex collapses newlines to whitespace,
+# so a multi-line `for ...; do echo a; cat /path; done` lands as
+# segments split on `;` whose body segment is `do echo a` (or `do cat
+# /path` etc.) — leading token is `do`, which isn't a command. We
+# strip leading control keywords from each segment so the classifier
+# reaches the real body command underneath.
+BASH_CONTROL_KEYWORDS = {
+    "for", "while", "until", "if", "case", "select",
+    "do", "then", "else", "elif",
+    "done", "fi", "esac",
+}
+
 # Special path strings that are never scope-checked.
 PATH_EXEMPT = {"/dev/null", "/dev/stdout", "/dev/stderr", "/dev/tty", "-"}
 
@@ -116,19 +128,25 @@ def classify_bash_segment(tokens: list) -> tuple:
 
     Returns ``(read_paths, write_paths, fail_reason)``:
         - ``fail_reason is None`` means classify normally (use the
-          collected path lists).
+          collected path lists; allow if all paths satisfy the read /
+          write scope checks in :func:`main`).
         - ``fail_reason == "subprocess_bypass"`` means the segment
           uses a construct (find -exec, xargs, etc.) that invokes
           subprocesses we can't see — paths in those calls bypass
           per-command classification. Fail closed.
-        - ``fail_reason == "unknown_command"`` means the leading
-          command isn't in any classifier table AND there are
-          path-shaped tokens we can't reliably attribute to
-          read-vs-write. Fail closed.
+
+    Unknown commands with path-shaped tokens are NOT a fail-reason:
+    we default to treating those tokens as reads (see policy comment
+    inside the function). The read-scope check still denies anything
+    outside experiment_dir; the residual risk (an unknown command
+    that's actually a write writing within experiment_dir) is bounded
+    and accepted in exchange for not playing whack-a-mole with novel
+    command shapes invented by the agent.
 
     Handles redirects (``>``, ``>>``, ``&>``, ``2>``, ``<``) by
     extracting the redirect target out of ``tokens`` before command
-    classification.
+    classification. Strips leading ``env VAR=val`` and shell control
+    keywords (``for``, ``do``, ``then``, ...) before lookup.
     """
     read_paths: list = []
     write_paths: list = []
@@ -169,6 +187,15 @@ def classify_bash_segment(tokens: list) -> tuple:
             if "/" in remaining[0].split("=", 1)[0]:
                 break
             remaining = remaining[1:]
+
+    # Strip leading shell control keywords (`for`, `while`, `do`, `then`,
+    # ...). shlex eats newlines, so a multi-line for-loop body whose
+    # statements are newline-separated collapses to a single `;`-segment
+    # whose first token is `do`. Without this strip the classifier would
+    # try to look up `do` as a command and fail closed despite the actual
+    # body command (cat / echo / etc.) being right behind it.
+    while remaining and remaining[0] in BASH_CONTROL_KEYWORDS:
+        remaining = remaining[1:]
 
     if not remaining:
         return read_paths, write_paths, None
@@ -248,24 +275,39 @@ def classify_bash_segment(tokens: list) -> tuple:
                 read_paths.append(a)
         return read_paths, write_paths, None
 
-    # Unknown command. If it has any path-shaped tokens, fail closed —
-    # we don't know whether they're sources, sinks, regex patterns, or
-    # something else.
-    if any(looks_like_path(a) for a in args):
-        return read_paths, write_paths, "unknown_command"
+    # Unknown command with path-shaped tokens. We can't tell read-vs-write,
+    # but rather than fail-closing into an arms race against creative
+    # agents inventing novel command shapes, default to treating path
+    # tokens as reads. The read-scope check still denies anything outside
+    # experiment_dir; the residual risk is that an unknown command which
+    # is actually a write would write somewhere in experiment_dir
+    # (possibly a sibling iter dir) — bounded, undesirable for run-to-run
+    # hygiene, but not a sandbox-breaking exfil. The fail-closed
+    # alternative was producing real false positives in evolution runs
+    # (e.g., `frobnicate <path-in-scope>` denied even when intent was
+    # clearly a read).
+    for a in args:
+        if not a.startswith("-") and looks_like_path(a):
+            read_paths.append(a)
     return read_paths, write_paths, None
 
 
 def split_compound(command: str) -> list:
     """Split a Bash command on top-level pipes/semicolons/&&/|| boundaries.
 
-    Returns a list of token-lists, one per segment. Tokens are produced
-    via shlex.split with posix=True. If shlex fails (unbalanced quotes,
-    heredocs we don't model), returns None to signal "unparseable —
-    fail closed."
+    Returns a list of token-lists, one per segment. If shlex fails
+    (unbalanced quotes, heredocs we don't model), returns None to
+    signal "unparseable — fail closed."
+
+    Uses ``punctuation_chars=True`` so separators glued to other tokens
+    (``false;`` → ``false ;``) split correctly. Plain ``shlex.split``
+    keeps ``;`` glued to the preceding token, which silently broke
+    every for/while loop body classification.
     """
     try:
-        all_tokens = shlex.split(command, posix=True)
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+        lexer.whitespace_split = True
+        all_tokens = list(lexer)
     except ValueError:
         return None
 
@@ -557,27 +599,10 @@ def main() -> int:
                 })
                 return 0
 
-            if fail_reason == "unknown_command":
-                emit_decision(
-                    "deny",
-                    "Sandbox denied. Bash command not in classifier and "
-                    "contains path-shaped tokens — refusing to allow without "
-                    "knowing whether they're sources or sinks. Use Read/Edit/"
-                    "Write tools instead, or extend "
-                    "utilities/sandbox_hook.py to teach the classifier this "
-                    "command.\n"
-                    f"Command: {' '.join(tokens)}",
-                )
-                append_denial_record({
-                    "ts": datetime.now().isoformat(timespec="seconds"),
-                    "tool": "Bash",
-                    "scope": "classifier",
-                    "blocked_path": "",
-                    "command": command,
-                    "cwd": cwd_real,
-                    "reason": f"unknown command with path tokens: {tokens[0]}",
-                })
-                return 0
+            # `unknown_command` is no longer produced by classify_bash_segment
+            # — see the read-default policy in the function body. Path tokens
+            # under unknown commands now flow into read_paths and are subject
+            # to the read-scope check below.
 
             ok, blocked = check_read_paths(read_paths, experiment_dir,
                                             extra_read_roots, cwd_real)

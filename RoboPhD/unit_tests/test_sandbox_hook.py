@@ -388,15 +388,38 @@ def test_bash_passthrough_no_path_tokens(cmd, experiment_layout):
 # ---------------------------------------------------------------------
 
 
-def test_bash_unknown_cmd_with_path_denies(experiment_layout):
+def test_bash_unknown_cmd_with_path_in_read_scope_allows(experiment_layout):
+    """Unknown commands default to treating path tokens as reads.
+
+    Policy decision (2026-05-06): rather than fail-close on every
+    novel command shape (`frobnicate`, `mlr`, `dasel`, etc.) and
+    play whack-a-mole with the agent's creativity, treat path tokens
+    as reads and let the read-scope check do the gating. If the path
+    is in scope, allow; if outside, deny via the standard read-scope
+    deny path.
+    """
     layout = experiment_layout
     target = layout["agents_dir"] / "agent.py"
     res = run_hook(
         make_envelope("Bash", {"command": f"frobnicate {target}"}, layout["cwd"]),
         layout["experiment_dir"],
     )
+    assert res["decision"] is None, res
+
+
+def test_bash_unknown_cmd_with_path_outside_read_scope_denies(experiment_layout):
+    """Unknown command + path outside read scope → standard read-scope deny."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": f"frobnicate {layout['sibling_agent']}"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
     assert res["decision"] == "deny"
-    assert "not in classifier" in res["reason"]
+    assert "outside read scope" in res["reason"]
 
 
 def test_bash_unknown_cmd_no_path_allows(experiment_layout):
@@ -523,19 +546,109 @@ def test_bash_xargs_fails_closed(experiment_layout):
     assert "xargs" in res["reason"]
 
 
-def test_bash_unknown_command_message_unchanged(experiment_layout):
-    """Truly-unknown commands still get the classifier-omission message
-    (distinct from the subprocess-bypass message)."""
+def test_bash_unknown_cmd_routes_through_read_scope_not_subprocess_bypass(
+    experiment_layout,
+):
+    """When an unknown command's path lands outside read scope, the deny
+    routes through the standard read-scope check, not the subprocess-bypass
+    message. (subprocess-bypass is reserved for find -exec / xargs.)"""
     layout = experiment_layout
-    target = layout["agents_dir"] / "agent.py"
     res = run_hook(
-        make_envelope("Bash", {"command": f"frobnicate {target}"}, layout["cwd"]),
+        make_envelope(
+            "Bash",
+            {"command": f"frobnicate {layout['sibling_agent']}"},
+            layout["cwd"],
+        ),
         layout["experiment_dir"],
     )
     assert res["decision"] == "deny"
-    assert "not in classifier" in res["reason"]
-    # Must NOT route to the subprocess-bypass branch
+    assert "outside read scope" in res["reason"]
     assert "subprocesses" not in res["reason"]
+
+
+# ---------------------------------------------------------------------
+# Shell control flow (for / while / if / case): strip leading keywords
+# ---------------------------------------------------------------------
+
+
+def test_bash_for_loop_multiline_body_in_scope_allows(experiment_layout):
+    """Multi-line for-loop reading files in the iteration's own dir.
+
+    Reproduces the 2026-05-06 production denial: shlex collapses the
+    newlines, so the body lands in a `;`-segment whose leading token
+    is `do`. Stripping `do` lets the classifier reach `cat <path>`.
+    """
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"
+    cmd = (
+        "for p in 1 2 3; do\n"
+        "  echo === $p ===\n"
+        f"  cat {target}\n"
+        "  echo\n"
+        "done"
+    )
+    res = run_hook(
+        make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
+
+
+def test_bash_for_loop_singleline_body_in_scope_allows(experiment_layout):
+    """Same shape with `;`-delimited body — should classify each
+    body command independently and allow."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": f"for p in 1 2 3; do cat {target}; done"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
+
+
+def test_bash_for_loop_body_path_outside_scope_denies(experiment_layout):
+    """Loop body cat'ing a sibling-run file → must still deny."""
+    layout = experiment_layout
+    cmd = f"for p in 1; do cat {layout['sibling_agent']}; done"
+    res = run_hook(
+        make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_bash_if_then_fi_in_scope_allows(experiment_layout):
+    """`if [ ... ]; then cat <in-scope>; fi` — strip `then`, classify cat."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": f"if true; then cat {target}; fi"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
+
+
+def test_bash_while_loop_with_body_write_outside_cwd_denies(experiment_layout):
+    """Strip `do`, classify the body's `rm` against write scope."""
+    layout = experiment_layout
+    # rm target is in read scope but outside write scope (= cwd) — should deny.
+    target = layout["agents_dir"] / "agent.py"
+    cmd = f"while false; do rm {target}; done"
+    res = run_hook(
+        make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside write scope" in res["reason"]
 
 
 # ---------------------------------------------------------------------
