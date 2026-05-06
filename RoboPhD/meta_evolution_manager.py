@@ -675,7 +675,10 @@ class MetaEvolutionManager:
         # before adding sandbox env.
         extra_env = get_lmstudio_env(model) or {}
         if self.experiment_dir is not None:
-            extra_env["ROBOPHD_EXPERIMENT_DIR"] = str(self.experiment_dir)
+            # Resolve to absolute — the hook resolves this against its
+            # own cwd (= iteration dir), so a relative path would point
+            # at a bogus location.
+            extra_env["ROBOPHD_EXPERIMENT_DIR"] = str(Path(self.experiment_dir).resolve())
 
         try:
             # Run in iteration-specific working directory with rate limit handling
