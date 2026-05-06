@@ -166,20 +166,40 @@ def _install_evolution_sandbox(
     }, indent=2))
 
     denials_path = experiment_dir / "sandbox_denials.jsonl"
+    # /tmp fallback path inside sandbox_hook.append_denial_record. If the
+    # hook ever can't write to <experiment_dir>/sandbox_denials.jsonl
+    # (env-var missing, env-var pointing at non-existent dir, permissions),
+    # records land here. Tail it too with a cwd-prefix filter so misrouted
+    # records still surface in this run's logs. Without this branch the
+    # 2026-05-06 relative-path bug was completely silent — denials existed
+    # only as a /tmp file no one was reading.
+    fallback_path = Path("/tmp/robophd_sandbox_denials.jsonl")
+    experiment_prefix = str(experiment_dir.resolve()) + os.sep
 
-    def _tail_denials() -> None:
-        # Wait for the file to come into existence (the hook only
-        # creates it on the first denial; that may never happen).
-        while not denials_path.exists():
+    def _emit_record(rec: dict, *, fallback: bool) -> None:
+        tag = "FALLBACK " if fallback else ""
+        if rec.get("error"):
+            logger.warning("[sandbox] %sHOOK ERROR: %s", tag, rec.get("error"))
+            return
+        logger.warning(
+            "[sandbox] %sDENY tool=%s scope=%s blocked=%s cmd=%s",
+            tag,
+            rec.get("tool"),
+            rec.get("scope"),
+            rec.get("blocked_path"),
+            rec.get("command", ""),
+        )
+
+    def _tail_file(path: Path, *, fallback: bool, filter_prefix: Optional[str]) -> None:
+        while not path.exists():
             time.sleep(1.0)
         try:
-            # Read from position 0. The file is created by the hook on
-            # the first denial, so there's nothing to "skip ahead" past
-            # — content written between mkdir and our open() call IS
-            # what we want to surface. (For --resume into an existing
-            # experiment dir this would re-emit prior denials, which is
-            # benign.)
-            with denials_path.open() as f:
+            with path.open() as f:
+                if fallback:
+                    # /tmp is shared across runs and may have records
+                    # from prior runs. Skip to end so we only re-emit
+                    # records produced during THIS run.
+                    f.seek(0, 2)
                 while True:
                     line = f.readline()
                     if not line:
@@ -193,20 +213,34 @@ def _install_evolution_sandbox(
                     except json.JSONDecodeError:
                         logger.warning("[sandbox] (unparseable) %s", line)
                         continue
-                    if rec.get("error"):
-                        logger.warning("[sandbox] HOOK ERROR: %s", rec.get("error"))
-                        continue
-                    logger.warning(
-                        "[sandbox] DENY tool=%s scope=%s blocked=%s cmd=%s",
-                        rec.get("tool"),
-                        rec.get("scope"),
-                        rec.get("blocked_path"),
-                        rec.get("command", ""),
-                    )
+                    if filter_prefix is not None:
+                        rec_cwd = rec.get("cwd") or ""
+                        if not (rec_cwd == filter_prefix.rstrip(os.sep)
+                                or rec_cwd.startswith(filter_prefix)):
+                            continue
+                    _emit_record(rec, fallback=fallback)
         except Exception as exc:  # pragma: no cover — defensive
             logger.warning("[sandbox] tail thread crashed: %s", exc)
 
-    threading.Thread(target=_tail_denials, daemon=True, name="sandbox-tail").start()
+    threading.Thread(
+        target=_tail_file,
+        kwargs={"path": denials_path, "fallback": False, "filter_prefix": None},
+        daemon=True, name="sandbox-tail",
+    ).start()
+    threading.Thread(
+        target=_tail_file,
+        kwargs={"path": fallback_path, "fallback": True,
+                "filter_prefix": experiment_prefix},
+        daemon=True, name="sandbox-tail-fallback",
+    ).start()
+
+    # Positive confirmation that the sandbox wired up. Without this, a
+    # silent zero-denial run is indistinguishable from a silent
+    # zero-hook-firing run.
+    logger.info(
+        "[sandbox] installed. exp_dir=%s denials=%s fallback=%s",
+        experiment_dir.resolve(), denials_path, fallback_path,
+    )
 
 
 # Infrastructure errors that indicate system bugs (not agent failures)
