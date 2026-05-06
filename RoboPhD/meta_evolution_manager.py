@@ -643,7 +643,7 @@ class MetaEvolutionManager:
         Raises:
             RuntimeError: If Claude Code call fails
         """
-        from RoboPhD.config import CLAUDE_CLI_MODEL_MAP, get_lmstudio_env
+        from RoboPhD.config import CLAUDE_CLI_MODEL_MAP, build_evolution_env
 
         # Build command
         claude_cli = self._get_claude_cli_path()
@@ -670,15 +670,7 @@ class MetaEvolutionManager:
 
         logger.debug(f"Calling Claude Code: {' '.join(cmd[:4])}...")
 
-        # Get LM Studio env overrides for non-Anthropic models.
-        # get_lmstudio_env returns None for Anthropic models, so coerce
-        # before adding sandbox env.
-        extra_env = get_lmstudio_env(model) or {}
-        if self.experiment_dir is not None:
-            # Resolve to absolute — the hook resolves this against its
-            # own cwd (= iteration dir), so a relative path would point
-            # at a bogus location.
-            extra_env["ROBOPHD_EXPERIMENT_DIR"] = str(Path(self.experiment_dir).resolve())
+        extra_env = build_evolution_env(model, self.experiment_dir)
 
         try:
             # Run in iteration-specific working directory with rate limit handling

@@ -3,7 +3,8 @@ Configuration settings for RoboPhD Text-to-SQL Research System
 """
 
 import os
-from typing import Dict, Optional
+from pathlib import Path
+from typing import Dict, Optional, Union
 
 # Model configuration with pricing from official Anthropic pricing
 SUPPORTED_MODELS = {
@@ -176,3 +177,25 @@ def get_lmstudio_env(model: str, base_url: str = LMSTUDIO_DEFAULT_BASE_URL) -> O
         "ANTHROPIC_BASE_URL": base_url,
         "ANTHROPIC_AUTH_TOKEN": "lmstudio",
     }
+
+
+def build_evolution_env(
+    model: str, experiment_dir: Optional[Union[str, Path]]
+) -> Dict[str, str]:
+    """Build the env dict for an evolution Claude CLI invocation.
+
+    Combines two concerns historically tangled at every call site:
+      * LM Studio routing for non-Anthropic models (None for Anthropic).
+      * Sandbox env var ROBOPHD_EXPERIMENT_DIR (must be ABSOLUTE — the
+        sandbox hook resolves it against its own cwd, which is the
+        iteration dir, so a relative path would point at a bogus
+        location and silently break the cwd-under-experiment-dir gate).
+
+    Centralizing avoids the regression mode where a fix to one call
+    site doesn't reach the other two (e.g., commits f75228e + aa548a4,
+    each of which had to patch three identical blocks).
+    """
+    env: Dict[str, str] = get_lmstudio_env(model) or {}
+    if experiment_dir is not None:
+        env["ROBOPHD_EXPERIMENT_DIR"] = str(Path(experiment_dir).resolve())
+    return env

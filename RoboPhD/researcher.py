@@ -191,15 +191,19 @@ def _install_evolution_sandbox(
         )
 
     def _tail_file(path: Path, *, fallback: bool, filter_prefix: Optional[str]) -> None:
+        # Asymmetry between primary and fallback tail is intentional:
+        # the primary file (<experiment_dir>/sandbox_denials.jsonl) is
+        # per-run, so reading from byte 0 is correct — content written
+        # between mkdir and our open() IS this run's. (On --resume we
+        # may re-emit prior denials, which is benign.) The fallback at
+        # /tmp is shared across runs, so we MUST seek to end or we'd
+        # spam the log with stale records from earlier experiments.
         while not path.exists():
             time.sleep(1.0)
         try:
             with path.open() as f:
                 if fallback:
-                    # /tmp is shared across runs and may have records
-                    # from prior runs. Skip to end so we only re-emit
-                    # records produced during THIS run.
-                    f.seek(0, 2)
+                    f.seek(0, os.SEEK_END)
                 while True:
                     line = f.readline()
                     if not line:

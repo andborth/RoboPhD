@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from RoboPhD.domains.base import DomainInterface
 
 from RoboPhD.domains.base import SampledProblems, EvaluationResult
-from RoboPhD.config import CLAUDE_CLI_MODEL_MAP, get_lmstudio_env
+from RoboPhD.config import CLAUDE_CLI_MODEL_MAP, build_evolution_env
 from utilities.claude_cli import call_claude_cli, claude_cli_settings, RateLimitExceeded
 
 logger = logging.getLogger(__name__)
@@ -934,15 +934,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             "--permission-mode", "bypassPermissions"
         ]
 
-        # Get LM Studio env overrides for non-Anthropic evolution models.
-        # get_lmstudio_env returns None for Anthropic models, so coerce
-        # before adding sandbox env.
-        extra_env = get_lmstudio_env(self.evolution_model) or {}
-        if self.experiment_dir is not None:
-            # Resolve to absolute — the hook resolves this against its
-            # own cwd (= iteration dir), so a relative path would point
-            # at a bogus location.
-            extra_env["ROBOPHD_EXPERIMENT_DIR"] = str(Path(self.experiment_dir).resolve())
+        extra_env = build_evolution_env(self.evolution_model, self.experiment_dir)
 
         try:
             result = call_claude_cli(
@@ -1016,15 +1008,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
 
         logger.debug(f"Calling Claude Code: {' '.join(cmd[:4])}...")
 
-        # Get LM Studio env overrides for non-Anthropic evolution models.
-        # get_lmstudio_env returns None for Anthropic models, so coerce
-        # before adding sandbox env.
-        extra_env = get_lmstudio_env(self.evolution_model) or {}
-        if self.experiment_dir is not None:
-            # Resolve to absolute — the hook resolves this against its
-            # own cwd (= iteration dir), so a relative path would point
-            # at a bogus location.
-            extra_env["ROBOPHD_EXPERIMENT_DIR"] = str(Path(self.experiment_dir).resolve())
+        extra_env = build_evolution_env(self.evolution_model, self.experiment_dir)
 
         try:
             # Run in working directory with rate limit handling
