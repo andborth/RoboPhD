@@ -179,7 +179,7 @@ def parse_args():
 
     p.add_argument("--cost-threshold", type=float, default=None,
                    help="Per-example agent spend below this is in the free zone "
-                        "(no penalty). Default $0.02.")
+                        "(no penalty). Default $0.04.")
     p.add_argument("--cost-saturation", type=float, default=None,
                    help="Per-example agent spend at this level (or above) "
                         "incurs the maximum cost penalty of 1.0. Default $1.00. "
