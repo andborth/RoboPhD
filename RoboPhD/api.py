@@ -333,6 +333,7 @@ def optimize_anything(
     background: str = "",
     config: Optional[Union[RoboPhDConfig, GEPAConfig, AutoresearchConfig]] = None,
     task_name: str = "optimize_anything",
+    extra_read_paths: Optional[List[str]] = None,
 ) -> OptimizeResult:
     """Optimize text artifacts using evolutionary search.
 
@@ -380,6 +381,14 @@ def optimize_anything(
         config: Engine configuration. Type determines the engine. If None,
             uses ``RoboPhDConfig()`` defaults.
         task_name: Name for the experiment directory.
+        extra_read_paths: Optional list of absolute paths added to the
+            evolution sandbox's read scope. The default sandbox restricts
+            evolution Claude CLI sessions to reads under the experiment
+            directory only; pass extra paths here when a task uses
+            symlinked-in resources outside that tree (e.g., text2sql
+            uses ``RoboPhD/benchmark_resources``). Read-only — does not
+            grant write permission. RoboPhD engine only; GEPA and
+            Autoresearch ignore this argument.
 
     Returns:
         OptimizeResult with best_candidate, best_score, and experiment_dir.
@@ -426,6 +435,7 @@ def optimize_anything(
             "diagnostic_files": {},
             "runs_dir": str(run_dir),
             "eval_timeout": cfg.eval_timeout,
+            "extra_read_paths": extra_read_paths,
         }
 
         researcher = ParallelAgentResearcher(
@@ -484,6 +494,7 @@ def optimize_anything(
             "diagnostic_files": {},
             "runs_dir": str(run_dir),
             "eval_timeout": cfg.eval_timeout,
+            "extra_read_paths": extra_read_paths,
         }
 
         # Persist objective/background in task_config so they survive resume

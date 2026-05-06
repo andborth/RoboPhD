@@ -171,6 +171,15 @@ def main():
         if args.from_iteration:
             cfg.from_iteration = args.from_iteration
 
+    # Read carve-out: BIRD databases live under benchmark_resources/, and
+    # per-problem eval workspaces symlink them in. Without this carve-out,
+    # the evolution sandbox's realpath check would deny evolution-time
+    # introspection (cat database.sqlite, sqlite3 .schema, smoke-tests
+    # against a copy of a problem's DB) — patterns text2sql evolution has
+    # historically used. Read scope only; writes are still cwd-only.
+    benchmark_resources = HERE.parent.parent / "benchmark_resources"
+    extra_read_paths = [str(benchmark_resources.resolve())]
+
     result = optimize_anything(
         evaluator=evaluator,
         dataset=dataset,
@@ -179,6 +188,7 @@ def main():
         background=background,
         config=cfg,
         task_name="text2sql",
+        extra_read_paths=extra_read_paths,
     )
 
     logger.info(f"Optimization complete: {result.num_iterations_completed} iterations, "

@@ -274,17 +274,66 @@ def emit_decision(decision: str, reason: str = "") -> None:
     sys.stdout.flush()
 
 
-def deny_message(experiment_dir: str, cwd: str, blocked_path: str, scope: str) -> str:
+def parse_extra_read_paths(argv: list) -> list:
+    """Parse --extra-read=PATH args from argv (any order, repeatable).
+
+    Each PATH is canonicalized via realpath. The hook installer is
+    responsible for passing absolute paths; relative paths are
+    resolved against the hook's own cwd at parse time, which is
+    rarely meaningful — kept as a defensive fallback.
+    """
+    extras: list = []
+    for arg in argv[1:]:
+        if arg.startswith("--extra-read="):
+            extras.append(os.path.realpath(arg[len("--extra-read="):]))
+    return extras
+
+
+def deny_message(
+    experiment_dir: str,
+    cwd: str,
+    blocked_path: str,
+    scope: str,
+    extra_read_roots: list = None,
+) -> str:
     """Format the human-readable denial reason shown to the agent."""
+    extra_lines = ""
+    if extra_read_roots:
+        bullets = "\n".join(f"      {p}" for p in extra_read_roots)
+        extra_lines = f"    plus task-specific resource roots:\n{bullets}\n"
     return (
         "Sandbox denied. This Claude CLI session has two scopes:\n"
         f"  • Read (Read/Glob/Grep/Bash file inputs): anywhere under\n"
         f"    {experiment_dir}\n"
+        f"{extra_lines}"
         f"  • Write (Edit/Write/Bash redirects, cp/mv/rm/mkdir/touch/sed -i targets): only\n"
         f"    {cwd}\n"
         "\n"
         f"Blocked: {blocked_path} — outside {scope} scope. Sibling experiment runs and the source repo are out of scope by policy."
     )
+
+
+def check_read_paths(
+    paths: list,
+    experiment_dir: str,
+    extra_read_roots: list,
+    cwd: str,
+) -> tuple:
+    """Return (ok, blocked_path) for a list of read-target path tokens.
+
+    A path is OK iff its realpath is under experiment_dir OR under any
+    extra read root.
+    """
+    for p in paths:
+        if p in PATH_EXEMPT:
+            continue
+        norm = normalize(p, cwd)
+        if is_under(norm, experiment_dir):
+            continue
+        if any(is_under(norm, root) for root in extra_read_roots):
+            continue
+        return False, norm
+    return True, None
 
 
 def check_paths(
@@ -335,13 +384,15 @@ def main() -> int:
 
     experiment_dir = os.path.realpath(experiment_dir)
     cwd_real = os.path.realpath(cwd)
+    extra_read_roots = parse_extra_read_paths(sys.argv)
 
     # Cwd must itself be under the experiment dir; otherwise the write
     # scope is broken before we start.
     if not is_under(cwd_real, experiment_dir):
         emit_decision(
             "deny",
-            deny_message(experiment_dir, cwd_real, cwd_real, "write"),
+            deny_message(experiment_dir, cwd_real, cwd_real, "write",
+                         extra_read_roots),
         )
         append_denial_record({
             "ts": datetime.now().isoformat(timespec="seconds"),
@@ -361,10 +412,11 @@ def main() -> int:
             # Glob/Grep with no path — search runs from cwd, which is
             # already inside experiment_dir. Allow.
             return 0
-        ok, blocked = check_paths([path], experiment_dir, cwd_real, "read")
+        ok, blocked = check_read_paths([path], experiment_dir, extra_read_roots, cwd_real)
         if ok:
             return 0
-        emit_decision("deny", deny_message(experiment_dir, cwd_real, blocked, "read"))
+        emit_decision("deny", deny_message(experiment_dir, cwd_real, blocked, "read",
+                                           extra_read_roots))
         append_denial_record({
             "ts": datetime.now().isoformat(timespec="seconds"),
             "tool": tool_name,
@@ -388,7 +440,8 @@ def main() -> int:
         ok, blocked = check_paths([path], cwd_real, cwd_real, "write")
         if ok:
             return 0
-        emit_decision("deny", deny_message(experiment_dir, cwd_real, blocked, "write"))
+        emit_decision("deny", deny_message(experiment_dir, cwd_real, blocked, "write",
+                                           extra_read_roots))
         append_denial_record({
             "ts": datetime.now().isoformat(timespec="seconds"),
             "tool": tool_name,
@@ -452,11 +505,13 @@ def main() -> int:
                 })
                 return 0
 
-            ok, blocked = check_paths(read_paths, experiment_dir, cwd_real, "read")
+            ok, blocked = check_read_paths(read_paths, experiment_dir,
+                                            extra_read_roots, cwd_real)
             if not ok:
                 emit_decision(
                     "deny",
-                    deny_message(experiment_dir, cwd_real, blocked, "read"),
+                    deny_message(experiment_dir, cwd_real, blocked, "read",
+                                 extra_read_roots),
                 )
                 append_denial_record({
                     "ts": datetime.now().isoformat(timespec="seconds"),
@@ -472,7 +527,8 @@ def main() -> int:
             if not ok:
                 emit_decision(
                     "deny",
-                    deny_message(experiment_dir, cwd_real, blocked, "write"),
+                    deny_message(experiment_dir, cwd_real, blocked, "write",
+                                 extra_read_roots),
                 )
                 append_denial_record({
                     "ts": datetime.now().isoformat(timespec="seconds"),

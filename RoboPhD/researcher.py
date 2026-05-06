@@ -68,7 +68,10 @@ import psutil
 logger = logging.getLogger(__name__)
 
 
-def _install_evolution_sandbox(experiment_dir: Path) -> None:
+def _install_evolution_sandbox(
+    experiment_dir: Path,
+    extra_read_paths: Optional[List[str]] = None,
+) -> None:
     """Configure the per-experiment Claude CLI sandbox.
 
     Two side effects, both anchored at experiment-dir creation:
@@ -84,12 +87,25 @@ def _install_evolution_sandbox(experiment_dir: Path) -> None:
          denials visible in console output (and any FileHandler
          attached to the application logger) without requiring the
          user to monitor a separate file.
+
+    Args:
+        experiment_dir: per-run experiment directory. Becomes the read
+            scope; the hook config and denial log live here.
+        extra_read_paths: optional list of additional read-scope roots
+            (per-task carve-outs). Each is passed to the hook as a
+            --extra-read=PATH arg. text2sql uses this to expose the
+            BIRD database tree under benchmark_resources/.
     """
     from utilities.claude_cli import REPO_ROOT
 
     settings_dir = experiment_dir / ".claude"
     settings_dir.mkdir(exist_ok=True)
-    hook_command = f"python3 {REPO_ROOT / 'utilities' / 'sandbox_hook.py'}"
+    hook_parts = [f"python3 {REPO_ROOT / 'utilities' / 'sandbox_hook.py'}"]
+    for p in extra_read_paths or []:
+        # Resolve to absolute via realpath so the hook gets a stable
+        # canonical path regardless of where it's invoked from.
+        hook_parts.append(f"--extra-read={Path(p).resolve()}")
+    hook_command = " ".join(hook_parts)
     (settings_dir / "settings.local.json").write_text(json.dumps({
         "hooks": {
             "PreToolUse": [{
@@ -878,7 +894,10 @@ class ParallelAgentResearcher:
             self.experiment_dir.mkdir(parents=True, exist_ok=True)
 
             # Sandbox the per-experiment Claude CLI sessions to this dir.
-            _install_evolution_sandbox(self.experiment_dir)
+            _install_evolution_sandbox(
+                self.experiment_dir,
+                extra_read_paths=(runtime_config or {}).get("extra_read_paths"),
+            )
 
             # Set evaluator debug_log_dir now that experiment_dir is known
             evaluator_fn = self.runtime_config.get("evaluator_fn")

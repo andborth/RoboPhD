@@ -66,7 +66,8 @@ def experiment_layout(tmp_path):
     }
 
 
-def run_hook(envelope: dict, experiment_dir: Path) -> dict:
+def run_hook(envelope: dict, experiment_dir: Path,
+             extra_reads: list = None) -> dict:
     """Invoke the hook as a subprocess and return parsed result.
 
     Returns a dict with keys: rc, stdout, stderr, decision (or None),
@@ -74,8 +75,11 @@ def run_hook(envelope: dict, experiment_dir: Path) -> dict:
     """
     env = dict(os.environ)
     env["ROBOPHD_EXPERIMENT_DIR"] = str(experiment_dir)
+    cmd = [sys.executable, str(HOOK)]
+    for p in extra_reads or []:
+        cmd.append(f"--extra-read={p}")
     proc = subprocess.run(
-        [sys.executable, str(HOOK)],
+        cmd,
         input=json.dumps(envelope),
         capture_output=True,
         text=True,
@@ -484,3 +488,148 @@ def test_bad_stdin_fails_closed(experiment_layout):
         timeout=10,
     )
     assert proc.returncode == 2
+
+
+# ---------------------------------------------------------------------
+# Per-task read carve-outs (--extra-read=PATH)
+# ---------------------------------------------------------------------
+
+
+@pytest.fixture
+def carveout_layout(tmp_path):
+    """Layout with an external resource dir + a symlink from inside the
+    experiment dir to it. Models text2sql's BIRD database setup.
+    """
+    runs_root = tmp_path / "runs"
+    engine = runs_root / "robophd"
+    engine.mkdir(parents=True)
+    experiment_dir = engine / "task_20260101_000000"
+    cwd = experiment_dir / "evolution_output" / "iteration_002"
+    cwd.mkdir(parents=True)
+
+    # External resource (mirrors RoboPhD/benchmark_resources/...)
+    resource_root = tmp_path / "resources"
+    resource_root.mkdir()
+    real_db = resource_root / "talkingdata.sqlite"
+    real_db.write_text("BIRD database stub\n")
+
+    # Per-problem dir with symlink mirroring the text2sql layout.
+    problem_dir = experiment_dir / "iteration_002" / "agent_x" / "problems" / "452"
+    problem_dir.mkdir(parents=True)
+    db_link = problem_dir / "database.sqlite"
+    db_link.symlink_to(real_db)
+
+    # A sibling run that should still be blocked even with the carve-out.
+    sibling = engine / "task_20251231_120000"
+    sibling_agent = sibling / "agents" / "iter1" / "agent.py"
+    sibling_agent.parent.mkdir(parents=True)
+    sibling_agent.write_text("# sibling\n")
+
+    return {
+        "experiment_dir": experiment_dir,
+        "cwd": cwd,
+        "resource_root": resource_root,
+        "real_db": real_db,
+        "db_link": db_link,
+        "problem_dir": problem_dir,
+        "sibling_agent": sibling_agent,
+    }
+
+
+def test_carveout_allows_read_via_symlink(carveout_layout):
+    """Read of a symlink whose target lives under a carved-out root."""
+    L = carveout_layout
+    res = run_hook(
+        make_envelope("Read", {"file_path": str(L["db_link"])}, L["cwd"]),
+        L["experiment_dir"],
+        extra_reads=[str(L["resource_root"])],
+    )
+    assert res["decision"] is None, res
+
+
+def test_carveout_allows_bash_through_symlink(carveout_layout):
+    """Bash cat through a symlinked-in resource — the text2sql case."""
+    L = carveout_layout
+    res = run_hook(
+        make_envelope("Bash", {"command": f"cat {L['db_link']}"}, L["cwd"]),
+        L["experiment_dir"],
+        extra_reads=[str(L["resource_root"])],
+    )
+    assert res["decision"] is None, res
+
+
+def test_carveout_allows_direct_read_of_resource(carveout_layout):
+    """Reading the resource directly by absolute path is also OK."""
+    L = carveout_layout
+    res = run_hook(
+        make_envelope("Read", {"file_path": str(L["real_db"])}, L["cwd"]),
+        L["experiment_dir"],
+        extra_reads=[str(L["resource_root"])],
+    )
+    assert res["decision"] is None, res
+
+
+def test_carveout_does_not_grant_writes(carveout_layout):
+    """A read carve-out must NOT grant writes into the same path."""
+    L = carveout_layout
+    target = L["resource_root"] / "stolen.txt"
+    res = run_hook(
+        make_envelope("Write", {"file_path": str(target), "content": "x"},
+                      L["cwd"]),
+        L["experiment_dir"],
+        extra_reads=[str(L["resource_root"])],
+    )
+    assert res["decision"] == "deny"
+    assert "outside write scope" in res["reason"]
+
+
+def test_carveout_does_not_unblock_sibling_runs(carveout_layout):
+    """Carve-outs are additive — sibling runs stay denied."""
+    L = carveout_layout
+    res = run_hook(
+        make_envelope("Read", {"file_path": str(L["sibling_agent"])}, L["cwd"]),
+        L["experiment_dir"],
+        extra_reads=[str(L["resource_root"])],
+    )
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_no_carveout_blocks_resource(carveout_layout):
+    """Without the carve-out, the symlinked-in DB is denied."""
+    L = carveout_layout
+    res = run_hook(
+        make_envelope("Bash", {"command": f"cat {L['db_link']}"}, L["cwd"]),
+        L["experiment_dir"],
+        # extra_reads omitted intentionally
+    )
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_multiple_carveouts(carveout_layout, tmp_path):
+    """Hook accepts repeated --extra-read args."""
+    L = carveout_layout
+    extra2 = tmp_path / "extra"
+    extra2.mkdir()
+    extra_db = extra2 / "another.sqlite"
+    extra_db.write_text("x")
+    res = run_hook(
+        make_envelope("Read", {"file_path": str(extra_db)}, L["cwd"]),
+        L["experiment_dir"],
+        extra_reads=[str(L["resource_root"]), str(extra2)],
+    )
+    assert res["decision"] is None, res
+
+
+def test_deny_message_lists_extra_roots(carveout_layout):
+    """When extra-reads exist, the denial reason should hint at them."""
+    L = carveout_layout
+    res = run_hook(
+        make_envelope("Read", {"file_path": str(L["sibling_agent"])}, L["cwd"]),
+        L["experiment_dir"],
+        extra_reads=[str(L["resource_root"])],
+    )
+    assert res["decision"] == "deny"
+    assert "task-specific resource roots" in res["reason"]
+    assert str(L["resource_root"].resolve()) in res["reason"]
