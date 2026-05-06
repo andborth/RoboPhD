@@ -670,8 +670,10 @@ class MetaEvolutionManager:
 
         logger.debug(f"Calling Claude Code: {' '.join(cmd[:4])}...")
 
-        # Get LM Studio env overrides for non-Anthropic models
-        extra_env = get_lmstudio_env(model)
+        # Get LM Studio env overrides for non-Anthropic models.
+        # get_lmstudio_env returns None for Anthropic models, so coerce
+        # before adding sandbox env.
+        extra_env = get_lmstudio_env(model) or {}
         if self.experiment_dir is not None:
             extra_env["ROBOPHD_EXPERIMENT_DIR"] = str(self.experiment_dir)
 
