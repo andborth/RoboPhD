@@ -114,13 +114,21 @@ def is_under(path: str, root: str) -> bool:
 def classify_bash_segment(tokens: list) -> tuple:
     """Classify a single Bash command segment.
 
-    Returns (read_paths, write_paths, unknown_command_with_paths)
-    where unknown_command_with_paths is True iff the leading command
-    is not in any classifier table AND there are path-shaped tokens
-    we can't reliably attribute to read-vs-write.
+    Returns ``(read_paths, write_paths, fail_reason)``:
+        - ``fail_reason is None`` means classify normally (use the
+          collected path lists).
+        - ``fail_reason == "subprocess_bypass"`` means the segment
+          uses a construct (find -exec, xargs, etc.) that invokes
+          subprocesses we can't see — paths in those calls bypass
+          per-command classification. Fail closed.
+        - ``fail_reason == "unknown_command"`` means the leading
+          command isn't in any classifier table AND there are
+          path-shaped tokens we can't reliably attribute to
+          read-vs-write. Fail closed.
 
-    Handles redirects (`>`, `>>`, `&>`, `2>`, `<`) by extracting the
-    redirect target out of `tokens` before command classification.
+    Handles redirects (``>``, ``>>``, ``&>``, ``2>``, ``<``) by
+    extracting the redirect target out of ``tokens`` before command
+    classification.
     """
     read_paths: list = []
     write_paths: list = []
@@ -163,7 +171,7 @@ def classify_bash_segment(tokens: list) -> tuple:
             remaining = remaining[1:]
 
     if not remaining:
-        return read_paths, write_paths, False
+        return read_paths, write_paths, None
 
     cmd = remaining[0]
     args = remaining[1:]
@@ -174,11 +182,11 @@ def classify_bash_segment(tokens: list) -> tuple:
             for a in args:
                 if not a.startswith("-") and looks_like_path(a):
                     write_paths.append(a)
-            return read_paths, write_paths, False
+            return read_paths, write_paths, None
         for a in args:
             if not a.startswith("-") and looks_like_path(a):
                 read_paths.append(a)
-        return read_paths, write_paths, False
+        return read_paths, write_paths, None
 
     # `dd if=SRC of=DST bs=N count=N` — `if=` is a read source, `of=` a
     # write target. Other key=val args (bs, count, conv, status...) are
@@ -196,23 +204,23 @@ def classify_bash_segment(tokens: list) -> tuple:
                     write_paths.append(target)
             # Other dd named args (bs=, count=, conv=, status=, etc.)
             # aren't paths; ignore.
-        return read_paths, write_paths, False
+        return read_paths, write_paths, None
 
     # `find` is a read command, BUT `-exec`/`-execdir`/`-ok`/`-okdir`
     # invokes arbitrary commands per-match. Those subprocesses run
-    # outside the hook's view — bypass for the read scope. Treat as
-    # unknown-with-paths (fail-closed). Plain find without -exec is
-    # fine and falls through to the BASH_READ_COMMANDS branch below.
+    # outside the hook's view — bypass for the read scope. Plain find
+    # without -exec is fine and falls through to the BASH_READ_COMMANDS
+    # branch below.
     if cmd == "find" and any(
         a in ("-exec", "-execdir", "-ok", "-okdir") for a in args
     ):
-        return read_paths, write_paths, True
+        return read_paths, write_paths, "subprocess_bypass"
 
     # `xargs <command>` invokes a command per-line of stdin, taking
     # paths from a piped predecessor. Same shape as find -exec — paths
-    # bypass per-command classification. Fail closed.
+    # bypass per-command classification.
     if cmd == "xargs":
-        return read_paths, write_paths, True
+        return read_paths, write_paths, "subprocess_bypass"
 
     if cmd in BASH_WRITE_LAST_POSITIONAL:
         positional = [a for a in args if not a.startswith("-")]
@@ -220,31 +228,32 @@ def classify_bash_segment(tokens: list) -> tuple:
             write_paths.append(positional[-1])
             for a in positional[:-1]:
                 read_paths.append(a)
-        return read_paths, write_paths, False
+        return read_paths, write_paths, None
 
     if cmd in BASH_WRITE_ALL_POSITIONAL:
         for a in args:
             if not a.startswith("-") and looks_like_path(a):
                 write_paths.append(a)
-        return read_paths, write_paths, False
+        return read_paths, write_paths, None
 
     if cmd in BASH_READ_COMMANDS:
         for a in args:
             if not a.startswith("-") and looks_like_path(a):
                 read_paths.append(a)
-        return read_paths, write_paths, False
+        return read_paths, write_paths, None
 
     if cmd in BASH_PASSTHROUGH:
         for a in args:
             if looks_like_path(a):
                 read_paths.append(a)
-        return read_paths, write_paths, False
+        return read_paths, write_paths, None
 
     # Unknown command. If it has any path-shaped tokens, fail closed —
     # we don't know whether they're sources, sinks, regex patterns, or
     # something else.
-    has_path_token = any(looks_like_path(a) for a in args)
-    return read_paths, write_paths, has_path_token
+    if any(looks_like_path(a) for a in args):
+        return read_paths, write_paths, "unknown_command"
+    return read_paths, write_paths, None
 
 
 def split_compound(command: str) -> list:
@@ -517,9 +526,38 @@ def main() -> int:
         for tokens in segments:
             if not tokens:
                 continue
-            read_paths, write_paths, unknown_with_paths = classify_bash_segment(tokens)
+            read_paths, write_paths, fail_reason = classify_bash_segment(tokens)
 
-            if unknown_with_paths:
+            if fail_reason == "subprocess_bypass":
+                # find -exec / xargs / etc. — the construct invokes
+                # commands per-match outside the hook's view, so paths
+                # passed to those inner commands bypass per-command
+                # path classification. Tell the agent the actual policy
+                # gap and an actionable workaround.
+                emit_decision(
+                    "deny",
+                    "Sandbox denied. This Bash construct invokes "
+                    "subprocesses (find -exec / -execdir / -ok / -okdir, "
+                    "or xargs) that run outside the hook's view — paths "
+                    "flowing through those subprocesses bypass per-command "
+                    "read/write scope checks. To preserve sandbox guarantees: "
+                    "list files first (plain `find` without -exec, `ls`, or "
+                    "the Glob tool), then operate on each one via the "
+                    "Read/Edit/Write tools.\n"
+                    f"Command: {' '.join(tokens)}",
+                )
+                append_denial_record({
+                    "ts": datetime.now().isoformat(timespec="seconds"),
+                    "tool": "Bash",
+                    "scope": "subprocess_bypass",
+                    "blocked_path": "",
+                    "command": command,
+                    "cwd": cwd_real,
+                    "reason": f"subprocess-bypass construct: {tokens[0]}",
+                })
+                return 0
+
+            if fail_reason == "unknown_command":
                 emit_decision(
                     "deny",
                     "Sandbox denied. Bash command not in classifier and "

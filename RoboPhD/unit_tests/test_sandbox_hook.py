@@ -463,7 +463,7 @@ def test_bash_dd_write_target_outside_cwd_denies(experiment_layout):
 
 def test_bash_find_exec_fails_closed(experiment_layout):
     """find -exec invokes commands per-match — those subprocesses
-    bypass per-command path classification. Treat as unknown-with-paths."""
+    bypass per-command path classification. Dedicated message."""
     layout = experiment_layout
     res = run_hook(
         make_envelope(
@@ -474,7 +474,9 @@ def test_bash_find_exec_fails_closed(experiment_layout):
         layout["experiment_dir"],
     )
     assert res["decision"] == "deny"
-    assert "not in classifier" in res["reason"]
+    # Architectural-bypass message, not the generic classifier one
+    assert "subprocesses" in res["reason"]
+    assert "outside the hook's view" in res["reason"]
 
 
 @pytest.mark.parametrize("variant", ["-exec", "-execdir", "-ok", "-okdir"])
@@ -489,6 +491,7 @@ def test_bash_find_exec_variants_all_fail_closed(variant, experiment_layout):
         layout["experiment_dir"],
     )
     assert res["decision"] == "deny", f"{variant}: {res}"
+    assert "subprocesses" in res["reason"], f"{variant}: {res}"
 
 
 def test_bash_find_without_exec_still_allowed(experiment_layout):
@@ -504,7 +507,8 @@ def test_bash_find_without_exec_still_allowed(experiment_layout):
 
 
 def test_bash_xargs_fails_closed(experiment_layout):
-    """xargs reads paths from stdin — bypasses per-command classification."""
+    """xargs reads paths from stdin — bypasses per-command classification.
+    Routed to the subprocess-bypass message, not the generic classifier one."""
     layout = experiment_layout
     res = run_hook(
         make_envelope(
@@ -515,7 +519,23 @@ def test_bash_xargs_fails_closed(experiment_layout):
         layout["experiment_dir"],
     )
     assert res["decision"] == "deny"
+    assert "subprocesses" in res["reason"]
+    assert "xargs" in res["reason"]
+
+
+def test_bash_unknown_command_message_unchanged(experiment_layout):
+    """Truly-unknown commands still get the classifier-omission message
+    (distinct from the subprocess-bypass message)."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"
+    res = run_hook(
+        make_envelope("Bash", {"command": f"frobnicate {target}"}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
     assert "not in classifier" in res["reason"]
+    # Must NOT route to the subprocess-bypass branch
+    assert "subprocesses" not in res["reason"]
 
 
 # ---------------------------------------------------------------------
