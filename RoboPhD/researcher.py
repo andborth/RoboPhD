@@ -131,15 +131,26 @@ def _install_evolution_sandbox(
             --extra-read=PATH arg. text2sql uses this to expose the
             BIRD database tree under benchmark_resources/.
     """
+    import shlex
     from utilities.claude_cli import REPO_ROOT
 
     settings_dir = experiment_dir / ".claude"
     settings_dir.mkdir(exist_ok=True)
-    hook_parts = [f"python3 {REPO_ROOT / 'utilities' / 'sandbox_hook.py'}"]
+    # Each component is shlex.quote'd because Claude CLI passes the
+    # `command` string to a shell. Without quoting, a path containing
+    # a space, ;, |, $, or & would be tokenized incorrectly (best
+    # case: the carve-out is silently misparsed; worst case: command
+    # injection if the path is parameterized from external input).
+    # Threat model: user-supplied paths from a task's main.py — not
+    # adversarial, but defensive practice catches typos and any path
+    # with whitespace.
+    hook_script = REPO_ROOT / "utilities" / "sandbox_hook.py"
+    hook_parts = [shlex.quote("python3"), shlex.quote(str(hook_script))]
     for p in extra_read_paths or []:
         # Resolve to absolute via realpath so the hook gets a stable
         # canonical path regardless of where it's invoked from.
-        hook_parts.append(f"--extra-read={Path(p).resolve()}")
+        resolved = str(Path(p).resolve())
+        hook_parts.append(f"--extra-read={shlex.quote(resolved)}")
     hook_command = " ".join(hook_parts)
     (settings_dir / "settings.local.json").write_text(json.dumps({
         "hooks": {

@@ -399,6 +399,17 @@ def optimize_anything(
     cfg = config or RoboPhDConfig()
 
     # Dispatch to engine based on config type
+    if isinstance(cfg, (GEPAConfig, AutoresearchConfig)) and extra_read_paths:
+        import logging as _logging
+        _logging.getLogger(__name__).warning(
+            "[optimize_anything] extra_read_paths=%r is set, but the %s "
+            "engine does not implement the evolution sandbox; the carve-out "
+            "will be silently ignored. The argument only affects the RoboPhD "
+            "engine. Pass it from a RoboPhDConfig() run, or remove it from "
+            "this call.",
+            extra_read_paths, type(cfg).__name__,
+        )
+
     if isinstance(cfg, GEPAConfig):
         from RoboPhD.engines.gepa import run_gepa
         return run_gepa(evaluator, dataset, seed_candidate, objective, background, cfg, task_name)
