@@ -22,11 +22,18 @@ command never silently leaks reads.
 import json
 import os
 import os.path
+import re
 import shlex
 import sys
 import traceback
 from datetime import datetime
 from pathlib import Path
+
+# Bash variable-assignment prefix (`x=...`, `MY_VAR=...`). Used to
+# identify leading-token assignments like `x=/sibling/a; cat $x` or
+# the env-prefix form `x=/sibling/a cat $x`, neither of which has the
+# path token in `args` where the classifier scans.
+ASSIGNMENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 
 # Tools whose tool_input describes a single read.
 READ_TOOLS = {"Read", "Glob", "Grep"}
@@ -151,6 +158,18 @@ def classify_bash_segment(tokens: list) -> tuple:
     read_paths: list = []
     write_paths: list = []
 
+    # Detect command substitution / subshell constructs:
+    #   $(cmd args)   <- shlex with punctuation_chars splits as `$ ( ... )`
+    #   `cmd args`    <- shlex keeps backticks glued to surrounding word
+    #   (cmd)         <- subshell, also splits to standalone `(` `)`
+    #   <(cmd) >(cmd) <- process substitution, same `(` punctuation
+    # All run subprocesses outside the hook's view — same architectural
+    # class as find -exec / xargs. Fail closed.
+    if any(t in ("(", ")") for t in tokens):
+        return read_paths, write_paths, "subprocess_bypass"
+    if any("`" in t for t in tokens):
+        return read_paths, write_paths, "subprocess_bypass"
+
     # Pull redirects out first. We process tokens left-to-right; when we
     # see a redirect operator the next token is the redirect target.
     remaining: list = []
@@ -195,6 +214,21 @@ def classify_bash_segment(tokens: list) -> tuple:
     # try to look up `do` as a command and fail closed despite the actual
     # body command (cat / echo / etc.) being right behind it.
     while remaining and remaining[0] in BASH_CONTROL_KEYWORDS:
+        remaining = remaining[1:]
+
+    # Strip leading variable-assignment prefixes (`x=/path/a`,
+    # `A=1 B=/path cmd args`). These appear in two shapes:
+    #   `x=/sibling/a; cat $x`     — assignment followed by `;` then use
+    #   `x=/sibling/a cat $x`      — env-prefix on a command (no `env` kw)
+    # In both shapes the path is *inside* the assignment token (left of
+    # the rest of remaining), not in `args`, so the read-default scan
+    # would miss it. Capture the value as a read-target if it's
+    # path-shaped, then strip the assignment so the actual command
+    # (if any) becomes the leading token.
+    while remaining and ASSIGNMENT_RE.match(remaining[0]):
+        _, _, value = remaining[0].partition("=")
+        if value and looks_like_path(value):
+            read_paths.append(value)
         remaining = remaining[1:]
 
     if not remaining:
@@ -571,21 +605,22 @@ def main() -> int:
             read_paths, write_paths, fail_reason = classify_bash_segment(tokens)
 
             if fail_reason == "subprocess_bypass":
-                # find -exec / xargs / etc. — the construct invokes
-                # commands per-match outside the hook's view, so paths
-                # passed to those inner commands bypass per-command
-                # path classification. Tell the agent the actual policy
-                # gap and an actionable workaround.
+                # find -exec / xargs / $(...) / `...` / subshells — all
+                # run nested commands outside the hook's view, so paths
+                # flowing through them bypass per-command classification.
+                # Tell the agent the actual policy gap and an actionable
+                # workaround.
                 emit_decision(
                     "deny",
                     "Sandbox denied. This Bash construct invokes "
                     "subprocesses (find -exec / -execdir / -ok / -okdir, "
-                    "or xargs) that run outside the hook's view — paths "
-                    "flowing through those subprocesses bypass per-command "
-                    "read/write scope checks. To preserve sandbox guarantees: "
-                    "list files first (plain `find` without -exec, `ls`, or "
-                    "the Glob tool), then operate on each one via the "
-                    "Read/Edit/Write tools.\n"
+                    "xargs, $(...) or `...` command substitution, or a "
+                    "(...) subshell) that run outside the hook's view — "
+                    "paths flowing through those nested commands bypass "
+                    "per-command read/write scope checks. To preserve "
+                    "sandbox guarantees: list files first (plain `find` "
+                    "without -exec, `ls`, or the Glob tool), then operate "
+                    "on each one via the Read/Edit/Write tools.\n"
                     f"Command: {' '.join(tokens)}",
                 )
                 append_denial_record({

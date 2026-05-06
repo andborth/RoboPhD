@@ -652,6 +652,141 @@ def test_bash_while_loop_with_body_write_outside_cwd_denies(experiment_layout):
 
 
 # ---------------------------------------------------------------------
+# Variable assignments: `x=/path/a; cat $x` and `x=/path/a cat $x`
+# ---------------------------------------------------------------------
+
+
+def test_bash_assignment_prefix_in_scope_path_allows(experiment_layout):
+    """`x=<in-scope> cat $x` — the assignment value gets read-checked
+    even though it's not in `args`. In-scope path → allow."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": f"x={target} cat $x"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
+
+
+def test_bash_assignment_prefix_out_of_scope_path_denies(experiment_layout):
+    """`x=<sibling-run> cat $x` — assignment-stripper captures the
+    sibling path as a read target; read-scope check denies."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": f"x={layout['sibling_agent']} cat $x"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_bash_assignment_then_use_out_of_scope_denies(experiment_layout):
+    """`x=<sibling>; cat $x` — assignment is its own segment; same
+    classification logic applies."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": f"x={layout['sibling_agent']}; cat $x"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_bash_multiple_assignments_each_checked(experiment_layout):
+    """`A=<in-scope> B=<sibling> cmd` — every assignment value is
+    extracted; B's sibling path triggers the deny."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": f"A={target} B={layout['sibling_agent']} cmd"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_bash_assignment_with_non_path_value_allows(experiment_layout):
+    """`x=hello cmd` — value isn't path-shaped; nothing to check."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash", {"command": "FOO=bar BAZ=42 echo hi"}, layout["cwd"]
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
+
+
+# ---------------------------------------------------------------------
+# Command substitution: $(...), `...`, subshells (...)
+# ---------------------------------------------------------------------
+
+
+def test_bash_dollar_paren_command_substitution_denies(experiment_layout):
+    """`cat $(echo /etc/passwd)` — substitution runs a subprocess we
+    can't see. Same architectural class as find -exec / xargs."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": "cat $(echo /etc/passwd)"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "subprocesses" in res["reason"]
+    assert "$(...)" in res["reason"] or "command substitution" in res["reason"]
+
+
+def test_bash_backtick_command_substitution_denies(experiment_layout):
+    """Backtick-form command substitution — same hazard as $()."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": "cat `echo /etc/passwd`"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "subprocesses" in res["reason"]
+
+
+def test_bash_subshell_denies(experiment_layout):
+    """`(cmd args)` — subshell runs the inner command in a child
+    process the hook can't classify."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": "(cat /etc/passwd)"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "subprocesses" in res["reason"]
+
+
+# ---------------------------------------------------------------------
 # Symlink bypass
 # ---------------------------------------------------------------------
 
