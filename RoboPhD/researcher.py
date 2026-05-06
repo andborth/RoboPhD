@@ -68,6 +68,85 @@ import psutil
 logger = logging.getLogger(__name__)
 
 
+def _install_evolution_sandbox(experiment_dir: Path) -> None:
+    """Configure the per-experiment Claude CLI sandbox.
+
+    Two side effects, both anchored at experiment-dir creation:
+      1. Write <experiment_dir>/.claude/settings.local.json with a
+         PreToolUse hook that points at utilities/sandbox_hook.py.
+         Claude CLI walks up from each iteration's cwd to discover
+         this file and applies the hook for every tool call in the
+         session. Read scope = the experiment dir; write scope = the
+         tool's cwd.
+      2. Start a daemon thread that tails
+         <experiment_dir>/sandbox_denials.jsonl and emits each new
+         denial through the standard logger as a WARNING. This makes
+         denials visible in console output (and any FileHandler
+         attached to the application logger) without requiring the
+         user to monitor a separate file.
+    """
+    from utilities.claude_cli import REPO_ROOT
+
+    settings_dir = experiment_dir / ".claude"
+    settings_dir.mkdir(exist_ok=True)
+    hook_command = f"python3 {REPO_ROOT / 'utilities' / 'sandbox_hook.py'}"
+    (settings_dir / "settings.local.json").write_text(json.dumps({
+        "hooks": {
+            "PreToolUse": [{
+                "matcher": "Read|Edit|Write|NotebookEdit|MultiEdit|Glob|Grep|Bash",
+                "hooks": [{
+                    "type": "command",
+                    "command": hook_command,
+                    "timeout": 10,
+                }],
+            }],
+        },
+    }, indent=2))
+
+    denials_path = experiment_dir / "sandbox_denials.jsonl"
+
+    def _tail_denials() -> None:
+        # Wait for the file to come into existence (the hook only
+        # creates it on the first denial; that may never happen).
+        while not denials_path.exists():
+            time.sleep(1.0)
+        try:
+            # Read from position 0. The file is created by the hook on
+            # the first denial, so there's nothing to "skip ahead" past
+            # — content written between mkdir and our open() call IS
+            # what we want to surface. (For --resume into an existing
+            # experiment dir this would re-emit prior denials, which is
+            # benign.)
+            with denials_path.open() as f:
+                while True:
+                    line = f.readline()
+                    if not line:
+                        time.sleep(0.5)
+                        continue
+                    line = line.rstrip()
+                    if not line:
+                        continue
+                    try:
+                        rec = json.loads(line)
+                    except json.JSONDecodeError:
+                        logger.warning("[sandbox] (unparseable) %s", line)
+                        continue
+                    if rec.get("error"):
+                        logger.warning("[sandbox] HOOK ERROR: %s", rec.get("error"))
+                        continue
+                    logger.warning(
+                        "[sandbox] DENY tool=%s scope=%s blocked=%s cmd=%s",
+                        rec.get("tool"),
+                        rec.get("scope"),
+                        rec.get("blocked_path"),
+                        rec.get("command", ""),
+                    )
+        except Exception as exc:  # pragma: no cover — defensive
+            logger.warning("[sandbox] tail thread crashed: %s", exc)
+
+    threading.Thread(target=_tail_denials, daemon=True, name="sandbox-tail").start()
+
+
 # Infrastructure errors that indicate system bugs (not agent failures)
 # These should abort the run to prevent corrupted/incomplete data
 CRITICAL_INFRASTRUCTURE_ERRORS = [
@@ -797,6 +876,9 @@ class ParallelAgentResearcher:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 self.experiment_dir = runs_dir / "robophd" / f"{task_name}_{timestamp}"
             self.experiment_dir.mkdir(parents=True, exist_ok=True)
+
+            # Sandbox the per-experiment Claude CLI sessions to this dir.
+            _install_evolution_sandbox(self.experiment_dir)
 
             # Set evaluator debug_log_dir now that experiment_dir is known
             evaluator_fn = self.runtime_config.get("evaluator_fn")

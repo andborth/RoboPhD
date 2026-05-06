@@ -667,6 +667,8 @@ class MetaEvolutionManager:
 
         # Get LM Studio env overrides for non-Anthropic models
         extra_env = get_lmstudio_env(model)
+        if self.experiment_dir is not None:
+            extra_env["ROBOPHD_EXPERIMENT_DIR"] = str(self.experiment_dir)
 
         try:
             # Run in iteration-specific working directory with rate limit handling

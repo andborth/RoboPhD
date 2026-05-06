@@ -930,6 +930,8 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
 
         # Get LM Studio env overrides for non-Anthropic evolution models
         extra_env = get_lmstudio_env(self.evolution_model)
+        if self.experiment_dir is not None:
+            extra_env["ROBOPHD_EXPERIMENT_DIR"] = str(self.experiment_dir)
 
         try:
             result = call_claude_cli(
@@ -1005,6 +1007,8 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
 
         # Get LM Studio env overrides for non-Anthropic evolution models
         extra_env = get_lmstudio_env(self.evolution_model)
+        if self.experiment_dir is not None:
+            extra_env["ROBOPHD_EXPERIMENT_DIR"] = str(self.experiment_dir)
 
         try:
             # Run in working directory with rate limit handling
