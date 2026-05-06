@@ -82,12 +82,21 @@ def install_iteration_sandbox(working_dir: Path, experiment_dir: Path) -> None:
 
     The experiment-level file at ``<experiment_dir>/.claude/settings.local.json``
     is the template (written once by ``_install_evolution_sandbox``); this
-    helper just copies it. If the template doesn't exist (e.g., the
-    experiment was created before the sandbox feature), this is a no-op
-    so old experiments still work on resume.
+    helper just copies it. If the template doesn't exist this is a no-op
+    so old experiments resumed from before the sandbox feature still work
+    — but we log a warning, since on a *fresh* run a missing template
+    means the sandbox is silently no-op and that's a wiring bug we want
+    to know about.
     """
     src = experiment_dir / SANDBOX_SETTINGS_RELPATH
     if not src.exists():
+        logger.warning(
+            "[sandbox] template missing at %s — evolution session will run "
+            "UNSANDBOXED for this iteration. Either resuming a pre-sandbox "
+            "experiment (expected) or _install_evolution_sandbox wasn't "
+            "called for this experiment_dir (bug).",
+            src,
+        )
         return
     dst_dir = working_dir / ".claude"
     dst_dir.mkdir(exist_ok=True)

@@ -3,6 +3,17 @@
 Exercises the hook as a subprocess (which is how Claude CLI actually
 calls it) so the stdin/stdout JSON protocol is part of the contract
 under test, not just the internal classifier.
+
+**Integration gap, by design:** these tests invoke the hook script
+directly. They do NOT verify that Claude CLI actually loads
+.claude/settings.local.json from a given location — that's a
+property of Claude CLI's settings-resolution behavior, which is
+external. Past wiring bugs (e.g., assuming Claude CLI walks up from
+cwd to find settings) passed all unit tests while the sandbox was
+silently no-op in production. After any change to
+_install_evolution_sandbox / install_iteration_sandbox / the
+hook-command construction in researcher.py, run an end-to-end smoke
+against the real CLI as documented in the sandbox memory entry.
 """
 
 import json
@@ -395,6 +406,116 @@ def test_bash_unknown_cmd_no_path_allows(experiment_layout):
         layout["experiment_dir"],
     )
     assert res["decision"] is None
+
+
+# ---------------------------------------------------------------------
+# dd: if=src is read, of=dst is write
+# ---------------------------------------------------------------------
+
+
+def test_bash_dd_legitimate_copy_inside_scope_allows(experiment_layout):
+    """dd if=<read-scope-path> of=<cwd-path> copies legitimately."""
+    layout = experiment_layout
+    src = layout["agents_dir"] / "agent.py"
+    dst = layout["cwd"] / "copy.py"
+    res = run_hook(
+        make_envelope("Bash", {"command": f"dd if={src} of={dst} bs=4096"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
+
+
+def test_bash_dd_read_source_outside_read_scope_denies(experiment_layout):
+    """dd if=<sibling-run> of=<cwd> — source is a read-scope violation."""
+    layout = experiment_layout
+    dst = layout["cwd"] / "copy.py"
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": f"dd if={layout['sibling_agent']} of={dst}"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_bash_dd_write_target_outside_cwd_denies(experiment_layout):
+    """dd if=<read-scope> of=<outside-cwd> — target is a write-scope violation."""
+    layout = experiment_layout
+    src = layout["agents_dir"] / "agent.py"
+    dst = layout["agents_dir"] / "stolen.py"  # in read scope, NOT in write scope
+    res = run_hook(
+        make_envelope("Bash", {"command": f"dd if={src} of={dst}"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside write scope" in res["reason"]
+
+
+# ---------------------------------------------------------------------
+# find -exec / xargs: bypass closure
+# ---------------------------------------------------------------------
+
+
+def test_bash_find_exec_fails_closed(experiment_layout):
+    """find -exec invokes commands per-match — those subprocesses
+    bypass per-command path classification. Treat as unknown-with-paths."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": "find . -name agent.py -exec cat {} ;"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "not in classifier" in res["reason"]
+
+
+@pytest.mark.parametrize("variant", ["-exec", "-execdir", "-ok", "-okdir"])
+def test_bash_find_exec_variants_all_fail_closed(variant, experiment_layout):
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": f"find . -name '*.py' {variant} cat {{}} ;"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny", f"{variant}: {res}"
+
+
+def test_bash_find_without_exec_still_allowed(experiment_layout):
+    """Plain find without -exec is fine and stays in BASH_READ_COMMANDS."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash", {"command": "find . -name agent.py"}, layout["cwd"]
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None
+
+
+def test_bash_xargs_fails_closed(experiment_layout):
+    """xargs reads paths from stdin — bypasses per-command classification."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": "find . -name '*.sqlite' | xargs cat"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "not in classifier" in res["reason"]
 
 
 # ---------------------------------------------------------------------

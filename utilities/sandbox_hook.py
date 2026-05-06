@@ -49,8 +49,10 @@ BASH_WRITE_LAST_POSITIONAL = {"cp", "mv"}
 
 # Bash command names where every positional path is a write target.
 # `rm <path>...`, `mkdir <path>`, `touch <path>`, etc.
+# Note: `dd` is NOT here — it uses `if=src` (read) and `of=dst` (write)
+# named args, handled separately in classify_bash_segment.
 BASH_WRITE_ALL_POSITIONAL = {
-    "rm", "rmdir", "mkdir", "touch", "tee", "dd",
+    "rm", "rmdir", "mkdir", "touch", "tee",
 }
 
 # Bash command names that have no path tokens worth scoping (we still
@@ -177,6 +179,40 @@ def classify_bash_segment(tokens: list) -> tuple:
             if not a.startswith("-") and looks_like_path(a):
                 read_paths.append(a)
         return read_paths, write_paths, False
+
+    # `dd if=SRC of=DST bs=N count=N` — `if=` is a read source, `of=` a
+    # write target. Other key=val args (bs, count, conv, status...) are
+    # not paths. Falling through to BASH_WRITE_ALL_POSITIONAL would have
+    # mis-classified `if=` as a write — caught in code review.
+    if cmd == "dd":
+        for a in args:
+            if a.startswith("if="):
+                target = a[len("if="):]
+                if looks_like_path(target):
+                    read_paths.append(target)
+            elif a.startswith("of="):
+                target = a[len("of="):]
+                if looks_like_path(target):
+                    write_paths.append(target)
+            # Other dd named args (bs=, count=, conv=, status=, etc.)
+            # aren't paths; ignore.
+        return read_paths, write_paths, False
+
+    # `find` is a read command, BUT `-exec`/`-execdir`/`-ok`/`-okdir`
+    # invokes arbitrary commands per-match. Those subprocesses run
+    # outside the hook's view — bypass for the read scope. Treat as
+    # unknown-with-paths (fail-closed). Plain find without -exec is
+    # fine and falls through to the BASH_READ_COMMANDS branch below.
+    if cmd == "find" and any(
+        a in ("-exec", "-execdir", "-ok", "-okdir") for a in args
+    ):
+        return read_paths, write_paths, True
+
+    # `xargs <command>` invokes a command per-line of stdin, taking
+    # paths from a piped predecessor. Same shape as find -exec — paths
+    # bypass per-command classification. Fail closed.
+    if cmd == "xargs":
+        return read_paths, write_paths, True
 
     if cmd in BASH_WRITE_LAST_POSITIONAL:
         positional = [a for a in args if not a.startswith("-")]
