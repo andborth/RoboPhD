@@ -767,7 +767,69 @@ def test_bash_backtick_command_substitution_denies(experiment_layout):
         layout["experiment_dir"],
     )
     assert res["decision"] == "deny"
-    assert "subprocesses" in res["reason"]
+    assert "backtick" in res["reason"] or "subprocesses" in res["reason"]
+
+
+def test_bash_backtick_inside_double_quotes_still_denies(experiment_layout):
+    """Backticks inside double quotes ARE active substitution in bash."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": 'echo "result: `cat /etc/passwd`"'},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "backtick" in res["reason"]
+
+
+def test_bash_backtick_inside_single_quotes_allows(experiment_layout):
+    """Single-quoted backticks are literal in bash. shlex strips the
+    enclosing quote chars before classification, so without a raw-string
+    quote-aware check this would false-positive."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": "echo 'literal backtick: ` symbol'"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
+
+
+def test_bash_escaped_backtick_outside_quotes_allows(experiment_layout):
+    r"""`\\\`` is a literal backtick character in unquoted bash."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": "echo escaped: \\` symbol"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
+
+
+def test_bash_process_substitution_denies(experiment_layout):
+    """`<(cmd)` process substitution — same `(`/`)` punctuation as
+    other subshell forms; deny message must mention process substitution
+    so the agent knows it's covered."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": "diff <(cat /etc/passwd) <(echo)"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "process substitution" in res["reason"]
 
 
 def test_bash_subshell_denies(experiment_layout):

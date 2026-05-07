@@ -160,14 +160,14 @@ def classify_bash_segment(tokens: list) -> tuple:
 
     # Detect command substitution / subshell constructs:
     #   $(cmd args)   <- shlex with punctuation_chars splits as `$ ( ... )`
-    #   `cmd args`    <- shlex keeps backticks glued to surrounding word
+    #   `cmd args`    <- backticks; checked against the RAW command string
+    #                   in classify_bash_command (single-quote-aware) since
+    #                   shlex strips quote characters from token contents.
     #   (cmd)         <- subshell, also splits to standalone `(` `)`
     #   <(cmd) >(cmd) <- process substitution, same `(` punctuation
     # All run subprocesses outside the hook's view — same architectural
     # class as find -exec / xargs. Fail closed.
     if any(t in ("(", ")") for t in tokens):
-        return read_paths, write_paths, "subprocess_bypass"
-    if any("`" in t for t in tokens):
         return read_paths, write_paths, "subprocess_bypass"
 
     # Pull redirects out first. We process tokens left-to-right; when we
@@ -324,6 +324,38 @@ def classify_bash_segment(tokens: list) -> tuple:
         if not a.startswith("-") and looks_like_path(a):
             read_paths.append(a)
     return read_paths, write_paths, None
+
+
+def has_unquoted_backtick(command: str) -> bool:
+    """True iff the raw command string contains an active backtick.
+
+    Bash quoting rules:
+      * Inside single quotes, everything (including backticks) is literal.
+      * Inside double quotes, backticks remain active — `"\\`cmd\\`"` is
+        a real substitution.
+      * Backslash-escaped backticks (\\`) are literal in unquoted and
+        double-quoted contexts.
+
+    We can't lean on shlex token contents here because shlex strips the
+    enclosing quote chars, so by the time we see a token we've lost the
+    information about whether a backtick was inside `'...'`.
+    """
+    in_single = False
+    in_double = False
+    i = 0
+    while i < len(command):
+        c = command[i]
+        if c == "\\" and i + 1 < len(command) and not in_single:
+            i += 2  # backslash escapes the next char (outside single quotes)
+            continue
+        if c == "'" and not in_double:
+            in_single = not in_single
+        elif c == '"' and not in_single:
+            in_double = not in_double
+        elif c == "`" and not in_single:
+            return True
+        i += 1
+    return False
 
 
 def split_compound(command: str) -> list:
@@ -578,6 +610,33 @@ def main() -> int:
         if not command:
             return 0  # nothing to check
 
+        # Quote-aware backtick check on the raw command. shlex strips
+        # the enclosing quote chars before classify_bash_segment sees
+        # tokens, so a literal backtick inside `'...'` (legitimately
+        # literal in bash) is indistinguishable from one inside `"..."`
+        # (which IS active substitution) without scanning the raw text.
+        if has_unquoted_backtick(command):
+            emit_decision(
+                "deny",
+                "Sandbox denied. This Bash command contains an active "
+                "backtick (`...`) outside single quotes — backtick command "
+                "substitution runs a subprocess outside the hook's view. "
+                "Same architectural class as $(...) / find -exec / xargs. "
+                "If you actually meant a literal backtick character, "
+                "single-quote it ('`') and try again.\n"
+                f"Command: {command}",
+            )
+            append_denial_record({
+                "ts": datetime.now().isoformat(timespec="seconds"),
+                "tool": "Bash",
+                "scope": "subprocess_bypass",
+                "blocked_path": "",
+                "command": command,
+                "cwd": cwd_real,
+                "reason": "unquoted backtick (command substitution)",
+            })
+            return 0
+
         segments = split_compound(command)
         if segments is None:
             # shlex couldn't parse — likely heredoc, unbalanced quotes,
@@ -614,9 +673,10 @@ def main() -> int:
                     "deny",
                     "Sandbox denied. This Bash construct invokes "
                     "subprocesses (find -exec / -execdir / -ok / -okdir, "
-                    "xargs, $(...) or `...` command substitution, or a "
-                    "(...) subshell) that run outside the hook's view — "
-                    "paths flowing through those nested commands bypass "
+                    "xargs, $(...) or `...` command substitution, "
+                    "<(...) / >(...) process substitution, or a (...) "
+                    "subshell) that run outside the hook's view — paths "
+                    "flowing through those nested commands bypass "
                     "per-command read/write scope checks. To preserve "
                     "sandbox guarantees: list files first (plain `find` "
                     "without -exec, `ls`, or the Glob tool), then operate "
