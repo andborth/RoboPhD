@@ -755,40 +755,47 @@ def test_bash_dollar_paren_command_substitution_denies(experiment_layout):
     assert "$(...)" in res["reason"] or "command substitution" in res["reason"]
 
 
-def test_bash_backtick_command_substitution_denies(experiment_layout):
-    """Backtick-form command substitution — same hazard as $()."""
+def test_bash_backtick_substitution_with_path_outside_scope_denies(experiment_layout):
+    """`cat \`echo /sibling\`` — the path token tokenizes standalone
+    (shlex doesn't preserve the backticks as a single quoted unit), so
+    the standard read-scope check still catches it. This is the only
+    backtick-substitution shape we still deny; the corresponding
+    inline-in-double-quotes shape (echo "x: \`cat /sibling\`") is now
+    allowed, symmetric with our existing $()-inside-double-quotes hole."""
     layout = experiment_layout
     res = run_hook(
         make_envelope(
             "Bash",
-            {"command": "cat `echo /etc/passwd`"},
+            {"command": f"cat `echo {layout['sibling_agent']}`"},
             layout["cwd"],
         ),
         layout["experiment_dir"],
     )
     assert res["decision"] == "deny"
-    assert "backtick" in res["reason"] or "subprocesses" in res["reason"]
+    assert "outside read scope" in res["reason"]
 
 
-def test_bash_backtick_inside_double_quotes_still_denies(experiment_layout):
-    """Backticks inside double quotes ARE active substitution in bash."""
+def test_bash_legitimate_backtick_substitution_allows(experiment_layout):
+    """`echo \"today: \`date\`\"` — legitimate backtick substitution that
+    doesn't reference any out-of-scope path. Used to be denied by the
+    has_unquoted_backtick rule; now allowed since we accept the residual
+    risk in exchange for not blocking legit substitution patterns."""
     layout = experiment_layout
     res = run_hook(
         make_envelope(
             "Bash",
-            {"command": 'echo "result: `cat /etc/passwd`"'},
+            {"command": 'echo "today: `date`"'},
             layout["cwd"],
         ),
         layout["experiment_dir"],
     )
-    assert res["decision"] == "deny"
-    assert "backtick" in res["reason"]
+    assert res["decision"] is None, res
 
 
 def test_bash_backtick_inside_single_quotes_allows(experiment_layout):
-    """Single-quoted backticks are literal in bash. shlex strips the
-    enclosing quote chars before classification, so without a raw-string
-    quote-aware check this would false-positive."""
+    """Single-quoted backticks are literal in bash; this used to require
+    the raw-string quote tracker to allow. After dropping that check,
+    single-quoted backticks pass through trivially."""
     layout = experiment_layout
     res = run_hook(
         make_envelope(
@@ -801,15 +808,90 @@ def test_bash_backtick_inside_single_quotes_allows(experiment_layout):
     assert res["decision"] is None, res
 
 
-def test_bash_escaped_backtick_outside_quotes_allows(experiment_layout):
-    r"""`\\\`` is a literal backtick character in unquoted bash."""
+# ---------------------------------------------------------------------
+# Heredoc body stripping: opaque content, only redirect target is checked
+# ---------------------------------------------------------------------
+
+
+def test_bash_heredoc_with_python_parens_in_body_allows(experiment_layout):
+    """`cat <<EOF > script.py\\nprint(1)\\nEOF` — without body-stripping the
+    `(` and `)` from `print(1)` would trip the subshell check. Body is
+    opaque, redirect target is in cwd, should allow."""
     layout = experiment_layout
+    cmd = (
+        f"cat <<EOF > {layout['cwd']}/script.py\n"
+        "print(1)\n"
+        "EOF"
+    )
     res = run_hook(
-        make_envelope(
-            "Bash",
-            {"command": "echo escaped: \\` symbol"},
-            layout["cwd"],
-        ),
+        make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
+
+
+def test_bash_heredoc_with_backticks_in_body_allows(experiment_layout):
+    """Heredoc body with markdown-style backticks in a comment. Used to
+    be denied by has_unquoted_backtick; now opaque thanks to body stripping."""
+    layout = experiment_layout
+    cmd = (
+        f"cat <<EOF > {layout['cwd']}/script.py\n"
+        "# Run with `python script.py`\n"
+        "print('hello')\n"
+        "EOF"
+    )
+    res = run_hook(
+        make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
+
+
+def test_bash_heredoc_quoted_delimiter_allows(experiment_layout):
+    """`<<'EOF'` — single-quoted delimiter form. Body is treated as
+    literal by bash and as opaque by us. Should allow."""
+    layout = experiment_layout
+    cmd = (
+        f"cat <<'EOF' > {layout['cwd']}/script.py\n"
+        "# Anything goes here: `\\$ ()\n"
+        "EOF"
+    )
+    res = run_hook(
+        make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
+
+
+def test_bash_heredoc_redirect_target_outside_cwd_still_denies(experiment_layout):
+    """Body is opaque but the `> file` redirect target is still
+    write-scope-checked. Writing the heredoc output outside cwd → deny."""
+    layout = experiment_layout
+    cmd = (
+        f"cat <<EOF > {layout['agents_dir']}/stolen.py\n"
+        "print('overwrite')\n"
+        "EOF"
+    )
+    res = run_hook(
+        make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside write scope" in res["reason"]
+
+
+def test_bash_heredoc_dash_form_strips_body(experiment_layout):
+    """`<<-EOF` strips leading tabs from body lines. We don't care about
+    the body content but should still parse the heredoc start so the
+    body doesn't trip downstream classifiers."""
+    layout = experiment_layout
+    cmd = (
+        f"cat <<-EOF > {layout['cwd']}/script.py\n"
+        "\tline with leading tab `print(x)`\n"
+        "\tEOF"
+    )
+    res = run_hook(
+        make_envelope("Bash", {"command": cmd}, layout["cwd"]),
         layout["experiment_dir"],
     )
     assert res["decision"] is None, res

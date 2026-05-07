@@ -35,6 +35,21 @@ from pathlib import Path
 # path token in `args` where the classifier scans.
 ASSIGNMENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 
+# Heredoc start: `<<DELIM`, `<< DELIM`, `<<-DELIM`, `<<'DELIM'`, `<<"DELIM"`.
+# DELIM is a bash identifier (letters/digits/underscore) when unquoted.
+# `<<-` strips leading tabs from the body but doesn't change DELIM matching
+# semantics for our purposes (we only need the body span).
+HEREDOC_START_RE = re.compile(
+    r"<<-?\s*"
+    r"(?:"
+    r"'([^'\n]+)'"               # 'DELIM'
+    r"|"
+    r'"([^"\n]+)"'              # "DELIM"
+    r"|"
+    r"([A-Za-z_][A-Za-z0-9_]*)"  # bare DELIM
+    r")"
+)
+
 # Tools whose tool_input describes a single read.
 READ_TOOLS = {"Read", "Glob", "Grep"}
 
@@ -158,15 +173,20 @@ def classify_bash_segment(tokens: list) -> tuple:
     read_paths: list = []
     write_paths: list = []
 
-    # Detect command substitution / subshell constructs:
-    #   $(cmd args)   <- shlex with punctuation_chars splits as `$ ( ... )`
-    #   `cmd args`    <- backticks; checked against the RAW command string
-    #                   in classify_bash_command (single-quote-aware) since
-    #                   shlex strips quote characters from token contents.
+    # Detect command substitution / subshell constructs that tokenize as
+    # standalone punctuation under shlex(punctuation_chars=True):
+    #   $(cmd args)   <- splits as `$ ( ... )`
     #   (cmd)         <- subshell, also splits to standalone `(` `)`
     #   <(cmd) >(cmd) <- process substitution, same `(` punctuation
     # All run subprocesses outside the hook's view — same architectural
     # class as find -exec / xargs. Fail closed.
+    #
+    # Note: bare `\` ... \`` backtick substitution is NOT denied here.
+    # Path tokens hidden inside backticks (`cat /sibling/agent.py`)
+    # tokenize as a path-shaped token and get caught by the standard
+    # read-scope check; backticks buried inside double-quoted strings
+    # (echo "x: `cat /sibling`") are a residual exfil shape we accept,
+    # symmetric with the existing $()-inside-double-quotes hole.
     if any(t in ("(", ")") for t in tokens):
         return read_paths, write_paths, "subprocess_bypass"
 
@@ -326,36 +346,74 @@ def classify_bash_segment(tokens: list) -> tuple:
     return read_paths, write_paths, None
 
 
-def has_unquoted_backtick(command: str) -> bool:
-    """True iff the raw command string contains an active backtick.
+def strip_heredoc_bodies(command: str) -> str:
+    """Remove heredoc bodies from a Bash command string before tokenizing.
 
-    Bash quoting rules:
-      * Inside single quotes, everything (including backticks) is literal.
-      * Inside double quotes, backticks remain active — `"\\`cmd\\`"` is
-        a real substitution.
-      * Backslash-escaped backticks (\\`) are literal in unquoted and
-        double-quoted contexts.
+    A heredoc is a way to send multi-line stdin to a command:
 
-    We can't lean on shlex token contents here because shlex strips the
-    enclosing quote chars, so by the time we see a token we've lost the
-    information about whether a backtick was inside `'...'`.
+        cat <<EOF > scratch.py
+        # Run with `python scratch.py`
+        print(1)
+        EOF
+
+    The body is opaque content, not bash code we can usefully classify.
+    Without stripping, our tokenizer sees the body's `(`, `)`, and
+    backticks as standalone shell constructs and false-positives on
+    legitimate file writes — a Python script with `print(1)` becomes a
+    "subshell," a comment containing markdown backticks becomes
+    "command substitution," etc.
+
+    Stripping keeps the redirect target visible (the `> scratch.py`
+    part still gets write-scope-checked) while leaving the body
+    invisible. The tradeoff: an agent could exfil sibling files via
+    heredoc-body backtick substitution (`<<EOF` is not literal — bash
+    *will* substitute), but that exfil shape has not been observed in
+    practice and the user's policy is "defend the patterns we've
+    actually seen, don't preemptively block legitimate work."
+
+    Handles:
+      * `<<DELIM`, `<<-DELIM`, `<< DELIM`, `<<'DELIM'`, `<<"DELIM"`
+      * Multiple heredocs in one command (rare; processed iteratively)
+      * Unterminated heredoc (no closing DELIM line) — strips to end
     """
-    in_single = False
-    in_double = False
-    i = 0
-    while i < len(command):
-        c = command[i]
-        if c == "\\" and i + 1 < len(command) and not in_single:
-            i += 2  # backslash escapes the next char (outside single quotes)
-            continue
-        if c == "'" and not in_double:
-            in_single = not in_single
-        elif c == '"' and not in_single:
-            in_double = not in_double
-        elif c == "`" and not in_single:
-            return True
-        i += 1
-    return False
+    out: list = []
+    pos = 0
+    while pos < len(command):
+        m = HEREDOC_START_RE.search(command, pos)
+        if not m:
+            out.append(command[pos:])
+            break
+        delim = m.group(1) or m.group(2) or m.group(3)
+        # Body begins after the next newline. The same-line tokens
+        # *between* the heredoc start and that newline (e.g.,
+        # `> outfile` redirects, pipes, additional args) MUST stay
+        # visible to the classifier — appending only up to m.end()
+        # would drop the redirect target and silently allow writes.
+        nl = command.find("\n", m.end())
+        if nl < 0:
+            # No newline after heredoc start — there's no body. Append
+            # the rest verbatim and we're done.
+            out.append(command[pos:])
+            break
+        # Append everything up to and including the newline (covers
+        # heredoc-start + same-line redirects/pipes/args).
+        out.append(command[pos:nl + 1])
+        # Find the closing delimiter on its own line. Bash matches a
+        # line consisting only of DELIM (with optional leading whitespace
+        # for the `<<-` form; we accept any leading whitespace since the
+        # body is being discarded either way).
+        end_pattern = re.compile(
+            rf"^[ \t]*{re.escape(delim)}\s*$",
+            re.MULTILINE,
+        )
+        em = end_pattern.search(command, nl + 1)
+        if not em:
+            # Unterminated heredoc — strip to end of command.
+            break
+        # Skip past the closing delim line.
+        line_end = command.find("\n", em.end())
+        pos = em.end() if line_end < 0 else line_end + 1
+    return "".join(out)
 
 
 def split_compound(command: str) -> list:
@@ -610,32 +668,13 @@ def main() -> int:
         if not command:
             return 0  # nothing to check
 
-        # Quote-aware backtick check on the raw command. shlex strips
-        # the enclosing quote chars before classify_bash_segment sees
-        # tokens, so a literal backtick inside `'...'` (legitimately
-        # literal in bash) is indistinguishable from one inside `"..."`
-        # (which IS active substitution) without scanning the raw text.
-        if has_unquoted_backtick(command):
-            emit_decision(
-                "deny",
-                "Sandbox denied. This Bash command contains an active "
-                "backtick (`...`) outside single quotes — backtick command "
-                "substitution runs a subprocess outside the hook's view. "
-                "Same architectural class as $(...) / find -exec / xargs. "
-                "If you actually meant a literal backtick character, "
-                "single-quote it ('`') and try again.\n"
-                f"Command: {command}",
-            )
-            append_denial_record({
-                "ts": datetime.now().isoformat(timespec="seconds"),
-                "tool": "Bash",
-                "scope": "subprocess_bypass",
-                "blocked_path": "",
-                "command": command,
-                "cwd": cwd_real,
-                "reason": "unquoted backtick (command substitution)",
-            })
-            return 0
+        # Strip heredoc bodies before tokenizing. Heredoc body content
+        # is opaque data flowing into stdin; tokenizing it makes our
+        # `(`/`)` punctuation check false-positive on legitimate Python
+        # / shell content inside the body (e.g., `print(1)`). The
+        # surrounding command (including the `> file` redirect target)
+        # is still visible and classified normally.
+        command = strip_heredoc_bodies(command)
 
         segments = split_compound(command)
         if segments is None:
@@ -673,14 +712,14 @@ def main() -> int:
                     "deny",
                     "Sandbox denied. This Bash construct invokes "
                     "subprocesses (find -exec / -execdir / -ok / -okdir, "
-                    "xargs, $(...) or `...` command substitution, "
-                    "<(...) / >(...) process substitution, or a (...) "
-                    "subshell) that run outside the hook's view — paths "
-                    "flowing through those nested commands bypass "
-                    "per-command read/write scope checks. To preserve "
-                    "sandbox guarantees: list files first (plain `find` "
-                    "without -exec, `ls`, or the Glob tool), then operate "
-                    "on each one via the Read/Edit/Write tools.\n"
+                    "xargs, $(...) command substitution, <(...) / >(...) "
+                    "process substitution, or a (...) subshell) that run "
+                    "outside the hook's view — paths flowing through those "
+                    "nested commands bypass per-command read/write scope "
+                    "checks. To preserve sandbox guarantees: list files "
+                    "first (plain `find` without -exec, `ls`, or the Glob "
+                    "tool), then operate on each one via the Read/Edit/"
+                    "Write tools.\n"
                     f"Command: {' '.join(tokens)}",
                 )
                 append_denial_record({
