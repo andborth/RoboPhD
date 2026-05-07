@@ -85,8 +85,6 @@ Six model handles are available, imported from `model_registry`. They pair by fa
 | `GEMINI_3_1_FLASH_LITE_PREVIEW` | 0.25 | 1.50 |
 | `GEMINI_3_FLASH_PREVIEW` | 0.50 | 3.00 |
 
-Use these to estimate per-problem spend against the $0.04 free-zone threshold without having to look up rates externally. As a rough order-of-magnitude check: a single 2K-input / 500-output call to `CLAUDE_SONNET_4_6` is ~$0.014, well under the threshold; the same call to `GPT_5_4_MINI` is ~$0.004.
-
 ```python
 from inspect_ai.model import GenerateConfig
 from model_registry import GPT_5_4_MINI, CLAUDE_SONNET_4_6, GEMINI_3_FLASH_PREVIEW
