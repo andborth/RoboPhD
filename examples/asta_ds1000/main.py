@@ -61,11 +61,16 @@ SPLIT_SEED = 42
 # Default per-iteration sample size. Single source of truth: referenced
 # from _build_dataset's return tuple AND from the argparse help text,
 # so changing this constant updates both the run-time default and the
-# user-facing default-listed-in-help. 10 (down from 20) reduces the
-# cross-iteration overfit pressure documented in
-# robophd-asta_ds1000-001's reflections — each problem expected ~1.5
-# hits over 15 iterations vs ~3 at 20/iter.
-DEFAULT_EXAMPLES_PER_ITERATION = 10
+# user-facing default-listed-in-help. 20 (reverted from a 10 experiment):
+# DS-1000 is binary-graded, and n=10 produced too many correctness ties
+# at the top of the leaderboard for ELO selection to track real accuracy
+# gaps — see selection_noise_analysis.md. Overfitting pressure from the
+# higher per-problem hit count is mitigated by (a) the reworded objective
+# that no longer rewards narrow specialization and (b) `new_agent_test_rounds=0`
+# in engine_overrides below, which removes Deep Focus's round-2 refinement
+# eval and keeps each agent's per-iteration training exposure comparable
+# to the n=10 / 1-round regime.
+DEFAULT_EXAMPLES_PER_ITERATION = 20
 
 # Default iteration cap. Same single-source-of-truth pattern as
 # DEFAULT_EXAMPLES_PER_ITERATION above — referenced from
@@ -305,7 +310,16 @@ def main():
     num_iterations = args.num_iterations if args.num_iterations is not None else default_iterations
     evaluation_budget = args.evaluation_budget if args.evaluation_budget is not None else default_budget
 
-    engine_overrides: dict = {"examples_per_iteration": examples_per_iter}
+    # new_agent_test_rounds=0 disables Deep Focus's round-2 refinement
+    # eval. Round 2 evaluates each new agent on a fresh batch of training
+    # examples within the same iteration, effectively doubling per-agent
+    # training exposure. Disabling it pairs with the n=20 default to keep
+    # exposure comparable to the previous n=10 + 1-round regime — see the
+    # comment on DEFAULT_EXAMPLES_PER_ITERATION for the full rationale.
+    engine_overrides: dict = {
+        "examples_per_iteration": examples_per_iter,
+        "new_agent_test_rounds": 0,
+    }
     if args.engine_config:
         engine_overrides.update(json.loads(args.engine_config))
 
