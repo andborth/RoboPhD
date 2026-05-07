@@ -64,12 +64,13 @@ SPLIT_SEED = 42
 # user-facing default-listed-in-help. 20 (reverted from a 10 experiment):
 # DS-1000 is binary-graded, and n=10 produced too many correctness ties
 # at the top of the leaderboard for ELO selection to track real accuracy
-# gaps — see selection_noise_analysis.md. Overfitting pressure from the
-# higher per-problem hit count is mitigated by (a) the reworded objective
-# that no longer rewards narrow specialization and (b) `new_agent_test_rounds=0`
-# in engine_overrides below, which removes Deep Focus's round-2 refinement
-# eval and keeps each agent's per-iteration training exposure comparable
-# to the n=10 / 1-round regime.
+# gaps — see Appendix B (Selection Noise Analysis) of the RoboPhD paper.
+# Overfitting pressure from the higher per-problem hit count is mitigated
+# by (a) the reworded objective that no longer rewards narrow
+# specialization and (b) `new_agent_test_rounds=0` in engine_overrides
+# below, which removes Deep Focus's round-2 refinement eval and keeps
+# each agent's per-iteration training exposure comparable to the n=10 /
+# 1-round regime.
 DEFAULT_EXAMPLES_PER_ITERATION = 20
 
 # Default iteration cap. Same single-source-of-truth pattern as
