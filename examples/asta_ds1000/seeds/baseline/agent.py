@@ -1,27 +1,18 @@
 """Baseline DS-1000 solver.
 
 One-shot baseline: send the problem prompt to the LLM, take the response,
-and emit a `<code>...</code>` block. No self-check, no python_session
-calls, no library-specific scaffolding. The scorer extracts the code
-between `<code>` and `</code>` tags and runs it inside the sandbox.
-
-Evolution is expected to add things like:
-  - python_session self-check (run the candidate against the example
-    inputs in the prompt, retry on failure)
-  - library-specific prompt scaffolding (different system prompts for
-    NumPy vs Pandas vs Matplotlib problems)
-  - few-shot retrieval or chain-of-thought prompting
-  - syntactic post-processing (strip markdown fences, balance brackets)
+and emit the required `<code>...</code>` block.
 """
 
 from inspect_ai.model import GenerateConfig
 from inspect_ai.solver import Generate, TaskState, solver
 
 # Pre-resolved Model handles. Pick one per call, or mix across calls.
-# The cost penalty applied during training is computed against the
-# total agent_cost_usd across whichever models you use. See
-# model_registry.py for the full list (CLAUDE_HAIKU_4_5,
-# GEMINI_3_1_FLASH_LITE_PREVIEW).
+# Six handles are available from `model_registry`:
+#   GPT_5_4_MINI, GPT_5_4,
+#   CLAUDE_HAIKU_4_5, CLAUDE_SONNET_4_6,
+#   GEMINI_3_1_FLASH_LITE_PREVIEW, GEMINI_3_FLASH_PREVIEW.
+# See CLAUDE.md (Domain Background) for the pricing table.
 from model_registry import GPT_5_4_MINI
 
 
@@ -44,6 +35,9 @@ def _wrap_in_code_tags(text: str) -> str:
 @solver
 def make_solver():
     async def solve(state: TaskState, generate: Generate) -> TaskState:
+        # Demonstration print statement — captured in `agent_stdout`
+        # alongside the per-problem diagnostics, so anything you print
+        # here is available for retrospective analysis.
         print(f"[{state.sample_id}] library={state.metadata.get('library', '?')}")
 
         resp = await GPT_5_4_MINI.generate(
