@@ -76,9 +76,16 @@ Most DS-1000 problems don't need files, but the API is available.
 
 Six model handles are available, imported from `model_registry`. They pair by family into a cheap/fast tier and a stronger/slower tier:
 
-- `GPT_5_4_MINI`, `GPT_5_4`
-- `CLAUDE_HAIKU_4_5`, `CLAUDE_SONNET_4_6`
-- `GEMINI_3_1_FLASH_LITE_PREVIEW`, `GEMINI_3_FLASH_PREVIEW`
+| Handle | Input ($/M tok) | Output ($/M tok) |
+| --- | --- | --- |
+| `GPT_5_4_MINI` | 0.75 | 4.50 |
+| `GPT_5_4` | 2.50 | 15.00 |
+| `CLAUDE_HAIKU_4_5` | 1.00 | 5.00 |
+| `CLAUDE_SONNET_4_6` | 3.00 | 15.00 |
+| `GEMINI_3_1_FLASH_LITE_PREVIEW` | 0.25 | 1.50 |
+| `GEMINI_3_FLASH_PREVIEW` | 0.50 | 3.00 |
+
+Use these to estimate per-problem spend against the $0.04 free-zone threshold without having to look up rates externally. As a rough order-of-magnitude check: a single 2K-input / 500-output call to `CLAUDE_SONNET_4_6` is ~$0.014, well under the threshold; the same call to `GPT_5_4_MINI` is ~$0.004.
 
 ```python
 from inspect_ai.model import GenerateConfig

@@ -3618,7 +3618,10 @@ class ParallelAgentResearcher:
                     continue
                 report_lines.append(f"**{agent_id}**")
                 for i, (ctx, cost) in enumerate(top, 1):
-                    report_lines.append(f"{i}. {ctx}: ${cost:.2f}")
+                    # Tenth-of-a-cent precision so $0.02 / $0.01 / $0.01
+                    # rows resolve into a meaningful ordering instead
+                    # of three near-identical pennies.
+                    report_lines.append(f"{i}. {ctx}: ${cost:.3f}")
                 report_lines.append("")
 
         # Write report
