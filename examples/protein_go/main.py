@@ -91,7 +91,7 @@ def parse_args():
     parser.add_argument("--max-workers", type=int, default=8,
                         help="Parallel eval workers (8 to balance DIAMOND I/O and LLM calls)")
     parser.add_argument("--runs-dir", default="../robophd_runs",
-                        help="Root directory for experiment output")
+                        help="Root directory for experiment output (default: %(default)s)")
     parser.add_argument("--random-seed", type=int, default=None,
                         help="Random seed for reproducibility")
     parser.add_argument("--engine-config", type=str, default=None,

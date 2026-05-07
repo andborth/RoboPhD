@@ -197,7 +197,8 @@ def parse_args():
                         "own subprocess to bypass inspect.eval's process-global "
                         "singleton lock, so this is real parallelism. 12 fits "
                         "20 examples/iteration in ~2 waves on M-series Macs.")
-    p.add_argument("--runs-dir", default="../robophd_runs")
+    p.add_argument("--runs-dir", default="../robophd_runs",
+                   help="Root directory for experiment output (default: %(default)s)")
     p.add_argument("--random-seed", type=int, default=None,
                    help="Seed for RoboPhD's per-iteration draws and other "
                         "internal RNG. Default None resolves to a fresh seed "

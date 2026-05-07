@@ -223,7 +223,8 @@ def parse_args():
                         "comfortable default on M-series Macs; tune higher if "
                         "you increase --examples-per-iteration and your OpenAI "
                         "tier supports the resulting RPS.")
-    p.add_argument("--runs-dir", default="../robophd_runs")
+    p.add_argument("--runs-dir", default="../robophd_runs",
+                   help="Root directory for experiment output (default: %(default)s)")
     p.add_argument("--random-seed", type=int, default=None,
                    help="Seed for RoboPhD's per-iteration draws and other "
                         "internal RNG. Default None resolves to a fresh seed "

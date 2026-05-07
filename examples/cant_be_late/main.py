@@ -56,7 +56,7 @@ def parse_args():
 
     # Infrastructure
     parser.add_argument("--max-workers", type=int, default=None, help="Parallel eval workers (None = Python default)")
-    parser.add_argument("--runs-dir", default="../robophd_runs", help="Root directory for experiment output")
+    parser.add_argument("--runs-dir", default="../robophd_runs", help="Root directory for experiment output (default: %(default)s)")
     parser.add_argument("--random-seed", type=int, default=None, help="Random seed for reproducibility")
     parser.add_argument("--engine-config", type=str, default=None, help="JSON overrides (e.g. evolution_strategy, evolution_model, examples_per_iteration)")
     parser.add_argument("--meta-evolution-strategy", default=None,

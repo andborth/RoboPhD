@@ -72,7 +72,8 @@ def parse_args():
                         "own subprocess to bypass inspect.eval's process-global "
                         "singleton lock. The Asta MCP rate limit (~4 req/sec on "
                         "the default key) may be the binding constraint above 8.")
-    p.add_argument("--runs-dir", default="../robophd_runs")
+    p.add_argument("--runs-dir", default="../robophd_runs",
+                   help="Root directory for experiment output (default: %(default)s)")
     p.add_argument("--random-seed", type=int, default=None)
     p.add_argument("--engine-config", type=str, default=None)
     p.add_argument("--meta-evolution-strategy", default=None)
