@@ -29,7 +29,7 @@ A correct completion writes `<code>result = a[a != 0]</code>` (any equivalent Nu
 | Field | Type | Contents |
 | --- | --- | --- |
 | `state.input` | str | The full problem prompt, including the code skeleton and the format instruction "Put your answer inside `<code>` and `</code>` tags." |
-| `state.metadata["library"]` | str | One of `"Numpy"`, `"Pandas"`, `"Matplotlib"`, `"Scipy"`, `"Scikit-learn"`, `"Pytorch"`, `"Tensorflow"`. The same library is implied in the prompt. |
+| `state.metadata["library"]` | str | One of `"Numpy"`, `"Pandas"`, `"Matplotlib"`, `"Scipy"`, `"Sklearn"`, `"Pytorch"`, `"Tensorflow"`. The same library is implied in the prompt. |
 
 ## Required output
 
