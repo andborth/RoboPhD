@@ -480,13 +480,15 @@ def test_bash_dd_write_target_outside_cwd_denies(experiment_layout):
 
 
 # ---------------------------------------------------------------------
-# find -exec / xargs: bypass closure
+# find -exec / xargs: subprocess_bypass retired — visible paths are still
+# checked, but the structural deny on these constructs is gone.
 # ---------------------------------------------------------------------
 
 
-def test_bash_find_exec_fails_closed(experiment_layout):
-    """find -exec invokes commands per-match — those subprocesses
-    bypass per-command path classification. Dedicated message."""
+def test_bash_find_exec_in_scope_allows(experiment_layout):
+    """find -exec on the iteration's own files is now allowed. The
+    structural subprocess_bypass deny was retired; the inner cat
+    operates on files under the in-scope find root."""
     layout = experiment_layout
     res = run_hook(
         make_envelope(
@@ -496,29 +498,46 @@ def test_bash_find_exec_fails_closed(experiment_layout):
         ),
         layout["experiment_dir"],
     )
-    assert res["decision"] == "deny"
-    # Architectural-bypass message, not the generic classifier one
-    assert "subprocesses" in res["reason"]
-    assert "outside the hook's view" in res["reason"]
+    assert res["decision"] is None, res
 
 
-@pytest.mark.parametrize("variant", ["-exec", "-execdir", "-ok", "-okdir"])
-def test_bash_find_exec_variants_all_fail_closed(variant, experiment_layout):
+def test_bash_find_exec_with_out_of_scope_root_still_denies(experiment_layout):
+    """find's search root tokenizes as a path argument; if it's
+    outside read scope, the path-token check still denies regardless
+    of -exec."""
     layout = experiment_layout
     res = run_hook(
         make_envelope(
             "Bash",
-            {"command": f"find . -name '*.py' {variant} cat {{}} ;"},
+            {"command": f"find {layout['sibling_agent'].parent} -exec cat {{}} ;"},
             layout["cwd"],
         ),
         layout["experiment_dir"],
     )
-    assert res["decision"] == "deny", f"{variant}: {res}"
-    assert "subprocesses" in res["reason"], f"{variant}: {res}"
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_bash_find_exec_with_out_of_scope_hardcoded_arg_still_denies(experiment_layout):
+    """Hardcoded path inside the -exec command (not the {} substitution)
+    still tokenizes as a path argument and gets read-scope-checked. We
+    lose recall on what the inner command does *with* {}, not on
+    explicit hardcoded paths."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": f"find . -exec cp {{}} {layout['sibling_agent'].parent}/ ;"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
 
 
 def test_bash_find_without_exec_still_allowed(experiment_layout):
-    """Plain find without -exec is fine and stays in BASH_READ_COMMANDS."""
+    """Plain find without -exec stays allowed, same as before."""
     layout = experiment_layout
     res = run_hook(
         make_envelope(
@@ -529,29 +548,42 @@ def test_bash_find_without_exec_still_allowed(experiment_layout):
     assert res["decision"] is None
 
 
-def test_bash_xargs_fails_closed(experiment_layout):
-    """xargs reads paths from stdin — bypasses per-command classification.
-    Routed to the subprocess-bypass message, not the generic classifier one."""
+def test_bash_xargs_in_scope_allows(experiment_layout):
+    """xargs in a pipeline whose visible paths are all in scope is
+    now allowed. The subprocess_bypass deny was retired."""
     layout = experiment_layout
     res = run_hook(
         make_envelope(
             "Bash",
-            {"command": "find . -name '*.sqlite' | xargs cat"},
+            {"command": "find . -name '*.py' | xargs cat"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
+
+
+def test_bash_xargs_with_out_of_scope_predecessor_still_denies(experiment_layout):
+    """If the pipeline predecessor's visible path is out of scope,
+    the path-token check on that segment still denies, independent of
+    xargs in the next segment."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": f"find {layout['sibling_agent'].parent} | xargs cat"},
             layout["cwd"],
         ),
         layout["experiment_dir"],
     )
     assert res["decision"] == "deny"
-    assert "subprocesses" in res["reason"]
-    assert "xargs" in res["reason"]
+    assert "outside read scope" in res["reason"]
 
 
-def test_bash_unknown_cmd_routes_through_read_scope_not_subprocess_bypass(
-    experiment_layout,
-):
-    """When an unknown command's path lands outside read scope, the deny
-    routes through the standard read-scope check, not the subprocess-bypass
-    message. (subprocess-bypass is reserved for find -exec / xargs.)"""
+def test_bash_unknown_cmd_routes_through_read_scope(experiment_layout):
+    """Unknown command + out-of-scope path tokenizes as a normal read-
+    scope violation. Same as before — the subprocess_bypass deny path
+    was retired but this one stays."""
     layout = experiment_layout
     res = run_hook(
         make_envelope(
@@ -563,7 +595,6 @@ def test_bash_unknown_cmd_routes_through_read_scope_not_subprocess_bypass(
     )
     assert res["decision"] == "deny"
     assert "outside read scope" in res["reason"]
-    assert "subprocesses" not in res["reason"]
 
 
 # ---------------------------------------------------------------------
@@ -738,9 +769,11 @@ def test_bash_assignment_with_non_path_value_allows(experiment_layout):
 # ---------------------------------------------------------------------
 
 
-def test_bash_dollar_paren_command_substitution_denies(experiment_layout):
-    """`cat $(echo /etc/passwd)` — substitution runs a subprocess we
-    can't see. Same architectural class as find -exec / xargs."""
+def test_bash_dollar_paren_with_out_of_scope_path_denies(experiment_layout):
+    """`cat $(echo /etc/passwd)` — the structural subprocess_bypass
+    deny was retired; the visible path token /etc/passwd still gets
+    read-scope-checked and denied. The path is what the inner command
+    would emit anyway, so catching the visible token is what matters."""
     layout = experiment_layout
     res = run_hook(
         make_envelope(
@@ -751,8 +784,22 @@ def test_bash_dollar_paren_command_substitution_denies(experiment_layout):
         layout["experiment_dir"],
     )
     assert res["decision"] == "deny"
-    assert "subprocesses" in res["reason"]
-    assert "$(...)" in res["reason"] or "command substitution" in res["reason"]
+    assert "outside read scope" in res["reason"]
+
+
+def test_bash_dollar_paren_in_scope_allows(experiment_layout):
+    """`cat $(ls *.py | head -1)` with all visible paths in scope is
+    now allowed."""
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": "cat $(ls *.py | head -1)"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
 
 
 def test_bash_backtick_substitution_with_path_outside_scope_denies(experiment_layout):
@@ -897,10 +944,10 @@ def test_bash_heredoc_dash_form_strips_body(experiment_layout):
     assert res["decision"] is None, res
 
 
-def test_bash_process_substitution_denies(experiment_layout):
-    """`<(cmd)` process substitution — same `(`/`)` punctuation as
-    other subshell forms; deny message must mention process substitution
-    so the agent knows it's covered."""
+def test_bash_process_substitution_with_out_of_scope_path_denies(experiment_layout):
+    """`<(cat /etc/passwd)` — the visible /etc/passwd token still gets
+    read-scope-checked and denied via the standard path-classifier
+    path; the structural deny on `(`/`)` is gone."""
     layout = experiment_layout
     res = run_hook(
         make_envelope(
@@ -911,12 +958,12 @@ def test_bash_process_substitution_denies(experiment_layout):
         layout["experiment_dir"],
     )
     assert res["decision"] == "deny"
-    assert "process substitution" in res["reason"]
+    assert "outside read scope" in res["reason"]
 
 
-def test_bash_subshell_denies(experiment_layout):
-    """`(cmd args)` — subshell runs the inner command in a child
-    process the hook can't classify."""
+def test_bash_subshell_with_out_of_scope_path_denies(experiment_layout):
+    """`(cat /etc/passwd)` — subshell wrapping. Visible path token
+    still gets read-scope-checked and denied."""
     layout = experiment_layout
     res = run_hook(
         make_envelope(
@@ -927,7 +974,22 @@ def test_bash_subshell_denies(experiment_layout):
         layout["experiment_dir"],
     )
     assert res["decision"] == "deny"
-    assert "subprocesses" in res["reason"]
+    assert "outside read scope" in res["reason"]
+
+
+def test_bash_subshell_in_scope_allows(experiment_layout):
+    """In-scope subshell now allowed; structural deny was retired."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"
+    res = run_hook(
+        make_envelope(
+            "Bash",
+            {"command": f"(cat {target})"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] is None, res
 
 
 # ---------------------------------------------------------------------

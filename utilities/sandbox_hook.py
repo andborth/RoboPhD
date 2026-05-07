@@ -148,22 +148,29 @@ def is_under(path: str, root: str) -> bool:
 def classify_bash_segment(tokens: list) -> tuple:
     """Classify a single Bash command segment.
 
-    Returns ``(read_paths, write_paths, fail_reason)``:
-        - ``fail_reason is None`` means classify normally (use the
-          collected path lists; allow if all paths satisfy the read /
-          write scope checks in :func:`main`).
-        - ``fail_reason == "subprocess_bypass"`` means the segment
-          uses a construct (find -exec, xargs, etc.) that invokes
-          subprocesses we can't see — paths in those calls bypass
-          per-command classification. Fail closed.
+    Returns ``(read_paths, write_paths, fail_reason)`` where
+    ``fail_reason`` is always ``None`` in the current implementation —
+    the third return slot is preserved for compatibility with callers
+    and possible future re-introduction of fail-closed categories.
 
-    Unknown commands with path-shaped tokens are NOT a fail-reason:
-    we default to treating those tokens as reads (see policy comment
-    inside the function). The read-scope check still denies anything
-    outside experiment_dir; the residual risk (an unknown command
-    that's actually a write writing within experiment_dir) is bounded
-    and accepted in exchange for not playing whack-a-mole with novel
-    command shapes invented by the agent.
+    Policy: visible path tokens are classified as reads or writes by
+    command name (see ``BASH_READ_COMMANDS``, ``BASH_WRITE_*``,
+    ``sed -i``, ``dd of=``). Constructs that run nested commands
+    (``find -exec``, ``xargs``, ``$(...)``, subshells, process
+    substitution) used to fail closed under a ``subprocess_bypass``
+    branch; that branch was retired (2026-05-06) because (a) the
+    out-of-scope cases it caught are also caught by the read-scope
+    check on the visible path tokens those constructs accept, and
+    (b) the in-scope cases were false positives that interfered with
+    legitimate evolution work (find -exec on the iteration's own
+    files, in-scope $() substitutions, etc.). The user explicitly
+    accepted the loss of recall on inner-command invisibility: the
+    write violations within the experiment dir that this branch
+    uniquely caught are hypothetical, not observed.
+
+    Unknown commands with path-shaped tokens default to read scope
+    (path tokens flow into ``read_paths``); see the policy comment
+    inside the function body.
 
     Handles redirects (``>``, ``>>``, ``&>``, ``2>``, ``<``) by
     extracting the redirect target out of ``tokens`` before command
@@ -172,23 +179,6 @@ def classify_bash_segment(tokens: list) -> tuple:
     """
     read_paths: list = []
     write_paths: list = []
-
-    # Detect command substitution / subshell constructs that tokenize as
-    # standalone punctuation under shlex(punctuation_chars=True):
-    #   $(cmd args)   <- splits as `$ ( ... )`
-    #   (cmd)         <- subshell, also splits to standalone `(` `)`
-    #   <(cmd) >(cmd) <- process substitution, same `(` punctuation
-    # All run subprocesses outside the hook's view — same architectural
-    # class as find -exec / xargs. Fail closed.
-    #
-    # Note: bare `\` ... \`` backtick substitution is NOT denied here.
-    # Path tokens hidden inside backticks (`cat /sibling/agent.py`)
-    # tokenize as a path-shaped token and get caught by the standard
-    # read-scope check; backticks buried inside double-quoted strings
-    # (echo "x: `cat /sibling`") are a residual exfil shape we accept,
-    # symmetric with the existing $()-inside-double-quotes hole.
-    if any(t in ("(", ")") for t in tokens):
-        return read_paths, write_paths, "subprocess_bypass"
 
     # Pull redirects out first. We process tokens left-to-right; when we
     # see a redirect operator the next token is the redirect target.
@@ -286,22 +276,6 @@ def classify_bash_segment(tokens: list) -> tuple:
             # Other dd named args (bs=, count=, conv=, status=, etc.)
             # aren't paths; ignore.
         return read_paths, write_paths, None
-
-    # `find` is a read command, BUT `-exec`/`-execdir`/`-ok`/`-okdir`
-    # invokes arbitrary commands per-match. Those subprocesses run
-    # outside the hook's view — bypass for the read scope. Plain find
-    # without -exec is fine and falls through to the BASH_READ_COMMANDS
-    # branch below.
-    if cmd == "find" and any(
-        a in ("-exec", "-execdir", "-ok", "-okdir") for a in args
-    ):
-        return read_paths, write_paths, "subprocess_bypass"
-
-    # `xargs <command>` invokes a command per-line of stdin, taking
-    # paths from a piped predecessor. Same shape as find -exec — paths
-    # bypass per-command classification.
-    if cmd == "xargs":
-        return read_paths, write_paths, "subprocess_bypass"
 
     if cmd in BASH_WRITE_LAST_POSITIONAL:
         positional = [a for a in args if not a.startswith("-")]
@@ -700,43 +674,16 @@ def main() -> int:
         for tokens in segments:
             if not tokens:
                 continue
-            read_paths, write_paths, fail_reason = classify_bash_segment(tokens)
+            read_paths, write_paths, _fail_reason = classify_bash_segment(tokens)
 
-            if fail_reason == "subprocess_bypass":
-                # find -exec / xargs / $(...) / `...` / subshells — all
-                # run nested commands outside the hook's view, so paths
-                # flowing through them bypass per-command classification.
-                # Tell the agent the actual policy gap and an actionable
-                # workaround.
-                emit_decision(
-                    "deny",
-                    "Sandbox denied. This Bash construct invokes "
-                    "subprocesses (find -exec / -execdir / -ok / -okdir, "
-                    "xargs, $(...) command substitution, <(...) / >(...) "
-                    "process substitution, or a (...) subshell) that run "
-                    "outside the hook's view — paths flowing through those "
-                    "nested commands bypass per-command read/write scope "
-                    "checks. To preserve sandbox guarantees: list files "
-                    "first (plain `find` without -exec, `ls`, or the Glob "
-                    "tool), then operate on each one via the Read/Edit/"
-                    "Write tools.\n"
-                    f"Command: {' '.join(tokens)}",
-                )
-                append_denial_record({
-                    "ts": datetime.now().isoformat(timespec="seconds"),
-                    "tool": "Bash",
-                    "scope": "subprocess_bypass",
-                    "blocked_path": "",
-                    "command": command,
-                    "cwd": cwd_real,
-                    "reason": f"subprocess-bypass construct: {tokens[0]}",
-                })
-                return 0
-
-            # `unknown_command` is no longer produced by classify_bash_segment
-            # — see the read-default policy in the function body. Path tokens
-            # under unknown commands now flow into read_paths and are subject
-            # to the read-scope check below.
+            # `subprocess_bypass` and `unknown_command` are no longer
+            # produced by classify_bash_segment — find -exec, xargs,
+            # $(...), subshells, and unknown commands all flow their
+            # visible path tokens into read_paths and rely on the
+            # read-scope check below. The user explicitly accepted
+            # losing recall on inner-command path-classification
+            # invisibility (in exchange for not false-positive-ing
+            # in-scope find -exec, in-scope xargs, etc.).
 
             ok, blocked = check_read_paths(read_paths, experiment_dir,
                                             extra_read_roots, cwd_real)
