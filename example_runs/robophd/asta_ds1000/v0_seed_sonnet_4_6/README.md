@@ -2,6 +2,8 @@
 
 One-shot Claude Sonnet 4.6 baseline submitted alongside the evolved iter13 agent. Establishes the meaningful lower bound for evolved agents that have access to Sonnet 4.6.
 
+> **This seed is structurally identical to [`v0_seed_gpt54_mini`](../v0_seed_gpt54_mini/agent.py) — and to the canonical seed at [`examples/asta_ds1000/seeds/baseline/agent.py`](../../../../examples/asta_ds1000/seeds/baseline/agent.py) — except the solver model is `CLAUDE_SONNET_4_6` instead of `GPT_5_4_MINI`.** All other differences are comments and docstring text. The two submitted seeds therefore isolate the model-choice axis on the Pareto curve: same one-shot pattern, same `temperature=0`, same `<code>...</code>` wrapping, just a different model handle.
+
 ## Recorded score
 
 | | Value |
@@ -25,7 +27,7 @@ One-shot Claude Sonnet 4.6 baseline submitted alongside the evolved iter13 agent
 
 ## Approach
 
-52-line one-shot solver. Sends the problem prompt to Claude Sonnet 4.6 at `temperature=0`, wraps the response in `<code>...</code>` tags, and returns. No self-check, no `python_session` calls, no library-specific scaffolding, no per-problem detectors. See `agent.py`.
+52-line one-shot solver. Sends the problem prompt to Claude Sonnet 4.6 at `temperature=0`, wraps the response in `<code>...</code>` tags, and returns. No self-check, no `python_session` calls, no library-specific scaffolding, no per-problem detectors. See `agent.py`. (As noted at the top, code-equivalent to the GPT-5.4-mini seed except for the model handle.)
 
 ## Pareto positioning
 
