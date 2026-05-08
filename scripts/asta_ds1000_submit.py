@@ -123,6 +123,53 @@ def verify_clean_tree() -> None:
         sys.exit(1)
 
 
+def resolve_anthropic_key() -> str:
+    """Return ANTHROPIC_API_KEY value to inject into subprocesses.
+
+    Inspect-AI's CLI resolves `--model anthropic/...` at startup by
+    instantiating an Anthropic client, which reads ANTHROPIC_API_KEY
+    directly from env. Our convention is to keep ANTHROPIC_API_KEY
+    unset so the user's Claude Code CLI subscription credentials don't
+    get clobbered, and use ANTHROPIC_API_KEY_FOR_ROBOPHD for our
+    evaluation needs (which model_registry.py reads). This shim bridges
+    the two: prefer ANTHROPIC_API_KEY if already set, else fall back
+    to ANTHROPIC_API_KEY_FOR_ROBOPHD. The returned value is injected
+    into the subprocess env only — the parent process's env is left
+    alone, so the user's Claude Code CLI keeps using its own creds.
+    """
+    return (
+        os.environ.get("ANTHROPIC_API_KEY")
+        or os.environ.get("ANTHROPIC_API_KEY_FOR_ROBOPHD")
+        or ""
+    )
+
+
+def verify_credentials() -> None:
+    """Hard-fail at startup if any required provider key is missing.
+
+    All three keys are required even though some submissions only use
+    one model — model_registry.py creates handles for all six models at
+    import time, and the Anthropic provider validates its key eagerly.
+    Failing here beats failing 30 minutes into a $23 iter13 run.
+    """
+    missing = []
+    if not os.environ.get("OPENAI_API_KEY"):
+        missing.append("OPENAI_API_KEY")
+    if not resolve_anthropic_key():
+        missing.append("ANTHROPIC_API_KEY (or ANTHROPIC_API_KEY_FOR_ROBOPHD)")
+    if not os.environ.get("GOOGLE_API_KEY"):
+        missing.append("GOOGLE_API_KEY")
+    if missing:
+        sys.stderr.write(
+            f"Missing required env vars: {', '.join(missing)}\n"
+            "All three provider keys must be set — model_registry.py creates\n"
+            "all six model handles at import time, and the Anthropic provider\n"
+            "validates its key eagerly. See examples/asta_ds1000/README.md\n"
+            "for setup instructions.\n"
+        )
+        sys.exit(1)
+
+
 def run(cmd: list[str], *, cwd: Path, extra_env: dict | None = None) -> int:
     """Stream subprocess output live. Returns exit code."""
     env = {**os.environ, **(extra_env or {})}
@@ -169,7 +216,14 @@ def eval_submission(s: Submission, working_dir: Path) -> bool:
         cwd=working_dir,
         # LITELLM_LOCAL_MODEL_COST_MAP is required by `astabench score`;
         # passing during eval too is harmless and keeps env consistent.
-        extra_env={"LITELLM_LOCAL_MODEL_COST_MAP": "True"},
+        # ANTHROPIC_API_KEY is injected here (not in the parent process)
+        # so Inspect's --model anthropic/... resolution succeeds without
+        # clobbering the user's Claude Code CLI subscription credentials
+        # in their interactive shell. See resolve_anthropic_key().
+        extra_env={
+            "LITELLM_LOCAL_MODEL_COST_MAP": "True",
+            "ANTHROPIC_API_KEY": resolve_anthropic_key(),
+        },
     )
     return rc == 0
 
@@ -227,6 +281,7 @@ def summarize() -> None:
 
 def main() -> int:
     verify_clean_tree()
+    verify_credentials()
     failures = []
     for s in SUBMISSIONS:
         print(f"\n{'#' * 70}\n# {s.name}\n{'#' * 70}")
