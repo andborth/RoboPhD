@@ -1,0 +1,7 @@
+```python
+def g(a):
+    return tf.argmin(a,axis=0)
+
+result = g(a.__copy__())
+
+```
