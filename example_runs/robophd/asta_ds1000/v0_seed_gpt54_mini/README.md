@@ -39,4 +39,6 @@ This `agent.py` is copied verbatim from:
 robophd_runs/robophd/asta_ds1000_20260505_145358/agents/seed_b13o9jud/agent.py
 ```
 
-The source run's RoboPhD-internal seed name was `seed_b13o9jud` (b13o9jud is a random per-run hash — the v0_seed_gpt54_mini name in this snapshot is more descriptive). That run produced an evolved agent (`iter9_recursion_ordinal_freq_savepath`, score 0.7244) with a +3.1pp lift over this seed. We're submitting **the seed** here rather than the evolved agent because the seed itself lands on the cheap end of the Pareto curve, while the evolved agent was paused before submission to revise the seed/background/objective and re-run.
+The source run's RoboPhD-internal seed name was `seed_b13o9jud` (b13o9jud is a random per-run hash — the v0_seed_gpt54_mini name in this snapshot is more descriptive).
+
+**Code-equivalent to the current canonical seed** at `examples/asta_ds1000/seeds/baseline/agent.py`. The two files differ only in comments and docstring (the canonical seed's docstring was tightened over time to remove evolution-strategy hints, and its model-registry comment lists all six current handles). Executable code is identical: a one-shot `GPT_5_4_MINI.generate()` call at `temperature=0`, response wrapped in `<code>...</code>` tags.
