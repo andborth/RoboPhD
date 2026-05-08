@@ -178,8 +178,80 @@ def run(cmd: list[str], *, cwd: Path, extra_env: dict | None = None) -> int:
     return subprocess.run(cmd, cwd=cwd, env=env).returncode
 
 
+# Auto-generated resilience wrapper inserted as `agent.py` in the staged
+# working dir. The original agent code is renamed to `agent_inner.py` and
+# imported from here. Wraps the inner make_solver in a try/except that
+# converts uncaught solver exceptions to empty `state.output.completion`,
+# which the DS-1000 scorer marks as 'I' (incorrect → score 0).
+#
+# Why this exists: RoboPhD's evolution evaluator runs each sample in a
+# subprocess, so a per-sample solver crash returns raw_score=0 and the run
+# continues. AstaBench's CLI runs all samples in one process and aborts on
+# any uncaught solver exception. The wrapper bridges those two contracts so
+# the AstaBench-CLI score reflects the same crash-tolerance the recorded
+# RoboPhD-internal score was produced under.
+#
+# Caught: any `Exception` subclass (which on Python 3.11+ includes
+# asyncio.TimeoutError, since it's an alias for builtins.TimeoutError).
+# NOT caught: KeyboardInterrupt, SystemExit, asyncio.CancelledError —
+# these BaseException-only signals stay unhandled so user/runtime
+# cancellation still works correctly.
+WRAPPER_TEMPLATE = '''"""Auto-generated resilience wrapper for AstaBench submission.
+
+Original agent source preserved at agent_inner.py in this dir; this file
+imports its make_solver and wraps the returned solver in a try/except that
+converts uncaught exceptions to empty `state.output.completion`. The DS-1000
+scorer then marks the empty output as 'I' (incorrect → score 0).
+
+This matches the per-sample crash semantics of RoboPhD's internal
+subprocess-isolated evaluator under which the recorded RoboPhD-internal
+test_results_final.json scores were produced. Inspect-AI's
+`--score-on-error` flag (added in 0.3.220) would be a clean framework-level
+equivalent, but AstaBench pins to 0.3.203, so we apply the same semantic at
+the agent level.
+
+Wrapper recipe lives in scripts/asta_ds1000_submit.py:WRAPPER_TEMPLATE.
+"""
+import traceback
+
+from inspect_ai.solver import Generate, TaskState, solver
+
+from agent_inner import make_solver as _inner_make_solver
+
+
+@solver
+def make_solver():
+    inner = _inner_make_solver()
+
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
+        try:
+            return await inner(state, generate)
+        except Exception as e:
+            print(f"[{state.sample_id}] WRAPPER caught {type(e).__name__}: {e}")
+            print(f"[{state.sample_id}] WRAPPER traceback (truncated):")
+            print(traceback.format_exc()[:1500])
+            state.output.completion = ""
+            if state.metadata is None:
+                state.metadata = {}
+            state.metadata["__wrapper_caught"] = repr(e)[:500]
+            state.metadata["__wrapper_traceback"] = traceback.format_exc()[:2000]
+            return state
+
+    return solve
+'''
+
+
 def stage(s: Submission) -> Path:
-    """Copy agent.py + model_registry.py into a fresh working dir.
+    """Stage a working dir with the resilience wrapper.
+
+    Layout in dst_dir:
+      agent.py         — auto-generated wrapper (the file --solver references)
+      agent_inner.py   — the actual evolved/seed agent source (renamed)
+      model_registry.py — copied from examples/asta_ds1000/
+
+    The wrapper imports make_solver from agent_inner and shields its
+    callers from any Exception raised at solve time. See WRAPPER_TEMPLATE
+    above for the rationale.
 
     Returns the working dir path.
     """
@@ -187,7 +259,8 @@ def stage(s: Submission) -> Path:
     src_registry = EXAMPLES_DIR / "model_registry.py"
     dst_dir = WORKING_BASE / s.name
     dst_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy(src_agent, dst_dir / "agent.py")
+    shutil.copy(src_agent, dst_dir / "agent_inner.py")
+    (dst_dir / "agent.py").write_text(WRAPPER_TEMPLATE)
     shutil.copy(src_registry, dst_dir / "model_registry.py")
     return dst_dir
 

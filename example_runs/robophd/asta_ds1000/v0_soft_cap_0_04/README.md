@@ -39,6 +39,26 @@ iter13's distinguishing additions over its `iter9_mpl_aware_judge` ancestor:
 
 iter13 also dropped three iter12 experiments that had hurt performance (alt-approach regeneration, 5th Haiku candidate, unproven TF/pandas system-prompt blocks) — productive backtracking by evolution.
 
+## Submission resilience wrapper
+
+The submitted `agent.py` (inside the leaderboard tarball) is **not** the literal evolved iter13 source. It's a small auto-generated wrapper that imports iter13's `make_solver` and shields it from uncaught exceptions:
+
+```python
+try:
+    return await inner(state, generate)
+except Exception as e:
+    state.output.completion = ""    # scorer marks "I" → score 0
+    return state
+```
+
+The evolved iter13 source is preserved verbatim in this directory at [`agents/iter13_style_aware_lean/agent.py`](agents/iter13_style_aware_lean/agent.py). The wrapper template lives in [`scripts/asta_ds1000_submit.py`](../../../../scripts/asta_ds1000_submit.py) (the `WRAPPER_TEMPLATE` constant) and is materialized into the working dir as `agent.py` at submission stage time, with the original code renamed to `agent_inner.py`.
+
+**Why the wrapper is needed.** RoboPhD's evolution evaluator runs each sample in a subprocess, so a per-sample solver crash returns `raw_score=0` and the run continues. AstaBench's CLI runs all samples in one process and aborts on any uncaught solver exception. The wrapper bridges those two contracts so the AstaBench-CLI score reflects the same crash-tolerance the recorded RoboPhD-internal score (0.8089) was produced under.
+
+**Specifically necessary because:** iter13's `_has_loop_token` helper at line 544 has a typo — `tokenize.TokenizeError` (real attribute is `tokenize.TokenError`, no "ize"). The except clause is only evaluated when the inner `tokenize.tokenize()` raises, which is rare. On sample 874 (Sklearn TF-IDF) one of iter13's candidate models produces code that triggers this path. The recorded RoboPhD-internal `test_results_final.per_problem.json` already shows sample 874 with `raw_score: 0.0` and the same `AttributeError` — the bug is part of the recorded-score reality. The wrapper makes AstaBench-CLI's sample-874 outcome match (score 0, eval continues) instead of aborting the whole run.
+
+`Inspect-AI 0.3.220` introduced `--score-on-error`, a framework-level equivalent. AstaBench currently pins to `inspect_ai==0.3.203`; we'll switch to the native flag when AstaBench bumps. Until then the wrapper is the cleanest path that requires no agent code modification and makes a leaderboard-honest disclosure.
+
 ## Lineage (agents/)
 
 15 agents in `agents/`, in chronological order:
