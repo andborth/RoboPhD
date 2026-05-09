@@ -225,8 +225,38 @@ def main():
 
     from evaluator import Ds1000Evaluator
 
-    objective = (HERE / "objective.md").read_text().strip()
-    background = (HERE / "background.md").read_text().strip()
+    # Resolve cost-penalty knobs once: CLI override or evaluator default.
+    # The same values feed both the evaluator and the markdown
+    # interpolation below — keeping them in lockstep means the agent's
+    # CLAUDE.md never disagrees with the actual scoring function.
+    from evaluator import MIN_COST_THRESHOLD, COST_PENALTY_SATURATION
+    cost_threshold = (
+        args.cost_threshold if args.cost_threshold is not None
+        else MIN_COST_THRESHOLD
+    )
+    cost_saturation = (
+        args.cost_saturation if args.cost_saturation is not None
+        else COST_PENALTY_SATURATION
+    )
+
+    def _fmt_cost(x: float) -> str:
+        return f"${x:.2f}"
+
+    # Replace ${COST_THRESHOLD}, ${COST_SATURATION}, and the two derived
+    # forms used in the worked example in objective.md. Order matters:
+    # the longer-suffix variants must be replaced before ${COST_THRESHOLD}
+    # itself, since that name is a prefix of theirs.
+    def _interpolate(text: str) -> str:
+        return (
+            text
+            .replace("${COST_THRESHOLD_X2}", _fmt_cost(cost_threshold * 2))
+            .replace("${COST_THRESHOLD_M1}", _fmt_cost(cost_threshold - 0.01))
+            .replace("${COST_THRESHOLD}", _fmt_cost(cost_threshold))
+            .replace("${COST_SATURATION}", _fmt_cost(cost_saturation))
+        )
+
+    objective = _interpolate((HERE / "objective.md").read_text().strip())
+    background = _interpolate((HERE / "background.md").read_text().strip())
 
     # Per-example timeout: must match the value passed to RoboPhDConfig
     # below. The evaluator derives a slightly-shorter subprocess_timeout
@@ -238,18 +268,11 @@ def main():
     # (a tiebreaker between correctness-tied agents); test paths report
     # raw 0/1 so evolved agents land at their true point on the Pareto
     # cost-vs-score curve.
-    from evaluator import MIN_COST_THRESHOLD, COST_PENALTY_SATURATION
     evaluator = Ds1000Evaluator(
         eval_timeout=EVAL_TIMEOUT,
         apply_cost_penalty=True,  # training: penalty fires
-        min_cost_threshold=(
-            args.cost_threshold if args.cost_threshold is not None
-            else MIN_COST_THRESHOLD
-        ),
-        cost_penalty_saturation=(
-            args.cost_saturation if args.cost_saturation is not None
-            else COST_PENALTY_SATURATION
-        ),
+        min_cost_threshold=cost_threshold,
+        cost_penalty_saturation=cost_saturation,
     )
     test_evaluator = evaluator.with_overrides(apply_cost_penalty=False)
 
