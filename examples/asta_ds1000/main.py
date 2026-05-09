@@ -245,12 +245,14 @@ def main():
     # Replace ${COST_THRESHOLD}, ${COST_SATURATION}, and the two derived
     # forms used in the worked example in objective.md. Order matters:
     # the longer-suffix variants must be replaced before ${COST_THRESHOLD}
-    # itself, since that name is a prefix of theirs.
+    # itself, since that name is a prefix of theirs. M1 is clamped at 0
+    # so a sub-cent threshold renders as "$0.00" (a free agent — still
+    # rhetorically valid in the example) rather than a negative dollar.
     def _interpolate(text: str) -> str:
         return (
             text
             .replace("${COST_THRESHOLD_X2}", _fmt_cost(cost_threshold * 2))
-            .replace("${COST_THRESHOLD_M1}", _fmt_cost(cost_threshold - 0.01))
+            .replace("${COST_THRESHOLD_M1}", _fmt_cost(max(0.0, cost_threshold - 0.01)))
             .replace("${COST_THRESHOLD}", _fmt_cost(cost_threshold))
             .replace("${COST_SATURATION}", _fmt_cost(cost_saturation))
         )
