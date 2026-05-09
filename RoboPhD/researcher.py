@@ -1911,6 +1911,10 @@ class ParallelAgentResearcher:
                         # (evaluator-side overhead) for cost reporting.
                         'eval_cost': r.get('eval_cost', 0.0),
                         'other_cost': r.get('other_cost', 0.0),
+                        # Per-model agent cost split (opt-in per task).
+                        # Empty {} for tasks that don't emit it — the
+                        # cost report's per-model section stays absent.
+                        'cost_by_model': r.get('cost_by_model') or {},
                     })
 
                 # Calculate agent metrics
@@ -3575,6 +3579,54 @@ class ParallelAgentResearcher:
             total_row.append(f"**${grand_total:.2f}**")
         report_lines.append("| " + " | ".join(total_row) + " |")
 
+        # ---- Per-model cost breakdown ------------------------------------
+        # Aggregate per-agent (sum across that agent's problems) and per-
+        # (agent, context) for the Top-3 inline augmentation. cost_by_model
+        # is populated only when the task's evaluator opts in by emitting
+        # cost_by_model_usd in diagnostics; otherwise these dicts stay
+        # empty and the section gates below short-circuit.
+        per_agent_cost_by_model: Dict[str, Dict[str, float]] = {}
+        cost_by_model_per_task: Dict[tuple, Dict[str, float]] = {}
+        for agent_id, results in results_by_agent.items():
+            agent_bucket: Dict[str, float] = {}
+            for r in results:
+                breakdown = r.get('cost_by_model') or {}
+                if not breakdown:
+                    continue
+                for m, c in breakdown.items():
+                    try:
+                        cf = float(c)
+                    except (TypeError, ValueError):
+                        continue
+                    agent_bucket[m] = agent_bucket.get(m, 0.0) + cf
+                ctx = r.get('context')
+                if ctx is not None:
+                    cost_by_model_per_task[(agent_id, ctx)] = {
+                        str(m): float(c) for m, c in breakdown.items()
+                        if isinstance(c, (int, float))
+                    }
+            if agent_bucket:
+                per_agent_cost_by_model[agent_id] = agent_bucket
+
+        # Section-level gate: render "Cost by Model" only when at least
+        # one agent in this iteration used >=2 models. When it fires,
+        # show every agent (single-model agents render at 100% so cross-
+        # agent comparison stays clean).
+        if any(len(b) >= 2 for b in per_agent_cost_by_model.values()):
+            report_lines.extend(["", "---", "", "## Cost by Model", ""])
+            for agent_id in all_agents:
+                bucket = per_agent_cost_by_model.get(agent_id) or {}
+                if not bucket:
+                    continue
+                agent_total = sum(bucket.values())
+                if agent_total <= 0:
+                    continue
+                report_lines.append(f"**{agent_id}** (${agent_total:.3f} total)")
+                for m, c in sorted(bucket.items(), key=lambda kv: kv[1], reverse=True):
+                    pct = (c / agent_total) * 100
+                    report_lines.append(f"- {m}: ${c:.3f} ({pct:.0f}%)")
+                report_lines.append("")
+
         # Cost insights
         report_lines.extend(["", "---", "", "## Cost Insights", ""])
 
@@ -3621,7 +3673,28 @@ class ParallelAgentResearcher:
                     # Tenth-of-a-cent precision so $0.02 / $0.01 / $0.01
                     # rows resolve into a meaningful ordering instead
                     # of three near-identical pennies.
-                    report_lines.append(f"{i}. {ctx}: ${cost:.3f}")
+                    line = f"{i}. {ctx}: ${cost:.3f}"
+                    # Append per-model breakdown only when this (agent,
+                    # task) pair actually hit >=2 models; single-model
+                    # tasks render bare, same as today.
+                    breakdown = cost_by_model_per_task.get((agent_id, ctx)) or {}
+                    if len(breakdown) >= 2:
+                        sorted_models = sorted(
+                            breakdown.items(), key=lambda kv: kv[1], reverse=True
+                        )
+                        # Strip provider prefix for inline readability
+                        # (full names live in the standalone "Cost by
+                        # Model" section). Top 3 contributors, with
+                        # "+N more" if more.
+                        top3 = sorted_models[:3]
+                        rest = len(sorted_models) - 3
+                        parts = [
+                            f"{m.rsplit('/', 1)[-1]} ${c:.3f}" for m, c in top3
+                        ]
+                        if rest > 0:
+                            parts.append(f"+{rest} more")
+                        line += " (" + ", ".join(parts) + ")"
+                    report_lines.append(line)
                 report_lines.append("")
 
         # Write report

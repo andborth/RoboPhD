@@ -307,6 +307,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                 # 0 and the "Other" report columns stay hidden.
                 cost_usd = 0.0
                 other_cost = 0.0
+                cost_by_model: dict = {}
                 if isinstance(diagnostics, dict):
                     raw = diagnostics.get("cost_usd", 0.0)
                     try:
@@ -318,6 +319,16 @@ class ExternalEvaluatorDomain(DomainInterface):
                         other_cost = float(raw_other)
                     except (TypeError, ValueError):
                         pass
+                    # Per-model agent cost (opt-in by evaluator). Tasks
+                    # that don't emit it leave cost_by_model = {} and the
+                    # cost report's per-model section stays absent.
+                    raw_breakdown = diagnostics.get("cost_by_model_usd")
+                    if isinstance(raw_breakdown, dict):
+                        for k, v in raw_breakdown.items():
+                            try:
+                                cost_by_model[str(k)] = float(v)
+                            except (TypeError, ValueError):
+                                pass
 
                 has_error = "error.md" in diagnostics if isinstance(diagnostics, dict) else False
                 result_entry = {
@@ -325,6 +336,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                     "score": score,
                     "eval_cost": cost_usd,
                     "other_cost": other_cost,
+                    "cost_by_model": cost_by_model,
                     "error": has_error,
                 }
 

@@ -774,6 +774,7 @@ class Ds1000Evaluator:
         # Cost. DS-1000 has no judge LLM, so model_usage is all agent.
         agent_cost_usd = 0.0
         usage_summary: dict[str, Any] = {}
+        cost_by_model_usd: dict[str, float] = {}
         try:
             stats = getattr(log, "stats", None)
             model_usage = getattr(stats, "model_usage", None) if stats else None
@@ -785,7 +786,9 @@ class Ds1000Evaluator:
                         "total_tokens": getattr(u, "total_tokens", 0),
                     }
                     usage_summary[model_name] = counts
-                    agent_cost_usd += self._estimate_cost(model_name, counts)
+                    model_cost = self._estimate_cost(model_name, counts)
+                    cost_by_model_usd[model_name] = model_cost
+                    agent_cost_usd += model_cost
         except Exception:
             pass
 
@@ -815,19 +818,30 @@ class Ds1000Evaluator:
         diagnostics["cost_usd"] = agent_cost_usd
         diagnostics["agent_cost_usd"] = agent_cost_usd
         diagnostics["usage"] = usage_summary
+        diagnostics["cost_by_model_usd"] = cost_by_model_usd  # plumbed through to result.json by ExternalEvaluatorDomain
         diagnostics["library"] = (example.metadata or {}).get("library")
         # Numeric fields (raw_score, cost_penalty) are skipped by
         # ExternalEvaluatorDomain's str-only file persistence. Surface
         # them as a readable per-key file so failure forensics can
         # distinguish "wrong answer" (raw_score=0) from "correct but
         # expensive" (raw_score=1, cost_penalty>0) without re-running.
-        diagnostics["cost_breakdown.md"] = (
-            f"raw_score:        {raw_score}\n"
-            f"agent_cost_usd:   ${agent_cost_usd:.6f}\n"
-            f"cost_penalty:     {cost_penalty:.4f}\n"
-            f"penalty_applied:  {self.apply_cost_penalty}\n"
-            f"final score:      {score_value}\n"
-        )
+        breakdown_lines = [
+            f"raw_score:        {raw_score}",
+            f"agent_cost_usd:   ${agent_cost_usd:.6f}",
+            f"cost_penalty:     {cost_penalty:.4f}",
+            f"penalty_applied:  {self.apply_cost_penalty}",
+            f"final score:      {score_value}",
+        ]
+        # Per-model split — only useful when the problem actually used >1
+        # model. A 1-row table just restates agent_cost_usd at 100%.
+        if len(cost_by_model_usd) >= 2 and agent_cost_usd > 0:
+            sorted_models = sorted(cost_by_model_usd.items(), key=lambda kv: kv[1], reverse=True)
+            breakdown_lines.append("")
+            breakdown_lines.append("By model (sorted desc):")
+            for m, c in sorted_models:
+                share = (c / agent_cost_usd) * 100 if agent_cost_usd > 0 else 0.0
+                breakdown_lines.append(f"  {m}: ${c:.6f} ({share:.0f}%)")
+        diagnostics["cost_breakdown.md"] = "\n".join(breakdown_lines) + "\n"
 
         return score_value, diagnostics
 
