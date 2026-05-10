@@ -236,8 +236,31 @@ def main():
     # per-sample subprocess). os.environ writes propagate to children
     # via inheritance — the asta_ds1000 evaluator's subprocess.Popen
     # calls don't pass env=, so the parent env is used.
+    #
+    # On --resume, also auto-detect: if any agent in the resumed run
+    # imports a gated handle (CLAUDE_OPUS_4_7 / GPT_5_5 /
+    # GEMINI_3_1_PRO_PREVIEW), the original training run had
+    # --allow-stronger-models, and the resume must too — otherwise the
+    # gated handles aren't created in the eval workers and every per-
+    # problem subprocess crashes on import for a uniform 0.000 score.
+    # Self-healing rather than checkpoint-persisted so historical runs
+    # also benefit.
     if args.allow_stronger_models:
         os.environ["ASTA_DS1000_ALLOW_STRONGER_MODELS"] = "1"
+    elif args.resume:
+        gated = ("CLAUDE_OPUS_4_7", "GPT_5_5", "GEMINI_3_1_PRO_PREVIEW")
+        agents_dir = Path(args.resume) / "agents"
+        if agents_dir.is_dir():
+            needs_flag = any(
+                any(name in p.read_text() for name in gated)
+                for p in agents_dir.glob("*/agent.py")
+            )
+            if needs_flag:
+                os.environ["ASTA_DS1000_ALLOW_STRONGER_MODELS"] = "1"
+                logger.info(
+                    "Auto-enabled --allow-stronger-models on resume: "
+                    "resumed run's agent pool imports a gated handle"
+                )
 
     from evaluator import Ds1000Evaluator
 
