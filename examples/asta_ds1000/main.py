@@ -436,7 +436,13 @@ def main():
     # below. The evaluator derives a slightly-shorter subprocess_timeout
     # internally so subprocesses get killed BEFORE RoboPhD's reaper
     # would leak the thread.
-    EVAL_TIMEOUT = 600
+    #
+    # 20-minute cap. Wall-clock time isn't a leaderboard criterion;
+    # this is just a catch for runaway processes. Higher --cost-threshold
+    # runs (e.g. 0.16) can pair with stronger / higher-reasoning model
+    # handles that take noticeably longer per example, and the previous
+    # 10-minute cap was tight enough to clip legitimate solutions there.
+    EVAL_TIMEOUT = 1200
 
     # Two evaluator instances. Training applies the bounded cost penalty
     # (a tiebreaker between correctness-tied agents); test paths report
