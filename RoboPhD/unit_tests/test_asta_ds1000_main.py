@@ -62,6 +62,24 @@ def resume_helper():
         sys.path.remove(str(REPO_ROOT))
 
 
+@pytest.fixture(scope="module")
+def framing_helper():
+    """Import main.py's `_test_rounds_framing` once per module.
+
+    Same sys.path dance as `resume_helper`. Module-cached, so the actual
+    `import main` only re-runs once per test session even with multiple
+    fixtures.
+    """
+    sys.path.insert(0, str(ASTA_DS1000_DIR))
+    sys.path.insert(0, str(REPO_ROOT))
+    try:
+        import main as asta_main  # noqa: E402
+        return asta_main._test_rounds_framing
+    finally:
+        sys.path.remove(str(ASTA_DS1000_DIR))
+        sys.path.remove(str(REPO_ROOT))
+
+
 def _make_fake_resume(tmp_path: Path, agent_src: str) -> Path:
     """Build a minimal resume_dir with one agent.py at the conventional
     path. Returns the resume_dir."""
@@ -305,3 +323,66 @@ def test_main_plumbs_test_rounds_arg_into_engine_overrides():
         "CLI flag actually changes runtime behavior. Found a "
         "non-args.* assignment:\n  " + "\n  ".join(bad)
     )
+
+
+# --- _test_rounds_framing branch coverage -----------------------------------
+# Pure-function tests on the framing helper. We assert by SEMANTIC
+# CONTENT (which concepts each branch must / must not mention) rather
+# than exact strings, so the wording can be tuned without breaking
+# tests — what's load-bearing is the agent-prompt-level meaning, not
+# the surface phrasing.
+
+
+def test_framing_rounds_zero_no_in_iteration_revision_promise(framing_helper):
+    """rounds=0: the agent gets ONE pass per iteration. The framing
+    must not promise an in-iteration revision opportunity — that would
+    be a false promise that distorts behavior (the agent might leave
+    obvious bugs unfixed expecting a "Round 2" that won't happen). The
+    long-arc 'future iterations' framing is shared with rounds>=1 and
+    should still appear."""
+    text = framing_helper(0).lower()
+    assert "future iterations" in text, (
+        f"rounds=0 framing must keep the long-arc framing about future "
+        f"iterations; got: {text!r}"
+    )
+    forbidden = (
+        "refine", "revise", "different batch", "another batch",
+        "second pass", "second round", "round 2",
+    )
+    leaked = [w for w in forbidden if w in text]
+    assert not leaked, (
+        f"rounds=0 framing must not promise an in-iteration revision "
+        f"loop, but mentions {leaked!r} in: {text!r}"
+    )
+
+
+def test_framing_rounds_one_promises_in_iteration_revision(framing_helper):
+    """rounds>=1: the anti-overfit incentive depends on telling the
+    agent BOTH that it'll see results on a different batch within the
+    iteration AND that it'll get to refine before the agent is tested
+    in future iterations. Drop either half and the prompt loses bite —
+    just the future-iterations framing without the in-iteration
+    revision promise reduces to the rounds=0 wording."""
+    text = framing_helper(1).lower()
+    assert "different batch" in text or "another batch" in text, (
+        f"rounds>=1 framing must promise a view on a different batch "
+        f"of examples within the iteration; got: {text!r}"
+    )
+    assert any(w in text for w in ("refine", "revise", "improve")), (
+        f"rounds>=1 framing must promise a refinement opportunity; "
+        f"got: {text!r}"
+    )
+    assert "future iterations" in text, (
+        f"rounds>=1 framing must keep the long-arc framing about "
+        f"future iterations; got: {text!r}"
+    )
+
+
+def test_framing_higher_values_use_same_branch(framing_helper):
+    """rounds=2, 3, ... share the rounds>=1 wording — the runtime
+    semantics differ (more refinement passes) but the prompt-level
+    framing is binary. A regression that only branches on rounds==1
+    would break this."""
+    one = framing_helper(1)
+    assert framing_helper(2) == one
+    assert framing_helper(5) == one

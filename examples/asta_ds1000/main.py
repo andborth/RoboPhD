@@ -210,6 +210,42 @@ def _resume_needs_stronger_flag(
     return False
 
 
+def _test_rounds_framing(rounds: int) -> str:
+    """Return objective.md paragraph 3's last-sentence framing for the
+    given new_agent_test_rounds value.
+
+    Two branches, both written from the evolutionary agent's POV:
+
+    - rounds == 0: the agent only gets one pass per iteration, so we
+      can't honestly promise an in-iteration revision opportunity. The
+      framing falls back to the long-arc "future iterations" framing
+      alone — true but a weaker anti-overfit signal.
+
+    - rounds >= 1: RoboPhD's Deep Focus Round 2 re-evaluates each new
+      agent on a fresh batch of training examples within the same
+      iteration. The framing tells the agent it'll see results on a
+      different batch and have a chance to refine before the agent is
+      tested on entirely new batches in future iterations — explicit
+      anti-overfit incentive that anchors the agent on generalization.
+
+    The wording avoids RoboPhD-internal jargon ("Round 2", "session")
+    and consistently uses "iteration", which is the vocabulary already
+    in objective.md and the rest of the agent-facing prompt surface.
+    """
+    if rounds >= 1:
+        return (
+            "After you construct your agent, you will see how it "
+            "performs on a different batch of examples within this "
+            "iteration. You will then have the opportunity to refine "
+            "your agent so that it can be tested on entirely new "
+            "batches of examples in future iterations."
+        )
+    return (
+        "After you construct your agent, it will be tested on entirely "
+        "new batches of examples in future iterations."
+    )
+
+
 def parse_args():
     p = argparse.ArgumentParser(
         description="Evolve DS-1000 agents on AstaBench (Standard tools, Docker sandbox)",
@@ -349,33 +385,26 @@ def main():
     # value — without this, --engine-config '{"new_agent_test_rounds":1}'
     # without the dedicated flag would run Round 2 but still ship the
     # 0-round wording, weakening the anti-overfit prompt.
+    #
+    # Coerce the JSON-typed value to int at the parse site. JSON has no
+    # int type distinct from number, and a stringified value like
+    # '{"new_agent_test_rounds":"1"}' would otherwise propagate as a
+    # string — silently mis-routing both the framing branch (string vs
+    # int comparison) and RoboPhDConfig validation downstream. int(...)
+    # accepts numeric values and JSON strings of digits; non-numeric
+    # input fails loud here rather than mid-render.
     parsed_engine_config = (
         json.loads(args.engine_config) if args.engine_config else {}
     )
+    if "new_agent_test_rounds" in parsed_engine_config:
+        parsed_engine_config["new_agent_test_rounds"] = int(
+            parsed_engine_config["new_agent_test_rounds"]
+        )
     effective_test_rounds = parsed_engine_config.get(
         "new_agent_test_rounds", args.new_agent_test_rounds
     )
 
-    # Round-2-aware framing for objective.md paragraph 3. When test
-    # rounds >= 1, RoboPhD re-evaluates each new agent on a fresh batch
-    # within the same iteration, so we can honestly tell the agent it
-    # will see results on different examples and have a chance to
-    # refine — this is extra incentive to avoid overfitting to the
-    # iteration's visible batch. With test rounds == 0 there is no such
-    # second pass, so we revert to the single-sentence wording.
-    if effective_test_rounds >= 1:
-        test_rounds_framing = (
-            "After you construct your agent, you will see your agent's "
-            "results on a different batch of examples in Round 2 of this "
-            "session. You will then have the opportunity to refine the "
-            "agent's approach so that it can be tested on entirely new "
-            "batches of examples in future iterations."
-        )
-    else:
-        test_rounds_framing = (
-            "After you construct your agent, it will be tested on entirely "
-            "new batches of examples in future iterations."
-        )
+    test_rounds_framing = _test_rounds_framing(effective_test_rounds)
 
     # Replace ${COST_THRESHOLD}, ${COST_SATURATION}, and the two derived
     # forms used in the worked example in objective.md. Order matters:
