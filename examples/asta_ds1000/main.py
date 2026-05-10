@@ -71,10 +71,12 @@ SPLIT_SEED = 42
 # gaps — see Appendix B (Selection Noise Analysis) of the RoboPhD paper.
 # Overfitting pressure from the higher per-problem hit count is mitigated
 # by (a) the reworded objective that no longer rewards narrow
-# specialization and (b) `new_agent_test_rounds=0` in engine_overrides
-# below, which removes Deep Focus's round-2 refinement eval and keeps
-# each agent's per-iteration training exposure comparable to the n=10 /
-# 1-round regime.
+# specialization and (b) the --new-agent-test-rounds default of 0,
+# which skips Deep Focus's round-2 refinement eval and keeps each
+# agent's per-iteration training exposure comparable to the n=10 /
+# 1-round regime. Pass --new-agent-test-rounds 1 to opt back into
+# Round 2 (which also activates the Round-2-aware framing in
+# objective.md).
 DEFAULT_EXAMPLES_PER_ITERATION = 20
 
 # Default iteration cap. Same single-source-of-truth pattern as
@@ -224,6 +226,15 @@ def parse_args():
                    help=f"Override the default per-iteration sample size ({DEFAULT_EXAMPLES_PER_ITERATION})")
     p.add_argument("--evaluation-budget", type=int, default=None,
                    help="Override the default evaluation budget (iter-bounded)")
+    p.add_argument("--new-agent-test-rounds", type=int, default=0,
+                   help="Number of Deep-Focus refinement rounds per new agent. "
+                        "0 (default) skips Round 2 — each agent is evaluated once "
+                        "per iteration. >=1 evaluates each new agent on a fresh "
+                        "batch of training examples within the same iteration; "
+                        "doubles per-agent training exposure and swaps "
+                        "objective.md to the Round-2-aware framing that gives "
+                        "the agent extra incentive to avoid overfitting to the "
+                        "visible batch.")
 
     p.add_argument("--allow-stronger-models", action="store_true",
                    help="Expose three stronger model handles to evolved agents: "
@@ -330,6 +341,42 @@ def main():
     else:
         stronger_rows = ""
 
+    # Resolve effective new_agent_test_rounds from CLI flag + the
+    # --engine-config overlay. The flag is the primary surface; the
+    # JSON overlay still wins as the escape hatch (matches the
+    # precedence used for engine_overrides below). Resolving it here
+    # means the framing in objective.md tracks the actual runtime
+    # value — without this, --engine-config '{"new_agent_test_rounds":1}'
+    # without the dedicated flag would run Round 2 but still ship the
+    # 0-round wording, weakening the anti-overfit prompt.
+    parsed_engine_config = (
+        json.loads(args.engine_config) if args.engine_config else {}
+    )
+    effective_test_rounds = parsed_engine_config.get(
+        "new_agent_test_rounds", args.new_agent_test_rounds
+    )
+
+    # Round-2-aware framing for objective.md paragraph 3. When test
+    # rounds >= 1, RoboPhD re-evaluates each new agent on a fresh batch
+    # within the same iteration, so we can honestly tell the agent it
+    # will see results on different examples and have a chance to
+    # refine — this is extra incentive to avoid overfitting to the
+    # iteration's visible batch. With test rounds == 0 there is no such
+    # second pass, so we revert to the single-sentence wording.
+    if effective_test_rounds >= 1:
+        test_rounds_framing = (
+            "After you construct your agent, you will see your agent's "
+            "results on a different batch of examples in Round 2 of this "
+            "session. You will then have the opportunity to refine the "
+            "agent's approach so that it can be tested on entirely new "
+            "batches of examples in future iterations."
+        )
+    else:
+        test_rounds_framing = (
+            "After you construct your agent, it will be tested on entirely "
+            "new batches of examples in future iterations."
+        )
+
     # Replace ${COST_THRESHOLD}, ${COST_SATURATION}, and the two derived
     # forms used in the worked example in objective.md. Order matters:
     # the longer-suffix variants must be replaced before ${COST_THRESHOLD}
@@ -350,6 +397,7 @@ def main():
             .replace("${COST_THRESHOLD}", _fmt_cost(cost_threshold))
             .replace("${COST_SATURATION}", _fmt_cost(cost_saturation))
             .replace("${STRONGER_MODELS_TABLE_ROWS}\n", stronger_replacement)
+            .replace("${TEST_ROUNDS_FRAMING}", test_rounds_framing)
         )
 
     objective = _interpolate((HERE / "objective.md").read_text().strip())
@@ -449,18 +497,22 @@ def main():
     num_iterations = args.num_iterations if args.num_iterations is not None else default_iterations
     evaluation_budget = args.evaluation_budget if args.evaluation_budget is not None else default_budget
 
-    # new_agent_test_rounds=0 disables Deep Focus's round-2 refinement
-    # eval. Round 2 evaluates each new agent on a fresh batch of training
-    # examples within the same iteration, effectively doubling per-agent
-    # training exposure. Disabling it pairs with the n=20 default to keep
-    # exposure comparable to the previous n=10 + 1-round regime — see the
-    # comment on DEFAULT_EXAMPLES_PER_ITERATION for the full rationale.
+    # Default --new-agent-test-rounds=0 disables Deep Focus's round-2
+    # refinement eval. Round 2 evaluates each new agent on a fresh batch
+    # of training examples within the same iteration, effectively
+    # doubling per-agent training exposure. The default of 0 pairs with
+    # the n=20 default to keep exposure comparable to the previous
+    # n=10 + 1-round regime — see DEFAULT_EXAMPLES_PER_ITERATION for the
+    # full rationale. Pass --new-agent-test-rounds 1 (or higher) to
+    # opt into Round 2; that also swaps objective.md paragraph 3 to the
+    # Round-2-aware wording (see the test_rounds_framing block above).
+    # parsed_engine_config was already loaded above for
+    # effective_test_rounds; reuse it to avoid parsing JSON twice.
     engine_overrides: dict = {
         "examples_per_iteration": examples_per_iter,
-        "new_agent_test_rounds": 0,
+        "new_agent_test_rounds": args.new_agent_test_rounds,
     }
-    if args.engine_config:
-        engine_overrides.update(json.loads(args.engine_config))
+    engine_overrides.update(parsed_engine_config)
 
     if args.engine == "gepa":
         cfg = GEPAConfig(

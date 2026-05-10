@@ -110,6 +110,12 @@ python examples/asta_ds1000/main.py --allow-stronger-models --cost-threshold 0.0
 # Smaller per-iteration sample for cheaper iteration:
 python examples/asta_ds1000/main.py --examples-per-iteration 5
 
+# Opt into Deep-Focus Round 2 (each new agent re-evaluated on a fresh
+# batch within the same iteration). Doubles per-agent training
+# exposure and switches objective.md to a Round-2-aware framing that
+# nudges the agent away from overfitting to the visible batch:
+python examples/asta_ds1000/main.py --new-agent-test-rounds 1
+
 # Other engines (RoboPhD is the focus; GEPA / Autoresearch should work
 # conceptually since the evaluator and seed are engine-agnostic, but
 # weren't tuned for this task):

@@ -1,6 +1,6 @@
 """Pin asta_ds1000 main.py invariants that the type system can't enforce.
 
-Currently covers two bug classes:
+Currently covers three bug classes:
 
   - Test-pipeline eval calls (`eval_candidate` / `eval_run`) must pass
     `config=` explicitly. Without it, they silently inherit
@@ -20,6 +20,16 @@ Currently covers two bug classes:
     model_registry as `GATED_HANDLE_NAMES` (the single source of
     truth); main.py's `_resume_needs_stronger_flag` consumes that
     constant via AST `ImportFrom` matching on `agents/*/agent.py`.
+
+  - --new-agent-test-rounds must reach engine_overrides AND drive the
+    framing in objective.md. The wording in objective.md paragraph 3
+    swaps to a Round-2-aware variant when test rounds >= 1, giving the
+    agent extra incentive to avoid overfitting to the iteration's
+    visible batch. If main.py reverts to a hardcoded
+    `"new_agent_test_rounds": 0` or objective.md drops the
+    `${TEST_ROUNDS_FRAMING}` placeholder, the framing silently drifts
+    from the runtime — agent gets a weaker prompt than the runtime
+    actually warrants.
 """
 import ast
 import sys
@@ -223,4 +233,75 @@ def test_main_imports_gated_names_from_model_registry():
         "list creates drift between main.py and model_registry that "
         "silently re-introduces the uniform-0.000 bug if the gated set "
         "ever changes."
+    )
+
+
+# --- --new-agent-test-rounds plumbing ---------------------------------------
+# Two checks: (1) objective.md keeps the `${TEST_ROUNDS_FRAMING}`
+# placeholder so main.py's interpolation can swap the wording, and
+# (2) main.py plumbs `args.new_agent_test_rounds` into engine_overrides
+# rather than reverting to a hardcoded literal. Both regressions would
+# silently weaken the anti-overfit prompt the agent sees in Round-2
+# mode while leaving the runtime semantically correct, so neither shows
+# up in functional tests.
+
+
+def test_objective_md_uses_test_rounds_framing_placeholder():
+    """objective.md must contain `${TEST_ROUNDS_FRAMING}` so main.py's
+    interpolation can swap the wording based on
+    --new-agent-test-rounds. Without the placeholder, the framing in
+    the rendered prompt drifts silently from the runtime test-rounds
+    value — the agent always sees the rounds==0 wording even when the
+    engine actually runs Round 2."""
+    obj = (REPO_ROOT / "examples" / "asta_ds1000" / "objective.md").read_text()
+    assert "${TEST_ROUNDS_FRAMING}" in obj, (
+        "objective.md no longer contains `${TEST_ROUNDS_FRAMING}`. "
+        "Re-add the placeholder in paragraph 3 (replacing the "
+        "hardcoded sentence about future iterations) so main.py can "
+        "swap framings based on --new-agent-test-rounds."
+    )
+
+
+def test_main_plumbs_test_rounds_arg_into_engine_overrides():
+    """The `engine_overrides` dict in main.py must set
+    `"new_agent_test_rounds"` from `args.new_agent_test_rounds` rather
+    than a hardcoded `0`. AST walk: find every dict literal with a
+    `"new_agent_test_rounds"` key and assert the value is an
+    `Attribute` access on a `Name("args")` (i.e. `args.<something>`),
+    not a `Constant`. Catches a future commit that re-inlines the
+    literal — at which point the CLI flag becomes a no-op for the
+    runtime, while the framing still tracks the flag, so the framing
+    and the runtime would silently disagree."""
+    tree = ast.parse(MAIN_PY.read_text())
+    found_dicts: list[tuple[int, ast.expr]] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Dict):
+            continue
+        for k, v in zip(node.keys, node.values):
+            if (
+                isinstance(k, ast.Constant)
+                and k.value == "new_agent_test_rounds"
+            ):
+                found_dicts.append((node.lineno, v))
+
+    assert found_dicts, (
+        "Couldn't find any dict literal in main.py with a "
+        "'new_agent_test_rounds' key — has the engine_overrides "
+        "construction been refactored?"
+    )
+    bad: list[str] = []
+    for lineno, value_node in found_dicts:
+        ok = (
+            isinstance(value_node, ast.Attribute)
+            and isinstance(value_node.value, ast.Name)
+            and value_node.value.id == "args"
+        )
+        if not ok:
+            rendered = ast.unparse(value_node)
+            bad.append(f"line {lineno}: value is `{rendered}`")
+    assert not bad, (
+        "engine_overrides[\"new_agent_test_rounds\"] must be set from "
+        "`args.new_agent_test_rounds` so the --new-agent-test-rounds "
+        "CLI flag actually changes runtime behavior. Found a "
+        "non-args.* assignment:\n  " + "\n  ".join(bad)
     )
