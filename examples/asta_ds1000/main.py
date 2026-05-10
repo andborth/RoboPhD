@@ -315,6 +315,13 @@ def main():
     )
     test_evaluator = evaluator.with_overrides(apply_cost_penalty=False)
 
+    # Single source of truth for test-side eval config. Reused at every
+    # eval_candidate / eval_run call site below (--eval-only and
+    # --eval-test-set paths) so the test pipeline can't silently drift
+    # from the training pipeline's eval_timeout. Future test-side knobs
+    # (max_workers, test_repeats, ...) belong on this object.
+    test_eval_config = RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT)
+
     train, test, examples_per_iter, default_budget, default_iterations = (
         _build_dataset(args.phase)
     )
@@ -351,14 +358,14 @@ def main():
                 evaluator=test_evaluator,
                 dataset=test,
                 candidate=candidate,
-                config=RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT),
+                config=test_eval_config,
             )
         else:
             eval_result = eval_run(
                 evaluator=test_evaluator,
                 dataset=test,
                 experiment_dir=args.resume,
-                config=RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT),
+                config=test_eval_config,
             )
 
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
@@ -460,7 +467,7 @@ def main():
                 evaluator=test_evaluator,
                 dataset=test,
                 candidate=result.best_candidate,
-                config=RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT),
+                config=test_eval_config,
             )
             logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
             summary_path, per_problem_path = _write_test_results(
