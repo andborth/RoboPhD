@@ -75,6 +75,12 @@ CLAUDE_SONNET_4_6 = get_model(_CLAUDE_SONNET_4_6_ID, api_key=_ANTHROPIC_API_KEY)
 # respectively for Gemini 3 Flash family. Per-call configs from evolved
 # agents merge field-by-field over these defaults via Inspect's
 # base_config.merge mechanism.
+#
+# Why only Gemini? GPT-5 family defaults to reasoning_effort="none" at
+# OpenAI's API, and Claude 4.x defaults to extended-thinking-off — both
+# already-conservative baselines that don't drive timeouts. If a future
+# timeout pattern emerges on a Sonnet or GPT-5 *opt-in* reasoning path,
+# this is the place to add an analogous pin.
 GEMINI_3_1_FLASH_LITE_PREVIEW = get_model(
     _GEMINI_3_1_FLASH_LITE_PREVIEW_ID,
     config=GenerateConfig(reasoning_effort="low"),
