@@ -38,6 +38,7 @@ from RoboPhD import (
     eval_candidate,
     eval_run,
     RoboPhDConfig,
+    RoboPhDEvalConfig,
     GEPAConfig,
     AutoresearchConfig,
 )
@@ -346,9 +347,19 @@ def main():
                 raise SystemExit(str(e))
             candidate = {"agent.py": (agent_dir / "agent.py").read_text()}
             logger.info(f"Evaluating named agent: {args.eval_agent} from {agent_dir}")
-            eval_result = eval_candidate(evaluator=test_evaluator, dataset=test, candidate=candidate)
+            eval_result = eval_candidate(
+                evaluator=test_evaluator,
+                dataset=test,
+                candidate=candidate,
+                config=RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT),
+            )
         else:
-            eval_result = eval_run(evaluator=test_evaluator, dataset=test, experiment_dir=args.resume)
+            eval_result = eval_run(
+                evaluator=test_evaluator,
+                dataset=test,
+                experiment_dir=args.resume,
+                config=RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT),
+            )
 
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
         results_filename = (
@@ -449,6 +460,7 @@ def main():
                 evaluator=test_evaluator,
                 dataset=test,
                 candidate=result.best_candidate,
+                config=RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT),
             )
             logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
             summary_path, per_problem_path = _write_test_results(
