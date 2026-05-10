@@ -24,6 +24,7 @@ Setup:
 import argparse
 import json
 import logging
+import os
 import random
 import sys
 from pathlib import Path
@@ -183,6 +184,12 @@ def parse_args():
     p.add_argument("--evaluation-budget", type=int, default=None,
                    help="Override the default evaluation budget (iter-bounded)")
 
+    p.add_argument("--allow-stronger-models", action="store_true",
+                   help="Expose three stronger model handles to evolved agents: "
+                        "GPT_5_5, CLAUDE_OPUS_4_7, GEMINI_3_1_PRO_PREVIEW. These "
+                        "are ~5-10x more expensive than the default tier; pair "
+                        "with a higher --cost-threshold (e.g. 0.08) to give them "
+                        "headroom in the cost penalty.")
     p.add_argument("--cost-threshold", type=float, default=None,
                    help="Per-example agent spend below this is in the free zone "
                         "(no penalty). Default $0.04.")
@@ -223,6 +230,14 @@ def parse_args():
 def main():
     args = parse_args()
 
+    # Set the stronger-models env var BEFORE importing evaluator (which
+    # transitively triggers model_registry's import-time check in each
+    # per-sample subprocess). os.environ writes propagate to children
+    # via inheritance — the asta_ds1000 evaluator's subprocess.Popen
+    # calls don't pass env=, so the parent env is used.
+    if args.allow_stronger_models:
+        os.environ["ASTA_DS1000_ALLOW_STRONGER_MODELS"] = "1"
+
     from evaluator import Ds1000Evaluator
 
     # Resolve cost-penalty knobs once: CLI override or evaluator default.
@@ -242,12 +257,32 @@ def main():
     def _fmt_cost(x: float) -> str:
         return f"${x:.2f}"
 
+    # Stronger-model rows, conditional on --allow-stronger-models. When
+    # the flag is off, the placeholder collapses to empty string and the
+    # background.md table stays at six rows; when on, three rows are
+    # appended that match the pricing in model_registry.py's gated
+    # handles.
+    if args.allow_stronger_models:
+        stronger_rows = (
+            "| `GPT_5_5` | 5.00 | 30.00 |\n"
+            "| `CLAUDE_OPUS_4_7` | 5.00 | 25.00 |\n"
+            "| `GEMINI_3_1_PRO_PREVIEW` | 2.00 | 12.00 |"
+        )
+    else:
+        stronger_rows = ""
+
     # Replace ${COST_THRESHOLD}, ${COST_SATURATION}, and the two derived
     # forms used in the worked example in objective.md. Order matters:
     # the longer-suffix variants must be replaced before ${COST_THRESHOLD}
     # itself, since that name is a prefix of theirs. M1 is clamped at 0
     # so a sub-cent threshold renders as "$0.00" (a free agent — still
     # rhetorically valid in the example) rather than a negative dollar.
+    #
+    # ${STRONGER_MODELS_TABLE_ROWS} matches with its trailing newline so
+    # that off-mode collapses the entire line (no stray blank line that
+    # would terminate the markdown table early); on-mode puts the rows
+    # plus a trailing newline back in.
+    stronger_replacement = stronger_rows + "\n" if stronger_rows else ""
     def _interpolate(text: str) -> str:
         return (
             text
@@ -255,6 +290,7 @@ def main():
             .replace("${COST_THRESHOLD_M1}", _fmt_cost(max(0.0, cost_threshold - 0.01)))
             .replace("${COST_THRESHOLD}", _fmt_cost(cost_threshold))
             .replace("${COST_SATURATION}", _fmt_cost(cost_saturation))
+            .replace("${STRONGER_MODELS_TABLE_ROWS}\n", stronger_replacement)
         )
 
     objective = _interpolate((HERE / "objective.md").read_text().strip())

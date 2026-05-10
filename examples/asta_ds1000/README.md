@@ -97,11 +97,15 @@ python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir>
 python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir> --phase final
 ```
 
-Default models: six handles in `model_registry.py`, paired by family into a mini/standard tier (the seed picks GPT-5.4 Mini; evolution may pick any of the six per call).
+Default models: six handles in `model_registry.py`, paired by family into a mini/standard tier (the seed picks GPT-5.4 Mini; evolution may pick any of the six per call). With `--allow-stronger-models`, three additional stronger-tier handles (GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro Preview) are also exposed — see "Model registry" below.
 
 ```bash
 # Tighten the cost-penalty endpoints (ablation):
 python examples/asta_ds1000/main.py --cost-threshold 0.005 --cost-saturation 0.5
+
+# Open up the stronger model tier (pair with a higher cost threshold —
+# these models cost ~5-10x the default tier):
+python examples/asta_ds1000/main.py --allow-stronger-models --cost-threshold 0.08
 
 # Smaller per-iteration sample for cheaper iteration:
 python examples/asta_ds1000/main.py --examples-per-iteration 5
@@ -172,6 +176,16 @@ Six pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside t
 - Google: `GEMINI_3_1_FLASH_LITE_PREVIEW`, `GEMINI_3_FLASH_PREVIEW`
 
 Pairing same-family handles by tier (mini/standard) lets evolution choose between cheap-and-fast or stronger-and-slower per call. Evolved agents `from model_registry import` whichever they want and call `.generate()`; the underlying model strings are not part of the evolvable artifact, so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — an agent produced at iteration 4 might use Claude Sonnet, and a 401 mid-run is a worse failure mode than a startup error.
+
+#### Stronger-models tier (`--allow-stronger-models`)
+
+Passing `--allow-stronger-models` to `main.py` exposes three additional handles, gated behind an env var that the registry reads at import time:
+
+- OpenAI: `GPT_5_5` ($5.00 / $30.00 per M tokens)
+- Anthropic: `CLAUDE_OPUS_4_7` ($5.00 / $25.00 per M tokens)
+- Google: `GEMINI_3_1_PRO_PREVIEW` ($2.00 / $12.00 per M tokens)
+
+These cost ~5–10× the default tier, so a single accidental call could saturate the cost penalty at the default $0.04 threshold. Pair the flag with a higher `--cost-threshold` (e.g. `0.08`) to give the stronger tier headroom in the cost penalty. The handles are conditionally created at registry import time — without the flag, the names simply don't exist, so accidental imports fail-fast rather than silently inflating spend. `GEMINI_3_1_PRO_PREVIEW` ships with `reasoning_effort="medium"` pinned, parallel to `GEMINI_3_FLASH_PREVIEW`'s pin.
 
 Provider-prefix translation: Inspect-AI requires `google/...` to route Google models, but litellm prices them under `gemini/...`. `evaluator.py:_estimate_cost` normalizes at the cost-pricing boundary (translates `google/` → `gemini/`) so cost tracking works for the Gemini handles. Without this, Gemini calls would silently price as $0 — the once-per-process "model priced at $0 despite tokens" warning would fire as the symptom.
 

@@ -7,6 +7,14 @@ into a cheap/fast tier and a stronger/slower tier:
   Anthropic: CLAUDE_HAIKU_4_5              / CLAUDE_SONNET_4_6
   Google:    GEMINI_3_1_FLASH_LITE_PREVIEW / GEMINI_3_FLASH_PREVIEW
 
+When `ASTA_DS1000_ALLOW_STRONGER_MODELS=1` is set in the environment
+(via main.py's `--allow-stronger-models` flag), three additional
+stronger-tier handles are also exported:
+
+  OpenAI:    GPT_5_5
+  Anthropic: CLAUDE_OPUS_4_7
+  Google:    GEMINI_3_1_PRO_PREVIEW
+
 Evolved agents import these handles and call `.generate(...)` on them;
 the underlying provider/model strings live here, OUTSIDE the evolvable
 artifact (agent.py is the only file in a candidate's file_mapping).
@@ -89,3 +97,22 @@ GEMINI_3_FLASH_PREVIEW = get_model(
     _GEMINI_3_FLASH_PREVIEW_ID,
     config=GenerateConfig(reasoning_effort="medium"),
 )
+
+# Stronger-model handles, gated behind --allow-stronger-models on
+# main.py (which sets ASTA_DS1000_ALLOW_STRONGER_MODELS=1 in os.environ
+# before subprocess eval imports this module). Cost rates are ~5-10×
+# the cheap tier; pair with --cost-threshold 0.08 (or higher) so the
+# cost penalty doesn't saturate on the first call.
+if os.environ.get("ASTA_DS1000_ALLOW_STRONGER_MODELS") == "1":
+    _GPT_5_5_ID = "openai/gpt-5.5"
+    _CLAUDE_OPUS_4_7_ID = "anthropic/claude-opus-4-7"
+    _GEMINI_3_1_PRO_PREVIEW_ID = "google/gemini-3.1-pro-preview"
+
+    GPT_5_5 = get_model(_GPT_5_5_ID)
+    CLAUDE_OPUS_4_7 = get_model(_CLAUDE_OPUS_4_7_ID, api_key=_ANTHROPIC_API_KEY)
+    # Match GEMINI_3_FLASH_PREVIEW's medium pin — conservative default
+    # given the timeout issues we saw on Flash Lite at high reasoning.
+    GEMINI_3_1_PRO_PREVIEW = get_model(
+        _GEMINI_3_1_PRO_PREVIEW_ID,
+        config=GenerateConfig(reasoning_effort="medium"),
+    )

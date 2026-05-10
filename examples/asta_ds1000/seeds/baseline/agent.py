@@ -7,12 +7,9 @@ and emit the required `<code>...</code>` block.
 from inspect_ai.model import GenerateConfig
 from inspect_ai.solver import Generate, TaskState, solver
 
-# Pre-resolved Model handles. Pick one per call, or mix across calls.
-# Six handles are available from `model_registry`:
-#   GPT_5_4_MINI, GPT_5_4,
-#   CLAUDE_HAIKU_4_5, CLAUDE_SONNET_4_6,
-#   GEMINI_3_1_FLASH_LITE_PREVIEW, GEMINI_3_FLASH_PREVIEW.
-# See CLAUDE.md (Domain Background) for the pricing table.
+# LLM handles are imported from `model_registry`. Pick one per call,
+# or mix across calls. See CLAUDE.md (Domain Background) for the
+# full list of handles and their pricing.
 from model_registry import GPT_5_4_MINI
 
 
