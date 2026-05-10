@@ -22,12 +22,14 @@ Setup:
 """
 
 import argparse
+import ast
 import json
 import logging
 import os
 import random
 import sys
 from pathlib import Path
+from typing import Iterable
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent.parent))
@@ -168,6 +170,44 @@ def _write_test_results(
     return summary_path, per_problem_path
 
 
+def _resume_needs_stronger_flag(
+    resume_dir: Path, gated_names: Iterable[str]
+) -> bool:
+    """Return True iff any agent.py in `<resume_dir>/agents/*/` imports
+    a gated handle name from `model_registry`.
+
+    Used at resume time to auto-set ASTA_DS1000_ALLOW_STRONGER_MODELS
+    when --allow-stronger-models was omitted but the resumed run's
+    agent pool needs the gated handles. Without this, eval workers
+    crash on import in their per-sample subprocesses and the test eval
+    yields a uniform 0.000 score with no surfaced exception.
+
+    AST-based (ImportFrom name match) rather than substring scan, so
+    occurrences in comments / docstrings don't trigger false positives.
+    The cost asymmetry of false positives is mild (an unused env var
+    on a non-stronger run does no harm), but AST is the cleaner
+    contract. Files that fail to parse are skipped, not raised.
+    """
+    agents_dir = resume_dir / "agents"
+    if not agents_dir.is_dir():
+        return False
+    gated_set = set(gated_names)
+    for p in agents_dir.glob("*/agent.py"):
+        try:
+            tree = ast.parse(p.read_text())
+        except (SyntaxError, OSError):
+            continue
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.ImportFrom)
+                and node.module == "model_registry"
+            ):
+                for alias in node.names:
+                    if alias.name in gated_set:
+                        return True
+    return False
+
+
 def parse_args():
     p = argparse.ArgumentParser(
         description="Evolve DS-1000 agents on AstaBench (Standard tools, Docker sandbox)",
@@ -238,29 +278,24 @@ def main():
     # calls don't pass env=, so the parent env is used.
     #
     # On --resume, also auto-detect: if any agent in the resumed run
-    # imports a gated handle (CLAUDE_OPUS_4_7 / GPT_5_5 /
-    # GEMINI_3_1_PRO_PREVIEW), the original training run had
+    # imports a gated handle, the original training run had
     # --allow-stronger-models, and the resume must too — otherwise the
     # gated handles aren't created in the eval workers and every per-
     # problem subprocess crashes on import for a uniform 0.000 score.
     # Self-healing rather than checkpoint-persisted so historical runs
-    # also benefit.
+    # also benefit. The gated-handle list is owned by model_registry
+    # (GATED_HANDLE_NAMES) so the registry stays the single source of
+    # truth — no hardcoded list in main.py.
     if args.allow_stronger_models:
         os.environ["ASTA_DS1000_ALLOW_STRONGER_MODELS"] = "1"
     elif args.resume:
-        gated = ("CLAUDE_OPUS_4_7", "GPT_5_5", "GEMINI_3_1_PRO_PREVIEW")
-        agents_dir = Path(args.resume) / "agents"
-        if agents_dir.is_dir():
-            needs_flag = any(
-                any(name in p.read_text() for name in gated)
-                for p in agents_dir.glob("*/agent.py")
+        from model_registry import GATED_HANDLE_NAMES
+        if _resume_needs_stronger_flag(Path(args.resume), GATED_HANDLE_NAMES):
+            os.environ["ASTA_DS1000_ALLOW_STRONGER_MODELS"] = "1"
+            logger.info(
+                "Auto-enabled --allow-stronger-models on resume: "
+                "resumed run's agent pool imports a gated handle"
             )
-            if needs_flag:
-                os.environ["ASTA_DS1000_ALLOW_STRONGER_MODELS"] = "1"
-                logger.info(
-                    "Auto-enabled --allow-stronger-models on resume: "
-                    "resumed run's agent pool imports a gated handle"
-                )
 
     from evaluator import Ds1000Evaluator
 

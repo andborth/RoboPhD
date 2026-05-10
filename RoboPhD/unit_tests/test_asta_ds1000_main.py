@@ -12,25 +12,54 @@ Currently covers two bug classes:
     test guards against re-introduction.
 
   - On `--resume`, main.py must auto-detect imports of gated stronger-
-    tier handles (CLAUDE_OPUS_4_7 / GPT_5_5 / GEMINI_3_1_PRO_PREVIEW) in
-    the resumed run's agent pool and set
-    ASTA_DS1000_ALLOW_STRONGER_MODELS=1 even when --allow-stronger-models
-    was omitted. Without it, eval workers ImportError on every sample,
-    yielding a uniform 0.000 test score (silent — no exception bubbles
-    up). Detection is by simple substring scan of `agents/*/agent.py`.
+    tier handles in the resumed run's agent pool and set
+    ASTA_DS1000_ALLOW_STRONGER_MODELS=1 even when
+    --allow-stronger-models was omitted. Without it, eval workers
+    ImportError on every sample, yielding a uniform 0.000 test score
+    (silent — no exception bubbles up). The gated names live in
+    model_registry as `GATED_HANDLE_NAMES` (the single source of
+    truth); main.py's `_resume_needs_stronger_flag` consumes that
+    constant via AST `ImportFrom` matching on `agents/*/agent.py`.
 """
 import ast
-import subprocess
 import sys
-import textwrap
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MAIN_PY = REPO_ROOT / "examples" / "asta_ds1000" / "main.py"
+ASTA_DS1000_DIR = REPO_ROOT / "examples" / "asta_ds1000"
 
 EVAL_FUNCS = {"eval_candidate", "eval_run"}
 
-GATED_HANDLES = ("CLAUDE_OPUS_4_7", "GPT_5_5", "GEMINI_3_1_PRO_PREVIEW")
+
+@pytest.fixture(scope="module")
+def resume_helper():
+    """Import main.py's `_resume_needs_stronger_flag` once per module.
+
+    sys.path manipulation rather than a package install because
+    examples/asta_ds1000/ isn't an installable package. Importing
+    main.py runs argparse setup but not main() — safe at import time.
+    """
+    sys.path.insert(0, str(ASTA_DS1000_DIR))
+    sys.path.insert(0, str(REPO_ROOT))
+    try:
+        import main as asta_main  # noqa: E402
+        return asta_main._resume_needs_stronger_flag
+    finally:
+        sys.path.remove(str(ASTA_DS1000_DIR))
+        sys.path.remove(str(REPO_ROOT))
+
+
+def _make_fake_resume(tmp_path: Path, agent_src: str) -> Path:
+    """Build a minimal resume_dir with one agent.py at the conventional
+    path. Returns the resume_dir."""
+    fake_run = tmp_path / "fake_run"
+    agent_dir = fake_run / "agents" / "fake_agent"
+    agent_dir.mkdir(parents=True)
+    (agent_dir / "agent.py").write_text(agent_src)
+    return fake_run
 
 
 def _calls_to(funcs: set[str], src: str) -> list[ast.Call]:
@@ -108,95 +137,90 @@ def test_test_eval_config_consolidated_to_single_construction():
 
 
 # --- Resume-time gated-handle auto-detection --------------------------------
-# Behavioral test: spawn a subprocess that imports main.py's flag-gating
-# block on a fake resume dir, and confirm the env var is set when an
-# agent imports a gated handle. We exercise the actual main.py source
-# (not a copy) so any future regression of the auto-detect logic is
-# caught — matching the asymmetry-bug failure mode (silent 0.000 score).
+# Direct unit tests of `_resume_needs_stronger_flag`. The helper is a
+# pure function (Path + Iterable[str] → bool) with no side effects, so
+# we can exercise it in-process without env-var pollution and without
+# coupling to main.py's import order.
 
 
-def _run_resume_check(tmp_path: Path, agent_src: str) -> bool:
-    """Stand up a fake resume dir, run main.py's auto-detect block, and
-    return whether the env var was set. Subprocess-isolated so env-var
-    writes don't pollute the test suite.
+def test_resume_helper_true_when_agent_imports_gated_handle(resume_helper, tmp_path):
+    """Agent imports a gated handle → True."""
+    fake = _make_fake_resume(
+        tmp_path,
+        "from model_registry import CLAUDE_OPUS_4_7, CLAUDE_SONNET_4_6\n",
+    )
+    assert resume_helper(fake, ("CLAUDE_OPUS_4_7", "GPT_5_5")) is True
+
+
+def test_resume_helper_false_when_only_cheap_tier_imported(resume_helper, tmp_path):
+    """No gated import → False."""
+    fake = _make_fake_resume(
+        tmp_path,
+        "from model_registry import GPT_5_4_MINI, CLAUDE_SONNET_4_6\n",
+    )
+    assert resume_helper(fake, ("CLAUDE_OPUS_4_7", "GPT_5_5")) is False
+
+
+def test_resume_helper_ignores_comment_mentions(resume_helper, tmp_path):
+    """Comment-only mention must not trigger detection — the AST scan is
+    the substring-scan upgrade. This is the test that fails under the
+    pre-refactor implementation, where `# unlike CLAUDE_OPUS_4_7, ...`
+    in a docstring would have set the env var unnecessarily."""
+    fake = _make_fake_resume(
+        tmp_path,
+        "# unlike CLAUDE_OPUS_4_7, this seed only uses the cheap tier\n"
+        '"""docstring mentions GPT_5_5 in passing."""\n'
+        "from model_registry import GPT_5_4_MINI\n",
+    )
+    assert resume_helper(fake, ("CLAUDE_OPUS_4_7", "GPT_5_5")) is False
+
+
+def test_resume_helper_handles_missing_agents_dir(resume_helper, tmp_path):
+    """Resume dir without agents/ subdir → False, no exception. Defensive
+    for partial / malformed resume dirs."""
+    fake_run = tmp_path / "no_agents_dir"
+    fake_run.mkdir()
+    assert resume_helper(fake_run, ("CLAUDE_OPUS_4_7",)) is False
+
+
+def test_resume_helper_skips_unparseable_agent(resume_helper, tmp_path):
+    """A syntactically broken agent.py shouldn't blow up the helper —
+    skip it and continue. The next agent in the pool may still trigger."""
+    fake_run = tmp_path / "mixed_pool"
+    broken_dir = fake_run / "agents" / "broken_agent"
+    broken_dir.mkdir(parents=True)
+    (broken_dir / "agent.py").write_text("def : invalid syntax\n")
+    good_dir = fake_run / "agents" / "good_agent"
+    good_dir.mkdir(parents=True)
+    (good_dir / "agent.py").write_text(
+        "from model_registry import CLAUDE_OPUS_4_7\n"
+    )
+    assert resume_helper(fake_run, ("CLAUDE_OPUS_4_7",)) is True
+
+
+def test_main_imports_gated_names_from_model_registry():
+    """main.py must consume `GATED_HANDLE_NAMES` from `model_registry`
+    rather than hardcoding its own list. This is the wiring check that
+    keeps the gated set as a single source of truth: if a fourth gated
+    handle is added to model_registry, main.py picks it up
+    automatically; if a future commit re-inlines a hardcoded tuple in
+    main.py instead of importing the constant, this test fails.
     """
-    fake_run = tmp_path / "fake_run"
-    agent_dir = fake_run / "agents" / "fake_agent"
-    agent_dir.mkdir(parents=True)
-    (agent_dir / "agent.py").write_text(agent_src)
-
-    # Extract the auto-detect block from main.py and run it in isolation
-    # against the fake resume dir. We don't import main.py wholesale (it
-    # has side effects), but we replicate the flag-gating logic by
-    # invoking the real main.py up to argparse and then inspecting
-    # os.environ. Cleanest is to actually call main.py with --eval-only
-    # --resume <fake>; main.py will fail later (no real checkpoint), but
-    # the env var will be set first. Capture os.environ before that
-    # failure by intercepting sys.exit.
-    code = textwrap.dedent(f"""
-        import os, sys
-        sys.path.insert(0, {str(MAIN_PY.parent)!r})
-        sys.path.insert(0, {str(REPO_ROOT)!r})
-        # Stub out the post-env-var imports so main.py exits cleanly
-        # right after our block runs but before evaluator import.
-        import builtins
-        _real_import = builtins.__import__
-        def _stub_import(name, *a, **kw):
-            if name == "evaluator":
-                print("ENV_AT_EVAL_IMPORT:",
-                      os.environ.get("ASTA_DS1000_ALLOW_STRONGER_MODELS", "<unset>"))
-                sys.exit(0)
-            return _real_import(name, *a, **kw)
-        builtins.__import__ = _stub_import
-
-        sys.argv = ["main.py", "--eval-only", "--resume", {str(fake_run)!r}]
-        import main
-        main.main()
-    """)
-    r = subprocess.run(
-        [sys.executable, "-c", code],
-        capture_output=True, text=True, timeout=30,
+    tree = ast.parse(MAIN_PY.read_text())
+    found = False
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.ImportFrom)
+            and node.module == "model_registry"
+            and any(a.name == "GATED_HANDLE_NAMES" for a in node.names)
+        ):
+            found = True
+            break
+    assert found, (
+        "main.py doesn't import `GATED_HANDLE_NAMES` from model_registry. "
+        "The resume-time auto-detect must consume the registry's "
+        "single-source-of-truth constant — re-inlining a hardcoded "
+        "list creates drift between main.py and model_registry that "
+        "silently re-introduces the uniform-0.000 bug if the gated set "
+        "ever changes."
     )
-    for line in r.stdout.splitlines():
-        if line.startswith("ENV_AT_EVAL_IMPORT:"):
-            return line.split(":", 1)[1].strip() == "1"
-    raise AssertionError(
-        f"subprocess didn't reach evaluator import:\n"
-        f"STDOUT: {r.stdout}\nSTDERR: {r.stderr[-1500:]}"
-    )
-
-
-def test_resume_auto_enables_flag_when_agent_imports_gated_handle(tmp_path):
-    """Resume with no flag + agent imports a gated handle → env set."""
-    agent_src = "from model_registry import CLAUDE_OPUS_4_7, CLAUDE_SONNET_4_6\n"
-    assert _run_resume_check(tmp_path, agent_src) is True, (
-        "main.py failed to auto-set ASTA_DS1000_ALLOW_STRONGER_MODELS=1 "
-        "on resume despite the resumed agent pool importing a gated "
-        "handle. Without this, eval workers crash on import and produce "
-        "a uniform 0.000 test score with no surfaced exception."
-    )
-
-
-def test_resume_leaves_flag_unset_when_no_agent_imports_gated_handle(tmp_path):
-    """Resume with no flag + no gated imports → env stays unset."""
-    agent_src = "from model_registry import GPT_5_4_MINI, CLAUDE_SONNET_4_6\n"
-    assert _run_resume_check(tmp_path, agent_src) is False, (
-        "main.py auto-enabled stronger-models on a resume that doesn't "
-        "need it — the gate should only fire when an agent in the pool "
-        "imports a gated handle"
-    )
-
-
-def test_resume_auto_detect_covers_all_gated_handles():
-    """Sanity check: the auto-detect substring list in main.py matches the
-    set of handles the model_registry actually gates. If a future commit
-    adds a fourth gated handle, this catches the asymmetry between the
-    registry definition and the resume-time detector."""
-    src = MAIN_PY.read_text()
-    for handle in GATED_HANDLES:
-        assert handle in src, (
-            f"Expected the auto-detect block in main.py to mention "
-            f"{handle!r} as a gated handle name, but the substring isn't "
-            f"in the file. Did the gated set change without updating the "
-            f"resume-time detector?"
-        )

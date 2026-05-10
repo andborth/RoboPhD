@@ -103,6 +103,17 @@ GEMINI_3_FLASH_PREVIEW = get_model(
 # before subprocess eval imports this module). Cost rates are ~5-10×
 # the cheap tier; pair with --cost-threshold 0.08 (or higher) so the
 # cost penalty doesn't saturate on the first call.
+#
+# GATED_HANDLE_NAMES is the single source of truth for the gated set:
+# referenced from main.py's resume-time auto-detect (so omitting
+# --allow-stronger-models on a resume still picks up the env var when
+# any agent in the pool imports a gated handle), and from the registry
+# tests (which loop over it to verify each name exists when the gate is
+# open). If you add or remove a gated handle, update both this tuple
+# and the if-block body below — the registry tests will fail-loud if
+# they drift apart, which is the whole point of having the constant.
+GATED_HANDLE_NAMES = ("GPT_5_5", "CLAUDE_OPUS_4_7", "GEMINI_3_1_PRO_PREVIEW")
+
 if os.environ.get("ASTA_DS1000_ALLOW_STRONGER_MODELS") == "1":
     _GPT_5_5_ID = "openai/gpt-5.5"
     _CLAUDE_OPUS_4_7_ID = "anthropic/claude-opus-4-7"

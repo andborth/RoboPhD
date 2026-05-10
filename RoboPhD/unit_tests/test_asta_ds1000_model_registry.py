@@ -101,24 +101,38 @@ def test_get_model_still_accepts_pinned_kwargs():
 # fixture-using test catches accidental leakage; the env-var-set tests
 # spawn fresh subprocesses so the writeable env doesn't pollute other
 # tests in the suite.
-
-STRONGER_HANDLES = ("GPT_5_5", "CLAUDE_OPUS_4_7", "GEMINI_3_1_PRO_PREVIEW")
+#
+# The set of gated handles lives on `model_registry.GATED_HANDLE_NAMES`
+# (the single source of truth, also consumed by main.py's resume-time
+# auto-detect). These tests pull the names from that constant rather
+# than hardcoding a local tuple, so a future fourth gated handle gets
+# tested automatically AND drift between the constant and the
+# if-block body fails this file loud (the constant says X, but the
+# `if` block doesn't define X → hasattr check fails).
 
 
 def test_stronger_models_absent_by_default(model_registry):
-    """Without ASTA_DS1000_ALLOW_STRONGER_MODELS=1, the three stronger
-    handles must not be exported — accidental presence inflates
-    per-example spend by ~5-10× the cheap tier."""
-    for name in STRONGER_HANDLES:
+    """Without ASTA_DS1000_ALLOW_STRONGER_MODELS=1, the gated handles
+    listed in `GATED_HANDLE_NAMES` must not be exported — accidental
+    presence inflates per-example spend by ~5-10× the cheap tier."""
+    for name in model_registry.GATED_HANDLE_NAMES:
         assert not hasattr(model_registry, name), (
             f"{name} leaked into the default registry"
         )
 
 
 @pytest.fixture(scope="module")
-def with_strong_env():
+def with_strong_env(model_registry):
     """Import model_registry in a subprocess with the env var set, and
     parse handle availability + the Pro Preview's reasoning_effort.
+
+    Iterates over GATED_HANDLE_NAMES (read from the parent fixture's
+    no-env-var import — the constant is defined at module level
+    BEFORE the env-gated `if` block, so it's available without the
+    flag). This is what makes the test fail-loud on
+    constant↔if-block-body drift: if a name appears in the constant
+    but isn't created inside the if block, hasattr returns False and
+    `have_strong` is False.
 
     Subprocess (rather than fixture-based reload) for two reasons:
     (1) avoids polluting the env var into the rest of the test suite,
@@ -126,12 +140,16 @@ def with_strong_env():
     `if os.environ.get(...) == "1":` gate at module load. Module-scoped
     so multiple env-gated tests can share one subprocess invocation.
     """
+    gated_names = list(model_registry.GATED_HANDLE_NAMES)
     code = f"""
 import sys
 sys.path.insert(0, {str(ASTA_DS1000_DIR)!r})
 import model_registry as mr
-have = all(hasattr(mr, n) for n in {STRONGER_HANDLES!r})
+gated = {gated_names!r}
+have = all(hasattr(mr, n) for n in gated)
+missing = [n for n in gated if not hasattr(mr, n)]
 print("HAVE_STRONG:", have)
+print("MISSING:", missing)
 if have:
     print("PRO_EFFORT:", mr.GEMINI_3_1_PRO_PREVIEW.config.reasoning_effort)
 """
@@ -150,16 +168,23 @@ if have:
     for line in r.stdout.splitlines():
         if line.startswith("HAVE_STRONG:"):
             state["have_strong"] = line.endswith("True")
+        elif line.startswith("MISSING:"):
+            state["missing"] = line.split(":", 1)[1].strip()
         elif line.startswith("PRO_EFFORT:"):
             state["pro_effort"] = line.split(":", 1)[1].strip()
     return state
 
 
 def test_stronger_models_present_when_flag_set(with_strong_env):
-    """With ASTA_DS1000_ALLOW_STRONGER_MODELS=1, all three handles
-    must be exported."""
+    """With ASTA_DS1000_ALLOW_STRONGER_MODELS=1, every name in
+    `GATED_HANDLE_NAMES` must actually be exported by the registry —
+    otherwise the constant has drifted from the `if` block body and
+    main.py's auto-detect would set the env var for handles that
+    don't exist."""
     assert with_strong_env.get("have_strong") is True, (
-        f"stronger handles missing when flag set:\n{with_strong_env['raw']}"
+        f"GATED_HANDLE_NAMES claims handles that the registry "
+        f"doesn't actually create when the flag is set. Missing: "
+        f"{with_strong_env.get('missing')}\nRaw:\n{with_strong_env['raw']}"
     )
 
 
