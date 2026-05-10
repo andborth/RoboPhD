@@ -24,7 +24,7 @@ sum of agent_cost_usd across whichever models you use.
 
 import os
 
-from inspect_ai.model import get_model
+from inspect_ai.model import GenerateConfig, get_model
 
 # Internal — strings stay private so agent.py doesn't import them.
 _GPT_5_4_MINI_ID = "openai/gpt-5.4-mini"
@@ -65,5 +65,21 @@ GPT_5_4_MINI = get_model(_GPT_5_4_MINI_ID)
 GPT_5_4 = get_model(_GPT_5_4_ID)
 CLAUDE_HAIKU_4_5 = get_model(_CLAUDE_HAIKU_4_5_ID, api_key=_ANTHROPIC_API_KEY)
 CLAUDE_SONNET_4_6 = get_model(_CLAUDE_SONNET_4_6_ID, api_key=_ANTHROPIC_API_KEY)
-GEMINI_3_1_FLASH_LITE_PREVIEW = get_model(_GEMINI_3_1_FLASH_LITE_PREVIEW_ID)
-GEMINI_3_FLASH_PREVIEW = get_model(_GEMINI_3_FLASH_PREVIEW_ID)
+# Gemini 3 Flash and Flash Lite are thinking models that default to
+# "high" reasoning at the provider — too aggressive for DS-1000's mostly
+# short numpy/pandas idioms (deep reasoning inflates latency and bills
+# as output tokens). Pin lower defaults:
+#   - Flash Lite → "low"    (most DS-1000 problems are routine library calls)
+#   - Flash      → "medium" (slightly heavier model, step-up tier)
+# Inspect's Google provider maps these to ThinkingLevel.LOW and .MEDIUM
+# respectively for Gemini 3 Flash family. Per-call configs from evolved
+# agents merge field-by-field over these defaults via Inspect's
+# base_config.merge mechanism.
+GEMINI_3_1_FLASH_LITE_PREVIEW = get_model(
+    _GEMINI_3_1_FLASH_LITE_PREVIEW_ID,
+    config=GenerateConfig(reasoning_effort="low"),
+)
+GEMINI_3_FLASH_PREVIEW = get_model(
+    _GEMINI_3_FLASH_PREVIEW_ID,
+    config=GenerateConfig(reasoning_effort="medium"),
+)
