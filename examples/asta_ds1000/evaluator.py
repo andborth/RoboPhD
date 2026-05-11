@@ -55,6 +55,34 @@ logger = logging.getLogger(__name__)
 _unpriced_models_warned: set[str] = set()
 
 
+def _head_tail_truncate(s: str, head: int = 200, tail: int = 1500) -> str:
+    """Truncate `s` to `head` + marker + `tail` chars when too long.
+
+    Inspect-AI wraps provider errors as f"\\nRequest:\\n{request}\\n\\n{error}"
+    (_model.py:1007). The load-bearing upstream message is at the END;
+    request JSON in the middle is typically large but uninformative.
+    A flat `s[:N]` slice would land entirely inside the request body and
+    hide every distinct failure mode behind an opaque tail-less string.
+    Head + tail preserves both the "Request:" preamble (for context) and
+    the actual provider response.
+
+    The `head + tail + 50` short-string threshold: when `s` is only
+    slightly longer than `head + tail`, truncating would replace those
+    few extra chars with a marker that's actually longer than what we'd
+    save. The marker `f"\\n... (N chars truncated) ...\\n"` is ~27 chars
+    of fixed text plus 1-7 digits for N — call it ~28-35 chars total.
+    Break-even sits around `len(s) = head + tail + 30`, where the
+    truncation saves zero or one char. The `+ 50` cutoff gives a ~15-char
+    safety margin past break-even so we only truncate when the savings
+    is meaningful (~15+ chars). Pure: no I/O, no global state, no
+    dependencies beyond `len()` and string slicing.
+    """
+    if len(s) <= head + tail + 50:
+        return s
+    truncated = len(s) - head - tail
+    return s[:head] + f"\n... ({truncated} chars truncated) ...\n" + s[-tail:]
+
+
 # Per-example score during training (apply_cost_penalty=True):
 #   score = SCORE_SCALE * raw_score - cost_penalty
 #   cost_penalty = min(1.0, max(0, agent_cost_usd - MIN_COST_THRESHOLD)
@@ -721,25 +749,7 @@ class Ds1000Evaluator:
         sample_err = getattr(sample_log, "error", None)
         if sample_err is not None:
             err_msg = getattr(sample_err, "message", None) or str(sample_err)
-            # Head + tail rather than a single [:N] slice. Inspect-AI
-            # wraps provider errors as f"\nRequest:\n{request}\n\n{error}"
-            # (model/_model.py:1007) — the load-bearing upstream message
-            # is at the END, after a request JSON that often exceeds
-            # 1000 chars on its own. A flat prefix slice loses the
-            # diagnostic and leaves an opaque "RuntimeError(... [request
-            # JSON] ..." that all looks alike across genuinely different
-            # failures. 200 chars of head keeps the "Request:" preamble
-            # for context; 1500 chars of tail captures the provider's
-            # actual response (4xx body, rate-limit text, etc.).
-            HEAD, TAIL = 200, 1500
-            if len(err_msg) <= HEAD + TAIL + 50:
-                diagnostics["error"] = err_msg
-            else:
-                diagnostics["error"] = (
-                    err_msg[:HEAD]
-                    + f"\n... ({len(err_msg) - HEAD - TAIL} chars truncated) ...\n"
-                    + err_msg[-TAIL:]
-                )
+            diagnostics["error"] = _head_tail_truncate(err_msg)
 
         # Score read-out. The DS-1000 scorer returns string "C" or "I".
         # Anything else is a sign the upstream package changed its
