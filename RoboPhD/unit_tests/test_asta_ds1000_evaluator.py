@@ -128,16 +128,19 @@ def test_custom_head_tail_parameters(truncate):
 
 
 def test_custom_parameters_respect_pass_through_threshold(truncate):
-    """Pass-through threshold scales with head+tail. With head=5,
-    tail=10, threshold is 5+10+50 = 65 chars."""
-    s = "x" * 65
-    assert truncate(s, head=5, tail=10) == s
-    s = "x" * 66
-    # Still pass-through since the +50 is intentionally generous
-    # (66 - 65 = 1 char extra, well below break-even).
-    # Actually 66 > 65 so truncation kicks in. Test the boundary:
-    assert truncate("x" * 65, head=5, tail=10) == "x" * 65
-    # 66 chars triggers truncation
-    out_66 = truncate("x" * 66, head=5, tail=10)
-    assert out_66 != "x" * 66
-    assert "chars truncated" in out_66
+    """The +50 pass-through threshold scales with the head+tail args.
+
+    With head=5, tail=10, the threshold is 5+10+50 = 65 chars. The
+    helper uses `<=` so:
+      - len(s) == 65 → pass-through (exactly at threshold)
+      - len(s) == 66 → truncation triggered (first length above)
+    """
+    # At-threshold: pass-through.
+    at_threshold = "x" * 65
+    assert truncate(at_threshold, head=5, tail=10) == at_threshold
+
+    # One char above threshold: truncation triggered.
+    above_threshold = "x" * 66
+    out = truncate(above_threshold, head=5, tail=10)
+    assert out != above_threshold
+    assert "chars truncated" in out

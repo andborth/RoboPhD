@@ -242,7 +242,7 @@ def _build_stronger_rows(allow_stronger_models: bool) -> str:
     return (
         '| `GPT_5_5` | 5.00 | 30.00 | model-managed | `"low"`, `"medium"`, `"high"` |\n'
         '| `CLAUDE_OPUS_4_7` | 5.00 | 25.00 | model-managed | `"low"`, `"medium"`, `"high"` |\n'
-        '| `GEMINI_3_1_PRO_PREVIEW` | 2.00 | 12.00 | `"low"` | `"high"` only (reasoning cannot be disabled) |'
+        '| `GEMINI_3_1_PRO_PREVIEW` | 2.00 | 12.00 | `"low"` | `"high"` only (cannot go below default) |'
     )
 
 
