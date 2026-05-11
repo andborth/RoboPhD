@@ -37,19 +37,6 @@ def make_solver():
         # here is available for retrospective analysis.
         print(f"[{state.sample_id}] library={state.metadata.get('library', '?')}")
 
-        # No `config=` on the .generate() call. Earlier versions of the
-        # seed passed `GenerateConfig(temperature=0.0)` for deterministic
-        # sampling, but the seed is the anchoring pattern evolution
-        # copies into derived agents — leaving `temperature` here would
-        # leak the param into Opus 4.7 / GPT-5.5 calls in derived
-        # agents, where it's either rejected (400) or silently stripped
-        # when combined with `reasoning_effort`. Tradeoff acknowledged:
-        # dropping `temperature=0.0` removes the API-level determinism
-        # anchor for GPT_5_4_MINI's sampling, adding bounded variance
-        # to per-iteration scores. DS-1000's binary 0/1 scoring caps
-        # the variance, and ELO averages across many problems per
-        # iteration, so the anti-anchoring win on derived agents
-        # outweighs the seed-noise cost.
         resp = await GPT_5_4_MINI.generate(state.input)
         completion = resp.completion or ""
         state.output.completion = _wrap_in_code_tags(completion)
