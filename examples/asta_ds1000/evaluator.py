@@ -721,7 +721,25 @@ class Ds1000Evaluator:
         sample_err = getattr(sample_log, "error", None)
         if sample_err is not None:
             err_msg = getattr(sample_err, "message", None) or str(sample_err)
-            diagnostics["error"] = err_msg[:1000]
+            # Head + tail rather than a single [:N] slice. Inspect-AI
+            # wraps provider errors as f"\nRequest:\n{request}\n\n{error}"
+            # (model/_model.py:1007) — the load-bearing upstream message
+            # is at the END, after a request JSON that often exceeds
+            # 1000 chars on its own. A flat prefix slice loses the
+            # diagnostic and leaves an opaque "RuntimeError(... [request
+            # JSON] ..." that all looks alike across genuinely different
+            # failures. 200 chars of head keeps the "Request:" preamble
+            # for context; 1500 chars of tail captures the provider's
+            # actual response (4xx body, rate-limit text, etc.).
+            HEAD, TAIL = 200, 1500
+            if len(err_msg) <= HEAD + TAIL + 50:
+                diagnostics["error"] = err_msg
+            else:
+                diagnostics["error"] = (
+                    err_msg[:HEAD]
+                    + f"\n... ({len(err_msg) - HEAD - TAIL} chars truncated) ...\n"
+                    + err_msg[-TAIL:]
+                )
 
         # Score read-out. The DS-1000 scorer returns string "C" or "I".
         # Anything else is a sign the upstream package changed its
