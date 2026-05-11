@@ -368,11 +368,34 @@ def main():
     # background.md table stays at six rows; when on, three rows are
     # appended that match the pricing in model_registry.py's gated
     # handles.
+    #
+    # We also append a "no temperature" caveat: all three stronger-tier
+    # handles are reasoning-enabled and reject the `temperature` field
+    # in GenerateConfig (Opus 4.7 returns "`temperature` is deprecated";
+    # GPT-5.5 returns "Unsupported parameter: 'temperature' is not
+    # supported with this model"; Gemini 3.1 Pro Preview follows the
+    # same reasoning-model pattern). Without this caveat, evolved agents
+    # copy the cheap-tier example above (which passes temperature=0.0)
+    # and 400 on every problem — see the diagnostic loss in
+    # robophd_runs/.../asta_ds1000_20260510_170547. Information lives in
+    # background.md (not objective.md) so it's domain-knowledge for the
+    # agent, not part of the scoring objective.
     if args.allow_stronger_models:
         stronger_rows = (
             "| `GPT_5_5` | 5.00 | 30.00 |\n"
             "| `CLAUDE_OPUS_4_7` | 5.00 | 25.00 |\n"
-            "| `GEMINI_3_1_PRO_PREVIEW` | 2.00 | 12.00 |"
+            "| `GEMINI_3_1_PRO_PREVIEW` | 2.00 | 12.00 |\n"
+            "\n"
+            "**Stronger-tier constraint:** `GPT_5_5`, `CLAUDE_OPUS_4_7`, "
+            "and `GEMINI_3_1_PRO_PREVIEW` are reasoning-enabled models "
+            "and do **not** accept the `temperature` field in "
+            "`GenerateConfig`. Passing `temperature` to any of these three "
+            "handles returns a 400 `BadRequestError` from the provider "
+            "and the call yields no output. Either omit `config=` "
+            "entirely on those calls, or build a `GenerateConfig` without "
+            "`temperature` (other fields like `max_tokens` are fine). "
+            "The cheap-tier handles in the table above all accept "
+            "`temperature` normally."
         )
     else:
         stronger_rows = ""
