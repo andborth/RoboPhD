@@ -76,27 +76,36 @@ Most DS-1000 problems don't need files, but the API is available.
 
 The following model handles are available, imported from `model_registry`. They pair by family into a cheap/fast tier and a stronger/slower tier:
 
-| Handle | Input ($/M tok) | Output ($/M tok) |
-| --- | --- | --- |
-| `GPT_5_4_MINI` | 0.75 | 4.50 |
-| `GPT_5_4` | 2.50 | 15.00 |
-| `CLAUDE_HAIKU_4_5` | 1.00 | 5.00 |
-| `CLAUDE_SONNET_4_6` | 3.00 | 15.00 |
-| `GEMINI_3_1_FLASH_LITE_PREVIEW` | 0.25 | 1.50 |
-| `GEMINI_3_FLASH_PREVIEW` | 0.50 | 3.00 |
+| Handle | Input ($/M tok) | Output ($/M tok) | Default `reasoning_effort` | Available overrides |
+| --- | --- | --- | --- | --- |
+| `GPT_5_4_MINI` | 0.75 | 4.50 | none | `"low"`, `"medium"`, `"high"` |
+| `GPT_5_4` | 2.50 | 15.00 | none | `"low"`, `"medium"`, `"high"` |
+| `CLAUDE_HAIKU_4_5` | 1.00 | 5.00 | none | `"low"`, `"medium"`, `"high"` |
+| `CLAUDE_SONNET_4_6` | 3.00 | 15.00 | none | `"low"`, `"medium"`, `"high"` |
+| `GEMINI_3_1_FLASH_LITE_PREVIEW` | 0.25 | 1.50 | `"low"` | `"low"`, `"high"` |
+| `GEMINI_3_FLASH_PREVIEW` | 0.50 | 3.00 | `"low"` | `"low"`, `"high"` |
 ${STRONGER_MODELS_TABLE_ROWS}
+
+Setting `reasoning_effort` to any value in the "available overrides" column adds reasoning tokens above what the default already costs. For handles whose default is `none`, picking `"low"` is the cheapest opt-in step but it's still strictly more expensive than omitting `reasoning_effort` entirely. For the Gemini handles whose default is already `"low"`, the only opt-up is `"high"`. To stay at the cheapest path on any handle, omit the `reasoning_effort` field from `GenerateConfig`.
+
+`max_tokens` is a universal output-budget cap accepted on every handle (an integer; no provider rejects or strips it). Pass it via `GenerateConfig(max_tokens=N)`. On Anthropic handles, Inspect auto-augments the budget when `reasoning_effort` is also set, so the cap applies to the visible completion only; on OpenAI handles, the cap is shared between reasoning and visible tokens, so set it generously when combined with `reasoning_effort`.
 
 ```python
 from inspect_ai.model import GenerateConfig
-from model_registry import GPT_5_4_MINI, CLAUDE_SONNET_4_6, GEMINI_3_FLASH_PREVIEW
+from model_registry import GPT_5_4_MINI, CLAUDE_SONNET_4_6
 
-resp = await GPT_5_4_MINI.generate(
-    "Your prompt here", config=GenerateConfig(temperature=0.0)
+# Default call (cheapest, no extra reasoning):
+resp = await GPT_5_4_MINI.generate("Your prompt here")
+
+# Opt into reasoning for a hard problem and cap the output:
+resp = await CLAUDE_SONNET_4_6.generate(
+    "Your prompt here",
+    config=GenerateConfig(reasoning_effort="low", max_tokens=2048),
 )
 text = resp.completion
 ```
 
-Use one of these when you want to make an LLM call. You can decide to use only one model, or mix them across calls — for example, route easy problems to a mini-tier handle and hard problems to a stronger-tier handle. `config` is optional; pass a `GenerateConfig` to set sampling parameters such as `temperature`. See `inspect_ai.model.GenerateConfig` for the full set. All LLM calls must go through one of the handles above.
+`config` is optional. The two knobs to use are `reasoning_effort` (trades cost for quality on hard problems; see the per-handle table above for default and available values) and `max_tokens` (caps the output budget). All LLM calls must go through one of the handles above.
 
 ## Scoring
 

@@ -65,9 +65,9 @@ def test_flash_lite_defaults_to_low(model_registry):
     )
 
 
-def test_flash_defaults_to_medium(model_registry):
+def test_flash_defaults_to_low(model_registry):
     assert (
-        model_registry.GEMINI_3_FLASH_PREVIEW.config.reasoning_effort == "medium"
+        model_registry.GEMINI_3_FLASH_PREVIEW.config.reasoning_effort == "low"
     )
 
 
@@ -188,11 +188,14 @@ def test_stronger_models_present_when_flag_set(with_strong_env):
     )
 
 
-def test_pro_preview_reasoning_effort_pinned_to_medium(with_strong_env):
-    """The Gemini 3.1 Pro Preview handle should default to medium
-    reasoning, parallel to GEMINI_3_FLASH_PREVIEW. Conservative starting
-    point given the timeouts we saw on Flash Lite at high reasoning."""
-    assert with_strong_env.get("pro_effort") == "medium", (
-        f"GEMINI_3_1_PRO_PREVIEW.config.reasoning_effort != 'medium':\n"
+def test_pro_preview_reasoning_effort_pinned_to_low(with_strong_env):
+    """The Gemini 3.1 Pro Preview handle should default to "low"
+    reasoning, parallel to GEMINI_3_FLASH_PREVIEW and Flash Lite — all
+    three Gemini handles share the same default. Note: Inspect's google
+    provider would silently UPGRADE "medium" to ThinkingLevel.HIGH on
+    non-flash Gemini (_providers/google.py:778-780), so any value above
+    "low" here would be misleading about what's actually sent."""
+    assert with_strong_env.get("pro_effort") == "low", (
+        f"GEMINI_3_1_PRO_PREVIEW.config.reasoning_effort != 'low':\n"
         f"{with_strong_env['raw']}"
     )

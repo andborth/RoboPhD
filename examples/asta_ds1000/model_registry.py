@@ -76,13 +76,11 @@ CLAUDE_SONNET_4_6 = get_model(_CLAUDE_SONNET_4_6_ID, api_key=_ANTHROPIC_API_KEY)
 # Gemini 3 Flash and Flash Lite are thinking models that default to
 # "high" reasoning at the provider — too aggressive for DS-1000's mostly
 # short numpy/pandas idioms (deep reasoning inflates latency and bills
-# as output tokens). Pin lower defaults:
-#   - Flash Lite → "low"    (most DS-1000 problems are routine library calls)
-#   - Flash      → "medium" (slightly heavier model, step-up tier)
-# Inspect's Google provider maps these to ThinkingLevel.LOW and .MEDIUM
-# respectively for Gemini 3 Flash family. Per-call configs from evolved
-# agents merge field-by-field over these defaults via Inspect's
-# base_config.merge mechanism.
+# as output tokens). Pin both to "low" for cheap throughput; the step-up
+# path is per-call `reasoning_effort="high"` from an evolved agent.
+# Inspect's Google provider maps these to ThinkingLevel.LOW for Gemini 3
+# Flash family. Per-call configs from evolved agents merge field-by-field
+# over these defaults via Inspect's base_config.merge mechanism.
 #
 # Why only Gemini? GPT-5 family defaults to reasoning_effort="none" at
 # OpenAI's API, and Claude 4.x defaults to extended-thinking-off — both
@@ -95,7 +93,7 @@ GEMINI_3_1_FLASH_LITE_PREVIEW = get_model(
 )
 GEMINI_3_FLASH_PREVIEW = get_model(
     _GEMINI_3_FLASH_PREVIEW_ID,
-    config=GenerateConfig(reasoning_effort="medium"),
+    config=GenerateConfig(reasoning_effort="low"),
 )
 
 # Stronger-model handles, gated behind --allow-stronger-models on
@@ -121,9 +119,16 @@ if os.environ.get("ASTA_DS1000_ALLOW_STRONGER_MODELS") == "1":
 
     GPT_5_5 = get_model(_GPT_5_5_ID)
     CLAUDE_OPUS_4_7 = get_model(_CLAUDE_OPUS_4_7_ID, api_key=_ANTHROPIC_API_KEY)
-    # Match GEMINI_3_FLASH_PREVIEW's medium pin — conservative default
-    # given the timeout issues we saw on Flash Lite at high reasoning.
+    # All three Gemini handles default to "low" reasoning_effort for a
+    # uniform Gemini family default. Two reasons specific to Pro Preview:
+    # (1) Inspect's google provider silently UPGRADES "medium" to
+    # ThinkingLevel.HIGH on non-flash Gemini handles (_providers/
+    # google.py:778-780), so the prior "medium" pin was effectively
+    # running at HIGH thinking — misleading and expensive at the
+    # $0.08-$0.16 cost thresholds we're now running. (2) Pro Preview
+    # thinking cannot be disabled at all; "low" is the cheapest legal
+    # floor. Evolution opts up to "high" per-call when it needs more.
     GEMINI_3_1_PRO_PREVIEW = get_model(
         _GEMINI_3_1_PRO_PREVIEW_ID,
-        config=GenerateConfig(reasoning_effort="medium"),
+        config=GenerateConfig(reasoning_effort="low"),
     )

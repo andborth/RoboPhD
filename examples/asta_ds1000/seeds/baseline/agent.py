@@ -37,10 +37,7 @@ def make_solver():
         # here is available for retrospective analysis.
         print(f"[{state.sample_id}] library={state.metadata.get('library', '?')}")
 
-        resp = await GPT_5_4_MINI.generate(
-            state.input,
-            config=GenerateConfig(temperature=0.0),
-        )
+        resp = await GPT_5_4_MINI.generate(state.input)
         completion = resp.completion or ""
         state.output.completion = _wrap_in_code_tags(completion)
         print(f"  emitted {len(state.output.completion)} chars")

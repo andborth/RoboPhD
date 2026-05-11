@@ -386,3 +386,108 @@ def test_framing_higher_values_use_same_branch(framing_helper):
     one = framing_helper(1)
     assert framing_helper(2) == one
     assert framing_helper(5) == one
+
+
+# --- 5-column table shape + temperature-free seed ---------------------------
+# Two invariants from the "reasoning_effort + max_tokens table" change:
+# (1) the stronger-tier rows in main.py must keep the 5-column shape that
+#     matches the cheap-tier table in background.md (regression to the old
+#     3-column shape would render a broken markdown table); and
+# (2) the seed agent's only .generate() call must not pass `temperature`
+#     (the seed is the anchoring pattern evolution copies; passing
+#     temperature there leaks the footgun into Opus/GPT-5.5 agents).
+
+SEED_AGENT_PY = REPO_ROOT / "examples" / "asta_ds1000" / "seeds" / "baseline" / "agent.py"
+
+
+def test_stronger_rows_uses_five_column_shape():
+    """The stronger_rows string in main.py must produce rows that match
+    the cheap-tier 5-column table shape (Handle | Input | Output |
+    Default reasoning | Available overrides). A regression to the old
+    3-column shape would silently render a broken markdown table.
+
+    Scan: find every triple-quoted-or-paren string in main.py that
+    contains a stronger-tier handle name (GPT_5_5, CLAUDE_OPUS_4_7,
+    GEMINI_3_1_PRO_PREVIEW), then assert each pipe-row inside it has
+    exactly 5 column separators (6 pipes per row counting leading and
+    trailing)."""
+    src = MAIN_PY.read_text()
+    tree = ast.parse(src)
+    # Find string literals that include the stronger-tier handle names
+    rows_strings: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            if "CLAUDE_OPUS_4_7" in node.value and "|" in node.value:
+                rows_strings.append(node.value)
+    assert rows_strings, (
+        "Couldn't find any string literal in main.py mentioning "
+        "CLAUDE_OPUS_4_7 with markdown pipes — has the stronger_rows "
+        "construction been refactored?"
+    )
+
+    # Concatenate the strings (the parenthesized construction in main.py
+    # is one ast.Constant per concatenated piece). Then check each row.
+    combined = "\n".join(rows_strings)
+    row_lines = [
+        line for line in combined.split("\n")
+        if line.startswith("| `") and line.endswith(" |")
+    ]
+    assert row_lines, "No markdown rows detected in the stronger_rows string"
+    bad: list[str] = []
+    for line in row_lines:
+        # 5 columns ⇒ 6 pipe separators total per row
+        if line.count("|") != 6:
+            bad.append(f"{line.count('|')} pipes (expected 6): {line!r}")
+    assert not bad, (
+        "stronger_rows in main.py contains rows with the wrong number "
+        "of columns (regression to the pre-5-column shape would break "
+        "the markdown table when interpolated into background.md):\n  "
+        + "\n  ".join(bad)
+    )
+
+
+def test_seed_generate_call_omits_temperature():
+    """The seed's `.generate(...)` call must not pass `temperature`.
+
+    Evolution copies the seed's call shape into derived agents. Passing
+    temperature in the seed leaks the param into Opus 4.7 / GPT-5.5
+    calls in derived agents — those handles 400 on temperature
+    (`asta_ds1000_20260510_170547` is the captured incident). Scan for
+    every Call where `.generate` is called and assert no keyword arg
+    named `temperature`."""
+    tree = ast.parse(SEED_AGENT_PY.read_text())
+    generate_calls: list[ast.Call] = []
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "generate"
+        ):
+            generate_calls.append(node)
+    assert generate_calls, (
+        "Couldn't find any `.generate(...)` call in the seed — has the "
+        "seed been refactored away from the model_registry handle pattern?"
+    )
+
+    offenders: list[str] = []
+    for call in generate_calls:
+        # Check direct keyword args
+        for kw in call.keywords:
+            if kw.arg == "temperature":
+                offenders.append(f"line {call.lineno}: direct temperature kwarg")
+        # Check config=GenerateConfig(...) for temperature kwarg
+        for kw in call.keywords:
+            if kw.arg == "config" and isinstance(kw.value, ast.Call):
+                for inner_kw in kw.value.keywords:
+                    if inner_kw.arg == "temperature":
+                        offenders.append(
+                            f"line {call.lineno}: temperature inside "
+                            f"config=GenerateConfig(...)"
+                        )
+    assert not offenders, (
+        "The seed's .generate() call passes `temperature`, which "
+        "anchors evolution toward a parameter that's rejected on "
+        "Opus 4.7 / GPT-5.5 and silently stripped when combined with "
+        "reasoning_effort elsewhere. Drop the temperature kwarg:\n  "
+        + "\n  ".join(offenders)
+    )
