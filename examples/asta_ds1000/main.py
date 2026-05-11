@@ -210,6 +210,42 @@ def _resume_needs_stronger_flag(
     return False
 
 
+def _build_stronger_rows(allow_stronger_models: bool) -> str:
+    """Return the three stronger-tier table rows for background.md,
+    or empty string when --allow-stronger-models is off.
+
+    Pure function — no I/O, no env-var reads, no global state. Tests
+    import this directly and pin the output string, so the row shape
+    is verified end-to-end without scanning main.py's source for
+    string-literal patterns (which would couple to construction style).
+
+    Row shape mirrors the cheap-tier 5-column shape:
+        Handle | Input | Output | Default reasoning_effort | Available overrides
+
+    The Default column uses a unified vocabulary across all 9 handles
+    (cheap-tier in background.md, strong-tier here):
+        "none"          — no reasoning by default (cheap-tier non-Google)
+        `"low"`         — we pinned "low" (Gemini Flash family + Pro Preview)
+        model-managed   — reasoning always on, level chosen by provider
+                          (GPT-5.5, Opus 4.7)
+    Pro Preview's "cannot disable below low" property moves to the
+    Available-overrides column where it actually constrains the choices.
+
+    No trailing prose caveat — the dollar columns carry cost asymmetry
+    and the Default column carries the always-on-reasoning fact. Keeping
+    the agent-facing surface free of `temperature` references matches
+    the broader direction of recommending only `reasoning_effort` and
+    `max_tokens`.
+    """
+    if not allow_stronger_models:
+        return ""
+    return (
+        '| `GPT_5_5` | 5.00 | 30.00 | model-managed | `"low"`, `"medium"`, `"high"` |\n'
+        '| `CLAUDE_OPUS_4_7` | 5.00 | 25.00 | model-managed | `"low"`, `"medium"`, `"high"` |\n'
+        '| `GEMINI_3_1_PRO_PREVIEW` | 2.00 | 12.00 | `"low"` | `"high"` only (reasoning cannot be disabled) |'
+    )
+
+
 def _test_rounds_framing(rounds: int) -> str:
     """Return objective.md paragraph 3's last-sentence framing for the
     given new_agent_test_rounds value.
@@ -363,27 +399,13 @@ def main():
     def _fmt_cost(x: float) -> str:
         return f"${x:.2f}"
 
-    # Stronger-model rows, conditional on --allow-stronger-models. When
-    # the flag is off, the placeholder collapses to empty string and the
-    # background.md table stays at six rows; when on, three rows are
-    # appended that match the pricing in model_registry.py's gated
-    # handles. The row shape mirrors the cheap-tier 5-column shape:
-    # Handle | Input | Output | Default reasoning_effort | Available overrides.
-    #
-    # No trailing prose caveat — costs are visible in the dollar columns
-    # and "always on (cannot disable)" appears in the Default column, so
-    # the table communicates everything the previous temperature-focused
-    # caveat covered. Dropping the prose also keeps the agent-facing
-    # surface free of `temperature` references, matching the broader
-    # direction of recommending only `reasoning_effort` and `max_tokens`.
-    if args.allow_stronger_models:
-        stronger_rows = (
-            "| `GPT_5_5` | 5.00 | 30.00 | always on (model-managed) | `\"low\"`, `\"medium\"`, `\"high\"` |\n"
-            "| `CLAUDE_OPUS_4_7` | 5.00 | 25.00 | always on (model-managed) | `\"low\"`, `\"medium\"`, `\"high\"` |\n"
-            "| `GEMINI_3_1_PRO_PREVIEW` | 2.00 | 12.00 | `\"low\"` (cannot disable) | `\"low\"`, `\"high\"` |"
-        )
-    else:
-        stronger_rows = ""
+    # Stronger-model rows, conditional on --allow-stronger-models.
+    # When the flag is off, the placeholder collapses to empty string
+    # and the background.md table stays at six rows; when on, three
+    # rows are appended. Construction is delegated to a pure helper
+    # so tests can pin the output string without scanning main.py's
+    # source for string-literal patterns.
+    stronger_rows = _build_stronger_rows(args.allow_stronger_models)
 
     # Resolve effective new_agent_test_rounds from CLI flag + the
     # --engine-config overlay. The flag is the primary surface; the

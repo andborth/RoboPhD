@@ -82,6 +82,21 @@ CLAUDE_SONNET_4_6 = get_model(_CLAUDE_SONNET_4_6_ID, api_key=_ANTHROPIC_API_KEY)
 # Flash family. Per-call configs from evolved agents merge field-by-field
 # over these defaults via Inspect's base_config.merge mechanism.
 #
+# Why "low" for Flash even though it's the heavier of the two Gemini
+# Flash variants? Earlier (ed0c0f5) Flash was pinned at "medium" to
+# act as a "step-up tier" relative to Flash-Lite's "low". That intent
+# is preserved by Flash's higher native price and capability ($0.50/
+# $3.00 vs Flash-Lite's $0.25/$1.50), just shifted: the step-up is now
+# in default capability, not in default reasoning effort. The agent
+# can still opt up to `"high"` per-call when it wants the original
+# medium-style step-up — the new background.md table makes that
+# affordance explicit. Bonus: the agent-facing recommendation now
+# only lists `"low"` and `"high"` as Gemini override values (because
+# Inspect silently upgrades `"medium"` to HIGH on non-flash handles),
+# so having Flash default to `"low"` makes the "Default" and
+# "Available overrides" columns coherent — `"medium"` defaults would
+# point at a value that isn't in the agent's override set.
+#
 # Why only Gemini? GPT-5 family defaults to reasoning_effort="none" at
 # OpenAI's API, and Claude 4.x defaults to extended-thinking-off — both
 # already-conservative baselines that don't drive timeouts. If a future

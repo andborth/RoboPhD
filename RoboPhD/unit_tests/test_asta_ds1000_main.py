@@ -80,6 +80,19 @@ def framing_helper():
         sys.path.remove(str(REPO_ROOT))
 
 
+@pytest.fixture(scope="module")
+def stronger_rows_helper():
+    """Import main.py's `_build_stronger_rows` once per module."""
+    sys.path.insert(0, str(ASTA_DS1000_DIR))
+    sys.path.insert(0, str(REPO_ROOT))
+    try:
+        import main as asta_main  # noqa: E402
+        return asta_main._build_stronger_rows
+    finally:
+        sys.path.remove(str(ASTA_DS1000_DIR))
+        sys.path.remove(str(REPO_ROOT))
+
+
 def _make_fake_resume(tmp_path: Path, agent_src: str) -> Path:
     """Build a minimal resume_dir with one agent.py at the conventional
     path. Returns the resume_dir."""
@@ -400,50 +413,55 @@ def test_framing_higher_values_use_same_branch(framing_helper):
 SEED_AGENT_PY = REPO_ROOT / "examples" / "asta_ds1000" / "seeds" / "baseline" / "agent.py"
 
 
-def test_stronger_rows_uses_five_column_shape():
-    """The stronger_rows string in main.py must produce rows that match
-    the cheap-tier 5-column table shape (Handle | Input | Output |
-    Default reasoning | Available overrides). A regression to the old
-    3-column shape would silently render a broken markdown table.
+def test_stronger_rows_off_mode_is_empty(stronger_rows_helper):
+    """With --allow-stronger-models off, the helper returns empty string
+    so the ${STRONGER_MODELS_TABLE_ROWS}\\n placeholder collapses
+    cleanly (see the trailing-newline absorption trick in
+    _interpolate()). A regression that returned anything non-empty
+    here would re-introduce stronger-tier handle names into off-mode
+    background.md."""
+    assert stronger_rows_helper(False) == ""
 
-    Scan: find every triple-quoted-or-paren string in main.py that
-    contains a stronger-tier handle name (GPT_5_5, CLAUDE_OPUS_4_7,
-    GEMINI_3_1_PRO_PREVIEW), then assert each pipe-row inside it has
-    exactly 5 column separators (6 pipes per row counting leading and
-    trailing)."""
-    src = MAIN_PY.read_text()
-    tree = ast.parse(src)
-    # Find string literals that include the stronger-tier handle names
-    rows_strings: list[str] = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            if "CLAUDE_OPUS_4_7" in node.value and "|" in node.value:
-                rows_strings.append(node.value)
-    assert rows_strings, (
-        "Couldn't find any string literal in main.py mentioning "
-        "CLAUDE_OPUS_4_7 with markdown pipes — has the stronger_rows "
-        "construction been refactored?"
-    )
 
-    # Concatenate the strings (the parenthesized construction in main.py
-    # is one ast.Constant per concatenated piece). Then check each row.
-    combined = "\n".join(rows_strings)
+def test_stronger_rows_on_mode_uses_five_column_shape(stronger_rows_helper):
+    """With --allow-stronger-models on, every row must match the
+    cheap-tier 5-column shape (Handle | Input | Output | Default
+    reasoning_effort | Available overrides). Tests the helper output
+    directly — survives any string-construction refactor (f-strings,
+    .join(), list-of-rows, ...) since we're parsing rendered markdown
+    rather than scanning source. A regression to the pre-5-column
+    shape would break the rendered table when interpolated into
+    background.md."""
+    rendered = stronger_rows_helper(True)
     row_lines = [
-        line for line in combined.split("\n")
+        line for line in rendered.split("\n")
         if line.startswith("| `") and line.endswith(" |")
     ]
-    assert row_lines, "No markdown rows detected in the stronger_rows string"
+    assert row_lines, (
+        f"Helper returned non-empty output but no parseable rows:\n"
+        f"{rendered!r}"
+    )
+
+    # 5 columns ⇒ 6 pipe separators per row
     bad: list[str] = []
     for line in row_lines:
-        # 5 columns ⇒ 6 pipe separators total per row
         if line.count("|") != 6:
             bad.append(f"{line.count('|')} pipes (expected 6): {line!r}")
     assert not bad, (
-        "stronger_rows in main.py contains rows with the wrong number "
-        "of columns (regression to the pre-5-column shape would break "
-        "the markdown table when interpolated into background.md):\n  "
-        + "\n  ".join(bad)
+        "stronger_rows helper returned rows with the wrong number of "
+        "columns:\n  " + "\n  ".join(bad)
     )
+
+
+def test_stronger_rows_includes_all_three_handle_names(stronger_rows_helper):
+    """All three gated handles must appear in the on-mode output. Pins
+    against accidental row removal."""
+    rendered = stronger_rows_helper(True)
+    for name in ("GPT_5_5", "CLAUDE_OPUS_4_7", "GEMINI_3_1_PRO_PREVIEW"):
+        assert name in rendered, (
+            f"Handle {name!r} missing from stronger_rows output:\n"
+            f"{rendered!r}"
+        )
 
 
 def test_seed_generate_call_omits_temperature():
