@@ -198,17 +198,26 @@ def run(cmd: list[str], *, cwd: Path, extra_env: dict | None = None) -> int:
 # cancellation still works correctly.
 WRAPPER_TEMPLATE = '''"""Auto-generated resilience wrapper for AstaBench submission.
 
-Original agent source preserved at agent_inner.py in this dir; this file
-imports its make_solver and wraps the returned solver in a try/except that
-converts uncaught exceptions to empty `state.output.completion`. The DS-1000
-scorer then marks the empty output as 'I' (incorrect → score 0).
+Two-tier fallback: primary agent (agent_inner.py) -> seed agent
+(seed_agent.py) -> empty completion. Each layer catches Exception so a
+transient provider failure or evolved-agent bug on one example doesn't
+abort the eval, and the seed gets a shot at recovering the score before
+we give up and emit 'I'.
 
 This matches the per-sample crash semantics of RoboPhD's internal
-subprocess-isolated evaluator under which the recorded RoboPhD-internal
-test_results_final.json scores were produced. Inspect-AI's
-`--score-on-error` flag (added in 0.3.220) would be a clean framework-level
-equivalent, but AstaBench pins to 0.3.203, so we apply the same semantic at
-the agent level.
+subprocess-isolated evaluator (with `fallback_candidate=seed`) under
+which the recorded RoboPhD-internal test_results_final.json scores
+were produced. Inspect-AI's `--score-on-error` flag (added in 0.3.220)
+would be a clean framework-level equivalent, but AstaBench pins to
+0.3.203, so we apply the same semantic at the agent level.
+
+Stopping-behavior asymmetry vs the internal evaluator's fallback: when
+the seed ALSO errors, this wrapper emits empty completion (scorer marks
+'I' -> 0) because Inspect requires a TaskState back to score. The
+internal evaluator (Ds1000Evaluator.__call__) returns the seed's error
+diagnostics as-is, since its upstream layer (ExternalEvaluatorDomain)
+handles errors natively. Same intent (no third retry, no recursion);
+different output shape forced by the calling convention.
 
 Wrapper recipe lives in scripts/asta_ds1000_submit.py:WRAPPER_TEMPLATE.
 """
@@ -217,49 +226,63 @@ import traceback
 from inspect_ai.solver import Generate, TaskState, solver
 
 from agent_inner import make_solver as _inner_make_solver
+from seed_agent import make_solver as _seed_make_solver
 
 
 @solver
 def make_solver():
     inner = _inner_make_solver()
+    seed = _seed_make_solver()
 
     async def solve(state: TaskState, generate: Generate) -> TaskState:
+        if state.metadata is None:
+            state.metadata = {}
         try:
             return await inner(state, generate)
-        except Exception as e:
-            print(f"[{state.sample_id}] WRAPPER caught {type(e).__name__}: {e}")
-            print(f"[{state.sample_id}] WRAPPER traceback (truncated):")
+        except Exception as primary:
+            print(f"[{state.sample_id}] WRAPPER primary caught {type(primary).__name__}: {primary}")
+            print(f"[{state.sample_id}] WRAPPER primary traceback (truncated):")
             print(traceback.format_exc()[:1500])
-            state.output.completion = ""
-            if state.metadata is None:
-                state.metadata = {}
-            state.metadata["__wrapper_caught"] = repr(e)[:500]
-            state.metadata["__wrapper_traceback"] = traceback.format_exc()[:2000]
-            return state
+            state.metadata["__wrapper_primary_caught"] = repr(primary)[:500]
+            state.metadata["__wrapper_primary_traceback"] = traceback.format_exc()[:2000]
+            try:
+                return await seed(state, generate)
+            except Exception as fallback:
+                print(f"[{state.sample_id}] WRAPPER seed fallback ALSO caught {type(fallback).__name__}: {fallback}")
+                print(f"[{state.sample_id}] WRAPPER seed fallback traceback (truncated):")
+                print(traceback.format_exc()[:1500])
+                state.output.completion = ""
+                state.metadata["__wrapper_fallback_caught"] = repr(fallback)[:500]
+                state.metadata["__wrapper_fallback_traceback"] = traceback.format_exc()[:2000]
+                return state
 
     return solve
 '''
 
 
 def stage(s: Submission) -> Path:
-    """Stage a working dir with the resilience wrapper.
+    """Stage a working dir with the two-tier resilience wrapper.
 
     Layout in dst_dir:
       agent.py         — auto-generated wrapper (the file --solver references)
-      agent_inner.py   — the actual evolved/seed agent source (renamed)
+      agent_inner.py   — the primary evolved/seed agent source (renamed)
+      seed_agent.py    — the baseline seed agent (the fallback tier)
       model_registry.py — copied from examples/asta_ds1000/
 
-    The wrapper imports make_solver from agent_inner and shields its
-    callers from any Exception raised at solve time. See WRAPPER_TEMPLATE
-    above for the rationale.
+    The wrapper imports make_solver from agent_inner (primary) and
+    seed_agent (fallback). On primary Exception it invokes the seed;
+    on the seed also raising it emits empty completion. See
+    WRAPPER_TEMPLATE above for the rationale.
 
     Returns the working dir path.
     """
     src_agent = SOURCE_BASE / s.name / s.agent_rel_path
+    src_seed = EXAMPLES_DIR / "seeds" / "baseline" / "agent.py"
     src_registry = EXAMPLES_DIR / "model_registry.py"
     dst_dir = WORKING_BASE / s.name
     dst_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy(src_agent, dst_dir / "agent_inner.py")
+    shutil.copy(src_seed, dst_dir / "seed_agent.py")
     (dst_dir / "agent.py").write_text(WRAPPER_TEMPLATE)
     shutil.copy(src_registry, dst_dir / "model_registry.py")
     return dst_dir

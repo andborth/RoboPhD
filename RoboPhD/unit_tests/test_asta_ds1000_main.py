@@ -509,3 +509,50 @@ def test_seed_generate_call_omits_temperature():
         "reasoning_effort elsewhere. Drop the temperature kwarg:\n  "
         + "\n  ".join(offenders)
     )
+
+
+def test_write_test_results_reads_fallback_keys_from_diagnostics():
+    """`_write_test_results` constructs the per-problem JSON from a
+    hardcoded key list — the same anti-pattern that originally dropped
+    `fallback_used`/`primary_error` on the way out. This test asserts
+    both keys are read from the diagnostics dict (via `diag.get(...)`)
+    so a future contributor who adds new diagnostic keys can't silently
+    re-introduce the drop without also failing this test.
+
+    Mirrors `test_with_overrides_propagates_fallback_candidate` in the
+    evaluator test file — same trap, opposite side of the boundary.
+    """
+    src = MAIN_PY.read_text()
+    tree = ast.parse(src)
+    write_fn = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == "_write_test_results":
+            write_fn = node
+            break
+    assert write_fn is not None, "_write_test_results function not found"
+
+    # Collect string-constant args passed to any `<name>.get("...")` call
+    # inside the function. The diagnostics dict is named `diag` in this
+    # function, but be tolerant of refactors that rename it — assert on
+    # any `.get(<str>)` call.
+    read_keys = set()
+    for node in ast.walk(write_fn):
+        if not isinstance(node, ast.Call):
+            continue
+        if not (isinstance(node.func, ast.Attribute) and node.func.attr == "get"):
+            continue
+        if not node.args:
+            continue
+        first_arg = node.args[0]
+        if isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):
+            read_keys.add(first_arg.value)
+
+    required = {"fallback_used", "primary_error"}
+    missing = required - read_keys
+    assert not missing, (
+        f"_write_test_results does not read these diagnostic keys: "
+        f"{sorted(missing)}. The hardcoded per-problem-key list "
+        f"silently drops them from test_results_<phase>.per_problem.json. "
+        f"Add `<key>: diag.get(\"<key>\")` entries (and the matching "
+        f"aggregate fields in the summary block) before the JSON dump."
+    )

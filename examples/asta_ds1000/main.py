@@ -133,8 +133,17 @@ def _write_test_results(
     DS-1000 has no judge LLM, so cost is agent-only — simpler than
     DiscoveryBench's agent/judge split.
     """
+    # Head+tail truncation so the tail (where tracebacks carry the real
+    # failure line) survives. Keeps the byte budget close to the prior
+    # 500-char head-only cap.
+    from evaluator import _head_tail_truncate
+
+    def _trunc(s):
+        return _head_tail_truncate(s, head=100, tail=400) if s else None
+
     per_problem = []
     total_agent_cost = 0.0
+    n_fallback_used = 0
     diagnostics_list = eval_result.per_example_diagnostics or []
     scores_list = eval_result.per_example_scores or []
     for i, diag in enumerate(diagnostics_list):
@@ -143,6 +152,10 @@ def _write_test_results(
         agent_c = diag.get("agent_cost_usd") or 0.0
         total_agent_cost += agent_c
         err = diag.get("error")
+        fallback_used = bool(diag.get("fallback_used"))
+        if fallback_used:
+            n_fallback_used += 1
+        primary_error = diag.get("primary_error")
         per_problem.append({
             "sample_id": diag.get("sample_id"),
             "score": score,
@@ -150,7 +163,9 @@ def _write_test_results(
             "cost_penalty": diag.get("cost_penalty"),
             "agent_cost_usd": agent_c,
             "library": diag.get("library"),
-            "error": (err[:500] if err else None),
+            "error": _trunc(err),
+            "fallback_used": fallback_used,
+            "primary_error": _trunc(primary_error),
         })
 
     summary_path = output_dir / summary_filename
@@ -163,11 +178,21 @@ def _write_test_results(
             "total_test_problems": eval_result.num_examples,
             "test_eval_cost_usd": evaluator.total_eval_cost,
             "test_eval_agent_cost_usd": total_agent_cost,
+            "n_fallback_used": n_fallback_used,
         }, f, indent=2)
 
     per_problem_path = summary_path.with_suffix(".per_problem.json")
     with open(per_problem_path, "w") as f:
         json.dump(per_problem, f, indent=2)
+
+    n_total = len(per_problem)
+    if n_total and n_fallback_used:
+        # Only emit when fallback actually fired — a clean run shouldn't
+        # spend a log line on "Fallback used: 0/N".
+        rate = 100.0 * n_fallback_used / n_total
+        logger.info(
+            f"Fallback used: {n_fallback_used}/{n_total} ({rate:.1f}%)"
+        )
 
     return summary_path, per_problem_path
 
@@ -474,6 +499,13 @@ def main():
     # 10-minute cap was tight enough to clip legitimate solutions there.
     EVAL_TIMEOUT = 1200
 
+    # Seed is loaded early so it can plumb into the test evaluator as
+    # `fallback_candidate` below. Training keeps fallback_candidate=None
+    # so error signals stay visible to the evolution loop; test/inference
+    # opts in so a single primary failure doesn't tank that example's
+    # score on the leaderboard or in --eval-test-set / --eval-only runs.
+    seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
+
     # Two evaluator instances. Training applies the bounded cost penalty
     # (a tiebreaker between correctness-tied agents); test paths report
     # raw 0/1 so evolved agents land at their true point on the Pareto
@@ -484,7 +516,10 @@ def main():
         min_cost_threshold=cost_threshold,
         cost_penalty_saturation=cost_saturation,
     )
-    test_evaluator = evaluator.with_overrides(apply_cost_penalty=False)
+    test_evaluator = evaluator.with_overrides(
+        apply_cost_penalty=False,
+        fallback_candidate=seed,
+    )
 
     # Single source of truth for test-side eval config. Reused at every
     # eval_candidate / eval_run call site below (--eval-only and
@@ -556,8 +591,6 @@ def main():
         logger.info(f"Test summary:    {summary_path}")
         logger.info(f"Test per-problem: {per_problem_path}")
         return
-
-    seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
 
     num_iterations = args.num_iterations if args.num_iterations is not None else default_iterations
     evaluation_budget = args.evaluation_budget if args.evaluation_budget is not None else default_budget

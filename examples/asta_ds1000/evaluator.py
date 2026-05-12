@@ -472,6 +472,7 @@ class Ds1000Evaluator:
         apply_cost_penalty: bool = True,
         min_cost_threshold: float = MIN_COST_THRESHOLD,
         cost_penalty_saturation: float = COST_PENALTY_SATURATION,
+        fallback_candidate: dict[str, str] | None = None,
     ):
         # Hard requirement: every provider key the registry references
         # must be set, even if the seed only uses one. Evolution can
@@ -537,6 +538,11 @@ class Ds1000Evaluator:
             )
         self.min_cost_threshold = min_cost_threshold
         self.cost_penalty_saturation = cost_penalty_saturation
+        # Inference-only safety net: when set, `__call__` re-runs a
+        # failed example with this candidate before returning. Left
+        # None during training so error signals stay visible to the
+        # evolution loop.
+        self.fallback_candidate = fallback_candidate
 
         # Subprocess kill-after timeout MUST be less than RoboPhD's
         # eval_timeout so the subprocess gets SIGKILLed before RoboPhD's
@@ -563,6 +569,7 @@ class Ds1000Evaluator:
             "min_cost_threshold": self.min_cost_threshold,
             "cost_penalty_saturation": self.cost_penalty_saturation,
             "subprocess_isolation": self.subprocess_isolation,
+            "fallback_candidate": self.fallback_candidate,
             "skip_docker_check": True,
         }
         base.update(overrides)
@@ -575,6 +582,59 @@ class Ds1000Evaluator:
             score, diagnostics = self._evaluate_via_subprocess(candidate, example)
         else:
             score, diagnostics = self.evaluate(candidate, example, problem_dir=problem_dir)
+        # Fallback-on-error: when configured (inference paths opt in
+        # via `with_overrides(fallback_candidate=seed)`), a primary
+        # failure re-runs the same example with the seed candidate.
+        # Training leaves fallback_candidate=None so error signals
+        # stay visible to the evolution loop. If the fallback also
+        # errors, its result passes through unchanged (no further
+        # retries).
+        #
+        # Cost handling: in principle the primary may have burned
+        # tokens before failing, so we sum the primary's agent_cost_usd
+        # into the final agent_cost_usd to avoid under-reporting. In
+        # practice today, all error paths in `_evaluate_via_subprocess`
+        # (timeout, non-zero exit, missing payload) and `evaluate()`
+        # (import failure, inspect.eval crash) return diagnostics
+        # WITHOUT a cost field, so the primary cost we read here is
+        # almost always 0.0 — the worker died before its payload was
+        # written. The merge is structurally correct and future-proofs
+        # the layer against any later commit that adds cost tracking
+        # to error paths. Other primary fields (stderr, stdout) are
+        # preserved under a `primary_*` namespace so the audit trail
+        # survives.
+        if self.fallback_candidate is not None and "error" in diagnostics:
+            primary_error = diagnostics["error"]
+            primary_cost = diagnostics.get("agent_cost_usd", 0.0) or 0.0
+            primary_cost_by_model = diagnostics.get("cost_by_model_usd") or {}
+            primary_subprocess_stderr = diagnostics.get("subprocess_stderr") or ""
+            primary_agent_stdout = diagnostics.get("agent_stdout") or ""
+            if self.subprocess_isolation:
+                score, diagnostics = self._evaluate_via_subprocess(
+                    self.fallback_candidate, example
+                )
+            else:
+                score, diagnostics = self.evaluate(
+                    self.fallback_candidate, example, problem_dir=problem_dir
+                )
+            diagnostics["fallback_used"] = True
+            diagnostics["primary_error"] = primary_error
+            # Sum cost so the total isn't under-reported. Primary cost
+            # is typically 0 today (see comment above); when it isn't,
+            # this preserves the spend in the aggregate.
+            fallback_cost = diagnostics.get("agent_cost_usd", 0.0) or 0.0
+            diagnostics["agent_cost_usd"] = fallback_cost + primary_cost
+            if primary_cost > 0:
+                diagnostics["primary_agent_cost_usd"] = primary_cost
+            if primary_cost_by_model:
+                merged = dict(diagnostics.get("cost_by_model_usd") or {})
+                for model, cost in primary_cost_by_model.items():
+                    merged[model] = (merged.get(model, 0.0) or 0.0) + cost
+                diagnostics["cost_by_model_usd"] = merged
+            if primary_subprocess_stderr:
+                diagnostics["primary_subprocess_stderr"] = primary_subprocess_stderr
+            if primary_agent_stdout:
+                diagnostics["primary_agent_stdout"] = primary_agent_stdout
         # Decode any PNG artifacts (Matplotlib problems) and write to
         # problem_dir as binary files. Strips the b64 keys regardless,
         # since they don't fit ExternalEvaluatorDomain's str-only file

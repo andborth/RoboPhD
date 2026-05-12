@@ -241,3 +241,241 @@ def test_all_communicate_calls_have_timeout(evaluate_via_subprocess_node):
             f"communicate() at line {call.lineno} must pass "
             f"timeout=N — every drain needs a hard cap"
         )
+
+
+# --- fallback_candidate machinery regression -------------------------------
+
+
+@pytest.fixture(scope="module")
+def evaluator_tree():
+    """Parse evaluator.py once per module for AST tests that walk the
+    whole file (not just one function). Pure parse — no import."""
+    return ast.parse((ASTA_DS1000_DIR / "evaluator.py").read_text())
+
+
+def _find_method(tree: ast.AST, class_name: str, method_name: str) -> ast.FunctionDef:
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef) and node.name == class_name:
+            for child in node.body:
+                if isinstance(child, ast.FunctionDef) and child.name == method_name:
+                    return child
+    raise AssertionError(f"{class_name}.{method_name} not found")
+
+
+def test_constructor_accepts_fallback_candidate(evaluator_tree):
+    """`Ds1000Evaluator.__init__` must accept `fallback_candidate` with
+    a default of `None`. Default-None matters: training instantiates
+    without specifying it and must retain today's behavior (error signals
+    visible to the evolution loop)."""
+    init = _find_method(evaluator_tree, "Ds1000Evaluator", "__init__")
+    arg_names = {a.arg for a in init.args.args} | {a.arg for a in init.args.kwonlyargs}
+    assert "fallback_candidate" in arg_names, (
+        "Ds1000Evaluator.__init__ must accept a `fallback_candidate` kwarg"
+    )
+    # Default must be None — find the index of fallback_candidate in args
+    # and check the corresponding default. Python aligns defaults to the
+    # tail of args.
+    pos_args = init.args.args
+    defaults = init.args.defaults
+    pos_arg_names = [a.arg for a in pos_args]
+    if "fallback_candidate" in pos_arg_names:
+        idx = pos_arg_names.index("fallback_candidate")
+        default_idx = idx - (len(pos_args) - len(defaults))
+        assert default_idx >= 0, "fallback_candidate must have a default value"
+        default_node = defaults[default_idx]
+        assert isinstance(default_node, ast.Constant) and default_node.value is None, (
+            f"fallback_candidate default must be literal None; "
+            f"got {ast.dump(default_node)}"
+        )
+
+
+def test_with_overrides_propagates_fallback_candidate(evaluator_tree):
+    """`with_overrides` builds a `base` dict that's spread into a fresh
+    Ds1000Evaluator. Every new constructor field must be added to this
+    dict or it silently resets to default on every test-evaluator
+    derivation. Catches the same trap that already exists for every
+    other field."""
+    method = _find_method(evaluator_tree, "Ds1000Evaluator", "with_overrides")
+    # Find the `base = {...}` dict literal in the method body.
+    base_dict_keys = []
+    for node in ast.walk(method):
+        if isinstance(node, ast.Dict):
+            for k in node.keys:
+                if isinstance(k, ast.Constant):
+                    base_dict_keys.append(k.value)
+    assert "fallback_candidate" in base_dict_keys, (
+        f"with_overrides()'s base dict must include 'fallback_candidate' "
+        f"to propagate it across .with_overrides() calls; "
+        f"found keys: {sorted(set(base_dict_keys))}"
+    )
+
+
+def test_call_checks_fallback_candidate_on_error(evaluator_tree):
+    """`__call__` must re-invoke the dispatch path when a primary error
+    is observed AND fallback_candidate is set. Looks for an `if`
+    statement whose test references both `self.fallback_candidate` and
+    the string literal `"error"` (the diagnostics dict key). Regression
+    catch: a refactor that drops the conditional re-invocation."""
+    call_method = _find_method(evaluator_tree, "Ds1000Evaluator", "__call__")
+    found_conditional = False
+    for node in ast.walk(call_method):
+        if not isinstance(node, ast.If):
+            continue
+        # Walk the condition's AST directly — robust against quote-style
+        # differences from ast.unparse (single vs double quotes).
+        names_fallback = False
+        names_error = False
+        for child in ast.walk(node.test):
+            if (isinstance(child, ast.Attribute)
+                    and child.attr == "fallback_candidate"
+                    and isinstance(child.value, ast.Name)
+                    and child.value.id == "self"):
+                names_fallback = True
+            if isinstance(child, ast.Constant) and child.value == "error":
+                names_error = True
+        if names_fallback and names_error:
+            found_conditional = True
+            break
+    assert found_conditional, (
+        "__call__ must contain `if self.fallback_candidate is not None "
+        "and \"error\" in diagnostics:` (or equivalent) to gate the "
+        "fallback re-invocation"
+    )
+
+
+# --- fallback runtime behavior ----------------------------------------------
+
+
+@pytest.fixture
+def evaluator_with_fallback(monkeypatch):
+    """Construct a Ds1000Evaluator with fallback_candidate set, mocking
+    the env-var pre-flight and skipping the Docker check. Stubs dummy
+    provider keys; no real API calls happen because the test
+    monkey-patches `_evaluate_via_subprocess` directly."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    monkeypatch.setenv("GOOGLE_API_KEY", "sk-test")
+    sys.path.insert(0, str(ASTA_DS1000_DIR))
+    try:
+        from evaluator import Ds1000Evaluator
+        ev = Ds1000Evaluator(
+            skip_docker_check=True,
+            apply_cost_penalty=False,
+            fallback_candidate={"agent.py": "# pretend seed"},
+        )
+        yield ev
+    finally:
+        sys.path.remove(str(ASTA_DS1000_DIR))
+
+
+def test_fallback_fires_on_primary_error(evaluator_with_fallback, monkeypatch):
+    """End-to-end behavioral test: when the primary returns an error
+    diagnostic, __call__ must re-invoke the dispatch with the fallback
+    candidate, return the fallback's score, and mark fallback_used.
+    AST tests pin the structural shape; this catches a refactor that
+    makes the gate more clever but silently skips the fallback in real
+    conditions."""
+    from evaluator import Ds1000Evaluator
+    calls = []
+
+    def fake_eval(self, candidate, example):
+        calls.append(candidate)
+        if len(calls) == 1:
+            return 0.0, {"error": "synthetic primary failure"}
+        return 1.0, {"score": 1.0, "library": "numpy"}
+
+    monkeypatch.setattr(Ds1000Evaluator, "_evaluate_via_subprocess", fake_eval)
+
+    primary = {"agent.py": "# pretend primary"}
+    example = {"id": "test_0", "input": "x"}
+    score, diag = evaluator_with_fallback(primary, example)
+
+    assert score == 1.0
+    assert diag["fallback_used"] is True
+    assert diag["primary_error"] == "synthetic primary failure"
+    assert len(calls) == 2
+    assert calls[0] is primary
+    assert calls[1] is evaluator_with_fallback.fallback_candidate
+
+
+def test_fallback_skipped_when_primary_succeeds(evaluator_with_fallback, monkeypatch):
+    """When the primary succeeds (no `"error"` key), the fallback must
+    NOT fire. Single call to _evaluate_via_subprocess; no fallback_used
+    marker; primary diagnostics pass through unchanged."""
+    from evaluator import Ds1000Evaluator
+    calls = []
+
+    def fake_eval(self, candidate, example):
+        calls.append(candidate)
+        return 1.0, {"score": 1.0, "library": "numpy", "agent_cost_usd": 0.05}
+
+    monkeypatch.setattr(Ds1000Evaluator, "_evaluate_via_subprocess", fake_eval)
+
+    score, diag = evaluator_with_fallback({"agent.py": "primary"}, {"id": "test_0"})
+
+    assert score == 1.0
+    assert "fallback_used" not in diag
+    assert "primary_error" not in diag
+    assert diag["agent_cost_usd"] == 0.05
+    assert len(calls) == 1
+
+
+def test_fallback_sums_primary_cost(evaluator_with_fallback, monkeypatch):
+    """When the primary somehow reports cost before erroring (future-
+    proof case — today's error paths return no cost field, but if a
+    later commit adds one, the fallback layer should sum primary +
+    fallback so the aggregate isn't under-reported)."""
+    from evaluator import Ds1000Evaluator
+    calls = []
+
+    def fake_eval(self, candidate, example):
+        calls.append(candidate)
+        if len(calls) == 1:
+            return 0.0, {
+                "error": "synthetic, but cost was tracked",
+                "agent_cost_usd": 0.03,
+                "cost_by_model_usd": {"primary_model": 0.03},
+            }
+        return 1.0, {
+            "score": 1.0,
+            "agent_cost_usd": 0.02,
+            "cost_by_model_usd": {"fallback_model": 0.02},
+        }
+
+    monkeypatch.setattr(Ds1000Evaluator, "_evaluate_via_subprocess", fake_eval)
+
+    score, diag = evaluator_with_fallback({"agent.py": "primary"}, {"id": "test_0"})
+
+    assert score == 1.0
+    assert diag["fallback_used"] is True
+    # Cost is summed across primary + fallback so the aggregate isn't lost.
+    assert diag["agent_cost_usd"] == pytest.approx(0.05)
+    assert diag["primary_agent_cost_usd"] == pytest.approx(0.03)
+    assert diag["cost_by_model_usd"] == {
+        "primary_model": pytest.approx(0.03),
+        "fallback_model": pytest.approx(0.02),
+    }
+
+
+def test_fallback_also_errors_passes_through(evaluator_with_fallback, monkeypatch):
+    """If the fallback also errors, its result is returned as-is. No
+    third retry, no recursion. Primary error is still preserved under
+    primary_error for the audit trail."""
+    from evaluator import Ds1000Evaluator
+    calls = []
+
+    def fake_eval(self, candidate, example):
+        calls.append(candidate)
+        if len(calls) == 1:
+            return 0.0, {"error": "primary boom"}
+        return 0.0, {"error": "fallback boom too"}
+
+    monkeypatch.setattr(Ds1000Evaluator, "_evaluate_via_subprocess", fake_eval)
+
+    score, diag = evaluator_with_fallback({"agent.py": "primary"}, {"id": "test_0"})
+
+    assert score == 0.0
+    assert diag["error"] == "fallback boom too"
+    assert diag["primary_error"] == "primary boom"
+    assert diag["fallback_used"] is True
+    assert len(calls) == 2  # exactly two, no third retry
