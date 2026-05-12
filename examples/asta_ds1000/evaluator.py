@@ -29,6 +29,7 @@ import json
 import logging
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -629,22 +630,52 @@ class Ds1000Evaluator:
         out_path = inf_path + ".out"
 
         try:
+            proc = subprocess.Popen(
+                [sys.executable, str(worker_path), inf_path, out_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                # New session so we can killpg on timeout: SIGKILL goes
+                # to the worker AND every grandchild it spawned. Plain
+                # proc.kill() (what subprocess.run does) only hits the
+                # immediate child, leaving orphan grandchildren that
+                # can keep our stdout/stderr pipes open and wedge the
+                # parent's post-kill drain for hours. POSIX-only;
+                # silently ignored on Windows, which the rest of the
+                # codebase already assumes we're not running on.
+                start_new_session=True,
+            )
             try:
-                result = subprocess.run(
-                    [sys.executable, str(worker_path), inf_path, out_path],
-                    capture_output=True,
-                    text=True,
-                    timeout=self.subprocess_timeout,
-                )
+                stdout, stderr = proc.communicate(timeout=self.subprocess_timeout)
             except subprocess.TimeoutExpired as e:
+                try:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                except (ProcessLookupError, PermissionError):
+                    proc.kill()
+                # Bounded drain: pipes should EOF immediately once the
+                # whole group is dead. If something is somehow still
+                # holding the writer end, give up rather than hang.
+                # On POSIX, communicate() preserves internal buffers
+                # across calls — drain_exc.stdout/stderr is a superset
+                # of the outer e.stdout/e.stderr (everything captured
+                # up through the second timeout), so it's the right
+                # source to prefer.
+                try:
+                    stdout, stderr = proc.communicate(timeout=30)
+                except subprocess.TimeoutExpired as drain_exc:
+                    proc.kill()
+                    stdout = drain_exc.stdout or e.stdout or ""
+                    stderr = drain_exc.stderr or e.stderr or ""
+                    if not stderr:
+                        stderr = "<post-kill drain timed out>"
                 return 0.0, {
                     "error": f"subprocess timed out after {self.subprocess_timeout}s",
-                    "subprocess_stderr": (e.stderr or "")[-2000:] if e.stderr else "",
+                    "subprocess_stderr": (stderr or "")[-2000:],
                 }
-            if result.returncode != 0:
+            if proc.returncode != 0:
                 return 0.0, {
-                    "error": f"subprocess failed (exit {result.returncode})",
-                    "subprocess_stderr": result.stderr[-2000:] if result.stderr else "",
+                    "error": f"subprocess failed (exit {proc.returncode})",
+                    "subprocess_stderr": (stderr or "")[-2000:],
                 }
             try:
                 with open(out_path) as f:
@@ -652,7 +683,7 @@ class Ds1000Evaluator:
             except (FileNotFoundError, json.JSONDecodeError) as e:
                 return 0.0, {
                     "error": f"subprocess produced no valid output: {type(e).__name__}: {e}",
-                    "subprocess_stderr": result.stderr[-2000:] if result.stderr else "",
+                    "subprocess_stderr": (stderr or "")[-2000:],
                 }
 
             score = float(payload.get("score", 0.0))

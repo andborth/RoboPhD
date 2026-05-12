@@ -8,9 +8,18 @@ upstream provider errors behind the request JSON — exactly the failure
 mode that led to commit e7e2348 (`asta_ds1000: keep error head+tail
 instead of flat 1000-char prefix`).
 
+Also pins the subprocess-isolation timeout machinery in
+`_evaluate_via_subprocess`: a future refactor that drops
+`start_new_session=True`, the `os.killpg` path, or the bounded
+post-kill drain would silently re-introduce the orphan-grandchild
+hang that wedged the parent for 60+ minutes on
+`asta_ds1000_20260511_162205`. AST-level checks catch the structural
+regression without needing a multi-minute integration repro.
+
 Test fixture imports evaluator once per module via sys.path
 manipulation (same pattern as the other asta_ds1000 test files).
 """
+import ast
 import sys
 from pathlib import Path
 
@@ -144,3 +153,91 @@ def test_custom_parameters_respect_pass_through_threshold(truncate):
     out = truncate(above_threshold, head=5, tail=10)
     assert out != above_threshold
     assert "chars truncated" in out
+
+
+# --- _evaluate_via_subprocess timeout-machinery regression -----------------
+
+
+@pytest.fixture(scope="module")
+def evaluate_via_subprocess_node():
+    """Parse evaluator.py and return the FunctionDef AST for
+    `_evaluate_via_subprocess`. Pure AST parse — no import — so the
+    fixture is cheap and doesn't trigger evaluator.py's env-var checks.
+    """
+    src = (ASTA_DS1000_DIR / "evaluator.py").read_text()
+    tree = ast.parse(src)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == "_evaluate_via_subprocess":
+            return node
+    raise AssertionError("_evaluate_via_subprocess not found in evaluator.py")
+
+
+def test_popen_uses_start_new_session(evaluate_via_subprocess_node):
+    """The worker must be spawned with start_new_session=True so the
+    timeout-path killpg signals the whole group. A refactor back to
+    `subprocess.run(...)` (no session control) silently re-introduces
+    the orphan-grandchild hang."""
+    popen_calls = [
+        c for c in ast.walk(evaluate_via_subprocess_node)
+        if isinstance(c, ast.Call)
+        and isinstance(c.func, ast.Attribute)
+        and c.func.attr == "Popen"
+        and isinstance(c.func.value, ast.Name)
+        and c.func.value.id == "subprocess"
+    ]
+    assert len(popen_calls) == 1, (
+        f"Expected exactly one subprocess.Popen call in "
+        f"_evaluate_via_subprocess; found {len(popen_calls)}"
+    )
+    kwargs = {kw.arg: kw.value for kw in popen_calls[0].keywords}
+    assert "start_new_session" in kwargs, (
+        "subprocess.Popen call must pass start_new_session=True so we "
+        "can killpg the worker's process group on timeout"
+    )
+    val = kwargs["start_new_session"]
+    assert isinstance(val, ast.Constant) and val.value is True, (
+        f"start_new_session must be literal True; got {ast.dump(val)}"
+    )
+
+
+def test_killpg_used_on_timeout(evaluate_via_subprocess_node):
+    """Timeout handling must call os.killpg — plain proc.kill() only
+    signals the immediate child, leaving grandchildren that can keep
+    stdout/stderr pipes open and wedge the post-kill drain."""
+    killpg_calls = [
+        c for c in ast.walk(evaluate_via_subprocess_node)
+        if isinstance(c, ast.Call)
+        and isinstance(c.func, ast.Attribute)
+        and c.func.attr == "killpg"
+        and isinstance(c.func.value, ast.Name)
+        and c.func.value.id == "os"
+    ]
+    assert killpg_calls, (
+        "os.killpg call required in _evaluate_via_subprocess: timeout "
+        "handling must kill the worker's process group, not just the "
+        "immediate child"
+    )
+
+
+def test_all_communicate_calls_have_timeout(evaluate_via_subprocess_node):
+    """Every proc.communicate() call must pass an explicit timeout.
+    The first communicate() (subprocess_timeout) bounds the main run;
+    the second (the post-kill drain) bounds how long we're willing to
+    wait for pipes to EOF after killpg. An unbounded communicate()
+    would re-introduce the hang we're guarding against."""
+    communicate_calls = [
+        c for c in ast.walk(evaluate_via_subprocess_node)
+        if isinstance(c, ast.Call)
+        and isinstance(c.func, ast.Attribute)
+        and c.func.attr == "communicate"
+    ]
+    assert len(communicate_calls) >= 2, (
+        f"Expected at least two communicate() calls (main run + "
+        f"post-kill drain); found {len(communicate_calls)}"
+    )
+    for call in communicate_calls:
+        kw_names = {kw.arg for kw in call.keywords}
+        assert "timeout" in kw_names, (
+            f"communicate() at line {call.lineno} must pass "
+            f"timeout=N — every drain needs a hard cap"
+        )
