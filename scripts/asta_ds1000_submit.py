@@ -23,11 +23,10 @@ submission. submissions/ is gitignored so the working dirs don't dirty
 the tree.
 
 Cost / time, sequential:
-    v0_seed_gpt54_mini    ~$0.50    30-60 min   (gpt-5.4-mini one-shot)
-    v0_seed_sonnet_4_6    ~$2.20    30-60 min   (claude-sonnet-4-6 one-shot)
-    v0_soft_cap_0_04      ~$23.00   2-4 hr      (4-candidate jury w/ smoke-test)
+    v0_0_1_seed_gpt54_mini   ~$0.50    30-60 min   (gpt-5.4-mini one-shot)
+    v0_0_1_soft_cap_0_16     ~$20-30   2-4 hr      (quad-diverse ensemble + Opus critic)
     --
-    total                 ~$25.70   4-6 hr
+    total                   ~$20-30   2-4 hr
 
 Prerequisites:
   - OPENAI_API_KEY              (required by all three; v0_soft_cap_0_04
@@ -75,25 +74,30 @@ class Submission(NamedTuple):
     # we use `none` so the recorded eval.model field doesn't claim a
     # single primary; per-call usage is captured in stats.model_usage.
     model_arg: str
+    # Set True when the agent imports gated handles from model_registry
+    # (CLAUDE_OPUS_4_7, GPT_5_5, GEMINI_3_1_PRO_PREVIEW). Drives the
+    # ASTA_DS1000_ALLOW_STRONGER_MODELS=1 env var passed to `astabench
+    # eval` so model_registry defines those names at import time. Off
+    # by default — the seed and any cheap-tier-only candidates don't
+    # need it, and leaving it off keeps the staged tarball's eval-time
+    # env honest about which handles the candidate actually needs.
+    needs_stronger_models: bool = False
 
 
 SUBMISSIONS = [
-    # Cheapest first — if anything's wrong with the path we catch it
-    # before spending $23 on the iter13 run.
+    # Cheapest first — if anything's wrong with the path (wrapper
+    # template, stage(), extra_env, etc.) we catch it on the ~$0.50
+    # seed run before spending $20-30 on the iter10 ensemble.
     Submission(
-        name="v0_seed_gpt54_mini",
+        name="v0_0_1_seed_gpt54_mini",
         agent_rel_path="agent.py",
         model_arg="openai/gpt-5.4-mini",
     ),
     Submission(
-        name="v0_seed_sonnet_4_6",
-        agent_rel_path="agent.py",
-        model_arg="anthropic/claude-sonnet-4-6",
-    ),
-    Submission(
-        name="v0_soft_cap_0_04",
-        agent_rel_path="agents/iter13_style_aware_lean/agent.py",
+        name="v0_0_1_soft_cap_0_16",
+        agent_rel_path="agents/iter10_idiomatic_loop_guard_v1/agent.py",
         model_arg="none",
+        needs_stronger_models=True,
     ),
 ]
 
@@ -299,6 +303,25 @@ def eval_submission(s: Submission, working_dir: Path) -> bool:
         return True
     log_dir = working_dir / LOG_SUBDIR
     log_dir.mkdir(parents=True, exist_ok=True)
+    # LITELLM_LOCAL_MODEL_COST_MAP is required by `astabench score`;
+    # passing during eval too is harmless and keeps env consistent.
+    # ANTHROPIC_API_KEY is injected here (not in the parent process)
+    # so Inspect's --model anthropic/... resolution succeeds without
+    # clobbering the user's Claude Code CLI subscription credentials
+    # in their interactive shell. See resolve_anthropic_key().
+    extra_env = {
+        "LITELLM_LOCAL_MODEL_COST_MAP": "True",
+        "ANTHROPIC_API_KEY": resolve_anthropic_key(),
+    }
+    if s.needs_stronger_models:
+        # The agent's source imports gated handles (CLAUDE_OPUS_4_7,
+        # GPT_5_5, GEMINI_3_1_PRO_PREVIEW) which model_registry only
+        # defines when this env var is set at module-load time. Without
+        # it, `astabench eval` aborts at startup with an ImportError
+        # before any solver runs. Scoped per-Submission so a seed-only
+        # tarball doesn't claim it needs stronger handles it isn't
+        # importing.
+        extra_env["ASTA_DS1000_ALLOW_STRONGER_MODELS"] = "1"
     rc = run(
         [
             "astabench", "eval",
@@ -310,16 +333,7 @@ def eval_submission(s: Submission, working_dir: Path) -> bool:
             "--display", "plain",
         ],
         cwd=working_dir,
-        # LITELLM_LOCAL_MODEL_COST_MAP is required by `astabench score`;
-        # passing during eval too is harmless and keeps env consistent.
-        # ANTHROPIC_API_KEY is injected here (not in the parent process)
-        # so Inspect's --model anthropic/... resolution succeeds without
-        # clobbering the user's Claude Code CLI subscription credentials
-        # in their interactive shell. See resolve_anthropic_key().
-        extra_env={
-            "LITELLM_LOCAL_MODEL_COST_MAP": "True",
-            "ANTHROPIC_API_KEY": resolve_anthropic_key(),
-        },
+        extra_env=extra_env,
     )
     return rc == 0
 

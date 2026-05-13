@@ -1,4 +1,0 @@
-<code>
-model = SelectFromModel(clf, prefit=True)
-column_names = X.columns[model.get_support()].tolist()
-</code>

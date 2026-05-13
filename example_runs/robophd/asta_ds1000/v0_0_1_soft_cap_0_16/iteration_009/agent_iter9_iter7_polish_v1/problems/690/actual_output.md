@@ -1,0 +1,1 @@
+<tf.Tensor: shape=(2,), dtype=int32, numpy=array([3, 0], dtype=int32)>

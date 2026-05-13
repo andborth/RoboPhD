@@ -1,5 +1,0 @@
-```python
-result = [x[i, row] for i, row in enumerate(~np.isnan(x))]
-
-
-```

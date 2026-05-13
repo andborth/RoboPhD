@@ -1,4 +1,0 @@
-```python
-for i_batch in range(10):
-    a[i_batch, lengths[i_batch]:, :] = 2333
-```
