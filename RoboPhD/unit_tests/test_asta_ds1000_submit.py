@@ -117,3 +117,72 @@ def test_stage_copies_seed_file(submit_tree: ast.AST) -> None:
         "stage() must call `shutil.copy(<seed_src>, dst_dir / \"seed_agent.py\")` "
         "so the wrapper's seed import resolves at submission-eval time"
     )
+
+
+def test_wrapper_template_has_per_tier_timeouts(wrapper_tree: ast.AST) -> None:
+    """Both tiers of the wrapper must be wrapped in `asyncio.wait_for`
+    so a hung primary or seed can't wedge the eval indefinitely. The
+    first iter10 submission attempt wedged for 1:45+ on a stuck sample
+    because the wrapper's outer `except Exception` only catches raised
+    exceptions, not duration; this test pins the regression."""
+    wait_for_calls = [
+        n for n in ast.walk(wrapper_tree)
+        if isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "wait_for"
+        and isinstance(n.func.value, ast.Name)
+        and n.func.value.id == "asyncio"
+    ]
+    assert len(wait_for_calls) >= 2, (
+        f"WRAPPER_TEMPLATE must wrap BOTH tiers in asyncio.wait_for; "
+        f"found {len(wait_for_calls)}"
+    )
+    # Every wait_for must have a timeout kwarg (positional second arg
+    # would also work, but we use kwargs in the template — pin that).
+    # Floor at 300s: legitimate iter10 samples can take several minutes
+    # (Opus reasoning + LOOP-SCRUB verify). A future "we don't need 20
+    # minutes" reduction to e.g. 10s would defeat the wrapper's purpose
+    # and false-timeout most samples; this test flags that class of
+    # accidental tightening without preventing reasonable retuning
+    # (anywhere from 5min to 30min stays within the floor).
+    MIN_TIMEOUT_S = 300
+    for call in wait_for_calls:
+        kw_names = {kw.arg for kw in call.keywords}
+        assert "timeout" in kw_names, (
+            f"asyncio.wait_for at line {call.lineno} must pass a "
+            f"timeout=N kwarg"
+        )
+        # Resolve the timeout to a numeric value. The template uses a
+        # module-level constant (PRIMARY_TIMEOUT_S / SEED_TIMEOUT_S) as
+        # the kwarg value, so we look it up in the wrapper module's
+        # top-level Assign nodes.
+        timeout_kw = next(kw for kw in call.keywords if kw.arg == "timeout")
+        if isinstance(timeout_kw.value, ast.Constant) and isinstance(timeout_kw.value.value, (int, float)):
+            timeout_val = timeout_kw.value.value
+        elif isinstance(timeout_kw.value, ast.Name):
+            const_name = timeout_kw.value.id
+            timeout_val = None
+            for stmt in wrapper_tree.body:
+                if (isinstance(stmt, ast.Assign)
+                        and len(stmt.targets) == 1
+                        and isinstance(stmt.targets[0], ast.Name)
+                        and stmt.targets[0].id == const_name
+                        and isinstance(stmt.value, ast.Constant)
+                        and isinstance(stmt.value.value, (int, float))):
+                    timeout_val = stmt.value.value
+                    break
+            assert timeout_val is not None, (
+                f"asyncio.wait_for at line {call.lineno} references "
+                f"unresolvable constant `{const_name}`"
+            )
+        else:
+            raise AssertionError(
+                f"asyncio.wait_for at line {call.lineno} has unrecognized "
+                f"timeout value type: {ast.dump(timeout_kw.value)}"
+            )
+        assert timeout_val >= MIN_TIMEOUT_S, (
+            f"asyncio.wait_for at line {call.lineno} has timeout="
+            f"{timeout_val}, below the {MIN_TIMEOUT_S}s floor. Legitimate "
+            f"iter10 samples can take several minutes; too-short timeouts "
+            f"would false-trip on slow-but-correct runs."
+        )

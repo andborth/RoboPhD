@@ -223,14 +223,26 @@ diagnostics as-is, since its upstream layer (ExternalEvaluatorDomain)
 handles errors natively. Same intent (no third retry, no recursion);
 different output shape forced by the calling convention.
 
+Per-sample wall-clock timeout: both tiers are wrapped in
+`asyncio.wait_for(..., timeout=1200)` so a hung primary (rate-limit
+retry storm, provider connection deadlock, etc.) can't wedge the eval
+indefinitely. asyncio.TimeoutError is a subclass of Exception on
+Python 3.11+, so the existing `except Exception` blocks catch the
+timeout and fall to the next tier naturally.
+
 Wrapper recipe lives in scripts/asta_ds1000_submit.py:WRAPPER_TEMPLATE.
 """
+import asyncio
 import traceback
 
 from inspect_ai.solver import Generate, TaskState, solver
 
 from agent_inner import make_solver as _inner_make_solver
 from seed_agent import make_solver as _seed_make_solver
+
+
+PRIMARY_TIMEOUT_S = 1200  # 20 min — bounds hung primaries
+SEED_TIMEOUT_S = 1200     # same — applied independently to the fallback tier
 
 
 @solver
@@ -242,7 +254,7 @@ def make_solver():
         if state.metadata is None:
             state.metadata = {}
         try:
-            return await inner(state, generate)
+            return await asyncio.wait_for(inner(state, generate), timeout=PRIMARY_TIMEOUT_S)
         except Exception as primary:
             print(f"[{state.sample_id}] WRAPPER primary caught {type(primary).__name__}: {primary}")
             print(f"[{state.sample_id}] WRAPPER primary traceback (truncated):")
@@ -250,7 +262,7 @@ def make_solver():
             state.metadata["__wrapper_primary_caught"] = repr(primary)[:500]
             state.metadata["__wrapper_primary_traceback"] = traceback.format_exc()[:2000]
             try:
-                return await seed(state, generate)
+                return await asyncio.wait_for(seed(state, generate), timeout=SEED_TIMEOUT_S)
             except Exception as fallback:
                 print(f"[{state.sample_id}] WRAPPER seed fallback ALSO caught {type(fallback).__name__}: {fallback}")
                 print(f"[{state.sample_id}] WRAPPER seed fallback traceback (truncated):")
@@ -331,6 +343,18 @@ def eval_submission(s: Submission, working_dir: Path) -> bool:
             "--task", "DS_1000_test",
             "--log-dir", str(log_dir),
             "--display", "plain",
+            # Concurrency knobs forwarded to `inspect eval-set` via
+            # agenteval's ignore_unknown_options Click context. Sized so
+            # max-samples is the binding constraint:
+            #   - 6 in-flight samples (half the 12-core M4 Pro)
+            #   - 6 Docker sandboxes (one per sample; iter10 packs its 4
+            #     candidates into one container via exec() namespaces)
+            #   - 30 connections (peak Anthropic burst = 6 samples × 2
+            #     concurrent calls = 12; 30 is 2.5× headroom for the
+            #     sequential downstream Anthropic calls that follow)
+            "--max-samples", "6",
+            "--max-sandboxes", "6",
+            "--max-connections", "30",
         ],
         cwd=working_dir,
         extra_env=extra_env,
