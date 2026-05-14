@@ -115,23 +115,69 @@ def format_binary_report_comparative(index: dict) -> list[str]:
         ""
     ])
 
-    # Per-agent accuracy table
+    # Per-agent accuracy table. When any agent has a non-empty
+    # aggregator explanation (custom batch-level scoring — DS-1000
+    # training adds a cost penalty here), surface the aggregator's
+    # output as a "Mean Score" column alongside raw accuracy, and
+    # explain how it was derived in a "Notes" block below. In the
+    # default case we just show Correct/Failed/Errors/Accuracy.
     by_agent = index.get('by_agent', {})
+    agent_explanations = summary.get('agent_explanations', {}) or {}
+    agent_aggregate_scores = summary.get('agent_aggregate_scores', {}) or {}
+    any_explanation = any(agent_explanations.get(a) for a in agents)
+
     if by_agent and agents:
-        lines.extend([
-            "## Agent Accuracy",
-            "",
-            "| Agent | Correct | Failed | Errors | Accuracy |",
-            "|-------|---------|--------|--------|----------|"
-        ])
-        for agent in agents:
-            stats = by_agent.get(agent, {})
-            correct = stats.get('total_correct', 0)
-            failed = stats.get('total_failed', stats.get('total_errors', 0))
-            errors = stats.get('total_errors', 0)
-            accuracy = stats.get('accuracy', 0.0)
-            lines.append(f"| {agent} | {correct} | {failed} | {errors} | {accuracy:.1f}% |")
-        lines.append("")
+        if any_explanation:
+            lines.extend([
+                "## Agent Accuracy",
+                "",
+                "| Agent | Correct | Failed | Errors | Mean Raw Score | Mean Score |",
+                "|-------|---------|--------|--------|----------------|------------|"
+            ])
+            for agent in agents:
+                stats = by_agent.get(agent, {})
+                correct = stats.get('total_correct', 0)
+                failed = stats.get('total_failed', stats.get('total_errors', 0))
+                errors = stats.get('total_errors', 0)
+                total = stats.get('total_questions', correct + failed) or 1
+                # Single source of truth for the raw mean: correct/total.
+                # Avoids the `accuracy / 100.0` percentage round-trip
+                # whose `100` literal visually collides with SCORE_SCALE
+                # in the aggregator (also 100). raw_mean is what the
+                # default aggregator would have returned for this binary
+                # task; it doubles as the Mean Raw Score column AND the
+                # fallback when summary.average_score is missing.
+                raw_mean = correct / total
+                aggregate = agent_aggregate_scores.get(agent, raw_mean)
+                lines.append(
+                    f"| {agent} | {correct} | {failed} | {errors} | "
+                    f"{raw_mean:.4f} | {aggregate:.3f} |"
+                )
+            lines.append("")
+            lines.append(
+                "**Aggregate notes** (how Mean Score was derived from Mean Raw Score):"
+            )
+            lines.append("")
+            for agent in agents:
+                exp = agent_explanations.get(agent) or ''
+                if exp:
+                    lines.append(f"- **{agent}**: {exp}")
+            lines.append("")
+        else:
+            lines.extend([
+                "## Agent Accuracy",
+                "",
+                "| Agent | Correct | Failed | Errors | Accuracy |",
+                "|-------|---------|--------|--------|----------|"
+            ])
+            for agent in agents:
+                stats = by_agent.get(agent, {})
+                correct = stats.get('total_correct', 0)
+                failed = stats.get('total_failed', stats.get('total_errors', 0))
+                errors = stats.get('total_errors', 0)
+                accuracy = stats.get('accuracy', 0.0)
+                lines.append(f"| {agent} | {correct} | {failed} | {errors} | {accuracy:.1f}% |")
+            lines.append("")
 
     # Consensus failures (all agents failed)
     cross_patterns = index.get('cross_agent_patterns', {})
@@ -224,23 +270,59 @@ def format_binary_report_deep_focus(index: dict) -> list[str]:
         ""
     ])
 
-    # Per-agent accuracy table
+    # Per-agent accuracy table. Same conditional dual-column treatment
+    # as format_binary_report_comparative — when an aggregator is in
+    # use (any non-empty agent_explanations), show Mean Score and the
+    # explanations beneath.
+    agent_explanations = summary.get('agent_explanations', {}) or {}
+    agent_aggregate_scores = summary.get('agent_aggregate_scores', {}) or {}
+
     if by_agent:
         all_agents = [newest_agent] + baseline_agents
-        lines.extend([
-            "## Agent Accuracy",
-            "",
-            "| Agent | Correct | Failed | Errors | Accuracy |",
-            "|-------|---------|--------|--------|----------|"
-        ])
-        for agent in all_agents:
-            stats = by_agent.get(agent, {})
-            correct = stats.get('total_correct', 0)
-            failed = stats.get('total_failed', stats.get('total_errors', 0))
-            errors = stats.get('total_errors', 0)
-            accuracy = stats.get('accuracy', 0.0)
-            lines.append(f"| {agent} | {correct} | {failed} | {errors} | {accuracy:.1f}% |")
-        lines.append("")
+        any_explanation = any(agent_explanations.get(a) for a in all_agents)
+        if any_explanation:
+            lines.extend([
+                "## Agent Accuracy",
+                "",
+                "| Agent | Correct | Failed | Errors | Mean Raw Score | Mean Score |",
+                "|-------|---------|--------|--------|----------------|------------|"
+            ])
+            for agent in all_agents:
+                stats = by_agent.get(agent, {})
+                correct = stats.get('total_correct', 0)
+                failed = stats.get('total_failed', stats.get('total_errors', 0))
+                errors = stats.get('total_errors', 0)
+                total = stats.get('total_questions', correct + failed) or 1
+                # Single source of truth — see format_binary_report_comparative.
+                raw_mean = correct / total
+                aggregate = agent_aggregate_scores.get(agent, raw_mean)
+                lines.append(
+                    f"| {agent} | {correct} | {failed} | {errors} | "
+                    f"{raw_mean:.4f} | {aggregate:.3f} |"
+                )
+            lines.append("")
+            lines.append("**Aggregate notes** (how Mean Score was derived from Mean Raw Score):")
+            lines.append("")
+            for agent in all_agents:
+                exp = agent_explanations.get(agent) or ''
+                if exp:
+                    lines.append(f"- **{agent}**: {exp}")
+            lines.append("")
+        else:
+            lines.extend([
+                "## Agent Accuracy",
+                "",
+                "| Agent | Correct | Failed | Errors | Accuracy |",
+                "|-------|---------|--------|--------|----------|"
+            ])
+            for agent in all_agents:
+                stats = by_agent.get(agent, {})
+                correct = stats.get('total_correct', 0)
+                failed = stats.get('total_failed', stats.get('total_errors', 0))
+                errors = stats.get('total_errors', 0)
+                accuracy = stats.get('accuracy', 0.0)
+                lines.append(f"| {agent} | {correct} | {failed} | {errors} | {accuracy:.1f}% |")
+            lines.append("")
 
     # Unique Successes
     if unique_successes:
@@ -347,8 +429,48 @@ def _compute_agent_totals(scores_by_question: dict, agents: list[str]) -> dict[s
 
 
 def _format_score_summary(agent_totals: dict[str, list[float]], agents: list[str],
-                          new_agent: str | None = None) -> list[str]:
-    """Build the score summary table. Marks new_agent if provided."""
+                          new_agent: str | None = None,
+                          agent_explanations: dict[str, str] | None = None,
+                          agent_aggregate_scores: dict[str, float] | None = None) -> list[str]:
+    """Build the score summary table. Marks new_agent if provided.
+
+    When ``agent_explanations`` contains any non-empty value, render a
+    dual-score layout: "Mean Raw Score" = mean of per-example scores
+    (as before), "Mean Score" = the aggregator's output from
+    ``agent_aggregate_scores`` (what ELO actually compared). The
+    explanation strings appear in an "Aggregate notes" block beneath
+    the table. Default behavior (no explanations) preserves the legacy
+    single-column layout.
+    """
+    explanations = agent_explanations or {}
+    aggregates = agent_aggregate_scores or {}
+    any_explanation = any(explanations.get(a) for a in agents)
+
+    if any_explanation:
+        lines = [
+            "## Score Summary",
+            "",
+            "| Agent | Mean Raw Score | Mean Score | Problems |",
+            "|-------|----------------|------------|----------|",
+        ]
+        for agent in agents:
+            scores = agent_totals[agent]
+            raw_mean = sum(scores) / len(scores) if scores else 0.0
+            aggregate = aggregates.get(agent, raw_mean)
+            marker = " **(new)**" if agent == new_agent else ""
+            lines.append(
+                f"| {agent}{marker} | {raw_mean:.3f} | {aggregate:.3f} | {len(scores)} |"
+            )
+        lines.append("")
+        lines.append("**Aggregate notes** (how Mean Score was derived from Mean Raw Score):")
+        lines.append("")
+        for agent in agents:
+            exp = explanations.get(agent) or ''
+            if exp:
+                lines.append(f"- **{agent}**: {exp}")
+        lines.append("")
+        return lines
+
     lines = [
         "## Score Summary",
         "",
@@ -367,7 +489,8 @@ def _format_score_summary(agent_totals: dict[str, list[float]], agents: list[str
 def _format_score_rows(scores_by_question: dict, agents: list[str],
                        agent_labels: list[str],
                        extra_col_headers: list[str],
-                       extra_cols_fn) -> list[str]:
+                       extra_cols_fn,
+                       section_header: str = "## Score Comparison") -> list[str]:
     """Build the score comparison table rows with pluggable extra columns.
 
     extra_cols_fn(scored_sorted, agent_scores) -> (sort_key, [display_str, ...])
@@ -384,7 +507,7 @@ def _format_score_rows(scores_by_question: dict, agents: list[str],
     rows.sort(key=lambda r: r[0])
 
     # Table header
-    lines = ["## Score Comparison", ""]
+    lines = [section_header, ""]
     header = "| Problem |"
     separator = "|---------|"
     for label in agent_labels:
@@ -414,10 +537,20 @@ def _format_score_rows(scores_by_question: dict, agents: list[str],
     return lines
 
 
-def format_continuous_score_table(scores_by_question: dict, agents: list[str]) -> list[str]:
+def format_continuous_score_table(
+    scores_by_question: dict,
+    agents: list[str],
+    agent_explanations: dict[str, str] | None = None,
+    agent_aggregate_scores: dict[str, float] | None = None,
+) -> list[str]:
     """Build score comparison table for continuous-score tasks (iteration report).
 
     Sorted by delta(best-worst) descending — most differentiated problems first.
+
+    When ``agent_explanations`` contains any non-empty value, the
+    Score Summary renders with Mean Raw Score + Mean Score columns
+    and the per-problem table is titled "Raw Score Comparison" to
+    make clear that the per-problem values are raw (pre-aggregator).
     """
     if not scores_by_question or not agents:
         return []
@@ -427,9 +560,20 @@ def format_continuous_score_table(scores_by_question: dict, agents: list[str]) -
         a: (sum(scores) / len(scores) if scores else 0.0)
         for a, scores in agent_totals.items()
     }
-    sorted_agents = sorted(agents, key=lambda a: agent_means[a], reverse=True)
+    # Sort by aggregator output (what ELO compared) when available,
+    # otherwise by mean. For tasks without an aggregator these match.
+    aggregates = agent_aggregate_scores or {}
+    sorted_agents = sorted(
+        agents,
+        key=lambda a: aggregates.get(a, agent_means[a]),
+        reverse=True,
+    )
 
-    lines = _format_score_summary(agent_totals, sorted_agents)
+    lines = _format_score_summary(
+        agent_totals, sorted_agents,
+        agent_explanations=agent_explanations,
+        agent_aggregate_scores=agent_aggregate_scores,
+    )
 
     # Solo wins and solo losses per agent (with problem IDs)
     win_ids: dict[str, list[str]] = {a: [] for a in sorted_agents}
@@ -465,9 +609,16 @@ def format_continuous_score_table(scores_by_question: dict, agents: list[str]) -
         sort_key = -delta_bw
         return sort_key, [f"{delta_bw:.3f}", f"{delta_12:.3f}"]
 
+    explanations = agent_explanations or {}
+    any_explanation = any(explanations.get(a) for a in sorted_agents)
+    section_header = (
+        "## Raw Score Comparison" if any_explanation else "## Score Comparison"
+    )
+
     lines.extend(_format_score_rows(
         scores_by_question, sorted_agents, sorted_agents,
         ["Δ(best-worst)", "Δ(#1-#2)"], delta_cols,
+        section_header=section_header,
     ))
     return lines
 
@@ -476,11 +627,18 @@ def format_continuous_score_table_deep_focus(
     scores_by_question: dict,
     new_agent: str,
     baseline_agents: list[str],
+    agent_explanations: dict[str, str] | None = None,
+    agent_aggregate_scores: dict[str, float] | None = None,
 ) -> list[str]:
     """Build score comparison table for continuous-score tasks (deep focus report).
 
     Shows new-vs-best-baseline delta and new agent's rank.
     Sorted by new-vs-best ascending (worst problems for new agent first).
+
+    Same conditional layout as ``format_continuous_score_table``:
+    when any agent has a non-empty aggregator explanation, the summary
+    splits into Mean Raw Score + Mean Score and the per-problem table
+    is titled "Raw Score Comparison".
     """
     if not scores_by_question:
         return []
@@ -488,7 +646,12 @@ def format_continuous_score_table_deep_focus(
     all_agents = [new_agent] + baseline_agents
     agent_totals = _compute_agent_totals(scores_by_question, all_agents)
 
-    lines = _format_score_summary(agent_totals, all_agents, new_agent=new_agent)
+    lines = _format_score_summary(
+        agent_totals, all_agents,
+        new_agent=new_agent,
+        agent_explanations=agent_explanations,
+        agent_aggregate_scores=agent_aggregate_scores,
+    )
 
     agent_labels = [f"{a} (new)" if a == new_agent else a for a in all_agents]
 
@@ -535,9 +698,16 @@ def format_continuous_score_table_deep_focus(
             if len(losers) == 1:
                 new_losses.append(qid)
 
+    explanations = agent_explanations or {}
+    any_explanation = any(explanations.get(a) for a in all_agents)
+    section_header = (
+        "## Raw Score Comparison" if any_explanation else "## Score Comparison"
+    )
+
     lines.extend(_format_score_rows(
         scores_by_question, all_agents, agent_labels,
         ["New vs Best", "New Rank"], new_vs_best_cols,
+        section_header=section_header,
     ))
 
     # Summary lines

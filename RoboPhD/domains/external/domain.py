@@ -30,6 +30,25 @@ from RoboPhD.eval_utils import EvalRateLimitError, is_rate_limit_error
 logger = logging.getLogger(__name__)
 
 
+def _default_aggregate(per_example_results: List[Dict]) -> Tuple[float, str]:
+    """Default iteration aggregator: simple mean of per-example scores.
+
+    Evaluators that need batch-level scoring (e.g. mean-cost penalty
+    applied to an iteration-level aggregate, not per example) can expose
+    an `aggregate(per_example_results) -> (scalar, explanation_str)`
+    method on the evaluator object. The domain calls it once per
+    (agent, iteration) after all per-example evals complete.
+
+    Empty `explanation_str` signals default behavior; the report layer
+    keys off non-empty strings to switch on a dual-column layout that
+    surfaces both the raw mean and the aggregator's output.
+    """
+    if not per_example_results:
+        return 0.0, ""
+    n = len(per_example_results)
+    return sum(r.get("score", 0.0) for r in per_example_results) / n, ""
+
+
 class ExternalEvaluatorDomain(DomainInterface):
     """
     Domain backed by an external evaluator function.
@@ -221,28 +240,28 @@ class ExternalEvaluatorDomain(DomainInterface):
         for problem_id, result_data in cached_results.items():
             score = result_data.get("score", 0.0)
             score_sum += score
+            # Propagate cost fields from disk so the iteration-level
+            # aggregator (called once all per-example results are in)
+            # sees the same cost atoms whether they came from cache or
+            # fresh eval. Without this, an all-cached iteration would
+            # see zero cost and any cost-aware aggregator would
+            # incorrectly skip its penalty branch.
             results.append({
                 "question_id": problem_id,
                 "score": score,
+                "eval_cost": result_data.get("eval_cost", 0.0),
+                "other_cost": result_data.get("other_cost", 0.0),
+                "cost_by_model": result_data.get("cost_by_model", {}),
                 "cached": True,
             })
 
-        # --- All-cached fast path ---
+        # All-cached case falls through to the same aggregation path
+        # used by mixed/fresh iterations — the executor below has
+        # nothing to do (fresh_problem_ids is empty) and exits cleanly.
+        # Centralizing the aggregator call means cost-aware aggregators
+        # fire on cache-only iterations too.
         if fresh_count == 0 and cached_count > 0:
             self.logger.info("All problems cached — skipping evaluator")
-            total = cached_count
-            average_score = (score_sum / total) if total else 0.0
-            eval_data = {
-                "summary": {"total_problems": total, "score_sum": score_sum, "average_score": average_score},
-                "results": {r["question_id"]: r for r in results},
-            }
-            with open(output_dir / "evaluation.json", "w") as f:
-                json.dump(eval_data, f, indent=2)
-            return EvaluationResult(
-                average_score=average_score, total=total, score_sum=score_sum,
-                results=results,
-                metadata={"fresh_count": 0, "cached_count": cached_count, "eval_cost": 0.0, "other_cost": 0.0},
-            )
 
         # --- Warn about leaked threads from prior timeouts ---
         if self._leaked_threads > 0:
@@ -448,7 +467,18 @@ class ExternalEvaluatorDomain(DomainInterface):
                 executor.shutdown(wait=True)
 
         total = len(results)
-        average_score = (score_sum / total) if total else 0.0
+        # Iteration-level aggregate. Evaluators can opt into custom
+        # batch-level scoring (e.g. apply a cost penalty to the mean
+        # rather than per example) by exposing an `aggregate` method.
+        # Default behavior is simple-mean — identical to the prior
+        # `score_sum / total` formula. The explanation string is empty
+        # for the default aggregator and the report layer renders the
+        # legacy single-column layout in that case. `score_sum` itself
+        # stays as the raw sum (consumed by the per-iteration error
+        # breakdown), so `score_sum/total != average_score` for any
+        # aggregator that scales or penalizes.
+        aggregator = getattr(self._evaluator_fn, "aggregate", None) or _default_aggregate
+        average_score, aggregate_explanation = aggregator(results)
 
         # Aggregate evaluation costs from fresh results. `other_cost` is the
         # optional evaluator-side-overhead bucket (e.g., DiscoveryBench's
@@ -461,12 +491,16 @@ class ExternalEvaluatorDomain(DomainInterface):
             r.get("other_cost", 0.0) for r in results if not r.get("cached")
         )
 
-        # Write evaluation.json for compatibility
+        # Write evaluation.json. Persist aggregate_explanation so the
+        # report subprocess (create_comparative_error_index.py) can
+        # propagate it into error_index.json without seeing in-memory
+        # state.
         eval_data = {
             "summary": {
                 "total_problems": total,
                 "score_sum": score_sum,
                 "average_score": average_score,
+                "aggregate_explanation": aggregate_explanation,
             },
             "results": {r["question_id"]: r for r in results},
         }
@@ -483,6 +517,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                 "cached_count": cached_count,
                 "eval_cost": total_eval_cost,
                 "other_cost": total_other_cost,
+                "aggregate_explanation": aggregate_explanation,
             },
         )
 

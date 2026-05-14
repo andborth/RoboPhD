@@ -438,6 +438,8 @@ class DeepFocusEvolutionManager:
                 summary = index.get('summary', {})
                 newest_agent = summary.get('new_agent', 'unknown')
                 baseline_agents = summary.get('baseline_agents', [])
+                agent_explanations = summary.get('agent_explanations', {}) or {}
+                agent_aggregate_scores = summary.get('agent_aggregate_scores', {}) or {}
 
                 if scores_by_question and is_continuous_scoring(scores_by_question):
                     report_lines.append(f"**New Agent**: {newest_agent}")
@@ -446,6 +448,8 @@ class DeepFocusEvolutionManager:
                     report_lines.append("")
                     report_lines.extend(format_continuous_score_table_deep_focus(
                         scores_by_question, newest_agent, baseline_agents,
+                        agent_explanations=agent_explanations,
+                        agent_aggregate_scores=agent_aggregate_scores,
                     ))
                 else:
                     report_lines.extend(format_binary_report_deep_focus(index))
@@ -784,6 +788,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         overall_score = eval_result.average_score
         total_score_sum = eval_result.score_sum
         total_questions = eval_result.total
+        aggregate_explanation = (eval_result.metadata or {}).get('aggregate_explanation', '')
 
         # Compute rank relative to baselines
         rank_str = ""
@@ -817,6 +822,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             total_score_sum=total_score_sum,
             total_questions=total_questions,
             agent_name=agent_name,
+            aggregate_explanation=aggregate_explanation,
         )
 
         # Save snapshot after refinement
@@ -832,6 +838,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         total_score_sum: float,
         total_questions: int,
         agent_name: str,
+        aggregate_explanation: str = "",
     ):
         """
         Prompt Claude Code to refine agent based on test results.
@@ -841,10 +848,16 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         Args:
             round_num: Current round number
             test_iteration: Iteration that was tested against
-            overall_score: Overall average score (0-1)
-            total_score_sum: Sum of all per-problem scores
+            overall_score: Aggregator's output for this batch (the
+                canonical score ELO compares — see aggregate_explanation
+                for how it was derived from raw correctness).
+            total_score_sum: Sum of all per-problem raw scores
             total_questions: Total number of questions
             agent_name: Name of the new agent being tested
+            aggregate_explanation: Optional human-readable explanation
+                of how the aggregator converted raw correctness to
+                overall_score (e.g. DS-1000 cost-penalty math). Empty
+                for tasks using the default mean aggregator.
         """
         # Check if error analysis report exists (always generated now)
         test_workspace_name = f"iteration_{test_iteration:03d}_test"
@@ -883,6 +896,11 @@ Your new agent's per-problem output:
 {new_agent_line}
 """
 
+        aggregate_section = (
+            f"Aggregator notes: {aggregate_explanation}\n"
+            if aggregate_explanation
+            else ""
+        )
         prompt = f"""
 ## Round {round_num}: Testing and Refinement
 
@@ -890,7 +908,7 @@ Your agent was tested on data from iteration {test_iteration}.
 
 ### Results
 Overall score: {overall_score:.3f} ({total_score_sum:.1f}/{total_questions})
-{error_analysis_section}{agent_dirs_section}
+{aggregate_section}{error_analysis_section}{agent_dirs_section}
 ### Your Task
 Review the performance results and diagnostic outputs listed above.
 

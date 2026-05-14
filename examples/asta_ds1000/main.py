@@ -179,6 +179,10 @@ def _write_test_results(
             "test_eval_cost_usd": evaluator.total_eval_cost,
             "test_eval_agent_cost_usd": total_agent_cost,
             "n_fallback_used": n_fallback_used,
+            # Empty for the default test path (apply_cost_penalty=False,
+            # aggregator returns mean_raw with no annotation). Populated
+            # if a future test mode opts into a non-default aggregator.
+            "aggregate_explanation": getattr(eval_result, "aggregate_explanation", ""),
         }, f, indent=2)
 
     per_problem_path = summary_path.with_suffix(".per_problem.json")
@@ -340,13 +344,15 @@ def parse_args():
                         "with a higher --cost-threshold (e.g. 0.08) to give them "
                         "headroom in the cost penalty.")
     p.add_argument("--cost-threshold", type=float, default=None,
-                   help="Per-example agent spend below this is in the free zone "
-                        "(no penalty). Default $0.04.")
+                   help="Mean cost across an iteration's batch below this "
+                        "is in the free zone (no penalty). Default $0.04.")
     p.add_argument("--cost-saturation", type=float, default=None,
-                   help="Per-example agent spend at this level (or above) "
-                        "incurs the maximum cost penalty of 1.0. Default $1.00. "
+                   help="Mean cost at this level (or above) incurs the "
+                        "maximum cost penalty of 1.0. Default $10.00. "
                         "The penalty ramps linearly between threshold and "
-                        "saturation. Test-path scores are raw 0/1 regardless.")
+                        "saturation and is applied to the iteration aggregate "
+                        "(not per example). Test-path scores are raw 0/1 "
+                        "fractions regardless.")
 
     p.add_argument("--max-workers", type=int, default=12,
                    help="Parallel eval workers. Each evaluation runs in its "

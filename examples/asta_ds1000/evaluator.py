@@ -84,28 +84,38 @@ def _head_tail_truncate(s: str, head: int = 200, tail: int = 1500) -> str:
     return s[:head] + f"\n... ({truncated} chars truncated) ...\n" + s[-tail:]
 
 
-# Per-example score during training (apply_cost_penalty=True):
-#   score = SCORE_SCALE * raw_score - cost_penalty
-#   cost_penalty = min(1.0, max(0, agent_cost_usd - MIN_COST_THRESHOLD)
-#                          / (COST_PENALTY_SATURATION - MIN_COST_THRESHOLD))
-# raw_score is binary (1.0 for "C" / 0.0 for "I"). At MIN_COST_THRESHOLD
-# the penalty is 0 (free zone for trivial agents); at COST_PENALTY_SATURATION
-# it hits its max of 1.0. SCORE_SCALE puts raw_score on a [0, 100] axis
-# so the [0, 1] penalty acts as a tiebreaker that never overrides
-# correctness gaps. Test scores remain raw 0/1 — leaderboard parity.
+# Iteration-level score during training (apply_cost_penalty=True), via
+# Ds1000Evaluator.aggregate:
+#   score = SCORE_SCALE * mean_raw - penalty(mean_cost)
+#   penalty = min(1.0, max(0, mean_cost - MIN_COST_THRESHOLD)
+#                       / (COST_PENALTY_SATURATION - MIN_COST_THRESHOLD))
+# mean_raw is mean of binary per-example scores (1.0 for "C" / 0.0 for "I").
+# The penalty applies to the MEAN cost across the iteration's batch, not
+# per example — matches the leaderboard's mean-cost Pareto framing and
+# rewards selective routing (expensive models on hard problems, cheap on
+# easy) as long as the batch average stays in the free zone. SCORE_SCALE
+# puts mean_raw on a [0, 100] axis so the [0, 1] penalty acts as a
+# tiebreaker that never overrides correctness gaps. Test-path scores
+# (apply_cost_penalty=False) skip SCORE_SCALE entirely and report
+# mean_raw as a [0, 1] fraction — leaderboard parity.
 SCORE_SCALE = 100.0
 # Free-zone width set to $0.04 so the typical "cheap" leaderboard entries
-# (~$0.02/problem) have headroom to land inside the free zone without
-# brushing up against the threshold and triggering an epsilon cost
-# penalty. Without that buffer, sub-cent variance can drag a cheap agent
-# above threshold on some problems and not others, turning the penalty
-# into a near-deterministic tiebreaker on the binary 0/1 correctness
-# scores at small per-iteration task counts. With n=10 binary tasks
-# correctness ties are common; if every cheap-vs-cheap matchup were
-# resolved that way the selection step would become approximately
-# accuracy-blind.
+# (~$0.02/problem) sit safely inside the free zone. With the mean-cost
+# formulation (penalty applies to the batch mean rather than per
+# example), epsilon-cost variance no longer pushes individual examples
+# over threshold — the buffer mainly protects against sample-mean noise
+# at small batch sizes. Cost-only-tiebreaker invariant: SCORE_SCALE > n
+# (examples_per_iteration). Holds strictly for n < 100; we operate at
+# n=20-60 with 1.67×-5× margin.
 MIN_COST_THRESHOLD = 0.04
-COST_PENALTY_SATURATION = 1.0  # matches DiscoveryBench
+# Saturation pushed out to $10 so realistic agents (~$0.02-$0.25/problem
+# mean on the leaderboard) live deep in the linear ramp, far from the
+# penalty cap. Penalty at $0.10 mean is ~0.006; at $1 mean ~0.096; at
+# $10 mean it saturates at 1.0. This widens the linear range over which
+# cost actually differentiates agents while keeping the worst-case
+# penalty magnitude (1.0) far below a single-problem accuracy delta
+# (100/n ≥ 1.67 at n=60).
+COST_PENALTY_SATURATION = 10.0
 
 # Keys in state.metadata the agent must NOT see. The scorer reads
 # `code_context`; we keep it on the Sample but pop it from state.metadata
@@ -514,12 +524,15 @@ class Ds1000Evaluator:
         self._default_model = _DEFAULT_MODEL
 
         self.subprocess_isolation = subprocess_isolation
-        # True for training (RoboPhD's ELO competition): score is
-        # SCORE_SCALE * raw_score - cost_penalty. False for test paths
-        # (eval_candidate / eval_run / --eval-test-set / --eval-only) —
-        # score is raw 0/1 so the agent lands at its true point on the
-        # Pareto cost-vs-score curve. agent_cost_usd is recorded in
-        # diagnostics in both modes for the audit trail.
+        # True for training (RoboPhD's ELO competition): the iteration
+        # aggregator (Ds1000Evaluator.aggregate) returns SCORE_SCALE *
+        # mean_raw_accuracy - penalty(mean_cost). False for test paths
+        # (eval_candidate / eval_run / --eval-test-set / --eval-only):
+        # aggregate returns mean_raw_accuracy as a [0, 1] fraction with
+        # no penalty so the agent lands at its true point on the
+        # Pareto cost-vs-score curve. Per-example scores stay raw 0/1
+        # in both modes; agent_cost_usd is recorded in diagnostics in
+        # both modes for the audit trail.
         self.apply_cost_penalty = apply_cost_penalty
         # Catch the misconfiguration class up-front: equal endpoints
         # would divide by zero when computing cost_penalty; crossed
@@ -574,6 +587,81 @@ class Ds1000Evaluator:
         }
         base.update(overrides)
         return Ds1000Evaluator(**base)
+
+    # -- Iteration-level aggregator -----------------------------------------
+
+    def aggregate(self, per_example_results: list[dict]) -> tuple[float, str]:
+        """Combine per-example scores into an iteration-level aggregate.
+
+        Per-example `score` is raw correctness (1.0 / 0.0). This method
+        is called once per (agent, iteration) by RoboPhD after all
+        per-example evals have completed (or been read from cache),
+        and its scalar return becomes the agent's `average_score` for
+        the iteration — what ELO compares.
+
+        Two scale regimes:
+
+        - **Training** (`apply_cost_penalty=True`): scale raw accuracy
+          to a percentage (SCORE_SCALE × mean_raw), then apply a small
+          [0, 1] cost penalty proportional to how far the batch's *mean*
+          cost exceeds `min_cost_threshold`. SCORE_SCALE=100 keeps
+          accuracy ~100× the magnitude of the penalty so cost is strictly
+          a tiebreaker for n < SCORE_SCALE (we run at n=20-60).
+
+        - **Test** (`apply_cost_penalty=False`): no scaling, no penalty.
+          Returns mean_raw as a [0, 1] fraction — matches leaderboard
+          format and preserves prior test-path scoring exactly.
+
+        The explanation string is non-empty in training mode (free-zone
+        OR breach) so the report layer surfaces the scale and any
+        penalty. In test mode the empty string keeps the default
+        single-column report layout.
+        """
+        if not per_example_results:
+            return 0.0, ""
+        n = len(per_example_results)
+        mean_raw = sum(r.get("score", 0.0) for r in per_example_results) / n
+
+        # Test path: leaderboard-format fraction, no penalty, no
+        # explanation (default-aggregator-style return).
+        if not self.apply_cost_penalty:
+            return mean_raw, ""
+
+        # Training path: report on a percentage scale. Both branches
+        # below (free-zone and breach) return on this scale and surface
+        # an explanation so readers always know the scale they're
+        # looking at — the empty-string fast path is reserved for test
+        # mode.
+        base = SCORE_SCALE * mean_raw
+
+        # Cost can arrive under either key depending on whether the
+        # caller is the training path (domain normalized → eval_cost)
+        # or the test path (raw diagnostic → agent_cost_usd). The test
+        # path exits above before this read, but the coalesce keeps
+        # the aggregator invariant to the call site.
+        def _cost_of(r: dict) -> float:
+            return r.get("eval_cost") or r.get("agent_cost_usd") or 0.0
+        mean_cost = sum(_cost_of(r) for r in per_example_results) / n
+
+        if mean_cost <= self.min_cost_threshold:
+            explanation = (
+                f"Mean cost ${mean_cost:.4f} within free zone (threshold "
+                f"${self.min_cost_threshold:.2f}); no tiebreaker penalty applied. "
+                f"Raw accuracy {mean_raw:.4f} reported as percentage: {base:.3f}."
+            )
+            return base, explanation
+
+        cost_excess = mean_cost - self.min_cost_threshold
+        ramp_width = self.cost_penalty_saturation - self.min_cost_threshold
+        penalty = min(1.0, cost_excess / ramp_width)
+        final = base - penalty
+        explanation = (
+            f"Mean cost ${mean_cost:.4f} exceeded threshold ${self.min_cost_threshold:.2f} "
+            f"by ${cost_excess:.4f}; applied small tie-breaking penalty "
+            f"${cost_excess:.4f} / ${ramp_width:.2f} = {penalty:.4f} "
+            f"to raw score {base:.3f} → final {final:.3f} (percentage)."
+        )
+        return final, explanation
 
     # -- RoboPhD evaluator contract -----------------------------------------
 
@@ -911,56 +999,21 @@ class Ds1000Evaluator:
         except Exception:
             pass
 
-        # Cost penalty (training only). raw_score is rescaled to
-        # [0, SCORE_SCALE] and a bounded penalty in [0, 1] is subtracted,
-        # proportional to cost above min_cost_threshold up to
-        # cost_penalty_saturation. The penalty's [0, 1] range is two
-        # orders of magnitude smaller than the score scale, so it acts as
-        # a tiebreaker and never reorders agents whose raw scores differ
-        # (DS-1000 raw is binary 1.0/0.0). Test paths skip this — score
-        # stays raw 0/1 for leaderboard parity.
-        raw_score = score_value
-        if self.apply_cost_penalty:
-            cost_excess = max(0.0, agent_cost_usd - self.min_cost_threshold)
-            cost_excess_range = self.cost_penalty_saturation - self.min_cost_threshold
-            cost_penalty = min(1.0, cost_excess / cost_excess_range)
-            score_value = SCORE_SCALE * raw_score - cost_penalty
-        else:
-            cost_penalty = 0.0
-
+        # Per-example score is raw correctness (1.0 / 0.0). The cost
+        # penalty applies at the iteration level via Ds1000Evaluator.aggregate
+        # — computing it per example would diverge from the leaderboard's
+        # mean-cost framing and would punish selective-routing strategies
+        # whose batch-mean cost lands in the free zone.
         with self._cost_lock:
             self.total_eval_cost += agent_cost_usd
 
-        diagnostics["score"] = score_value           # post-penalty (training) or raw (test)
-        diagnostics["raw_score"] = raw_score         # always 1.0 or 0.0 — pre-penalty
-        diagnostics["cost_penalty"] = cost_penalty   # [0, 1] subtracted on training; 0.0 on test
+        diagnostics["score"] = score_value           # raw correctness 1.0/0.0
+        diagnostics["raw_score"] = score_value       # alias kept for readability in result.json
         diagnostics["cost_usd"] = agent_cost_usd
         diagnostics["agent_cost_usd"] = agent_cost_usd
         diagnostics["usage"] = usage_summary
         diagnostics["cost_by_model_usd"] = cost_by_model_usd  # plumbed through to result.json by ExternalEvaluatorDomain
         diagnostics["library"] = (example.metadata or {}).get("library")
-        # Numeric fields (raw_score, cost_penalty) are skipped by
-        # ExternalEvaluatorDomain's str-only file persistence. Surface
-        # them as a readable per-key file so failure forensics can
-        # distinguish "wrong answer" (raw_score=0) from "correct but
-        # expensive" (raw_score=1, cost_penalty>0) without re-running.
-        breakdown_lines = [
-            f"raw_score:        {raw_score}",
-            f"agent_cost_usd:   ${agent_cost_usd:.6f}",
-            f"cost_penalty:     {cost_penalty:.4f}",
-            f"penalty_applied:  {self.apply_cost_penalty}",
-            f"final score:      {score_value}",
-        ]
-        # Per-model split — only useful when the problem actually used >1
-        # model. A 1-row table just restates agent_cost_usd at 100%.
-        if len(cost_by_model_usd) >= 2 and agent_cost_usd > 0:
-            sorted_models = sorted(cost_by_model_usd.items(), key=lambda kv: kv[1], reverse=True)
-            breakdown_lines.append("")
-            breakdown_lines.append("By model (sorted desc):")
-            for m, c in sorted_models:
-                share = (c / agent_cost_usd) * 100 if agent_cost_usd > 0 else 0.0
-                breakdown_lines.append(f"  {m}: ${c:.6f} ({share:.0f}%)")
-        diagnostics["cost_breakdown.md"] = "\n".join(breakdown_lines) + "\n"
 
         return score_value, diagnostics
 

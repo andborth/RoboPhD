@@ -130,7 +130,24 @@ class EvalResult:
     """Result of an eval_candidate() call."""
 
     mean_score: float
-    """Mean score across all evaluated examples."""
+    """Iteration-level score from the evaluator's aggregator (or simple
+    mean when no aggregator is defined).
+
+    **Scale is evaluator-defined and may differ between training and
+    test modes for the same evaluator.** Notably DS-1000's
+    ``Ds1000Evaluator.aggregate`` returns:
+
+    - ``SCORE_SCALE × mean_raw - penalty`` (~85 scale) in training mode
+      (``apply_cost_penalty=True``), so the [0, 1] cost penalty stays
+      a tiebreaker against the percentage-scaled accuracy.
+    - ``mean_raw`` ([0, 1] fraction) in test mode
+      (``apply_cost_penalty=False``), for leaderboard parity.
+
+    Cross-task and cross-mode aggregators must be interpreted with this
+    in mind — comparing raw ``mean_score`` numbers across tasks (or
+    across test/training for the same task) is not meaningful unless
+    you've checked the aggregator's scale convention.
+    """
     total_score: float
     """Sum of all scores."""
     num_examples: int
@@ -141,6 +158,11 @@ class EvalResult:
     """Ordered list of per-example diagnostics from the evaluator."""
     had_timeouts: bool
     """Whether any evaluations timed out (leaked threads may be present)."""
+    aggregate_explanation: str = ""
+    """Explanation string from the evaluator's `aggregate` method, if any.
+    Empty when the evaluator uses the default mean aggregator. Populated
+    by tasks that apply batch-level scoring (e.g. DS-1000's cost-penalty
+    explanation in training mode)."""
 
 
 @dataclass
@@ -639,6 +661,7 @@ def eval_candidate(
         per_example_scores=result["scores"],
         per_example_diagnostics=result["diagnostics"],
         had_timeouts=result["timed_out"],
+        aggregate_explanation=result["test_results"].get("aggregate_explanation", ""),
     )
 
 

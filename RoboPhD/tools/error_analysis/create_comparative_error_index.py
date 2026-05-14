@@ -47,6 +47,12 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
     by_question = defaultdict(dict)
     by_agent = defaultdict(dict)
     agents = set()
+    # Per-agent iteration-aggregate summary fields. Populated from
+    # evaluation.json's `summary` block. The aggregate_explanation
+    # surfaces in the iteration report's per-agent score table when
+    # any value is non-empty; the aggregate_score is the canonical
+    # number (aggregator output) ELO compared.
+    agent_summaries: Dict[str, Dict] = {}
 
     # Find all evaluation files - try hierarchical structure first (Text2SQL)
     eval_files = list(iteration_dir.glob("agent_*/*/evaluations/evaluation.json"))
@@ -86,6 +92,19 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
         if not isinstance(eval_data, dict):
             continue
 
+        # Capture per-agent summary (aggregate_explanation + aggregate
+        # score) from evaluation.json. Persisted by ExternalEvaluatorDomain
+        # so this subprocess can propagate it into error_index.json
+        # without seeing in-memory researcher state.
+        summary = eval_data.get('summary') or {}
+        if summary:
+            agent_summaries[agent_name] = {
+                'aggregate_explanation': summary.get('aggregate_explanation', ''),
+                'average_score': summary.get('average_score', 0.0),
+                'score_sum': summary.get('score_sum', 0.0),
+                'total_problems': summary.get('total_problems', 0),
+            }
+
         results_dict = eval_data.get('results', {})
         if not results_dict:
             continue
@@ -120,7 +139,8 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
     return {
         'by_question': dict(by_question),
         'by_agent': dict(by_agent),
-        'agents': agents
+        'agents': agents,
+        'agent_summaries': agent_summaries,
     }
 
 
@@ -373,11 +393,28 @@ def _build_continuous_index(agents: Set[str], results: Dict, scores_by_question:
         'min_delta': round(min(all_deltas), 4),
     }
 
+    # Aggregator outputs from evaluation.json summaries — propagated
+    # into the index so the report layer can render the dual-column
+    # layout (Mean Raw Score + Mean Score + Notes) when any agent has
+    # a non-empty explanation. Empty/missing summaries → empty
+    # explanations + per-question mean fallback for aggregate scores.
+    agent_summaries = results.get('agent_summaries', {})
+    agent_explanations = {
+        strip_agent_prefix(a): (agent_summaries.get(a, {}) or {}).get('aggregate_explanation', '')
+        for a in sorted_agents
+    }
+    agent_aggregate_scores = {
+        strip_agent_prefix(a): (agent_summaries.get(a, {}) or {}).get('average_score', agent_mean_scores.get(strip_agent_prefix(a), 0.0))
+        for a in sorted_agents
+    }
+
     summary = {
         'agents': [strip_agent_prefix(a) for a in sorted_agents],
         'total_questions': total_comparable,
         'total_unique_questions': total_unique_questions,
         'agent_mean_scores': agent_mean_scores,
+        'agent_aggregate_scores': agent_aggregate_scores,
+        'agent_explanations': agent_explanations,
         'differentiation_stats': differentiation_stats,
     }
 
@@ -415,11 +452,33 @@ def _build_binary_index(agents: Set[str], results: Dict, scores_by_question: Dic
 
     _warn_sampling_inconsistency(total_unique_questions, total_comparable_questions)
 
+    # Aggregator outputs from evaluation.json summaries — same role as
+    # in the continuous branch (drives dual-column layout when any
+    # explanation is non-empty). DS-1000 lands here under the new
+    # design (per-example scores are pure 0/1, so is_continuous_scoring
+    # returns False) and needs these fields populated.
+    agent_summaries = results.get('agent_summaries', {})
+    sorted_agent_list = sorted(agents)
+    agent_explanations = {
+        strip_agent_prefix(a): (agent_summaries.get(a, {}) or {}).get('aggregate_explanation', '')
+        for a in sorted_agent_list
+    }
+    # Aggregate score (aggregator output) is what ELO compares. For
+    # tasks without a custom aggregator this equals raw accuracy.
+    agent_aggregate_scores = {
+        strip_agent_prefix(a): (agent_summaries.get(a, {}) or {}).get(
+            'average_score', agent_accuracies.get(a, 0.0) / 100.0
+        )
+        for a in sorted_agent_list
+    }
+
     summary = {
         'agents': sorted(agents),
         'total_questions': total_comparable_questions,  # Only comparable questions
         'total_unique_questions': total_unique_questions,  # All questions (for diagnostics)
         'agent_accuracies': agent_accuracies,
+        'agent_aggregate_scores': agent_aggregate_scores,
+        'agent_explanations': agent_explanations,
         'consensus_stats': {
             'all_correct': consensus_correct_count,
             'all_correct_pct': round(consensus_correct_count / total_comparable_questions * 100, 1) if total_comparable_questions > 0 else 0,

@@ -16,10 +16,14 @@ Input JSON shape:
    "example": {<Sample.model_dump()>},
    "apply_cost_penalty": true,
    "min_cost_threshold": 0.04,
-   "cost_penalty_saturation": 1.0}
+   "cost_penalty_saturation": 10.0}
 
 Output JSON shape:
   {"score": <float>, "diagnostics": <dict>}
+
+Note: the worker returns per-example raw correctness (1.0 / 0.0); the
+iteration-level cost penalty is computed by Ds1000Evaluator.aggregate
+in the parent process after all per-example results are in.
 """
 
 import json

@@ -272,7 +272,30 @@ def run_parallel_eval(
 
     scores = [score_map[i] for i in range(len(examples))]
     diagnostics = [diag_map.get(i, {}) for i in range(len(examples))]
-    mean_score = sum(scores) / len(scores) if scores else 0.0
+
+    # Iteration-level aggregate. Evaluators can opt into batch-level
+    # scoring by exposing an `aggregate(results) -> (scalar, explanation)`
+    # method. Default falls back to simple mean. The test path doesn't
+    # go through ExternalEvaluatorDomain, so we duplicate the hook here
+    # for architectural symmetry — but the evaluator may behave
+    # differently in test mode (e.g. DS-1000 disables its cost penalty
+    # via apply_cost_penalty=False, returning the leaderboard-format
+    # fraction instead of the scaled training number).
+    aggregator = getattr(evaluator, "aggregate", None)
+    if aggregator is not None:
+        # Build per-example results matching the domain layer's shape so
+        # the aggregator sees a consistent input. The test path doesn't
+        # normalize agent_cost_usd → eval_cost like the domain does, so
+        # we pass diagnostics through verbatim; aggregators that need
+        # cost must coalesce the two keys.
+        per_example_results = [
+            {"score": scores[i], **(diagnostics[i] or {})}
+            for i in range(len(scores))
+        ]
+        mean_score, aggregate_explanation = aggregator(per_example_results)
+    else:
+        mean_score = sum(scores) / len(scores) if scores else 0.0
+        aggregate_explanation = ""
 
     if not quiet:
         logger.info(f"Test score: {mean_score:.3f} ({len(scores)} problems)")
@@ -281,6 +304,7 @@ def run_parallel_eval(
         "mean_test_score": mean_score,
         "total_test_score": sum(scores),
         "total_test_problems": len(scores),
+        "aggregate_explanation": aggregate_explanation,
     }
 
     return {"scores": scores, "diagnostics": diagnostics, "test_results": test_results, "timed_out": timed_out}

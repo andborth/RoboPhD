@@ -737,11 +737,25 @@ class ParallelAgentEvolver:
 
         agents = sorted(prev_results.keys())
 
-        # Agent score table
-        lines.append("### Agent Scores")
-        lines.append("")
-        lines.append("| Agent | Score | Score Sum / Total |")
-        lines.append("|-------|-------|-------------------|")
+        # Agent score table. "Score" is the aggregator's output (the
+        # number ELO compares); "Raw / Total" is the underlying count of
+        # correct answers. They can diverge if the evaluator implements
+        # a custom aggregator (e.g. DS-1000 training applies a small
+        # cost penalty + scales to a percentage). The "Aggregate notes"
+        # block below explains each non-default aggregate.
+        any_explanation = any(
+            prev_results[a].get('aggregate_explanation') for a in agents
+        )
+        if any_explanation:
+            lines.append("### Agent Scores")
+            lines.append("")
+            lines.append("| Agent | Score | Raw / Total |")
+            lines.append("|-------|-------|-------------|")
+        else:
+            lines.append("### Agent Scores")
+            lines.append("")
+            lines.append("| Agent | Score | Score Sum / Total |")
+            lines.append("|-------|-------|-------------------|")
 
         for agent_id in agents:
             agent_data = prev_results[agent_id]
@@ -752,6 +766,15 @@ class ParallelAgentEvolver:
             lines.append(f"| {agent_display} | {average_score:.3f} | {score_sum:.1f}/{total} |")
 
         lines.append("")
+
+        if any_explanation:
+            lines.append("**Aggregate notes** (how each Score was derived from Raw / Total):")
+            lines.append("")
+            for agent_id in agents:
+                exp = prev_results[agent_id].get('aggregate_explanation') or ''
+                if exp:
+                    lines.append(f"- **{agent_id}**: {exp}")
+            lines.append("")
 
         # Failed problem IDs from evaluation.json (skip for continuous-score domains)
         if self.domain:
@@ -1444,16 +1467,25 @@ class ParallelAgentResearcher:
                     ]
                     self.performance_records[agent_id]['iteration_results'] = cleaned_results
 
-                    # Recalculate summary statistics based on cleaned results
+                    # Recalculate summary statistics based on cleaned results.
+                    # mean_score tracks the aggregator's per-iteration output
+                    # (weighted by iteration sample size), matching the live
+                    # accumulation logic. For tasks using the default mean
+                    # aggregator this collapses to score_sum/total.
                     if cleaned_results:
                         total_score_sum = sum(r.get('score_sum', 0.0) for r in cleaned_results if 'score_sum' in r)
                         total_questions = sum(r.get('examples', 0) for r in cleaned_results)
+                        total_aggregate_weighted = sum(
+                            r.get('average_score', 0.0) * r.get('examples', 0)
+                            for r in cleaned_results
+                        )
 
                         self.performance_records[agent_id]['test_count'] = len(cleaned_results)
                         self.performance_records[agent_id]['total_score_sum'] = total_score_sum
+                        self.performance_records[agent_id]['total_aggregate_weighted'] = total_aggregate_weighted
                         self.performance_records[agent_id]['total_questions'] = total_questions
                         if total_questions > 0:
-                            self.performance_records[agent_id]['mean_score'] = total_score_sum / total_questions
+                            self.performance_records[agent_id]['mean_score'] = total_aggregate_weighted / total_questions
                     else:
                         # No results left - mark for removal from performance_records
                         # (No point preserving agents with no historical data)
@@ -1650,6 +1682,7 @@ class ParallelAgentResearcher:
             self.performance_records[agent_id] = {
                 'test_count': 0,
                 'total_score_sum': 0.0,
+                'total_aggregate_weighted': 0.0,
                 'total_questions': 0,
                 'mean_score': 0.0,
                 'elo': 1500,
@@ -1930,15 +1963,34 @@ class ParallelAgentResearcher:
                     'score_sum': score_sum,
                     'total': total_questions,
                     'contexts_tested': list(contexts),
-                    'failures': 0
+                    'failures': 0,
+                    # Surfaces the aggregator's per-iteration explanation
+                    # (e.g. "Mean cost $X exceeded threshold ... penalty Y"
+                    # for DS-1000 training). Empty when the evaluator uses
+                    # the default mean aggregator.
+                    'aggregate_explanation': metadata.get('aggregate_explanation', ''),
                 }
 
-                # Update performance records
+                # Update performance records. perf['mean_score'] tracks
+                # the running weighted average of the aggregator's
+                # per-iteration output (not raw score_sum/total), so
+                # interim_report.md / final_report.md show the
+                # aggregator's canonical scale (e.g. ~85 for DS-1000
+                # training with cost penalty). For tasks without a
+                # custom aggregator, average_score == score_sum/total
+                # per iteration, so this collapses numerically to the
+                # prior cumulative raw mean.
                 perf = self.performance_records[agent_id]
                 perf['test_count'] += 1
                 perf['total_score_sum'] += score_sum
                 perf['total_questions'] += total_questions
-                perf['mean_score'] = (perf['total_score_sum'] / perf['total_questions']) if perf['total_questions'] > 0 else 0
+                perf['total_aggregate_weighted'] = (
+                    perf.get('total_aggregate_weighted', 0.0)
+                    + average_score * total_questions
+                )
+                perf['mean_score'] = (
+                    perf['total_aggregate_weighted'] / perf['total_questions']
+                ) if perf['total_questions'] > 0 else 0
                 perf['iteration_results'].append({
                     'iteration': iteration,
                     'average_score': average_score,
@@ -2019,7 +2071,13 @@ class ParallelAgentResearcher:
             raise RuntimeError(error_msg)
 
         # Detect exact-clone agents: newly created agents with identical
-        # per-problem scores to any other agent in this iteration.
+        # per-problem raw scores AND identical iteration aggregate scores
+        # as any other agent in this iteration. Both conditions matter
+        # under custom aggregators: with the DS-1000 cost penalty, two
+        # agents can produce the same per-problem correctness pattern
+        # but different aggregates (e.g. one uses expensive models, one
+        # uses cheap) — those are genuinely different strategies and
+        # must not be flagged as clones.
         clone_agents = set()
         for agent_id in selected_agents:
             agent_info = self.agent_pool.get(agent_id, {})
@@ -2029,12 +2087,14 @@ class ParallelAgentResearcher:
             new_scores = {r['context']: r['score'] for r in results_by_agent.get(agent_id, [])}
             if not new_scores:
                 continue
+            new_agg = round(iteration_results.get(agent_id, {}).get('average_score', 0.0), 6)
             # Compare against all other agents in this iteration
             for other_id in selected_agents:
                 if other_id == agent_id:
                     continue
                 other_scores = {r['context']: r['score'] for r in results_by_agent.get(other_id, [])}
-                if new_scores == other_scores:
+                other_agg = round(iteration_results.get(other_id, {}).get('average_score', 0.0), 6)
+                if new_scores == other_scores and new_agg == other_agg:
                     clone_agents.add(agent_id)
                     self.clone_detections.append((agent_id, other_id, iteration))
                     print(f"    ⚠️ Clone detected: {agent_id} has identical scores to {other_id} — ELO penalty applied, excluded from winners")
@@ -3081,6 +3141,7 @@ class ParallelAgentResearcher:
                     self.performance_records[new_agent_id] = {
                         'test_count': 0,
                         'total_score_sum': 0.0,
+                        'total_aggregate_weighted': 0.0,
                         'total_questions': 0,
                         'mean_score': 0.0,
                         'elo': 1500,
@@ -3401,12 +3462,18 @@ class ParallelAgentResearcher:
                 summary = index.get('summary', {})
                 agents = summary.get('agents', [])
                 total_q = summary.get('total_questions', 0)
+                agent_explanations = summary.get('agent_explanations', {}) or {}
+                agent_aggregate_scores = summary.get('agent_aggregate_scores', {}) or {}
 
                 if scores_by_question and is_continuous_scoring(scores_by_question):
                     report_lines.append(f"**Agents**: {', '.join(agents)}")
                     report_lines.append(f"**Total problems**: {total_q}")
                     report_lines.append("")
-                    report_lines.extend(format_continuous_score_table(scores_by_question, agents))
+                    report_lines.extend(format_continuous_score_table(
+                        scores_by_question, agents,
+                        agent_explanations=agent_explanations,
+                        agent_aggregate_scores=agent_aggregate_scores,
+                    ))
                     report_lines.extend(format_agent_errors(index))
                 else:
                     report_lines.extend(format_binary_report_comparative(index))
