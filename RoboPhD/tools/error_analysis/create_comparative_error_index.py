@@ -463,11 +463,17 @@ def _build_binary_index(agents: Set[str], results: Dict, scores_by_question: Dic
         strip_agent_prefix(a): (agent_summaries.get(a, {}) or {}).get('aggregate_explanation', '')
         for a in sorted_agent_list
     }
-    # Aggregate score (aggregator output) is what ELO compares. For
-    # tasks without a custom aggregator this equals raw accuracy.
+    # Aggregate score (aggregator output) is what ELO compares. Fallback
+    # to correct/total — the default aggregator's answer for binary tasks.
+    # Avoids the `accuracy / 100` percentage round-trip, whose `100`
+    # literal visually collides with SCORE_SCALE (also 100).
+    def _raw_mean_fallback(agent_name: str) -> float:
+        stats = by_agent.get(agent_name, {})
+        total = stats.get('total_questions', 0)
+        return (stats.get('total_correct', 0) / total) if total else 0.0
     agent_aggregate_scores = {
         strip_agent_prefix(a): (agent_summaries.get(a, {}) or {}).get(
-            'average_score', agent_accuracies.get(a, 0.0) / 100.0
+            'average_score', _raw_mean_fallback(a)
         )
         for a in sorted_agent_list
     }

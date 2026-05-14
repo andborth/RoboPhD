@@ -358,3 +358,181 @@ def test_binary_report_legacy_layout_when_no_explanations():
     assert "| Agent | Correct | Failed | Errors | Accuracy |" in joined
     assert "Mean Raw Score" not in joined
     assert "Aggregate notes" not in joined
+
+
+# ---------------------------------------------------------------------------
+# Index-builder symmetry — pins comparative ⇆ deep-focus parallel
+#
+# The two index-builder subprocesses (create_comparative_error_index.py and
+# create_deep_focus_error_index.py) both have to read summary.aggregate_explanation
+# from each agent's evaluation.json and emit agent_explanations +
+# agent_aggregate_scores in their respective error_index.json. The original
+# commit missed the deep-focus parallel — these tests pin the symmetry so a
+# future change to one builder can't silently regress the other.
+# ---------------------------------------------------------------------------
+
+
+def _binary_eval_data(correct: int, total: int, aggregate_score=None, explanation=""):
+    """Build an evaluation.json-shaped dict for index-builder tests."""
+    results = {}
+    for i in range(correct):
+        results[f"q{i:03d}"] = {"score": 1, "error": False}
+    for i in range(correct, total):
+        results[f"q{i:03d}"] = {"score": 0, "error": False}
+    summary = {
+        "total_problems": total,
+        "score_sum": float(correct),
+        "average_score": aggregate_score if aggregate_score is not None else correct / total,
+    }
+    if explanation:
+        summary["aggregate_explanation"] = explanation
+    else:
+        summary["aggregate_explanation"] = ""
+    return {"summary": summary, "results": results}
+
+
+def _write_iteration(tmp_path, eval_data_by_agent):
+    """Lay out iteration_001/agent_*/evaluation.json files."""
+    import json
+    iteration_dir = tmp_path / "iteration_001"
+    for agent_name, eval_data in eval_data_by_agent.items():
+        agent_dir = iteration_dir / agent_name
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        with open(agent_dir / "evaluation.json", "w") as f:
+            json.dump(eval_data, f)
+    return iteration_dir
+
+
+def test_comparative_index_propagates_aggregate_explanation(tmp_path):
+    """When evaluation.json has summary.aggregate_explanation populated,
+    the comparative index must emit it under summary.agent_explanations
+    (keyed by stripped agent name) and propagate summary.average_score
+    under summary.agent_aggregate_scores."""
+    from RoboPhD.tools.error_analysis.create_comparative_error_index import (
+        build_error_index,
+    )
+    iteration_dir = _write_iteration(tmp_path, {
+        "agent_a1": _binary_eval_data(17, 20, aggregate_score=85.0, explanation="Mean cost $0.025 within free zone"),
+        "agent_a2": _binary_eval_data(16, 20, aggregate_score=80.0, explanation="Mean cost $0.10 exceeded threshold"),
+    })
+    index = build_error_index(iteration_dir)
+    explanations = index["summary"].get("agent_explanations", {})
+    aggregates = index["summary"].get("agent_aggregate_scores", {})
+    assert explanations.get("a1") == "Mean cost $0.025 within free zone"
+    assert explanations.get("a2") == "Mean cost $0.10 exceeded threshold"
+    assert aggregates.get("a1") == pytest.approx(85.0)
+    assert aggregates.get("a2") == pytest.approx(80.0)
+
+
+def test_comparative_index_empty_explanations_when_default_aggregator(tmp_path):
+    """Tasks without a custom aggregator emit empty explanation strings;
+    the aggregate score equals the default mean (correct/total)."""
+    from RoboPhD.tools.error_analysis.create_comparative_error_index import (
+        build_error_index,
+    )
+    iteration_dir = _write_iteration(tmp_path, {
+        "agent_a1": _binary_eval_data(17, 20),  # no aggregate_score override → defaults to mean; no explanation
+    })
+    index = build_error_index(iteration_dir)
+    assert index["summary"].get("agent_explanations", {}).get("a1") == ""
+    assert index["summary"].get("agent_aggregate_scores", {}).get("a1") == pytest.approx(0.85)
+
+
+def _deep_focus_results(eval_data_by_agent):
+    """Build the `results` shape that _build_binary_index expects —
+    matches what load_evaluation_results would have produced, including
+    the agent_summaries block."""
+    by_question = {}
+    by_agent = {}
+    agent_summaries = {}
+    for agent_name, eval_data in eval_data_by_agent.items():
+        results_for_agent = eval_data["results"]
+        by_agent[agent_name] = results_for_agent
+        for qid, r in results_for_agent.items():
+            by_question.setdefault(qid, {})[agent_name] = r
+        summary = eval_data.get("summary") or {}
+        agent_summaries[agent_name] = {
+            "aggregate_explanation": summary.get("aggregate_explanation", ""),
+            "average_score": summary.get("average_score", 0.0),
+            "score_sum": summary.get("score_sum", 0.0),
+            "total_problems": summary.get("total_problems", 0),
+        }
+    return {
+        "by_question": by_question,
+        "by_agent": by_agent,
+        "agent_summaries": agent_summaries,
+    }
+
+
+def test_deep_focus_index_propagates_aggregate_explanation():
+    """Deep-focus index builder must propagate the same fields as the
+    comparative one — without this, evolution_output/iteration_*/
+    iteration_*_test/error_analysis_report.md would render the legacy
+    layout even when DS-1000 has explanations to surface.
+
+    Calls `_build_binary_index` directly (skipping the
+    agents-dir / newest-agent detection that `build_error_index` does)
+    so the test focuses on the summary-propagation logic that the
+    parallel builders must keep in sync.
+    """
+    from RoboPhD.tools.error_analysis.create_deep_focus_error_index import (
+        _build_binary_index,
+    )
+    eval_data_by_agent = {
+        "agent_new": _binary_eval_data(17, 20, aggregate_score=85.0, explanation="new agent free zone"),
+        "agent_baseline": _binary_eval_data(16, 20, aggregate_score=80.0, explanation="baseline free zone"),
+    }
+    results = _deep_focus_results(eval_data_by_agent)
+    scores_by_question = {
+        qid: {
+            agent.replace("agent_", "", 1): r.get("score", 0)
+            for agent, r in agents.items()
+        }
+        for qid, agents in results["by_question"].items()
+    }
+    index = _build_binary_index(
+        "agent_new", ["agent_baseline"], results, scores_by_question
+    )
+    explanations = index["summary"].get("agent_explanations", {})
+    aggregates = index["summary"].get("agent_aggregate_scores", {})
+    assert explanations.get("new") == "new agent free zone"
+    assert explanations.get("baseline") == "baseline free zone"
+    assert aggregates.get("new") == pytest.approx(85.0)
+    assert aggregates.get("baseline") == pytest.approx(80.0)
+
+
+def test_deep_focus_index_empty_when_no_aggregator():
+    """Default-aggregator case: explanations empty, aggregate scores
+    fall back to correct/total via _raw_mean_fallback. Pins the
+    fallback's behavior so a future change can't silently swap it
+    back to the `accuracy / 100` percentage round-trip."""
+    from RoboPhD.tools.error_analysis.create_deep_focus_error_index import (
+        _build_binary_index,
+    )
+    eval_data_by_agent = {
+        "agent_new": _binary_eval_data(17, 20),
+        "agent_baseline": _binary_eval_data(16, 20),
+    }
+    results = _deep_focus_results(eval_data_by_agent)
+    # Wipe the summary blocks → simulate legacy evaluation.json where
+    # summary.aggregate_explanation / average_score weren't written.
+    for v in results["agent_summaries"].values():
+        v["aggregate_explanation"] = ""
+        v.pop("average_score")
+    scores_by_question = {
+        qid: {
+            agent.replace("agent_", "", 1): r.get("score", 0)
+            for agent, r in agents.items()
+        }
+        for qid, agents in results["by_question"].items()
+    }
+    index = _build_binary_index(
+        "agent_new", ["agent_baseline"], results, scores_by_question
+    )
+    explanations = index["summary"].get("agent_explanations", {})
+    aggregates = index["summary"].get("agent_aggregate_scores", {})
+    assert explanations.get("new") == ""
+    assert explanations.get("baseline") == ""
+    # Fallback should be correct/total — NOT accuracy/100
+    assert aggregates.get("new") == pytest.approx(17 / 20)
+    assert aggregates.get("baseline") == pytest.approx(16 / 20)

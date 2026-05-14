@@ -573,9 +573,15 @@ def _build_binary_index(newest_agent: str, baseline_agents: List[str],
         strip_agent_prefix(a): (agent_summaries.get(a, {}) or {}).get('aggregate_explanation', '')
         for a in all_agents
     }
+    # Fallback is correct/total — avoids the `accuracy / 100` round-trip
+    # whose `100` collides visually with SCORE_SCALE (also 100).
+    def _raw_mean_fallback(agent_name: str) -> float:
+        stats = by_agent.get(agent_name, {})
+        total = stats.get('total_questions', 0)
+        return (stats.get('total_correct', 0) / total) if total else 0.0
     agent_aggregate_scores = {
         strip_agent_prefix(a): (agent_summaries.get(a, {}) or {}).get(
-            'average_score', by_agent.get(a, {}).get('accuracy', 0.0) / 100.0
+            'average_score', _raw_mean_fallback(a)
         )
         for a in all_agents
     }
