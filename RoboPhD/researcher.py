@@ -3604,22 +3604,28 @@ class ParallelAgentResearcher:
             s.get('cached', 0) > 0 for s in eval_cache_stats.values()
         )
 
-        # Build header dynamically: optionally include Other column
+        # Build header dynamically: optionally include Other column.
+        # Avg/Problem trails Total — it's the per-example unit number
+        # evolution compares against, computed cache-agnostically
+        # (cost ÷ problems tested, never cost ÷ fresh).
         cols = ["Agent", "Eval Cost"]
         if has_other:
             cols.append("Other")
         if has_cache:
-            cols.extend(["Cached", "Total"])
+            cols.extend(["Cached", "Total", "Avg/Problem"])
         else:
-            cols.append("Total")
+            cols.extend(["Total", "Avg/Problem"])
         header = "| " + " | ".join(cols) + " |"
         separator = "|" + "|".join(["-" * max(len(c), 3) for c in cols]) + "|"
 
         report_lines.extend(["## Agent Cost Summary", "", header, separator])
 
+        n_problems = len(sorted_contexts)
+
         for agent_id in all_agents:
             at = agent_totals[agent_id]
             agent_total = at['eval'] + at['other']
+            avg_per_problem = (agent_total / n_problems) if n_problems else 0.0
             row = [agent_id, f"${at['eval']:.2f}"]
             if has_other:
                 row.append(f"${at['other']:.2f}")
@@ -3628,23 +3634,35 @@ class ParallelAgentResearcher:
                 cached = cs.get('cached', 0)
                 total_problems = cached + cs.get('fresh', 0)
                 cache_str = f"{cached}/{total_problems}" if cached > 0 else "-"
-                row.extend([cache_str, f"**${agent_total:.2f}**"])
+                row.extend([cache_str, f"**${agent_total:.2f}**", f"${avg_per_problem:.3f}"])
             else:
-                row.append(f"**${agent_total:.2f}**")
+                row.extend([f"**${agent_total:.2f}**", f"${avg_per_problem:.3f}"])
             report_lines.append("| " + " | ".join(row) + " |")
 
-        # Total row
+        # Total row. Avg/Problem on the total is grand_total ÷ num_tests
+        # (cost across the full agent × problem grid divided by every
+        # test that ran).
         grand_total = total_eval + total_other
+        total_avg = (grand_total / num_tests) if num_tests else 0.0
         total_row = ["**Total**", f"**${total_eval:.2f}**"]
         if has_other:
             total_row.append(f"**${total_other:.2f}**")
         if has_cache:
             total_cached = sum(s.get('cached', 0) for s in eval_cache_stats.values())
             total_all = sum(s.get('cached', 0) + s.get('fresh', 0) for s in eval_cache_stats.values())
-            total_row.extend([f"**{total_cached}/{total_all}**", f"**${grand_total:.2f}**"])
+            total_row.extend([
+                f"**{total_cached}/{total_all}**",
+                f"**${grand_total:.2f}**",
+                f"**${total_avg:.3f}**",
+            ])
         else:
-            total_row.append(f"**${grand_total:.2f}**")
+            total_row.extend([f"**${grand_total:.2f}**", f"**${total_avg:.3f}**"])
         report_lines.append("| " + " | ".join(total_row) + " |")
+        report_lines.append("")
+        report_lines.append(
+            "*Avg/Problem is total cost divided by problems tested. "
+            "Cache does not affect this calculation.*"
+        )
 
         # ---- Per-model cost breakdown ------------------------------------
         # Aggregate per-agent (sum across that agent's problems) and per-
@@ -3697,27 +3715,10 @@ class ParallelAgentResearcher:
         # Cost insights
         report_lines.extend(["", "---", "", "## Cost Insights", ""])
 
-        # Most expensive agents — ordered by cost per non-cached problem so
-        # heavy-cache agents aren't artificially deflated by zero-cost reuse.
-        agent_costs = []
-        for agent in all_agents:
-            cost = agent_totals[agent]['eval']
-            if eval_cache_stats and agent in eval_cache_stats:
-                fresh = eval_cache_stats[agent].get('fresh', len(sorted_contexts))
-            else:
-                fresh = len(sorted_contexts)
-            avg = (cost / fresh) if fresh > 0 else 0.0
-            agent_costs.append((agent, cost, avg))
-        agent_costs.sort(key=lambda x: x[2], reverse=True)
-
-        report_lines.append("### Most Expensive Agents")
-        for i, (agent, cost, avg) in enumerate(agent_costs, 1):
-            report_lines.append(f"{i}. {agent}: ${cost:.2f} (avg ${avg:.3f}/problem)")
-        report_lines.append("")
-
-        # Top 3 most expensive tasks per agent (eval cost only, fresh runs only).
-        # Cached tasks have $0 eval cost from reuse and don't reflect agent behavior,
-        # so we filter them out. Skip the whole section if every agent's tasks are zero.
+        # Top 5 most expensive tasks per agent. After commit b453ee0 cached
+        # entries carry their original eval_cost, so both cached and fresh
+        # tasks with cost > 0 are surfaced here — the report is cache-
+        # agnostic in all dollar calculations.
         per_agent_top = []
         for agent_id in all_agents:
             tasks = [
@@ -3727,10 +3728,10 @@ class ParallelAgentResearcher:
                 and cost_matrix[ctx][agent_id]['eval'] > 0
             ]
             tasks.sort(key=lambda x: x[1], reverse=True)
-            per_agent_top.append((agent_id, tasks[:3]))
+            per_agent_top.append((agent_id, tasks[:5]))
 
         if any(top for _, top in per_agent_top):
-            report_lines.append("### Top 3 Most Expensive Tasks per Agent")
+            report_lines.append("### Top 5 Most Expensive Tasks per Agent")
             report_lines.append("")
             for agent_id, top in per_agent_top:
                 if not top:
@@ -3751,15 +3752,11 @@ class ParallelAgentResearcher:
                         )
                         # Strip provider prefix for inline readability
                         # (full names live in the standalone "Cost by
-                        # Model" section). Top 3 contributors, with
-                        # "+N more" if more.
-                        top3 = sorted_models[:3]
-                        rest = len(sorted_models) - 3
+                        # Model" section). Show every model — evolution
+                        # needs the full picture of where spend went.
                         parts = [
-                            f"{m.rsplit('/', 1)[-1]} ${c:.3f}" for m, c in top3
+                            f"{m.rsplit('/', 1)[-1]} ${c:.3f}" for m, c in sorted_models
                         ]
-                        if rest > 0:
-                            parts.append(f"+{rest} more")
                         line += " (" + ", ".join(parts) + ")"
                     report_lines.append(line)
                 report_lines.append("")

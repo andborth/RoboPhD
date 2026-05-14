@@ -7,12 +7,12 @@ The report has two new surfaces gated on multi-model usage:
     agent having >=2 models in its aggregate breakdown. When it fires,
     every agent gets a per-agent block (single-model agents render at
     100% for cross-agent comparison).
-  - Inline annotation on Top-3 task lines — per-(agent, task) gate; only
-    pairs that hit >=2 models get a "(model $X, model $Y)" suffix.
+  - Inline annotation on Top-5 task lines — per-(agent, task) gate; only
+    pairs that hit >=2 models get a "(model $X, model $Y, …)" suffix.
 
 Tests below pin: (a) the iteration-level gate, (b) the per-task gate,
 (c) provider-prefix stripping in the inline annotation, (d) descending
-sort within blocks/inline lists, (e) "+N more" overflow at >3 models.
+sort within blocks/inline lists, (e) full model list inline (no truncation).
 """
 import tempfile
 from pathlib import Path
@@ -58,6 +58,65 @@ def _render(results_by_agent):
             1, results_by_agent, costs_by_context, None
         )
         return (expdir / "iteration_001" / "cost_report.md").read_text()
+
+
+# ---------------------------------------------------------------------------
+# Agent Cost Summary: Avg/Problem column, footnote, no Most-Expensive section
+# ---------------------------------------------------------------------------
+
+def test_agent_summary_avg_per_problem_column():
+    """Avg/Problem = total_cost / problems_tested, cache-agnostic.
+
+    An agent with 20 problems summing to $0.20 must render `$0.010`
+    in the Avg/Problem column. This pins the cache-independence of
+    the calculation — adding cache stats to the input must not change
+    the answer (regression test for the prior cost/fresh workaround).
+    """
+    # 20 problems @ $0.01 each = $0.20 total, $0.20 / 20 = $0.010
+    rba = {
+        "iter1": [_result("iter1", f"p{i:02d}", 0.01) for i in range(20)],
+    }
+    text = _render(rba)
+    # Split on the Cost Insights heading rather than the bare `---`,
+    # since the markdown table separator (e.g. `|---|---|`) trips the
+    # naive split.
+    summary_section = text.split("## Agent Cost Summary", 1)[1].split("## Cost Insights", 1)[0]
+    # New Avg/Problem column header
+    assert "Avg/Problem" in summary_section
+    # Per-agent value
+    iter1_row = [line for line in summary_section.splitlines() if line.startswith("| iter1 ")][0]
+    assert "$0.010" in iter1_row
+    # Total row: single agent so total avg = same
+    total_row = [line for line in summary_section.splitlines() if "**Total**" in line][0]
+    assert "**$0.010**" in total_row
+
+
+def test_agent_summary_has_cache_footnote():
+    """Footnote clarifies the Avg/Problem semantics and that cache
+    plays no role in the calculation. Drops cleanly out of plain
+    legacy reports — the footnote always renders when the summary
+    table does."""
+    rba = {
+        "iter1": [_result("iter1", f"p{i:02d}", 0.01) for i in range(20)],
+    }
+    text = _render(rba)
+    summary_section = text.split("## Agent Cost Summary", 1)[1].split("## Cost Insights", 1)[0]
+    assert (
+        "Avg/Problem is total cost divided by problems tested. "
+        "Cache does not affect this calculation." in summary_section
+    )
+
+
+def test_most_expensive_agents_section_removed():
+    """The legacy '### Most Expensive Agents' section is subsumed by the
+    Avg/Problem column and must not appear in any output. Pins against
+    accidental re-introduction."""
+    rba = {
+        "seed": [_result("seed", "p1", 0.02), _result("seed", "p2", 0.03)],
+        "iter1": [_result("iter1", "p1", 0.05), _result("iter1", "p2", 0.04)],
+    }
+    text = _render(rba)
+    assert "Most Expensive Agents" not in text
 
 
 # ---------------------------------------------------------------------------
@@ -198,7 +257,7 @@ def test_inline_annotation_only_when_task_used_multiple_models():
         ],
     }
     text = _render(rba)
-    top3 = text.split("Top 3 Most Expensive Tasks per Agent", 1)[1]
+    top3 = text.split("Top 5 Most Expensive Tasks per Agent", 1)[1]
     # Multi-model task gets the inline breakdown
     assert "p_multi: $0.075 (claude-sonnet-4-5 $0.030" in top3
     # Single-model task stays bare — no parens after the cost
@@ -217,7 +276,7 @@ def test_inline_annotation_strips_provider_prefix():
         ],
     }
     text = _render(rba)
-    top3 = text.split("Top 3 Most Expensive Tasks per Agent", 1)[1]
+    top3 = text.split("Top 5 Most Expensive Tasks per Agent", 1)[1]
     # Provider prefix stripped in inline display
     assert "(claude-sonnet-4-5 $0.030, gpt-5.4 $0.025, gpt-5.4-mini $0.020)" in top3
     # But full prefixed names still in standalone "Cost by Model" section
@@ -238,7 +297,7 @@ def test_inline_annotation_descending_sort():
         ],
     }
     text = _render(rba)
-    top3 = text.split("Top 3 Most Expensive Tasks per Agent", 1)[1]
+    top3 = text.split("Top 5 Most Expensive Tasks per Agent", 1)[1]
     # Order: sonnet (highest), then gpt-5.4, then mini
     inline = top3.split("(", 1)[1].split(")", 1)[0]
     parts = [p.strip() for p in inline.split(",")]
@@ -247,8 +306,10 @@ def test_inline_annotation_descending_sort():
     assert parts[2].startswith("gpt-5.4-mini")
 
 
-def test_inline_annotation_overflow_plus_n_more():
-    """Tasks with >3 models truncate to top 3 with '+N more' suffix."""
+def test_inline_annotation_shows_all_models_no_truncation():
+    """Tasks with many models surface ALL of them inline, in descending
+    cost order — no '+N more' truncation. Evolution needs the full
+    cost breakdown to make routing decisions."""
     rba = {
         "iter1": [
             _result("iter1", "p1", 0.10, {
@@ -261,15 +322,22 @@ def test_inline_annotation_overflow_plus_n_more():
         ],
     }
     text = _render(rba)
-    top3 = text.split("Top 3 Most Expensive Tasks per Agent", 1)[1]
-    # Top 3 by cost, then "+2 more"
-    assert "claude-sonnet-4-5 $0.040" in top3
-    assert "gpt-5.4 $0.030" in top3
-    assert "gpt-5.4-mini $0.020" in top3
-    assert "+2 more" in top3
-    # The two cheapest (Haiku, Gemini) should NOT appear inline at all
-    assert "claude-haiku" not in top3.split("p1: $0.100", 1)[1].split("\n", 1)[0]
-    assert "gemini-3-flash" not in top3.split("p1: $0.100", 1)[1].split("\n", 1)[0]
+    top = text.split("Top 5 Most Expensive Tasks per Agent", 1)[1]
+    # No truncation: all five models render inline
+    assert "claude-sonnet-4-5 $0.040" in top
+    assert "gpt-5.4 $0.030" in top
+    assert "gpt-5.4-mini $0.020" in top
+    assert "gemini-3-flash-preview $0.005" in top
+    assert "claude-haiku-4-5 $0.005" in top
+    # And no overflow marker
+    assert "more)" not in top
+    assert "+" not in top.split("p1: $0.100", 1)[1].split("\n", 1)[0]
+    # Descending order pinned: sonnet first, mini cheaper than gpt-5.4
+    inline = top.split("p1: $0.100", 1)[1].split("(", 1)[1].split(")", 1)[0]
+    parts = [p.strip() for p in inline.split(",")]
+    assert parts[0].startswith("claude-sonnet-4-5")
+    assert parts[1].startswith("gpt-5.4 ")
+    assert parts[2].startswith("gpt-5.4-mini")
 
 
 # ---------------------------------------------------------------------------
