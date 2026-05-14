@@ -3620,12 +3620,19 @@ class ParallelAgentResearcher:
 
         report_lines.extend(["## Agent Cost Summary", "", header, separator])
 
-        n_problems = len(sorted_contexts)
-
+        # Per-agent Avg/Problem divides by THIS agent's evaluation count
+        # — not by len(sorted_contexts) (which is the union across all
+        # agents). In uniform-participation cases (every agent runs every
+        # problem, the common case) these are identical; in non-uniform
+        # cases (some agents had failures and didn't reach every problem)
+        # the agent-specific count is the right denominator. Both the
+        # per-agent rows and the Total row then mean "cost per single
+        # problem evaluation" at their respective scopes.
         for agent_id in all_agents:
             at = agent_totals[agent_id]
             agent_total = at['eval'] + at['other']
-            avg_per_problem = (agent_total / n_problems) if n_problems else 0.0
+            agent_n_tests = len(results_by_agent.get(agent_id, []))
+            avg_per_problem = (agent_total / agent_n_tests) if agent_n_tests else 0.0
             row = [agent_id, f"${at['eval']:.2f}"]
             if has_other:
                 row.append(f"${at['other']:.2f}")
@@ -3639,9 +3646,9 @@ class ParallelAgentResearcher:
                 row.extend([f"**${agent_total:.2f}**", f"${avg_per_problem:.3f}"])
             report_lines.append("| " + " | ".join(row) + " |")
 
-        # Total row. Avg/Problem on the total is grand_total ÷ num_tests
-        # (cost across the full agent × problem grid divided by every
-        # test that ran).
+        # Total row. Avg/Problem on the total = grand_total / num_tests
+        # — same semantic ("cost per single problem evaluation") just
+        # scoped over all (agent, problem) test instances.
         grand_total = total_eval + total_other
         total_avg = (grand_total / num_tests) if num_tests else 0.0
         total_row = ["**Total**", f"**${total_eval:.2f}**"]
@@ -3658,11 +3665,17 @@ class ParallelAgentResearcher:
         else:
             total_row.extend([f"**${grand_total:.2f}**", f"**${total_avg:.3f}**"])
         report_lines.append("| " + " | ".join(total_row) + " |")
-        report_lines.append("")
-        report_lines.append(
-            "*Avg/Problem is total cost divided by problems tested. "
-            "Cache does not affect this calculation.*"
-        )
+        # Footnote only renders when there's actual Avg/Problem data —
+        # if no tests ran, every cell is $0.000 and the disclaimer would
+        # describe a calculation that didn't happen.
+        if num_tests > 0:
+            report_lines.append("")
+            report_lines.append(
+                "*Avg/Problem is total cost divided by the number of problem "
+                "evaluations (each agent's own count for per-agent rows; the "
+                "full agent×problem grid for the Total row). "
+                "Cache does not affect this calculation.*"
+            )
 
         # ---- Per-model cost breakdown ------------------------------------
         # Aggregate per-agent (sum across that agent's problems) and per-
