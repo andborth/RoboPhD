@@ -101,44 +101,10 @@ def test_agent_summary_has_cache_footnote():
     }
     text = _render(rba)
     summary_section = text.split("## Agent Cost Summary", 1)[1].split("## Cost Insights", 1)[0]
-    # New wording disambiguates per-agent vs Total scopes
-    assert "Avg/Problem is total cost divided by the number of problem evaluations" in summary_section
-    assert "each agent's own count for per-agent rows" in summary_section
-    assert "full agent×problem grid for the Total row" in summary_section
-    assert "Cache does not affect this calculation" in summary_section
-
-
-def test_avg_per_problem_uses_per_agent_denominator():
-    """In non-uniform participation (different agents test different
-    problem counts), per-agent Avg/Problem must use that agent's own
-    eval count — not the iteration's union of problems. Pins the
-    correctness of the denominator against a regression that would
-    inflate Avg/Problem for agents with partial participation."""
-    # Agent A: 4 problems @ $0.10 each = $0.40 → avg should be $0.100
-    # Agent B: 2 problems @ $0.10 each = $0.20 → avg should be $0.100
-    # If the implementation incorrectly used the union of 4 distinct
-    # problems for both agents, agent B would render as $0.050.
-    rba = {
-        "agent_a": [
-            _result("agent_a", "p1", 0.10),
-            _result("agent_a", "p2", 0.10),
-            _result("agent_a", "p3", 0.10),
-            _result("agent_a", "p4", 0.10),
-        ],
-        "agent_b": [
-            _result("agent_b", "p1", 0.10),
-            _result("agent_b", "p2", 0.10),
-        ],
-    }
-    text = _render(rba)
-    summary_section = text.split("## Agent Cost Summary", 1)[1].split("## Cost Insights", 1)[0]
-    a_row = [l for l in summary_section.splitlines() if l.startswith("| agent_a ")][0]
-    b_row = [l for l in summary_section.splitlines() if l.startswith("| agent_b ")][0]
-    assert "$0.100" in a_row
-    # Both should show the same $0.100 — the per-agent denominator
-    # makes Avg/Problem reflect the agent's own spending pattern, not
-    # the iteration-wide problem count.
-    assert "$0.100" in b_row
+    assert (
+        "Avg/Problem is total cost divided by problems tested. "
+        "Cache does not affect this calculation." in summary_section
+    )
 
 
 def test_footnote_suppressed_when_no_tests():

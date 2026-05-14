@@ -3620,19 +3620,17 @@ class ParallelAgentResearcher:
 
         report_lines.extend(["## Agent Cost Summary", "", header, separator])
 
-        # Per-agent Avg/Problem divides by THIS agent's evaluation count
-        # — not by len(sorted_contexts) (which is the union across all
-        # agents). In uniform-participation cases (every agent runs every
-        # problem, the common case) these are identical; in non-uniform
-        # cases (some agents had failures and didn't reach every problem)
-        # the agent-specific count is the right denominator. Both the
-        # per-agent rows and the Total row then mean "cost per single
-        # problem evaluation" at their respective scopes.
+        # All agents in an iteration attempt the same problem set
+        # (sampled once at the top of run_iteration), so n_problems is
+        # also each agent's evaluation count. If an agent crashed
+        # entirely (results_by_agent[agent] is empty), agent_total
+        # is 0 and 0 / n_problems = 0 — correct without a special case.
+        n_problems = len(sorted_contexts)
+
         for agent_id in all_agents:
             at = agent_totals[agent_id]
             agent_total = at['eval'] + at['other']
-            agent_n_tests = len(results_by_agent.get(agent_id, []))
-            avg_per_problem = (agent_total / agent_n_tests) if agent_n_tests else 0.0
+            avg_per_problem = (agent_total / n_problems) if n_problems else 0.0
             row = [agent_id, f"${at['eval']:.2f}"]
             if has_other:
                 row.append(f"${at['other']:.2f}")
@@ -3646,9 +3644,10 @@ class ParallelAgentResearcher:
                 row.extend([f"**${agent_total:.2f}**", f"${avg_per_problem:.3f}"])
             report_lines.append("| " + " | ".join(row) + " |")
 
-        # Total row. Avg/Problem on the total = grand_total / num_tests
-        # — same semantic ("cost per single problem evaluation") just
-        # scoped over all (agent, problem) test instances.
+        # Total row Avg/Problem: grand_total / num_tests, where
+        # num_tests = n_agents × n_problems. Same unit as per-agent
+        # Avg/Problem ($/single evaluation); the total row is the mean
+        # of the per-agent averages.
         grand_total = total_eval + total_other
         total_avg = (grand_total / num_tests) if num_tests else 0.0
         total_row = ["**Total**", f"**${total_eval:.2f}**"]
@@ -3671,9 +3670,7 @@ class ParallelAgentResearcher:
         if num_tests > 0:
             report_lines.append("")
             report_lines.append(
-                "*Avg/Problem is total cost divided by the number of problem "
-                "evaluations (each agent's own count for per-agent rows; the "
-                "full agent×problem grid for the Total row). "
+                "*Avg/Problem is total cost divided by problems tested. "
                 "Cache does not affect this calculation.*"
             )
 
