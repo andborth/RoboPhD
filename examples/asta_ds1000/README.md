@@ -48,7 +48,7 @@ export OPENAI_API_KEY="sk-..."
 # their normal subscription credentials. Either env var works.
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."
 
-# Google — Gemini 3.1 Flash Lite / Flash Image Preview
+# Google — Gemini 3.1 Flash Lite / Gemini 3 Flash Preview
 export GOOGLE_API_KEY="..."
 ```
 
