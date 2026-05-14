@@ -294,38 +294,57 @@ def test_objective_md_uses_test_rounds_framing_placeholder():
 
 
 def test_main_plumbs_test_rounds_arg_into_engine_overrides():
-    """The `engine_overrides` dict in main.py must set
-    `"new_agent_test_rounds"` from `args.new_agent_test_rounds` rather
-    than a hardcoded `0`. AST walk: find every dict literal with a
-    `"new_agent_test_rounds"` key and assert the value is an
-    `Attribute` access on a `Name("args")` (i.e. `args.<something>`),
-    not a `Constant`. Catches a future commit that re-inlines the
-    literal — at which point the CLI flag becomes a no-op for the
-    runtime, while the framing still tracks the flag, so the framing
-    and the runtime would silently disagree."""
-    tree = ast.parse(MAIN_PY.read_text())
-    found_dicts: list[tuple[int, ast.expr]] = []
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Dict):
-            continue
-        for k, v in zip(node.keys, node.values):
-            if (
-                isinstance(k, ast.Constant)
-                and k.value == "new_agent_test_rounds"
-            ):
-                found_dicts.append((node.lineno, v))
+    """When the user provides `--new-agent-test-rounds N`, the value
+    must reach engine_overrides as `args.new_agent_test_rounds`.
 
-    assert found_dicts, (
-        "Couldn't find any dict literal in main.py with a "
-        "'new_agent_test_rounds' key — has the engine_overrides "
-        "construction been refactored?"
+    Post b453ee0+ pattern: instead of a dict literal `{"new_agent_test_rounds": args.X}`,
+    main.py guards the assignment behind `if args.new_agent_test_rounds is not None`
+    so the CLI default (now `None`) doesn't silently clobber the
+    original run's setting on `--resume`. This test walks for the
+    subscript assignment `engine_overrides["new_agent_test_rounds"] = args.new_agent_test_rounds`
+    inside an `if`-block, and asserts the RHS is `args.new_agent_test_rounds`.
+
+    Catches regressions where the conditional is removed (CLI default
+    re-clobbers on resume) OR where the value source changes to a
+    hardcoded literal (CLI flag becomes inert)."""
+    tree = ast.parse(MAIN_PY.read_text())
+    # Find every assignment of the form engine_overrides[K] = V where
+    # K is the literal "new_agent_test_rounds". This covers either the
+    # dict-literal pattern OR the subscript-assignment pattern.
+    found: list[tuple[int, ast.expr]] = []
+    for node in ast.walk(tree):
+        # Subscript assignment: engine_overrides["new_agent_test_rounds"] = X
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if (
+                    isinstance(target, ast.Subscript)
+                    and isinstance(target.value, ast.Name)
+                    and target.value.id == "engine_overrides"
+                    and isinstance(target.slice, ast.Constant)
+                    and target.slice.value == "new_agent_test_rounds"
+                ):
+                    found.append((node.lineno, node.value))
+        # Dict literal: {"new_agent_test_rounds": X, ...}
+        if isinstance(node, ast.Dict):
+            for k, v in zip(node.keys, node.values):
+                if (
+                    isinstance(k, ast.Constant)
+                    and k.value == "new_agent_test_rounds"
+                ):
+                    found.append((node.lineno, v))
+
+    assert found, (
+        "Couldn't find any assignment in main.py setting "
+        "engine_overrides[\"new_agent_test_rounds\"] — has the "
+        "construction been refactored away?"
     )
     bad: list[str] = []
-    for lineno, value_node in found_dicts:
+    for lineno, value_node in found:
         ok = (
             isinstance(value_node, ast.Attribute)
             and isinstance(value_node.value, ast.Name)
             and value_node.value.id == "args"
+            and value_node.attr == "new_agent_test_rounds"
         )
         if not ok:
             rendered = ast.unparse(value_node)
@@ -334,7 +353,96 @@ def test_main_plumbs_test_rounds_arg_into_engine_overrides():
         "engine_overrides[\"new_agent_test_rounds\"] must be set from "
         "`args.new_agent_test_rounds` so the --new-agent-test-rounds "
         "CLI flag actually changes runtime behavior. Found a "
-        "non-args.* assignment:\n  " + "\n  ".join(bad)
+        "non-args.new_agent_test_rounds assignment:\n  " + "\n  ".join(bad)
+    )
+
+
+def test_main_does_not_pack_test_rounds_default_into_engine_overrides():
+    """Regression for the resume-clobber bug: when the user does NOT
+    set --new-agent-test-rounds, the constructed engine_overrides
+    dict must not contain a 'new_agent_test_rounds' key. Otherwise
+    `--resume` reapplies the CLI default (0) as a delta on the
+    resume iteration, silently overriding whatever the original run
+    set via the same flag (api.py:327).
+
+    Verified two ways:
+      1. The argparse flag has default=None (so an unset CLI value
+         arrives as None, not 0).
+      2. The engine_overrides assignment is guarded by an `if args.X
+         is not None` check, so None values never reach the dict.
+
+    Both must hold; either alone is insufficient."""
+    tree = ast.parse(MAIN_PY.read_text())
+
+    # (1) argparse default must be None.
+    argparse_default = None
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        # Looking for p.add_argument("--new-agent-test-rounds", ..., default=...)
+        if not (isinstance(node.func, ast.Attribute) and node.func.attr == "add_argument"):
+            continue
+        if not (node.args and isinstance(node.args[0], ast.Constant)
+                and node.args[0].value == "--new-agent-test-rounds"):
+            continue
+        for kw in node.keywords:
+            if kw.arg == "default":
+                argparse_default = kw.value
+                break
+    assert argparse_default is not None, (
+        "Couldn't find p.add_argument('--new-agent-test-rounds', ...) — "
+        "has the flag been removed?"
+    )
+    assert (
+        isinstance(argparse_default, ast.Constant)
+        and argparse_default.value is None
+    ), (
+        f"--new-agent-test-rounds must default to None (not {ast.unparse(argparse_default)!r}) "
+        "so the engine_overrides packing can distinguish 'user set this' "
+        "from 'framework default'. A non-None default re-introduces the "
+        "resume-clobber bug."
+    )
+
+    # (2) The assignment engine_overrides["new_agent_test_rounds"] = ...
+    # must live inside an `if`-block guarding on args.new_agent_test_rounds.
+    found_guarded = False
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.If):
+            continue
+        # The if-test must reference args.new_agent_test_rounds
+        refs_arg = any(
+            isinstance(n, ast.Attribute)
+            and isinstance(n.value, ast.Name)
+            and n.value.id == "args"
+            and n.attr == "new_agent_test_rounds"
+            for n in ast.walk(node.test)
+        )
+        if not refs_arg:
+            continue
+        # And the body must assign engine_overrides[...] = ...
+        for stmt in node.body:
+            if not isinstance(stmt, ast.Assign):
+                continue
+            for target in stmt.targets:
+                if (
+                    isinstance(target, ast.Subscript)
+                    and isinstance(target.value, ast.Name)
+                    and target.value.id == "engine_overrides"
+                    and isinstance(target.slice, ast.Constant)
+                    and target.slice.value == "new_agent_test_rounds"
+                ):
+                    found_guarded = True
+                    break
+            if found_guarded:
+                break
+        if found_guarded:
+            break
+    assert found_guarded, (
+        "engine_overrides['new_agent_test_rounds'] must be set inside an "
+        "`if args.new_agent_test_rounds is not None` block. Without the "
+        "guard, the CLI default propagates into engine_overrides and "
+        "silently overrides the original run's value on --resume "
+        "(api.py:327 reapplies engine_overrides as a delta on resume)."
     )
 
 

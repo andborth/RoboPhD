@@ -327,7 +327,7 @@ def parse_args():
                    help=f"Override the default per-iteration sample size ({DEFAULT_EXAMPLES_PER_ITERATION})")
     p.add_argument("--evaluation-budget", type=int, default=None,
                    help="Override the default evaluation budget (iter-bounded)")
-    p.add_argument("--new-agent-test-rounds", type=int, default=0,
+    p.add_argument("--new-agent-test-rounds", type=int, default=None,
                    help="Number of Deep-Focus refinement rounds per new agent. "
                         "0 (default) skips Round 2 — each agent is evaluated once "
                         "per iteration. >=1 evaluates each new agent on a fresh "
@@ -335,7 +335,9 @@ def parse_args():
                         "doubles per-agent training exposure and swaps "
                         "objective.md to the Round-2-aware framing that gives "
                         "the agent extra incentive to avoid overfitting to the "
-                        "visible batch.")
+                        "visible batch. Default=None (not user-set) so that on "
+                        "--resume an unset CLI value doesn't silently overwrite "
+                        "the original run's setting via engine_overrides.")
 
     p.add_argument("--allow-stronger-models", action="store_true",
                    help="Expose three stronger model handles to evolved agents: "
@@ -461,8 +463,15 @@ def main():
         parsed_engine_config["new_agent_test_rounds"] = int(
             parsed_engine_config["new_agent_test_rounds"]
         )
+    # `args.new_agent_test_rounds` is None when the CLI flag was not
+    # set — defaults to 0 here at the read site for the framing path.
+    # The None-as-default pattern is intentional: it lets the
+    # engine_overrides packing below distinguish "user set this" from
+    # "framework default", so --resume doesn't silently clobber the
+    # original run's value with the CLI default.
     effective_test_rounds = parsed_engine_config.get(
-        "new_agent_test_rounds", args.new_agent_test_rounds
+        "new_agent_test_rounds",
+        args.new_agent_test_rounds if args.new_agent_test_rounds is not None else 0,
     )
 
     test_rounds_framing = _test_rounds_framing(effective_test_rounds)
@@ -601,21 +610,22 @@ def main():
     num_iterations = args.num_iterations if args.num_iterations is not None else default_iterations
     evaluation_budget = args.evaluation_budget if args.evaluation_budget is not None else default_budget
 
-    # Default --new-agent-test-rounds=0 disables Deep Focus's round-2
-    # refinement eval. Round 2 evaluates each new agent on a fresh batch
-    # of training examples within the same iteration, effectively
-    # doubling per-agent training exposure. The default of 0 pairs with
-    # the n=20 default to keep exposure comparable to the previous
-    # n=10 + 1-round regime — see DEFAULT_EXAMPLES_PER_ITERATION for the
-    # full rationale. Pass --new-agent-test-rounds 1 (or higher) to
-    # opt into Round 2; that also swaps objective.md paragraph 3 to the
-    # Round-2-aware wording (see the test_rounds_framing block above).
+    # Build engine_overrides containing ONLY user-explicitly-set CLI
+    # values (plus anything from --engine-config). Defaults are
+    # deliberately NOT included: on --resume the engine_overrides dict
+    # is reapplied as a delta on the resume iteration (api.py:327), so
+    # any CLI default packed here would silently clobber the original
+    # run's value. The argparse defaults are None for exactly this
+    # reason — a None CLI arg means "user didn't set it; use whatever
+    # was in effect before".
+    #
     # parsed_engine_config was already loaded above for
     # effective_test_rounds; reuse it to avoid parsing JSON twice.
-    engine_overrides: dict = {
-        "examples_per_iteration": examples_per_iter,
-        "new_agent_test_rounds": args.new_agent_test_rounds,
-    }
+    engine_overrides: dict = {}
+    if args.examples_per_iteration is not None:
+        engine_overrides["examples_per_iteration"] = args.examples_per_iteration
+    if args.new_agent_test_rounds is not None:
+        engine_overrides["new_agent_test_rounds"] = args.new_agent_test_rounds
     engine_overrides.update(parsed_engine_config)
 
     if args.engine == "gepa":

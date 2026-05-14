@@ -324,7 +324,14 @@ def _build_resume_kwargs(
     else:
         num_iterations = checkpoint_num_iterations
 
-    # Apply engine_overrides as a delta on the resume iteration
+    # Apply engine_overrides as a delta on the resume iteration.
+    # Convention: callers (typically each example's main.py) must
+    # populate engine_overrides ONLY with values the user explicitly
+    # set on the resume command line. CLI defaults packed here would
+    # silently clobber the original run's setting — every key applied
+    # here overwrites whatever was in effect at iteration `resume_from`.
+    # See examples/asta_ds1000/main.py for the conditional-packing
+    # pattern (argparse default=None + `if args.X is not None`).
     if cfg.engine_overrides:
         config_manager.apply_delta(
             iteration=resume_from,
