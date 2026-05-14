@@ -146,6 +146,11 @@ def load_evaluation_results(iteration_dirs: List[Path]) -> Dict:
     """
     by_question = defaultdict(dict)
     by_agent = defaultdict(dict)
+    # Per-agent iteration-aggregate summary, parallel to the comparative
+    # builder. Captures evaluation.json's `summary.aggregate_explanation`
+    # so the deep-focus report can render the dual-column layout when
+    # an aggregator is in use (e.g. DS-1000 training).
+    agent_summaries: Dict[str, Dict] = {}
 
     for iteration_dir in iteration_dirs:
         eval_files = _find_eval_files(iteration_dir)
@@ -168,6 +173,15 @@ def load_evaluation_results(iteration_dirs: List[Path]) -> Dict:
             if not agent_name:
                 continue
 
+            summary = eval_data.get('summary') or {}
+            if summary:
+                agent_summaries[agent_name] = {
+                    'aggregate_explanation': summary.get('aggregate_explanation', ''),
+                    'average_score': summary.get('average_score', 0.0),
+                    'score_sum': summary.get('score_sum', 0.0),
+                    'total_problems': summary.get('total_problems', 0),
+                }
+
             results = eval_data.get('results', {})
             # Handle case where results is a list (e.g., timeout with no predictions)
             if not isinstance(results, dict):
@@ -178,7 +192,8 @@ def load_evaluation_results(iteration_dirs: List[Path]) -> Dict:
 
     return {
         'by_question': dict(by_question),
-        'by_agent': dict(by_agent)
+        'by_agent': dict(by_agent),
+        'agent_summaries': agent_summaries,
     }
 
 
@@ -465,6 +480,20 @@ def _build_continuous_index(newest_agent: str, baseline_agents: List[str],
     best_baseline_mean = max(baseline_means) if baseline_means else 0.0
     total_questions = len(results['by_agent'].get(newest_agent, {}))
 
+    # Aggregator outputs — see _build_binary_index above for parallel.
+    agent_summaries = results.get('agent_summaries', {})
+    all_agents = [newest_agent] + baseline_agents
+    agent_explanations = {
+        strip_agent_prefix(a): (agent_summaries.get(a, {}) or {}).get('aggregate_explanation', '')
+        for a in all_agents
+    }
+    agent_aggregate_scores = {
+        strip_agent_prefix(a): (agent_summaries.get(a, {}) or {}).get(
+            'average_score', by_agent.get(strip_agent_prefix(a), {}).get('mean_score', 0.0)
+        )
+        for a in all_agents
+    }
+
     summary = {
         'new_agent': new_display,
         'baseline_agents': baseline_displays,
@@ -474,6 +503,8 @@ def _build_continuous_index(newest_agent: str, baseline_agents: List[str],
         'delta': round(new_mean - best_baseline_mean, 4),
         'new_wins_all_count': len(new_wins_all),
         'new_losses_all_count': len(new_losses_all),
+        'agent_explanations': agent_explanations,
+        'agent_aggregate_scores': agent_aggregate_scores,
     }
 
     return {
@@ -514,6 +545,7 @@ def _build_binary_index(newest_agent: str, baseline_agents: List[str],
             'total_correct': total_correct,
             'total_failed': total_questions - total_correct,
             'total_errors': len(error_ids),
+            'total_questions': total_questions,
             'accuracy': round(accuracy, 1),
             'failed_ids': failed_ids,
             'error_ids': error_ids,
@@ -531,6 +563,23 @@ def _build_binary_index(newest_agent: str, baseline_agents: List[str],
     consensus_failures = len(global_cross_agent['new_vs_baseline']['consensus_failures'])
     mixed_results = len(global_cross_agent['new_vs_baseline']['mixed_results'])
 
+    # Aggregator outputs from evaluation.json summaries — same pattern
+    # as create_comparative_error_index._build_binary_index. Drives the
+    # report layer's dual-column layout when any agent has a non-empty
+    # explanation (e.g. DS-1000 training cost-penalty annotation).
+    agent_summaries = results.get('agent_summaries', {})
+    all_agents = [newest_agent] + baseline_agents
+    agent_explanations = {
+        strip_agent_prefix(a): (agent_summaries.get(a, {}) or {}).get('aggregate_explanation', '')
+        for a in all_agents
+    }
+    agent_aggregate_scores = {
+        strip_agent_prefix(a): (agent_summaries.get(a, {}) or {}).get(
+            'average_score', by_agent.get(a, {}).get('accuracy', 0.0) / 100.0
+        )
+        for a in all_agents
+    }
+
     summary = {
         'new_agent': newest_agent,
         'baseline_agents': baseline_agents,
@@ -538,6 +587,8 @@ def _build_binary_index(newest_agent: str, baseline_agents: List[str],
         'new_agent_failed': new_agent_stats.get('total_failed', 0),
         'new_agent_errors': new_agent_stats.get('total_errors', 0),
         'new_agent_accuracy': new_agent_stats.get('accuracy', 0),
+        'agent_explanations': agent_explanations,
+        'agent_aggregate_scores': agent_aggregate_scores,
         'baseline_comparison': {
             'unique_failures': unique_failures,         # New failed, all baselines succeeded
             'unique_successes': unique_successes,       # New succeeded, all baselines failed
