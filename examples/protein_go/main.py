@@ -73,7 +73,7 @@ def parse_args():
                         default="robophd", help="Optimization engine")
 
     # Task-specific
-    parser.add_argument("--model", default="openrouter/google/gemini-3.1-flash-lite-preview",
+    parser.add_argument("--model", default="openrouter/google/gemini-3.1-flash-lite",
                         help="LLM for the agent's llm() callable. Default matches arc_agi_1's sibling tier.")
     parser.add_argument("--reasoning-effort", default="medium",
                         choices=["none", "low", "medium", "high"],

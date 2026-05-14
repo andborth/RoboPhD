@@ -37,7 +37,7 @@ import litellm
 
 # Silence litellm's "Provider List: https://docs.litellm.ai/docs/providers"
 # stderr chatter that fires on every call for multi-slash model strings
-# (e.g. openrouter/google/gemini-3.1-flash-lite-preview). Matches the
+# (e.g. openrouter/google/gemini-3.1-flash-lite). Matches the
 # pattern used in examples/docfinqa/evaluator.py.
 litellm.suppress_debug_info = True
 
@@ -54,7 +54,7 @@ from tools import (
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SOLVER_MODEL = "openrouter/google/gemini-3.1-flash-lite-preview"
+DEFAULT_SOLVER_MODEL = "openrouter/google/gemini-3.1-flash-lite"
 DEFAULT_EMBED_MODEL = "text-embedding-3-small"
 
 HERE = Path(__file__).resolve().parent

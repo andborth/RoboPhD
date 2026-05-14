@@ -61,7 +61,17 @@ def model_registry():
 
 def test_flash_lite_defaults_to_low(model_registry):
     assert (
-        model_registry.GEMINI_3_1_FLASH_LITE_PREVIEW.config.reasoning_effort == "low"
+        model_registry.GEMINI_3_1_FLASH_LITE.config.reasoning_effort == "low"
+    )
+
+
+def test_flash_lite_preview_alias_points_to_ga(model_registry):
+    """Backwards-compat: evolved agents from before the preview→GA
+    migration still import GEMINI_3_1_FLASH_LITE_PREVIEW. The alias
+    must resolve to the same Model handle as the canonical GA name."""
+    assert (
+        model_registry.GEMINI_3_1_FLASH_LITE_PREVIEW
+        is model_registry.GEMINI_3_1_FLASH_LITE
     )
 
 

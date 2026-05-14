@@ -82,7 +82,7 @@ The following model handles are available, imported from `model_registry`. They 
 | `GPT_5_4` | 2.50 | 15.00 | `"none"` | `"low"`, `"medium"`, `"high"` |
 | `CLAUDE_HAIKU_4_5` | 1.00 | 5.00 | `"none"` | `"low"`, `"medium"`, `"high"` |
 | `CLAUDE_SONNET_4_6` | 3.00 | 15.00 | `"none"` | `"low"`, `"medium"`, `"high"` |
-| `GEMINI_3_1_FLASH_LITE_PREVIEW` | 0.25 | 1.50 | `"low"` | `"low"`, `"high"` |
+| `GEMINI_3_1_FLASH_LITE` | 0.25 | 1.50 | `"low"` | `"low"`, `"high"` |
 | `GEMINI_3_FLASH_PREVIEW` | 0.50 | 3.00 | `"low"` | `"low"`, `"high"` |
 ${STRONGER_MODELS_TABLE_ROWS}
 

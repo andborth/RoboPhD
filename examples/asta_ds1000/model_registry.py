@@ -5,7 +5,7 @@ into a cheap/fast tier and a stronger/slower tier:
 
   OpenAI:    GPT_5_4_MINI                  / GPT_5_4
   Anthropic: CLAUDE_HAIKU_4_5              / CLAUDE_SONNET_4_6
-  Google:    GEMINI_3_1_FLASH_LITE_PREVIEW / GEMINI_3_FLASH_PREVIEW
+  Google:    GEMINI_3_1_FLASH_LITE          / GEMINI_3_FLASH_PREVIEW
 
 When `ASTA_DS1000_ALLOW_STRONGER_MODELS=1` is set in the environment
 (via main.py's `--allow-stronger-models` flag), three additional
@@ -45,7 +45,7 @@ _CLAUDE_SONNET_4_6_ID = "anthropic/claude-sonnet-4-6"
 # date stamp to Sonnet or removing it from Haiku without
 # verifying the resulting strings still resolve. Inspect-AI
 # routes to whatever the provider's canonical id is.
-_GEMINI_3_1_FLASH_LITE_PREVIEW_ID = "google/gemini-3.1-flash-lite-preview"
+_GEMINI_3_1_FLASH_LITE_ID = "google/gemini-3.1-flash-lite"
 _GEMINI_3_FLASH_PREVIEW_ID = "google/gemini-3-flash-preview"
 
 # RoboPhD convention: prefer ANTHROPIC_API_KEY_FOR_ROBOPHD over
@@ -102,10 +102,13 @@ CLAUDE_SONNET_4_6 = get_model(_CLAUDE_SONNET_4_6_ID, api_key=_ANTHROPIC_API_KEY)
 # already-conservative baselines that don't drive timeouts. If a future
 # timeout pattern emerges on a Sonnet or GPT-5 *opt-in* reasoning path,
 # this is the place to add an analogous pin.
-GEMINI_3_1_FLASH_LITE_PREVIEW = get_model(
-    _GEMINI_3_1_FLASH_LITE_PREVIEW_ID,
+GEMINI_3_1_FLASH_LITE = get_model(
+    _GEMINI_3_1_FLASH_LITE_ID,
     config=GenerateConfig(reasoning_effort="low"),
 )
+# Backwards-compat for evolved agents created before the preview→GA migration.
+# Code-only; not surfaced in background.md or any doc.
+GEMINI_3_1_FLASH_LITE_PREVIEW = GEMINI_3_1_FLASH_LITE
 GEMINI_3_FLASH_PREVIEW = get_model(
     _GEMINI_3_FLASH_PREVIEW_ID,
     config=GenerateConfig(reasoning_effort="low"),

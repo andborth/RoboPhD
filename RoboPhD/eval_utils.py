@@ -79,8 +79,8 @@ def extract_response_cost(resp, model: str) -> float:
     ``litellm.completion_cost(resp)`` raises ``"This model isn't mapped yet"``
     when the provider returns a dated or versioned model name that isn't in
     litellm's pricing database. OpenRouter is a frequent offender: a request
-    for ``openrouter/google/gemini-3.1-flash-lite-preview`` comes back with
-    ``resp.model`` like ``google/gemini-3.1-flash-lite-preview-20260303``, and
+    for ``openrouter/google/gemini-3.1-flash-lite`` comes back with
+    ``resp.model`` like ``google/gemini-3.1-flash-lite-20260507``, and
     the dated suffix isn't indexed even when the undated alias is.
 
     The actual billed cost is still available in the response — OpenRouter

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-DEFAULT_SOLVER_MODEL = "openrouter/google/gemini-3.1-flash-lite-preview"
+DEFAULT_SOLVER_MODEL = "openrouter/google/gemini-3.1-flash-lite"
 
 
 

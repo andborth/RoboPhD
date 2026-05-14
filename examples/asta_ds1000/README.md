@@ -35,7 +35,7 @@ DS-1000 evolution may pick any of six solver models, paired by family into a che
 
 - OpenAI: GPT-5.4 Mini / GPT-5.4 (full)
 - Anthropic: Claude Haiku 4.5 / Claude Sonnet 4.6
-- Google: Gemini 3.1 Flash Lite Preview / Gemini 3 Flash Preview
+- Google: Gemini 3.1 Flash Lite / Gemini 3 Flash Preview
 
 All three provider keys must be set before running, even if your seed only uses one — evolution can produce an agent that uses any of the six at any iteration, and a 401 mid-run is the worst time to discover a missing key.
 
@@ -48,7 +48,7 @@ export OPENAI_API_KEY="sk-..."
 # their normal subscription credentials. Either env var works.
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."
 
-# Google — Gemini 3.1 Flash Lite Preview / Flash Image Preview
+# Google — Gemini 3.1 Flash Lite / Flash Image Preview
 export GOOGLE_API_KEY="..."
 ```
 
@@ -179,7 +179,7 @@ Six pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside t
 
 - OpenAI: `GPT_5_4_MINI`, `GPT_5_4`
 - Anthropic: `CLAUDE_HAIKU_4_5`, `CLAUDE_SONNET_4_6`
-- Google: `GEMINI_3_1_FLASH_LITE_PREVIEW`, `GEMINI_3_FLASH_PREVIEW`
+- Google: `GEMINI_3_1_FLASH_LITE`, `GEMINI_3_FLASH_PREVIEW`
 
 Pairing same-family handles by tier (mini/standard) lets evolution choose between cheap-and-fast or stronger-and-slower per call. Evolved agents `from model_registry import` whichever they want and call `.generate()`; the underlying model strings are not part of the evolvable artifact, so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — an agent produced at iteration 4 might use Claude Sonnet, and a 401 mid-run is a worse failure mode than a startup error.
 
