@@ -610,22 +610,43 @@ def main():
     num_iterations = args.num_iterations if args.num_iterations is not None else default_iterations
     evaluation_budget = args.evaluation_budget if args.evaluation_budget is not None else default_budget
 
-    # Build engine_overrides containing ONLY user-explicitly-set CLI
-    # values (plus anything from --engine-config). Defaults are
-    # deliberately NOT included: on --resume the engine_overrides dict
-    # is reapplied as a delta on the resume iteration (api.py:327), so
-    # any CLI default packed here would silently clobber the original
-    # run's value. The argparse defaults are None for exactly this
-    # reason — a None CLI arg means "user didn't set it; use whatever
-    # was in effect before".
+    # Build engine_overrides. Two principles:
+    #
+    # (1) User-explicit CLI values always propagate (this iteration of
+    #     resume, or initial run — same behavior).
+    # (2) On --resume with NO user value, don't pack anything: the
+    #     original run's setting must survive. api.py:327 reapplies
+    #     engine_overrides as a delta on the resume iteration, so any
+    #     CLI default packed here would silently clobber it.
+    # (3) On INITIAL RUN with no user value, pack DS-1000's task-
+    #     specific default if it differs from RoboPhD's framework
+    #     default (config_manager.py:get_defaults). Otherwise the
+    #     task's intent is silently lost to the framework default.
+    #
+    # examples_per_iteration: DS-1000 default (20) == RoboPhD default
+    # (20), so omitting it is safe — the framework default lands at
+    # the right value anyway. Only pack when the user explicitly set
+    # something different.
+    #
+    # new_agent_test_rounds: DS-1000 wants 0 (Round 2 disabled by
+    # default to keep training exposure comparable to the n=10 +
+    # 1-round regime — see DEFAULT_EXAMPLES_PER_ITERATION comment).
+    # RoboPhD's framework default is 1. So on initial runs we MUST
+    # pack the task default; only on resume do we omit it.
     #
     # parsed_engine_config was already loaded above for
     # effective_test_rounds; reuse it to avoid parsing JSON twice.
+    is_resume = args.resume is not None
     engine_overrides: dict = {}
     if args.examples_per_iteration is not None:
         engine_overrides["examples_per_iteration"] = args.examples_per_iteration
     if args.new_agent_test_rounds is not None:
         engine_overrides["new_agent_test_rounds"] = args.new_agent_test_rounds
+    elif not is_resume:
+        # Initial run with no user-set value: stamp DS-1000's task
+        # default into iteration 1's config so it persists into the
+        # checkpoint and is inherited by future iterations.
+        engine_overrides["new_agent_test_rounds"] = 0
     engine_overrides.update(parsed_engine_config)
 
     if args.engine == "gepa":

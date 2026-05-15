@@ -297,23 +297,21 @@ def test_main_plumbs_test_rounds_arg_into_engine_overrides():
     """When the user provides `--new-agent-test-rounds N`, the value
     must reach engine_overrides as `args.new_agent_test_rounds`.
 
-    Post b453ee0+ pattern: instead of a dict literal `{"new_agent_test_rounds": args.X}`,
-    main.py guards the assignment behind `if args.new_agent_test_rounds is not None`
-    so the CLI default (now `None`) doesn't silently clobber the
-    original run's setting on `--resume`. This test walks for the
-    subscript assignment `engine_overrides["new_agent_test_rounds"] = args.new_agent_test_rounds`
-    inside an `if`-block, and asserts the RHS is `args.new_agent_test_rounds`.
+    Post-fix pattern: the CLI value is packed in an `if`-guarded
+    assignment so the (now-None) default doesn't silently clobber on
+    resume. A separate elif/else branch may pack DS-1000's task-
+    specific default (literal `0`) for the initial-run case; that's
+    a different invariant tested by
+    test_main_does_not_clobber_test_rounds_on_resume.
 
-    Catches regressions where the conditional is removed (CLI default
-    re-clobbers on resume) OR where the value source changes to a
-    hardcoded literal (CLI flag becomes inert)."""
+    This test verifies the user-explicit branch: at least one
+    assignment to engine_overrides["new_agent_test_rounds"] must
+    have RHS `args.new_agent_test_rounds`. Catches regressions
+    where the CLI flag becomes inert (RHS is only a hardcoded
+    literal)."""
     tree = ast.parse(MAIN_PY.read_text())
-    # Find every assignment of the form engine_overrides[K] = V where
-    # K is the literal "new_agent_test_rounds". This covers either the
-    # dict-literal pattern OR the subscript-assignment pattern.
     found: list[tuple[int, ast.expr]] = []
     for node in ast.walk(tree):
-        # Subscript assignment: engine_overrides["new_agent_test_rounds"] = X
         if isinstance(node, ast.Assign):
             for target in node.targets:
                 if (
@@ -324,7 +322,6 @@ def test_main_plumbs_test_rounds_arg_into_engine_overrides():
                     and target.slice.value == "new_agent_test_rounds"
                 ):
                     found.append((node.lineno, node.value))
-        # Dict literal: {"new_agent_test_rounds": X, ...}
         if isinstance(node, ast.Dict):
             for k, v in zip(node.keys, node.values):
                 if (
@@ -338,40 +335,44 @@ def test_main_plumbs_test_rounds_arg_into_engine_overrides():
         "engine_overrides[\"new_agent_test_rounds\"] — has the "
         "construction been refactored away?"
     )
-    bad: list[str] = []
-    for lineno, value_node in found:
-        ok = (
-            isinstance(value_node, ast.Attribute)
-            and isinstance(value_node.value, ast.Name)
-            and value_node.value.id == "args"
-            and value_node.attr == "new_agent_test_rounds"
-        )
-        if not ok:
-            rendered = ast.unparse(value_node)
-            bad.append(f"line {lineno}: value is `{rendered}`")
-    assert not bad, (
-        "engine_overrides[\"new_agent_test_rounds\"] must be set from "
-        "`args.new_agent_test_rounds` so the --new-agent-test-rounds "
-        "CLI flag actually changes runtime behavior. Found a "
-        "non-args.new_agent_test_rounds assignment:\n  " + "\n  ".join(bad)
+    # At least one assignment must source from args.new_agent_test_rounds.
+    # (Others may exist for the task-default branch; that's fine.)
+    has_args_source = any(
+        isinstance(v, ast.Attribute)
+        and isinstance(v.value, ast.Name)
+        and v.value.id == "args"
+        and v.attr == "new_agent_test_rounds"
+        for _, v in found
+    )
+    assert has_args_source, (
+        "engine_overrides[\"new_agent_test_rounds\"] must include at "
+        "least one assignment sourcing from `args.new_agent_test_rounds` "
+        "so the --new-agent-test-rounds CLI flag actually changes "
+        "runtime behavior. Found assignments:\n  "
+        + "\n  ".join(f"line {lineno}: `{ast.unparse(v)}`" for lineno, v in found)
     )
 
 
-def test_main_does_not_pack_test_rounds_default_into_engine_overrides():
-    """Regression for the resume-clobber bug: when the user does NOT
-    set --new-agent-test-rounds, the constructed engine_overrides
-    dict must not contain a 'new_agent_test_rounds' key. Otherwise
-    `--resume` reapplies the CLI default (0) as a delta on the
-    resume iteration, silently overriding whatever the original run
-    set via the same flag (api.py:327).
+def test_main_does_not_clobber_test_rounds_on_resume():
+    """Regression for the resume-clobber bug + DS-1000 task-default
+    preservation.
 
-    Verified two ways:
-      1. The argparse flag has default=None (so an unset CLI value
-         arrives as None, not 0).
+    Two invariants:
+      1. The argparse flag has default=None so an unset CLI value
+         arrives as None (distinguishable from "user explicitly
+         passed 0").
       2. The engine_overrides assignment is guarded by an `if args.X
-         is not None` check, so None values never reach the dict.
+         is not None` block so unset values don't propagate.
+      3. The else/elif fallback that packs DS-1000's task default
+         (0, which differs from RoboPhD's framework default of 1)
+         must check `is_resume` / `args.resume` — otherwise the
+         initial-run default would clobber the original run's
+         setting on resume.
 
-    Both must hold; either alone is insufficient."""
+    Without all three: either (a) resume silently overrides the
+    user's prior --new-agent-test-rounds choice with the CLI
+    default, or (b) initial runs silently use RoboPhD's default 1
+    instead of DS-1000's intended 0."""
     tree = ast.parse(MAIN_PY.read_text())
 
     # (1) argparse default must be None.
@@ -379,7 +380,6 @@ def test_main_does_not_pack_test_rounds_default_into_engine_overrides():
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
-        # Looking for p.add_argument("--new-agent-test-rounds", ..., default=...)
         if not (isinstance(node.func, ast.Attribute) and node.func.attr == "add_argument"):
             continue
         if not (node.args and isinstance(node.args[0], ast.Constant)
@@ -403,47 +403,96 @@ def test_main_does_not_pack_test_rounds_default_into_engine_overrides():
         "resume-clobber bug."
     )
 
-    # (2) The assignment engine_overrides["new_agent_test_rounds"] = ...
-    # must live inside an `if`-block guarding on args.new_agent_test_rounds.
-    found_guarded = False
+    # (2) Find the if/elif/else chain that assigns
+    # engine_overrides["new_agent_test_rounds"]. The if-test must
+    # reference args.new_agent_test_rounds, and any elif branch must
+    # reference args.resume / is_resume (so it doesn't fire on resume).
+    guarded_if_test = None  # the If node that has the assignment in its body
     for node in ast.walk(tree):
         if not isinstance(node, ast.If):
             continue
-        # The if-test must reference args.new_agent_test_rounds
-        refs_arg = any(
-            isinstance(n, ast.Attribute)
-            and isinstance(n.value, ast.Name)
-            and n.value.id == "args"
-            and n.attr == "new_agent_test_rounds"
-            for n in ast.walk(node.test)
-        )
-        if not refs_arg:
+        if not _if_test_references(node.test, "args", "new_agent_test_rounds"):
             continue
-        # And the body must assign engine_overrides[...] = ...
-        for stmt in node.body:
-            if not isinstance(stmt, ast.Assign):
-                continue
-            for target in stmt.targets:
-                if (
-                    isinstance(target, ast.Subscript)
-                    and isinstance(target.value, ast.Name)
-                    and target.value.id == "engine_overrides"
-                    and isinstance(target.slice, ast.Constant)
-                    and target.slice.value == "new_agent_test_rounds"
-                ):
-                    found_guarded = True
-                    break
-            if found_guarded:
-                break
-        if found_guarded:
+        # And the body must assign engine_overrides["new_agent_test_rounds"]
+        if any(_is_engine_overrides_test_rounds_assign(stmt) for stmt in node.body):
+            guarded_if_test = node
             break
-    assert found_guarded, (
+    assert guarded_if_test is not None, (
         "engine_overrides['new_agent_test_rounds'] must be set inside an "
         "`if args.new_agent_test_rounds is not None` block. Without the "
         "guard, the CLI default propagates into engine_overrides and "
         "silently overrides the original run's value on --resume "
         "(api.py:327 reapplies engine_overrides as a delta on resume)."
     )
+
+    # (3) If the if-block has an else/elif that ALSO assigns
+    # engine_overrides["new_agent_test_rounds"] (DS-1000's task
+    # default path), that branch must be guarded against the resume
+    # case. Otherwise the task default fires on resume too and
+    # clobbers the original run.
+    elif_assigns_default = False
+    elif_guards_resume = False
+    current = guarded_if_test
+    while current.orelse:
+        # An `elif X:` in source parses as orelse=[If(test=X, ...)]
+        if (len(current.orelse) == 1 and isinstance(current.orelse[0], ast.If)):
+            elif_node = current.orelse[0]
+            if any(_is_engine_overrides_test_rounds_assign(s) for s in elif_node.body):
+                elif_assigns_default = True
+                # Check the elif test references resume in some form
+                src = ast.unparse(elif_node.test)
+                if "is_resume" in src or "args.resume" in src or "resume" in src:
+                    elif_guards_resume = True
+            current = elif_node
+        else:
+            # `else:` block (orelse is a list of statements, not a single If)
+            for stmt in current.orelse:
+                if _is_engine_overrides_test_rounds_assign(stmt):
+                    elif_assigns_default = True
+                    # A bare else with no guard means it always fires when
+                    # the if-test is false — including on resume. That's
+                    # the bug.
+                    elif_guards_resume = False
+            break
+
+    if elif_assigns_default:
+        assert elif_guards_resume, (
+            "engine_overrides['new_agent_test_rounds'] is assigned in an "
+            "elif/else branch (presumably packing DS-1000's task default), "
+            "but that branch isn't guarded against the --resume case. On "
+            "resume the task default will clobber the original run's setting. "
+            "Guard the elif on `is_resume` / `args.resume`."
+        )
+
+
+def _if_test_references(node: ast.expr, root_name: str, attr_name: str) -> bool:
+    """Walk an AST expression looking for an attribute access like
+    `args.new_agent_test_rounds`. Helper for the test above."""
+    for n in ast.walk(node):
+        if (
+            isinstance(n, ast.Attribute)
+            and isinstance(n.value, ast.Name)
+            and n.value.id == root_name
+            and n.attr == attr_name
+        ):
+            return True
+    return False
+
+
+def _is_engine_overrides_test_rounds_assign(stmt: ast.stmt) -> bool:
+    """True if `stmt` is `engine_overrides["new_agent_test_rounds"] = ...`."""
+    if not isinstance(stmt, ast.Assign):
+        return False
+    for target in stmt.targets:
+        if (
+            isinstance(target, ast.Subscript)
+            and isinstance(target.value, ast.Name)
+            and target.value.id == "engine_overrides"
+            and isinstance(target.slice, ast.Constant)
+            and target.slice.value == "new_agent_test_rounds"
+        ):
+            return True
+    return False
 
 
 # --- _test_rounds_framing branch coverage -----------------------------------
