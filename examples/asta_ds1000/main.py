@@ -312,6 +312,14 @@ def _test_rounds_framing(rounds: int) -> str:
 
 
 def parse_args():
+    # ArgumentDefaultsHelpFormatter auto-appends "(default: <value>)" to
+    # any flag whose help string does not already contain "%(default)".
+    # For most flags this is what we want. To opt OUT for a specific flag
+    # (e.g. when default=None is an implementation detail and the
+    # behavioral default is described inline), append "%(default).0s" to
+    # the help string — the .0s precision truncates the rendered value to
+    # empty so nothing extra appears in --help. See --new-agent-test-rounds
+    # below for the canonical example.
     p = argparse.ArgumentParser(
         description="Evolve DS-1000 agents on AstaBench (Standard tools, Docker sandbox)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
