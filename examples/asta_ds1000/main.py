@@ -335,9 +335,18 @@ def parse_args():
                         "doubles per-agent training exposure and swaps "
                         "objective.md to the Round-2-aware framing that gives "
                         "the agent extra incentive to avoid overfitting to the "
-                        "visible batch. Default=None (not user-set) so that on "
-                        "--resume an unset CLI value doesn't silently overwrite "
-                        "the original run's setting via engine_overrides.")
+                        "visible batch."
+                        # The %(default).0s trick silences argparse's auto
+                        # "(default: None)" append for this flag without
+                        # affecting other flags' defaults display:
+                        # ArgumentDefaultsHelpFormatter checks for the
+                        # substring "%(default)" in the help to decide
+                        # whether to auto-append; including it (with .0s
+                        # truncating the rendered value to empty) opts out.
+                        # User-facing default is 0, stated in-line above —
+                        # the implementation-detail None default would just
+                        # confuse readers if surfaced here.
+                        "%(default).0s")
 
     p.add_argument("--allow-stronger-models", action="store_true",
                    help="Expose three stronger model handles to evolved agents: "
