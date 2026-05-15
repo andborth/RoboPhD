@@ -1,0 +1,3 @@
+```python
+clf.steps.insert(2, ('t1919810', PCA()))
+```

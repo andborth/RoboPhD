@@ -25,8 +25,9 @@ the tree.
 Cost / time, sequential:
     v0_0_1_seed_gpt54_mini   ~$0.50    30-60 min   (gpt-5.4-mini one-shot)
     v0_0_1_soft_cap_0_16     ~$20-30   2-4 hr      (quad-diverse ensemble + Opus critic)
+    v0_0_2_soft_cap_0_08     ~$12-15   1-2 hr      (Sonnet primary + rare Opus fallback)
     --
-    total                   ~$20-30   2-4 hr
+    total                   ~$30-45   3-6 hr
 
 Prerequisites:
   - OPENAI_API_KEY              (required by all three; v0_soft_cap_0_04
@@ -96,6 +97,12 @@ SUBMISSIONS = [
     Submission(
         name="v0_0_1_soft_cap_0_16",
         agent_rel_path="agents/iter10_idiomatic_loop_guard_v1/agent.py",
+        model_arg="none",
+        needs_stronger_models=True,
+    ),
+    Submission(
+        name="v0_0_2_soft_cap_0_08",
+        agent_rel_path="agents/iter4_ds1000_idiom_probe/agent.py",
         model_arg="none",
         needs_stronger_models=True,
     ),

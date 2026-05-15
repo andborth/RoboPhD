@@ -1,0 +1,4 @@
+```python
+y = torch.argmax(softmax_output, dim=1).view(-1, 1)
+
+```

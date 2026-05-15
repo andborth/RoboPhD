@@ -1,0 +1,7 @@
+```python
+def g(df):
+    return df.groupby('group').agg(lambda x : x.head(1) if x.dtype=='object' else x.sum())
+
+result = g(df.copy())
+
+```
