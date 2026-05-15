@@ -2,7 +2,7 @@
 
 RoboPhD evolution run on AstaBench's DS-1000 task with cost-penalty free-zone threshold `MIN_COST_THRESHOLD = $0.08` (the default; paired with `--allow-stronger-models` to unlock Opus 4.7 as a fallback handle). Headline submitted agent: **`iter4_ds1000_idiom_probe`**. Run id: `robophd-asta_ds1000-009`.
 
-The `0_0_2` major-version bump from `v0_0_1_soft_cap_0_16` reflects code-state changes since the prior submission (commit `eb7dd11`), most notably the iteration-aggregate cost-penalty mechanism (commit `b453ee0`). The `soft_cap_0_08` tail names the per-iteration mean-spend free-zone the run was trained under.
+The `0_0_2` patch bump from `v0_0_1_soft_cap_0_16` reflects code-state changes since the prior submission (commit `eb7dd11`), most notably the iteration-aggregate cost-penalty mechanism (commit `b453ee0`). The `soft_cap_0_08` tail names the per-iteration mean-spend free-zone the run was trained under.
 
 ## Recorded score
 
@@ -74,7 +74,7 @@ The wrapper template lives in [`scripts/asta_ds1000_submit.py`](../../../../scri
 
 ## Pareto positioning
 
-Per `robophd_runs/results/asta_ds1000.json`, at the recorded 0.8044 / $0.0123 the iter4 agent strictly Pareto-dominates two AstaBench leaderboard entries:
+At the recorded 0.8044 / $0.0123 the iter4 agent strictly Pareto-dominates two AstaBench leaderboard entries:
 
 - `ReAct / GPT-5` ($0.02 / 0.780) — cheaper AND higher score
 - `Smolagents Coder / GPT-5` ($0.02 / 0.757) — cheaper AND higher score
@@ -86,8 +86,8 @@ It also sits below the existing v0_0_1 submission's measured leaderboard score o
 15 agents in `agents/`, in chronological order:
 
 1. `seed_yyg6m9ud/agent.py` — the seed for this run (the canonical GPT-5.4-mini one-shot at HEAD)
-2. `iter2_ds1000_verify_repair/agent.py` — added `python_session` sanity check + retry-on-failure
-3. `iter3_ds1000_format_aware/agent.py` — added deterministic format/indent preservation
+2. `iter2_ds1000_verify_repair/agent.py` — switched the primary model from `GPT_5_4_MINI` to `CLAUDE_SONNET_4_6` (`reasoning_effort="medium"`); added `python_session` sanity check + verify-and-repair pipeline
+3. `iter3_ds1000_format_aware/agent.py` — bumped Sonnet's `reasoning_effort` to `"high"`; added deterministic format/indent preservation
 4. `iter4_ds1000_idiom_probe/agent.py` — **the submitted candidate**: added idiom-constraint detection, invent-signature handling, and the narrow Opus escalation
 5. `iter5_ds1000_consensus/agent.py` through `iter15_ds1000_audit_split/agent.py` — later iters (consensus voting, dtype anchoring, trap audits, ground-truth best-of, opus-literal, audit splits, etc.) that didn't unseat iter4 as best
 

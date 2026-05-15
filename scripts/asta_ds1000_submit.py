@@ -27,14 +27,16 @@ Cost / time, sequential:
     v0_0_1_soft_cap_0_16     ~$20-30   2-4 hr      (quad-diverse ensemble + Opus critic)
     v0_0_2_soft_cap_0_08     ~$12-15   1-2 hr      (Sonnet primary + rare Opus fallback)
     --
-    total                   ~$30-45   3-6 hr
+    total                   ~$32-45   3.5-7 hr
 
 Prerequisites:
-  - OPENAI_API_KEY              (required by all three; v0_soft_cap_0_04
-                                 calls it as one of four candidates)
+  - OPENAI_API_KEY              (seed runs gpt-5.4-mini; v0_0_1_soft_cap_0_16
+                                 calls GPT-5.4 in its four-candidate ensemble)
   - ANTHROPIC_API_KEY           (or ANTHROPIC_API_KEY_FOR_ROBOPHD;
-                                 model_registry reads either)
-  - GOOGLE_API_KEY              (v0_soft_cap_0_04's Gemini candidate;
+                                 model_registry reads either; v0_0_1_soft_cap_0_16
+                                 uses Sonnet+Opus and v0_0_2_soft_cap_0_08
+                                 uses Sonnet primary + Opus fallback)
+  - GOOGLE_API_KEY              (v0_0_1_soft_cap_0_16's Gemini candidate;
                                  mostly times out but the registry import
                                  needs the env var present)
   - Docker daemon running       (DS-1000 sandbox tier requires it)
