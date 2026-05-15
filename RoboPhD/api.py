@@ -325,13 +325,25 @@ def _build_resume_kwargs(
         num_iterations = checkpoint_num_iterations
 
     # Apply engine_overrides as a delta on the resume iteration.
-    # Convention: callers (typically each example's main.py) must
-    # populate engine_overrides ONLY with values the user explicitly
-    # set on the resume command line. CLI defaults packed here would
-    # silently clobber the original run's setting — every key applied
-    # here overwrites whatever was in effect at iteration `resume_from`.
-    # See examples/asta_ds1000/main.py for the conditional-packing
-    # pattern (argparse default=None + `if args.X is not None`).
+    #
+    # !!! DANGER — caller invariant !!!
+    # On resume, populate engine_overrides ONLY with values the user
+    # explicitly set on the resume CLI. Every key in this dict is
+    # applied as a fresh delta that OVERWRITES whatever was in effect
+    # at iteration `resume_from`. A CLI default silently packed by
+    # main.py will clobber the original run's setting — this is the
+    # bug pattern fixed in commits 5d654f0 + b684c11 for asta_ds1000.
+    #
+    # The safe pattern (see examples/asta_ds1000/main.py and
+    # examples/asta_discoverybench/main.py):
+    #   1. argparse default=None for any flag exposed in engine_overrides
+    #   2. `if args.X is not None: engine_overrides["X"] = args.X`
+    #   3. If the task has a default that differs from RoboPhD's
+    #      framework default (config_manager.get_defaults), pack it
+    #      only on initial runs: `elif not is_resume: engine_overrides["X"] = TASK_DEFAULT`
+    #
+    # Examples that only pack `--engine-config` JSON (most of them) are
+    # automatically safe — argparse + JSON only carries user-set keys.
     if cfg.engine_overrides:
         config_manager.apply_delta(
             iteration=resume_from,

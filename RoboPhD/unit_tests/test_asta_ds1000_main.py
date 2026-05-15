@@ -439,9 +439,11 @@ def test_main_does_not_clobber_test_rounds_on_resume():
             elif_node = current.orelse[0]
             if any(_is_engine_overrides_test_rounds_assign(s) for s in elif_node.body):
                 elif_assigns_default = True
-                # Check the elif test references resume in some form
-                src = ast.unparse(elif_node.test)
-                if "is_resume" in src or "args.resume" in src or "resume" in src:
+                # AST-walk the elif test for the resume guard. Substring
+                # matching on ast.unparse would false-positive on any
+                # unrelated identifier containing "resume" (e.g.
+                # `resume_kwargs`, `resumed_run`, or a docstring).
+                if _expression_references_resume(elif_node.test):
                     elif_guards_resume = True
             current = elif_node
         else:
@@ -463,6 +465,26 @@ def test_main_does_not_clobber_test_rounds_on_resume():
             "resume the task default will clobber the original run's setting. "
             "Guard the elif on `is_resume` / `args.resume`."
         )
+
+
+def _expression_references_resume(node: ast.expr) -> bool:
+    """True if `node` is an expression that references the resume
+    state in one of the canonical forms used in main.py:
+      - bare Name `is_resume` (the local boolean main.py computes)
+      - attribute access `args.resume` (the raw argparse value)
+    Anything else returns False — including unrelated identifiers
+    that happen to contain the substring "resume"."""
+    for n in ast.walk(node):
+        if isinstance(n, ast.Name) and n.id == "is_resume":
+            return True
+        if (
+            isinstance(n, ast.Attribute)
+            and isinstance(n.value, ast.Name)
+            and n.value.id == "args"
+            and n.attr == "resume"
+        ):
+            return True
+    return False
 
 
 def _if_test_references(node: ast.expr, root_name: str, attr_name: str) -> bool:
