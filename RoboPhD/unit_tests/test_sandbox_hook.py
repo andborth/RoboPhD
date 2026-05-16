@@ -27,6 +27,10 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 HOOK = REPO_ROOT / "utilities" / "sandbox_hook.py"
 
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+from utilities.sandbox_hook import project_slug, auto_memory_dir  # noqa: E402
+
 
 # ---------------------------------------------------------------------
 # Fixtures
@@ -218,6 +222,194 @@ def test_write_into_experiment_dir_outside_cwd_denies(experiment_layout):
     )
     assert res["decision"] == "deny"
     assert "outside write scope" in res["reason"]
+
+
+# ---------------------------------------------------------------------
+# Run-scoped Claude auto-memory carve-out
+#
+# Claude Code's built-in memory feature writes/recalls under
+# ~/.claude/projects/<project-slug>/memory/. The hook grants exactly
+# this one run's <slug>/memory/ (read + Write-tool write), for both the
+# raw-env and realpath slug forms (symlinked-root robustness).
+#
+# Containment is NOT structural (project_slug is lossy); it holds
+# because experiment-dir names are timestamp-unique and RoboPhD owns
+# EXPERIMENT_DIR. These tests lock down BOTH sides: a genuinely
+# different slug is denied (sibling/source-repo), AND the lossy-slug
+# collision boundary is pinned explicitly so the known limitation is
+# fenced rather than merely asserted. See sandbox_hook.auto_memory_dir
+# for why this is fragile-but-fail-safe and only an interim measure.
+# ---------------------------------------------------------------------
+
+
+def _memory_path(experiment_dir: Path, name: str = "insight.md") -> str:
+    """The carve-out path the hook computes for this experiment dir."""
+    slug = project_slug(os.path.realpath(str(experiment_dir)))
+    return os.path.join(
+        os.path.expanduser("~"), ".claude", "projects", slug, "memory", name
+    )
+
+
+def test_project_slug_ground_truth():
+    """Pin the path->slug transform against OBSERVED Claude Code output.
+
+    If Claude Code changes its slug transform this fails loudly HERE
+    (our-bug surface). That is deliberately distinct from an anchor
+    drift, which fails safe as an ordinary runtime deny recorded in
+    sandbox_denials.jsonl.
+    """
+    assert project_slug(
+        "/Users/a/Desktop/cc/robophd_runs/robophd/asta_ds1000_20260514_231614"
+    ) == "-Users-a-Desktop-cc-robophd-runs-robophd-asta-ds1000-20260514-231614"
+    # Case preserved; '_' folds to '-'.
+    assert project_slug("/Users/a/Desktop/cc/RoboPhD") == "-Users-a-Desktop-cc-RoboPhD"
+
+
+def test_auto_memory_write_into_run_slug_allows(experiment_layout):
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Write",
+            {"file_path": _memory_path(layout["experiment_dir"]), "content": "x"},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["rc"] == 0
+    assert res["decision"] is None  # silent allow, like a cwd write
+
+
+def test_auto_memory_read_into_run_slug_allows(experiment_layout):
+    layout = experiment_layout
+    res = run_hook(
+        make_envelope(
+            "Read",
+            {"file_path": _memory_path(layout["experiment_dir"])},
+            layout["cwd"],
+        ),
+        layout["experiment_dir"],
+    )
+    assert res["rc"] == 0
+    assert res["decision"] is None
+
+
+def test_auto_memory_write_sibling_run_slug_denies(experiment_layout):
+    """A memory write whose slug is a DIFFERENT run must NOT escape."""
+    layout = experiment_layout
+    sibling_dir = layout["experiment_dir"].parent / "task_20251231_120000"
+    slug = project_slug(os.path.realpath(str(sibling_dir)))
+    target = os.path.join(
+        os.path.expanduser("~"), ".claude", "projects", slug, "memory", "x.md"
+    )
+    res = run_hook(
+        make_envelope("Write", {"file_path": target, "content": "x"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside write scope" in res["reason"]
+
+
+def test_auto_memory_write_source_repo_slug_denies(experiment_layout):
+    """A memory write slugged to the source repo must NOT escape."""
+    layout = experiment_layout
+    slug = project_slug("/Users/a/Desktop/cc/RoboPhD")
+    target = os.path.join(
+        os.path.expanduser("~"), ".claude", "projects", slug, "memory", "evil.md"
+    )
+    res = run_hook(
+        make_envelope("Write", {"file_path": target, "content": "x"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+
+
+def test_auto_memory_bash_write_still_denied(experiment_layout):
+    """Bash write path deliberately does NOT honor the carve-out.
+
+    Only Claude's legitimate Write-tool auto-memory is allowed; an
+    injection using `bash -c '... > ~/.claude/.../memory/x'` stays
+    denied so the documented Bash hole isn't widened.
+    """
+    layout = experiment_layout
+    mem = _memory_path(layout["experiment_dir"], "viaBash.md")
+    res = run_hook(
+        make_envelope("Bash", {"command": f"echo pwned > {mem}"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+
+
+def test_project_slug_collision_is_known_inherited_limitation():
+    """Pin the lossy-slug collision boundary explicitly.
+
+    project_slug folds '/', '_', '.' to '-', so it is non-injective:
+    distinct paths CAN map to one slug, hence to one carve-out dir.
+    This is inherited from Claude Code's own transform (Claude would
+    likewise merge their memory), not introduced by the hook. We assert
+    the limitation rather than a false structural guarantee, so the
+    docstring's claim is fenced by a test instead of merely stated.
+    """
+    a = "/x/run_1/exp"
+    b = "/x/run/1/exp"
+    assert a != b
+    assert project_slug(a) == project_slug(b) == "-x-run-1-exp"
+    # ...and the collision propagates to the carve-out dir: two
+    # different experiment dirs that slug-collide share ONE memory dir.
+    # Containment does NOT rest on injectivity; it rests on EXP names
+    # being timestamp-unique and RoboPhD-owned (covered by the
+    # sibling/source-repo deny tests above).
+    assert auto_memory_dir(a) == auto_memory_dir(b)
+
+
+def test_auto_memory_symlinked_root_literal_slug_allows(tmp_path):
+    """Fix-2 regression: carve-out must hold when literal != realpath.
+
+    Builds an experiment root reached via a symlink so the raw-env path
+    and its realpath produce DIFFERENT slugs. The expected memory path
+    is constructed from the *literal* (symlinked) slug — NOT realpath —
+    so this test fails under a single-realpath-slug implementation and
+    is therefore not green-by-construction.
+    """
+    real_root = tmp_path / "real_runs" / "robophd" / "task_20260101_000000"
+    cwd = real_root / "evolution_output" / "iteration_002"
+    cwd.mkdir(parents=True)
+    link_root = tmp_path / "link_runs"
+    link_root.symlink_to(tmp_path / "real_runs")
+
+    # Env value reaches the experiment dir THROUGH the symlink.
+    exp_literal = link_root / "robophd" / "task_20260101_000000"
+    cwd_literal = exp_literal / "evolution_output" / "iteration_002"
+
+    literal_slug = project_slug(str(exp_literal))
+    realpath_slug = project_slug(os.path.realpath(str(exp_literal)))
+    assert literal_slug != realpath_slug  # the symlink really diverges
+
+    literal_mem = os.path.join(
+        os.path.expanduser("~"), ".claude", "projects",
+        literal_slug, "memory", "insight.md",
+    )
+    res = run_hook(
+        make_envelope("Write", {"file_path": literal_mem, "content": "x"},
+                      cwd_literal),
+        exp_literal,  # ROBOPHD_EXPERIMENT_DIR = the literal symlinked path
+    )
+    assert res["rc"] == 0
+    assert res["decision"] is None
+    # The realpath-form slug must ALSO still be honored.
+    realpath_mem = os.path.join(
+        os.path.expanduser("~"), ".claude", "projects",
+        realpath_slug, "memory", "insight.md",
+    )
+    res2 = run_hook(
+        make_envelope("Write", {"file_path": realpath_mem, "content": "x"},
+                      cwd_literal),
+        exp_literal,
+    )
+    assert res2["rc"] == 0
+    assert res2["decision"] is None
 
 
 # ---------------------------------------------------------------------

@@ -474,6 +474,77 @@ def parse_extra_read_paths(argv: list) -> list:
     return extras
 
 
+def project_slug(abs_path: str) -> str:
+    """Reproduce Claude Code's path -> project-slug transform.
+
+    Observed ground truth (pinned in test_sandbox_hook):
+      /Users/a/Desktop/cc/robophd_runs/robophd/asta_ds1000_20260514_231614
+        -> -Users-a-Desktop-cc-robophd-runs-robophd-asta-ds1000-20260514-231614
+      /Users/a/Desktop/cc/RoboPhD
+        -> -Users-a-Desktop-cc-RoboPhD
+
+    i.e. each of '/', '_', '.' becomes '-'; case is preserved; a
+    leading '/' yields a leading '-'.
+
+    NON-INJECTIVE BY DESIGN: collapsing '/', '_', '.' to a single '-'
+    means distinct absolute paths can map to the same slug (e.g.
+    ``/a/b_c`` and ``/a/b/c`` both -> ``-a-b-c``). This lossiness is
+    inherited from Claude Code's own transform, not introduced here —
+    Claude itself would merge the memory of two slug-colliding project
+    roots. We must mirror it exactly (an injective slug would simply
+    fail to match Claude's real memory path), so the carve-out is
+    precisely as collision-safe as Claude's native memory isolation,
+    no weaker. test_sandbox_hook pins both the transform (ground truth)
+    and the collision boundary explicitly.
+
+    This transform — and the upstream rule that the auto-memory project
+    root anchors at the experiment dir — is UNDOCUMENTED and
+    version-unstable in Claude Code. We depend on it anyway only because
+    the failure is safe and visible (see auto_memory_dir).
+    """
+    return re.sub(r"[/_.]", "-", abs_path)
+
+
+def auto_memory_dir(experiment_dir: str):
+    """Run-scoped Claude auto-memory carve-out dir, or None.
+
+    Claude Code's built-in memory feature reads/writes under
+    ``~/.claude/projects/<project-slug>/memory/``. Empirically the
+    project slug for a sandboxed evolution session anchors at the
+    EXPERIMENT ROOT (the ``.claude/`` dir ``_install_evolution_sandbox``
+    drops there is what makes Claude treat it as the project root), so
+    the slug is computed from ``ROBOPHD_EXPERIMENT_DIR``. Whitelisting
+    exactly that one ``<slug>/memory/`` dir lets evolution use its own
+    within-run memory while keeping a sibling run or the source repo out
+    of reach.
+
+    The containment is NOT structural — ``project_slug`` is lossy — it
+    holds because: (1) ``EXPERIMENT_DIR`` is created by RoboPhD as
+    ``<runs>/robophd/<task>_<timestamp>``, so its name is
+    timestamp-unique and a prompt injection cannot induce a colliding
+    EXP (it controls only the write target, not EXP); (2) every
+    *meaningful* collision target (another run, the dev repo) differs in
+    the timestamp component or in length — distinct timestamps do not
+    fold together. The lossy-slug collision case is a known boundary,
+    inherited from Claude's own transform and pinned explicitly in
+    test_sandbox_hook, not an unbounded escape.
+
+    Fragile but FAIL-SAFE: if Claude's anchor or slug transform drifts,
+    the memory write targets a slug that is *not* this dir -> ordinary
+    deny -> sandbox_denials.jsonl -> surfaced as a WARNING by
+    researcher.py's tail thread. We notice; nothing escapes. This is an
+    interim measure; the durable fix is a PreToolUse ``updatedInput``
+    redirect that does not depend on the undocumented anchor at all.
+    """
+    home = os.path.expanduser("~")
+    if not home or home == "~":
+        return None
+    slug = project_slug(experiment_dir)
+    return os.path.realpath(
+        os.path.join(home, ".claude", "projects", slug, "memory")
+    )
+
+
 def deny_message(
     experiment_dir: str,
     cwd: str,
@@ -557,8 +628,8 @@ def main() -> int:
     tool_input = envelope.get("tool_input", {}) or {}
     cwd = envelope.get("cwd") or os.getcwd()
 
-    experiment_dir = os.environ.get("ROBOPHD_EXPERIMENT_DIR")
-    if not experiment_dir:
+    experiment_dir_env = os.environ.get("ROBOPHD_EXPERIMENT_DIR")
+    if not experiment_dir_env:
         sys.stderr.write("[sandbox] HOOK ERROR: ROBOPHD_EXPERIMENT_DIR not set\n")
         append_denial_record({
             "ts": datetime.now().isoformat(timespec="seconds"),
@@ -567,9 +638,32 @@ def main() -> int:
         })
         return 2
 
-    experiment_dir = os.path.realpath(experiment_dir)
+    experiment_dir = os.path.realpath(experiment_dir_env)
     cwd_real = os.path.realpath(cwd)
     extra_read_roots = parse_extra_read_paths(sys.argv)
+
+    # Run-scoped auto-memory carve-out. Read is granted via the normal
+    # extra-read mechanism (covers Read/Glob/Grep and Bash read
+    # commands, so the agent can recall its own within-run memory).
+    # Write is granted ONLY to the WRITE_TOOLS branch below — the Bash
+    # write path deliberately does NOT honor these dirs, so an injection
+    # using `bash -c '... > ~/.claude/.../memory/x'` stays denied; only
+    # Claude's legitimate Write-tool auto-memory is relocated-friendly.
+    #
+    # Dual slug (raw env value AND its realpath): we do NOT know whether
+    # Claude Code slugs the literal cwd-derived path or a realpath'd one
+    # (undocumented). On a symlinked deployment root the two diverge; a
+    # single-form guess would silently degrade the carve-out to no-op
+    # (fail-safe, but the feature just wouldn't work). Whitelisting both
+    # plausible forms covers the two realistic behaviors at trivial
+    # cost; anything more exotic still fails safe + logged. Both forms
+    # are this run's own timestamp-unique slug, so scope is unchanged.
+    memory_carveouts = []
+    for cand in (experiment_dir_env, experiment_dir):
+        d = auto_memory_dir(cand)
+        if d and d not in memory_carveouts:
+            memory_carveouts.append(d)
+    extra_read_roots = extra_read_roots + memory_carveouts
 
     # Cwd must itself be under the experiment dir; otherwise the write
     # scope is broken before we start.
@@ -623,6 +717,18 @@ def main() -> int:
             })
             return 2
         ok, blocked = check_paths([path], cwd_real, cwd_real, "write")
+        # Run-scoped auto-memory carve-out (Write-tool path only). A
+        # write outside cwd is still allowed iff it lands in exactly
+        # this run's ~/.claude/projects/<slug>/memory/ dir (raw-env or
+        # realpath slug form). Different slug (sibling run / source repo
+        # / drifted anchor) -> not under any carve-out -> denied +
+        # logged. Containment holds because experiment-dir names are
+        # timestamp-unique and RoboPhD owns EXPERIMENT_DIR (an injection
+        # can't induce a colliding EXP); see auto_memory_dir for why the
+        # lossy-slug collision boundary is inherited from Claude, not
+        # introduced here.
+        if not ok and any(is_under(blocked, mc) for mc in memory_carveouts):
+            ok, blocked = True, None
         if ok:
             return 0
         emit_decision("deny", deny_message(experiment_dir, cwd_real, blocked, "write",
