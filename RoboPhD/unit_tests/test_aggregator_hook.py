@@ -19,6 +19,7 @@ resolution) is skipped — only the attributes the aggregator actually
 reads need to be present.
 """
 
+import ast
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -536,3 +537,57 @@ def test_deep_focus_index_empty_when_no_aggregator():
     # Fallback should be correct/total — NOT accuracy/100
     assert aggregates.get("new") == pytest.approx(17 / 20)
     assert aggregates.get("baseline") == pytest.approx(16 / 20)
+
+
+# ---------------------------------------------------------------------------
+# domain.py: result_entry must carry eval_wall_clock_seconds
+#
+# result_entry has a FIXED key set, so arbitrary diagnostic keys do not
+# reach result.json. The wall-clock field has to be explicitly extracted
+# and added — pin both, so a refactor of the cost-extraction block can't
+# silently drop the latency signal back into invisibility.
+# ---------------------------------------------------------------------------
+
+
+def test_domain_result_entry_includes_eval_wall_clock_seconds():
+    from RoboPhD.domains.external import domain as _dm
+    tree = ast.parse(Path(_dm.__file__).read_text())
+
+    # Find the `result_entry = { ... }` dict literal.
+    result_entry_dict = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and any(
+            isinstance(t, ast.Name) and t.id == "result_entry" for t in node.targets
+        ) and isinstance(node.value, ast.Dict):
+            result_entry_dict = node.value
+            break
+    assert result_entry_dict is not None, (
+        "No `result_entry = {...}` dict literal in domain.py — has "
+        "run_evaluation's result construction been refactored?"
+    )
+    keys = {
+        k.value for k in result_entry_dict.keys
+        if isinstance(k, ast.Constant)
+    }
+    assert "eval_wall_clock_seconds" in keys, (
+        "result_entry omits 'eval_wall_clock_seconds' — per-problem "
+        "wall-clock won't reach result.json and a latency failure "
+        "stays an invisible score-0 cliff. Keys present: "
+        f"{sorted(keys)}"
+    )
+
+    # And it must be sourced from diagnostics, not hardcoded.
+    extracts_from_diag = any(
+        isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "get"
+        and n.args
+        and isinstance(n.args[0], ast.Constant)
+        and n.args[0].value == "eval_wall_clock_seconds"
+        for n in ast.walk(tree)
+    )
+    assert extracts_from_diag, (
+        "result_entry['eval_wall_clock_seconds'] is not populated from "
+        "diagnostics.get('eval_wall_clock_seconds') — it would always "
+        "be a constant/None and never reflect real per-problem latency."
+    )

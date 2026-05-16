@@ -34,6 +34,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import uuid
 from contextlib import redirect_stdout
 from importlib import resources
@@ -777,6 +778,18 @@ class Ds1000Evaluator:
             inf_path = inf.name
         out_path = inf_path + ".out"
 
+        # Wall-clock for this problem's subprocess eval. Recorded into
+        # diagnostics → result.json on EVERY return path (success,
+        # timeout, non-zero exit, bad payload) so a latency problem is
+        # a visible recorded number instead of an invisible cliff
+        # (timeouts otherwise surface as score 0 / $0 / no stdout,
+        # which the evolution loop has historically misattributed as a
+        # reasoning regression rather than "ran out of time").
+        _t0 = time.monotonic()
+
+        def _wc() -> float:
+            return round(time.monotonic() - _t0, 3)
+
         try:
             proc = subprocess.Popen(
                 [sys.executable, str(worker_path), inf_path, out_path],
@@ -819,11 +832,13 @@ class Ds1000Evaluator:
                 return 0.0, {
                     "error": f"subprocess timed out after {self.subprocess_timeout}s",
                     "subprocess_stderr": (stderr or "")[-2000:],
+                    "eval_wall_clock_seconds": _wc(),
                 }
             if proc.returncode != 0:
                 return 0.0, {
                     "error": f"subprocess failed (exit {proc.returncode})",
                     "subprocess_stderr": (stderr or "")[-2000:],
+                    "eval_wall_clock_seconds": _wc(),
                 }
             try:
                 with open(out_path) as f:
@@ -832,10 +847,12 @@ class Ds1000Evaluator:
                 return 0.0, {
                     "error": f"subprocess produced no valid output: {type(e).__name__}: {e}",
                     "subprocess_stderr": (stderr or "")[-2000:],
+                    "eval_wall_clock_seconds": _wc(),
                 }
 
             score = float(payload.get("score", 0.0))
             diagnostics = payload.get("diagnostics", {}) or {}
+            diagnostics["eval_wall_clock_seconds"] = _wc()
             agent_only_cost = diagnostics.get("agent_cost_usd", 0.0) or 0.0
             with self._cost_lock:
                 self.total_eval_cost += agent_only_cost
@@ -879,6 +896,10 @@ class Ds1000Evaluator:
         )
 
         captured = io.StringIO()
+        # Parity with _evaluate_via_subprocess: record wall-clock for
+        # the non-isolated path too (used when subprocess_isolation=False,
+        # e.g. some eval-only flows) so result.json carries it uniformly.
+        _t0 = time.monotonic()
         try:
             with redirect_stdout(captured):
                 logs = inspect_eval(
@@ -893,10 +914,15 @@ class Ds1000Evaluator:
             return 0.0, {
                 "error": f"inspect.eval crashed: {type(e).__name__}: {e}",
                 "agent_stdout": captured.getvalue(),
+                "eval_wall_clock_seconds": round(time.monotonic() - _t0, 3),
             }
 
         log = logs[0]
-        return self._extract_score_and_diagnostics(log, example, captured.getvalue())
+        score_value, diagnostics = self._extract_score_and_diagnostics(
+            log, example, captured.getvalue()
+        )
+        diagnostics["eval_wall_clock_seconds"] = round(time.monotonic() - _t0, 3)
+        return score_value, diagnostics
 
     # -- Result extraction --------------------------------------------------
 

@@ -505,6 +505,26 @@ def main():
     # would terminate the markdown table early); on-mode puts the rows
     # plus a trailing newline back in.
     stronger_replacement = stronger_rows + "\n" if stronger_rows else ""
+
+    # Per-example timeout: must match the value passed to RoboPhDConfig
+    # below. The evaluator derives a slightly-shorter subprocess_timeout
+    # internally so subprocesses get killed BEFORE RoboPhD's reaper
+    # would leak the thread. Defined here (above _interpolate) because
+    # the ${EVAL_TIMEOUT_MIN} substitution below derives its value from
+    # it and _interpolate is invoked a few lines down.
+    #
+    # 30-minute cap. Wall-clock time isn't a leaderboard criterion;
+    # this is just a catch for runaway processes. The evaluator SIGKILLs
+    # the per-problem subprocess at 1770s (= 29 min) — EVAL_TIMEOUT minus
+    # the 30s reaper buffer (see evaluator.py:564, subprocess_timeout =
+    # max(eval_timeout - 30, 60)) — so the agent's true budget is 29 min.
+    # Raised from 20→30 min: a 3-model serial fan-out blew the old 1170s
+    # cap on 8/20 problems, scored a misleading 60%, and the evolution
+    # lineage misattributed the latency death as a reasoning regression.
+    # 30 min keeps it generous enough to not be the binding constraint
+    # while still catching genuine runaways.
+    EVAL_TIMEOUT = 1800
+
     def _interpolate(text: str) -> str:
         return (
             text
@@ -514,22 +534,15 @@ def main():
             .replace("${COST_SATURATION}", _fmt_cost(cost_saturation))
             .replace("${STRONGER_MODELS_TABLE_ROWS}\n", stronger_replacement)
             .replace("${TEST_ROUNDS_FRAMING}", test_rounds_framing)
+            # True per-problem budget the agent experiences: EVAL_TIMEOUT
+            # minus the 30s reaper buffer, floored to whole minutes
+            # (1770 // 60 = 29). Floored & buffer-aware so the doc never
+            # over-promises the wall-clock the agent actually gets.
+            .replace("${EVAL_TIMEOUT_MIN}", str((EVAL_TIMEOUT - 30) // 60))
         )
 
     objective = _interpolate((HERE / "objective.md").read_text().strip())
     background = _interpolate((HERE / "background.md").read_text().strip())
-
-    # Per-example timeout: must match the value passed to RoboPhDConfig
-    # below. The evaluator derives a slightly-shorter subprocess_timeout
-    # internally so subprocesses get killed BEFORE RoboPhD's reaper
-    # would leak the thread.
-    #
-    # 20-minute cap. Wall-clock time isn't a leaderboard criterion;
-    # this is just a catch for runaway processes. Higher --cost-threshold
-    # runs (e.g. 0.16) can pair with stronger / higher-reasoning model
-    # handles that take noticeably longer per example, and the previous
-    # 10-minute cap was tight enough to clip legitimate solutions there.
-    EVAL_TIMEOUT = 1200
 
     # Seed is loaded early so it can plumb into the test evaluator as
     # `fallback_candidate` below. Training keeps fallback_candidate=None

@@ -117,6 +117,10 @@ A subset of problems additionally enforce **style/idiom constraints on the submi
 
 Per-example scoring is binary correctness (1.0 or 0.0). At the end of each iteration, your batch is combined into a single number ELO compares: `100 × mean_accuracy − cost_penalty`, where `mean_accuracy` is the fraction of correct answers across the iteration's batch and `cost_penalty ∈ [0, 1]` is a bounded function of your **mean** agent LLM spend across the batch (only `get_model()` calls are metered — `python_session` and `sandbox()` don't count). Mean spend below **${COST_THRESHOLD}** incurs zero penalty (free zone). Above ${COST_THRESHOLD} the penalty ramps linearly, hitting its maximum of 1.0 at **${COST_SATURATION}** of mean batch spend; further spend incurs no extra penalty. The penalty's [0, 1] range is two orders of magnitude smaller than the score scale, so it acts as a tiebreaker between correctness-tied agents — it never overrides a real correctness gap.
 
+## Time budget
+
+Your agent times out and the problem scores 0 if a single problem takes more than **${EVAL_TIMEOUT_MIN} minutes** of wall-clock. This is a generous budget and is unlikely to be the binding constraint. Per-problem wall-clock is recorded as `eval_wall_clock_seconds` in each problem's `result.json`.
+
 ## Diagnostics
 
 `print()` output from the solver is captured into `agent_stdout`. The extracted `<code>` block and the test program's stdout/stderr are surfaced as per-example diagnostic files (`extracted_code.md`, `test_result.md`) so failures can be inspected without re-running.

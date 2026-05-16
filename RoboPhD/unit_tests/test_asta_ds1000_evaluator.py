@@ -479,3 +479,94 @@ def test_fallback_also_errors_passes_through(evaluator_with_fallback, monkeypatc
     assert diag["primary_error"] == "primary boom"
     assert diag["fallback_used"] is True
     assert len(calls) == 2  # exactly two, no third retry
+
+
+# --- eval_wall_clock_seconds: every post-timing return must carry it -------
+# Timeouts otherwise surface as score 0 / $0 / no stdout — an invisible
+# cliff the evolution loop has historically misdiagnosed as a reasoning
+# regression. Pin that EVERY return after the timing starts records the
+# wall-clock, especially the timeout branch (the highest-value case).
+
+
+def test_evaluate_via_subprocess_records_wall_clock_on_every_path(
+    evaluate_via_subprocess_node,
+):
+    """After `_t0 = time.monotonic()` (timing start), every `return`
+    in `_evaluate_via_subprocess` must surface `eval_wall_clock_seconds`
+    — either as a key in a returned dict literal, or, for the
+    `return score, diagnostics` tuple, via a
+    `diagnostics["eval_wall_clock_seconds"] = ...` assignment in the
+    function body. Returns *before* timing starts (the malformed-input
+    guard) are exempt — there is no eval to time there."""
+    fn = evaluate_via_subprocess_node
+
+    # Locate the timing-start line: `_t0 = time.monotonic()`.
+    t0_line = None
+    for node in ast.walk(fn):
+        if (
+            isinstance(node, ast.Assign)
+            and any(isinstance(t, ast.Name) and t.id == "_t0" for t in node.targets)
+        ):
+            t0_line = node.lineno
+            break
+    assert t0_line is not None, (
+        "No `_t0 = time.monotonic()` timing anchor in "
+        "_evaluate_via_subprocess — wall-clock recording was removed."
+    )
+
+    # Does the function assign diagnostics["eval_wall_clock_seconds"]?
+    has_subscript_assign = any(
+        isinstance(n, ast.Assign)
+        and any(
+            isinstance(t, ast.Subscript)
+            and isinstance(t.value, ast.Name)
+            and isinstance(t.slice, ast.Constant)
+            and t.slice.value == "eval_wall_clock_seconds"
+            for t in n.targets
+        )
+        for n in ast.walk(fn)
+    )
+
+    def _dict_has_key(d: ast.Dict) -> bool:
+        return any(
+            isinstance(k, ast.Constant) and k.value == "eval_wall_clock_seconds"
+            for k in d.keys
+        )
+
+    # Returns inside nested helper defs (e.g. the `_wc()` closure) are
+    # not _evaluate_via_subprocess return paths — exclude them.
+    nested_returns = {
+        id(r)
+        for inner in ast.walk(fn)
+        if isinstance(inner, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and inner is not fn
+        for r in ast.walk(inner)
+        if isinstance(r, ast.Return)
+    }
+
+    offenders = []
+    for node in ast.walk(fn):
+        if not isinstance(node, ast.Return) or node.lineno <= t0_line:
+            continue
+        if id(node) in nested_returns:
+            continue
+        v = node.value
+        # Returns here are all `return <score>, <payload>` tuples.
+        payload = v.elts[1] if isinstance(v, ast.Tuple) and len(v.elts) == 2 else v
+        if isinstance(payload, ast.Dict):
+            if not _dict_has_key(payload):
+                offenders.append((node.lineno, ast.unparse(node)))
+        elif isinstance(payload, ast.Name):
+            # e.g. `return score, diagnostics` — covered iff the function
+            # sets diagnostics["eval_wall_clock_seconds"] somewhere.
+            if not has_subscript_assign:
+                offenders.append((node.lineno, ast.unparse(node)))
+        else:
+            offenders.append((node.lineno, ast.unparse(node)))
+
+    assert not offenders, (
+        "These post-timing returns in _evaluate_via_subprocess do NOT "
+        "record `eval_wall_clock_seconds` — a latency failure on these "
+        "paths would be an invisible score-0 cliff:\n  "
+        + "\n  ".join(f"line {ln}: {src}" for ln, src in offenders)
+    )

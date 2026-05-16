@@ -327,6 +327,13 @@ class ExternalEvaluatorDomain(DomainInterface):
                 cost_usd = 0.0
                 other_cost = 0.0
                 cost_by_model: dict = {}
+                # Per-problem wall-clock (opt-in by evaluator, same
+                # pattern as cost_by_model). None when the evaluator
+                # doesn't emit it, so result.json stays schema-clean for
+                # tasks that don't track it. asta_ds1000 emits this on
+                # every eval path (incl. timeouts) so a latency problem
+                # is a recorded number, not an invisible score-0 cliff.
+                eval_wall_clock_seconds = None
                 if isinstance(diagnostics, dict):
                     raw = diagnostics.get("cost_usd", 0.0)
                     try:
@@ -348,6 +355,12 @@ class ExternalEvaluatorDomain(DomainInterface):
                                 cost_by_model[str(k)] = float(v)
                             except (TypeError, ValueError):
                                 pass
+                    raw_wc = diagnostics.get("eval_wall_clock_seconds")
+                    if raw_wc is not None:
+                        try:
+                            eval_wall_clock_seconds = float(raw_wc)
+                        except (TypeError, ValueError):
+                            pass
 
                 has_error = "error.md" in diagnostics if isinstance(diagnostics, dict) else False
                 result_entry = {
@@ -356,6 +369,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                     "eval_cost": cost_usd,
                     "other_cost": other_cost,
                     "cost_by_model": cost_by_model,
+                    "eval_wall_clock_seconds": eval_wall_clock_seconds,
                     "error": has_error,
                 }
 

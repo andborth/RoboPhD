@@ -735,3 +735,73 @@ def test_write_test_results_reads_fallback_keys_from_diagnostics():
         f"Add `<key>: diag.get(\"<key>\")` entries (and the matching "
         f"aggregate fields in the summary block) before the JSON dump."
     )
+
+
+# --- per-problem wall-clock budget --------------------------------------------
+# The per-problem timeout was raised 20→30 min and surfaced agent-side
+# via background.md. These pins keep the constant, the placeholder, and
+# the interpolation in sync so the agent-facing doc can never silently
+# drift from the real budget (the exact stale-constraint failure mode
+# this work addressed).
+
+
+def test_eval_timeout_is_30_minutes():
+    """EVAL_TIMEOUT must be 1800s (30 min). Pinned because the
+    agent-facing background.md derives its stated budget from this
+    constant; a silent change here would desync the doc from reality."""
+    tree = ast.parse(MAIN_PY.read_text())
+    found = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                if isinstance(t, ast.Name) and t.id == "EVAL_TIMEOUT":
+                    found = node.value
+    assert found is not None, "EVAL_TIMEOUT assignment not found in main.py"
+    assert isinstance(found, ast.Constant) and found.value == 1800, (
+        f"EVAL_TIMEOUT must be the literal 1800 (30 min); got "
+        f"{ast.unparse(found)!r}. The agent's true budget is "
+        f"EVAL_TIMEOUT-30s = 1770s = 29 min (reaper buffer)."
+    )
+
+
+def test_background_md_eval_timeout_placeholder_and_interpolation():
+    """Three coupled invariants:
+      1. background.md contains the literal `${EVAL_TIMEOUT_MIN}`.
+      2. main.py's `_interpolate` substitutes it with an expression
+         derived from `EVAL_TIMEOUT` minus the 30s reaper buffer,
+         floored to whole minutes.
+      3. The arithmetic resolves to 29 at EVAL_TIMEOUT=1800.
+    Together these guarantee the rendered prompt states the *true*
+    floored kill budget and can never go stale relative to the
+    constant."""
+    bg = (REPO_ROOT / "examples" / "asta_ds1000" / "background.md").read_text()
+    assert "${EVAL_TIMEOUT_MIN}" in bg, (
+        "background.md no longer contains `${EVAL_TIMEOUT_MIN}`; the "
+        "Time budget section must keep the placeholder so main.py "
+        "interpolates the real (constant-derived) value."
+    )
+
+    tree = ast.parse(MAIN_PY.read_text())
+    repl = None
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "replace"
+            and node.args
+            and isinstance(node.args[0], ast.Constant)
+            and node.args[0].value == "${EVAL_TIMEOUT_MIN}"
+        ):
+            repl = node
+    assert repl is not None, (
+        "main.py `_interpolate` has no .replace(\"${EVAL_TIMEOUT_MIN}\", ...) "
+        "call — the placeholder would survive into the rendered prompt."
+    )
+    val_src = ast.unparse(repl.args[1])
+    assert "EVAL_TIMEOUT" in val_src and "- 30" in val_src and "// 60" in val_src, (
+        f"${{EVAL_TIMEOUT_MIN}} must be derived from "
+        f"`(EVAL_TIMEOUT - 30) // 60` (true kill budget, floored). "
+        f"Got: {val_src}"
+    )
+    # Arithmetic intent, documented and pinned.
+    assert (1800 - 30) // 60 == 29
