@@ -459,6 +459,16 @@ def _sandbox_compose_path() -> str:
     return (resources.files("astabench.util.sandbox") / "sandbox_compose.yaml").as_posix()
 
 
+def _elapsed_seconds(t0: float) -> float:
+    """Monotonic wall-clock seconds since ``t0``, 3dp.
+
+    Single source of truth for the ``eval_wall_clock_seconds`` rounding
+    precision — used by both the subprocess and non-subprocess eval
+    paths so a future precision tweak changes one place, not four.
+    """
+    return round(time.monotonic() - t0, 3)
+
+
 # ---------------------------------------------------------------------------
 # Evaluator
 # ---------------------------------------------------------------------------
@@ -787,9 +797,6 @@ class Ds1000Evaluator:
         # reasoning regression rather than "ran out of time").
         _t0 = time.monotonic()
 
-        def _wc() -> float:
-            return round(time.monotonic() - _t0, 3)
-
         try:
             proc = subprocess.Popen(
                 [sys.executable, str(worker_path), inf_path, out_path],
@@ -809,6 +816,13 @@ class Ds1000Evaluator:
             try:
                 stdout, stderr = proc.communicate(timeout=self.subprocess_timeout)
             except subprocess.TimeoutExpired as e:
+                # Capture elapsed NOW, before killpg + the bounded 30s
+                # post-kill drain. This is ≈ subprocess_timeout — i.e.
+                # how long the agent's subprocess actually ran before we
+                # killed it — NOT the parent-observed total (which would
+                # additionally include up to ~30s of teardown drain and
+                # mislead an analyst into thinking the agent ran longer).
+                timed_out_after = _elapsed_seconds(_t0)
                 try:
                     os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
                 except (ProcessLookupError, PermissionError):
@@ -832,13 +846,13 @@ class Ds1000Evaluator:
                 return 0.0, {
                     "error": f"subprocess timed out after {self.subprocess_timeout}s",
                     "subprocess_stderr": (stderr or "")[-2000:],
-                    "eval_wall_clock_seconds": _wc(),
+                    "eval_wall_clock_seconds": timed_out_after,
                 }
             if proc.returncode != 0:
                 return 0.0, {
                     "error": f"subprocess failed (exit {proc.returncode})",
                     "subprocess_stderr": (stderr or "")[-2000:],
-                    "eval_wall_clock_seconds": _wc(),
+                    "eval_wall_clock_seconds": _elapsed_seconds(_t0),
                 }
             try:
                 with open(out_path) as f:
@@ -847,12 +861,12 @@ class Ds1000Evaluator:
                 return 0.0, {
                     "error": f"subprocess produced no valid output: {type(e).__name__}: {e}",
                     "subprocess_stderr": (stderr or "")[-2000:],
-                    "eval_wall_clock_seconds": _wc(),
+                    "eval_wall_clock_seconds": _elapsed_seconds(_t0),
                 }
 
             score = float(payload.get("score", 0.0))
             diagnostics = payload.get("diagnostics", {}) or {}
-            diagnostics["eval_wall_clock_seconds"] = _wc()
+            diagnostics["eval_wall_clock_seconds"] = _elapsed_seconds(_t0)
             agent_only_cost = diagnostics.get("agent_cost_usd", 0.0) or 0.0
             with self._cost_lock:
                 self.total_eval_cost += agent_only_cost
@@ -914,14 +928,14 @@ class Ds1000Evaluator:
             return 0.0, {
                 "error": f"inspect.eval crashed: {type(e).__name__}: {e}",
                 "agent_stdout": captured.getvalue(),
-                "eval_wall_clock_seconds": round(time.monotonic() - _t0, 3),
+                "eval_wall_clock_seconds": _elapsed_seconds(_t0),
             }
 
         log = logs[0]
         score_value, diagnostics = self._extract_score_and_diagnostics(
             log, example, captured.getvalue()
         )
-        diagnostics["eval_wall_clock_seconds"] = round(time.monotonic() - _t0, 3)
+        diagnostics["eval_wall_clock_seconds"] = _elapsed_seconds(_t0)
         return score_value, diagnostics
 
     # -- Result extraction --------------------------------------------------

@@ -533,8 +533,12 @@ def test_evaluate_via_subprocess_records_wall_clock_on_every_path(
             for k in d.keys
         )
 
-    # Returns inside nested helper defs (e.g. the `_wc()` closure) are
-    # not _evaluate_via_subprocess return paths — exclude them.
+    # Defensive: returns inside any nested helper def are not
+    # _evaluate_via_subprocess return paths, so exclude them. (The
+    # wall-clock computation is currently the module-level
+    # `_elapsed_seconds` helper, so there's no in-function closure
+    # today — but keep this so a future closure refactor can't produce
+    # a false positive.)
     nested_returns = {
         id(r)
         for inner in ast.walk(fn)
@@ -569,4 +573,64 @@ def test_evaluate_via_subprocess_records_wall_clock_on_every_path(
         "record `eval_wall_clock_seconds` — a latency failure on these "
         "paths would be an invisible score-0 cliff:\n  "
         + "\n  ".join(f"line {ln}: {src}" for ln, src in offenders)
+    )
+
+
+def test_evaluate_non_subprocess_path_records_wall_clock():
+    """Parity pin for the non-isolated `evaluate()` path (used when
+    subprocess_isolation=False, e.g. some eval-only flows). It's a
+    lower-traffic path than _evaluate_via_subprocess, but the
+    test-rigor asymmetry is itself a regression risk: a future
+    refactor of evaluate() could silently drop the field with no
+    fence. Pin both the crash-path dict and the success-path
+    `diagnostics[...] = ...` assignment, anchored to evaluate()'s own
+    `_t0 = time.monotonic()`."""
+    src = (ASTA_DS1000_DIR / "evaluator.py").read_text()
+    tree = ast.parse(src)
+    fn = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == "evaluate":
+            fn = node
+            break
+    assert fn is not None, "evaluate() not found in evaluator.py"
+
+    has_timing_anchor = any(
+        isinstance(n, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == "_t0" for t in n.targets)
+        for n in ast.walk(fn)
+    )
+    assert has_timing_anchor, (
+        "evaluate() lost its `_t0 = time.monotonic()` timing anchor — "
+        "wall-clock recording on the non-subprocess path is gone."
+    )
+
+    # Crash-path return dict must carry the key.
+    crash_dict_has_key = any(
+        isinstance(n, ast.Return)
+        and isinstance(n.value, ast.Tuple)
+        and len(n.value.elts) == 2
+        and isinstance(n.value.elts[1], ast.Dict)
+        and any(
+            isinstance(k, ast.Constant) and k.value == "eval_wall_clock_seconds"
+            for k in n.value.elts[1].keys
+        )
+        for n in ast.walk(fn)
+    )
+    # Success path sets diagnostics["eval_wall_clock_seconds"] = ...
+    success_assign_has_key = any(
+        isinstance(n, ast.Assign)
+        and any(
+            isinstance(t, ast.Subscript)
+            and isinstance(t.value, ast.Name)
+            and isinstance(t.slice, ast.Constant)
+            and t.slice.value == "eval_wall_clock_seconds"
+            for t in n.targets
+        )
+        for n in ast.walk(fn)
+    )
+    assert crash_dict_has_key and success_assign_has_key, (
+        "evaluate() must record `eval_wall_clock_seconds` on BOTH its "
+        f"crash return (have={crash_dict_has_key}) and its success path "
+        f"(have={success_assign_has_key}). Asymmetric coverage vs "
+        "_evaluate_via_subprocess is a silent-drop risk."
     )
