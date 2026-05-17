@@ -1443,8 +1443,26 @@ def test_split_statement_newlines_unit():
     # Newlines inside quotes are data, not separators.
     assert split_statement_newlines("echo '1\n2'") == "echo '1\n2'"
     assert split_statement_newlines('echo "1\n2"') == 'echo "1\n2"'
-    # Backslash-newline line-continuation -> space.
-    assert split_statement_newlines("a \\\nb") == "a  b"
+    # bash line-continuation JOINS with no separator (a\<nl>b -> ab),
+    # NOT a space. A space would mis-split a path token and is
+    # exploitable (see test_backslash_newline_join_keeps_path_denied).
+    assert split_statement_newlines("a\\\nb") == "ab"
+    assert split_statement_newlines("a \\\nb") == "a b"  # real space kept
+
+
+def test_backslash_newline_join_keeps_path_denied(experiment_layout):
+    """An out-of-scope absolute path broken by an injected
+    backslash-newline must stay ONE token and be denied — bash joins
+    it, so we must too. A space-split would yield an in-scope-looking
+    leading fragment and let the read through."""
+    layout = experiment_layout
+    sib = str(layout["sibling_agent"])
+    cut = len(sib) // 2
+    cmd = f"cat {sib[:cut]}\\\n{sib[cut:]}"  # path split mid-token
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
 
 
 def test_multiline_interpreter_after_cd_allows(experiment_layout):
@@ -1537,3 +1555,59 @@ def test_tr_slash_operand_known_limitation(experiment_layout):
     res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
                    layout["experiment_dir"])
     assert res["decision"] == "deny"
+
+
+def test_sed_bundled_inplace_flag_is_write(experiment_layout):
+    """`-ni` is a bundled `-n -i` on GNU sed — it MUST be detected as
+    in-place, else the operand is read-classified and an in-place
+    write outside write scope is wrongly ALLOWED (the one
+    unsafe-direction gap; now closed)."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"  # read scope, NOT write
+    cmd = f"sed -ni 's/a/b/' {target}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside write scope" in res["reason"]
+
+
+def test_sed_inplace_target_in_cwd_allows(experiment_layout):
+    """Counterpart: bundled in-place on a cwd target is a legit write."""
+    layout = experiment_layout
+    target = layout["cwd"] / "agent.py"
+    target.write_text("a\n")
+    cmd = f"sed -i.bak 's/a/b/' {target}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["rc"] == 0
+    assert res["decision"] is None
+
+
+def test_sed_f_scriptfile_is_read_not_write_under_inplace(experiment_layout):
+    """`sed -i -f SCRIPT.sed TARGET`: SCRIPT.sed is a READ even under
+    -i (only TARGET is the write). An out-of-scope script file must be
+    denied as a *read*, proving it isn't mis-sunk into write_paths."""
+    layout = experiment_layout
+    sib_script = layout["sibling_agent"]  # out of scope
+    target = layout["cwd"] / "agent.py"
+    target.write_text("x\n")
+    cmd = f"sed -i -f {sib_script} {target}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_sed_f_scriptfile_in_scope_allows(experiment_layout):
+    """`sed -i -f SCRIPT.sed TARGET` with the script file in read scope
+    and the target in write scope — both classified correctly -> ok."""
+    layout = experiment_layout
+    script = layout["agents_dir"] / "prog.sed"  # in read scope
+    script.write_text("s/a/b/\n")
+    target = layout["cwd"] / "agent.py"
+    target.write_text("a\n")
+    cmd = f"sed -i -f {script} {target}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["rc"] == 0
+    assert res["decision"] is None

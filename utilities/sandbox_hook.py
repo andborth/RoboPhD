@@ -247,34 +247,60 @@ def classify_bash_segment(tokens: list) -> tuple:
     cmd = remaining[0]
     args = remaining[1:]
 
-    # `sed [-n] [-i] SCRIPT FILE...`. `-i` makes the FILEs writes;
-    # otherwise they're reads. Crucially, the inline SCRIPT is NOT a
-    # path — a sed address range like `/^FOO/,$p` starts with `/` and
-    # otherwise reads as an absolute path, producing spurious read
-    # denials (observed in production on a legitimate in-scope `diff
-    # <(sed -n '/re/,$p' a) <(... b)`). When `-e/-f/--expression/
-    # --file` is present there is no positional script (the program
-    # comes from the option/file), so every positional is a FILE.
+    # `sed [opts] [SCRIPT] FILE...`. `-i` makes the FILEs writes;
+    # otherwise they're reads. Subtleties this block must get right:
+    #   * the inline SCRIPT is NOT a path — a sed address range like
+    #     `/^FOO/,$p` starts with `/` and would otherwise read as an
+    #     absolute path (spurious deny; observed in production on a
+    #     legitimate in-scope `diff <(sed -n '/re/,$p' a) <(... b)`).
+    #   * in-place can be a BUNDLED short cluster (`-ni`, `-i.bak`) or
+    #     `--in-place`; missing those classifies an in-place write as a
+    #     read and would *allow* a write outside write scope (the only
+    #     unsafe-direction error in the file — every other limitation
+    #     fails toward deny). Any single-dash short cluster containing
+    #     `i` counts; ambiguity over-classifies as write (safe: at
+    #     worst a spurious deny, never an escape).
+    #   * a `-f SCRIPTFILE` program file is always a READ, even under
+    #     `-i` (only the edited target is the write).
     if cmd == "sed":
-        is_write = any(a == "-i" or a.startswith("-i") for a in args)
+        def _is_inplace(a: str) -> bool:
+            if a == "--in-place" or a.startswith("--in-place"):
+                return True
+            if a.startswith("-") and not a.startswith("--"):
+                return "i" in a[1:]
+            return False
+
+        is_write = any(_is_inplace(a) for a in args)
         sink = write_paths if is_write else read_paths
-        # -e/-f (and = forms) mean the program is supplied via option;
-        # then there is no inline-script positional to skip.
-        script_via_opt = any(
-            a in ("-e", "-f", "--expression", "--file")
-            or a.startswith(("-e", "-f", "--expression=", "--file="))
-            for a in args
-        )
-        script_consumed = script_via_opt
-        for a in args:
-            if a.startswith("-"):
-                continue
-            if not script_consumed:
-                # First bare positional is the inline sed program.
-                script_consumed = True
-                continue
-            if looks_like_path(a):
+        have_program = False      # set once -e/-f/--file or the inline
+        expect_script_file = False  # next token is the `-f` program file
+        j = 0
+        while j < len(args):
+            a = args[j]
+            if expect_script_file:
+                if looks_like_path(a):
+                    read_paths.append(a)  # script file: always a read
+                have_program = True
+                expect_script_file = False
+            elif a in ("-f", "--file"):
+                expect_script_file = True
+            elif a.startswith("--file="):
+                t = a[len("--file="):]
+                if looks_like_path(t):
+                    read_paths.append(t)
+                have_program = True
+            elif a in ("-e", "--expression"):
+                have_program = True
+                j += 1  # skip the following inline program (not a path)
+            elif a.startswith(("-e", "--expression=")):
+                have_program = True
+            elif a.startswith("-"):
+                pass  # other option (incl. bundled -i forms)
+            elif not have_program:
+                have_program = True  # first bare positional = inline program
+            elif looks_like_path(a):
                 sink.append(a)
+            j += 1
         return read_paths, write_paths, None
 
     # `dd if=SRC of=DST bs=N count=N` — `if=` is a read source, `of=` a
@@ -424,7 +450,13 @@ def split_statement_newlines(command: str) -> str:
     multi-line string is data, not a statement boundary — e.g.
     ``python -c "import os\\nos.do()"``). Heredoc bodies are already
     removed by ``strip_heredoc_bodies`` before this runs. A
-    backslash-newline line-continuation collapses to a space.
+    backslash-newline line-continuation is removed entirely (bash
+    JOINS the two physical lines with no separator: ``a\\<nl>b`` -> the
+    single token ``ab``). Emitting a space instead would be wrong and
+    actively unsafe: ``/exp\\<nl>iltrate/secret`` would split into the
+    in-scope token ``/exp`` plus a harmless-looking relative token,
+    while bash reads the out-of-scope ``/expiltrate/secret``. Joining
+    keeps it one token that the scope check correctly denies.
 
     Strictly increases splitting precision: more, smaller segments can
     only classify a path under a *narrower* command (or none, which
@@ -438,7 +470,9 @@ def split_statement_newlines(command: str) -> str:
         c = command[i]
         if (c == "\\" and i + 1 < n and command[i + 1] == "\n"
                 and not in_single and not in_double):
-            out.append(" ")
+            # bash line-continuation: remove BOTH chars, join with
+            # nothing (a\<nl>b -> ab). See docstring for why a space
+            # here would be an exploitable mis-split.
             i += 2
             continue
         if c == "'" and not in_double:
