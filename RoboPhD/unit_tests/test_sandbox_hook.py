@@ -1451,18 +1451,44 @@ def test_split_statement_newlines_unit():
 
 
 def test_backslash_newline_join_keeps_path_denied(experiment_layout):
-    """An out-of-scope absolute path broken by an injected
-    backslash-newline must stay ONE token and be denied — bash joins
-    it, so we must too. A space-split would yield an in-scope-looking
-    leading fragment and let the read through."""
+    """Escape regression — must be NOT green-by-construction.
+
+    The split lands exactly at the experiment-dir prefix boundary:
+      token-1 = <experiment_dir>          -> == root, IN scope
+      token-2 = _escape/secret            -> relative, resolves under
+                                             cwd, IN scope
+      joined  = <experiment_dir>_escape/secret -> sibling-of-root,
+                                             OUT of scope (bash reads
+                                             this).
+    Under the OLD space-emitting bug both tokens pass -> ALLOW (escape).
+    Under the JOIN fix it is one out-of-scope token -> DENY. So this
+    test FAILS on the buggy impl and PASSES on the fixed one, unlike a
+    mid-`sibling_agent` split whose every prefix is already out of
+    scope (green under both).
+    """
     layout = experiment_layout
-    sib = str(layout["sibling_agent"])
-    cut = len(sib) // 2
-    cmd = f"cat {sib[:cut]}\\\n{sib[cut:]}"  # path split mid-token
+    exp = str(layout["experiment_dir"])
+    # `<exp>_escape/secret` shares the string prefix but is NOT under
+    # <exp> (next char is '_' , not os.sep), so it is out of scope.
+    cmd = f"cat {exp}\\\n_escape/secret"
     res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
                    layout["experiment_dir"])
     assert res["decision"] == "deny"
     assert "outside read scope" in res["reason"]
+
+
+def test_backslash_newline_test_is_not_vacuous(experiment_layout):
+    """Control for the test above: the same `cat` of a genuinely
+    in-scope file (no continuation) is allowed — proving the deny
+    above is the join behavior, not the harness denying everything."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"  # in read scope
+    res = run_hook(
+        make_envelope("Bash", {"command": f"cat {target}"}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["rc"] == 0
+    assert res["decision"] is None
 
 
 def test_multiline_interpreter_after_cd_allows(experiment_layout):
