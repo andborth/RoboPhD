@@ -29,7 +29,11 @@ HOOK = REPO_ROOT / "utilities" / "sandbox_hook.py"
 
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
-from utilities.sandbox_hook import project_slug, auto_memory_dir  # noqa: E402
+from utilities.sandbox_hook import (  # noqa: E402
+    project_slug,
+    auto_memory_dir,
+    split_statement_newlines,
+)
 
 
 # ---------------------------------------------------------------------
@@ -1420,3 +1424,116 @@ def test_deny_message_lists_extra_roots(carveout_layout):
     assert res["decision"] == "deny"
     assert "task-specific resource roots" in res["reason"]
     assert str(L["resource_root"].resolve()) in res["reason"]
+
+
+# ---------------------------------------------------------------------
+# Tokenizer-flattening false positives (observed in asta_ds1000 runs)
+#
+# shlex collapses newlines and substitution boundaries, so the leading
+# command's classifier used to consume *other* commands' tokens. These
+# pin the fixes AND guard that the added precision never HIDES a path:
+# out-of-scope reads on later statements / sed file operands must still
+# be denied, and `find /` must stay blocked (it is a correct catch, not
+# a false positive).
+# ---------------------------------------------------------------------
+
+
+def test_split_statement_newlines_unit():
+    assert split_statement_newlines("a\nb\nc") == "a;b;c"
+    # Newlines inside quotes are data, not separators.
+    assert split_statement_newlines("echo '1\n2'") == "echo '1\n2'"
+    assert split_statement_newlines('echo "1\n2"') == 'echo "1\n2"'
+    # Backslash-newline line-continuation -> space.
+    assert split_statement_newlines("a \\\nb") == "a  b"
+
+
+def test_multiline_interpreter_after_cd_allows(experiment_layout):
+    """rec2: `cd <in-scope>` then a newline then an absolute-path
+    interpreter must NOT make the interpreter an argument of `cd`."""
+    layout = experiment_layout
+    cmd = (
+        f"cd {layout['cwd']}\n"
+        "/opt/anaconda3/envs/robophd_demo/bin/python -c "
+        "\"import ast; ast.parse(open('agent.py').read()); print('ok')\""
+    )
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["rc"] == 0
+    assert res["decision"] is None
+
+
+def test_multiline_second_statement_still_scoped(experiment_layout):
+    """Guard: newline-splitting must not let line 2 escape scope.
+
+    If it merely *ignored* later statements this would wrongly allow;
+    it must classify line 2 on its own and deny the sibling read."""
+    layout = experiment_layout
+    cmd = f"cd {layout['cwd']}\ncat {layout['sibling_agent']}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_sed_script_in_process_substitution_allows(experiment_layout):
+    """rec3: `diff <(sed -n '/re/,$p' a) <(sed -n '/re/,$p' b)` with
+    both files in scope — the sed script must not read as a path."""
+    layout = experiment_layout
+    a = layout["agents_dir"] / "agent.py"   # in read scope
+    b = layout["cwd"] / "agent.py"
+    b.write_text("x\n")
+    cmd = (f"diff <(sed -n '/^FORMAT_VAR = /,$p' {a}) "
+           f"<(sed -n '/^FORMAT_VAR = /,$p' {b}) && echo IDENT")
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["rc"] == 0
+    assert res["decision"] is None
+
+
+def test_sed_file_operand_still_scoped(experiment_layout):
+    """Guard: only the sed SCRIPT is exempted — a real out-of-scope
+    file operand must still be denied."""
+    layout = experiment_layout
+    cmd = f"sed -n '/re/,$p' {layout['sibling_agent']}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_sed_inplace_outside_cwd_still_write_denied(experiment_layout):
+    """Guard: sed -i FILE is still a write; a prior-agent dir is in
+    read scope but out of write scope."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"
+    cmd = f"sed -i 's/a/b/' {target}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside write scope" in res["reason"]
+
+
+def test_find_root_still_denied(experiment_layout):
+    """Security regression guard: `find /` is a full-filesystem scan
+    and MUST stay denied — it is a correct catch, not a false
+    positive, and the precision changes must not relax it."""
+    layout = experiment_layout
+    cmd = 'find / -name "test_760.py" 2>/dev/null | head'
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_tr_slash_operand_known_limitation(experiment_layout):
+    """KNOWN, ACCEPTED limitation (not fixed): `tr -d /` trips on bare
+    '/'. `tr`'s operand is a SET, not a path — but bare '/' MUST remain
+    path-shaped so `find /` (above) stays blocked, and shlex's `$(`/`)`
+    gluing means a tr-scoped exemption could be turned into an evasion.
+    A safe fix needs the substitution-parser rework, out of scope here.
+    Pinned so the behavior is deliberate and visible, not silent."""
+    layout = experiment_layout
+    cmd = "echo abc | tr -d /"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"

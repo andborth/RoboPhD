@@ -247,16 +247,34 @@ def classify_bash_segment(tokens: list) -> tuple:
     cmd = remaining[0]
     args = remaining[1:]
 
-    # `sed -i ...` is a write; otherwise sed is a read.
+    # `sed [-n] [-i] SCRIPT FILE...`. `-i` makes the FILEs writes;
+    # otherwise they're reads. Crucially, the inline SCRIPT is NOT a
+    # path — a sed address range like `/^FOO/,$p` starts with `/` and
+    # otherwise reads as an absolute path, producing spurious read
+    # denials (observed in production on a legitimate in-scope `diff
+    # <(sed -n '/re/,$p' a) <(... b)`). When `-e/-f/--expression/
+    # --file` is present there is no positional script (the program
+    # comes from the option/file), so every positional is a FILE.
     if cmd == "sed":
-        if any(a == "-i" or a.startswith("-i") for a in args):
-            for a in args:
-                if not a.startswith("-") and looks_like_path(a):
-                    write_paths.append(a)
-            return read_paths, write_paths, None
+        is_write = any(a == "-i" or a.startswith("-i") for a in args)
+        sink = write_paths if is_write else read_paths
+        # -e/-f (and = forms) mean the program is supplied via option;
+        # then there is no inline-script positional to skip.
+        script_via_opt = any(
+            a in ("-e", "-f", "--expression", "--file")
+            or a.startswith(("-e", "-f", "--expression=", "--file="))
+            for a in args
+        )
+        script_consumed = script_via_opt
         for a in args:
-            if not a.startswith("-") and looks_like_path(a):
-                read_paths.append(a)
+            if a.startswith("-"):
+                continue
+            if not script_consumed:
+                # First bare positional is the inline sed program.
+                script_consumed = True
+                continue
+            if looks_like_path(a):
+                sink.append(a)
         return read_paths, write_paths, None
 
     # `dd if=SRC of=DST bs=N count=N` — `if=` is a read source, `of=` a
@@ -390,6 +408,51 @@ def strip_heredoc_bodies(command: str) -> str:
     return "".join(out)
 
 
+def split_statement_newlines(command: str) -> str:
+    """Replace unquoted, top-level newlines with ';'.
+
+    shlex (used by ``split_compound``) treats a newline as plain
+    whitespace, so ``a\\nb\\nc`` collapses into ONE segment and the
+    leading command's classifier wrongly consumes the *later*
+    statements' tokens. Observed in production: a ``cd <in-scope-dir>``
+    on line 1 swallowed line 2's absolute ``/opt/.../python`` as one of
+    *its* arguments, producing a spurious read-scope denial of the
+    interpreter path. Newlines ARE statement separators in bash; making
+    that explicit lets each statement be classified on its own command.
+
+    Newlines inside single/double quotes are preserved (a quoted
+    multi-line string is data, not a statement boundary — e.g.
+    ``python -c "import os\\nos.do()"``). Heredoc bodies are already
+    removed by ``strip_heredoc_bodies`` before this runs. A
+    backslash-newline line-continuation collapses to a space.
+
+    Strictly increases splitting precision: more, smaller segments can
+    only classify a path under a *narrower* command (or none, which
+    still hits the read-scope default) — it never hides a path or
+    widens scope.
+    """
+    out: list = []
+    in_single = in_double = False
+    i, n = 0, len(command)
+    while i < n:
+        c = command[i]
+        if (c == "\\" and i + 1 < n and command[i + 1] == "\n"
+                and not in_single and not in_double):
+            out.append(" ")
+            i += 2
+            continue
+        if c == "'" and not in_double:
+            in_single = not in_single
+        elif c == '"' and not in_single:
+            in_double = not in_double
+        if c == "\n" and not in_single and not in_double:
+            out.append(";")
+        else:
+            out.append(c)
+        i += 1
+    return "".join(out)
+
+
 def split_compound(command: str) -> list:
     """Split a Bash command on top-level pipes/semicolons/&&/|| boundaries.
 
@@ -401,6 +464,16 @@ def split_compound(command: str) -> list:
     (``false;`` → ``false ;``) split correctly. Plain ``shlex.split``
     keeps ``;`` glued to the preceding token, which silently broke
     every for/while loop body classification.
+
+    Also breaks on subshell / process- / command-substitution
+    boundaries (``(``, ``)``, ``<(``, ``>(``). Without this an inner
+    command keeps its outer command's classifier rules — e.g.
+    ``diff <(sed -n '/re/,$p' f) ...`` was classified as ``diff`` so
+    the ``sed`` script ``/re/,$p`` was scanned as a path and spuriously
+    denied. Splitting here only makes classification *more* precise
+    (each command judged by its own rules); every path token still
+    flows through the same read/write scope check, so nothing is hidden
+    and scope is never widened.
     """
     try:
         lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
@@ -409,10 +482,11 @@ def split_compound(command: str) -> list:
     except ValueError:
         return None
 
+    separators = {"|", "||", "&&", ";", "&", "(", ")", "<(", ">("}
     segments: list = []
     current: list = []
     for tok in all_tokens:
-        if tok in ("|", "||", "&&", ";", "&"):
+        if tok in separators:
             if current:
                 segments.append(current)
                 current = []
@@ -755,6 +829,10 @@ def main() -> int:
         # surrounding command (including the `> file` redirect target)
         # is still visible and classified normally.
         command = strip_heredoc_bodies(command)
+        # Newlines are statement separators; make that explicit so
+        # split_compound doesn't merge newline-separated statements
+        # into one mis-classified segment (see split_statement_newlines).
+        command = split_statement_newlines(command)
 
         segments = split_compound(command)
         if segments is None:
