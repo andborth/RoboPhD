@@ -643,6 +643,56 @@ def test_stronger_rows_includes_all_three_handle_names(stronger_rows_helper):
         )
 
 
+def test_all_gemini_rows_share_available_overrides_cell(stronger_rows_helper):
+    """All three Gemini handles share the same default `"low"` /
+    opt-up `"high"` reasoning_effort shape, so their Available-
+    overrides cells in the rendered model-handle table must be
+    identical.
+
+    Pins the symmetry that the "describe Pro Preview like the other
+    Geminis" change (commit fe36199) established. The earlier shape
+    tests pass even when Pro Preview's cell uses asymmetric phrasing
+    (e.g. `"high"` only (cannot go below default)) because they only
+    check column count and handle-name presence. This test catches a
+    regression on either side: a stronger-rows helper that reverts to
+    Pro-Preview-special phrasing, or a background.md edit that drifts
+    one cheap-tier Gemini row away from the others.
+
+    Cell extraction parses rendered markdown rather than scanning
+    source, so it survives construction-style refactors (f-string,
+    .join(), list-of-rows, ...) of either the template or the helper.
+    """
+    background_md = (ASTA_DS1000_DIR / "background.md").read_text()
+    stronger_rendered = stronger_rows_helper(True)
+    combined = background_md + "\n" + stronger_rendered
+
+    gemini_rows = [
+        line for line in combined.split("\n")
+        if line.startswith("| `GEMINI_") and line.endswith(" |")
+    ]
+    assert len(gemini_rows) == 3, (
+        f"Expected 3 GEMINI_* rows across background.md + stronger "
+        f"rows, found {len(gemini_rows)}:\n  " + "\n  ".join(gemini_rows)
+    )
+
+    # Row shape: | handle | input | output | default | overrides |
+    # split("|") -> ['', ' handle ', ' input ', ' output ', ' default ',
+    #                 ' overrides ', '']
+    # so [-2] is the Available-overrides cell.
+    overrides_by_handle = {
+        row.split("|")[1].strip(): row.split("|")[-2].strip()
+        for row in gemini_rows
+    }
+    unique_cells = set(overrides_by_handle.values())
+    assert len(unique_cells) == 1, (
+        "GEMINI_* rows must share an identical Available-overrides "
+        "cell — Pro Preview should be described in the same boat as "
+        "the cheap-tier Geminis (all three default to `\"low\"` with "
+        "`\"high\"` as the only opt-up). Cells found:\n  "
+        + "\n  ".join(f"{h}: {c!r}" for h, c in overrides_by_handle.items())
+    )
+
+
 def test_seed_generate_call_omits_temperature():
     """The seed's `.generate(...)` call must not pass `temperature`.
 
