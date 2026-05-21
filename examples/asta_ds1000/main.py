@@ -257,8 +257,10 @@ def _build_stronger_rows(allow_stronger_models: bool) -> str:
         `"low"`         — we pinned "low" (Gemini Flash family + Pro Preview)
         model-managed   — reasoning always on, level chosen by provider
                           (GPT-5.5, Opus 4.7)
-    Pro Preview's "cannot disable below low" property moves to the
-    Available-overrides column where it actually constrains the choices.
+    Pro Preview shares the Gemini Flash family's reasoning_effort shape
+    (default `"low"`, opt-up to `"high"`), so its Available-overrides
+    column matches theirs exactly. The prose under the table covers the
+    "cannot disable below low" fact for all three Geminis at once.
 
     No trailing prose caveat — the dollar columns carry cost asymmetry
     and the Default column carries the always-on-reasoning fact. Keeping
@@ -271,7 +273,7 @@ def _build_stronger_rows(allow_stronger_models: bool) -> str:
     return (
         '| `GPT_5_5` | 5.00 | 30.00 | model-managed | `"low"`, `"medium"`, `"high"` |\n'
         '| `CLAUDE_OPUS_4_7` | 5.00 | 25.00 | model-managed | `"low"`, `"medium"`, `"high"` |\n'
-        '| `GEMINI_3_1_PRO_PREVIEW` | 2.00 | 12.00 | `"low"` | `"high"` only (cannot go below default) |'
+        '| `GEMINI_3_1_PRO_PREVIEW` | 2.00 | 12.00 | `"low"` | `"low"`, `"high"` |'
     )
 
 
