@@ -8,8 +8,8 @@ into a cheap/fast tier and a stronger/slower tier:
   Google:    GEMINI_3_1_FLASH_LITE          / GEMINI_3_FLASH_PREVIEW
 
 When `ASTA_DS1000_ALLOW_STRONGER_MODELS=1` is set in the environment
-(via main.py's `--allow-stronger-models` flag), three additional
-stronger-tier handles are also exported:
+(by default on for main.py; disabled via `--no-allow-stronger-models`),
+three additional stronger-tier handles are also exported:
 
   OpenAI:    GPT_5_5
   Anthropic: CLAUDE_OPUS_4_7
@@ -114,16 +114,16 @@ GEMINI_3_FLASH_PREVIEW = get_model(
     config=GenerateConfig(reasoning_effort="low"),
 )
 
-# Stronger-model handles, gated behind --allow-stronger-models on
-# main.py (which sets ASTA_DS1000_ALLOW_STRONGER_MODELS=1 in os.environ
-# before subprocess eval imports this module). Cost rates are ~5-10×
-# the cheap tier; pair with --cost-threshold 0.08 (or higher) so the
-# cost penalty doesn't saturate on the first call.
+# Stronger-model handles, gated behind ASTA_DS1000_ALLOW_STRONGER_MODELS=1.
+# main.py sets that env var by default; --no-allow-stronger-models on
+# main.py drops the tier. Cost rates are ~5-10× the cheap tier; raise
+# --cost-threshold (e.g. 0.08) for a more generous free zone when using
+# them, or raise --cost-per-error to soften the per-call penalty.
 #
 # GATED_HANDLE_NAMES is the single source of truth for the gated set:
-# referenced from main.py's resume-time auto-detect (so omitting
-# --allow-stronger-models on a resume still picks up the env var when
-# any agent in the pool imports a gated handle), and from the registry
+# referenced from main.py's resume-time auto-detect (so resuming with
+# --no-allow-stronger-models still re-enables the env var when any
+# agent in the pool imports a gated handle), and from the registry
 # tests (which loop over it to verify each name exists when the gate is
 # open). If you add or remove a gated handle, update both this tuple
 # and the if-block body below — the registry tests will fail-loud if

@@ -14,7 +14,7 @@ Currently covers three bug classes:
   - On `--resume`, main.py must auto-detect imports of gated stronger-
     tier handles in the resumed run's agent pool and set
     ASTA_DS1000_ALLOW_STRONGER_MODELS=1 even when
-    --allow-stronger-models was omitted. Without it, eval workers
+    --no-allow-stronger-models was passed. Without it, eval workers
     ImportError on every sample, yielding a uniform 0.000 test score
     (silent — no exception bubbles up). The gated names live in
     model_registry as `GATED_HANDLE_NAMES` (the single source of
@@ -593,17 +593,17 @@ SEED_AGENT_PY = REPO_ROOT / "examples" / "asta_ds1000" / "seeds" / "baseline" / 
 
 
 def test_stronger_rows_off_mode_is_empty(stronger_rows_helper):
-    """With --allow-stronger-models off, the helper returns empty string
-    so the ${STRONGER_MODELS_TABLE_ROWS}\\n placeholder collapses
-    cleanly (see the trailing-newline absorption trick in
-    _interpolate()). A regression that returned anything non-empty
-    here would re-introduce stronger-tier handle names into off-mode
-    background.md."""
+    """With the stronger-models tier disabled (--no-allow-stronger-models),
+    the helper returns empty string so the ${STRONGER_MODELS_TABLE_ROWS}\\n
+    placeholder collapses cleanly (see the trailing-newline absorption
+    trick in _interpolate()). A regression that returned anything non-
+    empty here would re-introduce stronger-tier handle names into off-
+    mode background.md."""
     assert stronger_rows_helper(False) == ""
 
 
 def test_stronger_rows_on_mode_uses_five_column_shape(stronger_rows_helper):
-    """With --allow-stronger-models on, every row must match the
+    """With the stronger-models tier enabled (default), every row must match the
     cheap-tier 5-column shape (Handle | Input | Output | Default
     reasoning_effort | Available overrides). Tests the helper output
     directly — survives any string-construction refactor (f-strings,

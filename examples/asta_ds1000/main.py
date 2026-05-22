@@ -211,7 +211,7 @@ def _resume_needs_stronger_flag(
     a gated handle name from `model_registry`.
 
     Used at resume time to auto-set ASTA_DS1000_ALLOW_STRONGER_MODELS
-    when --allow-stronger-models was omitted but the resumed run's
+    when --no-allow-stronger-models was passed but the resumed run's
     agent pool needs the gated handles. Without this, eval workers
     crash on import in their per-sample subprocesses and the test eval
     yields a uniform 0.000 score with no surfaced exception.
@@ -244,7 +244,9 @@ def _resume_needs_stronger_flag(
 
 def _build_stronger_rows(allow_stronger_models: bool) -> str:
     """Return the three stronger-tier table rows for background.md,
-    or empty string when --allow-stronger-models is off.
+    or empty string when the stronger-models tier is disabled
+    (`allow_stronger_models=False`, i.e. --no-allow-stronger-models
+    was passed).
 
     Pure function — no I/O, no env-var reads, no global state. Tests
     import this directly and pin the output string, so the row shape
@@ -431,9 +433,9 @@ def main():
     # via inheritance — the asta_ds1000 evaluator's subprocess.Popen
     # calls don't pass env=, so the parent env is used.
     #
-    # On --resume, also auto-detect: if any agent in the resumed run
-    # imports a gated handle, the original training run had
-    # --allow-stronger-models, and the resume must too — otherwise the
+    # On --resume with --no-allow-stronger-models, also auto-detect: if
+    # any agent in the resumed run imports a gated handle, the resumed
+    # run's agent pool needs the gated handles exposed — otherwise the
     # gated handles aren't created in the eval workers and every per-
     # problem subprocess crashes on import for a uniform 0.000 score.
     # Self-healing rather than checkpoint-persisted so historical runs
@@ -447,7 +449,8 @@ def main():
         if _resume_needs_stronger_flag(Path(args.resume), GATED_HANDLE_NAMES):
             os.environ["ASTA_DS1000_ALLOW_STRONGER_MODELS"] = "1"
             logger.info(
-                "Auto-enabled --allow-stronger-models on resume: "
+                "Auto-enabled stronger-models tier on resume "
+                "(overriding --no-allow-stronger-models): "
                 "resumed run's agent pool imports a gated handle"
             )
 
@@ -497,12 +500,13 @@ def main():
         ]
         return "\n".join(rows)
 
-    # Stronger-model rows, conditional on --allow-stronger-models.
-    # When the flag is off, the placeholder collapses to empty string
-    # and the background.md table stays at six rows; when on, three
-    # rows are appended. Construction is delegated to a pure helper
-    # so tests can pin the output string without scanning main.py's
-    # source for string-literal patterns.
+    # Stronger-model rows, conditional on the stronger-models tier
+    # being enabled (default on; disabled by --no-allow-stronger-models).
+    # When disabled, the placeholder collapses to empty string and the
+    # background.md table stays at six rows; when enabled, three rows
+    # are appended. Construction is delegated to a pure helper so tests
+    # can pin the output string without scanning main.py's source for
+    # string-literal patterns.
     stronger_rows = _build_stronger_rows(args.allow_stronger_models)
 
     # Resolve effective new_agent_test_rounds from CLI flag + the
