@@ -335,11 +335,14 @@ def parse_args():
 
     p.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd")
     p.add_argument("--num-iterations", type=int, default=None,
-                   help=f"Override the default iteration cap ({DEFAULT_NUM_ITERATIONS})")
+                   help=f"Override the default iteration cap ({DEFAULT_NUM_ITERATIONS})"
+                        "%(default).0s")
     p.add_argument("--examples-per-iteration", type=int, default=None,
-                   help=f"Override the default per-iteration sample size ({DEFAULT_EXAMPLES_PER_ITERATION})")
+                   help=f"Override the default per-iteration sample size ({DEFAULT_EXAMPLES_PER_ITERATION})"
+                        "%(default).0s")
     p.add_argument("--evaluation-budget", type=int, default=None,
-                   help="Override the default evaluation budget (iter-bounded)")
+                   help="Override the default evaluation budget (iter-bounded)"
+                        "%(default).0s")
     p.add_argument("--new-agent-test-rounds", type=int, default=None,
                    help="Number of Deep-Focus refinement rounds per new agent. "
                         "0 (default) skips Round 2 — each agent is evaluated once "
@@ -378,7 +381,8 @@ def parse_args():
                         "%(default).0s")
     p.add_argument("--cost-threshold", type=float, default=None,
                    help="Mean cost across an iteration's batch below this "
-                        "is in the free zone (no penalty). Default $0.04.")
+                        "is in the free zone (no penalty). Default $0.04."
+                        "%(default).0s")
     p.add_argument("--cost-per-error", type=float, default=None,
                    help="Dollars of mean batch spend (over --cost-threshold) "
                         "that equals one wrong answer of penalty. Default "
@@ -387,7 +391,8 @@ def parse_args():
                         "where the penalty sorts within accuracy ties but "
                         "never overrides a 1-problem accuracy gap. Applied "
                         "to the iteration aggregate (not per example); "
-                        "test-path scores are raw 0/1 fractions regardless.")
+                        "test-path scores are raw 0/1 fractions regardless."
+                        "%(default).0s")
 
     p.add_argument("--max-workers", type=int, default=12,
                    help="Parallel eval workers. Each evaluation runs in its "
