@@ -653,6 +653,62 @@ def auto_memory_dir(experiment_dir: str):
     )
 
 
+def auto_session_dirs(cwd: str) -> list:
+    """READ-ONLY carve-outs for Claude CLI's own session-project state.
+
+    Claude Code stashes per-session state under
+    ``<config-dir>/projects/<slug(cwd)>/`` — the session transcript
+    ``<session-id>.jsonl`` and large-tool-output *spills* at
+    ``<session-id>/tool-results/<id>.txt``. When a tool produces output
+    too large to inline, the CLI writes the full content there and the
+    model must ``Read`` it back to see the full result. Without this
+    carve-out that Read is denied (outside ``EXPERIMENT_DIR``),
+    silently degrading every iteration that produces a large tool
+    output.
+
+    Differences vs ``auto_memory_dir``:
+      * keyed on the runtime ``cwd`` (the iteration dir for evolution
+        sessions), NOT ``EXPERIMENT_DIR`` — Claude uses different
+        project roots for transcripts/tool-results (cwd-derived) vs
+        auto-memory (experiment-root). Observed empirically; both
+        slugs appear under ``~/.claude/projects/`` for the same run.
+      * READ-ONLY: the CLI writes these files itself, the model only
+        Reads them back; the write-tool branch deliberately does not
+        honor these dirs, keeping any ``~/.claude/...`` write denied.
+
+    Tries multiple config-dir locations: ``$CLAUDE_CONFIG_DIR`` (the
+    official override), ``~/.claude`` (default), ``~/.claude-secondary``
+    (observed in alt installations). Dual raw/realpath cwd-slug for
+    symlinked-root robustness, same as the memory carve-out. Same
+    fragile-but-fail-safe profile: a slug drift just yields ordinary
+    deny + logged record, never an escape.
+    """
+    home = os.path.expanduser("~")
+    if not home or home == "~":
+        return []
+    config_dirs: list = []
+    env_dir = os.environ.get("CLAUDE_CONFIG_DIR")
+    if env_dir:
+        config_dirs.append(env_dir)
+    for fallback in (".claude", ".claude-secondary"):
+        d = os.path.join(home, fallback)
+        if d not in config_dirs:
+            config_dirs.append(d)
+
+    out: list = []
+    seen_slugs: set = set()
+    for cand in (cwd, os.path.realpath(cwd)):
+        slug = project_slug(cand)
+        if slug in seen_slugs:
+            continue
+        seen_slugs.add(slug)
+        for cd in config_dirs:
+            p = os.path.realpath(os.path.join(cd, "projects", slug))
+            if p not in out:
+                out.append(p)
+    return out
+
+
 def deny_message(
     experiment_dir: str,
     cwd: str,
@@ -772,6 +828,18 @@ def main() -> int:
         if d and d not in memory_carveouts:
             memory_carveouts.append(d)
     extra_read_roots = extra_read_roots + memory_carveouts
+
+    # Session-project READ carve-out: the Claude CLI spills large tool
+    # outputs and stores transcripts under <config-dir>/projects/
+    # <slug(cwd)>/. The model must Read its own spilled output back; the
+    # raw experiment-dir read scope would deny. See auto_session_dirs.
+    # READ-ONLY by design — NOT added to memory_carveouts (write),
+    # so an injection writing to ~/.claude/... via Write or Bash stays
+    # denied.
+    session_carveouts = auto_session_dirs(cwd)
+    for d in session_carveouts:
+        if d not in extra_read_roots:
+            extra_read_roots = extra_read_roots + [d]
 
     # Cwd must itself be under the experiment dir; otherwise the write
     # scope is broken before we start.

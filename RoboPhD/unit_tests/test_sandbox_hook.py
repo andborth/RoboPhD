@@ -32,6 +32,7 @@ if str(REPO_ROOT) not in sys.path:
 from utilities.sandbox_hook import (  # noqa: E402
     project_slug,
     auto_memory_dir,
+    auto_session_dirs,
     split_statement_newlines,
 )
 
@@ -366,6 +367,113 @@ def test_project_slug_collision_is_known_inherited_limitation():
     # being timestamp-unique and RoboPhD-owned (covered by the
     # sibling/source-repo deny tests above).
     assert auto_memory_dir(a) == auto_memory_dir(b)
+
+
+# ---------------------------------------------------------------------
+# Session-project READ carve-out (Claude CLI tool-results / transcript)
+#
+# Claude Code spills large tool outputs to
+# ~/.claude/projects/<slug(cwd)>/<session>/tool-results/<id>.txt, and
+# the model later Reads it back. The slug is cwd-keyed (different from
+# auto-memory's experiment-root key). These tests pin the carve-out
+# AND the containment: a sibling iteration's slug stays denied, and
+# the carve-out is READ-only (Write/Bash-write to the same path stay
+# denied so the documented ~/.claude write boundary is unchanged).
+# ---------------------------------------------------------------------
+
+
+def _tool_results_path(cwd: Path, name: str = "spill.txt",
+                       config_dir_name: str = ".claude") -> str:
+    slug = project_slug(os.path.realpath(str(cwd)))
+    return os.path.join(
+        os.path.expanduser("~"), config_dir_name, "projects",
+        slug, "session-abc", "tool-results", name,
+    )
+
+
+def test_auto_session_dirs_includes_both_homes_unit(tmp_path):
+    d = tmp_path / "iter"
+    d.mkdir()
+    out = auto_session_dirs(str(d))
+    slug = project_slug(os.path.realpath(str(d)))
+    home = os.path.expanduser("~")
+    expected_default = os.path.realpath(os.path.join(home, ".claude", "projects", slug))
+    expected_secondary = os.path.realpath(os.path.join(home, ".claude-secondary", "projects", slug))
+    assert expected_default in out
+    assert expected_secondary in out
+
+
+def test_tool_results_read_under_cwd_slug_allows(experiment_layout):
+    """The CLI's own spill readback (this iteration's slug) must succeed."""
+    layout = experiment_layout
+    target = _tool_results_path(layout["cwd"])
+    res = run_hook(
+        make_envelope("Read", {"file_path": target}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["rc"] == 0
+    assert res["decision"] is None
+
+
+def test_tool_results_read_under_secondary_home_allows(experiment_layout):
+    """Same carve-out for the .claude-secondary home variant
+    (observed in alt installations)."""
+    layout = experiment_layout
+    target = _tool_results_path(layout["cwd"], config_dir_name=".claude-secondary")
+    res = run_hook(
+        make_envelope("Read", {"file_path": target}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["rc"] == 0
+    assert res["decision"] is None
+
+
+def test_tool_results_sibling_iteration_slug_denies(experiment_layout):
+    """A *different* iteration's slug (here: a sibling-run iter dir) is
+    not on the carve-out — read denied. Pins containment: the carve-out
+    is exactly this cwd's slug, not all of ~/.claude/projects/."""
+    layout = experiment_layout
+    other_cwd = (layout["experiment_dir"].parent / "task_20251231_120000"
+                 / "evolution_output" / "iteration_002")
+    other_slug = project_slug(os.path.realpath(str(other_cwd)))
+    target = os.path.join(
+        os.path.expanduser("~"), ".claude", "projects",
+        other_slug, "session-xyz", "tool-results", "leak.txt",
+    )
+    res = run_hook(
+        make_envelope("Read", {"file_path": target}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_tool_results_write_tool_still_denied(experiment_layout):
+    """Carve-out is READ-only. Writing to the same path must still
+    deny — keeps the documented ~/.claude write boundary intact."""
+    layout = experiment_layout
+    target = _tool_results_path(layout["cwd"])
+    res = run_hook(
+        make_envelope("Write", {"file_path": target, "content": "x"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside write scope" in res["reason"]
+
+
+def test_tool_results_bash_write_still_denied(experiment_layout):
+    """Bash write redirect into the carve-out dir must still deny —
+    the Bash write path deliberately doesn't honor session carve-outs,
+    same asymmetry as the memory carve-out."""
+    layout = experiment_layout
+    target = _tool_results_path(layout["cwd"], name="evil.txt")
+    res = run_hook(
+        make_envelope("Bash", {"command": f"echo pwned > {target}"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
 
 
 def test_auto_memory_symlinked_root_literal_slug_allows(tmp_path):
