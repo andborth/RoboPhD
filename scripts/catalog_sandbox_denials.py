@@ -63,9 +63,17 @@ _PROJECT_ROOT = Path(__file__).parent.parent
 # record dict.
 #
 # When a new FP class is closed in code, MOVE its pattern from FP-OPEN
-# to FP-FIXED and tag the commit in the label — that preserves
-# historical-record classification (old jsonl files still get tagged
-# correctly) and demonstrates the open->fixed transition over time.
+# to FP-FIXED — historical jsonl records keep classifying correctly,
+# and the open->fixed transition is visible over time. We deliberately
+# do NOT tag the closing commit hash in the label (SHAs rot under
+# rebase, and labels are user-visible in reports); use ``git log -S
+# "<label phrase>"`` from the closing PR/commit to find when a pattern
+# was migrated.
+#
+# Predicates that match on blocked_path patterns alone (e.g., the
+# sed-script regex) are tightened with a second cmd-awareness check
+# so a real out-of-scope path that *syntactically* matches the FP
+# regex isn't silently mislabeled FP-FIXED.
 # ---------------------------------------------------------------------
 
 
@@ -81,31 +89,45 @@ def _scope(rec):
     return rec.get("scope") or ""
 
 
+_INTERP_PATH_RE = re.compile(
+    r"^/(opt/anaconda3|usr|usr/local|opt/homebrew)/.*?/(python|node|ruby)\d*"
+)
+_SED_SCRIPT_RE = re.compile(r"^/\^?[^/]*[ ,].*[,$]p?$")
+
+
 PATTERNS = [
     # ---- FP-FIXED: no longer recurs at HEAD ----
-    ("FP-FIXED (3960fb6): interpreter binary path (multi-line cd + abs python)",
+    ("FP-FIXED: interpreter binary path (multi-line cd + abs python)",
      "FP-FIXED",
      # No $ anchor: real paths look like /opt/.../bin/python3.11 — version
      # suffix has a non-digit (.) so end-anchoring with \d*$ never matches.
-     lambda r: _scope(r) == "read" and bool(re.match(
-         r"^/(opt/anaconda3|usr|usr/local|opt/homebrew)/.*?/(python|node|ruby)\d*",
-         _b(r),
-     ))),
+     # Tighten with cmd-awareness via DIRNAME (not the full blocked path):
+     # blocked is realpath'd (`python` -> `python3.11`), cmd keeps the
+     # symlink name; the shared signal is the interpreter directory.
+     lambda r: _scope(r) == "read"
+               and bool(_INTERP_PATH_RE.match(_b(r)))
+               and os.path.dirname(_b(r)) in _cmd(r)),
 
-    ("FP-FIXED (3960fb6 + 9799265): sed script as path (/regex/,$p)",
+    ("FP-FIXED: sed script as path (/regex/,$p)",
      "FP-FIXED",
-     lambda r: _scope(r) == "read" and bool(re.match(
-         r"^/\^?[^/]*[ ,].*[,$]p?$", _b(r),
-     ))),
+     # Tighten: real out-of-scope paths CAN syntactically match the sed
+     # script regex (e.g., /foo,bar/p$baz). Require `sed` in the
+     # command so we don't mislabel a genuine recon read as a fixed FP.
+     lambda r: _scope(r) == "read"
+               and bool(_SED_SCRIPT_RE.match(_b(r)))
+               and bool(re.search(r"\bsed\b", _cmd(r)))),
 
-    ("FP-FIXED (7f116d4): auto-memory write under this-run slug",
+    ("FP-FIXED: auto-memory write under this-run slug",
      "FP-FIXED",
      lambda r: _scope(r) == "write"
                and ".claude/projects/" in _b(r) and "/memory/" in _b(r)),
 
-    ("FP-FIXED (b86062c): Claude CLI tool-results spill readback",
+    ("FP-FIXED: Claude CLI tool-results spill readback",
      "FP-FIXED",
-     lambda r: ".claude" in _b(r) and "/tool-results/" in _b(r)),
+     # Read-only carve-out — a write attempt to the same path is a TP
+     # (the read-only intent), so require scope=read.
+     lambda r: _scope(r) == "read"
+               and ".claude" in _b(r) and "/tool-results/" in _b(r)),
 
     # ---- FP-OPEN: still recurs at HEAD ----
     ("FP-OPEN: tr -d / operand (parked — needs substitution-parser rework)",
@@ -124,10 +146,15 @@ PATTERNS = [
      # Under a runs-root, but NOT pointing into a specific <task>_<ts>
      # run dir — e.g. `ls <engine>/`, `ls <engine>/agents/`,
      # `find <runs-root> -name model_registry*`, `cd <engine> && ls`.
+     # The negation must match an actual <task>_<timestamp>/ segment.
+     # Task names contain internal underscores (`asta_ds1000`), so
+     # [a-z_]+ greedy-then-_ doesn't reach the digits; need a stricter
+     # body class that ends with _<8digits>_<6digits>.
      lambda r: _scope(r) == "read"
                and bool(re.search(r"/(alt_)?robophd_runs(/|$)", _b(r)))
                and not bool(re.search(
-                   r"/(alt_)?robophd_runs/[^/]+/[a-z_]+_\d{8}_\d{6}/", _b(r),
+                   r"/(alt_)?robophd_runs/[^/]+/[a-z][a-z0-9_]*_\d{8}_\d{6}/",
+                   _b(r),
                ))),
 
     ("TP: sibling-run or source-repo read",

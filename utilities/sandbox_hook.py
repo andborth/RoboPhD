@@ -686,14 +686,18 @@ def auto_session_dirs(cwd: str) -> list:
     home = os.path.expanduser("~")
     if not home or home == "~":
         return []
-    config_dirs: list = []
+    # Prefer $CLAUDE_CONFIG_DIR when set (the official override); only
+    # then is whitelisting the conventional fallbacks unnecessary. Else
+    # we don't know which of ~/.claude vs ~/.claude-secondary Claude
+    # will actually use (both observed in practice), so include both.
     env_dir = os.environ.get("CLAUDE_CONFIG_DIR")
     if env_dir:
-        config_dirs.append(env_dir)
-    for fallback in (".claude", ".claude-secondary"):
-        d = os.path.join(home, fallback)
-        if d not in config_dirs:
-            config_dirs.append(d)
+        config_dirs = [env_dir]
+    else:
+        config_dirs = [
+            os.path.join(home, ".claude"),
+            os.path.join(home, ".claude-secondary"),
+        ]
 
     out: list = []
     seen_slugs: set = set()

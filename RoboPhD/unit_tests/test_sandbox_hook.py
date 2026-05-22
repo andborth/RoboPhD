@@ -391,7 +391,11 @@ def _tool_results_path(cwd: Path, name: str = "spill.txt",
     )
 
 
-def test_auto_session_dirs_includes_both_homes_unit(tmp_path):
+def test_auto_session_dirs_uses_both_homes_when_env_unset(tmp_path, monkeypatch):
+    """Without $CLAUDE_CONFIG_DIR, both conventional homes are
+    whitelisted (~/.claude AND ~/.claude-secondary) because we don't
+    know which Claude will use."""
+    monkeypatch.delenv("CLAUDE_CONFIG_DIR", raising=False)
     d = tmp_path / "iter"
     d.mkdir()
     out = auto_session_dirs(str(d))
@@ -401,6 +405,43 @@ def test_auto_session_dirs_includes_both_homes_unit(tmp_path):
     expected_secondary = os.path.realpath(os.path.join(home, ".claude-secondary", "projects", slug))
     assert expected_default in out
     assert expected_secondary in out
+
+
+def test_auto_session_dirs_prefers_env_when_set(tmp_path, monkeypatch):
+    """With $CLAUDE_CONFIG_DIR set, only that dir is whitelisted —
+    the fallbacks aren't needed and shouldn't widen the surface."""
+    custom = tmp_path / "custom_claude"
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(custom))
+    d = tmp_path / "iter"
+    d.mkdir()
+    out = auto_session_dirs(str(d))
+    slug = project_slug(os.path.realpath(str(d)))
+    expected = os.path.realpath(os.path.join(str(custom), "projects", slug))
+    home = os.path.expanduser("~")
+    fallback = os.path.realpath(os.path.join(home, ".claude", "projects", slug))
+    assert expected in out
+    assert fallback not in out  # fallbacks NOT added when env is set
+
+
+def test_tool_results_same_slug_different_session_id_allows(experiment_layout):
+    """Carve-out is intentionally the WHOLE <slug>/ dir, not just one
+    session-id subdir — Claude may legitimately spawn multiple sessions
+    in the same cwd (resume/extend), and all of them sit under this
+    one timestamp-unique slug. Pins the intentional breadth so a
+    future narrowing has to deliberate."""
+    layout = experiment_layout
+    slug = project_slug(os.path.realpath(str(layout["cwd"])))
+    home = os.path.expanduser("~")
+    other_session = os.path.join(
+        home, ".claude", "projects", slug,
+        "another-session-uuid", "tool-results", "x.txt",
+    )
+    res = run_hook(
+        make_envelope("Read", {"file_path": other_session}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["rc"] == 0
+    assert res["decision"] is None
 
 
 def test_tool_results_read_under_cwd_slug_allows(experiment_layout):
