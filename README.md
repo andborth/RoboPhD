@@ -5,6 +5,29 @@
 
 RoboPhD evolves AI agents to improve task performance without human intervention or author-supplied domain knowledge. It implements a closed-loop evolution cycle where an Evolution agent designs new versions of task agents based on performance feedback, using ELO-based competition to select the best agents across iterations.
 
+## AstaBench DS-1000 Leaderboard
+
+RoboPhD evolved two agents that earned spots on the [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution), an externally-administered benchmark from the Allen Institute for AI that scores agents on both **accuracy and cost per problem**.
+
+- One RoboPhD agent achieved the **highest accuracy on the entire leaderboard** (86.2%), at **roughly half the cost** of the previous accuracy leader (Ai2's ReAct/gemini-3.1-pro-preview at 84.9%, $0.25/problem vs $0.13/problem).
+- A second RoboPhD agent — using only Claude Sonnet — runs at **just $0.01 per problem** while outscoring five more expensive submissions.
+
+| Accuracy | Cost / problem | Agent |
+|---|---|---|
+| **86.2%** | **$0.13** | **RoboPhD** (claude-opus-4-7 + 4 others) |
+| 84.9% | $0.25 | ReAct (gemini-3.1-pro-preview) — *previous accuracy leader* |
+| 84.7% | $0.05 | ReAct (gpt-5.5) |
+| 83.8% | $0.04 | ReAct (gpt-5.4) |
+| 83.6% | $0.03 | Button (claude-opus-4-6) |
+| **80.9%** | **$0.01** | **RoboPhD** (claude-sonnet-4-6) |
+| 78.6% | $0.06 | ReAct (claude-opus-4-7) |
+| 78.4% | $0.03 | EvoScientist-Code (GPT-5) |
+| 78.0% | $0.02 | ReAct (GPT-5) |
+| 75.7% | $0.02 | Smolagents Coder (GPT-5) |
+| 75.6% | $0.04 | ReAct (Claude Sonnet 4) |
+
+The Key Results table below complements the leaderboard above with a controlled comparison against two alternative agent-evolution approaches (GEPA and Autoresearch) across six additional benchmarks, run at a fixed evaluation budget of 1,500 problems each.
+
 ## Key Results
 
 Tested across six benchmarks with diverse task types — abstract reasoning, cloud scheduling, SQL generation, financial document QA, puzzle-solving speed, and protein function prediction. All runs use a fixed budget of 1,500 evaluations. Scores show test set performance; numbers in parentheses are agent lines of code.
@@ -68,8 +91,9 @@ RoboPhD uses AI throughout:
 | DocFinQA | DocFinQA (ACL 2024) | `agent.py` — retrieval + QA pipeline | GPT-4.1-mini + text-embedding-3-small |
 | Sudoku | [sapientinc/sudoku-extreme](https://huggingface.co/datasets/sapientinc/sudoku-extreme) | `agent.py` — Python solver with `solve()` | Pure algorithmic (no LLM) |
 | Protein GO | [ProteInfer](https://github.com/google-research/proteinfer) + [Price-149 (CLEAN)](https://github.com/tttianhao/CLEAN) | `agent.py` — GO-MFO prediction with BLAST / ESM / LLM tools | Gemini 3.1 Flash Lite + text-embedding-3-small + ESM-2 |
+| AstaBench DS-1000 | [AstaBench DS-1000](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | `agent.py` — Inspect-AI `@solver` with `python_session` Docker sandbox | Varies — evolution picks from 9 handles across 3 providers: Anthropic (Haiku 4.5 / Sonnet 4.6 / Opus 4.7), OpenAI (GPT-5.4-mini / GPT-5.4 / GPT-5.5), Google (Gemini 3.1 Flash Lite / 3 Flash Preview / 3.1 Pro Preview) |
 
-Each domain has a self-contained example under [`examples/`](examples/) with evaluator, seed agent, and documentation. More examples coming soon.
+Each domain has a self-contained example under [`examples/`](examples/) with evaluator, seed agent, and documentation.
 
 ## Quick Start
 
@@ -87,7 +111,7 @@ export OPENAI_API_KEY="sk-..."   # DocFinQA solver: gpt-4.1-mini + text-embeddin
 python examples/docfinqa/main.py --num-iterations 2
 ```
 
-For the other five domains (ARC-AGI, Can't Be Late, Text2SQL, Sudoku, Protein GO), see the corresponding `examples/<domain>/README.md` — each documents its own API keys, data downloads, and extra pip installs.
+For the other six domains (ARC-AGI, Can't Be Late, Text2SQL, Sudoku, Protein GO, AstaBench DS-1000), see the corresponding `examples/<domain>/README.md` — each documents its own API keys, data downloads, and extra pip installs.
 
 ## Optimize Anything API
 
@@ -153,14 +177,6 @@ print(f"Accuracy: {eval_result.mean_score:.1%} ({eval_result.num_examples} examp
 
 See [`RoboPhD/api.py`](RoboPhD/api.py) for the full API reference.
 
-## Evolution Strategies
-
-Built-in strategies in `RoboPhD/evolution_strategies/`:
-- `use_your_judgment` — Open-ended: study agents, data, and failure patterns (default)
-- `data_focus` — Data-first: explore problem-level outputs before studying agent code
-- `refinement` — Iteratively improve a single base agent
-- `cross_pollination` — Combine patterns from multiple successful agents
-
 ## Configuration
 
 ```bash
@@ -195,6 +211,7 @@ Per-example requirements (solver API keys, dataset downloads, extra pip installs
 RoboPhD builds on several excellent open-source projects and benchmarks:
 - [GEPA](https://github.com/gepa-ai/gepa) (Agrawal et al., 2025) — reflective text evolution with Pareto selection
 - [Autoresearch](https://github.com/karpathy/autoresearch) (Karpathy, 2026) — single-session greedy experimentation
+- [AstaBench](https://openreview.net/forum?id=M7TNf5J26u) (Bragg et al., 2026) — externally-administered, accuracy-and-cost AI agent leaderboard from the Allen Institute for AI; the DS-1000 task is one of its benchmarks
 - [ARC Prize](https://arcprize.org/) / [ARC-AGI](https://arxiv.org/abs/1911.01547) (Chollet, 2019) — abstract reasoning benchmark
 - [BIRD](https://bird-bench.github.io/) (Li et al., 2024) — Text-to-SQL benchmark
 - [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) (Reddy et al., 2024) — long-context financial QA benchmark

@@ -4,19 +4,17 @@ RoboPhD evolution run on AstaBench's DS-1000 task with cost-penalty free-zone th
 
 The `0_0_2` patch bump from `v0_0_1_soft_cap_0_16` reflects code-state changes since the prior submission (commit `eb7dd11`), most notably the iteration-aggregate cost-penalty mechanism (commit `b453ee0`). The `soft_cap_0_08` tail names the per-iteration mean-spend free-zone the run was trained under.
 
-## Recorded score
+## Leaderboard verified score
 
 | | Value |
 |---|---|
-| Score (RoboPhD-internal eval, full test) | **0.8044** (724 / 900) |
-| Per-problem inference cost | $0.0123 |
-| Test eval total cost | $11.09 |
-| Best-agent ELO | 1552 |
-| Mean train score | 0.9300 (90 train problems × 10 rounds) |
-| Wrapper-level timeouts | 0 / 900 |
-| Per-problem errors / fallbacks during internal eval | 0 |
+| Accuracy (AstaBench leaderboard) | **80.9%** (0.8089) |
+| Per-problem inference cost | **$0.01** ($0.01181) |
+| Submission name | `v0_0_2_soft_cap_0_08` |
+| Pareto position | Lowest-cost submission above 80% accuracy; strictly outperforms five higher-cost submissions |
+| Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) |
 
-> **Caveat.** This score was produced by RoboPhD's internal scoring tooling, which uses the same `inspect_evals.ds1000.ds1000_scorer` as the official AstaBench leaderboard but runs each sample in a subprocess-isolated `inspect.eval()` call (vs the leaderboard's single batched call across all 900 samples). The internal eval was clean — 0 timeouts, 0 fallbacks — so the AstaBench-measured score is expected to track within sampling noise. The leaderboard's verified score after `astabench eval` is the canonical number.
+This is the canonical, externally-verified number from a single batched `astabench eval` run on the 900-sample test split. The submitted `agent.py` is a thin two-tier wrapper (see [Submission resilience wrapper](#submission-resilience-wrapper) below) around the evolved `iter4_ds1000_idiom_probe` source plus a bundled seed-fallback agent. The development-time internal evaluator measured a slightly lower number — see [Internal development scoring (pre-submission)](#internal-development-scoring-pre-submission) near the bottom of this page.
 
 ## Submission metadata
 
@@ -26,7 +24,7 @@ The `0_0_2` patch bump from `v0_0_1_soft_cap_0_16` reflects code-state changes s
 | Openness | Open source, closed weights |
 | Tools tier | Standard (uses `python_session` provided by the task) |
 | Models | claude-sonnet-4-6, claude-opus-4-7 |
-| Leaderboard URL | *(filled in after submission)* |
+| Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) |
 
 ## Approach (iter4_ds1000_idiom_probe)
 
@@ -74,12 +72,17 @@ The wrapper template lives in [`scripts/asta_ds1000_submit.py`](../../../../scri
 
 ## Pareto positioning
 
-At the recorded 0.8044 / $0.0123 the iter4 agent strictly Pareto-dominates two AstaBench leaderboard entries:
+At the leaderboard-verified **80.9% (0.8089) / $0.01**, this submission strictly Pareto-dominates **five existing AstaBench leaderboard entries** — every higher-cost submission scoring below 80.9%, including all four GPT-5-based agents on the board:
 
-- `ReAct / GPT-5` ($0.02 / 0.780) — cheaper AND higher score
-- `Smolagents Coder / GPT-5` ($0.02 / 0.757) — cheaper AND higher score
+| Dominated entry | Cost | Accuracy |
+|---|---|---|
+| `ReAct / claude-opus-4-7` | $0.06 | 78.6% |
+| `EvoScientist-Code (GPT-5)` | $0.03 | 78.4% |
+| `ReAct / GPT-5` | $0.02 | 78.0% |
+| `Smolagents Coder / GPT-5` | $0.02 | 75.7% |
+| `ReAct / Claude Sonnet 4` | $0.04 | 75.6% |
 
-It also sits below the existing v0_0_1 submission's measured leaderboard score of 0.8622 / $0.1273 by ~6pp at ~10× lower cost, occupying a distinct frontier point. The two together (seed at ~$0.0005/0.683, iter4 at ~$0.012/0.804, iter10 at $0.13/0.862) present a three-rung RoboPhD Pareto staircase.
+Together with the companion `v0_0_1_soft_cap_0_16` submission (86.2% / $0.13) at the high-accuracy end of the leaderboard, the two RoboPhD agents form a two-rung Pareto curve spanning roughly an order of magnitude in cost on DS-1000.
 
 ## Lineage (agents/)
 
@@ -92,6 +95,22 @@ It also sits below the existing v0_0_1 submission's measured leaderboard score o
 5. `iter5_ds1000_consensus/agent.py` through `iter15_ds1000_audit_split/agent.py` — later iters (consensus voting, dtype anchoring, trap audits, ground-truth best-of, opus-literal, audit splits, etc.) that didn't unseat iter4 as best
 
 iter4 won the train rounds 8 times (the most of any agent) and held the ELO lead for 9 of the 15 iterations. Later iters explored consensus and verification variants but didn't outscore iter4 across the train set.
+
+## Internal development scoring (pre-submission)
+
+These are the numbers RoboPhD's internal subprocess-isolated evaluator measured during development. They guided the decision to submit but are NOT the canonical leaderboard score — see [Leaderboard verified score](#leaderboard-verified-score) at the top of this page.
+
+| | Value |
+|---|---|
+| Score (RoboPhD-internal eval, full test) | **0.8044** (724 / 900) |
+| Per-problem inference cost | $0.0123 |
+| Test eval total cost | $11.09 |
+| Best-agent ELO | 1552 |
+| Mean train score | 0.9300 (90 train problems × 10 rounds) |
+| Wrapper-level timeouts | 0 / 900 |
+| Per-problem errors / fallbacks during internal eval | 0 |
+
+> **Caveat.** RoboPhD's internal scoring tooling uses the same `inspect_evals.ds1000.ds1000_scorer` as the official AstaBench leaderboard but runs each sample in a subprocess-isolated `inspect.eval()` call (vs the leaderboard's single batched call across all 900 samples). The internal eval was clean — 0 timeouts, 0 fallbacks — so the AstaBench-measured 0.8089 tracked within +0.45pp of this 0.8044 internal number, well within sampling noise.
 
 ## Files
 

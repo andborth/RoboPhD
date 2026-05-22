@@ -2,7 +2,18 @@
 
 Evolves Inspect-AI `@solver` agents on AstaBench's DS-1000 task (Code & Execution category, Standard tools tier). 100-sample validation split for training, 900-sample test split for the leaderboard metric.
 
-For the current state of the art and the bar we're aiming at, see the live leaderboard: https://huggingface.co/spaces/allenai/asta-bench-leaderboard (DS-1000 tab). We deliberately don't quote specific score targets in `background.md` to avoid anchoring evolution on a number; this README has the engineer-facing context.
+For the current state of the art and the bar we're aiming at, see the live leaderboard: https://allenai-asta-bench-leaderboard.hf.space/code-execution. We deliberately don't quote specific score targets in `background.md` to avoid anchoring evolution on a number; this README has the engineer-facing context.
+
+## Leaderboard submissions
+
+Two RoboPhD-evolved agents are live on the AstaBench DS-1000 leaderboard. Both sit on the Pareto frontier:
+
+| Submission | Frontier position | Accuracy | Cost / problem | In-repo snapshot |
+|---|---|---|---|---|
+| v0_0_1_soft_cap_0_16 | **#1 accuracy** on the leaderboard | 86.2% | $0.13 | [example_runs/robophd/asta_ds1000/v0_0_1_soft_cap_0_16/](../../example_runs/robophd/asta_ds1000/v0_0_1_soft_cap_0_16/) |
+| v0_0_2_soft_cap_0_08 | Lowest-cost submission above 80% accuracy | 80.9% | $0.01 | [example_runs/robophd/asta_ds1000/v0_0_2_soft_cap_0_08/](../../example_runs/robophd/asta_ds1000/v0_0_2_soft_cap_0_08/) |
+
+Each snapshot README documents the architecture, lineage, model usage, and submission resilience wrapper of its agent in detail.
 
 ## Setup
 
