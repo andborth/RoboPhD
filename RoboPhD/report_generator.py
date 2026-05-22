@@ -3,7 +3,7 @@ Report generation for RoboPhD research system.
 
 Handles creation of final and interim reports, including:
 - Experiment configuration summaries
-- Agent performance metrics and ELO rankings
+- Agent performance metrics and Elo rankings
 - Evolution strategy tracking
 - Cost analysis and timing
 - Cache performance statistics
@@ -437,7 +437,7 @@ def _format_score_summary(agent_totals: dict[str, list[float]], agents: list[str
     When ``agent_explanations`` contains any non-empty value, render a
     dual-score layout: "Mean Raw Score" = mean of per-example scores
     (as before), "Mean Score" = the aggregator's output from
-    ``agent_aggregate_scores`` (what ELO actually compared). The
+    ``agent_aggregate_scores`` (what Elo actually compared). The
     explanation strings appear in an "Aggregate notes" block beneath
     the table. Default behavior (no explanations) preserves the legacy
     single-column layout.
@@ -560,7 +560,7 @@ def format_continuous_score_table(
         a: (sum(scores) / len(scores) if scores else 0.0)
         for a, scores in agent_totals.items()
     }
-    # Sort by aggregator output (what ELO compared) when available,
+    # Sort by aggregator output (what Elo compared) when available,
     # otherwise by mean. For tasks without an aggregator these match.
     aggregates = agent_aggregate_scores or {}
     sorted_agents = sorted(
@@ -844,22 +844,22 @@ class ReportGenerator:
         self._generate_report(start_time, report_type='final')
 
     def _generate_elo_leadership_section(self) -> str:
-        """Generate ELO leadership progression section for reports."""
+        """Generate Elo leadership progression section for reports."""
         lines = []
-        lines.append("## ELO Leadership Progression\n")
+        lines.append("## Elo Leadership Progression\n")
 
         if not self.researcher.test_history or len(self.researcher.test_history) == 0:
             lines.append("No test history available yet.")
             return '\n'.join(lines)
 
-        # Use the researcher's ELO progression calculation method
-        # This ensures we use the same ELO calculation logic as the actual system
+        # Use the researcher's Elo progression calculation method
+        # This ensures we use the same Elo calculation logic as the actual system
         elo_leaders = self.researcher._calculate_elo_progression()
 
         # Display leadership changes
         if elo_leaders:
-            lines.append("Iteration-by-iteration ELO leaders:\n")
-            lines.append("| Iteration | Leader | ELO | Evolution Strategy |")
+            lines.append("Iteration-by-iteration Elo leaders:\n")
+            lines.append("| Iteration | Leader | Elo | Evolution Strategy |")
             lines.append("|-----------|--------|-----|-------------------|")
 
             for entry in elo_leaders:
@@ -1122,14 +1122,14 @@ class ReportGenerator:
             report_lines.append(ranking_table)
             report_lines.append("\n")
 
-        # Sort agents by ELO
+        # Sort agents by Elo
         sorted_agents = sorted(self.researcher.performance_records.keys(),
                              key=lambda a: self.researcher.performance_records[a]['elo'],
                              reverse=True)
 
         # Simple summary table
         report_lines.append("### Quick Summary\n")
-        report_lines.append("| Agent | ELO | Mean Score | Tests |")
+        report_lines.append("| Agent | Elo | Mean Score | Tests |")
         report_lines.append("|-------|-----|------------|-------|")
 
         for agent_id in sorted_agents:
@@ -1187,16 +1187,16 @@ class ReportGenerator:
         if clone_by_iteration:
             report_lines.append("")
             report_lines.append("\\* *Exact clone: identical per-problem scores to an existing agent on debut. "
-                              "ELO penalized by 200; excluded from winner selection.*")
+                              "Elo penalized by 200; excluded from winner selection.*")
 
         # Best agent
         if sorted_agents:
             best_agent = sorted_agents[0]
             report_lines.append(f"\n## Best Agent: {best_agent}")
-            report_lines.append(f"- ELO Score: {self.researcher.performance_records[best_agent]['elo']:.0f}")
+            report_lines.append(f"- Elo Score: {self.researcher.performance_records[best_agent]['elo']:.0f}")
             report_lines.append(f"- Mean Score: {self.researcher.performance_records[best_agent]['mean_score']:.3f}")
 
-        # ELO Leadership Progression
+        # Elo Leadership Progression
         report_lines.append("\n")
         elo_leadership_section = self._generate_elo_leadership_section()
         report_lines.append(elo_leadership_section)

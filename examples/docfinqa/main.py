@@ -176,7 +176,7 @@ def main():
 
     logger.info(f"Optimization complete: {result.num_iterations_completed} iterations, "
                 f"{result.total_evaluations} evaluations")
-    logger.info(f"Best agent: ELO {result.best_score:.0f}")
+    logger.info(f"Best agent: Elo {result.best_score:.0f}")
     logger.info(f"Experiment dir: {result.experiment_dir}")
 
     if args.eval_test_set:

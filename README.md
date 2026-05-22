@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04347-b31b1b.svg)](https://arxiv.org/abs/2604.04347)
 
-RoboPhD evolves AI agents to improve task performance without human intervention or author-supplied domain knowledge. It implements a closed-loop evolution cycle where an Evolution agent designs new versions of task agents based on performance feedback, using ELO-based competition to select the best agents across iterations.
+RoboPhD evolves AI agents to improve task performance without human intervention or author-supplied domain knowledge. It implements a closed-loop evolution cycle where an Evolution agent designs new versions of task agents based on performance feedback, using Elo-based competition to select the best agents across iterations.
 
 ## AstaBench DS-1000 Leaderboard
 
@@ -72,7 +72,7 @@ RoboPhD uses AI throughout:
     │           │                             │                   │
     │           │                             ▼                   │
     │  ┌────────┴─────────┐         ┌────────────────────┐        │
-    │  │  AGENT RANKINGS  │◀────────│  ELO COMPETITION   │        │
+    │  │  AGENT RANKINGS  │◀────────│  Elo COMPETITION   │        │
     │  │  Top agents      │         │  Head-to-head on   │        │
     │  │  inform next     │         │  sampled problems  │        │
     │  │  evolution round │         └────────────────────┘        │
@@ -140,7 +140,7 @@ result = optimize_anything(
     config=RoboPhDConfig(num_iterations=5, evaluation_budget=200),
 )
 print(result.best_candidate["system_prompt"])
-print(f"Best ELO: {result.best_score}")
+print(f"Best Elo: {result.best_score}")
 ```
 
 **Resume & extend** — `result.experiment_dir` points to the checkpoint directory, so you can always resume:

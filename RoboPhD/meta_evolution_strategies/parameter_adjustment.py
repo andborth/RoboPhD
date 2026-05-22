@@ -23,7 +23,7 @@ Within these bounds, the value of examples_per_iteration should be increased by 
 
 ## Input Sources
 
-- **interim_report.md** — ELO ratings, tie information, iteration progression
+- **interim_report.md** — Elo ratings, tie information, iteration progression
 - The run **checkpoint** — current config values
 
 (See `CLAUDE.md` in your working directory for the on-disk layout.)

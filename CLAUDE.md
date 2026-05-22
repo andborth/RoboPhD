@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-RoboPhD evolves AI agents to improve task performance without human intervention. The primary interface is the `optimize_anything()` API, with self-contained examples for each domain. Three optimization engines are available: RoboPhD (ELO-based evolution), GEPA (Pareto reflective), and Autoresearch (greedy hill-climbing).
+RoboPhD evolves AI agents to improve task performance without human intervention. The primary interface is the `optimize_anything()` API, with self-contained examples for each domain. Three optimization engines are available: RoboPhD (Elo-based evolution), GEPA (Pareto reflective), and Autoresearch (greedy hill-climbing).
 
 **Active domains:**
 - **ARC-AGI-1**: Abstract reasoning agents (Gemini via OpenRouter)
@@ -80,7 +80,7 @@ python examples/arc_agi_1/main.py --num-iterations 2 --evaluation-budget 60
 All examples support three optimization engines via `--engine`:
 
 ```bash
-# RoboPhD ELO competition (default)
+# RoboPhD Elo competition (default)
 python examples/docfinqa/main.py
 
 # GEPA Pareto-based reflective evolution
@@ -116,7 +116,7 @@ python examples/arc_agi_1/main.py \
 
 The `optimize_anything()` API supports three engines, selected by config type:
 
-- **`RoboPhDConfig`** (default): Multi-agent ELO competition with Deep Focus refinement
+- **`RoboPhDConfig`** (default): Multi-agent Elo competition with Deep Focus refinement
 - **`GEPAConfig`**: Pareto-based reflective text evolution
 - **`AutoresearchConfig`**: Single Claude Code session with greedy experimentation
 
@@ -141,7 +141,7 @@ The `optimize_anything()` API supports three engines, selected by config type:
     │           │                             │                    │
     │           │                             ▼                    │
     │  ┌────────┴─────────┐         ┌────────────────────┐        │
-    │  │  AGENT RANKINGS  │◀────────│  ELO COMPETITION   │        │
+    │  │  AGENT RANKINGS  │◀────────│  Elo COMPETITION   │        │
     │  │  Top agents      │         │  Head-to-head on   │        │
     │  │  inform next     │         │  sampled problems   │        │
     │  │  evolution round │         └────────────────────┘        │
@@ -157,7 +157,7 @@ The `optimize_anything()` API supports three engines, selected by config type:
 - **`RoboPhD/engines/`**: GEPA and Autoresearch engine wrappers
 
 ### Core
-- **`RoboPhD/researcher.py`**: ParallelAgentResearcher — ELO evolution loop
+- **`RoboPhD/researcher.py`**: ParallelAgentResearcher — Elo evolution loop
 - **`RoboPhD/evolution.py`**: Evolution strategy selector
 - **`RoboPhD/deep_focus_evolution_manager.py`**: Multi-round evolution with testing
 - **`RoboPhD/meta_evolution_manager.py`**: Meta-evolution for strategy improvement
@@ -201,10 +201,10 @@ python examples/cant_be_late/main.py --engine-config '{
 }'
 ```
 
-### ELO System
-- **K-factor**: 32, **Initial ELO**: 1500
+### Elo System
+- **K-factor**: 32, **Initial Elo**: 1500
 - **Tie Handling**: 0.5 points each, random winner selection
-- **Clone detection**: -200 ELO penalty for identical predictions
+- **Clone detection**: -200 Elo penalty for identical predictions
 
 ## Development Tips
 
@@ -212,7 +212,7 @@ python examples/cant_be_late/main.py --engine-config '{
 - **Check Progress**: Review `checkpoint.json` and `final_report.md` in the experiment dir
 - **Debug Evaluation**: Check `iteration_XXX/agent_YYY/problems/` in the experiment dir
 - **Evolution Output**: Check `evolution_output/iteration_XXX/` for Claude's reasoning
-- **Run Outputs**: All runs land in `../robophd_runs/` (`robophd/` for ELO, `gepa/` for GEPA, `autoresearch/` for Autoresearch)
+- **Run Outputs**: All runs land in `../robophd_runs/` (`robophd/` for Elo, `gepa/` for GEPA, `autoresearch/` for Autoresearch)
 - **Cleanup**: `python scripts/cleanup_runs.py` to find and remove short/experimental runs
 
 ## Troubleshooting

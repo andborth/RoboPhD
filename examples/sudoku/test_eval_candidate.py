@@ -111,7 +111,7 @@ def _load_candidate_from_run_dir(
 
     Returns (candidate_dict, resolved_agent_name). When agent_name is None,
     delegates to the shared engine-agnostic resolver in runner_utils (which
-    handles best_candidate.json / best_agent/ / best-ELO agent). When
+    handles best_candidate.json / best_agent/ / best-Elo agent). When
     agent_name is provided, it must be a key in the RoboPhD checkpoint's
     agent_pool — GEPA / Autoresearch runs don't carry a named pool, so
     agent_name is RoboPhD-only.
@@ -146,7 +146,7 @@ def main():
     parser.add_argument("--test-repeats", type=int, default=9)
     parser.add_argument("--eval-agent", type=str, default=None,
                         help="Name of agent to evaluate from the run's agent_pool. "
-                             "RoboPhD runs only. Defaults to the best-ELO agent.")
+                             "RoboPhD runs only. Defaults to the best-Elo agent.")
     parser.add_argument("--output", type=Path, default=None,
                         help="Where to write test_results.json (default: "
                              "<run_dir>/test_results.json, or test_results_<NAME>.json "

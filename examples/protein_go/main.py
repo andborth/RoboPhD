@@ -112,7 +112,7 @@ def parse_args():
     parser.add_argument("--eval-agent", type=str, default=None,
                         help="Name of a specific agent from the --resume run's agent_pool to "
                              "evaluate (e.g. 'seed_407zcoan' to baseline the seed). Requires "
-                             "--eval-only. Defaults to the best-ELO agent. Output file is "
+                             "--eval-only. Defaults to the best-Elo agent. Output file is "
                              "suffixed with the agent name so results don't overwrite the "
                              "default 'test_results.json' / 'price149_results.json'.")
     parser.add_argument("--skip-cafa-fmax", action="store_true",
@@ -308,7 +308,7 @@ def main():
                     config=eval_cfg,
                 )
             # Suffix output filenames with the agent name so named-agent
-            # runs don't overwrite the default best-ELO results on disk.
+            # runs don't overwrite the default best-Elo results on disk.
             if args.eval_agent:
                 stem = Path(results_filename).stem  # 'test_results' etc.
                 results_filename = f"{stem}_{args.eval_agent}.json"
@@ -385,7 +385,7 @@ def main():
 
     logger.info(f"Optimization complete: {result.num_iterations_completed} iterations, "
                 f"{result.total_evaluations} evaluations")
-    logger.info(f"Best agent: ELO {result.best_score:.0f}")
+    logger.info(f"Best agent: Elo {result.best_score:.0f}")
     logger.info(f"Experiment dir: {result.experiment_dir}")
 
     requested = [s for s in _EVAL_SPLITS if getattr(args, s[1])]

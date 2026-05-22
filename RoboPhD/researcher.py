@@ -632,7 +632,7 @@ class ParallelAgentEvolver:
         """Build the complete evolution prompt."""
         lines = []
 
-        # Add performance rankings and agent pool (can be disabled to reduce ELO-leader fixation)
+        # Add performance rankings and agent pool (can be disabled to reduce Elo-leader fixation)
         include_rankings = self.config.get("include_evolution_rankings", True)
         if include_rankings:
             lines.append("## Performance Rankings Across All Iterations\n")
@@ -738,7 +738,7 @@ class ParallelAgentEvolver:
         agents = sorted(prev_results.keys())
 
         # Agent score table. "Score" is the aggregator's output (the
-        # number ELO compares); "Raw / Total" is the underlying count of
+        # number Elo compares); "Raw / Total" is the underlying count of
         # correct answers. They can diverge if the evaluator implements
         # a custom aggregator (e.g. DS-1000 training applies a small
         # cost penalty + scales to a percentage). The "Aggregate notes"
@@ -817,7 +817,7 @@ class ParallelAgentEvolver:
         for agent_id in sorted(agent_pool.keys()):
             perf = performance_records.get(agent_id, {})
             elo_score = perf.get('elo', 1500)
-            lines.append(f"- {agent_id}: {perf.get('mean_score', 0):.3f} (ELO: {elo_score:.0f})")
+            lines.append(f"- {agent_id}: {perf.get('mean_score', 0):.3f} (Elo: {elo_score:.0f})")
         return "\n".join(lines)
 
     def _generate_agent_id(self, content: str, iteration: int) -> str:
@@ -1497,9 +1497,9 @@ class ParallelAgentResearcher:
                 for agent_id in agents_to_remove_from_perf:
                     del self.performance_records[agent_id]
             
-            # Recalculate all ELO scores from the cleaned test_history
+            # Recalculate all Elo scores from the cleaned test_history
             # This ensures consistency after archiving
-            print("  🎲 Recalculating ELO scores from cleaned test history...")
+            print("  🎲 Recalculating Elo scores from cleaned test history...")
             self._recalculate_all_elo_scores()
 
             # Always truncate evolution_times to prevent duplicates when restarting
@@ -2097,7 +2097,7 @@ class ParallelAgentResearcher:
                 if new_scores == other_scores and new_agg == other_agg:
                     clone_agents.add(agent_id)
                     self.clone_detections.append((agent_id, other_id, iteration))
-                    print(f"    ⚠️ Clone detected: {agent_id} has identical scores to {other_id} — ELO penalty applied, excluded from winners")
+                    print(f"    ⚠️ Clone detected: {agent_id} has identical scores to {other_id} — Elo penalty applied, excluded from winners")
                     break
 
         # Find winner(s) — exclude clone agents
@@ -2130,7 +2130,7 @@ class ParallelAgentResearcher:
         # Store results in test_history
         self.test_history.append(iteration_results)
 
-        # Update ELO scores (includes clone penalties via _recalculate_all_elo_scores)
+        # Update Elo scores (includes clone penalties via _recalculate_all_elo_scores)
         self._update_elo_scores(iteration_results)
 
         # Populate evolution costs from temporary storage
@@ -2159,15 +2159,15 @@ class ParallelAgentResearcher:
     @staticmethod
     def _calculate_elo_updates(current_elos: Dict[str, float], iteration_results: Dict, k: int = 32) -> Dict[str, float]:
         """
-        Calculate updated ELO scores based on head-to-head results, properly handling ties.
+        Calculate updated Elo scores based on head-to-head results, properly handling ties.
 
         Args:
-            current_elos: Dictionary of agent_id -> current ELO score
+            current_elos: Dictionary of agent_id -> current Elo score
             iteration_results: Dictionary of agent_id -> {'average_score': float, ...}
-            k: K-factor for ELO calculations (default 32)
+            k: K-factor for Elo calculations (default 32)
 
         Returns:
-            Dictionary of agent_id -> updated ELO score
+            Dictionary of agent_id -> updated Elo score
         """
         # Create a copy to avoid modifying the input
         updated_elos = current_elos.copy()
@@ -2208,7 +2208,7 @@ class ParallelAgentResearcher:
                         winner_elo = updated_elos[winner]
                         loser_elo = updated_elos[loser]
 
-                        # ELO calculation
+                        # Elo calculation
                         expected_winner = 1 / (1 + 10**((loser_elo - winner_elo) / 400))
                         expected_loser = 1 / (1 + 10**((winner_elo - loser_elo) / 400))
 
@@ -2219,15 +2219,15 @@ class ParallelAgentResearcher:
     
     def _recalculate_all_elo_scores(self):
         """
-        Recalculate all ELO scores from scratch based on test_history.
+        Recalculate all Elo scores from scratch based on test_history.
         This ensures consistency and prevents accumulated errors.
         """
-        # Reset all ELO scores to base
+        # Reset all Elo scores to base
         cumulative_elo_scores = {}
         
         # Process all iterations in test_history
         for iteration_data in self.test_history:
-            # Initialize new agents with base ELO
+            # Initialize new agents with base Elo
             for agent in iteration_data:
                 if agent not in cumulative_elo_scores:
                     cumulative_elo_scores[agent] = 1500.0
@@ -2238,7 +2238,7 @@ class ParallelAgentResearcher:
                 for agent, data in iteration_data.items()
             }
 
-            # Calculate updated ELO scores using the shared logic
+            # Calculate updated Elo scores using the shared logic
             current_elos_for_iteration = {
                 agent: cumulative_elo_scores[agent]
                 for agent in iteration_results
@@ -2249,12 +2249,12 @@ class ParallelAgentResearcher:
             for agent, new_elo in updated_elos.items():
                 cumulative_elo_scores[agent] = new_elo
 
-        # Update all performance_records with recalculated ELO scores
+        # Update all performance_records with recalculated Elo scores
         for agent_id in self.performance_records:
             if agent_id in cumulative_elo_scores:
                 self.performance_records[agent_id]['elo'] = cumulative_elo_scores[agent_id]
             else:
-                # Agent hasn't been tested yet, keep base ELO
+                # Agent hasn't been tested yet, keep base Elo
                 self.performance_records[agent_id]['elo'] = 1500.0
 
         # Apply persistent clone penalties
@@ -2264,7 +2264,7 @@ class ParallelAgentResearcher:
     
     def _update_elo_scores(self, iteration_results: Dict):
         """
-        Update ELO scores by recalculating from scratch based on all test history.
+        Update Elo scores by recalculating from scratch based on all test history.
         This ensures consistency and prevents accumulated errors.
         """
         # Instead of incremental updates, recalculate everything from test_history
@@ -2273,17 +2273,17 @@ class ParallelAgentResearcher:
     
     def _calculate_elo_progression(self) -> List[Dict]:
         """
-        Calculate ELO progression to track the leader after each iteration.
+        Calculate Elo progression to track the leader after each iteration.
         
         Returns:
-            List of dictionaries containing iteration number, leader name, ELO score, and average_score
+            List of dictionaries containing iteration number, leader name, Elo score, and average_score
         """
-        # We need to maintain a cumulative ELO score dictionary
+        # We need to maintain a cumulative Elo score dictionary
         cumulative_elo_scores = {}
         leaders = []
         
         for iter_num, iteration_data in enumerate(self.test_history, 1):
-            # Initialize new agents with base ELO
+            # Initialize new agents with base Elo
             for agent in iteration_data:
                 if agent not in cumulative_elo_scores:
                     cumulative_elo_scores[agent] = 1500.0
@@ -2294,7 +2294,7 @@ class ParallelAgentResearcher:
                 for agent, data in iteration_data.items()
             }
 
-            # Calculate updated ELO scores using the shared logic
+            # Calculate updated Elo scores using the shared logic
             # Important: We update the cumulative scores, not reset them
             current_elos_for_iteration = {
                 agent: cumulative_elo_scores[agent]
@@ -2359,7 +2359,7 @@ class ParallelAgentResearcher:
         - It hasn't been tested after that win (last_test_iteration <= last_win_iteration)
 
         Returns:
-            List of pending winner agent IDs, sorted by most recent win first, then by ELO
+            List of pending winner agent IDs, sorted by most recent win first, then by Elo
         """
         pending = []
 
@@ -2373,7 +2373,7 @@ class ParallelAgentResearcher:
                 if last_test is None or last_test <= last_win:
                     pending.append(agent_id)
 
-        # Sort by most recent win first, then by ELO (descending)
+        # Sort by most recent win first, then by Elo (descending)
         pending.sort(key=lambda agent_id: (
             -self.performance_records[agent_id].get('last_win_iteration', 0),
             -self.performance_records[agent_id].get('elo', 1500)
@@ -2383,10 +2383,10 @@ class ParallelAgentResearcher:
 
     def _select_challenger_agents(self, iteration: int) -> List[str]:
         """
-        Select agents for challenger round - targets under-tested high-ELO agents.
+        Select agents for challenger round - targets under-tested high-Elo agents.
 
         Excludes pending winners to "break dynasties" and find hidden gems.
-        Criteria: ELO > 1500
+        Criteria: Elo > 1500
         Selection: Sort by test count ascending (random within ties)
 
         Args:
@@ -2406,8 +2406,8 @@ class ParallelAgentResearcher:
         if pending_winners:
             print(f"\n🚫 Excluding {len(pending_winners)} pending winner(s): {', '.join(pending_winners)}")
 
-        # Find eligible challengers: ELO > 1500 (excluding pending winners)
-        print(f"\n🎯 Challenger mode: Under-tested high-performers (ELO > 1500)")
+        # Find eligible challengers: Elo > 1500 (excluding pending winners)
+        print(f"\n🎯 Challenger mode: Under-tested high-performers (Elo > 1500)")
         challengers = []
         for agent_id, perf in self.performance_records.items():
             # Skip pending winners
@@ -2426,7 +2426,7 @@ class ParallelAgentResearcher:
         for agent_id, elo, test_count in challengers:
             by_test_count[test_count].append((agent_id, elo))
 
-        # Sort each test count group by ELO, then shuffle for random tie-breaking
+        # Sort each test count group by Elo, then shuffle for random tie-breaking
         sorted_challengers = []
         for test_count in sorted(by_test_count.keys()):
             agents_at_count = by_test_count[test_count]
@@ -2456,14 +2456,14 @@ class ParallelAgentResearcher:
                 agents = by_test_count[test_count]
                 print(f"    Tests = {test_count} ({len(agents)} agent{'s' if len(agents) != 1 else ''}):")
                 for agent_id, elo in sorted(agents, key=lambda x: x[1], reverse=True):
-                    print(f"      - {agent_id} (ELO: {elo:.0f})")
+                    print(f"      - {agent_id} (Elo: {elo:.0f})")
                 displayed_tiers += 1
 
             # Select top k from sorted list
             selected = [agent_id for agent_id, elo, test_count in sorted_challengers[:num_to_select]]
             print(f"\n  Selected: {selected}")
         else:
-            print(f"  ⚠️  No agents found with ELO > 1500 (excluding pending winners)")
+            print(f"  ⚠️  No agents found with Elo > 1500 (excluding pending winners)")
 
         # Final fallback: If still not enough agents, include pending winners
         # (Better to test someone than fail with empty list)
@@ -2483,14 +2483,14 @@ class ParallelAgentResearcher:
                 perf = self.performance_records[agent_id]
                 elo = perf.get('elo', 1500)
                 test_count = perf.get('test_count', 0)
-                print(f"  ✓ Pending winner: {agent_id} (ELO: {elo:.0f}, tests: {test_count})")
+                print(f"  ✓ Pending winner: {agent_id} (Elo: {elo:.0f}, tests: {test_count})")
 
-        # Final fallback: agents with ELO <= 1500, ordered by ELO
+        # Final fallback: agents with Elo <= 1500, ordered by Elo
         if len(selected) < self.agents_per_iteration:
             remaining_slots = self.agents_per_iteration - len(selected)
             already_selected = set(selected)
 
-            # Get all agents with ELO <= 1500, not already selected
+            # Get all agents with Elo <= 1500, not already selected
             low_elo_agents = []
             for agent_id, perf in self.performance_records.items():
                 if agent_id in already_selected:
@@ -2499,14 +2499,14 @@ class ParallelAgentResearcher:
                 if elo <= 1500 and perf.get('test_count', 0) > 0:
                     low_elo_agents.append((agent_id, elo))
 
-            # Sort by ELO descending (best of the low-ELO agents first)
+            # Sort by Elo descending (best of the low-Elo agents first)
             low_elo_agents.sort(key=lambda x: x[1], reverse=True)
 
             if low_elo_agents:
-                print(f"\n🔄 Final fallback: Including agents with ELO ≤ 1500 to fill {remaining_slots} slot(s)")
+                print(f"\n🔄 Final fallback: Including agents with Elo ≤ 1500 to fill {remaining_slots} slot(s)")
                 for agent_id, elo in low_elo_agents[:remaining_slots]:
                     selected.append(agent_id)
-                    print(f"  ✓ Low-ELO agent: {agent_id} (ELO: {elo:.0f})")
+                    print(f"  ✓ Low-Elo agent: {agent_id} (Elo: {elo:.0f})")
 
         print(f"\n🎯 Final Challenger Selection: {selected}")
         print("=" * 60)
@@ -2523,7 +2523,7 @@ class ParallelAgentResearcher:
     def _select_greedy_agents(self, iteration: int,
                              evolved_agent_id: Optional[str] = None) -> List[str]:
         """
-        Greedy selection: deterministic top-k by ELO.
+        Greedy selection: deterministic top-k by Elo.
 
         Uses normal priority flow (1-3) but changes Priority 4 to deterministic selection.
 
@@ -2531,7 +2531,7 @@ class ParallelAgentResearcher:
         1. Pending Winners (all winners not yet retested)
         2. Newly evolved agent (if provided)
         3. Untested agents (test_count == 0)
-        4. Deterministic top-k by ELO (no randomization)
+        4. Deterministic top-k by Elo (no randomization)
 
         Args:
             iteration: Current iteration number
@@ -2562,7 +2562,7 @@ class ParallelAgentResearcher:
                     available.remove(agent_id)
                     last_win = self.performance_records[agent_id]['last_win_iteration']
                     elo_score = self.performance_records[agent_id]['elo']
-                    print(f"  ✓ Selected: {agent_id} (won iteration {last_win}, ELO: {elo_score:.0f})")
+                    print(f"  ✓ Selected: {agent_id} (won iteration {last_win}, Elo: {elo_score:.0f})")
 
                 print(f"  Found {len(pending_winners)} total pending winner(s), selected {len(chosen)}")
             else:
@@ -2629,10 +2629,10 @@ class ParallelAgentResearcher:
             else:
                 print("  ✗ No slots remaining for untested agents")
 
-        # Priority 4: Deterministic top-k ELO selection (GREEDY DIFFERENCE)
+        # Priority 4: Deterministic top-k Elo selection (GREEDY DIFFERENCE)
         if slots_remaining > 0 and tested:
-            print("\nPriority 4 - Deterministic Top-k ELO Selection:")
-            # Sort tested agents by ELO
+            print("\nPriority 4 - Deterministic Top-k Elo Selection:")
+            # Sort tested agents by Elo
             sorted_tested = sorted(tested,
                                  key=lambda a: self.performance_records[a]['elo'],
                                  reverse=True)
@@ -2641,18 +2641,18 @@ class ParallelAgentResearcher:
             num_to_select = min(slots_remaining, len(sorted_tested))
             candidate_pool = sorted_tested[:num_to_select]
 
-            print(f"  Mode: Deterministic top-{num_to_select} by ELO (greedy)")
+            print(f"  Mode: Deterministic top-{num_to_select} by Elo (greedy)")
             print(f"  Need to fill: {slots_remaining} slot(s)")
-            print(f"  Selected agents (top {num_to_select} by ELO):")
+            print(f"  Selected agents (top {num_to_select} by Elo):")
             for i, agent in enumerate(candidate_pool, 1):
                 elo = self.performance_records[agent]['elo']
                 test_count = self.performance_records[agent]['test_count']
-                print(f"    {i}. {agent} (ELO: {elo:.0f}, tested: {test_count} times)")
+                print(f"    {i}. {agent} (Elo: {elo:.0f}, tested: {test_count} times)")
 
             selected.extend(candidate_pool)
         elif slots_remaining > 0:
-            print("\nPriority 4 - Deterministic Top-k ELO Selection:")
-            print("  ✗ No tested agents available for ELO-based selection")
+            print("\nPriority 4 - Deterministic Top-k Elo Selection:")
+            print("  ✗ No tested agents available for Elo-based selection")
 
         print(f"\n🎯 Final Greedy Selection: {selected[:self.agents_per_iteration]}")
         print("=" * 60)
@@ -2677,14 +2677,14 @@ class ParallelAgentResearcher:
         1. Pending Winners (all winners not yet retested)
         2. Newly evolved agent (if provided)
         3. Untested agents (test_count == 0)
-        4. ELO-based selection:
+        4. Elo-based selection:
            - With evolution: Random from top 2*j agents
            - Without evolution: Deterministic top j agents
 
         Args:
             iteration: Current iteration
             evolved_agent_id: ID of newly evolved agent to include (if any)
-            skip_evolution: If True, use deterministic top ELO selection
+            skip_evolution: If True, use deterministic top Elo selection
 
         Returns:
             List of agent IDs to test
@@ -2721,7 +2721,7 @@ class ParallelAgentResearcher:
                     available.remove(agent_id)
                     last_win = self.performance_records[agent_id]['last_win_iteration']
                     elo_score = self.performance_records[agent_id]['elo']
-                    print(f"  ✓ Selected: {agent_id} (won iteration {last_win}, ELO: {elo_score:.0f})")
+                    print(f"  ✓ Selected: {agent_id} (won iteration {last_win}, Elo: {elo_score:.0f})")
 
                 print(f"  Found {len(pending_winners)} total pending winner(s), selected {len(chosen)}")
             else:
@@ -2736,7 +2736,7 @@ class ParallelAgentResearcher:
             if len(selected) >= self.agents_per_iteration:
                 dropped = random.choice(selected)  # Randomly select a pending winner to drop
                 selected.remove(dropped)
-                available.append(dropped)  # Return to pool for potential ELO selection
+                available.append(dropped)  # Return to pool for potential Elo selection
                 print(f"  ⚠️  At capacity - randomly dropping pending winner: {dropped}")
                 print(f"     (Will remain a pending winner for future iterations)")
 
@@ -2786,37 +2786,37 @@ class ParallelAgentResearcher:
             else:
                 print("  ✗ No slots remaining for untested agents")
         
-        # Priority 4: ELO-based selection (threshold: > 1500)
+        # Priority 4: Elo-based selection (threshold: > 1500)
         if slots_remaining > 0 and tested:
-            print("\nPriority 4 - ELO-Based Selection:")
+            print("\nPriority 4 - Elo-Based Selection:")
 
-            # Filter to high-performing agents (ELO > 1500)
+            # Filter to high-performing agents (Elo > 1500)
             high_elo = [(a, self.performance_records[a]['elo'])
                         for a in tested
                         if self.performance_records[a]['elo'] > 1500]
             high_elo.sort(key=lambda x: x[1], reverse=True)
 
             if high_elo:
-                # Random selection from top 2*k high-ELO agents
+                # Random selection from top 2*k high-Elo agents
                 pool_size = min(slots_remaining * 2, len(high_elo))
                 candidate_pool = [a for a, _ in high_elo[:pool_size]]
                 num_to_select = min(slots_remaining, len(candidate_pool))
 
-                print(f"  Mode: Random selection from top {pool_size} agents (ELO > 1500)")
+                print(f"  Mode: Random selection from top {pool_size} agents (Elo > 1500)")
                 print(f"  Need to fill: {slots_remaining} slot(s)")
                 print(f"  Candidate pool:")
                 for agent, elo in high_elo[:pool_size]:
                     test_count = self.performance_records[agent]['test_count']
-                    print(f"    - {agent} (ELO: {elo:.0f}, tested: {test_count} times)")
+                    print(f"    - {agent} (Elo: {elo:.0f}, tested: {test_count} times)")
 
                 elo_selected = random.sample(candidate_pool, num_to_select)
                 selected.extend(elo_selected)
                 slots_remaining -= len(elo_selected)
                 print(f"  Selected: {elo_selected} (random from pool)")
             else:
-                print(f"  ⚠️ No agents with ELO > 1500 available")
+                print(f"  ⚠️ No agents with Elo > 1500 available")
 
-            # Fallback: agents with ELO <= 1500, deterministic by ELO
+            # Fallback: agents with Elo <= 1500, deterministic by Elo
             if slots_remaining > 0:
                 already_selected = set(selected)
                 low_elo = [(a, self.performance_records[a]['elo'])
@@ -2825,14 +2825,14 @@ class ParallelAgentResearcher:
                 low_elo.sort(key=lambda x: x[1], reverse=True)
 
                 if low_elo:
-                    print(f"\n  Fallback: Filling {slots_remaining} slot(s) from agents with ELO ≤ 1500 (by ELO)")
+                    print(f"\n  Fallback: Filling {slots_remaining} slot(s) from agents with Elo ≤ 1500 (by Elo)")
                     for agent, elo in low_elo[:slots_remaining]:
                         selected.append(agent)
                         test_count = self.performance_records[agent]['test_count']
-                        print(f"    ✓ {agent} (ELO: {elo:.0f}, tested: {test_count} times)")
+                        print(f"    ✓ {agent} (Elo: {elo:.0f}, tested: {test_count} times)")
         elif slots_remaining > 0:
-            print("\nPriority 4 - ELO-Based Selection:")
-            print("  ✗ No tested agents available for ELO-based selection")
+            print("\nPriority 4 - Elo-Based Selection:")
+            print("  ✗ No tested agents available for Elo-based selection")
         
         print(f"\n🎯 Final Selection: {selected[:self.agents_per_iteration]}")
         print("=" * 60)
@@ -3021,7 +3021,7 @@ class ParallelAgentResearcher:
 
                 # Check for greedy strategy
                 if evolution_strategy == 'greedy':
-                    print(f"\n🎯 Greedy round: deterministic top-k selection by ELO")
+                    print(f"\n🎯 Greedy round: deterministic top-k selection by Elo")
                     self.evolver.use_greedy_selection = True
                     skip_evolution = True  # No evolution, deterministic selection
                     # Track in evolution_history
@@ -3034,7 +3034,7 @@ class ParallelAgentResearcher:
 
                 # Check for challenger strategy
                 if evolution_strategy == 'challenger':
-                    print(f"\n🎯 Challenger round: targeting under-tested high-ELO agents")
+                    print(f"\n🎯 Challenger round: targeting under-tested high-Elo agents")
                     self.evolver.use_challenger_selection = True
                     skip_evolution = True  # No evolution, but custom selection
                     # Track in evolution_history
@@ -3194,7 +3194,7 @@ class ParallelAgentResearcher:
             # Initialize meta-evolution time to 0 (will be updated if meta-evolution runs)
             self.meta_evolution_times.append(0)
 
-            # Store results (already done in run_iteration before ELO calculation)
+            # Store results (already done in run_iteration before Elo calculation)
 
             # Generate interim report after this iteration
             self.report_generator.generate_interim_report(start_time, iteration)
@@ -3487,7 +3487,7 @@ class ParallelAgentResearcher:
                         report_lines.append(
                             f"⚠️ **{clone_id}** identified as exact clone of **{matched_id}** "
                             f"(identical scores on all {total_q} problems). "
-                            f"ELO penalized by 200; excluded from winner selection."
+                            f"Elo penalized by 200; excluded from winner selection."
                         )
                     report_lines.append("")
 

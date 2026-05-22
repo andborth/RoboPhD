@@ -67,7 +67,7 @@ SPLIT_SEED = 42
 # so changing this constant updates both the run-time default and the
 # user-facing default-listed-in-help. 20 (reverted from a 10 experiment):
 # DS-1000 is binary-graded, and n=10 produced too many correctness ties
-# at the top of the leaderboard for ELO selection to track real accuracy
+# at the top of the leaderboard for Elo selection to track real accuracy
 # gaps — see Appendix B (Selection Noise Analysis) of the RoboPhD paper.
 # Overfitting pressure from the higher per-problem hit count is mitigated
 # by (a) the reworded objective that no longer rewards narrow
@@ -394,7 +394,7 @@ def parse_args():
     p.add_argument("--eval-only", action="store_true")
     p.add_argument("--eval-agent", type=str, default=None,
                    help="Name of a specific agent from the --resume run's agent_pool to "
-                        "evaluate. Requires --eval-only. Defaults to the best-ELO agent. "
+                        "evaluate. Requires --eval-only. Defaults to the best-Elo agent. "
                         "Output file is suffixed with the agent name.")
     p.add_argument("--resume", type=str, default=None)
     p.add_argument("--extend", type=int, default=None)
@@ -732,7 +732,7 @@ def main():
 
     logger.info(f"Optimization complete: {result.num_iterations_completed} iterations, "
                 f"{result.total_evaluations} evaluations")
-    logger.info(f"Best agent: ELO {result.best_score:.0f}")
+    logger.info(f"Best agent: Elo {result.best_score:.0f}")
     logger.info(f"Experiment dir: {result.experiment_dir}")
 
     if args.eval_test_set:

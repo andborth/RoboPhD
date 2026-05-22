@@ -47,7 +47,7 @@ the GEPA reflection model and for per-example solvers.
 # Add to your shell profile (~/.bashrc, ~/.zshrc, etc.)
 
 # For the GEPA engine only (reflection model).
-# Not needed for the default RoboPhD ELO engine or autoresearch.
+# Not needed for the default RoboPhD Elo engine or autoresearch.
 # Also needed for the Text2SQL example (default eval model is haiku-4.5).
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."
 
@@ -110,7 +110,7 @@ If successful, you'll see iteration progress and a final report.
 RoboPhD/
 ├── RoboPhD/                    # Core framework
 │   ├── api.py                  # optimize_anything(), eval_candidate(), eval_run()
-│   ├── researcher.py           # ELO evolution engine
+│   ├── researcher.py           # Elo evolution engine
 │   ├── engines/                # GEPA + Autoresearch engine wrappers
 │   ├── evolution_strategies/   # Evolution strategy prompts
 │   └── ...

@@ -90,7 +90,7 @@ The 100 / 900 validation/test split is fixed and cached in `astabench/evals/insp
 
 Test sub-sampling for the experiment phase is **deterministic** — driven by a hardcoded `SPLIT_SEED = 42`, independent of `--random-seed`. So `--phase experiment` always tests against the same 90 samples regardless of what other flags you pass.
 
-`--random-seed` (default `None` → fresh seed each run) only controls **RoboPhD-internal** RNG: which examples get drawn from the train pool each iteration, ELO matchup pairing, etc.
+`--random-seed` (default `None` → fresh seed each run) only controls **RoboPhD-internal** RNG: which examples get drawn from the train pool each iteration, Elo matchup pairing, etc.
 
 ## Running
 

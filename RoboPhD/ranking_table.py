@@ -61,9 +61,9 @@ def generate_ranking_table(test_history: List, performance_records: Dict, for_ev
 
     Args:
         test_history: Complete test history data
-        performance_records: Performance records for ELO/rank calculations
+        performance_records: Performance records for Elo/rank calculations
         for_evolution: If True, format for evolution prompts (simpler). If False, for final report.
-        clone_agent_ids: Set of agent IDs that were detected as exact clones (ELO penalized).
+        clone_agent_ids: Set of agent IDs that were detected as exact clones (Elo penalized).
     """
     if clone_agent_ids is None:
         clone_agent_ids = set()
@@ -124,7 +124,7 @@ def generate_ranking_table(test_history: List, performance_records: Dict, for_ev
             # Skip ranks for ties (e.g., if 2 agents tied at rank 1, next is rank 3)
             current_rank += len(agents_at_score)
     
-    # Sort agents by ELO score (highest first)
+    # Sort agents by Elo score (highest first)
     sorted_agents = sorted(agent_iteration_data.items(), 
                           key=lambda x: x[1]['elo'], 
                           reverse=True)
@@ -142,7 +142,7 @@ def generate_ranking_table(test_history: List, performance_records: Dict, for_ev
     header = "| Agent |"
     for i in range(1, num_iterations + 1):
         header += f" Iter {i} |"
-    header += " Final ELO | Mean Rank |\n"
+    header += " Final Elo | Mean Rank |\n"
     
     # Separator
     separator = "|-------|"
@@ -182,7 +182,7 @@ def generate_ranking_table(test_history: List, performance_records: Dict, for_ev
 
             row += cell
         
-        # Add ELO and mean rank
+        # Add Elo and mean rank
         elo = data['elo']
         mean_rank = data['mean_rank']
         clone_marker = "*" if agent_id in clone_agent_ids else ""
@@ -206,9 +206,9 @@ def generate_ranking_table(test_history: List, performance_records: Dict, for_ev
     table += "- **#1** = 1st place (winner of iteration)\n"
     table += "- #2, #3, etc. = 2nd, 3rd place, etc.\n"
     table += "- Score = Average score (0-1) on that iteration's problems\n"
-    table += "- **Bold ELO/Rank** = Top performer\n"
+    table += "- **Bold Elo/Rank** = Top performer\n"
     table += "- `-` = Agent not tested in that iteration\n"
     if clone_agent_ids:
-        table += "- \\* *Exact clone: identical per-problem scores to an existing agent on debut. ELO penalized by 200.*\n"
+        table += "- \\* *Exact clone: identical per-problem scores to an existing agent on debut. Elo penalized by 200.*\n"
 
     return table

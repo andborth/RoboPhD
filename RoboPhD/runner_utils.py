@@ -210,7 +210,7 @@ def split_train_val(
 
 
 def find_best_agent(run_dir: Path) -> Tuple[str, Path]:
-    """Find the best agent by ELO from a checkpoint.json.
+    """Find the best agent by Elo from a checkpoint.json.
 
     Returns (agent_name, agent_dir).
     """
@@ -233,7 +233,7 @@ def find_best_agent(run_dir: Path) -> Tuple[str, Path]:
 
     log.info(
         f"Best agent: {best_id} "
-        f"(ELO: {best_perf['elo']:.0f}, "
+        f"(Elo: {best_perf['elo']:.0f}, "
         f"score: {best_perf['mean_score']:.3f}, "
         f"tests: {best_perf['test_count']})"
     )
@@ -253,7 +253,7 @@ def find_named_agent(run_dir: Path, agent_name: str) -> Tuple[str, Path]:
     """Find a specific named agent from a run's agent_pool.
 
     Symmetric to find_best_agent but looks up by explicit name rather than
-    ELO. Used by --eval-agent CLI surfaces (currently sudoku and protein_go)
+    Elo. Used by --eval-agent CLI surfaces (currently sudoku and protein_go)
     so the user can baseline the seed, inspect a specific iteration's agent,
     or compare any two agents on the same held-out data.
 
@@ -306,7 +306,7 @@ def load_best_candidate(
     Returns (candidate_dict, label) where label is one of:
       - "best_candidate" — loaded from best_candidate.json
       - "best_agent"     — loaded from best_agent/<files...>
-      - <agent_name>     — loaded from the highest-ELO checkpoint agent
+      - <agent_name>     — loaded from the highest-Elo checkpoint agent
 
     Callers use `label` for user-facing identification (log lines, output
     filename suffixes); `eval_run` ignores it, sudoku test_eval uses it
@@ -319,7 +319,7 @@ def load_best_candidate(
         agent.py (today's single-file tasks — sudoku, protein_go). A
         multi-file best_agent/ with no explicit mapping raises rather
         than silently dropping files.
-      - checkpoint (ELO fallthrough): used by extract_candidate; if None,
+      - checkpoint (Elo fallthrough): used by extract_candidate; if None,
         read from checkpoint.task_config.
 
     Engines writing best_candidate.json must write a flat file_mapping
@@ -355,7 +355,7 @@ def load_best_candidate(
             f"an explicit file_mapping. Pass file_mapping to load_best_candidate."
         )
 
-    # RoboPhD ELO fallthrough: checkpoint.json + agent_pool.
+    # RoboPhD Elo fallthrough: checkpoint.json + agent_pool.
     agent_name, agent_dir = find_best_agent(run_dir)
     mapping = file_mapping
     if mapping is None:
@@ -374,7 +374,7 @@ def find_last_winner(run_dir: Path) -> Tuple[str, Path, bool]:
     """Find the agent that won the last completed iteration.
 
     For king-of-the-hill runs (oldest_agent_wins_ties=true), the last-round
-    winner may differ from the ELO leader.
+    winner may differ from the Elo leader.
 
     Returns (agent_name, agent_dir, is_also_elo_leader).
     """
@@ -408,25 +408,25 @@ def find_last_winner(run_dir: Path) -> Tuple[str, Path, bool]:
         if not has_field:
             log.warning(
                 f"No last_win_iteration field in performance records "
-                f"(older checkpoint format); falling back to ELO leader"
+                f"(older checkpoint format); falling back to Elo leader"
             )
         else:
             log.warning(
-                f"No agent won iteration {last_iter}; falling back to ELO leader"
+                f"No agent won iteration {last_iter}; falling back to Elo leader"
             )
         return elo_leader, _resolve_agent_dir(run_dir, elo_leader, agent_pool, perf_records, log), True
 
-    # Tiebreak by ELO
+    # Tiebreak by Elo
     winner_id = max(last_winners, key=lambda k: perf_records[k]["elo"])
     is_elo_leader = winner_id == elo_leader
     winner_perf = perf_records[winner_id]
 
     log.info(
         f"Last-round winner (iteration {last_iter}): {winner_id} "
-        f"(ELO: {winner_perf['elo']:.0f}, "
+        f"(Elo: {winner_perf['elo']:.0f}, "
         f"score: {winner_perf['mean_score']:.3f}, "
         f"tests: {winner_perf['test_count']}"
-        f"{', also ELO leader' if is_elo_leader else ''})"
+        f"{', also Elo leader' if is_elo_leader else ''})"
     )
 
     return winner_id, _resolve_agent_dir(run_dir, winner_id, agent_pool, perf_records, log), is_elo_leader

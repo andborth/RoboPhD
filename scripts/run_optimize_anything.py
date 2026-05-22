@@ -4,7 +4,7 @@ Demo: Evolve a math-problem-solving prompt using optimize_anything().
 
 Optimizes a system prompt that guides Claude Haiku to solve math word problems.
 The seed prompt is deliberately minimal (no chain-of-thought, no formatting).
-Evolution discovers better prompting strategies through ELO competition.
+Evolution discovers better prompting strategies through Elo competition.
 
 Usage:
     # Quick demo (3 iterations, ~$1-2 in API costs)
@@ -255,7 +255,7 @@ def print_step_result(step_name: str, result):
     print(f"{'─' * 50}")
     print(f"  Iterations completed: {result.num_iterations_completed}")
     print(f"  Total evaluations:    {result.total_evaluations}")
-    print(f"  Best ELO:             {result.best_score:.1f}")
+    print(f"  Best Elo:             {result.best_score:.1f}")
     print(f"  Agents explored:      {len(result.all_candidates)}")
     print(f"  Experiment dir:       {result.experiment_dir}")
 
@@ -393,7 +393,7 @@ def main():
     print("=" * 60)
     print(f"\nIterations completed: {result.num_iterations_completed}")
     print(f"Total evaluations: {result.total_evaluations}")
-    print(f"Best agent ELO: {result.best_score:.1f}")
+    print(f"Best agent Elo: {result.best_score:.1f}")
     print(f"Experiment dir: {result.experiment_dir}")
 
     print(f"\n--- Best Evolved Prompt ---\n")

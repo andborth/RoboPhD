@@ -13,7 +13,7 @@ pip install -r requirements.txt
 # Install datasets for HuggingFace puzzle loading
 pip install datasets
 
-# Only if using --engine gepa (reflection model); the default ELO engine uses
+# Only if using --engine gepa (reflection model); the default Elo engine uses
 # the Claude Code CLI's Claude Max auth and needs no API key.
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."
 ```

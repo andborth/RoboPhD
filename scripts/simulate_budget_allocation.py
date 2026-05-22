@@ -4,13 +4,13 @@ Monte Carlo simulation of RoboPhD budget allocation.
 
 Given a fixed budget of evaluations and a per-iteration improvement rate,
 which N (problems per iteration) maximizes the expected true accuracy of
-the top-ELO agent?
+the top-Elo agent?
 
 Core tension: smaller N = more iterations = higher accuracy ceiling, but
-noisier ELO rankings may lose track of the best agent. Larger N = fewer
+noisier Elo rankings may lose track of the best agent. Larger N = fewer
 iterations = lower ceiling, but more reliable rankings.
 
-ELO system, agent selection, and winner logic are faithfully ported from
+Elo system, agent selection, and winner logic are faithfully ported from
 RoboPhD/researcher.py.
 """
 
@@ -21,7 +21,7 @@ from typing import Dict, List, Optional, Tuple
 
 
 # ---------------------------------------------------------------------------
-# ELO system (ported from researcher.py:1911-1968)
+# Elo system (ported from researcher.py:1911-1968)
 # ---------------------------------------------------------------------------
 
 def calculate_elo_updates(
@@ -29,7 +29,7 @@ def calculate_elo_updates(
     iteration_results: Dict[str, Dict],
     k: int = 32,
 ) -> Dict[str, float]:
-    """Calculate updated ELO scores based on head-to-head results."""
+    """Calculate updated Elo scores based on head-to-head results."""
     updated_elos = current_elos.copy()
     agents = list(iteration_results.keys())
 
@@ -70,7 +70,7 @@ def calculate_elo_updates(
 def recalculate_all_elos(
     test_history: List[Dict[str, Dict]],
 ) -> Dict[str, float]:
-    """Recalculate all ELO scores from scratch (ported from researcher.py:1970-2009)."""
+    """Recalculate all Elo scores from scratch (ported from researcher.py:1970-2009)."""
     cumulative = {}
     for iteration_data in test_history:
         for agent in iteration_data:
@@ -139,7 +139,7 @@ def get_pending_winners(
             last_test = state.last_test_iteration if state.last_test_iteration is not None else -1
             if last_test <= state.last_win_iteration:
                 pending.append(aid)
-    # Sort: most recent win first, then ELO descending
+    # Sort: most recent win first, then Elo descending
     pending.sort(key=lambda a: (-agents[a].last_win_iteration, -agents[a].elo))
     return pending
 
@@ -190,7 +190,7 @@ def select_agents(
         available -= set(chosen)
         slots = k - len(selected)
 
-    # Priority 4: ELO-based (random from top 2*slots with ELO > 1500)
+    # Priority 4: Elo-based (random from top 2*slots with Elo > 1500)
     if slots > 0:
         tested = [a for a in available if agents[a].test_count > 0]
         high_elo = sorted(
@@ -207,7 +207,7 @@ def select_agents(
             available -= set(elo_chosen)
             slots = k - len(selected)
 
-        # Fallback: agents with ELO <= 1500, deterministic by ELO
+        # Fallback: agents with Elo <= 1500, deterministic by Elo
         if slots > 0:
             already = set(selected)
             low_elo = sorted(
@@ -296,12 +296,12 @@ def run_single_simulation(
         for w in winners:
             agents[w].last_win_iteration = iteration
 
-    # Recalculate ELO from scratch
+    # Recalculate Elo from scratch
     elo_scores = recalculate_all_elos(test_history)
     for aid, elo in elo_scores.items():
         agents[aid].elo = elo
 
-    # Top-ELO agent
+    # Top-Elo agent
     top_elo_agent = max(agents.values(), key=lambda a: a.elo)
     best_agent = max(agents.values(), key=lambda a: a.true_accuracy)
 
@@ -445,11 +445,11 @@ Examples:
     print("  N         = problems per iteration")
     print("  Iters     = number of iterations within budget")
     print("  Ceiling   = best possible true accuracy (no noise)")
-    print("  Mean      = mean true accuracy of top-ELO agent across simulations")
-    print("  p25/p50/p75 = percentiles of top-ELO agent true accuracy")
-    print("  P(best)   = probability top-ELO agent IS the best agent")
-    print("  P(<=2%)   = probability top-ELO agent is within 2% of best")
-    print("  Gap       = ceiling - mean (accuracy lost to ELO noise)")
+    print("  Mean      = mean true accuracy of top-Elo agent across simulations")
+    print("  p25/p50/p75 = percentiles of top-Elo agent true accuracy")
+    print("  P(best)   = probability top-Elo agent IS the best agent")
+    print("  P(<=2%)   = probability top-Elo agent is within 2% of best")
+    print("  Gap       = ceiling - mean (accuracy lost to Elo noise)")
 
     # Find optimal N
     best = max(results, key=lambda r: r["mean_accuracy"])

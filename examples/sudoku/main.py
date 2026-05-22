@@ -146,7 +146,7 @@ def parse_args():
     parser.add_argument("--eval-only", action="store_true", help="Skip optimization; evaluate best agent from --resume dir on test set")
     parser.add_argument("--eval-agent", type=str, default=None,
                         help="Name of agent in the run's agent_pool to evaluate (requires --eval-only). "
-                             "Defaults to the best-ELO agent.")
+                             "Defaults to the best-Elo agent.")
     parser.add_argument("--resume", type=str, default=None, help="Path to experiment directory to resume")
     parser.add_argument("--extend", type=int, default=None, help="Add N more iterations to a resumed run")
     parser.add_argument("--from-iteration", type=int, default=None, help="Restart from a specific iteration")
@@ -258,7 +258,7 @@ def main():
 
     logger.info(f"Optimization complete: {result.num_iterations_completed} iterations, "
                 f"{result.total_evaluations} evaluations")
-    logger.info(f"Best agent: ELO {result.best_score:.0f}")
+    logger.info(f"Best agent: Elo {result.best_score:.0f}")
     logger.info(f"Experiment dir: {result.experiment_dir}")
 
     if args.eval_test_set:

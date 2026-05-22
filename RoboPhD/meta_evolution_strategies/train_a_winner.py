@@ -91,7 +91,7 @@ recent error patterns.
 - **Not first-round**: iter2_deep_analysis_critic winning iteration 3 — it was created in iteration 2 (still a win, but a weaker signal)
 - **Multiple-win agent**: iter2_deep_analysis_critic wins iterations 2, 3, and 4 → Strong signal that the strategy which created it produced a broadly competitive agent
 - **Surpassed agent**: iter2_deep_analysis_critic dominated early but hasn't won since iteration 4 — previously strong, now surpassed by better agents
-- **Clone detection**: If a newly created agent scores identically to another agent on every problem in its debut iteration, it is flagged as an exact clone. Clones are excluded from winner selection (the older agent wins instead) and receive a -200 ELO penalty. A clone "win" does not count as evidence that a strategy is working.
+- **Clone detection**: If a newly created agent scores identically to another agent on every problem in its debut iteration, it is flagged as an exact clone. Clones are excluded from winner selection (the older agent wins instead) and receive a -200 Elo penalty. A clone "win" does not count as evidence that a strategy is working.
 - The "Winning Agents by Evolution Strategy" section in interim_report.md lists which strategy created each winning agent
 
 ## Input Sources
@@ -114,7 +114,7 @@ Each evolution iteration produces, in order:
 
 ### Iteration Reports and Analysis
 
-- **interim_report.md** — performance ranking table, winners, ELO progression, iteration timing
+- **interim_report.md** — performance ranking table, winners, Elo progression, iteration timing
 - **error_analysis_report.md** — per-problem score divergences across competing agents
 
 ### Other

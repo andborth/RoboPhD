@@ -2,7 +2,7 @@
 Base domain interface for RoboPhD research system.
 
 Domains differ in how problems are loaded, sampled, and evaluated.
-Everything else (evolution, ELO, checkpointing, agent selection) is domain-agnostic.
+Everything else (evolution, Elo, checkpointing, agent selection) is domain-agnostic.
 """
 
 from abc import ABC, abstractmethod
@@ -64,7 +64,7 @@ class DomainInterface(ABC):
     2. How solutions are evaluated (evaluate)
     3. How problems are loaded (load_problems, get_problems_for_context)
 
-    Everything else (evolution, ELO, checkpointing, agent selection) is domain-agnostic.
+    Everything else (evolution, Elo, checkpointing, agent selection) is domain-agnostic.
     """
 
     @abstractmethod

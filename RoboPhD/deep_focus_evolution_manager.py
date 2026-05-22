@@ -849,7 +849,7 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
             round_num: Current round number
             test_iteration: Iteration that was tested against
             overall_score: Aggregator's output for this batch (the
-                canonical score ELO compares — see aggregate_explanation
+                canonical score Elo compares — see aggregate_explanation
                 for how it was derived from raw correctness).
             total_score_sum: Sum of all per-problem raw scores
             total_questions: Total number of questions

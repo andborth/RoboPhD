@@ -2,7 +2,7 @@
 Simple programmatic API for RoboPhD optimization.
 
 Provides an optimize_anything() interface inspired by GEPA's API, wrapping
-RoboPhD's ELO evolution engine (ParallelAgentResearcher) behind a simple
+RoboPhD's Elo evolution engine (ParallelAgentResearcher) behind a simple
 function call.
 
 Usage:
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class RoboPhDConfig:
-    """Configuration for RoboPhD ELO evolution engine.
+    """Configuration for RoboPhD Elo evolution engine.
 
     All fields have sensible defaults. For most use cases, only
     ``num_iterations`` and ``evaluation_budget`` need tuning.
@@ -100,7 +100,7 @@ class OptimizeResult:
     best_candidate: Dict[str, str]
     """Best agent's text artifacts (same keys as seed_candidate)."""
     best_score: float
-    """Best agent's ELO rating."""
+    """Best agent's Elo rating."""
     experiment_dir: Path
     """Path to the full experiment directory (checkpoints, logs, agents)."""
     all_candidates: List[Dict[str, Any]]
@@ -170,7 +170,7 @@ class GEPAConfig:
     """Configuration for GEPA Pareto-based reflective text evolution.
 
     Pass this as the ``config`` argument to ``optimize_anything()`` to use
-    GEPA instead of the default RoboPhD ELO engine.
+    GEPA instead of the default RoboPhD Elo engine.
 
     GEPA evaluates each candidate on a minibatch then validates promising
     candidates on a held-out validation set. Use ``val_dataset`` to provide
@@ -220,7 +220,7 @@ class AutoresearchConfig:
     """Configuration for Autoresearch single-session greedy hill-climbing.
 
     Pass this as the ``config`` argument to ``optimize_anything()`` to use
-    Autoresearch instead of the default RoboPhD ELO engine.
+    Autoresearch instead of the default RoboPhD Elo engine.
 
     Autoresearch runs a single continuous Claude Code session that
     autonomously experiments with the agent code, using greedy keep/discard
@@ -380,7 +380,7 @@ def optimize_anything(
 
     The engine is determined by the config type:
 
-    - ``RoboPhDConfig`` (default): Multi-agent ELO competition with Deep Focus
+    - ``RoboPhDConfig`` (default): Multi-agent Elo competition with Deep Focus
     - ``GEPAConfig``: Pareto-based reflective text evolution
     - ``AutoresearchConfig``: Single Claude Code session with greedy hill-climbing
 
@@ -411,7 +411,7 @@ def optimize_anything(
         evaluator: Scoring function with signature
             ``(candidate: dict, example: dict) -> (score: float, diagnostics: dict)``.
             Higher scores are better. Must be thread-safe (called concurrently).
-        dataset: List of example dicts. For RoboPhD, all examples enter the ELO
+        dataset: List of example dicts. For RoboPhD, all examples enter the Elo
             competition pool. For GEPA/Autoresearch, this is the training pool
             (validation comes from ``config.val_dataset``).
         seed_candidate: Initial text artifact(s) to optimize. Dict mapping
@@ -458,7 +458,7 @@ def optimize_anything(
         from RoboPhD.engines.autoresearch import run_autoresearch
         return run_autoresearch(evaluator, dataset, seed_candidate, objective, background, cfg, task_name)
 
-    # --- RoboPhD ELO engine (default) ---
+    # --- RoboPhD Elo engine (default) ---
     from RoboPhD.config_manager import ConfigManager, ConfigSource
     from RoboPhD.researcher import ParallelAgentResearcher
     from RoboPhD.candidate_utils import materialize_candidate
@@ -694,7 +694,7 @@ def eval_run(
 
     Engine-agnostic: GEPA and Autoresearch write ``best_candidate.json`` and
     ``best_agent/`` at the run root — those are preferred when present. The
-    RoboPhD ELO path falls through to the highest-ELO agent in the checkpoint.
+    RoboPhD Elo path falls through to the highest-Elo agent in the checkpoint.
     Typical use: test-set evaluation after ``optimize_anything()`` finishes.
 
     Args:

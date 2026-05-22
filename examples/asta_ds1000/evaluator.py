@@ -535,7 +535,7 @@ class Ds1000Evaluator:
         self._default_model = _DEFAULT_MODEL
 
         self.subprocess_isolation = subprocess_isolation
-        # True for training (RoboPhD's ELO competition): the iteration
+        # True for training (RoboPhD's Elo competition): the iteration
         # aggregator (Ds1000Evaluator.aggregate) returns SCORE_SCALE *
         # mean_raw_accuracy - penalty(mean_cost). False for test paths
         # (eval_candidate / eval_run / --eval-test-set / --eval-only):
@@ -608,7 +608,7 @@ class Ds1000Evaluator:
         is called once per (agent, iteration) by RoboPhD after all
         per-example evals have completed (or been read from cache),
         and its scalar return becomes the agent's `average_score` for
-        the iteration — what ELO compares.
+        the iteration — what Elo compares.
 
         Two scale regimes:
 

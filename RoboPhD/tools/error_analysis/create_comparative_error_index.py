@@ -51,7 +51,7 @@ def load_evaluation_results(iteration_dir: Path) -> Dict:
     # evaluation.json's `summary` block. The aggregate_explanation
     # surfaces in the iteration report's per-agent score table when
     # any value is non-empty; the aggregate_score is the canonical
-    # number (aggregator output) ELO compared.
+    # number (aggregator output) Elo compared.
     agent_summaries: Dict[str, Dict] = {}
 
     # Find all evaluation files - try hierarchical structure first (Text2SQL)
@@ -463,7 +463,7 @@ def _build_binary_index(agents: Set[str], results: Dict, scores_by_question: Dic
         strip_agent_prefix(a): (agent_summaries.get(a, {}) or {}).get('aggregate_explanation', '')
         for a in sorted_agent_list
     }
-    # Aggregate score (aggregator output) is what ELO compares. Fallback
+    # Aggregate score (aggregator output) is what Elo compares. Fallback
     # to correct/total — the default aggregator's answer for binary tasks.
     # Avoids the `accuracy / 100` percentage round-trip, whose `100`
     # literal visually collides with SCORE_SCALE (also 100).
