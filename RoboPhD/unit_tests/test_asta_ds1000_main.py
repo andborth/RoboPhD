@@ -787,6 +787,64 @@ def test_write_test_results_reads_fallback_keys_from_diagnostics():
     )
 
 
+def test_write_test_results_summary_includes_required_aggregate_keys():
+    """The summary JSON dict literal in `_write_test_results` must
+    carry the aggregate stats that downstream tooling reads (cleanup
+    scripts, dev-eval reports, leaderboard exports). The list of
+    required keys is a structural contract — a refactor that silently
+    drops one (e.g. `mean_test_agent_cost_usd` going missing in a
+    rename) breaks consumers without failing the smoke run that
+    produced the file.
+
+    Same AST-walk shape as the per-problem fallback-keys test above —
+    this is the matching pin on the summary side of the boundary.
+    """
+    src = MAIN_PY.read_text()
+    tree = ast.parse(src)
+    write_fn = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == "_write_test_results":
+            write_fn = node
+            break
+    assert write_fn is not None, "_write_test_results function not found"
+
+    # Find the summary dict literal. Multiple dict literals can appear
+    # in this function (e.g. per-problem rows built inside the loop);
+    # anchor on "mean_test_score" + "total_test_problems" — the unique
+    # pair that identifies the top-level summary dict passed to
+    # json.dump for the *.json (not *.per_problem.json) file.
+    summary_keys = None
+    for node in ast.walk(write_fn):
+        if not isinstance(node, ast.Dict):
+            continue
+        keys = {
+            k.value for k in node.keys
+            if isinstance(k, ast.Constant) and isinstance(k.value, str)
+        }
+        if "mean_test_score" in keys and "total_test_problems" in keys:
+            summary_keys = keys
+            break
+    assert summary_keys is not None, (
+        "summary dict literal (anchored by mean_test_score + "
+        "total_test_problems) not found in _write_test_results"
+    )
+
+    required = {
+        "mean_test_score",
+        "total_test_score",
+        "total_test_problems",
+        "test_eval_cost_usd",         # total infra/eval spend
+        "test_eval_agent_cost_usd",   # total agent spend
+        "mean_test_agent_cost_usd",   # per-problem mean agent spend
+    }
+    missing = required - summary_keys
+    assert not missing, (
+        f"_write_test_results summary JSON is missing required keys: "
+        f"{sorted(missing)}. Add the field to the dict literal "
+        f"passed to json.dump(..., summary_path, ...)."
+    )
+
+
 # --- per-problem wall-clock budget --------------------------------------------
 # The per-problem timeout was raised 20→30 min and surfaced agent-side
 # via background.md. These pins keep the constant, the placeholder, and
