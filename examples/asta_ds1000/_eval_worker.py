@@ -16,7 +16,7 @@ Input JSON shape:
    "example": {<Sample.model_dump()>},
    "apply_cost_penalty": true,
    "min_cost_threshold": 0.04,
-   "cost_penalty_saturation": 10.0}
+   "cost_per_error": 0.01}
 
 Output JSON shape:
   {"score": <float>, "diagnostics": <dict>}
@@ -59,7 +59,7 @@ def main() -> int:
             subprocess_isolation=False,
             apply_cost_penalty=params["apply_cost_penalty"],
             min_cost_threshold=params["min_cost_threshold"],
-            cost_penalty_saturation=params["cost_penalty_saturation"],
+            cost_per_error=params["cost_per_error"],
         )
         score, diagnostics = evaluator.evaluate(params["candidate"], params["example"])
     except Exception:

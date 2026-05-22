@@ -634,3 +634,112 @@ def test_evaluate_non_subprocess_path_records_wall_clock():
         f"(have={success_assign_has_key}). Asymmetric coverage vs "
         "_evaluate_via_subprocess is a silent-drop risk."
     )
+
+
+# --- aggregate(): error-equivalent cost penalty ----------------------------
+#
+# Pins the iteration aggregator's training-mode math after the
+# cost_saturation → cost_per_error redesign. The formula:
+#   errors_equivalent = max(0, mean_cost − threshold) / cost_per_error
+#   penalty_pts = errors_equivalent × (SCORE_SCALE / n)
+#   score = SCORE_SCALE × mean_raw − penalty_pts
+# Each test pins one of the three regimes (free zone, breach, test path)
+# plus the validation that rejects cost_per_error <= 0. A regression that
+# silently re-introduces a [0, 1] penalty cap, or that swaps the (100/n)
+# scaling for a fixed [0, 1] ramp, will fail here.
+
+
+@pytest.fixture
+def aggregator(monkeypatch):
+    """Construct a Ds1000Evaluator suitable for poking aggregate() with
+    handcrafted per-example results. Stubs provider keys + skips Docker
+    so the constructor's pre-flight passes; no real API calls occur
+    because we only invoke aggregate()."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    monkeypatch.setenv("GOOGLE_API_KEY", "sk-test")
+    sys.path.insert(0, str(ASTA_DS1000_DIR))
+    try:
+        from evaluator import Ds1000Evaluator
+        ev = Ds1000Evaluator(
+            skip_docker_check=True,
+            apply_cost_penalty=True,
+            min_cost_threshold=0.04,
+            cost_per_error=0.01,
+        )
+        yield ev
+    finally:
+        sys.path.remove(str(ASTA_DS1000_DIR))
+
+
+def _batch(n: int, correct: int, cost: float) -> list[dict]:
+    """Build a per-example result list with `correct` 1.0s and the rest
+    0.0s, each carrying the given eval_cost. Mean cost = `cost`."""
+    return [
+        {"score": 1.0 if i < correct else 0.0, "eval_cost": cost}
+        for i in range(n)
+    ]
+
+
+def test_aggregate_free_zone(aggregator):
+    """Mean cost ≤ threshold: no penalty, score is the raw percentage."""
+    score, explanation = aggregator.aggregate(_batch(n=20, correct=19, cost=0.02))
+    assert score == pytest.approx(95.0)
+    assert "free zone" in explanation
+    assert "no penalty applied" in explanation
+
+
+def test_aggregate_one_error_breach(aggregator):
+    """Mean cost = threshold + cost_per_error: exactly 1 error of penalty,
+    so the penalty equals one wrong-answer's worth of score (100/n)."""
+    n = 20
+    score, explanation = aggregator.aggregate(_batch(n=n, correct=19, cost=0.05))
+    expected_penalty_pts = 100.0 / n  # one error of penalty at n=20 = 5 pts
+    assert score == pytest.approx(95.0 - expected_penalty_pts)
+    assert "1.00 errors of penalty" in explanation
+
+
+def test_aggregate_three_error_breach(aggregator):
+    """Three cost_per_error increments over threshold → 3 errors of penalty."""
+    n = 20
+    score, explanation = aggregator.aggregate(_batch(n=n, correct=20, cost=0.07))
+    expected_penalty_pts = 3 * (100.0 / n)  # 15 pts at n=20
+    assert score == pytest.approx(100.0 - expected_penalty_pts)
+    assert "3.00 errors of penalty" in explanation
+
+
+def test_aggregate_uncapped_can_go_negative(aggregator):
+    """Penalty is unbounded above — score can go below zero for
+    catastrophically expensive agents. Regression guard against a
+    re-introduced [0, 1] cap."""
+    n = 20
+    score, _ = aggregator.aggregate(_batch(n=n, correct=0, cost=0.30))
+    # 26 errors of penalty × 5 pts = 130 pts subtracted from raw 0
+    assert score == pytest.approx(-130.0)
+
+
+def test_aggregate_test_path_returns_raw_mean(aggregator, monkeypatch):
+    """apply_cost_penalty=False: raw [0, 1] mean accuracy, no penalty,
+    empty explanation. The cost field is irrelevant in this mode."""
+    monkeypatch.setattr(aggregator, "apply_cost_penalty", False)
+    score, explanation = aggregator.aggregate(_batch(n=20, correct=19, cost=10.00))
+    assert score == pytest.approx(0.95)
+    assert explanation == ""
+
+
+def test_constructor_rejects_nonpositive_cost_per_error(monkeypatch):
+    """cost_per_error <= 0 would divide-by-zero or sign-flip the
+    penalty; reject at construction so the failure surfaces before any
+    eval starts."""
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    monkeypatch.setenv("GOOGLE_API_KEY", "sk-test")
+    sys.path.insert(0, str(ASTA_DS1000_DIR))
+    try:
+        from evaluator import Ds1000Evaluator
+        with pytest.raises(ValueError, match="cost_per_error must be > 0"):
+            Ds1000Evaluator(skip_docker_check=True, cost_per_error=0.0)
+        with pytest.raises(ValueError, match="cost_per_error must be > 0"):
+            Ds1000Evaluator(skip_docker_check=True, cost_per_error=-0.01)
+    finally:
+        sys.path.remove(str(ASTA_DS1000_DIR))

@@ -111,8 +111,13 @@ python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir> --phase
 Default models: six handles in `model_registry.py`, paired by family into a mini/standard tier (the seed picks GPT-5.4 Mini; evolution may pick any of the six per call). With `--allow-stronger-models`, three additional stronger-tier handles (GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro Preview) are also exposed — see "Model registry" below.
 
 ```bash
-# Tighten the cost-penalty endpoints (ablation):
-python examples/asta_ds1000/main.py --cost-threshold 0.005 --cost-saturation 0.5
+# Tighten the cost-penalty endpoints (ablation): cheaper free zone +
+# half-cent dollars-per-error makes each extra cent equal two errors.
+python examples/asta_ds1000/main.py --cost-threshold 0.005 --cost-per-error 0.005
+
+# Recover pure-tiebreaker semantics (cost sorts within accuracy ties
+# but never overrides a one-problem accuracy gap):
+python examples/asta_ds1000/main.py --cost-per-error 10
 
 # Open up the stronger model tier (pair with a higher cost threshold —
 # these models cost ~5-10x the default tier):
@@ -160,25 +165,24 @@ This is deliberate — we enforce the no-leakage invariant in code rather than r
 
 ### Cost-penalty math
 
-During training the per-example score is:
+The iteration-aggregate score during training is:
 
 ```
-score = 100 · raw_score − cost_penalty
-cost_penalty = clip((agent_spend − $0.04) / ($1.00 − $0.04), 0, 1)
+errors_equivalent = max(0, mean_cost − $0.04) / $0.01
+score = 100 · mean_accuracy − errors_equivalent · (100 / n)
 ```
 
-`raw_score` is the binary 0/1 from the canonical scorer. The penalty's `[0, 1]` range is two orders of magnitude smaller than the score axis, so it acts as a tiebreaker between correctness-tied agents — it never reorders agents whose correctness differs. The free-zone width ($0.04) gives typical "cheap" leaderboard entries (~$0.02/problem) headroom to sit fully inside the free zone — without that buffer, sub-cent variance can drag a cheap agent above threshold on some problems and not others, turning the penalty into a near-deterministic tiebreaker on the binary 0/1 correctness scores. Worked examples at leaderboard reference points:
+where `mean_cost` is the batch's mean agent spend and `n` is the iteration batch size. One error-equivalent of penalty costs exactly one wrong answer of raw score, so the penalty lives in the agent's own currency (errors), not dollars. The free-zone width ($0.04) gives typical "cheap" leaderboard entries (~$0.02/problem) headroom to stay fully inside the free zone. Above the threshold, the penalty is **unbounded** — a catastrophically expensive agent can score well negative, which is intentional.
 
-| Per-eval spend | Cost penalty |
-| --- | --- |
-| $0.001 (cheap seed) | 0.000 (free zone) |
-| $0.02 (leaderboard floor) | 0.000 (free zone) |
-| $0.04 (threshold) | 0.000 (at threshold) |
-| $0.10 | 0.062 |
-| $0.25 (leaderboard top) | 0.219 |
-| $1.00 | 1.000 (saturated) |
+The two knobs are independently tunable. `--cost-threshold` widens the free zone; `--cost-per-error` chooses the regime:
 
-Per-problem `result.json` carries `raw_score` (the 0/1 outcome before any penalty) and `cost_penalty` (the [0,1] value subtracted) so failure analysis can distinguish "wrong answer" from "correct but expensive" without back-deriving the formula.
+| `--cost-per-error` | At iter7 mean cost ($0.13, $0.09 excess) | Crosses 1 error of penalty at | Behavior |
+| --- | --- | --- | --- |
+| $10 (≈ legacy default) | 0.045 pts | mean $10.04 | Pure tiebreaker — sorts ties, never overrides |
+| $1 | 0.45 pts | mean $1.04 | Pure tiebreaker (slightly stronger sort) |
+| $0.01 (new default) | 45 pts | mean $0.05 | Active pull — penalty trades off against accuracy |
+
+The per-iteration `aggregate_explanation` (in `evaluation.json`) carries the resolved excess and error-count so failure analysis can read "correct but expensive" off the page without back-deriving the formula.
 
 ### Cost-penalty asymmetry
 
@@ -202,7 +206,7 @@ Passing `--allow-stronger-models` to `main.py` exposes three additional handles,
 - Anthropic: `CLAUDE_OPUS_4_7` ($5.00 / $25.00 per M tokens)
 - Google: `GEMINI_3_1_PRO_PREVIEW` ($2.00 / $12.00 per M tokens)
 
-These cost ~5–10× the default tier, so a single accidental call could saturate the cost penalty at the default $0.04 threshold. Pair the flag with a higher `--cost-threshold` (e.g. `0.08`) to give the stronger tier headroom in the cost penalty. The handles are conditionally created at registry import time — without the flag, the names simply don't exist, so accidental imports fail-fast rather than silently inflating spend. `GEMINI_3_1_PRO_PREVIEW` ships with `reasoning_effort="low"` pinned, parallel to the rest of the Gemini family — all three Gemini handles share the same `"low"` default, with `"high"` as the only opt-up (the provider can't disable thinking below `"low"`).
+These cost ~5–10× the default tier, so a single accidental call could blow past the default $0.04 threshold and rack up tens of error-equivalents of penalty at the default `--cost-per-error 0.01`. Pair the flag with a higher `--cost-threshold` (e.g. `0.08`) to give the stronger tier headroom; raise `--cost-per-error` if you want the penalty to be a tiebreaker rather than an active pull. The handles are conditionally created at registry import time — without the flag, the names simply don't exist, so accidental imports fail-fast rather than silently inflating spend. `GEMINI_3_1_PRO_PREVIEW` ships with `reasoning_effort="low"` pinned, parallel to the rest of the Gemini family — all three Gemini handles share the same `"low"` default, with `"high"` as the only opt-up (the provider can't disable thinking below `"low"`).
 
 Provider-prefix translation: Inspect-AI requires `google/...` to route Google models, but litellm prices them under `gemini/...`. `evaluator.py:_estimate_cost` normalizes at the cost-pricing boundary (translates `google/` → `gemini/`) so cost tracking works for the Gemini handles. Without this, Gemini calls would silently price as $0 — the once-per-process "model priced at $0 despite tokens" warning would fire as the symptom.
 

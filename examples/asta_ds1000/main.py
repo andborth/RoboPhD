@@ -367,13 +367,15 @@ def parse_args():
     p.add_argument("--cost-threshold", type=float, default=None,
                    help="Mean cost across an iteration's batch below this "
                         "is in the free zone (no penalty). Default $0.04.")
-    p.add_argument("--cost-saturation", type=float, default=None,
-                   help="Mean cost at this level (or above) incurs the "
-                        "maximum cost penalty of 1.0. Default $10.00. "
-                        "The penalty ramps linearly between threshold and "
-                        "saturation and is applied to the iteration aggregate "
-                        "(not per example). Test-path scores are raw 0/1 "
-                        "fractions regardless.")
+    p.add_argument("--cost-per-error", type=float, default=None,
+                   help="Dollars of mean batch spend (over --cost-threshold) "
+                        "that equals one wrong answer of penalty. Default "
+                        "$0.01 puts cost in active-pull territory. Set "
+                        "large (e.g. $1, $10) for pure-tiebreaker semantics "
+                        "where the penalty sorts within accuracy ties but "
+                        "never overrides a 1-problem accuracy gap. Applied "
+                        "to the iteration aggregate (not per example); "
+                        "test-path scores are raw 0/1 fractions regardless.")
 
     p.add_argument("--max-workers", type=int, default=12,
                    help="Parallel eval workers. Each evaluation runs in its "
@@ -438,18 +440,45 @@ def main():
     # The same values feed both the evaluator and the markdown
     # interpolation below — keeping them in lockstep means the agent's
     # CLAUDE.md never disagrees with the actual scoring function.
-    from evaluator import MIN_COST_THRESHOLD, COST_PENALTY_SATURATION
+    from evaluator import MIN_COST_THRESHOLD, COST_PER_ERROR
     cost_threshold = (
         args.cost_threshold if args.cost_threshold is not None
         else MIN_COST_THRESHOLD
     )
-    cost_saturation = (
-        args.cost_saturation if args.cost_saturation is not None
-        else COST_PENALTY_SATURATION
+    cost_per_error = (
+        args.cost_per_error if args.cost_per_error is not None
+        else COST_PER_ERROR
     )
 
     def _fmt_cost(x: float) -> str:
-        return f"${x:.2f}"
+        return f"${x:.2f}" if x == round(x, 2) else f"${x:.4f}"
+
+    def _build_cost_penalty_table(threshold: float, cpe: float) -> str:
+        """Generate the cost-penalty table substituted into background.md.
+
+        Each row spans 1× cpe of mean cost; the breakeven correct-count
+        grows by 1 per row. We stop at 3+ (the "decisive" tier) and
+        emit a trailing pattern-continuation row so the agent doesn't
+        have to extrapolate from numerics alone.
+        """
+        rows = [
+            "| Mean cost | Effect on score |",
+            "|---|---|",
+            f"| ≤ {_fmt_cost(threshold)} | No effect on score — two free-zone "
+            f"agents with the same raw accuracy score identically, "
+            f"regardless of their actual spend |",
+            f"| {_fmt_cost(threshold)}–{_fmt_cost(threshold + cpe)} | "
+            f"Tiebreaker — lose tied accuracy to a cheaper agent; "
+            f"**need 1+ more correct** to win |",
+            f"| {_fmt_cost(threshold + cpe)}–{_fmt_cost(threshold + 2*cpe)} | "
+            f"**Need 2+ more correct** than a free-zone agent to win |",
+            f"| {_fmt_cost(threshold + 2*cpe)}–{_fmt_cost(threshold + 3*cpe)} | "
+            f"**Need 3+ more correct** than a free-zone agent to win "
+            f"(in practice, a decisive penalty) |",
+            f"| … | Each additional {_fmt_cost(cpe)} of mean spend adds 1 "
+            f"to the breakeven correct-count |",
+        ]
+        return "\n".join(rows)
 
     # Stronger-model rows, conditional on --allow-stronger-models.
     # When the flag is off, the placeholder collapses to empty string
@@ -495,18 +524,13 @@ def main():
 
     test_rounds_framing = _test_rounds_framing(effective_test_rounds)
 
-    # Replace ${COST_THRESHOLD}, ${COST_SATURATION}, and the two derived
-    # forms used in the worked example in objective.md. Order matters:
-    # the longer-suffix variants must be replaced before ${COST_THRESHOLD}
-    # itself, since that name is a prefix of theirs. M1 is clamped at 0
-    # so a sub-cent threshold renders as "$0.00" (a free agent — still
-    # rhetorically valid in the example) rather than a negative dollar.
-    #
     # ${STRONGER_MODELS_TABLE_ROWS} matches with its trailing newline so
     # that off-mode collapses the entire line (no stray blank line that
     # would terminate the markdown table early); on-mode puts the rows
     # plus a trailing newline back in.
     stronger_replacement = stronger_rows + "\n" if stronger_rows else ""
+
+    cost_penalty_table = _build_cost_penalty_table(cost_threshold, cost_per_error)
 
     # Per-example timeout: must match the value passed to RoboPhDConfig
     # below. The evaluator derives a slightly-shorter subprocess_timeout
@@ -530,10 +554,9 @@ def main():
     def _interpolate(text: str) -> str:
         return (
             text
-            .replace("${COST_THRESHOLD_X2}", _fmt_cost(cost_threshold * 2))
-            .replace("${COST_THRESHOLD_M1}", _fmt_cost(max(0.0, cost_threshold - 0.01)))
+            .replace("${COST_PENALTY_TABLE}", cost_penalty_table)
             .replace("${COST_THRESHOLD}", _fmt_cost(cost_threshold))
-            .replace("${COST_SATURATION}", _fmt_cost(cost_saturation))
+            .replace("${COST_PER_ERROR}", _fmt_cost(cost_per_error))
             .replace("${STRONGER_MODELS_TABLE_ROWS}\n", stronger_replacement)
             .replace("${TEST_ROUNDS_FRAMING}", test_rounds_framing)
             # True per-problem budget the agent experiences: EVAL_TIMEOUT
@@ -561,7 +584,7 @@ def main():
         eval_timeout=EVAL_TIMEOUT,
         apply_cost_penalty=True,  # training: penalty fires
         min_cost_threshold=cost_threshold,
-        cost_penalty_saturation=cost_saturation,
+        cost_per_error=cost_per_error,
     )
     test_evaluator = evaluator.with_overrides(
         apply_cost_penalty=False,

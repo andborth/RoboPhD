@@ -87,17 +87,18 @@ def _head_tail_truncate(s: str, head: int = 200, tail: int = 1500) -> str:
 
 # Iteration-level score during training (apply_cost_penalty=True), via
 # Ds1000Evaluator.aggregate:
-#   score = SCORE_SCALE * mean_raw - penalty(mean_cost)
-#   penalty = min(1.0, max(0, mean_cost - MIN_COST_THRESHOLD)
-#                       / (COST_PENALTY_SATURATION - MIN_COST_THRESHOLD))
+#   score = SCORE_SCALE * mean_raw - penalty_pts
+#   errors_equivalent = max(0, mean_cost - MIN_COST_THRESHOLD) / COST_PER_ERROR
+#   penalty_pts = errors_equivalent * (SCORE_SCALE / n)
 # mean_raw is mean of binary per-example scores (1.0 for "C" / 0.0 for "I").
-# The penalty applies to the MEAN cost across the iteration's batch, not
-# per example — matches the leaderboard's mean-cost Pareto framing and
-# rewards selective routing (expensive models on hard problems, cheap on
-# easy) as long as the batch average stays in the free zone. SCORE_SCALE
-# puts mean_raw on a [0, 100] axis so the [0, 1] penalty acts as a
-# tiebreaker that never overrides correctness gaps. Test-path scores
-# (apply_cost_penalty=False) skip SCORE_SCALE entirely and report
+# n is the batch size. The penalty applies to the MEAN cost across the
+# iteration's batch, not per example — matches the leaderboard's mean-cost
+# Pareto framing and rewards selective routing (expensive models on hard
+# problems, cheap on easy) as long as the batch average stays in the free
+# zone. One error_equivalent of penalty equals one wrong answer of raw
+# score (SCORE_SCALE/n points), so the penalty is expressible in the same
+# units the agent already cares about. Score is unbounded below. Test-path
+# scores (apply_cost_penalty=False) skip SCORE_SCALE entirely and report
 # mean_raw as a [0, 1] fraction — leaderboard parity.
 SCORE_SCALE = 100.0
 # Free-zone width set to $0.04 so the typical "cheap" leaderboard entries
@@ -105,18 +106,17 @@ SCORE_SCALE = 100.0
 # formulation (penalty applies to the batch mean rather than per
 # example), epsilon-cost variance no longer pushes individual examples
 # over threshold — the buffer mainly protects against sample-mean noise
-# at small batch sizes. Cost-only-tiebreaker invariant: SCORE_SCALE > n
-# (examples_per_iteration). Holds strictly for n < 100; we operate at
-# n=20-60 with 1.67×-5× margin.
+# at small batch sizes.
 MIN_COST_THRESHOLD = 0.04
-# Saturation pushed out to $10 so realistic agents (~$0.02-$0.25/problem
-# mean on the leaderboard) live deep in the linear ramp, far from the
-# penalty cap. Penalty at $0.10 mean is ~0.006; at $1 mean ~0.096; at
-# $10 mean it saturates at 1.0. This widens the linear range over which
-# cost actually differentiates agents while keeping the worst-case
-# penalty magnitude (1.0) far below a single-problem accuracy delta
-# (100/n ≥ 1.67 at n=60).
-COST_PENALTY_SATURATION = 10.0
+# Dollars of mean batch spend (over threshold) that equals one wrong
+# answer of penalty. Default $0.01 puts cost in "active pull" territory:
+# every $0.01 over threshold subtracts one error's worth of score
+# (SCORE_SCALE/n points = 5 pts at n=20). Set this large (e.g. $1, $10)
+# to recover pure-tiebreaker semantics where the penalty sorts within
+# accuracy ties but never overrides a 1-problem accuracy gap. Score is
+# unbounded below — catastrophically expensive agents land well negative,
+# which is intentional.
+COST_PER_ERROR = 0.01
 
 # Keys in state.metadata the agent must NOT see. The scorer reads
 # `code_context`; we keep it on the Sample but pop it from state.metadata
@@ -492,7 +492,7 @@ class Ds1000Evaluator:
         eval_timeout: int = 600,
         apply_cost_penalty: bool = True,
         min_cost_threshold: float = MIN_COST_THRESHOLD,
-        cost_penalty_saturation: float = COST_PENALTY_SATURATION,
+        cost_per_error: float = COST_PER_ERROR,
         fallback_candidate: dict[str, str] | None = None,
     ):
         # Hard requirement: every provider key the registry references
@@ -545,23 +545,19 @@ class Ds1000Evaluator:
         # in both modes; agent_cost_usd is recorded in diagnostics in
         # both modes for the audit trail.
         self.apply_cost_penalty = apply_cost_penalty
-        # Catch the misconfiguration class up-front: equal endpoints
-        # would divide by zero when computing cost_penalty; crossed
-        # endpoints would give a negative ramp width and produce huge
-        # penalties for tiny costs (sign-flip). Negative threshold
-        # would mean every agent pays a penalty — likely not intended.
+        # Catch the misconfiguration class up-front: cost_per_error <= 0
+        # would either divide by zero or sign-flip the penalty. Negative
+        # threshold would mean every agent pays a penalty.
         if min_cost_threshold < 0:
             raise ValueError(
                 f"min_cost_threshold must be >= 0; got {min_cost_threshold}"
             )
-        if min_cost_threshold >= cost_penalty_saturation:
+        if cost_per_error <= 0:
             raise ValueError(
-                f"min_cost_threshold ({min_cost_threshold}) must be strictly "
-                f"less than cost_penalty_saturation ({cost_penalty_saturation}); "
-                f"otherwise the cost-penalty ramp has zero or negative width"
+                f"cost_per_error must be > 0; got {cost_per_error}"
             )
         self.min_cost_threshold = min_cost_threshold
-        self.cost_penalty_saturation = cost_penalty_saturation
+        self.cost_per_error = cost_per_error
         # Inference-only safety net: when set, `__call__` re-runs a
         # failed example with this candidate before returning. Left
         # None during training so error signals stay visible to the
@@ -591,7 +587,7 @@ class Ds1000Evaluator:
             "eval_timeout": self.eval_timeout,
             "apply_cost_penalty": self.apply_cost_penalty,
             "min_cost_threshold": self.min_cost_threshold,
-            "cost_penalty_saturation": self.cost_penalty_saturation,
+            "cost_per_error": self.cost_per_error,
             "subprocess_isolation": self.subprocess_isolation,
             "fallback_candidate": self.fallback_candidate,
             "skip_docker_check": True,
@@ -613,11 +609,13 @@ class Ds1000Evaluator:
         Two scale regimes:
 
         - **Training** (`apply_cost_penalty=True`): scale raw accuracy
-          to a percentage (SCORE_SCALE × mean_raw), then apply a small
-          [0, 1] cost penalty proportional to how far the batch's *mean*
-          cost exceeds `min_cost_threshold`. SCORE_SCALE=100 keeps
-          accuracy ~100× the magnitude of the penalty so cost is strictly
-          a tiebreaker for n < SCORE_SCALE (we run at n=20-60).
+          to a percentage (SCORE_SCALE × mean_raw), then subtract an
+          error-equivalent cost penalty when the batch's *mean* cost
+          exceeds `min_cost_threshold`. One "error" of penalty equals
+          SCORE_SCALE/n score points (matching one wrong answer); the
+          number of errors charged is `(mean_cost - threshold) /
+          cost_per_error`. Score is unbounded below — a catastrophically
+          expensive agent can land well negative, which is intentional.
 
         - **Test** (`apply_cost_penalty=False`): no scaling, no penalty.
           Returns mean_raw as a [0, 1] fraction — matches leaderboard
@@ -657,20 +655,20 @@ class Ds1000Evaluator:
         if mean_cost <= self.min_cost_threshold:
             explanation = (
                 f"Mean cost ${mean_cost:.4f} within free zone (threshold "
-                f"${self.min_cost_threshold:.2f}); no tiebreaker penalty applied. "
+                f"${self.min_cost_threshold:.2f}); no penalty applied. "
                 f"Raw accuracy {mean_raw:.4f} reported as percentage: {base:.3f}."
             )
             return base, explanation
 
         cost_excess = mean_cost - self.min_cost_threshold
-        ramp_width = self.cost_penalty_saturation - self.min_cost_threshold
-        penalty = min(1.0, cost_excess / ramp_width)
+        errors_equivalent = cost_excess / self.cost_per_error
+        penalty = errors_equivalent * (SCORE_SCALE / n)
         final = base - penalty
         explanation = (
             f"Mean cost ${mean_cost:.4f} exceeded threshold ${self.min_cost_threshold:.2f} "
-            f"by ${cost_excess:.4f}; applied small tie-breaking penalty "
-            f"${cost_excess:.4f} / ${ramp_width:.2f} = {penalty:.4f} "
-            f"to raw score {base:.3f} → final {final:.3f} (percentage)."
+            f"by ${cost_excess:.4f} = {errors_equivalent:.2f} errors of penalty "
+            f"(cost_per_error=${self.cost_per_error:.4f}); subtracted "
+            f"{penalty:.3f} score pts from raw {base:.3f} → final {final:.3f} (percentage)."
         )
         return final, explanation
 
@@ -783,7 +781,7 @@ class Ds1000Evaluator:
                 "example": example_dict,
                 "apply_cost_penalty": self.apply_cost_penalty,
                 "min_cost_threshold": self.min_cost_threshold,
-                "cost_penalty_saturation": self.cost_penalty_saturation,
+                "cost_per_error": self.cost_per_error,
             }, inf, default=str)
             inf_path = inf.name
         out_path = inf_path + ".out"

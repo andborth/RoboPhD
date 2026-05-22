@@ -98,11 +98,11 @@ def ds1000_aggregate():
         sys.path.remove(str(ASTA_DS1000_DIR))
 
 
-def _stub(apply_cost_penalty, threshold=0.04, saturation=10.0):
+def _stub(apply_cost_penalty, threshold=0.04, cost_per_error=0.01):
     return SimpleNamespace(
         apply_cost_penalty=apply_cost_penalty,
         min_cost_threshold=threshold,
-        cost_penalty_saturation=saturation,
+        cost_per_error=cost_per_error,
     )
 
 
@@ -146,7 +146,7 @@ def test_ds1000_aggregate_training_free_zone_below_threshold(ds1000_aggregate):
     batch should pay zero penalty.
     """
     aggregate, SCORE_SCALE = ds1000_aggregate
-    stub = _stub(apply_cost_penalty=True)  # threshold=0.04, saturation=10
+    stub = _stub(apply_cost_penalty=True)  # threshold=0.04, cost_per_error=0.01
     # 18 cheap examples + 2 expensive — mean is $0.013, deep in free zone
     results = (
         [{"score": 1.0, "eval_cost": 0.005}] * 17  # 17 correct cheap
@@ -158,7 +158,7 @@ def test_ds1000_aggregate_training_free_zone_below_threshold(ds1000_aggregate):
     assert score == pytest.approx(95.0)
     # Explanation surfaces the scale even in free zone (non-empty)
     assert "free zone" in explanation
-    assert "no tiebreaker penalty applied" in explanation
+    assert "no penalty applied" in explanation
     assert "percentage" in explanation
     assert "$0.0" in explanation  # mean cost reported
 
@@ -166,7 +166,7 @@ def test_ds1000_aggregate_training_free_zone_below_threshold(ds1000_aggregate):
 def test_ds1000_aggregate_training_free_zone_at_threshold(ds1000_aggregate):
     """Mean cost exactly equal to threshold → still free zone (≤ boundary)."""
     aggregate, SCORE_SCALE = ds1000_aggregate
-    stub = _stub(apply_cost_penalty=True, threshold=0.04, saturation=10.0)
+    stub = _stub(apply_cost_penalty=True, threshold=0.04)
     results = [{"score": 1.0, "eval_cost": 0.04}] * 10  # mean = $0.04
     score, explanation = aggregate(stub, results)
     assert score == pytest.approx(100.0)
@@ -179,34 +179,47 @@ def test_ds1000_aggregate_training_free_zone_at_threshold(ds1000_aggregate):
 
 
 def test_ds1000_aggregate_training_above_threshold(ds1000_aggregate):
-    """Mean cost > threshold → SCORE_SCALE × mean_raw - linear penalty.
+    """Mean cost > threshold → SCORE_SCALE × mean_raw − error-equivalent penalty.
 
-    Pinning the penalty arithmetic: (mean_cost - threshold) /
-    (saturation - threshold). With mean_cost=$0.20, threshold=$0.04,
-    saturation=$10.00: penalty = 0.16 / 9.96 ≈ 0.01606.
+    Pinning the penalty arithmetic:
+        errors_equivalent = (mean_cost − threshold) / cost_per_error
+        penalty_pts      = errors_equivalent × (SCORE_SCALE / n)
+    With mean_cost=$0.20, threshold=$0.04, cost_per_error=$0.01, n=10:
+        errors    = 0.16 / 0.01 = 16
+        penalty   = 16 × (100 / 10) = 160 pts → score = 100 − 160 = −60.
     """
     aggregate, SCORE_SCALE = ds1000_aggregate
-    stub = _stub(apply_cost_penalty=True, threshold=0.04, saturation=10.0)
+    stub = _stub(apply_cost_penalty=True, threshold=0.04, cost_per_error=0.01)
     results = [{"score": 1.0, "eval_cost": 0.20}] * 10  # all correct, mean=$0.20
+    n = len(results)
     score, explanation = aggregate(stub, results)
-    expected_penalty = (0.20 - 0.04) / (10.0 - 0.04)
-    expected_score = 100.0 - expected_penalty
+    expected_errors = (0.20 - 0.04) / 0.01
+    expected_penalty = expected_errors * (SCORE_SCALE / n)
+    expected_score = SCORE_SCALE - expected_penalty
     assert score == pytest.approx(expected_score)
-    # Explanation surfaces the calculation
+    # Explanation surfaces the calculation in error-equivalent units
     assert "exceeded threshold" in explanation
-    assert "tie-breaking penalty" in explanation
+    assert "errors of penalty" in explanation
+    assert "cost_per_error=" in explanation
     assert "$0.2000" in explanation
     assert "(percentage)" in explanation
 
 
-def test_ds1000_aggregate_training_at_saturation(ds1000_aggregate):
-    """Mean cost ≥ saturation → penalty clamps at 1.0."""
+def test_ds1000_aggregate_training_penalty_is_uncapped(ds1000_aggregate):
+    """No [0, 1] cap — penalty grows linearly with mean cost.
+
+    Replaces the old "clamps at 1.0 at saturation" pin. With cost
+    high enough to burn many errors, the score lands well negative.
+    """
     aggregate, SCORE_SCALE = ds1000_aggregate
-    stub = _stub(apply_cost_penalty=True, threshold=0.04, saturation=10.0)
-    results = [{"score": 1.0, "eval_cost": 15.0}] * 5  # mean $15 >> saturation
+    stub = _stub(apply_cost_penalty=True, threshold=0.04, cost_per_error=0.01)
+    results = [{"score": 1.0, "eval_cost": 15.0}] * 5  # mean $15 >> any practical scenario
+    n = len(results)
     score, explanation = aggregate(stub, results)
-    # 100.0 - 1.0 = 99.0 (penalty capped at 1.0)
-    assert score == pytest.approx(99.0)
+    expected_errors = (15.0 - 0.04) / 0.01
+    expected_penalty = expected_errors * (SCORE_SCALE / n)
+    assert score == pytest.approx(SCORE_SCALE - expected_penalty)
+    assert score < 0  # definitely below 0 — pins "no [0, 1] cap"
     assert "exceeded threshold" in explanation
 
 
@@ -217,12 +230,14 @@ def test_ds1000_aggregate_training_uses_agent_cost_usd_fallback(ds1000_aggregate
     invariant to which caller built the input dict.
     """
     aggregate, SCORE_SCALE = ds1000_aggregate
-    stub = _stub(apply_cost_penalty=True, threshold=0.04, saturation=10.0)
+    stub = _stub(apply_cost_penalty=True, threshold=0.04, cost_per_error=0.01)
     # No eval_cost field — only agent_cost_usd
     results = [{"score": 1.0, "agent_cost_usd": 0.20}] * 10
+    n = len(results)
     score, _ = aggregate(stub, results)
-    expected_penalty = (0.20 - 0.04) / (10.0 - 0.04)
-    assert score == pytest.approx(100.0 - expected_penalty)
+    expected_errors = (0.20 - 0.04) / 0.01
+    expected_penalty = expected_errors * (SCORE_SCALE / n)
+    assert score == pytest.approx(SCORE_SCALE - expected_penalty)
 
 
 # ---------------------------------------------------------------------------
