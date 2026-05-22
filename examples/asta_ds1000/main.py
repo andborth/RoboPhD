@@ -83,7 +83,7 @@ DEFAULT_EXAMPLES_PER_ITERATION = 20
 # DEFAULT_EXAMPLES_PER_ITERATION above — referenced from
 # _build_dataset's return tuple and from the argparse help text via
 # f-string interpolation, so changing this constant updates both.
-DEFAULT_NUM_ITERATIONS = 15
+DEFAULT_NUM_ITERATIONS = 20
 
 
 def _build_dataset(phase: str):
@@ -361,12 +361,21 @@ def parse_args():
                         # confuse readers if surfaced here.
                         "%(default).0s")
 
-    p.add_argument("--allow-stronger-models", action="store_true",
-                   help="Expose three stronger model handles to evolved agents: "
-                        "GPT_5_5, CLAUDE_OPUS_4_7, GEMINI_3_1_PRO_PREVIEW. These "
-                        "are ~5-10x more expensive than the default tier; pair "
-                        "with a higher --cost-threshold (e.g. 0.08) to give them "
-                        "headroom in the cost penalty.")
+    p.add_argument("--no-allow-stronger-models", dest="allow_stronger_models",
+                   action="store_false", default=True,
+                   help="Restrict evolution to the cheap+standard tier. By "
+                        "default the three stronger handles (GPT_5_5, "
+                        "CLAUDE_OPUS_4_7, GEMINI_3_1_PRO_PREVIEW) are also "
+                        "exposed — evolution can use them where they help, "
+                        "and the cost-per-error penalty disciplines overuse."
+                        # Suppress argparse's auto "(default: True)" suffix.
+                        # The dest defaults to True (stronger models on), so
+                        # the auto suffix is technically right but reads as
+                        # "this flag is on by default" — confusing because
+                        # passing the flag *disables* the tier. The behavioral
+                        # default is already described in the help text above.
+                        # See the --new-agent-test-rounds canonical example.
+                        "%(default).0s")
     p.add_argument("--cost-threshold", type=float, default=None,
                    help="Mean cost across an iteration's batch below this "
                         "is in the free zone (no penalty). Default $0.04.")
