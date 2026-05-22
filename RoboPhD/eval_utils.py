@@ -260,7 +260,23 @@ def run_parallel_eval(
             if not quiet and len(score_map) % progress_interval == 0:
                 vals = list(score_map.values())
                 mean = sum(vals) / len(vals)
-                logger.info(f"Test progress: {len(score_map)}/{len(examples)}, running score: {mean:.3f}")
+                # `agent_cost_usd` is what we're optimizing on the cost
+                # axis (it tracks model spend that the evolution loop
+                # can act on). Total eval_cost includes infra/judge
+                # spend that's interesting for accounting but isn't an
+                # optimization target — keep it out of the running log.
+                # Only surface the running mean when at least one example
+                # reported a non-zero agent cost, so cost-less domains
+                # (Sudoku, Can't Be Late, ARC) log unchanged.
+                agent_costs = [
+                    (d or {}).get("agent_cost_usd") or 0.0
+                    for d in diag_map.values()
+                ]
+                msg = f"Test progress: {len(score_map)}/{len(examples)}, running score: {mean:.3f}"
+                if any(c > 0 for c in agent_costs):
+                    mean_cost = sum(agent_costs) / len(agent_costs)
+                    msg += f", running mean cost: ${mean_cost:.4f}"
+                logger.info(msg)
     except EvalRateLimitError:
         executor.shutdown(wait=False, cancel_futures=True)
         raise

@@ -169,15 +169,18 @@ def _write_test_results(
         })
 
     summary_path = output_dir / summary_filename
+    n_problems = eval_result.num_examples
+    mean_agent_cost = (total_agent_cost / n_problems) if n_problems else 0.0
     with open(summary_path, "w") as f:
         json.dump({
             "agent": agent_name,
             "phase": phase,
             "mean_test_score": eval_result.mean_score,
             "total_test_score": eval_result.total_score,
-            "total_test_problems": eval_result.num_examples,
+            "total_test_problems": n_problems,
             "test_eval_cost_usd": evaluator.total_eval_cost,
             "test_eval_agent_cost_usd": total_agent_cost,
+            "mean_test_agent_cost_usd": mean_agent_cost,
             "n_fallback_used": n_fallback_used,
             # Empty for the default test path (apply_cost_penalty=False,
             # aggregator returns mean_raw with no annotation). Populated
