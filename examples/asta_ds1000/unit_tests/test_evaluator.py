@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 ASTA_DS1000_DIR = REPO_ROOT / "examples" / "asta_ds1000"
 
 
@@ -35,7 +35,7 @@ def truncate():
 
     Evaluator imports astabench / inspect_evals which are heavy; the
     module-scope fixture amortizes that across all tests here. Same
-    sys.path dance as test_asta_ds1000_main.py.
+    sys.path dance as test_main.py.
     """
     sys.path.insert(0, str(ASTA_DS1000_DIR))
     try:

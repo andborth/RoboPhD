@@ -31,7 +31,7 @@ from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 ASTA_DS1000_DIR = REPO_ROOT / "examples" / "asta_ds1000"
 
 
