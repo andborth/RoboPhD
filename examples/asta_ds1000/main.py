@@ -396,11 +396,18 @@ def parse_args():
                         "test-path scores are raw 0/1 fractions regardless."
                         "%(default).0s")
 
-    p.add_argument("--max-workers", type=int, default=12,
+    p.add_argument("--max-workers", type=int, default=6,
                    help="Parallel eval workers. Each evaluation runs in its "
                         "own subprocess to bypass inspect.eval's process-global "
-                        "singleton lock, so this is real parallelism. 12 fits "
-                        "20 examples/iteration in ~2 waves on M-series Macs.")
+                        "singleton lock, so this is real parallelism. Default "
+                        "6 keeps peak concurrent docker-layer extraction below "
+                        "OrbStack's default ~130 GB btrfs subvolume quota — "
+                        "higher values (e.g. 12) burst-write enough overlay "
+                        "snapshots in parallel to trigger \"no space left on "
+                        "device\" on the inspect-ai sandbox's heavy ML base "
+                        "layer (torch/tensorflow/grpc). Raise if you've "
+                        "increased OrbStack's allocation; lower (e.g. 4) if "
+                        "still seeing ENOSPC.")
     p.add_argument("--runs-dir", default="../robophd_runs",
                    help="Root directory for experiment output (default: %(default)s)")
     p.add_argument("--random-seed", type=int, default=None,
