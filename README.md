@@ -3,6 +3,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04347-b31b1b.svg)](https://arxiv.org/abs/2604.04347)
 
+<p align="center">
+  <img src="assets/robophd-banner.jpg" alt="RoboPhD: Agentic evaluation and optimization framework for LLMs" width="800">
+</p>
+
 RoboPhD evolves AI agents to improve task performance without human intervention or author-supplied domain knowledge. It implements a closed-loop evolution cycle where an Evolution agent designs new versions of task agents based on performance feedback, using ELO-based competition to select the best agents across iterations.
 
 ## AstaBench DS-1000 Leaderboard
