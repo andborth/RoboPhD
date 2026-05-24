@@ -204,6 +204,40 @@ def _write_test_results(
     return summary_path, per_problem_path
 
 
+def _read_checkpoint_max_workers(resume_dir: Path) -> int | None:
+    """Read max_workers from a resumed run's checkpoint.json, or None if
+    absent / unparseable.
+
+    Walks `config_manager.iteration_configs` to the highest iteration that
+    has an explicit `max_workers` value (skipping iterations with null,
+    which represent "framework default"). Returns the last user-explicit
+    value or None.
+
+    Used by --resume + --eval-only (and resume-then-train) so the eval
+    phase honors whatever max_workers the original training run used,
+    matching the user expectation that resume preserves settings.
+    """
+    cp_path = resume_dir / "checkpoint.json"
+    if not cp_path.is_file():
+        return None
+    try:
+        cp = json.loads(cp_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+    iter_configs = (cp.get("config_manager") or {}).get("iteration_configs") or {}
+    if not iter_configs:
+        return None
+    # Iteration keys are stringified ints; walk in descending order so we
+    # pick the most-recent user-explicit value.
+    best: int | None = None
+    for k in sorted(iter_configs.keys(), key=lambda s: int(s) if s.isdigit() else -1, reverse=True):
+        val = (iter_configs[k] or {}).get("max_workers")
+        if val is not None:
+            best = int(val)
+            break
+    return best
+
+
 def _resume_needs_stronger_flag(
     resume_dir: Path, gated_names: Iterable[str]
 ) -> bool:
@@ -396,18 +430,25 @@ def parse_args():
                         "test-path scores are raw 0/1 fractions regardless."
                         "%(default).0s")
 
-    p.add_argument("--max-workers", type=int, default=6,
+    p.add_argument("--max-workers", type=int, default=None,
                    help="Parallel eval workers. Each evaluation runs in its "
                         "own subprocess to bypass inspect.eval's process-global "
-                        "singleton lock, so this is real parallelism. Default "
-                        "6 keeps peak concurrent docker-layer extraction below "
-                        "OrbStack's default ~130 GB btrfs subvolume quota — "
-                        "higher values (e.g. 12) burst-write enough overlay "
-                        "snapshots in parallel to trigger \"no space left on "
-                        "device\" on the inspect-ai sandbox's heavy ML base "
-                        "layer (torch/tensorflow/grpc). Raise if you've "
-                        "increased OrbStack's allocation; lower (e.g. 4) if "
-                        "still seeing ENOSPC.")
+                        "singleton lock, so this is real parallelism. "
+                        "Resolution order: (1) this CLI flag if set, "
+                        "(2) on --resume, the value stored in the resumed "
+                        "run's checkpoint.json, (3) the framework default of "
+                        "6. Default 6 keeps peak concurrent docker-layer "
+                        "extraction below OrbStack's default ~130 GB btrfs "
+                        "subvolume quota — higher values (e.g. 12) burst-write "
+                        "enough overlay snapshots in parallel to trigger \"no "
+                        "space left on device\" on the inspect-ai sandbox's "
+                        "heavy ML base layer (torch/tensorflow/grpc). Raise "
+                        "if you've increased OrbStack's allocation; lower "
+                        "(e.g. 4) if still seeing ENOSPC."
+                        # Suppress argparse's auto "(default: None)" suffix;
+                        # the resolution order above describes the actual
+                        # behavior more usefully than "default: None" does.
+                        "%(default).0s")
     p.add_argument("--runs-dir", default="../robophd_runs",
                    help="Root directory for experiment output (default: %(default)s)")
     p.add_argument("--random-seed", type=int, default=None,
@@ -619,12 +660,37 @@ def main():
         fallback_candidate=seed,
     )
 
+    # Resolve --max-workers once, applied to BOTH the training engine
+    # config and the test eval config so --eval-only --resume honors the
+    # resumed run's setting rather than silently spinning up
+    # ThreadPoolExecutor's 16-thread default.
+    #
+    # Order: explicit CLI flag wins. On --resume with no flag, recover
+    # the value the original run used (matches the user expectation that
+    # resume preserves settings). Otherwise fall back to the framework
+    # default of 6 (sized for OrbStack's default 130 GB btrfs subvolume
+    # quota — see the --max-workers help text).
+    if args.max_workers is not None:
+        effective_max_workers = args.max_workers
+    elif args.resume:
+        cp_max_workers = _read_checkpoint_max_workers(Path(args.resume))
+        effective_max_workers = cp_max_workers if cp_max_workers is not None else 6
+        if cp_max_workers is not None:
+            logger.info(
+                f"Resume: using max_workers={cp_max_workers} from "
+                f"checkpoint.json (pass --max-workers N to override)"
+            )
+    else:
+        effective_max_workers = 6
+
     # Single source of truth for test-side eval config. Reused at every
     # eval_candidate / eval_run call site below (--eval-only and
     # --eval-test-set paths) so the test pipeline can't silently drift
-    # from the training pipeline's eval_timeout. Future test-side knobs
-    # (max_workers, test_repeats, ...) belong on this object.
-    test_eval_config = RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT)
+    # from the training pipeline's eval_timeout or max_workers.
+    test_eval_config = RoboPhDEvalConfig(
+        eval_timeout=EVAL_TIMEOUT,
+        max_workers=effective_max_workers,
+    )
 
     train, test, examples_per_iter, default_budget, default_iterations = (
         _build_dataset(args.phase)
@@ -736,7 +802,7 @@ def main():
         cfg = GEPAConfig(
             evaluation_budget=evaluation_budget,
             val_dataset=test,
-            max_workers=args.max_workers,
+            max_workers=effective_max_workers,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
             eval_timeout=EVAL_TIMEOUT,
@@ -746,7 +812,7 @@ def main():
         cfg = AutoresearchConfig(
             evaluation_budget=evaluation_budget,
             val_dataset=test,
-            max_workers=args.max_workers,
+            max_workers=effective_max_workers,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
             eval_timeout=EVAL_TIMEOUT,
@@ -757,7 +823,7 @@ def main():
         cfg = RoboPhDConfig(
             num_iterations=num_iterations,
             evaluation_budget=evaluation_budget,
-            max_workers=args.max_workers,
+            max_workers=effective_max_workers,
             parent_experiments_dir=args.runs_dir,
             random_seed=args.random_seed,
             meta_evolution_strategy=args.meta_evolution_strategy,
