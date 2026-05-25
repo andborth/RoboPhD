@@ -40,6 +40,49 @@ def test_find_root_classifies_tp():
     assert "find /" in label
 
 
+def test_hallucinated_path_malformed_run_name_classifies_tp():
+    """Real observed case: agent constructed `/.../asta_ds1000_20264_
+    214900/iteration_002/agent_seed_X/problems/420/test_result.md`
+    when the actual run is `asta_ds1000_20260524_214900` and iterations
+    live under `evolution_output/`. Two-axis hallucination (timestamp
+    digits AND missing dir segment), goes deep enough to look real."""
+    label, cat = catalog.classify(_rec(
+        scope="read",
+        blocked_path=("/Users/andrew/Desktop/cc/robophd_runs/robophd/"
+                      "asta_ds1000_20264_214900/iteration_002/"
+                      "agent_seed_rbihfvr4/problems/420/test_result.md"),
+        command="",
+    ))
+    assert cat == "TP"
+    assert "hallucinated" in label
+
+
+def test_real_sibling_run_path_not_classified_as_hallucinated():
+    """A path with a VALID <task>_<8d>_<6d> run-name segment is a
+    real sibling-run access, not a hallucination — must fall through
+    to the sibling-run TP, not be absorbed as a malformed-name TP."""
+    label, _ = catalog.classify(_rec(
+        scope="read",
+        blocked_path=("/Users/andrew/Desktop/cc/robophd_runs/robophd/"
+                      "asta_ds1000_20260101_000000/evolution_output/"
+                      "iteration_002/agent.py"),
+        command="cat ...",
+    ))
+    assert "hallucinated" not in label
+
+
+def test_engine_level_recon_not_classified_as_hallucinated():
+    """`ls <engine>/agents/` only goes one level under engine, not
+    enough for the hallucination pattern (which requires 2+ deeper
+    segments). Falls through to engine-level recon."""
+    label, _ = catalog.classify(_rec(
+        scope="read",
+        blocked_path="/Users/andrew/Desktop/cc/alt_robophd_runs/robophd/agents",
+        command="ls /Users/andrew/Desktop/cc/alt_robophd_runs/robophd/agents/",
+    ))
+    assert "hallucinated" not in label
+
+
 def test_cross_run_recon_engine_dir_classifies_tp():
     _, cat = catalog.classify(_rec(
         scope="read",

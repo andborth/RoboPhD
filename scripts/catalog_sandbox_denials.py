@@ -141,6 +141,33 @@ PATTERNS = [
      lambda r: _scope(r) == "read" and _b(r) == "/"
                and " find " in " " + _cmd(r) + " "),
 
+    ("TP: read of hallucinated path (malformed run-name segment)",
+     "TP",
+     # Path is shaped like a real experiment-dir read (under
+     # <runs>/<engine>/<X>/<deeper>...) but the run-name slot <X>
+     # doesn't match the canonical <task>_<8digits>_<6digits> form —
+     # i.e. the agent constructed an absolute path with a wrong
+     # run-name (e.g. truncated timestamp digits, or both the
+     # run-name AND `evolution_output/` segment missing). Observed:
+     # `/.../asta_ds1000_20264_214900/iteration_002/agent_seed_.../
+     # problems/420/test_result.md` where the real run is
+     # `asta_ds1000_20260524_214900` and iterations live under
+     # `evolution_output/`. Distinct from engine-level recon (which
+     # is a deliberate `ls <engine>/`) — this one is the agent
+     # building a path from imagination without anchoring on $pwd /
+     # $ROBOPHD_EXPERIMENT_DIR. Sandbox correctly denied (TP-in-
+     # policy); the diagnostic value is in tracking the recurrence
+     # of agent path-hallucination so we know whether the evolution
+     # prompt needs a "use $ROBOPHD_EXPERIMENT_DIR as anchor" rule.
+     lambda r: _scope(r) == "read"
+               and bool(re.search(
+                   r"/(alt_)?robophd_runs/[^/]+/[^/]+/[^/]+", _b(r),
+               ))
+               and not bool(re.search(
+                   r"/(alt_)?robophd_runs/[^/]+/[a-z][a-z0-9_]*_\d{8}_\d{6}(/|$)",
+                   _b(r),
+               ))),
+
     ("TP: cross-run recon (engine-level or higher)",
      "TP",
      # Under a runs-root, but NOT pointing into a specific <task>_<ts>
