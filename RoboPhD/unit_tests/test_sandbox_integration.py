@@ -135,7 +135,7 @@ def test_env_var_resolves_to_absolute(wired_experiment):
 
 def test_iteration_dir_env_set_when_passed(wired_experiment):
     """When the harness passes iteration_dir, build_evolution_env
-    sets ROBOPHD_ITERATION_DIR (absolute). The sandbox hook reads
+    sets ROBOPHD_EVOLUTION_ITERATION_DIR (absolute). The sandbox hook reads
     this to anchor write scope at the iteration root instead of the
     runtime cwd."""
     # Pass a relative iteration_dir to mirror the experiment_dir
@@ -144,17 +144,17 @@ def test_iteration_dir_env_set_when_passed(wired_experiment):
     extra = build_evolution_env(
         "opus-4.7", wired_experiment["rel_exp"], iteration_dir=rel_iter,
     )
-    assert "ROBOPHD_ITERATION_DIR" in extra
-    assert os.path.isabs(extra["ROBOPHD_ITERATION_DIR"])
-    assert Path(extra["ROBOPHD_ITERATION_DIR"]) == wired_experiment["iteration"]
+    assert "ROBOPHD_EVOLUTION_ITERATION_DIR" in extra
+    assert os.path.isabs(extra["ROBOPHD_EVOLUTION_ITERATION_DIR"])
+    assert Path(extra["ROBOPHD_EVOLUTION_ITERATION_DIR"]) == wired_experiment["iteration"]
 
 
 def test_iteration_dir_env_unset_by_default(wired_experiment):
-    """When iteration_dir is omitted, ROBOPHD_ITERATION_DIR is NOT
+    """When iteration_dir is omitted, ROBOPHD_EVOLUTION_ITERATION_DIR is NOT
     set — preserves the legacy fallback (write scope = cwd) for
     callers that haven't migrated."""
     extra = build_evolution_env("opus-4.7", wired_experiment["rel_exp"])
-    assert "ROBOPHD_ITERATION_DIR" not in extra
+    assert "ROBOPHD_EVOLUTION_ITERATION_DIR" not in extra
 
 
 def test_denial_lands_in_experiment_dir_not_tmp_fallback(wired_experiment):

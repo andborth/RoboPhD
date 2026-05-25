@@ -94,7 +94,7 @@ def run_hook(envelope: dict, experiment_dir: Path,
     Returns a dict with keys: rc, stdout, stderr, decision (or None),
     reason (or None).
 
-    When ``iteration_dir`` is None, ROBOPHD_ITERATION_DIR is NOT set
+    When ``iteration_dir`` is None, ROBOPHD_EVOLUTION_ITERATION_DIR is NOT set
     in the env and the hook falls back to cwd-rooted write scope
     (the legacy behavior). Existing tests use this default to pin
     backward compat. Pass ``iteration_dir`` to exercise the new
@@ -102,11 +102,11 @@ def run_hook(envelope: dict, experiment_dir: Path,
     """
     env = dict(os.environ)
     env["ROBOPHD_EXPERIMENT_DIR"] = str(experiment_dir)
-    # Default: do NOT inherit a stray ROBOPHD_ITERATION_DIR from the
+    # Default: do NOT inherit a stray ROBOPHD_EVOLUTION_ITERATION_DIR from the
     # outer process env — tests must opt in by passing iteration_dir.
-    env.pop("ROBOPHD_ITERATION_DIR", None)
+    env.pop("ROBOPHD_EVOLUTION_ITERATION_DIR", None)
     if iteration_dir is not None:
-        env["ROBOPHD_ITERATION_DIR"] = str(iteration_dir)
+        env["ROBOPHD_EVOLUTION_ITERATION_DIR"] = str(iteration_dir)
     cmd = [sys.executable, str(HOOK)]
     for p in extra_reads or []:
         cmd.append(f"--extra-read={p}")
@@ -578,7 +578,7 @@ def test_auto_memory_symlinked_root_literal_slug_allows(tmp_path):
 
 
 # ---------------------------------------------------------------------
-# Iteration-rooted write scope ($ROBOPHD_ITERATION_DIR)
+# Iteration-rooted write scope ($ROBOPHD_EVOLUTION_ITERATION_DIR)
 #
 # When the harness declares an iteration root, write scope anchors on
 # that root rather than on the runtime cwd — so an agent can edit

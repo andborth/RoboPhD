@@ -192,7 +192,7 @@ def build_evolution_env(
         sandbox hook resolves it against its own cwd, which is the
         iteration dir, so a relative path would point at a bogus
         location and silently break the cwd-under-experiment-dir gate).
-      * Sandbox env var ROBOPHD_ITERATION_DIR (optional, also absolute):
+      * Sandbox env var ROBOPHD_EVOLUTION_ITERATION_DIR (optional, also absolute):
         declares the iteration's writable root. Write scope is anchored
         on this dir, not on the runtime cwd, so an agent can edit
         ``<iteration_dir>/agent.py`` regardless of whether it has
@@ -208,5 +208,5 @@ def build_evolution_env(
     if experiment_dir is not None:
         env["ROBOPHD_EXPERIMENT_DIR"] = str(Path(experiment_dir).resolve())
     if iteration_dir is not None:
-        env["ROBOPHD_ITERATION_DIR"] = str(Path(iteration_dir).resolve())
+        env["ROBOPHD_EVOLUTION_ITERATION_DIR"] = str(Path(iteration_dir).resolve())
     return env

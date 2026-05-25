@@ -12,7 +12,7 @@ standard logger, so denials surface to the run's normal log output.
 
 Policy:
   - Read scope: anywhere under $ROBOPHD_EXPERIMENT_DIR.
-  - Write scope: anywhere under $ROBOPHD_ITERATION_DIR (the harness-
+  - Write scope: anywhere under $ROBOPHD_EVOLUTION_ITERATION_DIR (the harness-
     declared iteration root). If unset (legacy / non-evolution
     callers), falls back to the tool's literal cwd — the historical
     behavior. The iteration-rooted policy means the agent can edit
@@ -20,7 +20,7 @@ Policy:
     nested test subdir for probing. The security boundary is
     unchanged: a sibling iteration's dir, a sibling run, the source
     repo, and ~/.claude/* all remain outside write scope (they are
-    NOT under $ROBOPHD_ITERATION_DIR).
+    NOT under $ROBOPHD_EVOLUTION_ITERATION_DIR).
 
 Fail-closed: if the hook can't classify a command or hits an internal
 error, the tool call is denied (exit 2) so a misclassified Bash
@@ -823,7 +823,7 @@ def main() -> int:
     # `cd`'d into for probing. The security boundary is unchanged —
     # iteration dirs are under experiment_dir, sibling iterations /
     # runs / repo / ~/.claude are not under THIS iteration's root.
-    write_root_env = os.environ.get("ROBOPHD_ITERATION_DIR")
+    write_root_env = os.environ.get("ROBOPHD_EVOLUTION_ITERATION_DIR")
     write_root = os.path.realpath(write_root_env) if write_root_env else cwd_real
 
     extra_read_roots = parse_extra_read_paths(sys.argv)
