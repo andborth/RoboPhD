@@ -747,9 +747,6 @@ def deny_message(
             f"  • Write (Edit/Write/Bash redirects, cp/mv/rm/mkdir/touch/sed -i targets): "
             f"anywhere under your evolution iteration directory:\n"
             f"    {write_root}\n"
-            f"    (writes are allowed anywhere in this tree regardless of your\n"
-            f"     cwd — you can edit `agent.py` here even after `cd`-ing into\n"
-            f"     a nested test subdir for probing.)\n"
         )
     else:
         write_note = (

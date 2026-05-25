@@ -649,9 +649,11 @@ def test_iteration_root_deny_message_names_iteration_directory(experiment_layout
     )
     assert res["decision"] == "deny"
     assert str(layout["cwd"].resolve()) in res["reason"]
-    assert "evolution iteration directory" in res["reason"]
-    # Also the actionable bit: the agent should know the cwd-independence.
-    assert "regardless of your" in res["reason"]
+    # The label ("evolution iteration directory") plus the word
+    # "anywhere" already carries the cwd-independence — no further
+    # explanatory parenthetical needed (and any redundant prose costs
+    # tokens on every denial).
+    assert "anywhere under your evolution iteration directory" in res["reason"]
 
 
 def test_legacy_deny_message_omits_iteration_label(experiment_layout):
