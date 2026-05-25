@@ -314,6 +314,35 @@ def _resolve_with_checkpoint(
     return default_value
 
 
+def _enforce_stronger_models_immutable_on_resume(
+    cli_value, stored_value,
+) -> None:
+    """Raise SystemExit if --no-allow-stronger-models is passed on resume.
+
+    The stronger-models tier gates whether three model handles exist in
+    eval workers — flipping it mid-run risks import failures and reshapes
+    the evolution agent's menu. So the value is locked to whatever the
+    original run chose; the only way to flip it is to start a new run.
+
+    Args:
+        cli_value: args.allow_stronger_models (None / True / False).
+            False means the user passed --no-allow-stronger-models.
+        stored_value: sidecar value (None / True / False). None for
+            historical runs that pre-date the sidecar.
+    """
+    if cli_value is False:
+        stored_desc = (
+            f"stored value: {stored_value}"
+            if stored_value is not None
+            else "no stored value (historical run, defaults to enabled)"
+        )
+        raise SystemExit(
+            "--no-allow-stronger-models cannot be set on --resume; the "
+            "stronger-models tier is locked to the original-run setting "
+            f"({stored_desc}). Start a new run to change it."
+        )
+
+
 def _resume_needs_stronger_flag(
     resume_dir: Path, gated_names: Iterable[str]
 ) -> bool:
@@ -572,20 +601,11 @@ def main():
     # models tier is more invasive because it changes which model handles
     # even exist in eval workers — flipping it mid-run risks import
     # failures and reshapes the evolution agent's menu.)
-    if args.resume and args.allow_stronger_models is False:
-        stored = checkpoint_ds1000.get("allow_stronger_models")
-        stored_desc = (
-            f"stored value: {stored}"
-            if stored is not None
-            else "no stored value (historical run, defaults to enabled)"
-        )
-        raise SystemExit(
-            "--no-allow-stronger-models cannot be set on --resume; the "
-            "stronger-models tier is locked to the original-run setting "
-            f"({stored_desc}). Start a new run to change it."
-        )
     if args.resume:
         stored = checkpoint_ds1000.get("allow_stronger_models")
+        _enforce_stronger_models_immutable_on_resume(
+            args.allow_stronger_models, stored
+        )
         effective_allow_stronger_models = stored if stored is not None else True
     else:
         effective_allow_stronger_models = (

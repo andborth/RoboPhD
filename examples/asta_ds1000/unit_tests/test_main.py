@@ -913,3 +913,162 @@ def test_background_md_eval_timeout_placeholder_and_interpolation():
     )
     # Arithmetic intent, documented and pinned.
     assert (1800 - 30) // 60 == 29
+
+
+# ----------------------------------------------------------------------
+# DS-1000 runtime sidecar (cost_threshold / cost_per_error /
+# allow_stronger_models) — see commit bca06e7. The framework's
+# ConfigManager doesn't persist these task-specific knobs, so without the
+# sidecar they silently revert to evaluator defaults on --resume, which
+# for cost_threshold *changes the scoring function* mid-run.
+# ----------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def sidecar_helpers():
+    """Import main.py's sidecar helpers once per module."""
+    sys.path.insert(0, str(ASTA_DS1000_DIR))
+    sys.path.insert(0, str(REPO_ROOT))
+    try:
+        import main as asta_main  # noqa: E402
+        return {
+            "read": asta_main._read_ds1000_runtime_config,
+            "write": asta_main._write_ds1000_runtime_config,
+            "resolve": asta_main._resolve_with_checkpoint,
+            "enforce": asta_main._enforce_stronger_models_immutable_on_resume,
+            "filename": asta_main.DS1000_RUNTIME_CONFIG_FILENAME,
+        }
+    finally:
+        sys.path.remove(str(ASTA_DS1000_DIR))
+        sys.path.remove(str(REPO_ROOT))
+
+
+def test_sidecar_roundtrip(sidecar_helpers, tmp_path):
+    """write → read returns exactly what was written."""
+    payload = {
+        "cost_threshold": 0.06,
+        "cost_per_error": 0.01,
+        "allow_stronger_models": False,
+    }
+    sidecar_helpers["write"](tmp_path, payload)
+    assert sidecar_helpers["read"](tmp_path) == payload
+
+
+def test_sidecar_missing_file_returns_empty_dict(sidecar_helpers, tmp_path):
+    """An absent sidecar must NOT raise — it's the historical-run case."""
+    assert sidecar_helpers["read"](tmp_path) == {}
+
+
+def test_sidecar_malformed_file_returns_empty_dict(sidecar_helpers, tmp_path):
+    """Best-effort read: malformed JSON falls back to {} rather than crashing
+    a resume. The framework's checkpoint.json is still authoritative for
+    the framework-level knobs; this sidecar is purely additive."""
+    (tmp_path / sidecar_helpers["filename"]).write_text("{not: valid json")
+    assert sidecar_helpers["read"](tmp_path) == {}
+
+
+def test_resolve_cli_wins_over_checkpoint(sidecar_helpers):
+    """Priority: explicit CLI flag > stored sidecar value."""
+    result = sidecar_helpers["resolve"](
+        cli_value=0.08, checkpoint_value=0.06, default_value=0.04,
+        name="cost-threshold",
+    )
+    assert result == 0.08
+
+
+def test_resolve_checkpoint_wins_when_cli_absent(sidecar_helpers):
+    """When CLI is None (user passed nothing), sidecar value is used.
+
+    This is the fix's load-bearing behavior — without it, --cost-threshold
+    silently reverts to evaluator.MIN_COST_THRESHOLD on resume.
+    """
+    result = sidecar_helpers["resolve"](
+        cli_value=None, checkpoint_value=0.06, default_value=0.04,
+        name="cost-threshold",
+    )
+    assert result == 0.06
+
+
+def test_resolve_default_when_neither(sidecar_helpers):
+    """Fresh run with no CLI flag falls through to the evaluator default."""
+    result = sidecar_helpers["resolve"](
+        cli_value=None, checkpoint_value=None, default_value=0.04,
+        name="cost-threshold",
+    )
+    assert result == 0.04
+
+
+def test_resolve_warns_loudly_on_mismatch(sidecar_helpers, caplog):
+    """When CLI and stored value disagree, a WARNING fires and CLI wins.
+
+    The warning is the only signal to the user that they're shifting
+    scoring/prompt mid-run; if it stops firing, silent goalpost shifts
+    return.
+    """
+    import logging
+    caplog.set_level(logging.WARNING, logger="main")
+    result = sidecar_helpers["resolve"](
+        cli_value=0.04, checkpoint_value=0.06, default_value=0.04,
+        name="cost-threshold",
+    )
+    assert result == 0.04
+    assert any(
+        "differs from stored value" in record.message
+        and record.levelname == "WARNING"
+        for record in caplog.records
+    ), f"expected mismatch warning; got: {[r.message for r in caplog.records]}"
+
+
+def test_resolve_no_warning_when_cli_matches_checkpoint(sidecar_helpers, caplog):
+    """Matching CLI + stored = silent. A no-op resume shouldn't be noisy."""
+    import logging
+    caplog.set_level(logging.WARNING, logger="main")
+    result = sidecar_helpers["resolve"](
+        cli_value=0.06, checkpoint_value=0.06, default_value=0.04,
+        name="cost-threshold",
+    )
+    assert result == 0.06
+    assert not [
+        r for r in caplog.records
+        if r.levelname == "WARNING" and "differs from stored value" in r.message
+    ]
+
+
+def test_enforce_stronger_models_immutable_blocks_resume_with_flag(sidecar_helpers):
+    """--no-allow-stronger-models on resume must hard-error.
+
+    Bug class: silently flipping the stronger-models tier mid-run
+    reshapes the evolution agent's model menu and risks ImportError in
+    eval workers if pooled agents already imported a gated handle.
+    """
+    with pytest.raises(SystemExit) as exc_info:
+        sidecar_helpers["enforce"](cli_value=False, stored_value=False)
+    msg = str(exc_info.value)
+    assert "cannot be set on --resume" in msg
+    assert "stored value: False" in msg
+
+
+def test_enforce_stronger_models_immutable_names_stored_value(sidecar_helpers):
+    """Error message must surface the stored value so the user knows what
+    they'd be flipping. Without this the user just sees "rejected" with
+    no actionable information."""
+    with pytest.raises(SystemExit) as exc_info:
+        sidecar_helpers["enforce"](cli_value=False, stored_value=True)
+    assert "stored value: True" in str(exc_info.value)
+
+
+def test_enforce_stronger_models_immutable_handles_historical_run(sidecar_helpers):
+    """Pre-sidecar runs have no stored value; error message must say so
+    rather than printing 'stored value: None' which reads as a bug."""
+    with pytest.raises(SystemExit) as exc_info:
+        sidecar_helpers["enforce"](cli_value=False, stored_value=None)
+    assert "no stored value" in str(exc_info.value)
+    assert "historical run" in str(exc_info.value)
+
+
+def test_enforce_stronger_models_immutable_silent_when_no_flag(sidecar_helpers):
+    """No CLI flag (cli_value=None) must not raise — only an explicit
+    --no-allow-stronger-models triggers the immutability check."""
+    sidecar_helpers["enforce"](cli_value=None, stored_value=False)
+    sidecar_helpers["enforce"](cli_value=None, stored_value=True)
+    sidecar_helpers["enforce"](cli_value=None, stored_value=None)
