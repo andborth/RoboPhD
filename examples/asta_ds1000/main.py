@@ -243,6 +243,77 @@ def _read_checkpoint_max_workers(resume_dir: Path) -> int | None:
     return best
 
 
+DS1000_RUNTIME_CONFIG_FILENAME = "ds1000_runtime_config.json"
+
+
+def _ds1000_runtime_path(experiment_dir: Path) -> Path:
+    return Path(experiment_dir) / DS1000_RUNTIME_CONFIG_FILENAME
+
+
+def _read_ds1000_runtime_config(resume_dir: Path) -> dict:
+    """Read DS-1000 task-specific runtime config from a resumed run.
+
+    Returns a dict of stored values (may be missing keys) or {} if the
+    sidecar file is absent / unreadable. The framework's ConfigManager
+    persists framework-level knobs (max_workers, eval_timeout, etc.) but
+    not task-specific ones; this sidecar covers --cost-threshold,
+    --cost-per-error, and --[no-]allow-stronger-models so they survive
+    --resume the same way --max-workers does.
+    """
+    cp_path = _ds1000_runtime_path(resume_dir)
+    if not cp_path.is_file():
+        return {}
+    try:
+        data = json.loads(cp_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _write_ds1000_runtime_config(experiment_dir: Path, values: dict) -> None:
+    """Persist DS-1000 task-specific runtime config alongside checkpoint.json.
+
+    Idempotent — writing the same values is a no-op semantically. Best-
+    effort: a write failure logs a warning but doesn't abort the run
+    (future resumes would fall back to evaluator defaults, same as today).
+    """
+    cp_path = _ds1000_runtime_path(experiment_dir)
+    try:
+        cp_path.parent.mkdir(parents=True, exist_ok=True)
+        cp_path.write_text(json.dumps(values, indent=2, sort_keys=True))
+    except OSError as e:
+        logger.warning(f"Could not write {cp_path.name}: {e}")
+
+
+def _resolve_with_checkpoint(
+    cli_value, checkpoint_value, default_value, name: str, fmt=str,
+):
+    """Three-way resolve for task-specific knobs on --resume.
+
+    Priority: explicit CLI flag > stored sidecar value > evaluator default.
+    Warns loudly when CLI and checkpoint disagree — these knobs shape the
+    scoring function or the agent's prompt, so a mid-run change is
+    consequential (agents from prior iterations were configured against
+    the stored value).
+    """
+    if cli_value is not None:
+        if checkpoint_value is not None and cli_value != checkpoint_value:
+            logger.warning(
+                f"Resume: --{name} CLI flag ({fmt(cli_value)}) differs "
+                f"from stored value ({fmt(checkpoint_value)}); using CLI "
+                f"flag. This shifts scoring/prompt mid-run — prior "
+                f"iterations were configured with the stored value."
+            )
+        return cli_value
+    if checkpoint_value is not None:
+        logger.info(
+            f"Resume: using {name}={fmt(checkpoint_value)} from "
+            f"{DS1000_RUNTIME_CONFIG_FILENAME}"
+        )
+        return checkpoint_value
+    return default_value
+
+
 def _resume_needs_stronger_flag(
     resume_dir: Path, gated_names: Iterable[str]
 ) -> bool:
@@ -405,21 +476,25 @@ def parse_args():
                         # confuse readers if surfaced here.
                         "%(default).0s")
 
-    p.add_argument("--no-allow-stronger-models", dest="allow_stronger_models",
-                   action="store_false", default=True,
-                   help="Restrict evolution to the cheap+standard tier. By "
-                        "default the three stronger handles (GPT_5_5, "
-                        "CLAUDE_OPUS_4_7, GEMINI_3_1_PRO_PREVIEW) are also "
-                        "exposed — evolution can use them where they help, "
-                        "and the cost-per-error penalty disciplines overuse."
-                        # Suppress argparse's auto "(default: True)" suffix.
-                        # The dest defaults to True (stronger models on), so
-                        # the auto suffix is technically right but reads as
-                        # "this flag is on by default" — confusing because
-                        # passing the flag *disables* the tier. The behavioral
-                        # default is already described in the help text above.
-                        # See the --new-agent-test-rounds canonical example.
-                        "%(default).0s")
+    # None sentinel distinguishes "user passed nothing" from "user
+    # explicitly opted out." The setting is immutable across a run —
+    # passing the flag on --resume is a hard error (the stored sidecar
+    # value wins; restart to change it). Default-on is implicit.
+    p.add_argument(
+        "--no-allow-stronger-models", dest="allow_stronger_models",
+        action="store_const", const=False, default=None,
+        help="Restrict evolution to the cheap+standard tier. By default "
+             "the three stronger handles (GPT_5_5, CLAUDE_OPUS_4_7, "
+             "GEMINI_3_1_PRO_PREVIEW) are also exposed — evolution can "
+             "use them where they help, and the cost-per-error penalty "
+             "disciplines overuse. Fresh-run only; the value is locked "
+             "for the lifetime of the run and cannot be changed on "
+             "--resume (start a new run to flip it)."
+             # Suppress argparse's "(default: None)" — the sentinel is
+             # an implementation detail; the behavioral default is
+             # described in the help text.
+             "%(default).0s",
+    )
     p.add_argument("--cost-threshold", type=float, default=None,
                    help="Mean cost across an iteration's batch below this "
                         "is in the free zone (no penalty). Default $0.04."
@@ -476,6 +551,77 @@ def parse_args():
 def main():
     args = parse_args()
 
+    from evaluator import MIN_COST_THRESHOLD, COST_PER_ERROR
+
+    def _fmt_cost(x: float) -> str:
+        return f"${x:.2f}" if x == round(x, 2) else f"${x:.4f}"
+
+    # Read task-specific sidecar (--cost-threshold / --cost-per-error /
+    # --[no-]allow-stronger-models) on --resume. These knobs aren't
+    # known to the framework's ConfigManager, so without this they'd
+    # silently revert to evaluator defaults on resume — a quiet
+    # scoring-function shift mid-run. CLI flags still override (with
+    # a loud warning if they disagree with the stored value).
+    checkpoint_ds1000 = (
+        _read_ds1000_runtime_config(Path(args.resume)) if args.resume else {}
+    )
+
+    # --no-allow-stronger-models is immutable across a run. On resume,
+    # passing it is a hard error — the sidecar value wins. (Cost knobs
+    # below keep their overrideable-with-warning behavior; the stronger-
+    # models tier is more invasive because it changes which model handles
+    # even exist in eval workers — flipping it mid-run risks import
+    # failures and reshapes the evolution agent's menu.)
+    if args.resume and args.allow_stronger_models is False:
+        stored = checkpoint_ds1000.get("allow_stronger_models")
+        stored_desc = (
+            f"stored value: {stored}"
+            if stored is not None
+            else "no stored value (historical run, defaults to enabled)"
+        )
+        raise SystemExit(
+            "--no-allow-stronger-models cannot be set on --resume; the "
+            "stronger-models tier is locked to the original-run setting "
+            f"({stored_desc}). Start a new run to change it."
+        )
+    if args.resume:
+        stored = checkpoint_ds1000.get("allow_stronger_models")
+        effective_allow_stronger_models = stored if stored is not None else True
+    else:
+        effective_allow_stronger_models = (
+            args.allow_stronger_models
+            if args.allow_stronger_models is not None
+            else True
+        )
+
+    cost_threshold = _resolve_with_checkpoint(
+        cli_value=args.cost_threshold,
+        checkpoint_value=checkpoint_ds1000.get("cost_threshold"),
+        default_value=MIN_COST_THRESHOLD,
+        name="cost-threshold",
+        fmt=_fmt_cost,
+    )
+    cost_per_error = _resolve_with_checkpoint(
+        cli_value=args.cost_per_error,
+        checkpoint_value=checkpoint_ds1000.get("cost_per_error"),
+        default_value=COST_PER_ERROR,
+        name="cost-per-error",
+        fmt=_fmt_cost,
+    )
+
+    # Persist the resolved values so future resumes recover them. On
+    # --resume we can write immediately (the dir exists); on a fresh
+    # run we don't know experiment_dir until optimize_anything returns
+    # and write the sidecar there. Skipped on --eval-only — that path
+    # is read-only by intent (no training iterations follow).
+    resolved_runtime = {
+        "cost_threshold": cost_threshold,
+        "cost_per_error": cost_per_error,
+        "allow_stronger_models": effective_allow_stronger_models,
+    }
+    if args.resume and not args.eval_only:
+        _write_ds1000_runtime_config(Path(args.resume), resolved_runtime)
+
     # Set the stronger-models env var BEFORE importing evaluator (which
     # transitively triggers model_registry's import-time check in each
     # per-sample subprocess). os.environ writes propagate to children
@@ -491,7 +637,7 @@ def main():
     # also benefit. The gated-handle list is owned by model_registry
     # (GATED_HANDLE_NAMES) so the registry stays the single source of
     # truth — no hardcoded list in main.py.
-    if args.allow_stronger_models:
+    if effective_allow_stronger_models:
         os.environ["ASTA_DS1000_ALLOW_STRONGER_MODELS"] = "1"
     elif args.resume:
         from model_registry import GATED_HANDLE_NAMES
@@ -504,23 +650,6 @@ def main():
             )
 
     from evaluator import Ds1000Evaluator
-
-    # Resolve cost-penalty knobs once: CLI override or evaluator default.
-    # The same values feed both the evaluator and the markdown
-    # interpolation below — keeping them in lockstep means the agent's
-    # CLAUDE.md never disagrees with the actual scoring function.
-    from evaluator import MIN_COST_THRESHOLD, COST_PER_ERROR
-    cost_threshold = (
-        args.cost_threshold if args.cost_threshold is not None
-        else MIN_COST_THRESHOLD
-    )
-    cost_per_error = (
-        args.cost_per_error if args.cost_per_error is not None
-        else COST_PER_ERROR
-    )
-
-    def _fmt_cost(x: float) -> str:
-        return f"${x:.2f}" if x == round(x, 2) else f"${x:.4f}"
 
     def _build_cost_penalty_table(threshold: float, cpe: float) -> str:
         """Generate the cost-penalty table substituted into background.md.
@@ -556,7 +685,7 @@ def main():
     # are appended. Construction is delegated to a pure helper so tests
     # can pin the output string without scanning main.py's source for
     # string-literal patterns.
-    stronger_rows = _build_stronger_rows(args.allow_stronger_models)
+    stronger_rows = _build_stronger_rows(effective_allow_stronger_models)
 
     # Resolve effective new_agent_test_rounds from CLI flag + the
     # --engine-config overlay. The flag is the primary surface; the
@@ -851,6 +980,11 @@ def main():
                 f"{result.total_evaluations} evaluations")
     logger.info(f"Best agent: Elo {result.best_score:.0f}")
     logger.info(f"Experiment dir: {result.experiment_dir}")
+
+    # Sidecar write for fresh runs (resume path already wrote above).
+    # Idempotent: rewriting on a resumed extend-run with no overrides
+    # produces an identical file.
+    _write_ds1000_runtime_config(result.experiment_dir, resolved_runtime)
 
     if args.eval_test_set:
         if not result.completed_normally:
