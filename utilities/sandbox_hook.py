@@ -723,23 +723,46 @@ def auto_session_dirs(cwd: str) -> list:
 
 def deny_message(
     experiment_dir: str,
-    cwd: str,
+    write_root: str,
     blocked_path: str,
     scope: str,
     extra_read_roots: list = None,
+    write_root_is_iteration: bool = False,
 ) -> str:
-    """Format the human-readable denial reason shown to the agent."""
+    """Format the human-readable denial reason shown to the agent.
+
+    ``write_root`` is the policy-defined write root — the
+    ``$ROBOPHD_EVOLUTION_ITERATION_DIR`` when set, else the tool's
+    cwd. ``write_root_is_iteration`` indicates which mode is active;
+    when True we add a clarifying note so the agent doesn't think it
+    must `cd` to ``write_root`` (the whole point of the iteration-
+    rooted policy is that it doesn't).
+    """
     extra_lines = ""
     if extra_read_roots:
         bullets = "\n".join(f"      {p}" for p in extra_read_roots)
         extra_lines = f"    plus task-specific resource roots:\n{bullets}\n"
+    if write_root_is_iteration:
+        write_note = (
+            f"  • Write (Edit/Write/Bash redirects, cp/mv/rm/mkdir/touch/sed -i targets): "
+            f"anywhere under your evolution iteration directory:\n"
+            f"    {write_root}\n"
+            f"    (writes are allowed anywhere in this tree regardless of your\n"
+            f"     cwd — you can edit `agent.py` here even after `cd`-ing into\n"
+            f"     a nested test subdir for probing.)\n"
+        )
+    else:
+        write_note = (
+            f"  • Write (Edit/Write/Bash redirects, cp/mv/rm/mkdir/touch/sed -i targets): "
+            f"only under\n"
+            f"    {write_root}\n"
+        )
     return (
         "Sandbox denied. This Claude CLI session has two scopes:\n"
         f"  • Read (Read/Glob/Grep/Bash file inputs): anywhere under\n"
         f"    {experiment_dir}\n"
         f"{extra_lines}"
-        f"  • Write (Edit/Write/Bash redirects, cp/mv/rm/mkdir/touch/sed -i targets): only\n"
-        f"    {cwd}\n"
+        f"{write_note}"
         "\n"
         f"Blocked: {blocked_path} — outside {scope} scope. Sibling experiment runs and the source repo are out of scope by policy."
     )
@@ -825,6 +848,11 @@ def main() -> int:
     # runs / repo / ~/.claude are not under THIS iteration's root.
     write_root_env = os.environ.get("ROBOPHD_EVOLUTION_ITERATION_DIR")
     write_root = os.path.realpath(write_root_env) if write_root_env else cwd_real
+    # Threaded into every deny_message so the agent sees the right
+    # explanation: "your evolution iteration directory" when the
+    # harness has declared one, generic "only under <path>" in the
+    # cwd-fallback case. Tests above pin both modes.
+    write_root_is_iteration = bool(write_root_env)
 
     extra_read_roots = parse_extra_read_paths(sys.argv)
 
@@ -868,8 +896,9 @@ def main() -> int:
     if not is_under(cwd_real, experiment_dir):
         emit_decision(
             "deny",
-            deny_message(experiment_dir, cwd_real, cwd_real, "write",
-                         extra_read_roots),
+            deny_message(experiment_dir, write_root, cwd_real, "write",
+                         extra_read_roots,
+                         write_root_is_iteration=write_root_is_iteration),
         )
         append_denial_record({
             "ts": datetime.now().isoformat(timespec="seconds"),
@@ -892,8 +921,9 @@ def main() -> int:
         ok, blocked = check_read_paths([path], experiment_dir, extra_read_roots, cwd_real)
         if ok:
             return 0
-        emit_decision("deny", deny_message(experiment_dir, cwd_real, blocked, "read",
-                                           extra_read_roots))
+        emit_decision("deny", deny_message(experiment_dir, write_root, blocked, "read",
+                                           extra_read_roots,
+                                           write_root_is_iteration=write_root_is_iteration))
         append_denial_record({
             "ts": datetime.now().isoformat(timespec="seconds"),
             "tool": tool_name,
@@ -930,7 +960,8 @@ def main() -> int:
         if ok:
             return 0
         emit_decision("deny", deny_message(experiment_dir, write_root, blocked, "write",
-                                           extra_read_roots))
+                                           extra_read_roots,
+                                           write_root_is_iteration=write_root_is_iteration))
         append_denial_record({
             "ts": datetime.now().isoformat(timespec="seconds"),
             "tool": tool_name,
@@ -998,8 +1029,9 @@ def main() -> int:
             if not ok:
                 emit_decision(
                     "deny",
-                    deny_message(experiment_dir, cwd_real, blocked, "read",
-                                 extra_read_roots),
+                    deny_message(experiment_dir, write_root, blocked, "read",
+                                 extra_read_roots,
+                                 write_root_is_iteration=write_root_is_iteration),
                 )
                 append_denial_record({
                     "ts": datetime.now().isoformat(timespec="seconds"),
@@ -1016,7 +1048,8 @@ def main() -> int:
                 emit_decision(
                     "deny",
                     deny_message(experiment_dir, write_root, blocked, "write",
-                                 extra_read_roots),
+                                 extra_read_roots,
+                                 write_root_is_iteration=write_root_is_iteration),
                 )
                 append_denial_record({
                     "ts": datetime.now().isoformat(timespec="seconds"),

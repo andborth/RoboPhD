@@ -632,6 +632,45 @@ def test_legacy_cwd_rooted_write_outside_cwd_denies(experiment_layout):
     assert "outside write scope" in res["reason"]
 
 
+def test_iteration_root_deny_message_names_iteration_directory(experiment_layout):
+    """When iteration_dir is declared, the deny message must
+    (a) show the iteration root as the write-scope path, AND
+    (b) explicitly call it the "evolution iteration directory" so
+    the agent doesn't think it needs to `cd` there. Without this
+    label, agents reading "Write only under <path>" plausibly
+    interpret it as 'I must be in that dir'."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"  # outside iteration root
+    res = run_hook(
+        make_envelope("Write", {"file_path": str(target), "content": "x"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+        iteration_dir=layout["cwd"],
+    )
+    assert res["decision"] == "deny"
+    assert str(layout["cwd"].resolve()) in res["reason"]
+    assert "evolution iteration directory" in res["reason"]
+    # Also the actionable bit: the agent should know the cwd-independence.
+    assert "regardless of your" in res["reason"]
+
+
+def test_legacy_deny_message_omits_iteration_label(experiment_layout):
+    """In legacy mode (no iteration_dir env var), the deny message
+    should NOT claim "evolution iteration directory" — that label
+    would be wrong (the displayed path is the cwd, not necessarily
+    the iteration root)."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"
+    res = run_hook(
+        make_envelope("Write", {"file_path": str(target), "content": "x"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+        # iteration_dir NOT set -> legacy fallback
+    )
+    assert res["decision"] == "deny"
+    assert "evolution iteration directory" not in res["reason"]
+
+
 def test_iteration_root_does_not_allow_sibling_iteration_write(experiment_layout):
     """Security boundary unchanged: even with iteration_dir declared,
     writing into a sibling iteration's (or prior agent's) dir must
