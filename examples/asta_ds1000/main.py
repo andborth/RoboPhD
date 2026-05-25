@@ -85,6 +85,11 @@ DEFAULT_EXAMPLES_PER_ITERATION = 20
 # f-string interpolation, so changing this constant updates both.
 DEFAULT_NUM_ITERATIONS = 20
 
+# Framework default for parallel eval workers. Single source of truth:
+# referenced from both --max-workers' resolution logic AND its argparse
+# help text (via f-string), so bumping this constant updates both.
+DEFAULT_MAX_WORKERS = 10
+
 
 def _build_dataset(phase: str):
     """Build (train_pool, test_pool, examples_per_iter, evaluation_budget,
@@ -431,15 +436,16 @@ def parse_args():
                         "%(default).0s")
 
     p.add_argument("--max-workers", type=int, default=None,
-                   help="Parallel eval workers. Each evaluation runs in its "
-                        "own subprocess to bypass inspect.eval's process-global "
-                        "singleton lock, so this is real parallelism. "
-                        "Resolution order: (1) this CLI flag if set, "
-                        "(2) on --resume, the value stored in the resumed "
-                        "run's checkpoint.json, (3) the framework default of "
-                        "10. Lower (e.g. 4-6) if seeing ENOSPC from parallel "
-                        "overlay snapshots of the inspect-ai sandbox's heavy "
-                        "ML base layer (torch/tensorflow/grpc)."
+                   help=f"Parallel eval workers. Each evaluation runs in its "
+                        f"own subprocess to bypass inspect.eval's process-global "
+                        f"singleton lock, so this is real parallelism. "
+                        f"Resolution order: (1) this CLI flag if set, "
+                        f"(2) on --resume, the value stored in the resumed "
+                        f"run's checkpoint.json, (3) the framework default of "
+                        f"{DEFAULT_MAX_WORKERS}. Lower (e.g. 4-6) if seeing "
+                        f"ENOSPC from parallel overlay snapshots of the "
+                        f"inspect-ai sandbox's heavy ML base layer "
+                        f"(torch/tensorflow/grpc)."
                         # Suppress argparse's auto "(default: None)" suffix;
                         # the resolution order above describes the actual
                         # behavior more usefully than "default: None" does.
@@ -662,20 +668,20 @@ def main():
     #
     # Order: explicit CLI flag wins. On --resume with no flag, recover
     # the value the original run used (matches the user expectation that
-    # resume preserves settings). Otherwise fall back to the framework
-    # default of 10 (see the --max-workers help text for ENOSPC notes).
+    # resume preserves settings). Otherwise fall back to
+    # DEFAULT_MAX_WORKERS (see the --max-workers help text for ENOSPC notes).
     if args.max_workers is not None:
         effective_max_workers = args.max_workers
     elif args.resume:
         cp_max_workers = _read_checkpoint_max_workers(Path(args.resume))
-        effective_max_workers = cp_max_workers if cp_max_workers is not None else 10
+        effective_max_workers = cp_max_workers if cp_max_workers is not None else DEFAULT_MAX_WORKERS
         if cp_max_workers is not None:
             logger.info(
                 f"Resume: using max_workers={cp_max_workers} from "
                 f"checkpoint.json (pass --max-workers N to override)"
             )
     else:
-        effective_max_workers = 10
+        effective_max_workers = DEFAULT_MAX_WORKERS
 
     # Single source of truth for test-side eval config. Reused at every
     # eval_candidate / eval_run call site below (--eval-only and
