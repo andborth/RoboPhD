@@ -437,14 +437,9 @@ def parse_args():
                         "Resolution order: (1) this CLI flag if set, "
                         "(2) on --resume, the value stored in the resumed "
                         "run's checkpoint.json, (3) the framework default of "
-                        "6. Default 6 keeps peak concurrent docker-layer "
-                        "extraction below OrbStack's default ~130 GB btrfs "
-                        "subvolume quota — higher values (e.g. 12) burst-write "
-                        "enough overlay snapshots in parallel to trigger \"no "
-                        "space left on device\" on the inspect-ai sandbox's "
-                        "heavy ML base layer (torch/tensorflow/grpc). Raise "
-                        "if you've increased OrbStack's allocation; lower "
-                        "(e.g. 4) if still seeing ENOSPC."
+                        "10. Lower (e.g. 4-6) if seeing ENOSPC from parallel "
+                        "overlay snapshots of the inspect-ai sandbox's heavy "
+                        "ML base layer (torch/tensorflow/grpc)."
                         # Suppress argparse's auto "(default: None)" suffix;
                         # the resolution order above describes the actual
                         # behavior more usefully than "default: None" does.
@@ -668,20 +663,19 @@ def main():
     # Order: explicit CLI flag wins. On --resume with no flag, recover
     # the value the original run used (matches the user expectation that
     # resume preserves settings). Otherwise fall back to the framework
-    # default of 6 (sized for OrbStack's default 130 GB btrfs subvolume
-    # quota — see the --max-workers help text).
+    # default of 10 (see the --max-workers help text for ENOSPC notes).
     if args.max_workers is not None:
         effective_max_workers = args.max_workers
     elif args.resume:
         cp_max_workers = _read_checkpoint_max_workers(Path(args.resume))
-        effective_max_workers = cp_max_workers if cp_max_workers is not None else 6
+        effective_max_workers = cp_max_workers if cp_max_workers is not None else 10
         if cp_max_workers is not None:
             logger.info(
                 f"Resume: using max_workers={cp_max_workers} from "
                 f"checkpoint.json (pass --max-workers N to override)"
             )
     else:
-        effective_max_workers = 6
+        effective_max_workers = 10
 
     # Single source of truth for test-side eval config. Reused at every
     # eval_candidate / eval_run call site below (--eval-only and
