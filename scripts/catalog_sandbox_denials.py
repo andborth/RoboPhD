@@ -173,6 +173,19 @@ PATTERNS = [
      "TP",
      lambda r: _b(r).startswith(("/tmp", "/private/tmp"))),
 
+    ("TP: find on out-of-scope system path (e.g. conda env, /usr, /opt)",
+     "TP",
+     # Distinct from `find /` (full-FS scan, caught above). This is
+     # the narrower shape where the agent picks a specific out-of-scope
+     # root — observed: `find /opt/anaconda3/envs/<env> -name model_*`.
+     # Cmd-aware: blocked path must appear as the find search root in
+     # cmd, so a deny on the same path via cat/grep doesn't get
+     # absorbed here.
+     lambda r: _scope(r) == "read"
+               and bool(_b(r)) and _b(r) != "/"
+               and bool(re.search(rf"\bfind\s+{re.escape(_b(r))}\b",
+                                  _cmd(r)))),
+
     # ---- LIMITATION: fail-closed by design ----
     ("LIMITATION: shlex parse fail (fail-closed)",
      "LIMITATION",

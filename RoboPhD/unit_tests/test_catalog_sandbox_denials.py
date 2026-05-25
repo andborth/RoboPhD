@@ -72,6 +72,29 @@ def test_path_inside_specific_run_does_not_match_engine_recon():
     assert "engine-level" not in label
 
 
+def test_find_on_conda_env_classifies_tp():
+    """Agent searches `/opt/anaconda3/envs/<env>` for a module — a
+    real out-of-scope find seen in the catalog. Distinct shape from
+    `find /` (covered separately)."""
+    _, cat = catalog.classify(_rec(
+        scope="read",
+        blocked_path="/opt/anaconda3/envs/robophd_demo",
+        command='find /opt/anaconda3/envs/robophd_demo -name "model_registry*"',
+    ))
+    assert cat == "TP"
+
+
+def test_find_on_system_dir_requires_path_in_cmd():
+    """The find-on-system-path predicate is cmd-aware: a deny on the
+    same path via cat/grep doesn't get silently absorbed as a find."""
+    label, cat = catalog.classify(_rec(
+        scope="read",
+        blocked_path="/opt/anaconda3/envs/robophd_demo",
+        command="cat /opt/anaconda3/envs/robophd_demo/something",
+    ))
+    assert "find on out-of-scope" not in label
+
+
 def test_tmp_scratch_classifies_tp():
     _, cat = catalog.classify(_rec(
         scope="read", blocked_path="/private/tmp",
