@@ -87,14 +87,26 @@ def experiment_layout(tmp_path):
 
 
 def run_hook(envelope: dict, experiment_dir: Path,
-             extra_reads: list = None) -> dict:
+             extra_reads: list = None,
+             iteration_dir: Path = None) -> dict:
     """Invoke the hook as a subprocess and return parsed result.
 
     Returns a dict with keys: rc, stdout, stderr, decision (or None),
     reason (or None).
+
+    When ``iteration_dir`` is None, ROBOPHD_ITERATION_DIR is NOT set
+    in the env and the hook falls back to cwd-rooted write scope
+    (the legacy behavior). Existing tests use this default to pin
+    backward compat. Pass ``iteration_dir`` to exercise the new
+    iteration-rooted write-scope behavior.
     """
     env = dict(os.environ)
     env["ROBOPHD_EXPERIMENT_DIR"] = str(experiment_dir)
+    # Default: do NOT inherit a stray ROBOPHD_ITERATION_DIR from the
+    # outer process env — tests must opt in by passing iteration_dir.
+    env.pop("ROBOPHD_ITERATION_DIR", None)
+    if iteration_dir is not None:
+        env["ROBOPHD_ITERATION_DIR"] = str(iteration_dir)
     cmd = [sys.executable, str(HOOK)]
     for p in extra_reads or []:
         cmd.append(f"--extra-read={p}")
@@ -563,6 +575,163 @@ def test_auto_memory_symlinked_root_literal_slug_allows(tmp_path):
     )
     assert res2["rc"] == 0
     assert res2["decision"] is None
+
+
+# ---------------------------------------------------------------------
+# Iteration-rooted write scope ($ROBOPHD_ITERATION_DIR)
+#
+# When the harness declares an iteration root, write scope anchors on
+# that root rather than on the runtime cwd — so an agent can edit
+# <iter>/agent.py from any subdir it has `cd`'d into for testing.
+# Security boundaries (sibling iterations / sibling runs / source repo
+# / ~/.claude write) are unchanged. Without the env var, the hook
+# falls back to the legacy cwd-rooted policy (existing tests above
+# fence that backward-compat path).
+# ---------------------------------------------------------------------
+
+
+def test_iteration_root_write_from_nested_cwd_allows(experiment_layout):
+    """The motivating case: cwd has moved into a nested test subdir,
+    but the agent wants to refine its own iteration's agent.py.
+    Under the iteration-rooted policy this MUST be allowed; under the
+    legacy cwd-rooted policy (same call without iteration_dir set) it
+    was denied (see test_legacy_cwd_rooted_write_outside_cwd_denies
+    below for the contrast)."""
+    layout = experiment_layout
+    nested = layout["cwd"] / "iteration_013_test" / "agent_iter15_x"
+    nested.mkdir(parents=True)
+    target = layout["cwd"] / "agent.py"
+    target.write_text("# pre-existing\n")
+    res = run_hook(
+        make_envelope("Write", {"file_path": str(target), "content": "new"},
+                      nested),
+        layout["experiment_dir"],
+        iteration_dir=layout["cwd"],  # declare iteration root
+    )
+    assert res["rc"] == 0
+    assert res["decision"] is None
+
+
+def test_legacy_cwd_rooted_write_outside_cwd_denies(experiment_layout):
+    """Contrast / regression guard: same envelope but WITHOUT
+    iteration_dir set falls back to cwd-rooted write scope and must
+    deny — pins the backward-compat path the existing test suite has
+    been exercising all along."""
+    layout = experiment_layout
+    nested = layout["cwd"] / "iteration_013_test" / "agent_iter15_x"
+    nested.mkdir(parents=True)
+    target = layout["cwd"] / "agent.py"
+    target.write_text("# pre-existing\n")
+    res = run_hook(
+        make_envelope("Write", {"file_path": str(target), "content": "new"},
+                      nested),
+        layout["experiment_dir"],
+        # iteration_dir NOT set -> falls back to cwd
+    )
+    assert res["decision"] == "deny"
+    assert "outside write scope" in res["reason"]
+
+
+def test_iteration_root_does_not_allow_sibling_iteration_write(experiment_layout):
+    """Security boundary unchanged: even with iteration_dir declared,
+    writing into a sibling iteration's (or prior agent's) dir must
+    still deny — those dirs are NOT under the declared iteration
+    root, just under the broader experiment dir."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"  # prior agent dir
+    res = run_hook(
+        make_envelope("Write", {"file_path": str(target), "content": "x"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+        iteration_dir=layout["cwd"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside write scope" in res["reason"]
+
+
+def test_iteration_root_does_not_allow_sibling_run_write(experiment_layout):
+    """Security boundary unchanged: a sibling RUN's dir is outside
+    even with iteration_dir declared."""
+    layout = experiment_layout
+    target = layout["sibling_agent"]  # different run
+    res = run_hook(
+        make_envelope("Write", {"file_path": str(target), "content": "x"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+        iteration_dir=layout["cwd"],
+    )
+    assert res["decision"] == "deny"
+
+
+def test_iteration_root_bash_redirect_to_iter_root_from_nested_cwd_allows(experiment_layout):
+    """Bash write path inherits the iteration-rooted policy too —
+    `echo … > <iter>/agent.py` from a nested cwd is allowed when
+    iteration_dir is declared."""
+    layout = experiment_layout
+    nested = layout["cwd"] / "scratch"
+    nested.mkdir()
+    target = layout["cwd"] / "agent.py"
+    cmd = f"echo content > {target}"
+    res = run_hook(
+        make_envelope("Bash", {"command": cmd}, nested),
+        layout["experiment_dir"],
+        iteration_dir=layout["cwd"],
+    )
+    assert res["rc"] == 0
+    assert res["decision"] is None
+
+
+def test_iteration_root_bash_write_to_sibling_iter_still_denied(experiment_layout):
+    """Bash write to a sibling iteration's dir stays denied even
+    under the iteration-rooted policy."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"
+    cmd = f"echo x > {target}"
+    res = run_hook(
+        make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+        layout["experiment_dir"],
+        iteration_dir=layout["cwd"],
+    )
+    assert res["decision"] == "deny"
+
+
+def test_iteration_root_memory_carveout_still_works(experiment_layout):
+    """Auto-memory write under <experiment-slug>/memory/ stays
+    allowed regardless of which write-scope mode is in effect."""
+    layout = experiment_layout
+    slug = project_slug(os.path.realpath(str(layout["experiment_dir"])))
+    target = os.path.join(
+        os.path.expanduser("~"), ".claude", "projects", slug,
+        "memory", "insight.md",
+    )
+    res = run_hook(
+        make_envelope("Write", {"file_path": target, "content": "x"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+        iteration_dir=layout["cwd"],
+    )
+    assert res["rc"] == 0
+    assert res["decision"] is None
+
+
+def test_iteration_root_bash_write_to_claude_dir_still_denied(experiment_layout):
+    """The documented Bash hole closure stays — even with
+    iteration_dir set, a Bash redirect into ~/.claude/.../memory/
+    stays denied (Bash write path doesn't honor any of the carve-outs
+    or the iteration-root expansion for ~/.claude)."""
+    layout = experiment_layout
+    slug = project_slug(os.path.realpath(str(layout["experiment_dir"])))
+    target = os.path.join(
+        os.path.expanduser("~"), ".claude", "projects", slug,
+        "memory", "viaBash.md",
+    )
+    res = run_hook(
+        make_envelope("Bash", {"command": f"echo x > {target}"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+        iteration_dir=layout["cwd"],
+    )
+    assert res["decision"] == "deny"
 
 
 # ---------------------------------------------------------------------

@@ -670,7 +670,9 @@ class MetaEvolutionManager:
 
         logger.debug(f"Calling Claude Code: {' '.join(cmd[:4])}...")
 
-        extra_env = build_evolution_env(model, self.experiment_dir)
+        extra_env = build_evolution_env(
+            model, self.experiment_dir, iteration_dir=working_dir,
+        )
 
         try:
             # Run in iteration-specific working directory with rate limit handling

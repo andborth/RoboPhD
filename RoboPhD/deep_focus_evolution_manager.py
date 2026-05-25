@@ -952,7 +952,10 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             "--permission-mode", "bypassPermissions"
         ]
 
-        extra_env = build_evolution_env(self.evolution_model, self.experiment_dir)
+        extra_env = build_evolution_env(
+            self.evolution_model, self.experiment_dir,
+            iteration_dir=self.working_dir,
+        )
 
         try:
             result = call_claude_cli(
@@ -1026,7 +1029,10 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
 
         logger.debug(f"Calling Claude Code: {' '.join(cmd[:4])}...")
 
-        extra_env = build_evolution_env(self.evolution_model, self.experiment_dir)
+        extra_env = build_evolution_env(
+            self.evolution_model, self.experiment_dir,
+            iteration_dir=self.working_dir,
+        )
 
         try:
             # Run in working directory with rate limit handling

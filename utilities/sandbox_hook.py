@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: enforce experiment-dir read scope and cwd write scope.
+"""PreToolUse hook: enforce experiment-dir read scope and iteration-dir
+write scope.
 
 Invoked once per tool call by Claude CLI when the per-experiment
 .claude/settings.local.json wires it in. Reads JSON from stdin
@@ -11,8 +12,15 @@ standard logger, so denials surface to the run's normal log output.
 
 Policy:
   - Read scope: anywhere under $ROBOPHD_EXPERIMENT_DIR.
-  - Write scope: only under the tool's cwd (i.e., the iteration's
-    working directory).
+  - Write scope: anywhere under $ROBOPHD_ITERATION_DIR (the harness-
+    declared iteration root). If unset (legacy / non-evolution
+    callers), falls back to the tool's literal cwd — the historical
+    behavior. The iteration-rooted policy means the agent can edit
+    `<iter>/agent.py` regardless of whether it has `cd`'d into a
+    nested test subdir for probing. The security boundary is
+    unchanged: a sibling iteration's dir, a sibling run, the source
+    repo, and ~/.claude/* all remain outside write scope (they are
+    NOT under $ROBOPHD_ITERATION_DIR).
 
 Fail-closed: if the hook can't classify a command or hits an internal
 error, the tool call is denied (exit 2) so a misclassified Bash
@@ -808,6 +816,16 @@ def main() -> int:
 
     experiment_dir = os.path.realpath(experiment_dir_env)
     cwd_real = os.path.realpath(cwd)
+
+    # Write-scope root: the harness-declared iteration root if set,
+    # else the runtime cwd (legacy behavior). The iteration-rooted
+    # form lets the agent edit <iter>/agent.py from any subdir it has
+    # `cd`'d into for probing. The security boundary is unchanged —
+    # iteration dirs are under experiment_dir, sibling iterations /
+    # runs / repo / ~/.claude are not under THIS iteration's root.
+    write_root_env = os.environ.get("ROBOPHD_ITERATION_DIR")
+    write_root = os.path.realpath(write_root_env) if write_root_env else cwd_real
+
     extra_read_roots = parse_extra_read_paths(sys.argv)
 
     # Run-scoped auto-memory carve-out. Read is granted via the normal
@@ -896,22 +914,22 @@ def main() -> int:
                 "tool": tool_name,
             })
             return 2
-        ok, blocked = check_paths([path], cwd_real, cwd_real, "write")
+        ok, blocked = check_paths([path], write_root, cwd_real, "write")
         # Run-scoped auto-memory carve-out (Write-tool path only). A
-        # write outside cwd is still allowed iff it lands in exactly
-        # this run's ~/.claude/projects/<slug>/memory/ dir (raw-env or
-        # realpath slug form). Different slug (sibling run / source repo
-        # / drifted anchor) -> not under any carve-out -> denied +
-        # logged. Containment holds because experiment-dir names are
-        # timestamp-unique and RoboPhD owns EXPERIMENT_DIR (an injection
-        # can't induce a colliding EXP); see auto_memory_dir for why the
-        # lossy-slug collision boundary is inherited from Claude, not
-        # introduced here.
+        # write outside write_root is still allowed iff it lands in
+        # exactly this run's ~/.claude/projects/<slug>/memory/ dir
+        # (raw-env or realpath slug form). Different slug (sibling
+        # run / source repo / drifted anchor) -> not under any
+        # carve-out -> denied + logged. Containment holds because
+        # experiment-dir names are timestamp-unique and RoboPhD owns
+        # EXPERIMENT_DIR (an injection can't induce a colliding EXP);
+        # see auto_memory_dir for why the lossy-slug collision
+        # boundary is inherited from Claude, not introduced here.
         if not ok and any(is_under(blocked, mc) for mc in memory_carveouts):
             ok, blocked = True, None
         if ok:
             return 0
-        emit_decision("deny", deny_message(experiment_dir, cwd_real, blocked, "write",
+        emit_decision("deny", deny_message(experiment_dir, write_root, blocked, "write",
                                            extra_read_roots))
         append_denial_record({
             "ts": datetime.now().isoformat(timespec="seconds"),
@@ -993,11 +1011,11 @@ def main() -> int:
                 })
                 return 0
 
-            ok, blocked = check_paths(write_paths, cwd_real, cwd_real, "write")
+            ok, blocked = check_paths(write_paths, write_root, cwd_real, "write")
             if not ok:
                 emit_decision(
                     "deny",
-                    deny_message(experiment_dir, cwd_real, blocked, "write",
+                    deny_message(experiment_dir, write_root, blocked, "write",
                                  extra_read_roots),
                 )
                 append_denial_record({
