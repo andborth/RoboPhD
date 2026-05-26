@@ -7,10 +7,33 @@ and emit the required `<code>...</code>` block.
 from inspect_ai.model import GenerateConfig
 from inspect_ai.solver import Generate, TaskState, solver
 
-# LLM handles are imported from `model_registry`. Pick one per call,
-# or mix across calls. See CLAUDE.md (Domain Background) for the
-# full list of handles and their pricing.
-from model_registry import GPT_5_4_MINI
+# Demonstration imports — the full menu of model handles is listed
+# here so evolution sees the available palette directly in the seed
+# (rather than only in CLAUDE.md's pricing table). The seed uses
+# GPT_5_4_MINI below; evolved agents are free to swap in any of the
+# other handles, mix across calls, or drop unused ones. See CLAUDE.md
+# (Domain Background) for per-handle pricing and reasoning defaults.
+from model_registry import (
+    GPT_5_4_MINI,
+    GPT_5_4,
+    CLAUDE_HAIKU_4_5,
+    CLAUDE_SONNET_4_6,
+    GEMINI_3_1_FLASH_LITE,
+    GEMINI_3_FLASH_PREVIEW,
+    GPT_5_5,
+    CLAUDE_OPUS_4_7,
+    GEMINI_3_1_PRO_PREVIEW,
+)
+
+# Reference the full menu so the demonstration imports above aren't
+# flagged as unused (and aren't quietly stripped by an evolution that
+# treats unused imports as cleanup). Evolution is welcome to drop
+# entries it doesn't end up using — just not by accident.
+_AVAILABLE_HANDLES = (
+    GPT_5_4_MINI, GPT_5_4, CLAUDE_HAIKU_4_5, CLAUDE_SONNET_4_6,
+    GEMINI_3_1_FLASH_LITE, GEMINI_3_FLASH_PREVIEW,
+    GPT_5_5, CLAUDE_OPUS_4_7, GEMINI_3_1_PRO_PREVIEW,
+)
 
 
 def _wrap_in_code_tags(text: str) -> str:
