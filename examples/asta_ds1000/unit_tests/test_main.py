@@ -11,16 +11,6 @@ Currently covers three bug classes:
     eval_timeout=EVAL_TIMEOUT)` near `test_evaluator` construction; this
     test guards against re-introduction.
 
-  - On `--resume`, main.py must auto-detect imports of gated stronger-
-    tier handles in the resumed run's agent pool and set
-    ASTA_DS1000_ALLOW_STRONGER_MODELS=1 even when
-    --no-allow-stronger-models was passed. Without it, eval workers
-    ImportError on every sample, yielding a uniform 0.000 test score
-    (silent — no exception bubbles up). The gated names live in
-    model_registry as `GATED_HANDLE_NAMES` (the single source of
-    truth); main.py's `_resume_needs_stronger_flag` consumes that
-    constant via AST `ImportFrom` matching on `agents/*/agent.py`.
-
   - --new-agent-test-rounds must reach engine_overrides AND drive the
     framing in objective.md. The wording in objective.md paragraph 3
     swaps to a Round-2-aware variant when test rounds >= 1, giving the
@@ -45,30 +35,14 @@ EVAL_FUNCS = {"eval_candidate", "eval_run"}
 
 
 @pytest.fixture(scope="module")
-def resume_helper():
-    """Import main.py's `_resume_needs_stronger_flag` once per module.
+def framing_helper():
+    """Import main.py's `_test_rounds_framing` once per module.
 
     sys.path manipulation rather than a package install because
     examples/asta_ds1000/ isn't an installable package. Importing
     main.py runs argparse setup but not main() — safe at import time.
-    """
-    sys.path.insert(0, str(ASTA_DS1000_DIR))
-    sys.path.insert(0, str(REPO_ROOT))
-    try:
-        import main as asta_main  # noqa: E402
-        return asta_main._resume_needs_stronger_flag
-    finally:
-        sys.path.remove(str(ASTA_DS1000_DIR))
-        sys.path.remove(str(REPO_ROOT))
-
-
-@pytest.fixture(scope="module")
-def framing_helper():
-    """Import main.py's `_test_rounds_framing` once per module.
-
-    Same sys.path dance as `resume_helper`. Module-cached, so the actual
-    `import main` only re-runs once per test session even with multiple
-    fixtures.
+    Module-cached so the actual `import main` only re-runs once per
+    test session even with multiple fixtures.
     """
     sys.path.insert(0, str(ASTA_DS1000_DIR))
     sys.path.insert(0, str(REPO_ROOT))
@@ -78,29 +52,6 @@ def framing_helper():
     finally:
         sys.path.remove(str(ASTA_DS1000_DIR))
         sys.path.remove(str(REPO_ROOT))
-
-
-@pytest.fixture(scope="module")
-def stronger_rows_helper():
-    """Import main.py's `_build_stronger_rows` once per module."""
-    sys.path.insert(0, str(ASTA_DS1000_DIR))
-    sys.path.insert(0, str(REPO_ROOT))
-    try:
-        import main as asta_main  # noqa: E402
-        return asta_main._build_stronger_rows
-    finally:
-        sys.path.remove(str(ASTA_DS1000_DIR))
-        sys.path.remove(str(REPO_ROOT))
-
-
-def _make_fake_resume(tmp_path: Path, agent_src: str) -> Path:
-    """Build a minimal resume_dir with one agent.py at the conventional
-    path. Returns the resume_dir."""
-    fake_run = tmp_path / "fake_run"
-    agent_dir = fake_run / "agents" / "fake_agent"
-    agent_dir.mkdir(parents=True)
-    (agent_dir / "agent.py").write_text(agent_src)
-    return fake_run
 
 
 def _calls_to(funcs: set[str], src: str) -> list[ast.Call]:
@@ -174,96 +125,6 @@ def test_test_eval_config_consolidated_to_single_construction():
         f"{len(constructions)} on lines "
         f"{[c.lineno for c in constructions]}. Did someone re-add an "
         f"inline construction at a test eval call site?"
-    )
-
-
-# --- Resume-time gated-handle auto-detection --------------------------------
-# Direct unit tests of `_resume_needs_stronger_flag`. The helper is a
-# pure function (Path + Iterable[str] → bool) with no side effects, so
-# we can exercise it in-process without env-var pollution and without
-# coupling to main.py's import order.
-
-
-def test_resume_helper_true_when_agent_imports_gated_handle(resume_helper, tmp_path):
-    """Agent imports a gated handle → True."""
-    fake = _make_fake_resume(
-        tmp_path,
-        "from model_registry import CLAUDE_OPUS_4_7, CLAUDE_SONNET_4_6\n",
-    )
-    assert resume_helper(fake, ("CLAUDE_OPUS_4_7", "GPT_5_5")) is True
-
-
-def test_resume_helper_false_when_only_cheap_tier_imported(resume_helper, tmp_path):
-    """No gated import → False."""
-    fake = _make_fake_resume(
-        tmp_path,
-        "from model_registry import GPT_5_4_MINI, CLAUDE_SONNET_4_6\n",
-    )
-    assert resume_helper(fake, ("CLAUDE_OPUS_4_7", "GPT_5_5")) is False
-
-
-def test_resume_helper_ignores_comment_mentions(resume_helper, tmp_path):
-    """Comment-only mention must not trigger detection — the AST scan is
-    the substring-scan upgrade. This is the test that fails under the
-    pre-refactor implementation, where `# unlike CLAUDE_OPUS_4_7, ...`
-    in a docstring would have set the env var unnecessarily."""
-    fake = _make_fake_resume(
-        tmp_path,
-        "# unlike CLAUDE_OPUS_4_7, this seed only uses the cheap tier\n"
-        '"""docstring mentions GPT_5_5 in passing."""\n'
-        "from model_registry import GPT_5_4_MINI\n",
-    )
-    assert resume_helper(fake, ("CLAUDE_OPUS_4_7", "GPT_5_5")) is False
-
-
-def test_resume_helper_handles_missing_agents_dir(resume_helper, tmp_path):
-    """Resume dir without agents/ subdir → False, no exception. Defensive
-    for partial / malformed resume dirs."""
-    fake_run = tmp_path / "no_agents_dir"
-    fake_run.mkdir()
-    assert resume_helper(fake_run, ("CLAUDE_OPUS_4_7",)) is False
-
-
-def test_resume_helper_skips_unparseable_agent(resume_helper, tmp_path):
-    """A syntactically broken agent.py shouldn't blow up the helper —
-    skip it and continue. The next agent in the pool may still trigger."""
-    fake_run = tmp_path / "mixed_pool"
-    broken_dir = fake_run / "agents" / "broken_agent"
-    broken_dir.mkdir(parents=True)
-    (broken_dir / "agent.py").write_text("def : invalid syntax\n")
-    good_dir = fake_run / "agents" / "good_agent"
-    good_dir.mkdir(parents=True)
-    (good_dir / "agent.py").write_text(
-        "from model_registry import CLAUDE_OPUS_4_7\n"
-    )
-    assert resume_helper(fake_run, ("CLAUDE_OPUS_4_7",)) is True
-
-
-def test_main_imports_gated_names_from_model_registry():
-    """main.py must consume `GATED_HANDLE_NAMES` from `model_registry`
-    rather than hardcoding its own list. This is the wiring check that
-    keeps the gated set as a single source of truth: if a fourth gated
-    handle is added to model_registry, main.py picks it up
-    automatically; if a future commit re-inlines a hardcoded tuple in
-    main.py instead of importing the constant, this test fails.
-    """
-    tree = ast.parse(MAIN_PY.read_text())
-    found = False
-    for node in ast.walk(tree):
-        if (
-            isinstance(node, ast.ImportFrom)
-            and node.module == "model_registry"
-            and any(a.name == "GATED_HANDLE_NAMES" for a in node.names)
-        ):
-            found = True
-            break
-    assert found, (
-        "main.py doesn't import `GATED_HANDLE_NAMES` from model_registry. "
-        "The resume-time auto-detect must consume the registry's "
-        "single-source-of-truth constant — re-inlining a hardcoded "
-        "list creates drift between main.py and model_registry that "
-        "silently re-introduces the uniform-0.000 bug if the gated set "
-        "ever changes."
     )
 
 
@@ -580,99 +441,75 @@ def test_framing_higher_values_use_same_branch(framing_helper):
     assert framing_helper(5) == one
 
 
-# --- 5-column table shape + temperature-free seed ---------------------------
-# Two invariants from the "reasoning_effort + max_tokens table" change:
-# (1) the stronger-tier rows in main.py must keep the 5-column shape that
-#     matches the cheap-tier table in background.md (regression to the old
-#     3-column shape would render a broken markdown table); and
-# (2) the seed agent's only .generate() call must not pass `temperature`
+# --- background.md model-handle table + temperature-free seed --------------
+# Two invariants:
+# (1) The model-handle table in background.md must list all 9 handles in
+#     5-column shape and the 3 Gemini handles must share an identical
+#     Available-overrides cell. Pins the table the agent reads.
+# (2) The seed agent's only .generate() call must not pass `temperature`
 #     (the seed is the anchoring pattern evolution copies; passing
 #     temperature there leaks the footgun into Opus/GPT-5.5 agents).
 
 SEED_AGENT_PY = REPO_ROOT / "examples" / "asta_ds1000" / "seeds" / "baseline" / "agent.py"
 
-
-def test_stronger_rows_off_mode_is_empty(stronger_rows_helper):
-    """With the stronger-models tier disabled (--no-allow-stronger-models),
-    the helper returns empty string so the ${STRONGER_MODELS_TABLE_ROWS}\\n
-    placeholder collapses cleanly (see the trailing-newline absorption
-    trick in _interpolate()). A regression that returned anything non-
-    empty here would re-introduce stronger-tier handle names into off-
-    mode background.md."""
-    assert stronger_rows_helper(False) == ""
+EXPECTED_HANDLES = (
+    "GPT_5_4_MINI", "GPT_5_4", "GPT_5_5",
+    "CLAUDE_HAIKU_4_5", "CLAUDE_SONNET_4_6", "CLAUDE_OPUS_4_7",
+    "GEMINI_3_1_FLASH_LITE", "GEMINI_3_FLASH_PREVIEW",
+    "GEMINI_3_1_PRO_PREVIEW",
+)
 
 
-def test_stronger_rows_on_mode_uses_five_column_shape(stronger_rows_helper):
-    """With the stronger-models tier enabled (default), every row must match the
-    cheap-tier 5-column shape (Handle | Input | Output | Default
-    reasoning_effort | Available overrides). Tests the helper output
-    directly — survives any string-construction refactor (f-strings,
-    .join(), list-of-rows, ...) since we're parsing rendered markdown
-    rather than scanning source. A regression to the pre-5-column
-    shape would break the rendered table when interpolated into
-    background.md."""
-    rendered = stronger_rows_helper(True)
-    row_lines = [
-        line for line in rendered.split("\n")
-        if line.startswith("| `") and line.endswith(" |")
-    ]
-    assert row_lines, (
-        f"Helper returned non-empty output but no parseable rows:\n"
-        f"{rendered!r}"
-    )
-
-    # 5 columns ⇒ 6 pipe separators per row
-    bad: list[str] = []
-    for line in row_lines:
-        if line.count("|") != 6:
-            bad.append(f"{line.count('|')} pipes (expected 6): {line!r}")
-    assert not bad, (
-        "stronger_rows helper returned rows with the wrong number of "
-        "columns:\n  " + "\n  ".join(bad)
-    )
-
-
-def test_stronger_rows_includes_all_three_handle_names(stronger_rows_helper):
-    """All three gated handles must appear in the on-mode output. Pins
-    against accidental row removal."""
-    rendered = stronger_rows_helper(True)
-    for name in ("GPT_5_5", "CLAUDE_OPUS_4_7", "GEMINI_3_1_PRO_PREVIEW"):
-        assert name in rendered, (
-            f"Handle {name!r} missing from stronger_rows output:\n"
-            f"{rendered!r}"
+def test_background_md_lists_all_nine_handles_in_five_column_shape():
+    """background.md's model-handle table must include all 9 handles in
+    the 5-column shape (Handle | Input | Output | Default reasoning_effort
+    | Available overrides). Regression to fewer columns would break the
+    rendered markdown table; missing handles would hide them from the
+    evolution agent's menu."""
+    background_md = (ASTA_DS1000_DIR / "background.md").read_text()
+    # Match the model-handle rows specifically — other tables (e.g.
+    # `state.input` row in the inspect-ai input doc) also start with
+    # "| `" but their cells don't begin with an UPPERCASE family prefix.
+    handle_rows = [
+        line for line in background_md.split("\n")
+        if (
+            line.endswith(" |")
+            and any(
+                line.startswith(f"| `{prefix}")
+                for prefix in ("GPT_", "CLAUDE_", "GEMINI_")
+            )
         )
+    ]
+    # 5 columns ⇒ 6 pipe separators per row
+    bad = [
+        f"{line.count('|')} pipes (expected 6): {line!r}"
+        for line in handle_rows if line.count("|") != 6
+    ]
+    assert not bad, "wrong column count:\n  " + "\n  ".join(bad)
+    # Each handle must appear in some row
+    missing = [
+        h for h in EXPECTED_HANDLES
+        if not any(f"`{h}`" in row for row in handle_rows)
+    ]
+    assert not missing, f"handles missing from background.md table: {missing}"
 
 
-def test_all_gemini_rows_share_available_overrides_cell(stronger_rows_helper):
-    """All three Gemini handles share the same default `"low"` /
-    opt-up `"high"` reasoning_effort shape, so their Available-
-    overrides cells in the rendered model-handle table must be
-    identical.
+def test_all_gemini_rows_share_available_overrides_cell():
+    """All three Gemini handles share the same default `"low"` / opt-up
+    `"high"` reasoning_effort shape, so their Available-overrides cells
+    in the rendered model-handle table must be identical.
 
     Pins the symmetry that the "describe Pro Preview like the other
-    Geminis" change (commit fe36199) established. The earlier shape
-    tests pass even when Pro Preview's cell uses asymmetric phrasing
-    (e.g. `"high"` only (cannot go below default)) because they only
-    check column count and handle-name presence. This test catches a
-    regression on either side: a stronger-rows helper that reverts to
-    Pro-Preview-special phrasing, or a background.md edit that drifts
-    one cheap-tier Gemini row away from the others.
-
-    Cell extraction parses rendered markdown rather than scanning
-    source, so it survives construction-style refactors (f-string,
-    .join(), list-of-rows, ...) of either the template or the helper.
+    Geminis" change (commit fe36199) established.
     """
     background_md = (ASTA_DS1000_DIR / "background.md").read_text()
-    stronger_rendered = stronger_rows_helper(True)
-    combined = background_md + "\n" + stronger_rendered
-
     gemini_rows = [
-        line for line in combined.split("\n")
+        line for line in background_md.split("\n")
         if line.startswith("| `GEMINI_") and line.endswith(" |")
     ]
     assert len(gemini_rows) == 3, (
-        f"Expected 3 GEMINI_* rows across background.md + stronger "
-        f"rows, found {len(gemini_rows)}:\n  " + "\n  ".join(gemini_rows)
+        f"Expected 3 GEMINI_* rows in background.md, found "
+        f"{len(gemini_rows)}:\n  " + "\n  ".join(gemini_rows)
     )
 
     # Row shape: | handle | input | output | default | overrides |
@@ -916,11 +753,13 @@ def test_background_md_eval_timeout_placeholder_and_interpolation():
 
 
 # ----------------------------------------------------------------------
-# DS-1000 runtime sidecar (cost_threshold / cost_per_error /
-# allow_stronger_models) — see commit bca06e7. The framework's
-# ConfigManager doesn't persist these task-specific knobs, so without the
-# sidecar they silently revert to evaluator defaults on --resume, which
-# for cost_threshold *changes the scoring function* mid-run.
+# DS-1000 runtime sidecar (cost_threshold / cost_per_error). The
+# framework's ConfigManager doesn't persist these task-specific knobs,
+# so without the sidecar they'd silently revert to evaluator defaults
+# on --resume, which for cost_threshold *changes the scoring function*
+# mid-run. The cost knobs are immutable across a run: passing the CLI
+# flag on --resume is a hard error, and a missing sidecar (pre-fix
+# historical run) is also an error rather than silent fallback.
 # ----------------------------------------------------------------------
 
 
@@ -934,8 +773,7 @@ def sidecar_helpers():
         return {
             "read": asta_main._read_ds1000_runtime_config,
             "write": asta_main._write_ds1000_runtime_config,
-            "resolve": asta_main._resolve_with_checkpoint,
-            "enforce": asta_main._enforce_stronger_models_immutable_on_resume,
+            "enforce_immutable": asta_main._enforce_immutable_on_resume,
             "filename": asta_main.DS1000_RUNTIME_CONFIG_FILENAME,
         }
     finally:
@@ -945,130 +783,203 @@ def sidecar_helpers():
 
 def test_sidecar_roundtrip(sidecar_helpers, tmp_path):
     """write → read returns exactly what was written."""
-    payload = {
-        "cost_threshold": 0.06,
-        "cost_per_error": 0.01,
-        "allow_stronger_models": False,
-    }
+    payload = {"cost_threshold": 0.06, "cost_per_error": 0.01}
     sidecar_helpers["write"](tmp_path, payload)
     assert sidecar_helpers["read"](tmp_path) == payload
 
 
 def test_sidecar_missing_file_returns_empty_dict(sidecar_helpers, tmp_path):
-    """An absent sidecar must NOT raise — it's the historical-run case."""
+    """An absent sidecar must NOT raise from the reader — the immutability
+    enforcement at the call site is where the historical-run error fires."""
     assert sidecar_helpers["read"](tmp_path) == {}
 
 
 def test_sidecar_malformed_file_returns_empty_dict(sidecar_helpers, tmp_path):
     """Best-effort read: malformed JSON falls back to {} rather than crashing
-    a resume. The framework's checkpoint.json is still authoritative for
-    the framework-level knobs; this sidecar is purely additive."""
+    a resume. The error then surfaces from _enforce_immutable_on_resume
+    with a clear "no stored value" message."""
     (tmp_path / sidecar_helpers["filename"]).write_text("{not: valid json")
     assert sidecar_helpers["read"](tmp_path) == {}
 
 
-def test_resolve_cli_wins_over_checkpoint(sidecar_helpers):
-    """Priority: explicit CLI flag > stored sidecar value."""
-    result = sidecar_helpers["resolve"](
-        cli_value=0.08, checkpoint_value=0.06, default_value=0.04,
-        name="cost-threshold",
+def test_enforce_fresh_run_uses_cli_when_set(sidecar_helpers):
+    """Fresh run + CLI flag set → returns CLI value."""
+    result = sidecar_helpers["enforce_immutable"](
+        cli_value=0.08, stored_value=None, default_value=0.04,
+        name="cost-threshold", on_resume=False,
     )
     assert result == 0.08
 
 
-def test_resolve_checkpoint_wins_when_cli_absent(sidecar_helpers):
-    """When CLI is None (user passed nothing), sidecar value is used.
-
-    This is the fix's load-bearing behavior — without it, --cost-threshold
-    silently reverts to evaluator.MIN_COST_THRESHOLD on resume.
-    """
-    result = sidecar_helpers["resolve"](
-        cli_value=None, checkpoint_value=0.06, default_value=0.04,
-        name="cost-threshold",
-    )
-    assert result == 0.06
-
-
-def test_resolve_default_when_neither(sidecar_helpers):
-    """Fresh run with no CLI flag falls through to the evaluator default."""
-    result = sidecar_helpers["resolve"](
-        cli_value=None, checkpoint_value=None, default_value=0.04,
-        name="cost-threshold",
+def test_enforce_fresh_run_falls_back_to_default(sidecar_helpers):
+    """Fresh run + no CLI flag → returns evaluator default."""
+    result = sidecar_helpers["enforce_immutable"](
+        cli_value=None, stored_value=None, default_value=0.04,
+        name="cost-threshold", on_resume=False,
     )
     assert result == 0.04
 
 
-def test_resolve_warns_loudly_on_mismatch(sidecar_helpers, caplog):
-    """When CLI and stored value disagree, a WARNING fires and CLI wins.
+def test_enforce_resume_with_cli_is_hard_error(sidecar_helpers):
+    """Resume + CLI flag → SystemExit naming the knob and stored value.
 
-    The warning is the only signal to the user that they're shifting
-    scoring/prompt mid-run; if it stops firing, silent goalpost shifts
-    return.
-    """
-    import logging
-    caplog.set_level(logging.WARNING, logger="main")
-    result = sidecar_helpers["resolve"](
-        cli_value=0.04, checkpoint_value=0.06, default_value=0.04,
-        name="cost-threshold",
-    )
-    assert result == 0.04
-    assert any(
-        "differs from stored value" in record.message
-        and record.levelname == "WARNING"
-        for record in caplog.records
-    ), f"expected mismatch warning; got: {[r.message for r in caplog.records]}"
-
-
-def test_resolve_no_warning_when_cli_matches_checkpoint(sidecar_helpers, caplog):
-    """Matching CLI + stored = silent. A no-op resume shouldn't be noisy."""
-    import logging
-    caplog.set_level(logging.WARNING, logger="main")
-    result = sidecar_helpers["resolve"](
-        cli_value=0.06, checkpoint_value=0.06, default_value=0.04,
-        name="cost-threshold",
-    )
-    assert result == 0.06
-    assert not [
-        r for r in caplog.records
-        if r.levelname == "WARNING" and "differs from stored value" in r.message
-    ]
-
-
-def test_enforce_stronger_models_immutable_blocks_resume_with_flag(sidecar_helpers):
-    """--no-allow-stronger-models on resume must hard-error.
-
-    Bug class: silently flipping the stronger-models tier mid-run
-    reshapes the evolution agent's model menu and risks ImportError in
-    eval workers if pooled agents already imported a gated handle.
+    This is the load-bearing immutability rule: changing cost-threshold
+    mid-run silently invalidates Elo continuity with prior iterations,
+    so we refuse and tell the user to restart.
     """
     with pytest.raises(SystemExit) as exc_info:
-        sidecar_helpers["enforce"](cli_value=False, stored_value=False)
+        sidecar_helpers["enforce_immutable"](
+            cli_value=0.10, stored_value=0.06, default_value=0.04,
+            name="cost-threshold", on_resume=True,
+        )
     msg = str(exc_info.value)
-    assert "cannot be set on --resume" in msg
-    assert "stored value: False" in msg
+    assert "cost-threshold" in msg
+    assert "cannot be changed on --resume" in msg
+    assert "stored value:" in msg
 
 
-def test_enforce_stronger_models_immutable_names_stored_value(sidecar_helpers):
-    """Error message must surface the stored value so the user knows what
-    they'd be flipping. Without this the user just sees "rejected" with
-    no actionable information."""
+def test_enforce_resume_with_no_cli_uses_stored(sidecar_helpers):
+    """Resume + no CLI flag + sidecar value → returns stored.
+
+    This is the fix's load-bearing behavior — without it, the user's
+    original --cost-threshold setting silently reverts to evaluator
+    defaults on resume.
+    """
+    result = sidecar_helpers["enforce_immutable"](
+        cli_value=None, stored_value=0.06, default_value=0.04,
+        name="cost-threshold", on_resume=True,
+    )
+    assert result == 0.06
+
+
+def test_enforce_resume_missing_stored_is_hard_error(sidecar_helpers):
+    """Resume + no CLI flag + missing sidecar → SystemExit (historical run).
+
+    Silent default fallback here is exactly the bug class that produced
+    the $0.10 → $0.04 drift in asta_ds1000_20260526_120002. Error
+    instead, naming what the user has to do (hand-edit or restart).
+    """
     with pytest.raises(SystemExit) as exc_info:
-        sidecar_helpers["enforce"](cli_value=False, stored_value=True)
-    assert "stored value: True" in str(exc_info.value)
+        sidecar_helpers["enforce_immutable"](
+            cli_value=None, stored_value=None, default_value=0.04,
+            name="cost-threshold", on_resume=True,
+        )
+    msg = str(exc_info.value)
+    assert "no stored cost-threshold" in msg
+    assert "historical run" in msg
 
 
-def test_enforce_stronger_models_immutable_handles_historical_run(sidecar_helpers):
-    """Pre-sidecar runs have no stored value; error message must say so
-    rather than printing 'stored value: None' which reads as a bug."""
-    with pytest.raises(SystemExit) as exc_info:
-        sidecar_helpers["enforce"](cli_value=False, stored_value=None)
-    assert "no stored value" in str(exc_info.value)
-    assert "historical run" in str(exc_info.value)
+def _references_args_resume(node: ast.AST) -> bool:
+    """True iff `node` (an arbitrary AST subtree) contains an
+    `args.resume` attribute reference."""
+    for n in ast.walk(node):
+        if (
+            isinstance(n, ast.Attribute)
+            and isinstance(n.value, ast.Name)
+            and n.value.id == "args"
+            and n.attr == "resume"
+        ):
+            return True
+    return False
 
 
-def test_enforce_stronger_models_immutable_silent_when_no_flag(sidecar_helpers):
-    """No CLI flag (cli_value=None) must not raise — only an explicit
-    --no-allow-stronger-models triggers the immutability check."""
-    sidecar_helpers["enforce"](cli_value=None, stored_value=False)
-    sidecar_helpers["enforce"](cli_value=None, stored_value=True)
-    sidecar_helpers["enforce"](cli_value=None, stored_value=None)
+def _body_contains_write_before(body, max_line: int) -> bool:
+    """True iff `body` (list of statements) contains a
+    `_write_ds1000_runtime_config(...)` call at a line < max_line."""
+    for stmt in body:
+        for n in ast.walk(stmt):
+            if (
+                isinstance(n, ast.Call)
+                and isinstance(n.func, ast.Name)
+                and n.func.id == "_write_ds1000_runtime_config"
+                and n.lineno < max_line
+            ):
+                return True
+    return False
+
+
+def test_main_writes_sidecar_in_non_resume_branch_before_optimize():
+    """The sidecar write for fresh RoboPhD runs must live in an
+    `args.resume`-conditional branch positioned BEFORE
+    `optimize_anything`. Otherwise an interrupted fresh run leaves no
+    sidecar and a future resume silently falls back to evaluator
+    defaults (the bug that ate $0.10 on asta_ds1000_20260526_120002).
+
+    Stronger than a simple "any write before optimize_anything" check —
+    that one would silently pass if the pre-create branch were deleted
+    and only the post-optimize write moved earlier in some other
+    branch. Here we require: at least one write call appears in a
+    branch only reached when `args.resume` is falsy, positioned before
+    the earliest `optimize_anything` call.
+    """
+    src = MAIN_PY.read_text()
+    tree = ast.parse(src)
+    optimize_lines = [
+        n.lineno for n in ast.walk(tree)
+        if isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Name)
+        and n.func.id == "optimize_anything"
+    ]
+    assert optimize_lines, "no optimize_anything calls found in main.py"
+    earliest_optimize = min(optimize_lines)
+
+    found = False
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.If):
+            continue
+        if not _references_args_resume(node.test):
+            continue
+        # Determine which branch runs when args.resume is FALSE:
+        #   `if not args.resume:` → body
+        #   `if args.resume:`     → orelse
+        # Anything else (e.g., compound conditions) — skip.
+        if isinstance(node.test, ast.UnaryOp) and isinstance(node.test.op, ast.Not):
+            falsy_branch = node.body
+        elif (
+            isinstance(node.test, ast.Attribute)
+            and isinstance(node.test.value, ast.Name)
+            and node.test.value.id == "args"
+            and node.test.attr == "resume"
+        ):
+            falsy_branch = node.orelse
+        else:
+            continue
+        if _body_contains_write_before(falsy_branch, earliest_optimize):
+            found = True
+            break
+
+    assert found, (
+        "Expected a _write_ds1000_runtime_config call inside the "
+        "non-resume branch (the `else:` of `if args.resume:` or the "
+        "body of `if not args.resume:`), positioned before "
+        f"optimize_anything (line {earliest_optimize}). Without this, "
+        "an interrupted fresh run leaves no sidecar and the "
+        "interrupted-fresh-run bug returns."
+    )
+
+
+def test_main_experiment_dir_pattern_matches_framework():
+    """main.py pre-creates experiment_dir on fresh RoboPhD runs using a
+    pattern that duplicates the framework's logic in researcher.py.
+    If the two diverge, main.py writes the sidecar to one path and the
+    framework iterates in a different path without one — silently
+    reproducing the interrupted-fresh-run bug.
+
+    This test catches drift by asserting both files reference the same
+    naming components: the `"robophd"` engine subdir literal and the
+    `"%Y%m%d_%H%M%S"` timestamp format. The right long-term fix is
+    factoring this into a shared framework helper; this test is the
+    cheap-and-load-bearing interim guard.
+    """
+    main_src = MAIN_PY.read_text()
+    researcher_src = (REPO_ROOT / "RoboPhD" / "researcher.py").read_text()
+    for component in ('"robophd"', '"%Y%m%d_%H%M%S"'):
+        assert component in main_src, (
+            f"main.py no longer references {component} — the "
+            f"pre-create path may have diverged from the framework."
+        )
+        assert component in researcher_src, (
+            f"framework researcher.py no longer references {component} "
+            f"— main.py's pre-create path may now point at a different "
+            f"directory than the one the framework actually uses."
+        )

@@ -108,7 +108,7 @@ python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir>
 python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir> --phase final
 ```
 
-Default models: nine handles in `model_registry.py`, paired by family into mini / standard / stronger tiers (the seed picks GPT-5.4 Mini; evolution may pick any of the nine per call). Pass `--no-allow-stronger-models` to drop the three stronger-tier handles (GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro Preview) — see "Model registry" below for the cost shape.
+Default models: nine handles in `model_registry.py`, grouped by family into mini / standard / stronger tiers (the seed picks GPT-5.4 Mini; evolution may pick any of the nine per call). All nine handles are always available; the cost-penalty disciplines overuse of the strong tier — see "Model registry" below for the cost shape.
 
 ```bash
 # Tighten the cost-penalty endpoints (ablation): cheaper free zone +
@@ -118,10 +118,6 @@ python examples/asta_ds1000/main.py --cost-threshold 0.005 --cost-per-error 0.00
 # Recover pure-tiebreaker semantics (cost sorts within accuracy ties
 # but never overrides a one-problem accuracy gap):
 python examples/asta_ds1000/main.py --cost-per-error 10
-
-# Restrict evolution to the cheap+standard tier (stronger models are
-# default-enabled; opt out for a cheaper run):
-python examples/asta_ds1000/main.py --no-allow-stronger-models
 
 # Give the stronger tier more cost headroom (~5-10x default-tier price):
 python examples/asta_ds1000/main.py --cost-threshold 0.08
@@ -193,23 +189,15 @@ The training evaluator applies the formula above. The test evaluator (derived vi
 
 ### Model registry
 
-Six pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside the candidate's `file_mapping`, which only contains `agent.py`), paired by family:
+Nine pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside the candidate's `file_mapping`, which only contains `agent.py`), grouped by family into three tiers:
 
-- OpenAI: `GPT_5_4_MINI`, `GPT_5_4`
-- Anthropic: `CLAUDE_HAIKU_4_5`, `CLAUDE_SONNET_4_6`
-- Google: `GEMINI_3_1_FLASH_LITE`, `GEMINI_3_FLASH_PREVIEW`
+- OpenAI: `GPT_5_4_MINI`, `GPT_5_4`, `GPT_5_5` ($5.00 / $30.00 per M tokens for the strong tier)
+- Anthropic: `CLAUDE_HAIKU_4_5`, `CLAUDE_SONNET_4_6`, `CLAUDE_OPUS_4_7` ($5.00 / $25.00 per M tokens for the strong tier)
+- Google: `GEMINI_3_1_FLASH_LITE`, `GEMINI_3_FLASH_PREVIEW`, `GEMINI_3_1_PRO_PREVIEW` ($2.00 / $12.00 per M tokens for the strong tier)
 
-Pairing same-family handles by tier (mini/standard) lets evolution choose between cheap-and-fast or stronger-and-slower per call. Evolved agents `from model_registry import` whichever they want and call `.generate()`; the underlying model strings are not part of the evolvable artifact, so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — an agent produced at iteration 4 might use Claude Sonnet, and a 401 mid-run is a worse failure mode than a startup error.
+Evolution chooses cheap, standard, or strong per call. Evolved agents `from model_registry import` whichever they want and call `.generate()`; the underlying model strings are not part of the evolvable artifact, so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — an agent produced at iteration 4 might use Claude Sonnet, and a 401 mid-run is a worse failure mode than a startup error.
 
-#### Stronger-models tier (default-enabled; opt out with `--no-allow-stronger-models`)
-
-By default `main.py` exposes three additional handles, gated behind an env var that the registry reads at import time:
-
-- OpenAI: `GPT_5_5` ($5.00 / $30.00 per M tokens)
-- Anthropic: `CLAUDE_OPUS_4_7` ($5.00 / $25.00 per M tokens)
-- Google: `GEMINI_3_1_PRO_PREVIEW` ($2.00 / $12.00 per M tokens)
-
-These cost ~5–10× the default tier, so a single naive call could blow past the default $0.04 cost threshold and rack up tens of error-equivalents of penalty at the default `--cost-per-error 0.01`. That's the point — the cost penalty disciplines overuse, so evolution must justify a stronger-model call with extra correctness rather than spraying them at every problem. Raise `--cost-threshold` (e.g. `0.08`) for a more generous free zone, or `--cost-per-error` if you want the penalty to be a tiebreaker rather than an active pull. Pass `--no-allow-stronger-models` to remove the tier entirely; the gated handles are conditionally created at registry import time, so without exposure the names simply don't exist and accidental imports fail-fast. `GEMINI_3_1_PRO_PREVIEW` ships with `reasoning_effort="low"` pinned, parallel to the rest of the Gemini family — all three Gemini handles share the same `"low"` default, with `"high"` as the only opt-up (the provider can't disable thinking below `"low"`).
+The strong-tier handles cost ~5–10× the cheap tier, so a single naive call could blow past the default $0.04 cost threshold and rack up tens of error-equivalents of penalty at the default `--cost-per-error 0.01`. That's the point — the cost penalty disciplines overuse, so evolution must justify a strong-tier call with extra correctness rather than spraying them at every problem. Raise `--cost-threshold` (e.g. `0.08`) for a more generous free zone, or `--cost-per-error` if you want the penalty to be a tiebreaker rather than an active pull. `GEMINI_3_1_PRO_PREVIEW` ships with `reasoning_effort="low"` pinned, parallel to the rest of the Gemini family — all three Gemini handles share the same `"low"` default, with `"high"` as the only opt-up (the provider can't disable thinking below `"low"`).
 
 Provider-prefix translation: Inspect-AI requires `google/...` to route Google models, but litellm prices them under `gemini/...`. `evaluator.py:_estimate_cost` normalizes at the cost-pricing boundary (translates `google/` → `gemini/`) so cost tracking works for the Gemini handles. Without this, Gemini calls would silently price as $0 — the once-per-process "model priced at $0 despite tokens" warning would fire as the symptom.
 

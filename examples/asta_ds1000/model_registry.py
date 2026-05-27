@@ -1,24 +1,18 @@
 """Model registry for DS-1000 evolved agents.
 
-Exports six pre-resolved Inspect-AI Model handles, paired by family
-into a cheap/fast tier and a stronger/slower tier:
+Exports nine pre-resolved Inspect-AI Model handles, grouped by family
+into a cheap/fast tier, a standard tier, and a strong/slow tier:
 
-  OpenAI:    GPT_5_4_MINI                  / GPT_5_4
-  Anthropic: CLAUDE_HAIKU_4_5              / CLAUDE_SONNET_4_6
-  Google:    GEMINI_3_1_FLASH_LITE          / GEMINI_3_FLASH_PREVIEW
-
-When `ASTA_DS1000_ALLOW_STRONGER_MODELS=1` is set in the environment
-(by default on for main.py; disabled via `--no-allow-stronger-models`),
-three additional stronger-tier handles are also exported:
-
-  OpenAI:    GPT_5_5
-  Anthropic: CLAUDE_OPUS_4_7
-  Google:    GEMINI_3_1_PRO_PREVIEW
+  OpenAI:    GPT_5_4_MINI              GPT_5_4               GPT_5_5
+  Anthropic: CLAUDE_HAIKU_4_5          CLAUDE_SONNET_4_6     CLAUDE_OPUS_4_7
+  Google:    GEMINI_3_1_FLASH_LITE     GEMINI_3_FLASH_PREVIEW  GEMINI_3_1_PRO_PREVIEW
 
 Evolved agents import these handles and call `.generate(...)` on them;
 the underlying provider/model strings live here, OUTSIDE the evolvable
 artifact (agent.py is the only file in a candidate's file_mapping).
 This keeps evolution from substituting an arbitrary provider/model.
+The cost-penalty in the training scorer (see background.md) disciplines
+overuse of the strong tier without requiring an explicit gate.
 
 Usage from agent.py:
 
@@ -114,39 +108,27 @@ GEMINI_3_FLASH_PREVIEW = get_model(
     config=GenerateConfig(reasoning_effort="low"),
 )
 
-# Stronger-model handles, gated behind ASTA_DS1000_ALLOW_STRONGER_MODELS=1.
-# main.py sets that env var by default; --no-allow-stronger-models on
-# main.py drops the tier. Cost rates are ~5-10× the cheap tier; raise
-# --cost-threshold (e.g. 0.08) for a more generous free zone when using
-# them, or raise --cost-per-error to soften the per-call penalty.
-#
-# GATED_HANDLE_NAMES is the single source of truth for the gated set:
-# referenced from main.py's resume-time auto-detect (so resuming with
-# --no-allow-stronger-models still re-enables the env var when any
-# agent in the pool imports a gated handle), and from the registry
-# tests (which loop over it to verify each name exists when the gate is
-# open). If you add or remove a gated handle, update both this tuple
-# and the if-block body below — the registry tests will fail-loud if
-# they drift apart, which is the whole point of having the constant.
-GATED_HANDLE_NAMES = ("GPT_5_5", "CLAUDE_OPUS_4_7", "GEMINI_3_1_PRO_PREVIEW")
+# Strong-tier handles. Cost rates are ~5-10× the cheap tier; the
+# cost-penalty in the training scorer disciplines overuse (see
+# background.md). Raise --cost-threshold (e.g. 0.08) for a more
+# generous free zone when relying on these, or raise --cost-per-error
+# to soften the per-call penalty.
+_GPT_5_5_ID = "openai/gpt-5.5"
+_CLAUDE_OPUS_4_7_ID = "anthropic/claude-opus-4-7"
+_GEMINI_3_1_PRO_PREVIEW_ID = "google/gemini-3.1-pro-preview"
 
-if os.environ.get("ASTA_DS1000_ALLOW_STRONGER_MODELS") == "1":
-    _GPT_5_5_ID = "openai/gpt-5.5"
-    _CLAUDE_OPUS_4_7_ID = "anthropic/claude-opus-4-7"
-    _GEMINI_3_1_PRO_PREVIEW_ID = "google/gemini-3.1-pro-preview"
-
-    GPT_5_5 = get_model(_GPT_5_5_ID)
-    CLAUDE_OPUS_4_7 = get_model(_CLAUDE_OPUS_4_7_ID, api_key=_ANTHROPIC_API_KEY)
-    # All three Gemini handles default to "low" reasoning_effort for a
-    # uniform Gemini family default. Two reasons specific to Pro Preview:
-    # (1) Inspect's google provider silently UPGRADES "medium" to
-    # ThinkingLevel.HIGH on non-flash Gemini handles (_providers/
-    # google.py:778-780), so the prior "medium" pin was effectively
-    # running at HIGH thinking — misleading and expensive at the
-    # $0.08-$0.16 cost thresholds we're now running. (2) Pro Preview
-    # thinking cannot be disabled at all; "low" is the cheapest legal
-    # floor. Evolution opts up to "high" per-call when it needs more.
-    GEMINI_3_1_PRO_PREVIEW = get_model(
-        _GEMINI_3_1_PRO_PREVIEW_ID,
-        config=GenerateConfig(reasoning_effort="low"),
-    )
+GPT_5_5 = get_model(_GPT_5_5_ID)
+CLAUDE_OPUS_4_7 = get_model(_CLAUDE_OPUS_4_7_ID, api_key=_ANTHROPIC_API_KEY)
+# All three Gemini handles default to "low" reasoning_effort for a
+# uniform Gemini family default. Two reasons specific to Pro Preview:
+# (1) Inspect's google provider silently UPGRADES "medium" to
+# ThinkingLevel.HIGH on non-flash Gemini handles (_providers/
+# google.py:778-780), so the prior "medium" pin was effectively
+# running at HIGH thinking — misleading and expensive at the
+# $0.08-$0.16 cost thresholds we're now running. (2) Pro Preview
+# thinking cannot be disabled at all; "low" is the cheapest legal
+# floor. Evolution opts up to "high" per-call when it needs more.
+GEMINI_3_1_PRO_PREVIEW = get_model(
+    _GEMINI_3_1_PRO_PREVIEW_ID,
+    config=GenerateConfig(reasoning_effort="low"),
+)

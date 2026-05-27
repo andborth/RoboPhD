@@ -28,6 +28,7 @@ import logging
 import os
 import random
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
@@ -256,9 +257,8 @@ def _read_ds1000_runtime_config(resume_dir: Path) -> dict:
     Returns a dict of stored values (may be missing keys) or {} if the
     sidecar file is absent / unreadable. The framework's ConfigManager
     persists framework-level knobs (max_workers, eval_timeout, etc.) but
-    not task-specific ones; this sidecar covers --cost-threshold,
-    --cost-per-error, and --[no-]allow-stronger-models so they survive
-    --resume the same way --max-workers does.
+    not task-specific ones; this sidecar covers --cost-threshold and
+    --cost-per-error so they survive --resume.
     """
     cp_path = _ds1000_runtime_path(resume_dir)
     if not cp_path.is_file():
@@ -285,139 +285,46 @@ def _write_ds1000_runtime_config(experiment_dir: Path, values: dict) -> None:
         logger.warning(f"Could not write {cp_path.name}: {e}")
 
 
-def _resolve_with_checkpoint(
-    cli_value, checkpoint_value, default_value, name: str, fmt=str,
+def _enforce_immutable_on_resume(
+    cli_value, stored_value, default_value, name: str, *, on_resume: bool, fmt=str,
 ):
-    """Three-way resolve for task-specific knobs on --resume.
+    """Resolve a per-run-immutable knob (cost-threshold / cost-per-error).
 
-    Priority: explicit CLI flag > stored sidecar value > evaluator default.
-    Warns loudly when CLI and checkpoint disagree — these knobs shape the
-    scoring function or the agent's prompt, so a mid-run change is
-    consequential (agents from prior iterations were configured against
-    the stored value).
+    Fresh run: CLI flag wins, else evaluator default.
+
+    Resume + CLI flag passed: SystemExit. These knobs shape the scoring
+    function — changing them mid-run silently invalidates the Elo
+    continuity with prior iterations. Restart for a different value.
+
+    Resume + no CLI flag, sidecar has value: use stored.
+
+    Resume + no CLI flag, sidecar missing the value: SystemExit. Only
+    happens for pre-fix historical runs that never got a sidecar; the
+    silent-default-fallback path is what produced the earlier
+    cost_threshold drift bug, so we error rather than guess.
     """
+    if not on_resume:
+        return cli_value if cli_value is not None else default_value
     if cli_value is not None:
-        if checkpoint_value is not None and cli_value != checkpoint_value:
-            logger.warning(
-                f"Resume: --{name} CLI flag ({fmt(cli_value)}) differs "
-                f"from stored value ({fmt(checkpoint_value)}); using CLI "
-                f"flag. This shifts scoring/prompt mid-run — prior "
-                f"iterations were configured with the stored value."
-            )
-        return cli_value
-    if checkpoint_value is not None:
-        logger.info(
-            f"Resume: using {name}={fmt(checkpoint_value)} from "
-            f"{DS1000_RUNTIME_CONFIG_FILENAME}"
-        )
-        return checkpoint_value
-    return default_value
-
-
-def _enforce_stronger_models_immutable_on_resume(
-    cli_value, stored_value,
-) -> None:
-    """Raise SystemExit if --no-allow-stronger-models is passed on resume.
-
-    The stronger-models tier gates whether three model handles exist in
-    eval workers — flipping it mid-run risks import failures and reshapes
-    the evolution agent's menu. So the value is locked to whatever the
-    original run chose; the only way to flip it is to start a new run.
-
-    Args:
-        cli_value: args.allow_stronger_models (None / True / False).
-            False means the user passed --no-allow-stronger-models.
-        stored_value: sidecar value (None / True / False). None for
-            historical runs that pre-date the sidecar.
-    """
-    if cli_value is False:
         stored_desc = (
-            f"stored value: {stored_value}"
+            f"stored value: {fmt(stored_value)}"
             if stored_value is not None
-            else "no stored value (historical run, defaults to enabled)"
+            else "no stored value (historical run)"
         )
         raise SystemExit(
-            "--no-allow-stronger-models cannot be set on --resume; the "
-            "stronger-models tier is locked to the original-run setting "
-            f"({stored_desc}). Start a new run to change it."
+            f"--{name} cannot be changed on --resume; the value is "
+            f"locked for the lifetime of the run ({stored_desc}). "
+            f"Start a new run to use a different {name}."
         )
-
-
-def _resume_needs_stronger_flag(
-    resume_dir: Path, gated_names: Iterable[str]
-) -> bool:
-    """Return True iff any agent.py in `<resume_dir>/agents/*/` imports
-    a gated handle name from `model_registry`.
-
-    Used at resume time to auto-set ASTA_DS1000_ALLOW_STRONGER_MODELS
-    when --no-allow-stronger-models was passed but the resumed run's
-    agent pool needs the gated handles. Without this, eval workers
-    crash on import in their per-sample subprocesses and the test eval
-    yields a uniform 0.000 score with no surfaced exception.
-
-    AST-based (ImportFrom name match) rather than substring scan, so
-    occurrences in comments / docstrings don't trigger false positives.
-    The cost asymmetry of false positives is mild (an unused env var
-    on a non-stronger run does no harm), but AST is the cleaner
-    contract. Files that fail to parse are skipped, not raised.
-    """
-    agents_dir = resume_dir / "agents"
-    if not agents_dir.is_dir():
-        return False
-    gated_set = set(gated_names)
-    for p in agents_dir.glob("*/agent.py"):
-        try:
-            tree = ast.parse(p.read_text())
-        except (SyntaxError, OSError):
-            continue
-        for node in ast.walk(tree):
-            if (
-                isinstance(node, ast.ImportFrom)
-                and node.module == "model_registry"
-            ):
-                for alias in node.names:
-                    if alias.name in gated_set:
-                        return True
-    return False
-
-
-def _build_stronger_rows(allow_stronger_models: bool) -> str:
-    """Return the three stronger-tier table rows for background.md,
-    or empty string when the stronger-models tier is disabled
-    (`allow_stronger_models=False`, i.e. --no-allow-stronger-models
-    was passed).
-
-    Pure function — no I/O, no env-var reads, no global state. Tests
-    import this directly and pin the output string, so the row shape
-    is verified end-to-end without scanning main.py's source for
-    string-literal patterns (which would couple to construction style).
-
-    Row shape mirrors the cheap-tier 5-column shape:
-        Handle | Input | Output | Default reasoning_effort | Available overrides
-
-    The Default column uses a unified vocabulary across all 9 handles
-    (cheap-tier in background.md, strong-tier here):
-        "none"          — no reasoning by default (cheap-tier non-Google)
-        `"low"`         — we pinned "low" (Gemini Flash family + Pro Preview)
-        model-managed   — reasoning always on, level chosen by provider
-                          (GPT-5.5, Opus 4.7)
-    Pro Preview shares the Gemini Flash family's reasoning_effort shape
-    (default `"low"`, opt-up to `"high"`), so its Available-overrides
-    column matches theirs exactly. The prose under the table covers the
-    "cannot disable below low" fact for all three Geminis at once.
-
-    No trailing prose caveat — the dollar columns carry cost asymmetry
-    and the Default column carries the always-on-reasoning fact. Keeping
-    the agent-facing surface free of `temperature` references matches
-    the broader direction of recommending only `reasoning_effort` and
-    `max_tokens`.
-    """
-    if not allow_stronger_models:
-        return ""
-    return (
-        '| `GPT_5_5` | 5.00 | 30.00 | model-managed | `"low"`, `"medium"`, `"high"` |\n'
-        '| `CLAUDE_OPUS_4_7` | 5.00 | 25.00 | model-managed | `"low"`, `"medium"`, `"high"` |\n'
-        '| `GEMINI_3_1_PRO_PREVIEW` | 2.00 | 12.00 | `"low"` | `"low"`, `"high"` |'
+    if stored_value is not None:
+        return stored_value
+    raise SystemExit(
+        f"--resume failed: no stored {name} in "
+        f"{DS1000_RUNTIME_CONFIG_FILENAME}. The sidecar can be missing "
+        f"for a pre-fix historical run, OR a fresh run that crashed "
+        f"before it persisted, OR a non-RoboPhD engine fresh run that "
+        f"errored mid-iteration. Either hand-edit the sidecar to add a "
+        f"{name} value, or restart the experiment."
     )
 
 
@@ -505,28 +412,13 @@ def parse_args():
                         # confuse readers if surfaced here.
                         "%(default).0s")
 
-    # None sentinel distinguishes "user passed nothing" from "user
-    # explicitly opted out." The setting is immutable across a run —
-    # passing the flag on --resume is a hard error (the stored sidecar
-    # value wins; restart to change it). Default-on is implicit.
-    p.add_argument(
-        "--no-allow-stronger-models", dest="allow_stronger_models",
-        action="store_const", const=False, default=None,
-        help="Restrict evolution to the cheap+standard tier. By default "
-             "the three stronger handles (GPT_5_5, CLAUDE_OPUS_4_7, "
-             "GEMINI_3_1_PRO_PREVIEW) are also exposed — evolution can "
-             "use them where they help, and the cost-per-error penalty "
-             "disciplines overuse. Fresh-run only; the value is locked "
-             "for the lifetime of the run and cannot be changed on "
-             "--resume (start a new run to flip it)."
-             # Suppress argparse's "(default: None)" — the sentinel is
-             # an implementation detail; the behavioral default is
-             # described in the help text.
-             "%(default).0s",
-    )
     p.add_argument("--cost-threshold", type=float, default=None,
                    help="Mean cost across an iteration's batch below this "
-                        "is in the free zone (no penalty). Default $0.04."
+                        "is in the free zone (no penalty). Default $0.04. "
+                        "Fresh-run only; the value is locked for the "
+                        "lifetime of the run and cannot be changed on "
+                        "--resume (start a new run to use a different "
+                        "threshold)."
                         "%(default).0s")
     p.add_argument("--cost-per-error", type=float, default=None,
                    help="Dollars of mean batch spend (over --cost-threshold) "
@@ -536,7 +428,8 @@ def parse_args():
                         "where the penalty sorts within accuracy ties but "
                         "never overrides a 1-problem accuracy gap. Applied "
                         "to the iteration aggregate (not per example); "
-                        "test-path scores are raw 0/1 fractions regardless."
+                        "test-path scores are raw 0/1 fractions regardless. "
+                        "Fresh-run only; immutable on --resume."
                         "%(default).0s")
 
     p.add_argument("--max-workers", type=int, default=None,
@@ -585,89 +478,38 @@ def main():
     def _fmt_cost(x: float) -> str:
         return f"${x:.2f}" if x == round(x, 2) else f"${x:.4f}"
 
-    # Read task-specific sidecar (--cost-threshold / --cost-per-error /
-    # --[no-]allow-stronger-models) on --resume. These knobs aren't
-    # known to the framework's ConfigManager, so without this they'd
-    # silently revert to evaluator defaults on resume — a quiet
-    # scoring-function shift mid-run. CLI flags still override (with
-    # a loud warning if they disagree with the stored value).
+    # Read task-specific sidecar (--cost-threshold / --cost-per-error)
+    # on --resume. These knobs aren't known to the framework's
+    # ConfigManager, so without this they'd silently revert to evaluator
+    # defaults on resume — a quiet scoring-function shift mid-run. They
+    # are immutable across a run: passing the CLI flag on --resume is a
+    # hard error, and a missing sidecar (historical pre-fix runs) is
+    # also an error rather than a silent default fallback.
+    on_resume = bool(args.resume)
     checkpoint_ds1000 = (
         _read_ds1000_runtime_config(Path(args.resume)) if args.resume else {}
     )
-
-    # --no-allow-stronger-models is immutable across a run. On resume,
-    # passing it is a hard error — the sidecar value wins. (Cost knobs
-    # below keep their overrideable-with-warning behavior; the stronger-
-    # models tier is more invasive because it changes which model handles
-    # even exist in eval workers — flipping it mid-run risks import
-    # failures and reshapes the evolution agent's menu.)
-    if args.resume:
-        stored = checkpoint_ds1000.get("allow_stronger_models")
-        _enforce_stronger_models_immutable_on_resume(
-            args.allow_stronger_models, stored
-        )
-        effective_allow_stronger_models = stored if stored is not None else True
-    else:
-        effective_allow_stronger_models = (
-            args.allow_stronger_models
-            if args.allow_stronger_models is not None
-            else True
-        )
-
-    cost_threshold = _resolve_with_checkpoint(
+    cost_threshold = _enforce_immutable_on_resume(
         cli_value=args.cost_threshold,
-        checkpoint_value=checkpoint_ds1000.get("cost_threshold"),
+        stored_value=checkpoint_ds1000.get("cost_threshold"),
         default_value=MIN_COST_THRESHOLD,
         name="cost-threshold",
+        on_resume=on_resume,
         fmt=_fmt_cost,
     )
-    cost_per_error = _resolve_with_checkpoint(
+    cost_per_error = _enforce_immutable_on_resume(
         cli_value=args.cost_per_error,
-        checkpoint_value=checkpoint_ds1000.get("cost_per_error"),
+        stored_value=checkpoint_ds1000.get("cost_per_error"),
         default_value=COST_PER_ERROR,
         name="cost-per-error",
+        on_resume=on_resume,
         fmt=_fmt_cost,
     )
 
-    # Persist the resolved values so future resumes recover them. On
-    # --resume we can write immediately (the dir exists); on a fresh
-    # run we don't know experiment_dir until optimize_anything returns
-    # and write the sidecar there. Skipped on --eval-only — that path
-    # is read-only by intent (no training iterations follow).
     resolved_runtime = {
         "cost_threshold": cost_threshold,
         "cost_per_error": cost_per_error,
-        "allow_stronger_models": effective_allow_stronger_models,
     }
-    if args.resume and not args.eval_only:
-        _write_ds1000_runtime_config(Path(args.resume), resolved_runtime)
-
-    # Set the stronger-models env var BEFORE importing evaluator (which
-    # transitively triggers model_registry's import-time check in each
-    # per-sample subprocess). os.environ writes propagate to children
-    # via inheritance — the asta_ds1000 evaluator's subprocess.Popen
-    # calls don't pass env=, so the parent env is used.
-    #
-    # On --resume with --no-allow-stronger-models, also auto-detect: if
-    # any agent in the resumed run imports a gated handle, the resumed
-    # run's agent pool needs the gated handles exposed — otherwise the
-    # gated handles aren't created in the eval workers and every per-
-    # problem subprocess crashes on import for a uniform 0.000 score.
-    # Self-healing rather than checkpoint-persisted so historical runs
-    # also benefit. The gated-handle list is owned by model_registry
-    # (GATED_HANDLE_NAMES) so the registry stays the single source of
-    # truth — no hardcoded list in main.py.
-    if effective_allow_stronger_models:
-        os.environ["ASTA_DS1000_ALLOW_STRONGER_MODELS"] = "1"
-    elif args.resume:
-        from model_registry import GATED_HANDLE_NAMES
-        if _resume_needs_stronger_flag(Path(args.resume), GATED_HANDLE_NAMES):
-            os.environ["ASTA_DS1000_ALLOW_STRONGER_MODELS"] = "1"
-            logger.info(
-                "Auto-enabled stronger-models tier on resume "
-                "(overriding --no-allow-stronger-models): "
-                "resumed run's agent pool imports a gated handle"
-            )
 
     from evaluator import Ds1000Evaluator
 
@@ -697,15 +539,6 @@ def main():
             f"to the breakeven correct-count |",
         ]
         return "\n".join(rows)
-
-    # Stronger-model rows, conditional on the stronger-models tier
-    # being enabled (default on; disabled by --no-allow-stronger-models).
-    # When disabled, the placeholder collapses to empty string and the
-    # background.md table stays at six rows; when enabled, three rows
-    # are appended. Construction is delegated to a pure helper so tests
-    # can pin the output string without scanning main.py's source for
-    # string-literal patterns.
-    stronger_rows = _build_stronger_rows(effective_allow_stronger_models)
 
     # Resolve effective new_agent_test_rounds from CLI flag + the
     # --engine-config overlay. The flag is the primary surface; the
@@ -743,12 +576,6 @@ def main():
 
     test_rounds_framing = _test_rounds_framing(effective_test_rounds)
 
-    # ${STRONGER_MODELS_TABLE_ROWS} matches with its trailing newline so
-    # that off-mode collapses the entire line (no stray blank line that
-    # would terminate the markdown table early); on-mode puts the rows
-    # plus a trailing newline back in.
-    stronger_replacement = stronger_rows + "\n" if stronger_rows else ""
-
     cost_penalty_table = _build_cost_penalty_table(cost_threshold, cost_per_error)
 
     # Per-example timeout: must match the value passed to RoboPhDConfig
@@ -776,7 +603,6 @@ def main():
             .replace("${COST_PENALTY_TABLE}", cost_penalty_table)
             .replace("${COST_THRESHOLD}", _fmt_cost(cost_threshold))
             .replace("${COST_PER_ERROR}", _fmt_cost(cost_per_error))
-            .replace("${STRONGER_MODELS_TABLE_ROWS}\n", stronger_replacement)
             .replace("${TEST_ROUNDS_FRAMING}", test_rounds_framing)
             # True per-problem budget the agent experiences: EVAL_TIMEOUT
             # minus the 30s reaper buffer, floored to whole minutes
@@ -981,6 +807,26 @@ def main():
         )
         if args.resume:
             cfg.experiment_dir = args.resume
+        else:
+            # Pre-create experiment_dir using the same pattern the
+            # framework uses for fresh RoboPhD runs (see
+            # ParallelAgentResearcher's experiment_dir construction)
+            # so we can write the sidecar BEFORE iterations start. If
+            # the run is interrupted before any iteration completes,
+            # the sidecar already has the user's --cost-threshold /
+            # --cost-per-error; a future --resume recovers them rather
+            # than silently falling through to evaluator defaults.
+            #
+            # The two paths (here and in the framework) must stay in
+            # sync — `test_main_experiment_dir_pattern_matches_framework`
+            # catches drift in the component literals.
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            fresh_experiment_dir = (
+                Path(args.runs_dir) / "robophd" / f"asta_ds1000_{timestamp}"
+            )
+            fresh_experiment_dir.mkdir(parents=True, exist_ok=True)
+            cfg.experiment_dir = str(fresh_experiment_dir)
+            _write_ds1000_runtime_config(fresh_experiment_dir, resolved_runtime)
         if args.extend:
             cfg.extend_iterations = args.extend
         if args.from_iteration:
@@ -1001,10 +847,13 @@ def main():
     logger.info(f"Best agent: Elo {result.best_score:.0f}")
     logger.info(f"Experiment dir: {result.experiment_dir}")
 
-    # Sidecar write for fresh runs (resume path already wrote above).
-    # Idempotent: rewriting on a resumed extend-run with no overrides
-    # produces an identical file.
-    _write_ds1000_runtime_config(result.experiment_dir, resolved_runtime)
+    # Sidecar write for non-RoboPhD engines (GEPA / Autoresearch): they
+    # don't go through the RoboPhD fresh-run early-write branch above,
+    # so we write here as a fallback. The RoboPhD path is no-op safe
+    # (same values; idempotent), but logging the dir difference would
+    # be confusing — skip it.
+    if args.engine != "robophd" or args.resume:
+        _write_ds1000_runtime_config(result.experiment_dir, resolved_runtime)
 
     if args.eval_test_set:
         if not result.completed_normally:
