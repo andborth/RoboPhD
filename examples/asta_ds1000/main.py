@@ -422,15 +422,7 @@ def parse_args():
 
     p.add_argument("--cost-threshold", type=float, default=None,
                    help="Mean cost across an iteration's batch below this "
-                        "is in the free zone (no penalty). Default $0.04. "
-                        "Immutable on --resume: passing a value that "
-                        "differs from the stored value is an error. "
-                        "(Exception: on --resume with no stored sidecar "
-                        "value, the flag bootstraps a fresh sidecar — a "
-                        "one-time recovery path for runs interrupted "
-                        "before their first iteration finished. Pair "
-                        "with --cost-per-error in the same invocation if "
-                        "the sidecar is missing entirely.)"
+                        "is in the free zone (no penalty). Default $0.04."
                         "%(default).0s")
     p.add_argument("--cost-per-error", type=float, default=None,
                    help="Dollars of mean batch spend (over --cost-threshold) "
@@ -440,9 +432,7 @@ def parse_args():
                         "where the penalty sorts within accuracy ties but "
                         "never overrides a 1-problem accuracy gap. Applied "
                         "to the iteration aggregate (not per example); "
-                        "test-path scores are raw 0/1 fractions regardless. "
-                        "Immutable on --resume (same semantics as "
-                        "--cost-threshold)."
+                        "test-path scores are raw 0/1 fractions regardless."
                         "%(default).0s")
 
     p.add_argument("--max-workers", type=int, default=None,
