@@ -885,7 +885,9 @@ def test_enforce_resume_missing_stored_and_no_cli_is_hard_error(sidecar_helpers)
     Silent default fallback here is the bug class that produced the
     $0.10 → $0.04 drift in asta_ds1000_20260526_120002. Error and
     tell the user how to recover (pass --cost-threshold to bootstrap,
-    or restart).
+    or restart). The error must also flag that both knobs are checked
+    independently — bootstrapping only one when both are missing
+    triggers a second error.
     """
     with pytest.raises(SystemExit) as exc_info:
         sidecar_helpers["enforce_immutable"](
@@ -895,3 +897,8 @@ def test_enforce_resume_missing_stored_and_no_cli_is_hard_error(sidecar_helpers)
     msg = str(exc_info.value)
     assert "no stored cost-threshold" in msg
     assert "bootstrap" in msg
+    assert "--cost-per-error" in msg, (
+        "missing-sidecar error must mention that both cost knobs need "
+        "to be supplied together — without this, users who pass only "
+        "--cost-threshold hit a second error and don't know why"
+    )

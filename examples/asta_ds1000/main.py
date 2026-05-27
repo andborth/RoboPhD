@@ -329,7 +329,10 @@ def _enforce_immutable_on_resume(
         f"{DS1000_RUNTIME_CONFIG_FILENAME}. The sidecar is missing — "
         f"likely a fresh run that crashed before completing its first "
         f"iteration, or a pre-fix historical run. Pass --{name} <value> "
-        f"to bootstrap it (one-time, then locked), or restart the run."
+        f"to bootstrap it (one-time, then locked). NOTE: if the sidecar "
+        f"is missing entirely, both --cost-threshold and --cost-per-error "
+        f"must be supplied on the same resume invocation — each is "
+        f"checked independently. Or restart the run."
     )
 
 
@@ -425,7 +428,9 @@ def parse_args():
                         "(Exception: on --resume with no stored sidecar "
                         "value, the flag bootstraps a fresh sidecar — a "
                         "one-time recovery path for runs interrupted "
-                        "before their first iteration finished.)"
+                        "before their first iteration finished. Pair "
+                        "with --cost-per-error in the same invocation if "
+                        "the sidecar is missing entirely.)"
                         "%(default).0s")
     p.add_argument("--cost-per-error", type=float, default=None,
                    help="Dollars of mean batch spend (over --cost-threshold) "
