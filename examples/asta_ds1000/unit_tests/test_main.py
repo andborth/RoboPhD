@@ -820,12 +820,25 @@ def test_enforce_fresh_run_falls_back_to_default(sidecar_helpers):
     assert result == 0.04
 
 
-def test_enforce_resume_with_cli_is_hard_error(sidecar_helpers):
-    """Resume + CLI flag → SystemExit naming the knob and stored value.
+def test_enforce_resume_with_matching_cli_silently_uses_stored(sidecar_helpers):
+    """Resume + CLI flag matching stored value → silent no-op.
+
+    A user who passes the same flag they used on the original run
+    shouldn't get an error — the immutability rule is about preventing
+    *changes*, not about banning the flag entirely.
+    """
+    result = sidecar_helpers["enforce_immutable"](
+        cli_value=0.06, stored_value=0.06, default_value=0.04,
+        name="cost-threshold", on_resume=True,
+    )
+    assert result == 0.06
+
+
+def test_enforce_resume_with_conflicting_cli_is_hard_error(sidecar_helpers):
+    """Resume + CLI flag differing from stored → SystemExit.
 
     This is the load-bearing immutability rule: changing cost-threshold
-    mid-run silently invalidates Elo continuity with prior iterations,
-    so we refuse and tell the user to restart.
+    mid-run silently invalidates Elo continuity with prior iterations.
     """
     with pytest.raises(SystemExit) as exc_info:
         sidecar_helpers["enforce_immutable"](
@@ -841,9 +854,8 @@ def test_enforce_resume_with_cli_is_hard_error(sidecar_helpers):
 def test_enforce_resume_with_no_cli_uses_stored(sidecar_helpers):
     """Resume + no CLI flag + sidecar value → returns stored.
 
-    This is the fix's load-bearing behavior — without it, the user's
-    original --cost-threshold setting silently reverts to evaluator
-    defaults on resume.
+    Without this, the user's original --cost-threshold setting
+    silently reverts to evaluator defaults on resume.
     """
     result = sidecar_helpers["enforce_immutable"](
         cli_value=None, stored_value=0.06, default_value=0.04,
@@ -852,12 +864,28 @@ def test_enforce_resume_with_no_cli_uses_stored(sidecar_helpers):
     assert result == 0.06
 
 
-def test_enforce_resume_missing_stored_is_hard_error(sidecar_helpers):
-    """Resume + no CLI flag + missing sidecar → SystemExit (historical run).
+def test_enforce_resume_bootstraps_when_sidecar_missing(sidecar_helpers):
+    """Resume + CLI flag + missing sidecar → returns CLI value (bootstrap).
 
-    Silent default fallback here is exactly the bug class that produced
-    the $0.10 → $0.04 drift in asta_ds1000_20260526_120002. Error
-    instead, naming what the user has to do (hand-edit or restart).
+    The sidecar is only written after iteration 1 completes, so a run
+    interrupted before then has no sidecar. Allowing the CLI flag to
+    bootstrap a fresh sidecar is the recovery path; the value is then
+    locked for all subsequent resumes.
+    """
+    result = sidecar_helpers["enforce_immutable"](
+        cli_value=0.10, stored_value=None, default_value=0.04,
+        name="cost-threshold", on_resume=True,
+    )
+    assert result == 0.10
+
+
+def test_enforce_resume_missing_stored_and_no_cli_is_hard_error(sidecar_helpers):
+    """Resume + no CLI flag + missing sidecar → SystemExit.
+
+    Silent default fallback here is the bug class that produced the
+    $0.10 → $0.04 drift in asta_ds1000_20260526_120002. Error and
+    tell the user how to recover (pass --cost-threshold to bootstrap,
+    or restart).
     """
     with pytest.raises(SystemExit) as exc_info:
         sidecar_helpers["enforce_immutable"](
@@ -866,120 +894,4 @@ def test_enforce_resume_missing_stored_is_hard_error(sidecar_helpers):
         )
     msg = str(exc_info.value)
     assert "no stored cost-threshold" in msg
-    assert "historical run" in msg
-
-
-def _references_args_resume(node: ast.AST) -> bool:
-    """True iff `node` (an arbitrary AST subtree) contains an
-    `args.resume` attribute reference."""
-    for n in ast.walk(node):
-        if (
-            isinstance(n, ast.Attribute)
-            and isinstance(n.value, ast.Name)
-            and n.value.id == "args"
-            and n.attr == "resume"
-        ):
-            return True
-    return False
-
-
-def _body_contains_write_before(body, max_line: int) -> bool:
-    """True iff `body` (list of statements) contains a
-    `_write_ds1000_runtime_config(...)` call at a line < max_line."""
-    for stmt in body:
-        for n in ast.walk(stmt):
-            if (
-                isinstance(n, ast.Call)
-                and isinstance(n.func, ast.Name)
-                and n.func.id == "_write_ds1000_runtime_config"
-                and n.lineno < max_line
-            ):
-                return True
-    return False
-
-
-def test_main_writes_sidecar_in_non_resume_branch_before_optimize():
-    """The sidecar write for fresh RoboPhD runs must live in an
-    `args.resume`-conditional branch positioned BEFORE
-    `optimize_anything`. Otherwise an interrupted fresh run leaves no
-    sidecar and a future resume silently falls back to evaluator
-    defaults (the bug that ate $0.10 on asta_ds1000_20260526_120002).
-
-    Stronger than a simple "any write before optimize_anything" check —
-    that one would silently pass if the pre-create branch were deleted
-    and only the post-optimize write moved earlier in some other
-    branch. Here we require: at least one write call appears in a
-    branch only reached when `args.resume` is falsy, positioned before
-    the earliest `optimize_anything` call.
-    """
-    src = MAIN_PY.read_text()
-    tree = ast.parse(src)
-    optimize_lines = [
-        n.lineno for n in ast.walk(tree)
-        if isinstance(n, ast.Call)
-        and isinstance(n.func, ast.Name)
-        and n.func.id == "optimize_anything"
-    ]
-    assert optimize_lines, "no optimize_anything calls found in main.py"
-    earliest_optimize = min(optimize_lines)
-
-    found = False
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.If):
-            continue
-        if not _references_args_resume(node.test):
-            continue
-        # Determine which branch runs when args.resume is FALSE:
-        #   `if not args.resume:` → body
-        #   `if args.resume:`     → orelse
-        # Anything else (e.g., compound conditions) — skip.
-        if isinstance(node.test, ast.UnaryOp) and isinstance(node.test.op, ast.Not):
-            falsy_branch = node.body
-        elif (
-            isinstance(node.test, ast.Attribute)
-            and isinstance(node.test.value, ast.Name)
-            and node.test.value.id == "args"
-            and node.test.attr == "resume"
-        ):
-            falsy_branch = node.orelse
-        else:
-            continue
-        if _body_contains_write_before(falsy_branch, earliest_optimize):
-            found = True
-            break
-
-    assert found, (
-        "Expected a _write_ds1000_runtime_config call inside the "
-        "non-resume branch (the `else:` of `if args.resume:` or the "
-        "body of `if not args.resume:`), positioned before "
-        f"optimize_anything (line {earliest_optimize}). Without this, "
-        "an interrupted fresh run leaves no sidecar and the "
-        "interrupted-fresh-run bug returns."
-    )
-
-
-def test_main_experiment_dir_pattern_matches_framework():
-    """main.py pre-creates experiment_dir on fresh RoboPhD runs using a
-    pattern that duplicates the framework's logic in researcher.py.
-    If the two diverge, main.py writes the sidecar to one path and the
-    framework iterates in a different path without one — silently
-    reproducing the interrupted-fresh-run bug.
-
-    This test catches drift by asserting both files reference the same
-    naming components: the `"robophd"` engine subdir literal and the
-    `"%Y%m%d_%H%M%S"` timestamp format. The right long-term fix is
-    factoring this into a shared framework helper; this test is the
-    cheap-and-load-bearing interim guard.
-    """
-    main_src = MAIN_PY.read_text()
-    researcher_src = (REPO_ROOT / "RoboPhD" / "researcher.py").read_text()
-    for component in ('"robophd"', '"%Y%m%d_%H%M%S"'):
-        assert component in main_src, (
-            f"main.py no longer references {component} — the "
-            f"pre-create path may have diverged from the framework."
-        )
-        assert component in researcher_src, (
-            f"framework researcher.py no longer references {component} "
-            f"— main.py's pre-create path may now point at a different "
-            f"directory than the one the framework actually uses."
-        )
+    assert "bootstrap" in msg

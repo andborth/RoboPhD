@@ -28,7 +28,6 @@ import logging
 import os
 import random
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
@@ -292,39 +291,45 @@ def _enforce_immutable_on_resume(
 
     Fresh run: CLI flag wins, else evaluator default.
 
-    Resume + CLI flag passed: SystemExit. These knobs shape the scoring
-    function — changing them mid-run silently invalidates the Elo
-    continuity with prior iterations. Restart for a different value.
+    Resume + sidecar has stored value:
+      - CLI flag passed and disagrees: SystemExit (immutability).
+      - CLI flag passed and matches: use stored (silent no-op).
+      - No CLI flag: use stored.
 
-    Resume + no CLI flag, sidecar has value: use stored.
+    Resume + sidecar missing the value (interrupted run that never
+    finished its first iteration, OR a pre-fix historical run):
+      - CLI flag passed: one-time bootstrap, return CLI value.
+      - No CLI flag: SystemExit (no value to use; user must restart
+        or pass the original flag explicitly).
 
-    Resume + no CLI flag, sidecar missing the value: SystemExit. Only
-    happens for pre-fix historical runs that never got a sidecar; the
-    silent-default-fallback path is what produced the earlier
-    cost_threshold drift bug, so we error rather than guess.
+    The bootstrap exception is the only override path on resume. It
+    exists because the sidecar is only written post-iteration-1, so
+    runs interrupted before then need a recovery path. After bootstrap,
+    the value is persisted and locked for any future resume.
     """
     if not on_resume:
         return cli_value if cli_value is not None else default_value
-    if cli_value is not None:
-        stored_desc = (
-            f"stored value: {fmt(stored_value)}"
-            if stored_value is not None
-            else "no stored value (historical run)"
-        )
-        raise SystemExit(
-            f"--{name} cannot be changed on --resume; the value is "
-            f"locked for the lifetime of the run ({stored_desc}). "
-            f"Start a new run to use a different {name}."
-        )
     if stored_value is not None:
+        if cli_value is not None and cli_value != stored_value:
+            raise SystemExit(
+                f"--{name} cannot be changed on --resume; the value "
+                f"is locked for the lifetime of the run (stored value: "
+                f"{fmt(stored_value)}). Start a new run to use a "
+                f"different {name}."
+            )
         return stored_value
+    if cli_value is not None:
+        logger.info(
+            f"Resume: bootstrapping {name}={fmt(cli_value)} into "
+            f"{DS1000_RUNTIME_CONFIG_FILENAME} (no prior stored value)."
+        )
+        return cli_value
     raise SystemExit(
         f"--resume failed: no stored {name} in "
-        f"{DS1000_RUNTIME_CONFIG_FILENAME}. The sidecar can be missing "
-        f"for a pre-fix historical run, OR a fresh run that crashed "
-        f"before it persisted, OR a non-RoboPhD engine fresh run that "
-        f"errored mid-iteration. Either hand-edit the sidecar to add a "
-        f"{name} value, or restart the experiment."
+        f"{DS1000_RUNTIME_CONFIG_FILENAME}. The sidecar is missing — "
+        f"likely a fresh run that crashed before completing its first "
+        f"iteration, or a pre-fix historical run. Pass --{name} <value> "
+        f"to bootstrap it (one-time, then locked), or restart the run."
     )
 
 
@@ -415,10 +420,12 @@ def parse_args():
     p.add_argument("--cost-threshold", type=float, default=None,
                    help="Mean cost across an iteration's batch below this "
                         "is in the free zone (no penalty). Default $0.04. "
-                        "Fresh-run only; the value is locked for the "
-                        "lifetime of the run and cannot be changed on "
-                        "--resume (start a new run to use a different "
-                        "threshold)."
+                        "Immutable on --resume: passing a value that "
+                        "differs from the stored value is an error. "
+                        "(Exception: on --resume with no stored sidecar "
+                        "value, the flag bootstraps a fresh sidecar — a "
+                        "one-time recovery path for runs interrupted "
+                        "before their first iteration finished.)"
                         "%(default).0s")
     p.add_argument("--cost-per-error", type=float, default=None,
                    help="Dollars of mean batch spend (over --cost-threshold) "
@@ -429,7 +436,8 @@ def parse_args():
                         "never overrides a 1-problem accuracy gap. Applied "
                         "to the iteration aggregate (not per example); "
                         "test-path scores are raw 0/1 fractions regardless. "
-                        "Fresh-run only; immutable on --resume."
+                        "Immutable on --resume (same semantics as "
+                        "--cost-threshold)."
                         "%(default).0s")
 
     p.add_argument("--max-workers", type=int, default=None,
@@ -807,26 +815,6 @@ def main():
         )
         if args.resume:
             cfg.experiment_dir = args.resume
-        else:
-            # Pre-create experiment_dir using the same pattern the
-            # framework uses for fresh RoboPhD runs (see
-            # ParallelAgentResearcher's experiment_dir construction)
-            # so we can write the sidecar BEFORE iterations start. If
-            # the run is interrupted before any iteration completes,
-            # the sidecar already has the user's --cost-threshold /
-            # --cost-per-error; a future --resume recovers them rather
-            # than silently falling through to evaluator defaults.
-            #
-            # The two paths (here and in the framework) must stay in
-            # sync — `test_main_experiment_dir_pattern_matches_framework`
-            # catches drift in the component literals.
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            fresh_experiment_dir = (
-                Path(args.runs_dir) / "robophd" / f"asta_ds1000_{timestamp}"
-            )
-            fresh_experiment_dir.mkdir(parents=True, exist_ok=True)
-            cfg.experiment_dir = str(fresh_experiment_dir)
-            _write_ds1000_runtime_config(fresh_experiment_dir, resolved_runtime)
         if args.extend:
             cfg.extend_iterations = args.extend
         if args.from_iteration:
@@ -847,13 +835,14 @@ def main():
     logger.info(f"Best agent: Elo {result.best_score:.0f}")
     logger.info(f"Experiment dir: {result.experiment_dir}")
 
-    # Sidecar write for non-RoboPhD engines (GEPA / Autoresearch): they
-    # don't go through the RoboPhD fresh-run early-write branch above,
-    # so we write here as a fallback. The RoboPhD path is no-op safe
-    # (same values; idempotent), but logging the dir difference would
-    # be confusing — skip it.
-    if args.engine != "robophd" or args.resume:
-        _write_ds1000_runtime_config(result.experiment_dir, resolved_runtime)
+    # Persist the resolved values so future resumes recover them. The
+    # framework's ConfigManager doesn't persist task-specific knobs,
+    # so without this sidecar a resume silently reverts to evaluator
+    # defaults (the bug from asta_ds1000_20260526_120002). Written
+    # after optimize_anything completes — runs interrupted before any
+    # iteration finishes will be missing the sidecar; that case is
+    # handled by the bootstrap branch in _enforce_immutable_on_resume.
+    _write_ds1000_runtime_config(result.experiment_dir, resolved_runtime)
 
     if args.eval_test_set:
         if not result.completed_normally:
