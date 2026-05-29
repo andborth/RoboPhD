@@ -195,3 +195,7 @@ A per-protein cost budget of $0.10 is enforced. Correct predictions within budge
 Headline benchmark score: After evolution, the best agent is evaluated on the held-out test set using CAFA-evaluator (Piovesan et al., 2024), the official scoring tool for the CAFA challenges. This produces a Fmax number directly comparable to published protein function prediction methods. The per-protein score above is what drives evolution; CAFA Fmax is the final reported metric.
 
 Diagnostics: Any print() output from the agent is captured and included in evaluation diagnostics as agent_stdout. Use print() to log anything you think would be helpful for you to see when improving the agent in later rounds.
+
+## Scratch space
+
+Your working directory is your iteration's evolution dir. If you need to drop a small test harness or scratch script while debugging, write it there directly — `/tmp` is outside the write scope, and there's no need to clean up after yourself afterwards. Leftover debugging artifacts in the iteration dir are useful for retrospective analysis.

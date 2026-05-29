@@ -9,3 +9,7 @@ Scoring: The program's `answer` variable is compared to the expected answer nume
 A per-problem cost budget of $0.10 is enforced. Correct answers within budget score 1.0. Correct answers that exceed the budget are penalized to 0.9 (a 10% reduction). Incorrect answers score 0.0 regardless of cost. The program output is executed via exec(); if it raises an exception the answer is counted as incorrect.
 
 Diagnostics: Any print() output from the agent is captured and included in evaluation diagnostics as agent_stdout. Use print() to log any information you think would be helpful for you to see in improving the agent in later rounds of testing and refinement.
+
+## Scratch space
+
+Your working directory is your iteration's evolution dir. If you need to drop a small test harness or scratch script while debugging, write it there directly — `/tmp` is outside the write scope, and there's no need to clean up after yourself afterwards. Leftover debugging artifacts in the iteration dir are useful for retrospective analysis.
