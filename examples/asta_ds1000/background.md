@@ -128,7 +128,3 @@ Your agent times out and the problem scores 0 if a single problem takes more tha
 ## Diagnostics
 
 `print()` output from the solver is captured into `agent_stdout`. The extracted `<code>` block and the test program's stdout/stderr are surfaced as per-example diagnostic files (`extracted_code.md`, `test_result.md`) so failures can be inspected without re-running.
-
-## Scratch space
-
-Your working directory is your iteration's evolution dir. If you need to drop a small test harness or scratch script while debugging, write it there directly — `/tmp` is outside the write scope, and there's no need to clean up after yourself afterwards. Leftover debugging artifacts in the iteration dir are useful for retrospective analysis.

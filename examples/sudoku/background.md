@@ -65,7 +65,3 @@ Final score = time_score (if correct), 0.0 otherwise.
 Puzzles come from the `sapientinc/sudoku-extreme` dataset on HuggingFace.
 Difficulty ratings range from 0 (easy) to 465 (extreme). The training set
 includes a stratified sample across difficulty levels.
-
-## Scratch space
-
-Your working directory is your iteration's evolution dir. If you need to drop a small test harness or scratch script while debugging, write it there directly — `/tmp` is outside the write scope, and there's no need to clean up after yourself afterwards. Leftover debugging artifacts in the iteration dir are useful for retrospective analysis.

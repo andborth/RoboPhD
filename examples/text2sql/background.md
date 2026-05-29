@@ -52,7 +52,3 @@ score 1.0. Correct answers that exceed the budget are penalized to 0.9
 - All databases are SQLite
 
 Diagnostics: Any print() output from agent.py is captured and included in evaluation diagnostics as agent_stdout. Any print() output from analyze_db.py is captured as tool_stdout. Use print() to log any information you think would be helpful for you to see in improving the agent in later rounds of testing and refinement.
-
-## Scratch space
-
-Your working directory is your iteration's evolution dir. If you need to drop a small test harness or scratch script while debugging, write it there directly — `/tmp` is outside the write scope, and there's no need to clean up after yourself afterwards. Leftover debugging artifacts in the iteration dir are useful for retrospective analysis.

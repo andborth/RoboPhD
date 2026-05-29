@@ -50,6 +50,10 @@ During testing and refinement rounds (Rounds 2+), your results appear in `./iter
 
 If a `strategy_tools/` directory exists in your working directory, it contains Python helper scripts provided by your evolution strategy. **Run them** — they analyze prior iteration data and produce structured output to guide your work. Use `__PYTHON_EXECUTABLE__ strategy_tools/<script>.py --help` to discover usage.
 
+## Scratch space
+
+Your working directory is your iteration's evolution dir. If you need to drop a small test harness or scratch script while debugging, write it there directly — `/tmp` is outside the write scope, and there's no need to clean up after yourself afterwards. Leftover debugging artifacts in the iteration dir are useful for retrospective analysis.
+
 """
 
 
