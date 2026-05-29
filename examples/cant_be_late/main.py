@@ -188,6 +188,7 @@ def main():
                 "mean_test_score": eval_result.mean_score,
                 "total_test_score": eval_result.total_score,
                 "total_test_problems": eval_result.num_examples,
+                "test_eval_cost_usd": evaluator.total_eval_cost,
             }
             test_path = result.experiment_dir / "test_results.json"
             with open(test_path, "w") as f:
