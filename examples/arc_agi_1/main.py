@@ -223,6 +223,9 @@ def main():
         else:
             test_data = load_arc_test()
             logger.info(f"Test evaluation: {len(test_data)} problems")
+            # Evaluator is shared with optimize_anything() above, so snapshot its
+            # running total to record test-only cost (not evolution + test).
+            cost_before = evaluator.total_eval_cost
             eval_result = eval_candidate(
                 evaluator=evaluator,
                 dataset=test_data,
@@ -236,7 +239,7 @@ def main():
                 "mean_test_score": eval_result.mean_score,
                 "total_test_score": eval_result.total_score,
                 "total_test_problems": eval_result.num_examples,
-                "test_eval_cost_usd": evaluator.total_eval_cost,
+                "test_eval_cost_usd": evaluator.total_eval_cost - cost_before,
             }
             test_path = result.experiment_dir / "test_results.json"
             with open(test_path, "w") as f:
