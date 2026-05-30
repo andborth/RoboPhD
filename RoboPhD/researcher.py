@@ -274,6 +274,8 @@ class MemoryMonitor:
         self._memlog = os.environ.get("ROBOPHD_MEMLOG") == "1"
         self._tm_last = None
         self._proc = psutil.Process(os.getpid())
+        # Baseline for per-iteration delta of eval-health counters.
+        self._last_eval_counters = {"timeouts": 0, "rate_limits": 0}
 
     def check_memory(self) -> bool:
         """Check if memory usage is below threshold."""
@@ -296,10 +298,18 @@ class MemoryMonitor:
             rss = self._proc.memory_info().rss
             vm = psutil.virtual_memory()
             sw = psutil.swap_memory()
+            # API pressure: cumulative eval timeouts / rate limits with the
+            # per-iteration delta, so 429s and hung evals show up next to memory.
+            from RoboPhD.eval_utils import get_eval_counters
+            ec = get_eval_counters()
+            dt = ec["timeouts"] - self._last_eval_counters["timeouts"]
+            dr = ec["rate_limits"] - self._last_eval_counters["rate_limits"]
+            self._last_eval_counters = ec
             print(
                 f"🧠 MEM[iter {iteration}] RSS={rss/(1024**3):.2f}GB | "
                 f"sys {vm.percent:.0f}% used, {vm.available/(1024**3):.1f}GB free | "
-                f"swap {sw.percent:.0f}% ({sw.used/(1024**3):.1f}GB)"
+                f"swap {sw.percent:.0f}% ({sw.used/(1024**3):.1f}GB) | "
+                f"API: timeouts {ec['timeouts']} (+{dt}), rate-limits {ec['rate_limits']} (+{dr})"
             )
         except Exception as e:
             print(f"🧠 MEM[iter {iteration}] RSS read failed: {e}")

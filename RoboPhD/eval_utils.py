@@ -82,6 +82,27 @@ class PeakRSSSampler:
         )
 
 
+# Process-global eval-health counters, surfaced on the per-iteration MEM line
+# so API pressure (timeouts / rate limits) is visible at a glance alongside
+# memory. Cumulative across the run; the MEM line also shows the per-iteration
+# delta. Incremented from the eval-loop thread; lock-guarded to be safe.
+_EVAL_COUNTERS = {"timeouts": 0, "rate_limits": 0}
+_EVAL_COUNTERS_LOCK = threading.Lock()
+
+
+def record_eval_event(kind: str) -> None:
+    """Increment a process-global eval-health counter ('timeouts' | 'rate_limits')."""
+    with _EVAL_COUNTERS_LOCK:
+        if kind in _EVAL_COUNTERS:
+            _EVAL_COUNTERS[kind] += 1
+
+
+def get_eval_counters() -> dict:
+    """Snapshot the process-global eval-health counters."""
+    with _EVAL_COUNTERS_LOCK:
+        return dict(_EVAL_COUNTERS)
+
+
 class EvalRateLimitError(Exception):
     """Raised when an evaluator hits an API rate limit.
 

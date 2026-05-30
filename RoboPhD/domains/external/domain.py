@@ -25,7 +25,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ..base import DomainInterface, EvaluationResult, SampledProblems
 from RoboPhD.candidate_utils import extract_candidate, materialize_candidate
-from RoboPhD.eval_utils import EvalRateLimitError, is_rate_limit_error, PeakRSSSampler
+from RoboPhD.eval_utils import EvalRateLimitError, is_rate_limit_error, PeakRSSSampler, record_eval_event
 
 logger = logging.getLogger(__name__)
 
@@ -436,6 +436,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                                 self.logger.warning(
                                     f"EVAL TIMEOUT: {pid} never started after resubmit — scored 0"
                                 )
+                                record_eval_event("timeouts")
                                 result_entry = {"question_id": pid, "score": 0.0}
                                 self._write_timeout_result(problems_dir, pid, result_entry, eval_timeout)
                                 results.append(result_entry)
@@ -453,6 +454,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                             self._leaked_threads += 1
                             timed_out = True
                             timed_out_pids.add(pid)
+                            record_eval_event("timeouts")
                             self.logger.warning(
                                 f"EVAL TIMEOUT: {pid} exceeded {eval_timeout}s — "
                                 f"scored 0, thread leaked ({self._leaked_threads} total leaked)"
@@ -468,6 +470,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                         result_entry = future.result()
                     except Exception as e:
                         if is_rate_limit_error(e):
+                            record_eval_event("rate_limits")
                             for f in not_done:
                                 f.cancel()
                             raise EvalRateLimitError(str(e)) from e
