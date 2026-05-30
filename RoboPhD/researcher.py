@@ -40,7 +40,7 @@ try:
     from .config_manager import ConfigManager, ConfigSource
     from .report_generator import ReportGenerator, is_continuous_scoring
     from .deep_focus_evolution_manager import DeepFocusEvolutionManager
-    from .eval_utils import EvalRateLimitError
+    from .eval_utils import EvalRateLimitError, get_eval_counters
 except ImportError:
     # When run as a script, use absolute imports
     import sys
@@ -59,7 +59,7 @@ except ImportError:
     from RoboPhD.report_generator import ReportGenerator, is_continuous_scoring
     from RoboPhD.deep_focus_evolution_manager import DeepFocusEvolutionManager
     from RoboPhD.domains.base import SampledProblems
-    from RoboPhD.eval_utils import EvalRateLimitError
+    from RoboPhD.eval_utils import EvalRateLimitError, get_eval_counters
 
 # Utilities
 import psutil
@@ -294,25 +294,27 @@ class MemoryMonitor:
         allocation sites plus the top-10 GROWTH sites versus the previous
         iteration — the latter is the signal for an accumulating retainer.
         """
+        # API pressure: cumulative eval timeouts / rate limits with the
+        # per-iteration delta, so 429s and hung evals show up next to memory.
+        # Computed before the memory read so a rare memory_info() failure can't
+        # skip the baseline update and smear the next iteration's delta.
+        ec = get_eval_counters()
+        dt = ec["timeouts"] - self._last_eval_counters["timeouts"]
+        dr = ec["rate_limits"] - self._last_eval_counters["rate_limits"]
+        self._last_eval_counters = ec
+        api = f"API: timeouts {ec['timeouts']} (+{dt}), rate-limits {ec['rate_limits']} (+{dr})"
+
         try:
             rss = self._proc.memory_info().rss
             vm = psutil.virtual_memory()
             sw = psutil.swap_memory()
-            # API pressure: cumulative eval timeouts / rate limits with the
-            # per-iteration delta, so 429s and hung evals show up next to memory.
-            from RoboPhD.eval_utils import get_eval_counters
-            ec = get_eval_counters()
-            dt = ec["timeouts"] - self._last_eval_counters["timeouts"]
-            dr = ec["rate_limits"] - self._last_eval_counters["rate_limits"]
-            self._last_eval_counters = ec
             print(
                 f"🧠 MEM[iter {iteration}] RSS={rss/(1024**3):.2f}GB | "
                 f"sys {vm.percent:.0f}% used, {vm.available/(1024**3):.1f}GB free | "
-                f"swap {sw.percent:.0f}% ({sw.used/(1024**3):.1f}GB) | "
-                f"API: timeouts {ec['timeouts']} (+{dt}), rate-limits {ec['rate_limits']} (+{dr})"
+                f"swap {sw.percent:.0f}% ({sw.used/(1024**3):.1f}GB) | {api}"
             )
         except Exception as e:
-            print(f"🧠 MEM[iter {iteration}] RSS read failed: {e}")
+            print(f"🧠 MEM[iter {iteration}] RSS read failed: {e} | {api}")
 
         if not self._memlog:
             return
