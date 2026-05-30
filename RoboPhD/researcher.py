@@ -63,6 +63,7 @@ except ImportError:
 
 # Utilities
 import psutil
+import tracemalloc
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -262,10 +263,18 @@ CRITICAL_INFRASTRUCTURE_ERRORS = [
 
 class MemoryMonitor:
     """Monitor system memory usage."""
-    
+
     def __init__(self, threshold_percent: float = 80.0):
         self.threshold_percent = threshold_percent
-        
+        # Per-iteration memory logging. RSS/system lines are always printed
+        # (cheap). The tracemalloc top-allocations + inter-iteration growth
+        # deltas are gated behind ROBOPHD_MEMLOG=1 because tracemalloc itself
+        # adds allocation overhead and memory — which would perturb the very
+        # footprint we're trying to diagnose. Frame depth via ROBOPHD_MEMLOG_FRAMES.
+        self._memlog = os.environ.get("ROBOPHD_MEMLOG") == "1"
+        self._tm_last = None
+        self._proc = psutil.Process(os.getpid())
+
     def check_memory(self) -> bool:
         """Check if memory usage is below threshold."""
         memory = psutil.virtual_memory()
@@ -274,6 +283,56 @@ class MemoryMonitor:
             print(f"   Available: {memory.available / (1024**3):.1f} GB")
             return False
         return True
+
+    def log_iteration_memory(self, iteration: int) -> None:
+        """Log this process's memory footprint at an iteration boundary.
+
+        Always prints process RSS + system memory (cheap, via psutil). When
+        ROBOPHD_MEMLOG=1, also starts tracemalloc and prints the top-10
+        allocation sites plus the top-10 GROWTH sites versus the previous
+        iteration — the latter is the signal for an accumulating retainer.
+        """
+        try:
+            rss = self._proc.memory_info().rss
+            vm = psutil.virtual_memory()
+            sw = psutil.swap_memory()
+            print(
+                f"🧠 MEM[iter {iteration}] RSS={rss/(1024**3):.2f}GB | "
+                f"sys {vm.percent:.0f}% used, {vm.available/(1024**3):.1f}GB free | "
+                f"swap {sw.percent:.0f}% ({sw.used/(1024**3):.1f}GB)"
+            )
+        except Exception as e:
+            print(f"🧠 MEM[iter {iteration}] RSS read failed: {e}")
+
+        if not self._memlog:
+            return
+
+        try:
+            if not tracemalloc.is_tracing():
+                frames = int(os.environ.get("ROBOPHD_MEMLOG_FRAMES", "1"))
+                tracemalloc.start(frames)
+                print(f"   tracemalloc started (nframe={frames})")
+                # First call: no baseline to diff against yet.
+                self._tm_last = tracemalloc.take_snapshot()
+                return
+
+            snap = tracemalloc.take_snapshot()
+            cur, peak = tracemalloc.get_traced_memory()
+            print(f"   tracemalloc tracked: cur={cur/(1024**2):.0f}MB peak={peak/(1024**2):.0f}MB")
+
+            print("   top-10 allocations (cumulative):")
+            for stat in snap.statistics("lineno")[:10]:
+                fr = stat.traceback[0]
+                print(f"     {stat.size/(1024**2):7.1f}MB  {stat.count:>7} objs  {fr.filename}:{fr.lineno}")
+
+            if self._tm_last is not None:
+                print("   top-10 GROWTH vs previous iteration:")
+                for stat in snap.compare_to(self._tm_last, "lineno")[:10]:
+                    fr = stat.traceback[0]
+                    print(f"     {stat.size_diff/(1024**2):+7.1f}MB  {stat.count_diff:>+7} objs  {fr.filename}:{fr.lineno}")
+            self._tm_last = snap
+        except Exception as e:
+            print(f"   tracemalloc snapshot failed: {e}")
 
 
 class StuckProcessReaper:
@@ -2955,6 +3014,10 @@ class ParallelAgentResearcher:
             print(f"\n{'='*60}")
             print(f"ITERATION {iteration}")
             print(f"{'='*60}")
+
+            # Per-iteration memory footprint (RSS always; tracemalloc deltas
+            # when ROBOPHD_MEMLOG=1) — diagnoses cross-iteration accumulation.
+            self.memory_monitor.log_iteration_memory(iteration)
 
             # Set current iteration for lazy evaluation (prevents future iteration caching)
             self.config_manager.set_current_iteration(iteration)

@@ -25,7 +25,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ..base import DomainInterface, EvaluationResult, SampledProblems
 from RoboPhD.candidate_utils import extract_candidate, materialize_candidate
-from RoboPhD.eval_utils import EvalRateLimitError, is_rate_limit_error
+from RoboPhD.eval_utils import EvalRateLimitError, is_rate_limit_error, PeakRSSSampler
 
 logger = logging.getLogger(__name__)
 
@@ -405,6 +405,12 @@ class ExternalEvaluatorDomain(DomainInterface):
         timed_out = False
         timed_out_pids: set[str] = set()  # Don't resubmit problems that already timed out
 
+        # Peak-RSS sampler: catch the in-eval memory spike (during exec of the
+        # agent's code) that iteration-boundary snapshots miss. No-op unless
+        # ROBOPHD_MEMLOG=1. Attributable to this agent because the eval below
+        # parallelizes across this one agent's problems only.
+        rss_sampler = PeakRSSSampler(f"{agent_id or 'agent'} x{fresh_count} probs").start()
+
         executor = ThreadPoolExecutor(max_workers=max_workers)
         try:
             future_to_pid = {
@@ -473,6 +479,7 @@ class ExternalEvaluatorDomain(DomainInterface):
             executor.shutdown(wait=False, cancel_futures=True)
             raise
         finally:
+            rss_sampler.stop()  # logs peak RSS for this agent (no-op unless ROBOPHD_MEMLOG=1)
             if timed_out:
                 # Don't block on hung threads — cancel queued futures and move on.
                 # Running threads keep burning CPU until process exit (Python limitation).

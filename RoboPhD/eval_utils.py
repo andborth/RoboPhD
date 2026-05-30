@@ -12,6 +12,76 @@ from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 logger = logging.getLogger(__name__)
 
 
+class PeakRSSSampler:
+    """Record the peak process RSS over a window, to attribute in-eval memory
+    spikes to a specific agent.
+
+    A daemon thread polls the kernel-maintained RSS of the current process via
+    psutil every `interval` seconds and keeps the max. It is strictly read-only:
+    it never touches the evaluated agent's code, namespace, or builtins — it
+    only observes a number the OS already maintains. Because evals parallelize
+    across the *examples of a single agent* (one candidate per run), the peak
+    seen between start()/stop() is attributable to that one agent.
+
+    Gated behind ROBOPHD_MEMLOG=1 so normal runs pay nothing (no thread, no
+    polling). Boundary tracemalloc snapshots only sample the trough between
+    evals; this catches the peak *during* exec(agent_code).
+    """
+
+    def __init__(self, label: str, interval: float = 0.1):
+        self.label = label
+        self.interval = interval
+        self._enabled = os.environ.get("ROBOPHD_MEMLOG") == "1"
+        self.start_rss = 0
+        self.peak_rss = 0
+        self._proc = None
+        self._stop = threading.Event()
+        self._thread = None
+
+    def _read_rss(self) -> int:
+        try:
+            return self._proc.memory_info().rss
+        except Exception:
+            return 0
+
+    def _run(self):
+        while not self._stop.is_set():
+            rss = self._read_rss()
+            if rss > self.peak_rss:
+                self.peak_rss = rss
+            self._stop.wait(self.interval)
+
+    def start(self):
+        if not self._enabled:
+            return self
+        try:
+            import psutil
+            self._proc = psutil.Process(os.getpid())
+        except Exception:
+            self._enabled = False
+            return self
+        self.start_rss = self.peak_rss = self._read_rss()
+        self._thread = threading.Thread(target=self._run, daemon=True, name="peak-rss-sampler")
+        self._thread.start()
+        return self
+
+    def stop(self):
+        if not self._enabled:
+            return
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=1.0)
+        # Capture any last-moment growth the poll loop may have missed.
+        rss = self._read_rss()
+        if rss > self.peak_rss:
+            self.peak_rss = rss
+        gb = 1024 ** 3
+        print(
+            f"🧠 PEAK[{self.label}] start={self.start_rss / gb:.2f}GB "
+            f"peak={self.peak_rss / gb:.2f}GB Δ={(self.peak_rss - self.start_rss) / gb:+.2f}GB"
+        )
+
+
 class EvalRateLimitError(Exception):
     """Raised when an evaluator hits an API rate limit.
 

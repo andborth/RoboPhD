@@ -39,6 +39,15 @@ logging.getLogger("litellm").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
+# Diagnostic: if this process is ever terminated by SIGALRM (seen as
+# "zsh: alarm" when two eval jobs thrash swap and a native socket/DNS
+# deadline blows), dump a full traceback first, then let the default
+# action proceed (chain=True). This names the exact stalled frame.
+import faulthandler
+import signal
+faulthandler.enable()
+faulthandler.register(signal.SIGALRM, chain=True)
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
