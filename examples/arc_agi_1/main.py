@@ -48,6 +48,11 @@ import signal
 faulthandler.enable()
 faulthandler.register(signal.SIGALRM, chain=True)
 
+# Per-evaluation timeout (seconds), single-sourced: the domain enforces this
+# as its cooperative future-wait, and the evaluator derives its per-child
+# subprocess timeout from the same value so the two stay coupled.
+EVAL_TIMEOUT = 600
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -131,6 +136,7 @@ def main():
         max_llm_calls=max_llm_calls,
         cost_budget=cost_budget,
         reasoning_effort=reasoning_effort,
+        eval_timeout=EVAL_TIMEOUT,
         agent_subprocess_isolation=args.agent_isolation,
         agent_memory_limit_gb=args.agent_memory_gb,
     )
@@ -145,7 +151,7 @@ def main():
         test_data = load_arc_test()
         eval_result = eval_run(
             evaluator=evaluator, dataset=test_data, experiment_dir=args.resume,
-            config=RoboPhDEvalConfig(eval_timeout=600),
+            config=RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT),
         )
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
         test_path = Path(args.resume) / "test_results.json"
@@ -173,7 +179,7 @@ def main():
             evaluation_budget=args.evaluation_budget,
             val_dataset=val,
             max_workers=args.max_workers,
-            eval_timeout=600,
+            eval_timeout=EVAL_TIMEOUT,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
@@ -183,7 +189,7 @@ def main():
             evaluation_budget=args.evaluation_budget,
             val_dataset=val,
             max_workers=args.max_workers,
-            eval_timeout=600,
+            eval_timeout=EVAL_TIMEOUT,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
@@ -199,7 +205,7 @@ def main():
             max_workers=args.max_workers,
             parent_experiments_dir=args.runs_dir,
             random_seed=args.random_seed,
-            eval_timeout=600,
+            eval_timeout=EVAL_TIMEOUT,
             meta_evolution_strategy=args.meta_evolution_strategy,
             engine_overrides=engine_overrides or None,
         )
@@ -238,7 +244,7 @@ def main():
                 evaluator=evaluator,
                 dataset=test_data,
                 candidate=result.best_candidate,
-                config=RoboPhDEvalConfig(eval_timeout=600),
+                config=RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT),
             )
             logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
 

@@ -33,9 +33,11 @@ DEFAULT_SOLVER_MODEL = "openrouter/google/gemini-3.1-flash-lite"
 # Subprocess worker that runs one evaluation in isolation (see __call__).
 _WORKER_PATH = str(Path(__file__).resolve().parent / "_eval_worker.py")
 
-# Default per-child wall-clock budget: just under the domain's cooperative
-# eval_timeout (600s) so the child is killed before the outer guard fires.
-_DEFAULT_SUBPROCESS_TIMEOUT = 570.0
+# How far under the domain's cooperative eval_timeout the per-child wall-clock
+# budget sits, so the child is killed before the domain abandons the future
+# (which would otherwise leave a live, memory-holding orphan). Mirrors ASTA's
+# `max(eval_timeout - 30, 60)`.
+_SUBPROCESS_TIMEOUT_MARGIN = 30.0
 
 
 
@@ -327,6 +329,7 @@ class ArcAGI1Evaluator:
         max_llm_calls: int = 10,
         reasoning_effort: Optional[str] = None,
         cost_budget: float = 0.10,
+        eval_timeout: float = 600.0,
         agent_subprocess_isolation: bool = True,
         agent_memory_limit_gb: float = 4.0,
         agent_subprocess_timeout: Optional[float] = None,
@@ -355,10 +358,28 @@ class ArcAGI1Evaluator:
                 pass
         self.agent_subprocess_isolation = agent_subprocess_isolation
         self._mem_bytes = int(agent_memory_limit_gb * (1024 ** 3))
+        # Derive the per-child timeout from the SAME eval_timeout the domain
+        # enforces, so the child is always killed before the domain abandons
+        # it. Keeping these coupled avoids leaking live memory-capped orphans
+        # if eval_timeout is ever changed (e.g. via engine_overrides).
         self._subprocess_timeout = (
             agent_subprocess_timeout if agent_subprocess_timeout is not None
-            else _DEFAULT_SUBPROCESS_TIMEOUT
+            else max(eval_timeout - _SUBPROCESS_TIMEOUT_MARGIN, 60.0)
         )
+
+    def _worker_config(self) -> Dict[str, Any]:
+        """Constructor kwargs the isolated worker needs to rebuild this evaluator.
+
+        Single source of truth for the parent->child config: adding a
+        constructor field that affects evaluation means updating only this dict
+        (alongside __init__), not the worker's construction call too.
+        """
+        return {
+            "solver_model": self.solver_model,
+            "max_llm_calls": self.max_llm_calls,
+            "reasoning_effort": self.reasoning_effort,
+            "cost_budget": self.cost_budget,
+        }
 
     def __call__(
         self,
@@ -377,10 +398,7 @@ class ArcAGI1Evaluator:
                 {
                     "candidate": candidate,
                     "example": example,
-                    "solver_model": self.solver_model,
-                    "max_llm_calls": self.max_llm_calls,
-                    "reasoning_effort": self.reasoning_effort,
-                    "cost_budget": self.cost_budget,
+                    "evaluator_config": self._worker_config(),
                 },
                 timeout=self._subprocess_timeout,
                 memory_limit_bytes=self._mem_bytes,

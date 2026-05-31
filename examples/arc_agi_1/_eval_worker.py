@@ -14,8 +14,7 @@ pathological evolved agent can't take down the whole run:
 Protocol:  python _eval_worker.py <input.json> <output.json>
 
 Input JSON:   {"candidate": {"agent.py": "..."}, "example": {...},
-               "solver_model": str, "max_llm_calls": int,
-               "reasoning_effort": str|null, "cost_budget": float}
+               "evaluator_config": {<ArcAGI1Evaluator constructor kwargs>}}
 Output JSON:  {"score": <float>, "diagnostics": <dict>}
 
 The memory ceiling is read from the ROBOPHD_AGENT_MEMORY_BYTES env var set by
@@ -61,12 +60,9 @@ def main() -> int:
         apply_agent_memory_cap(mem_bytes)
 
         evaluator = ArcAGI1Evaluator(
-            solver_model=params["solver_model"],
-            max_llm_calls=params["max_llm_calls"],
-            reasoning_effort=params.get("reasoning_effort"),
-            cost_budget=params["cost_budget"],
             # We ARE the isolated child — run in-process, don't recurse.
             agent_subprocess_isolation=False,
+            **params["evaluator_config"],
         )
         score, diagnostics = evaluator._evaluate_inprocess(
             params["candidate"], params["example"]
