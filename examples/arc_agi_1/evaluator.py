@@ -137,11 +137,20 @@ def _example_to_dict(ex) -> Dict[str, Any]:
     return {k: ex[k] for k in _EXAMPLE_KEYS}
 
 
-def load_arc_train_val(seed: int = 0) -> Tuple[List[Dict], List[Dict]]:
-    """Load ARC-AGI train and val splits (200 + 200 from HF training)."""
+def load_arc_train_val(seed: int = 0, num_train: int = 400) -> Tuple[List[Dict], List[Dict]]:
+    """Load ARC-AGI train and val splits (200 + 200 from HF training by default).
+
+    ``num_train`` caps the training pool to its first N records of the seeded
+    shuffle (deterministic, so subsets nest: N=50 ⊂ N=100 ⊂ ...). The pool is
+    split half train / half val, so ``train + val == pool[:num_train]`` for every
+    engine: ELO trains on all N (no held-out val), while GEPA/Autoresearch carve
+    their validation set from the same N records. Default 400 = the full pool.
+    """
     _v = _get_vendored()
     train_dspy, val_dspy, _test_dspy = _v.load_arc_dataset(seed)
-    return [_example_to_dict(e) for e in train_dspy], [_example_to_dict(e) for e in val_dspy]
+    pool = [_example_to_dict(e) for e in train_dspy] + [_example_to_dict(e) for e in val_dspy]
+    half = num_train // 2
+    return pool[:half], pool[half:num_train]
 
 
 def load_arc_test(seed: int = 0) -> List[Dict]:
