@@ -129,10 +129,22 @@ def _resolve_num_train(cli_value, stored_value, on_resume: bool, default: int = 
     )
 
 
+class _SkipNoneDefaultsFormatter(argparse.ArgumentDefaultsHelpFormatter):
+    """Like ArgumentDefaultsHelpFormatter but don't append "(default: None)" for
+    None-sentinel flags (where None means 'resolve the real default later'), which
+    would contradict the default stated inline in the help text. Keep in sync with
+    examples/asta_ds1000/main.py."""
+
+    def _get_help_string(self, action):
+        if action.default is None:
+            return action.help
+        return super()._get_help_string(action)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Evolve ARC-AGI-1 agents",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=_SkipNoneDefaultsFormatter,
     )
 
     # Budget & scale
@@ -141,9 +153,7 @@ def parse_args():
     parser.add_argument("--num-train", type=int, default=None,
                         help="Training-pool size: first N of the seeded shuffle (default 400 = all). "
                              "ELO trains on all N; GEPA/Autoresearch split it N/2 train + N/2 val "
-                             "(so train+val == ELO's train). Even, in [2,400]. LOCKED for the run: "
-                             "it persists across --resume (re-pass the same value or omit it; "
-                             "a different value is rejected).")
+                             "(so train+val == ELO's train). Even, in [2,400].")
 
     # Engine
     parser.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd", help="Optimization engine")
@@ -155,15 +165,20 @@ def parse_args():
 
     # Infrastructure
     parser.add_argument("--max-workers", type=int, default=None, help="Parallel eval workers (None = Python default)")
-    parser.add_argument("--no-agent-isolation", dest="agent_isolation", action="store_false",
-                        help="Disable running each agent eval in a memory-capped subprocess "
-                             "(isolation is on by default; it contains memory-bomb / signal-misuse agents)")
+    # BooleanOptionalAction exposes both --agent-isolation and
+    # --no-agent-isolation; with default=True the help's "(default: True)" reads
+    # against the positive name, where True == on (a store_false
+    # --no-agent-isolation would render "(default: True)" on the *disable* flag,
+    # which reads backwards).
+    parser.add_argument("--agent-isolation", action=argparse.BooleanOptionalAction, default=True,
+                        help="Run each agent eval in a memory-capped subprocess "
+                             "(contains memory-bomb / signal-misuse agents)")
     parser.add_argument("--agent-memory-gb", type=float, default=4.0,
                         help="Per-agent memory ceiling in GB when isolation is on (default: %(default)s); "
                              "note max_workers x ceiling must fit in RAM")
     parser.add_argument("--runs-dir", default="../robophd_runs", help="Root directory for experiment output (default: %(default)s)")
     parser.add_argument("--random-seed", type=int, default=None, help="Random seed for reproducibility")
-    parser.add_argument("--engine-config", type=str, default=None, help="JSON overrides (e.g. evolution_strategy, evolution_model, examples_per_iteration)")
+    parser.add_argument("--engine-config", type=str, default=None, help="JSON overrides (e.g. evolution_strategy, evolution_model, examples_per_iteration, new_agent_test_rounds)")
     parser.add_argument("--meta-evolution-strategy", default=None,
                         help="Meta-evolution strategy (e.g. train_a_winner); default off. "
                              "Cadence and first iteration default to (3, 4); override via --engine-config.")
