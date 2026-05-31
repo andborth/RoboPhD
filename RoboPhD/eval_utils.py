@@ -2,9 +2,13 @@
 
 import builtins
 import io
+import json
 import logging
 import os
+import signal
+import subprocess
 import sys
+import tempfile
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
@@ -472,3 +476,151 @@ def force_exit_if_threads_leaked(grace_period: float = 0.5):
         sys.stderr.flush()
         _silence_resource_tracker()
         os._exit(1 if sys.exc_info()[0] else 0)
+
+
+# ---------------------------------------------------------------------------
+# Agent subprocess isolation
+#
+# Some evolved agents are pathological: they allocate unbounded memory (a
+# bomb that OOMs the whole run) or arm signal.alarm() from a worker thread
+# where the handler can't install (a stray SIGALRM that terminates the whole
+# process). Running the agent in a disposable subprocess contains both: a
+# memory cap turns the bomb into a scored-0 child death, and in a subprocess
+# the agent runs on the main thread so its signal.alarm() works as intended
+# (and any stray signal only kills the child). Pattern mirrors the ASTA
+# evaluators' _evaluate_via_subprocess; the memory cap is the addition.
+# ---------------------------------------------------------------------------
+
+# Distinct exit code the in-child memory watchdog uses, so the parent can
+# tell "agent exceeded the memory ceiling" apart from a generic nonzero exit.
+AGENT_OOM_EXIT_CODE = 42
+
+
+def apply_agent_memory_cap(limit_bytes: int, poll_interval: float = 0.05) -> None:
+    """Cap the CURRENT (child) process's memory, called from the eval worker.
+
+    Two mechanisms:
+    1. Best-effort RLIMIT_AS soft cap (unreliable on macOS, so belt-and-
+       suspenders only — when it does fire, allocations raise MemoryError).
+    2. Primary: an always-on RSS watchdog daemon thread (same polling pattern
+       as PeakRSSSampler) that os._exit(AGENT_OOM_EXIT_CODE) once RSS exceeds
+       the ceiling. Runs as a background daemon so the agent keeps the main
+       thread (required for the agent's own signal.signal(SIGALRM) to install).
+    """
+    if limit_bytes <= 0:
+        return
+    try:
+        import resource
+        _soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+        resource.setrlimit(resource.RLIMIT_AS, (limit_bytes, hard))
+    except (ValueError, OSError, ImportError):
+        pass  # macOS frequently won't enforce this; the watchdog is the real guard
+
+    try:
+        import psutil
+        proc = psutil.Process(os.getpid())
+    except Exception:
+        return  # no psutil → rely on RLIMIT_AS alone
+
+    def _watch():
+        while True:
+            try:
+                if proc.memory_info().rss > limit_bytes:
+                    sys.stderr.write(
+                        f"[agent-mem-watchdog] RSS exceeded {limit_bytes} bytes — killing child\n"
+                    )
+                    sys.stderr.flush()
+                    os._exit(AGENT_OOM_EXIT_CODE)
+            except Exception:
+                pass
+            time.sleep(poll_interval)
+
+    threading.Thread(target=_watch, daemon=True, name="agent-mem-watchdog").start()
+
+
+def run_evaluation_in_subprocess(
+    worker_script: str,
+    input_params: dict,
+    *,
+    timeout: float,
+    memory_limit_bytes: int,
+    drain_timeout: float = 30.0,
+) -> tuple:
+    """Run one evaluation in a fresh, memory-capped subprocess.
+
+    Spawns ``python <worker_script> <in.json> <out.json>`` in a new session
+    (so timeouts can killpg the whole group), passing the memory ceiling via
+    the ROBOPHD_AGENT_MEMORY_BYTES env var for the worker to self-apply. The
+    worker writes ``{"score": float, "diagnostics": dict}`` JSON.
+
+    Returns ``(score, diagnostics)``. Every failure mode (memory kill,
+    timeout, nonzero exit, signal death, bad payload) maps to ``(0.0, {...})``
+    with an "error" string and truncated "subprocess_stderr" so evolution sees
+    actionable feedback and the parent run never dies.
+    """
+    gb = memory_limit_bytes / (1024 ** 3)
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as inf:
+        json.dump(input_params, inf, default=str)
+        in_path = inf.name
+    out_path = in_path + ".out"
+    env = {**os.environ, "ROBOPHD_AGENT_MEMORY_BYTES": str(int(memory_limit_bytes))}
+    _t0 = time.monotonic()
+
+    try:
+        proc = subprocess.Popen(
+            [sys.executable, str(worker_script), in_path, out_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+            # New session → killpg on timeout reaches grandchildren too.
+            # POSIX-only; ignored on Windows (not supported elsewhere here).
+            start_new_session=True,
+        )
+        try:
+            _stdout, stderr = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired as e:
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                proc.kill()
+            try:
+                _stdout, stderr = proc.communicate(timeout=drain_timeout)
+            except subprocess.TimeoutExpired as drain_exc:
+                proc.kill()
+                stderr = drain_exc.stderr or e.stderr or "<post-kill drain timed out>"
+            return 0.0, {
+                "error": f"agent subprocess timed out after {timeout:.0f}s",
+                "subprocess_stderr": (stderr or "")[-2000:],
+            }
+
+        rc = proc.returncode
+        if rc != 0:
+            stub = (stderr or "")[-2000:]
+            if rc == AGENT_OOM_EXIT_CODE or rc == -signal.SIGKILL:
+                error = f"Agent ran out of memory: exceeded {gb:.1f} GB ceiling"
+            elif rc < 0:
+                try:
+                    signame = signal.Signals(-rc).name
+                except ValueError:
+                    signame = str(-rc)
+                error = f"agent subprocess killed by {signame}"
+            else:
+                error = f"agent subprocess failed (exit {rc})"
+            return 0.0, {"error": error, "subprocess_stderr": stub}
+
+        try:
+            with open(out_path) as f:
+                payload = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            return 0.0, {
+                "error": f"agent subprocess produced no valid output: {type(e).__name__}: {e}",
+                "subprocess_stderr": (stderr or "")[-2000:],
+            }
+        return float(payload.get("score", 0.0)), (payload.get("diagnostics", {}) or {})
+    finally:
+        for p in (in_path, out_path):
+            try:
+                os.unlink(p)
+            except OSError:
+                pass

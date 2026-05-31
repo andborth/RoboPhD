@@ -8,6 +8,7 @@ Self-contained evaluator for the ARC-AGI-1 example. Merges functionality from:
 
 import json
 import logging
+import os
 import threading
 import time
 from pathlib import Path
@@ -16,6 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import litellm
 from RoboPhD.eval_utils import (
     retry_on_rate_limit, exec_with_stdout_capture, extract_response_cost,
+    run_evaluation_in_subprocess,
 )
 
 litellm.suppress_debug_info = True
@@ -27,6 +29,13 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 DEFAULT_SOLVER_MODEL = "openrouter/google/gemini-3.1-flash-lite"
+
+# Subprocess worker that runs one evaluation in isolation (see __call__).
+_WORKER_PATH = str(Path(__file__).resolve().parent / "_eval_worker.py")
+
+# Default per-child wall-clock budget: just under the domain's cooperative
+# eval_timeout (600s) so the child is killed before the outer guard fires.
+_DEFAULT_SUBPROCESS_TIMEOUT = 570.0
 
 
 
@@ -318,6 +327,9 @@ class ArcAGI1Evaluator:
         max_llm_calls: int = 10,
         reasoning_effort: Optional[str] = None,
         cost_budget: float = 0.10,
+        agent_subprocess_isolation: bool = True,
+        agent_memory_limit_gb: float = 4.0,
+        agent_subprocess_timeout: Optional[float] = None,
     ):
         self.solver_model = solver_model
         self.work_dir = Path(work_dir) if work_dir else Path("arc_agi_1_work")
@@ -329,6 +341,25 @@ class ArcAGI1Evaluator:
         self._last_logged_count = 0
         self._lock = threading.Lock()
 
+        # Agent subprocess isolation. Runs each agent's exec in a memory-capped
+        # child so a pathological agent (memory bomb, or signal.alarm armed
+        # from a worker thread) scores 0 instead of killing the run. Env
+        # overrides mirror the ROBOPHD_MEMLOG precedent.
+        if os.environ.get("ROBOPHD_AGENT_ISOLATION") == "0":
+            agent_subprocess_isolation = False
+        env_gb = os.environ.get("ROBOPHD_AGENT_MEMORY_GB")
+        if env_gb:
+            try:
+                agent_memory_limit_gb = float(env_gb)
+            except ValueError:
+                pass
+        self.agent_subprocess_isolation = agent_subprocess_isolation
+        self._mem_bytes = int(agent_memory_limit_gb * (1024 ** 3))
+        self._subprocess_timeout = (
+            agent_subprocess_timeout if agent_subprocess_timeout is not None
+            else _DEFAULT_SUBPROCESS_TIMEOUT
+        )
+
     def __call__(
         self,
         candidate: Dict[str, str],
@@ -336,6 +367,78 @@ class ArcAGI1Evaluator:
         *,
         problem_dir: Optional[Path] = None,
     ) -> Tuple[float, Dict[str, Any]]:
+        # Run the agent — isolated in a memory-capped subprocess by default, or
+        # in-process when disabled. Both paths return (score, diagnostics);
+        # diagnostics carries a popped-here "_isolation_meta" with the scalars
+        # needed for result.json (it never reaches the evolution loop).
+        if self.agent_subprocess_isolation:
+            score, diagnostics = run_evaluation_in_subprocess(
+                _WORKER_PATH,
+                {
+                    "candidate": candidate,
+                    "example": example,
+                    "solver_model": self.solver_model,
+                    "max_llm_calls": self.max_llm_calls,
+                    "reasoning_effort": self.reasoning_effort,
+                    "cost_budget": self.cost_budget,
+                },
+                timeout=self._subprocess_timeout,
+                memory_limit_bytes=self._mem_bytes,
+            )
+            meta = diagnostics.pop("_isolation_meta", None)
+            if meta is None:
+                # Driver failure path (oom / timeout / killed / bad payload):
+                # synthesize result.json meta and surface the error to evolution.
+                err = diagnostics.get("error", "agent subprocess failed")
+                meta = {"test_score": 0.0, "training_score": 0.0, "error": err}
+                diagnostics.setdefault("error.md", f"# Agent Error\n\n```\n{err}\n```")
+        else:
+            score, diagnostics = self._evaluate_inprocess(candidate, example)
+            meta = diagnostics.pop("_isolation_meta")
+
+        cost = float(diagnostics.get("cost_usd", 0.0) or 0.0)
+
+        with self._lock:
+            self._eval_count += 1
+            self._total_eval_cost += cost
+            count = self._eval_count
+            total_cost = self._total_eval_cost
+            milestone = count // 50 * 50
+            should_log = milestone > 0 and milestone > self._last_logged_count
+            if should_log:
+                self._last_logged_count = milestone
+        if should_log:
+            logger.info(f"ARC-AGI evaluator: {milestone} evaluations completed (${total_cost:.2f} spent)")
+
+        if problem_dir is not None:
+            problem_dir = Path(problem_dir)
+            problem_dir.mkdir(parents=True, exist_ok=True)
+            result_entry = {
+                "problem_id": example["problem_id"],
+                "score": score,
+                "test_score": meta.get("test_score", 0.0),
+                "training_score": meta.get("training_score", 0.0),
+                "cost": cost,
+                "error": meta.get("error"),
+            }
+            with open(problem_dir / "result.json", "w") as f:
+                json.dump(result_entry, f, indent=2)
+
+        return score, diagnostics
+
+    def _evaluate_inprocess(
+        self,
+        candidate: Dict[str, str],
+        example: Dict[str, Any],
+    ) -> Tuple[float, Dict[str, Any]]:
+        """Run the agent + scoring + diagnostics in THIS process.
+
+        Called directly when isolation is off, and by ``_eval_worker.py``
+        inside the isolated child. Returns (score, diagnostics); diagnostics
+        carries a non-string "_isolation_meta" dict (test/training score and
+        raw error) that __call__ pops for result.json. Bookkeeping (counters,
+        logging, result.json) lives in __call__ so it runs once in the parent.
+        """
         agent_code = candidate.get("agent.py", "")
         problem_id = example["problem_id"]
 
@@ -353,18 +456,6 @@ class ArcAGI1Evaluator:
         llms = result["llms"]
         cost = llms.total_cost
         score = max(0, result["test_score"] - 0.1 * (cost > self.cost_budget))
-
-        with self._lock:
-            self._eval_count += 1
-            self._total_eval_cost += cost
-            count = self._eval_count
-            total_cost = self._total_eval_cost
-            milestone = count // 50 * 50
-            should_log = milestone > 0 and milestone > self._last_logged_count
-            if should_log:
-                self._last_logged_count = milestone
-        if should_log:
-            logger.info(f"ARC-AGI evaluator: {milestone} evaluations completed (${total_cost:.2f} spent)")
 
         diagnostics: Dict[str, Any] = {"cost_usd": cost}
         diagnostics["problem.md"] = _format_problem(
@@ -391,20 +482,11 @@ class ArcAGI1Evaluator:
         if result["error"]:
             diagnostics["error.md"] = f"# Agent Error\n\n```\n{result['error']}\n```"
 
-        if problem_dir is not None:
-            problem_dir = Path(problem_dir)
-            problem_dir.mkdir(parents=True, exist_ok=True)
-            result_entry = {
-                "problem_id": problem_id,
-                "score": score,
-                "test_score": result["test_score"],
-                "training_score": result["training_score"],
-                "cost": cost,
-                "error": result["error"],
-            }
-            with open(problem_dir / "result.json", "w") as f:
-                json.dump(result_entry, f, indent=2)
-
+        diagnostics["_isolation_meta"] = {
+            "test_score": result["test_score"],
+            "training_score": result["training_score"],
+            "error": result["error"],
+        }
         return score, diagnostics
 
     @property

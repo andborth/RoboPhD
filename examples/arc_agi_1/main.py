@@ -69,6 +69,12 @@ def parse_args():
 
     # Infrastructure
     parser.add_argument("--max-workers", type=int, default=None, help="Parallel eval workers (None = Python default)")
+    parser.add_argument("--no-agent-isolation", dest="agent_isolation", action="store_false",
+                        help="Disable running each agent eval in a memory-capped subprocess "
+                             "(isolation is on by default; it contains memory-bomb / signal-misuse agents)")
+    parser.add_argument("--agent-memory-gb", type=float, default=4.0,
+                        help="Per-agent memory ceiling in GB when isolation is on (default: %(default)s); "
+                             "note max_workers x ceiling must fit in RAM")
     parser.add_argument("--runs-dir", default="../robophd_runs", help="Root directory for experiment output (default: %(default)s)")
     parser.add_argument("--random-seed", type=int, default=None, help="Random seed for reproducibility")
     parser.add_argument("--engine-config", type=str, default=None, help="JSON overrides (e.g. evolution_strategy, evolution_model, examples_per_iteration)")
@@ -125,6 +131,8 @@ def main():
         max_llm_calls=max_llm_calls,
         cost_budget=cost_budget,
         reasoning_effort=reasoning_effort,
+        agent_subprocess_isolation=args.agent_isolation,
+        agent_memory_limit_gb=args.agent_memory_gb,
     )
 
     train, val = load_arc_train_val()
