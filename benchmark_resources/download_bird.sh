@@ -35,6 +35,14 @@ fi
 #   - --retry-all-errors / --tries: auto-retry within one invocation, incl. on
 #                                    connection resets (plain --retry skips those)
 #   - outer attempt loop          : re-invoke if the tool still exits early
+#   - progress guard              : if the file stops GROWING across attempts,
+#                                    the partial is unrecoverable (e.g. a host
+#                                    mishandling range requests) — discard it and
+#                                    download fresh instead of resuming corruption
+#                                    forever. Keyed on progress, not attempt
+#                                    count, so a legitimately slow multi-reset
+#                                    download (which grows each attempt) is never
+#                                    thrown away.
 #   - unzip -t gate               : only trust a file whose archive verifies,
 #                                    so a truncated download can never be unzipped
 # The download tool's exit code is intentionally ignored (|| true): a complete
@@ -43,12 +51,25 @@ fi
 download_and_verify_zip() {
     local url="$1"
     local output="$2"
-    local attempts="${3:-5}"
-    local i
+    local attempts="${3:-8}"
+    local i prev_size=-1 cur_size stalls=0
     for ((i=1; i<=attempts; i++)); do
         if [ -f "$output" ] && unzip -tq "$output" >/dev/null 2>&1; then
             echo "$output verified (complete)."
             return 0
+        fi
+        # Progress guard: discard a partial that isn't growing (two stalled
+        # attempts) and download fresh, rather than resuming a stuck file.
+        if [ -f "$output" ]; then
+            cur_size=$(wc -c < "$output" 2>/dev/null || echo 0)
+            if [ "$cur_size" -le "$prev_size" ]; then stalls=$((stalls + 1)); else stalls=0; fi
+            prev_size="$cur_size"
+            if [ "$stalls" -ge 2 ]; then
+                echo "Resume stalled at ${cur_size} bytes; discarding $output and restarting clean."
+                rm -f "$output"
+                prev_size=-1
+                stalls=0
+            fi
         fi
         echo "Downloading $output (attempt $i/$attempts)..."
         if command -v curl &> /dev/null; then
@@ -67,7 +88,8 @@ download_and_verify_zip() {
         return 0
     fi
     echo "ERROR: could not obtain a complete $output after $attempts attempts." >&2
-    echo "       The partial file is kept — just re-run this script to resume." >&2
+    echo "       The partial file is kept — re-run to resume. If it keeps failing" >&2
+    echo "       at the same size, delete $output to force a clean download." >&2
     return 1
 }
 
