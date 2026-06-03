@@ -18,7 +18,23 @@ pip install -r requirements.txt
 bash benchmark_resources/download_bird.sh
 ```
 
-This downloads the BIRD benchmark data (~2 GB) to `benchmark_resources/datasets/`.
+This downloads the BIRD benchmark data to `benchmark_resources/datasets/`. It is
+**large** — ~50 GB compressed + ~80 GB extracted (~130 GB peak while both exist).
+The download resumes if interrupted (connection reset, sleep, Ctrl-C); just
+re-run the same command.
+
+**Not enough disk?** Relocate the dataset to another volume (e.g. an external
+drive) with the `BIRD_DATA_DIR` env var. Export it before downloading **and**
+before every run, so the downloader and the evaluator use the same location:
+
+```bash
+export BIRD_DATA_DIR="/Volumes/<drive>/bird_datasets"   # put in your shell profile to persist
+bash benchmark_resources/download_bird.sh
+```
+
+The per-problem eval workspaces symlink each database in by absolute path and
+the evolution sandbox's read carve-out follows `BIRD_DATA_DIR`, so everything
+keeps working off the external drive — no other changes needed.
 
 ### 3. Set API key
 
