@@ -76,12 +76,13 @@ _fetch() {
 # Download $url -> $output and verify it's a complete, valid zip. Layered:
 #   - _fetch (above)     : resume + retry; aria2c parallel, or curl/wget single-stream
 #   - outer attempt loop : re-invoke if the tool exits early
-#   - progress guard     : SINGLE-STREAM tools only — if the file stops GROWING
-#                          across attempts (e.g. a host mishandling range
-#                          requests), discard it and download fresh instead of
-#                          resuming corruption forever. Skipped for aria2c, which
-#                          writes 16 segments at scattered offsets (file size
-#                          isn't linear) and manages its own resume via .aria2.
+#   - progress guard     : if a partial stops GROWING across attempts (a host
+#                          mishandling range requests, or a wedged aria2c
+#                          segment), discard it — file AND any .aria2 control
+#                          file — and download fresh instead of resuming
+#                          corruption forever. Measured by on-disk blocks (du),
+#                          which grow for both a sequential file and aria2c's
+#                          sparse segmented writes.
 #   - unzip -t gate      : only trust a file whose archive verifies, so a
 #                          truncated download can never be unzipped.
 download_and_verify_zip() {
@@ -94,15 +95,17 @@ download_and_verify_zip() {
             echo "$output verified (complete)."
             return 0
         fi
-        # Progress guard (single-stream tools only — see header). Discard a
-        # partial that isn't growing across two attempts and download fresh.
-        if [ "$_DL_TOOL" != aria2c ] && [ -f "$output" ]; then
-            cur_size=$(wc -c < "$output" 2>/dev/null || echo 0)
+        # Progress guard (see header). Discard a partial that isn't growing
+        # across two attempts and download fresh. Uses on-disk blocks (du) so it
+        # works for aria2c's sparse segmented file too, and clears the .aria2
+        # control file so the clean restart doesn't resume stale segment state.
+        if [ -f "$output" ]; then
+            cur_size=$(du -k "$output" 2>/dev/null | cut -f1); cur_size=${cur_size:-0}
             if [ "$cur_size" -le "$prev_size" ]; then stalls=$((stalls + 1)); else stalls=0; fi
             prev_size="$cur_size"
             if [ "$stalls" -ge 2 ]; then
-                echo "Resume stalled at ${cur_size} bytes; discarding $output and restarting clean."
-                rm -f "$output"
+                echo "Resume stalled at ${cur_size} KB; discarding $output and restarting clean."
+                rm -f "$output" "$output.aria2"
                 prev_size=-1
                 stalls=0
             fi
@@ -115,8 +118,8 @@ download_and_verify_zip() {
         return 0
     fi
     echo "ERROR: could not obtain a complete $output after $attempts attempts." >&2
-    echo "       The partial file is kept — re-run to resume. If it keeps failing" >&2
-    echo "       at the same size, delete $output to force a clean download." >&2
+    echo "       The partial file is kept — re-run to resume. If it keeps failing," >&2
+    echo "       delete $output (and $output.aria2 if present) to force a clean download." >&2
     return 1
 }
 
@@ -195,8 +198,15 @@ if [ ! -f "$TRAIN_FILTERED" ]; then
     if curl -fsSL --retry 5 -o "$_tf_tmp" "$HF_TRAIN_FILTERED_URL" 2>/dev/null \
        || wget -q -O "$_tf_tmp" "$HF_TRAIN_FILTERED_URL"; then
         if command -v python3 &> /dev/null; then
-            python3 -c "import json,sys; rows=[json.loads(l) for l in open(sys.argv[1]) if l.strip()]; json.dump(rows, open(sys.argv[2],'w')); print(f'train-filtered ready: {len(rows)} questions')" "$_tf_tmp" "$TRAIN_FILTERED" \
-                || echo "  WARNING: JSONL -> JSON conversion failed; train-filtered unavailable."
+            # Convert to a .partial and mv into place only on success, so a
+            # crash mid-write (open(...,'w') truncates first) can't leave a
+            # corrupt train_filtered.json that the [ -f ] check treats as done.
+            if python3 -c "import json,sys; rows=[json.loads(l) for l in open(sys.argv[1]) if l.strip()]; json.dump(rows, open(sys.argv[2],'w')); print(f'train-filtered ready: {len(rows)} questions')" "$_tf_tmp" "$TRAIN_FILTERED.partial"; then
+                mv -f "$TRAIN_FILTERED.partial" "$TRAIN_FILTERED"
+            else
+                echo "  WARNING: JSONL -> JSON conversion failed; train-filtered unavailable."
+                rm -f "$TRAIN_FILTERED.partial"
+            fi
         else
             echo "  WARNING: need python3 to convert HF JSONL -> JSON array; train-filtered unavailable."
         fi
