@@ -21,19 +21,54 @@ echo ""
 mkdir -p "$DATASETS_DIR"
 cd "$DATASETS_DIR"
 
-# Function to download with progress
-download_file() {
+# unzip is needed both to extract and to integrity-check downloads below.
+if ! command -v unzip &> /dev/null; then
+    echo "Error: 'unzip' is required but not found. Install it and re-run." >&2
+    exit 1
+fi
+
+# Download $url -> $output, resuming partials and verifying the result is a
+# complete, valid zip. The BIRD host (Aliyun OSS, Beijing) resets connections
+# mid-transfer, which is fatal for a plain `curl -o` on the 40GB train set.
+# Defenses, in layers:
+#   - curl -C - / wget -c        : resume a partial file instead of restarting
+#   - --retry-all-errors / --tries: auto-retry within one invocation, incl. on
+#                                    connection resets (plain --retry skips those)
+#   - outer attempt loop          : re-invoke if the tool still exits early
+#   - unzip -t gate               : only trust a file whose archive verifies,
+#                                    so a truncated download can never be unzipped
+# The download tool's exit code is intentionally ignored (|| true): a complete
+# file makes `curl -C -` exit non-zero (416 range), and `set -e` would abort.
+# Completeness is decided solely by `unzip -t`.
+download_and_verify_zip() {
     local url="$1"
     local output="$2"
-    echo "Downloading: $output"
-    if command -v curl &> /dev/null; then
-        curl -L -o "$output" "$url" --progress-bar
-    elif command -v wget &> /dev/null; then
-        wget -O "$output" "$url" --show-progress
-    else
-        echo "Error: curl or wget required"
-        exit 1
+    local attempts="${3:-5}"
+    local i
+    for ((i=1; i<=attempts; i++)); do
+        if [ -f "$output" ] && unzip -tq "$output" >/dev/null 2>&1; then
+            echo "$output verified (complete)."
+            return 0
+        fi
+        echo "Downloading $output (attempt $i/$attempts)..."
+        if command -v curl &> /dev/null; then
+            curl -L -C - --retry 10 --retry-delay 5 --retry-all-errors \
+                --progress-bar -o "$output" "$url" || true
+        elif command -v wget &> /dev/null; then
+            wget -c --tries=10 --retry-connrefused --waitretry=5 \
+                --show-progress -O "$output" "$url" || true
+        else
+            echo "Error: curl or wget required" >&2
+            exit 1
+        fi
+    done
+    if [ -f "$output" ] && unzip -tq "$output" >/dev/null 2>&1; then
+        echo "$output verified (complete)."
+        return 0
     fi
+    echo "ERROR: could not obtain a complete $output after $attempts attempts." >&2
+    echo "       The partial file is kept — just re-run this script to resume." >&2
+    return 1
 }
 
 echo ""
@@ -42,23 +77,18 @@ echo "-----------------------------------"
 
 # Dev set - from BIRD benchmark
 if [ ! -d "dev/dev_20240627/dev_databases" ]; then
-    if [ ! -f "dev.zip" ]; then
-        download_file "https://bird-bench.oss-cn-beijing.aliyuncs.com/dev.zip" "dev.zip"
-    fi
-
-    if [ -f "dev.zip" ]; then
-        echo "Extracting dev.zip..."
-        unzip -q dev.zip
-        # Create expected directory structure
-        mkdir -p dev
-        mv dev_20240627 dev/
-        # Extract nested databases zip
-        cd dev/dev_20240627
-        unzip -q dev_databases.zip
-        rm -rf __MACOSX 2>/dev/null || true
-        cd "$DATASETS_DIR"
-        echo "Dev set extracted successfully."
-    fi
+    download_and_verify_zip "https://bird-bench.oss-cn-beijing.aliyuncs.com/dev.zip" "dev.zip"
+    echo "Extracting dev.zip..."
+    unzip -q dev.zip
+    # Create expected directory structure
+    mkdir -p dev
+    mv dev_20240627 dev/
+    # Extract nested databases zip
+    cd dev/dev_20240627
+    unzip -q dev_databases.zip
+    rm -rf __MACOSX 2>/dev/null || true
+    cd "$DATASETS_DIR"
+    echo "Dev set extracted successfully."
 else
     echo "Dev set already exists, skipping."
 fi
@@ -68,34 +98,30 @@ echo "Step 2: Downloading Train Set (~40GB)"
 echo "--------------------------------------"
 
 if [ ! -d "train/train/train_databases" ]; then
-    if [ ! -f "train.zip" ]; then
-        download_file "https://bird-bench.oss-cn-beijing.aliyuncs.com/train.zip" "train.zip"
-    fi
+    download_and_verify_zip "https://bird-bench.oss-cn-beijing.aliyuncs.com/train.zip" "train.zip"
 
-    if [ -f "train.zip" ]; then
-        echo "Extracting train.zip..."
-        unzip -q train.zip
-        # train.zip extracts to train/ folder, but we need train/train/
-        # Move contents to create nested structure
-        if [ -d "train" ] && [ ! -d "train/train" ]; then
-            mkdir -p train_temp
-            mv train/* train_temp/
-            mkdir -p train/train
-            mv train_temp/* train/train/
-            rmdir train_temp
-        fi
+    echo "Extracting train.zip..."
+    unzip -q train.zip
+    # train.zip extracts to train/ folder, but we need train/train/
+    # Move contents to create nested structure
+    if [ -d "train" ] && [ ! -d "train/train" ]; then
+        mkdir -p train_temp
+        mv train/* train_temp/
+        mkdir -p train/train
+        mv train_temp/* train/train/
+        rmdir train_temp
+    fi
+    rm -rf __MACOSX 2>/dev/null || true
+
+    # Extract train_databases.zip inside train/train/
+    if [ -f "train/train/train_databases.zip" ]; then
+        echo "Extracting train_databases.zip (~9GB)..."
+        cd train/train
+        unzip -q train_databases.zip
         rm -rf __MACOSX 2>/dev/null || true
-
-        # Extract train_databases.zip inside train/train/
-        if [ -f "train/train/train_databases.zip" ]; then
-            echo "Extracting train_databases.zip (~9GB)..."
-            cd train/train
-            unzip -q train_databases.zip
-            rm -rf __MACOSX 2>/dev/null || true
-            cd "$DATASETS_DIR"
-        fi
-        echo "Train set extracted successfully."
+        cd "$DATASETS_DIR"
     fi
+    echo "Train set extracted successfully."
 else
     echo "Train set already exists, skipping."
 fi
