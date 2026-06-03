@@ -5,7 +5,10 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DATASETS_DIR="$SCRIPT_DIR/datasets"
+# Data root: defaults to the repo's benchmark_resources/datasets, but can be
+# pointed at an external drive via BIRD_DATA_DIR (the dataset is ~130GB and may
+# not fit on the internal disk). examples/text2sql reads the same variable.
+DATASETS_DIR="${BIRD_DATA_DIR:-$SCRIPT_DIR/datasets}"
 
 echo "==================================="
 echo "BIRD Benchmark Dataset Downloader"
@@ -15,6 +18,7 @@ echo "This script will download the BIRD benchmark dataset."
 echo "Total size: ~50GB (compressed), ~80GB (extracted)"
 echo ""
 echo "Dataset source: https://bird-bench.github.io/"
+echo "Data directory: $DATASETS_DIR"
 echo ""
 
 # Create datasets directory

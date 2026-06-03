@@ -19,6 +19,7 @@ Usage:
 import argparse
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -171,14 +172,20 @@ def main():
         if args.from_iteration:
             cfg.from_iteration = args.from_iteration
 
-    # Read carve-out: BIRD databases live under benchmark_resources/, and
-    # per-problem eval workspaces symlink them in. Without this carve-out,
-    # the evolution sandbox's realpath check would deny evolution-time
-    # introspection (cat database.sqlite, sqlite3 .schema, smoke-tests
-    # against a copy of a problem's DB) — patterns text2sql evolution has
-    # historically used. Read scope only; writes are still cwd-only.
+    # Read carve-out: BIRD databases live under benchmark_resources/datasets/
+    # (or $BIRD_DATA_DIR if relocated, e.g. to an external drive), and per-problem
+    # eval workspaces symlink the .sqlite in by ABSOLUTE resolved path. The
+    # evolution sandbox does a realpath check, so we must whitelist wherever the
+    # data actually lives — otherwise evolution-time introspection (cat
+    # database.sqlite, sqlite3 .schema, smoke-tests against a copy of a problem's
+    # DB) is denied. Read scope only; writes are still cwd-only.
     benchmark_resources = HERE.parent.parent / "benchmark_resources"
     extra_read_paths = [str(benchmark_resources.resolve())]
+    bird_data_dir = os.environ.get("BIRD_DATA_DIR")
+    if bird_data_dir:
+        # Resolved so the realpath of the per-problem database.sqlite symlink
+        # (which points into BIRD_DATA_DIR) falls inside the read scope.
+        extra_read_paths.append(str(Path(bird_data_dir).resolve()))
 
     result = optimize_anything(
         evaluator=evaluator,

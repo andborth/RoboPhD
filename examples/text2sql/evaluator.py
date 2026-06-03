@@ -9,6 +9,7 @@ Scoring: set-based SQL result comparison (BIRD methodology)
 
 import json
 import logging
+import os
 import queue
 import re
 import sqlite3
@@ -34,19 +35,24 @@ _MAX_TEST_SQL_CALLS = 5   # max test_sql() calls per question
 _COST_BUDGET = 0.10       # per-question cost budget (USD)
 _OVER_BUDGET_PENALTY = 0.9  # multiplier for correct-but-over-budget answers
 
-# Dataset paths (relative to repo root)
+# Dataset root. Defaults to the repo's benchmark_resources/datasets (relative to
+# repo root), but can be relocated — e.g. to an external drive when the ~130GB
+# BIRD dataset won't fit on the internal disk — via the BIRD_DATA_DIR env var.
+# Keep this in sync with benchmark_resources/download_bird.sh, which honors the
+# same variable, and with main.py's sandbox read carve-out.
+_DATA_ROOT = os.environ.get("BIRD_DATA_DIR", "benchmark_resources/datasets")
 _DATASET_PATHS = {
     "train": {
-        "questions": "benchmark_resources/datasets/train/train/train.json",
-        "db_root": "benchmark_resources/datasets/train/train/train_databases",
+        "questions": f"{_DATA_ROOT}/train/train/train.json",
+        "db_root": f"{_DATA_ROOT}/train/train/train_databases",
     },
     "train-filtered": {
-        "questions": "benchmark_resources/datasets/train-filtered/train_filtered.json",
-        "db_root": "benchmark_resources/datasets/train/train/train_databases",
+        "questions": f"{_DATA_ROOT}/train-filtered/train_filtered.json",
+        "db_root": f"{_DATA_ROOT}/train/train/train_databases",
     },
     "dev": {
-        "questions": "benchmark_resources/datasets/dev/dev_20240627/dev.json",
-        "db_root": "benchmark_resources/datasets/dev/dev_20240627/dev_databases",
+        "questions": f"{_DATA_ROOT}/dev/dev_20240627/dev.json",
+        "db_root": f"{_DATA_ROOT}/dev/dev_20240627/dev_databases",
     },
 }
 
