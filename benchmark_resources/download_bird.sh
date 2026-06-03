@@ -31,27 +31,59 @@ if ! command -v unzip &> /dev/null; then
     exit 1
 fi
 
-# Download $url -> $output, resuming partials and verifying the result is a
-# complete, valid zip. The BIRD host (Aliyun OSS, Beijing) resets connections
-# mid-transfer, which is fatal for a plain `curl -o` on the 40GB train set.
-# Defenses, in layers:
-#   - curl -C - / wget -c        : resume a partial file instead of restarting
-#   - --retry-all-errors / --tries: auto-retry within one invocation, incl. on
-#                                    connection resets (plain --retry skips those)
-#   - outer attempt loop          : re-invoke if the tool still exits early
-#   - progress guard              : if the file stops GROWING across attempts,
-#                                    the partial is unrecoverable (e.g. a host
-#                                    mishandling range requests) — discard it and
-#                                    download fresh instead of resuming corruption
-#                                    forever. Keyed on progress, not attempt
-#                                    count, so a legitimately slow multi-reset
-#                                    download (which grows each attempt) is never
-#                                    thrown away.
-#   - unzip -t gate               : only trust a file whose archive verifies,
-#                                    so a truncated download can never be unzipped
-# The download tool's exit code is intentionally ignored (|| true): a complete
-# file makes `curl -C -` exit non-zero (416 range), and `set -e` would abort.
-# Completeness is decided solely by `unzip -t`.
+# Pick a downloader. aria2c is strongly preferred: the BIRD host (Aliyun OSS,
+# Beijing) throttles PER CONNECTION — a single stream gets ~17 KB/s, so the
+# ~8 GB train.zip would take *weeks*. aria2c's 16 parallel connections bypass
+# that (~6 MB/s, ~25 min). curl/wget are single-stream fallbacks: they work
+# (resume + retry), but are painfully slow on this host.
+if command -v aria2c &> /dev/null; then _DL_TOOL=aria2c
+elif command -v curl &> /dev/null; then _DL_TOOL=curl
+elif command -v wget &> /dev/null; then _DL_TOOL=wget
+else
+    echo "Error: need a downloader — install aria2 (recommended), curl, or wget." >&2
+    exit 1
+fi
+if [ "$_DL_TOOL" = aria2c ]; then
+    echo "Downloader: aria2c (16 parallel connections)"
+else
+    echo "Downloader: $_DL_TOOL — WARNING: single-stream. This host throttles"
+    echo "  per-connection (~17 KB/s), so the train set can take many hours/days."
+    echo "  Install aria2 for ~100x faster downloads (e.g. 'brew install aria2')."
+fi
+echo ""
+
+# Fetch $1 -> ./$2 (cwd is the data dir). Each tool resumes a partial and
+# auto-retries on the connection resets this host does mid-transfer. The exit
+# code is intentionally ignored (|| true): completeness is decided solely by
+# `unzip -t` in download_and_verify_zip below — and a complete file makes
+# `curl -C -` exit non-zero (416 range), which would otherwise trip `set -e`.
+_fetch() {
+    local url="$1" output="$2"
+    case "$_DL_TOOL" in
+        aria2c)
+            aria2c -x16 -s16 -k1M -c --max-tries=20 --retry-wait=5 \
+                --file-allocation=none --console-log-level=warn --summary-interval=30 \
+                -o "$output" "$url" || true ;;
+        curl)
+            curl -L -C - --retry 10 --retry-delay 5 --retry-all-errors \
+                --progress-bar -o "$output" "$url" || true ;;
+        wget)
+            wget -c --tries=10 --retry-connrefused --waitretry=5 \
+                --show-progress -O "$output" "$url" || true ;;
+    esac
+}
+
+# Download $url -> $output and verify it's a complete, valid zip. Layered:
+#   - _fetch (above)     : resume + retry; aria2c parallel, or curl/wget single-stream
+#   - outer attempt loop : re-invoke if the tool exits early
+#   - progress guard     : SINGLE-STREAM tools only — if the file stops GROWING
+#                          across attempts (e.g. a host mishandling range
+#                          requests), discard it and download fresh instead of
+#                          resuming corruption forever. Skipped for aria2c, which
+#                          writes 16 segments at scattered offsets (file size
+#                          isn't linear) and manages its own resume via .aria2.
+#   - unzip -t gate      : only trust a file whose archive verifies, so a
+#                          truncated download can never be unzipped.
 download_and_verify_zip() {
     local url="$1"
     local output="$2"
@@ -62,9 +94,9 @@ download_and_verify_zip() {
             echo "$output verified (complete)."
             return 0
         fi
-        # Progress guard: discard a partial that isn't growing (two stalled
-        # attempts) and download fresh, rather than resuming a stuck file.
-        if [ -f "$output" ]; then
+        # Progress guard (single-stream tools only — see header). Discard a
+        # partial that isn't growing across two attempts and download fresh.
+        if [ "$_DL_TOOL" != aria2c ] && [ -f "$output" ]; then
             cur_size=$(wc -c < "$output" 2>/dev/null || echo 0)
             if [ "$cur_size" -le "$prev_size" ]; then stalls=$((stalls + 1)); else stalls=0; fi
             prev_size="$cur_size"
@@ -76,16 +108,7 @@ download_and_verify_zip() {
             fi
         fi
         echo "Downloading $output (attempt $i/$attempts)..."
-        if command -v curl &> /dev/null; then
-            curl -L -C - --retry 10 --retry-delay 5 --retry-all-errors \
-                --progress-bar -o "$output" "$url" || true
-        elif command -v wget &> /dev/null; then
-            wget -c --tries=10 --retry-connrefused --waitretry=5 \
-                --show-progress -O "$output" "$url" || true
-        else
-            echo "Error: curl or wget required" >&2
-            exit 1
-        fi
+        _fetch "$url" "$output"
     done
     if [ -f "$output" ] && unzip -tq "$output" >/dev/null 2>&1; then
         echo "$output verified (complete)."
