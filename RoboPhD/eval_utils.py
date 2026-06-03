@@ -178,25 +178,63 @@ def extract_response_cost(resp, model: str) -> float:
     ``resp.model`` like ``google/gemini-3.1-flash-lite-20260507``, and
     the dated suffix isn't indexed even when the undated alias is.
 
-    The actual billed cost is still available in the response — OpenRouter
-    populates ``resp.usage.cost`` and litellm mirrors it as
-    ``resp._hidden_params["response_cost"]``. Try those provider-direct
-    sources first, then fall back to a pricing lookup with the model name the
-    caller originally passed (which typically IS in litellm's DB), then 0.
+    Source priority:
 
-    Terminates on ``is not None`` rather than ``> 0``: a legitimate zero-cost
-    call (free tier, zero-token completion) should be reported as $0 rather
-    than passed along as "cost unknown" to subsequent sources.
+    1. ``resp.usage.cost_details.upstream_inference_cost`` — the real spend
+       under OpenRouter **BYOK** (bring-your-own-key). When the request is
+       routed through the user's own upstream provider key
+       (``resp.usage.is_byok == True``), OpenRouter charges $0 and reports
+       ``usage.cost == 0`` *correctly* (it isn't billing — the upstream
+       provider is). The actual cost lives in ``cost_details``, which nothing
+       else reads. Present on every response (no request flag needed).
+    2. ``resp.usage.cost`` (non-BYOK: the real OpenRouter charge).
+    3. ``resp._hidden_params["response_cost"]`` (litellm's mirror).
+    4. ``litellm.completion_cost(...)`` pricing-DB lookup with the caller's
+       model name (which typically IS in the DB even when ``resp.model`` has a
+       dated suffix that isn't), then 0.
+
+    For sources 2-3, a reported cost of exactly ``0`` *with* real token usage
+    means the provider omitted the figure (not a genuine free call), so we
+    fall through to the pricing-DB estimate rather than trust it. A zero-token
+    call is a real $0 and is trusted.
 
     Warns once per (model, error type) when the final fallback returns 0 so
     pricing-DB regressions surface loudly without per-call log spam.
     """
-    usage_cost = getattr(getattr(resp, "usage", None), "cost", None)
-    if usage_cost is not None:
+    usage = getattr(resp, "usage", None)
+
+    # 1. OpenRouter BYOK: the true spend is in cost_details, not usage.cost.
+    #    cost_details may be a pydantic object or a plain dict.
+    cost_details = getattr(usage, "cost_details", None)
+    if cost_details is not None:
+        upstream = (
+            cost_details.get("upstream_inference_cost")
+            if isinstance(cost_details, dict)
+            else getattr(cost_details, "upstream_inference_cost", None)
+        )
+        if upstream is not None and upstream > 0:
+            return float(upstream)
+
+    # A reported cost of exactly 0 alongside real token usage means the
+    # provider omitted the figure — don't trust it; fall through to the
+    # pricing-DB estimate. A genuine zero-token call is trusted as $0.
+    has_tokens = bool(
+        getattr(usage, "prompt_tokens", 0)
+        or getattr(usage, "completion_tokens", 0)
+        or getattr(usage, "total_tokens", 0)
+    )
+
+    def _trustworthy(val):
+        return val is not None and not (val == 0 and has_tokens)
+
+    # 2. Non-BYOK OpenRouter charge.
+    usage_cost = getattr(usage, "cost", None)
+    if _trustworthy(usage_cost):
         return float(usage_cost)
+    # 3. litellm's mirror of the provider cost.
     hidden = getattr(resp, "_hidden_params", None) or {}
     hp_cost = hidden.get("response_cost")
-    if hp_cost is not None:
+    if _trustworthy(hp_cost):
         return float(hp_cost)
     # Final fallback: explicit-model pricing lookup. Local import so tasks
     # that never hit this helper (e.g. cant_be_late) don't take a litellm
