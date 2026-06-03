@@ -176,22 +176,38 @@ else
 fi
 
 echo ""
-echo "Step 3: Creating train-filtered subset"
-echo "---------------------------------------"
+echo "Step 3: train-filtered subset (canonical, from HuggingFace)"
+echo "-----------------------------------------------------------"
 
-# The train-filtered dataset is a curated subset with better quality
-if [ -d "train/train" ] && [ ! -d "train-filtered" ]; then
-    echo "Creating train-filtered directory..."
+# The curated 6,601-question filtered subset (vs 9,428 in full train) is NOT in
+# the BIRD train.zip. It's published by the official birdsql org on HuggingFace
+# (datasets/birdsql/bird23-train-filtered) as JSONL — verified identical to the
+# subset the text2sql evaluator's default --dataset expects. Pull it from there
+# (fast US CDN, no throttle) and convert JSONL -> the JSON array json.load wants.
+# Same db_root as full train (Step 2). Non-fatal: a failure here doesn't sink
+# the train/dev sets already downloaded above.
+TRAIN_FILTERED="train-filtered/train_filtered.json"
+HF_TRAIN_FILTERED_URL="https://huggingface.co/datasets/birdsql/bird23-train-filtered/resolve/main/data/train-00000-of-00001.jsonl"
+if [ ! -f "$TRAIN_FILTERED" ]; then
     mkdir -p train-filtered
-    # train_filtered.json should be generated or copied if available
-    if [ -f "train/train/train_filtered.json" ]; then
-        cp train/train/train_filtered.json train-filtered/
-        echo "train-filtered dataset ready."
+    _tf_tmp="train-filtered/.train_filtered.jsonl"
+    echo "Fetching from $HF_TRAIN_FILTERED_URL"
+    if curl -fsSL --retry 5 -o "$_tf_tmp" "$HF_TRAIN_FILTERED_URL" 2>/dev/null \
+       || wget -q -O "$_tf_tmp" "$HF_TRAIN_FILTERED_URL"; then
+        if command -v python3 &> /dev/null; then
+            python3 -c "import json,sys; rows=[json.loads(l) for l in open(sys.argv[1]) if l.strip()]; json.dump(rows, open(sys.argv[2],'w')); print(f'train-filtered ready: {len(rows)} questions')" "$_tf_tmp" "$TRAIN_FILTERED" \
+                || echo "  WARNING: JSONL -> JSON conversion failed; train-filtered unavailable."
+        else
+            echo "  WARNING: need python3 to convert HF JSONL -> JSON array; train-filtered unavailable."
+        fi
     else
-        echo "Note: train_filtered.json needs to be created from train.json"
-        echo "This is a curated subset with 6,601 questions (vs 9,428 in full train)."
-        echo "See documentation for the filtering criteria."
+        echo "  WARNING: could not fetch train-filtered from HuggingFace (network?)."
+        echo "           The default --dataset train-filtered will be unavailable;"
+        echo "           use --dataset train (full 9,428) or --dataset dev instead."
     fi
+    rm -f "$_tf_tmp"
+else
+    echo "train-filtered already exists, skipping."
 fi
 
 echo ""
