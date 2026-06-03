@@ -76,10 +76,24 @@ def test_zero_upstream_with_tokens_falls_through(_stub_completion_cost):
     assert _stub_completion_cost["n"] == 1
 
 
-def test_positive_usage_cost_trusted(_stub_completion_cost):
+def test_positive_usage_cost_trusted_when_no_cost_details(_stub_completion_cost):
+    # No cost_details → source 1 skipped → usage.cost used directly.
     usage = _usage(cost=0.0123, prompt_tokens=10, completion_tokens=5)
     assert extract_response_cost(_resp(usage), "m") == pytest.approx(0.0123)
     assert _stub_completion_cost["n"] == 0
+
+
+def test_upstream_preferred_over_positive_usage_cost(_stub_completion_cost):
+    # Both present (the non-BYOK shape the reviewer flagged): by policy we
+    # report the upstream provider cost, NOT OpenRouter's (higher) resale
+    # charge. Pin this so it isn't "fixed" back to usage.cost later.
+    usage = _usage(
+        cost=0.02,  # OpenRouter's marked-up charge
+        cost_details={"upstream_inference_cost": 0.013},  # provider cost-of-goods
+        prompt_tokens=100, completion_tokens=50,
+    )
+    assert extract_response_cost(_resp(usage), "m") == pytest.approx(0.013)
+    assert _stub_completion_cost["n"] == 0  # no DB fallback
 
 
 def test_zero_cost_with_tokens_falls_through(_stub_completion_cost):

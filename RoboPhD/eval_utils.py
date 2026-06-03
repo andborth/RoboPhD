@@ -178,17 +178,26 @@ def extract_response_cost(resp, model: str) -> float:
     ``resp.model`` like ``google/gemini-3.1-flash-lite-20260507``, and
     the dated suffix isn't indexed even when the undated alias is.
 
+    Metric policy: we report the **underlying provider compute cost** — what
+    the upstream model provider charges — not OpenRouter's resale price. This
+    keeps cost comparable across routing and matches "what the model costs."
+
     Source priority:
 
-    1. ``resp.usage.cost_details.upstream_inference_cost`` — the real spend
-       under OpenRouter **BYOK** (bring-your-own-key). When the request is
-       routed through the user's own upstream provider key
-       (``resp.usage.is_byok == True``), OpenRouter charges $0 and reports
-       ``usage.cost == 0`` *correctly* (it isn't billing — the upstream
-       provider is). The actual cost lives in ``cost_details``, which nothing
-       else reads. Present on every response (no request flag needed).
-    2. ``resp.usage.cost`` (non-BYOK: the real OpenRouter charge).
-    3. ``resp._hidden_params["response_cost"]`` (litellm's mirror).
+    1. ``resp.usage.cost_details.upstream_inference_cost`` — OpenRouter's
+       cost-of-goods, i.e. what the upstream provider charges. Preferred
+       **whenever present and > 0**, by deliberate policy (above), in
+       preference to ``usage.cost``. This is NOT gated on ``is_byok`` on
+       purpose: if a non-BYOK response populates both fields, ``usage.cost``
+       would be OpenRouter's marked-up price, which we intentionally do not
+       want. (It is also what makes BYOK work as a side effect: under BYOK
+       — ``usage.is_byok == True`` — OpenRouter bills $0 and reports
+       ``usage.cost == 0`` *correctly* since the upstream provider does the
+       billing, and the real figure lives only here.) Present on the response
+       with no request flag needed.
+    2. ``resp.usage.cost`` (OpenRouter's own charge; used only when no
+       upstream figure is available).
+    3. ``resp._hidden_params["response_cost"]`` (litellm's mirror of #2).
     4. ``litellm.completion_cost(...)`` pricing-DB lookup with the caller's
        model name (which typically IS in the DB even when ``resp.model`` has a
        dated suffix that isn't), then 0.
@@ -203,8 +212,10 @@ def extract_response_cost(resp, model: str) -> float:
     """
     usage = getattr(resp, "usage", None)
 
-    # 1. OpenRouter BYOK: the true spend is in cost_details, not usage.cost.
-    #    cost_details may be a pydantic object or a plain dict.
+    # 1. Underlying provider compute cost (OpenRouter cost-of-goods).
+    #    Preferred over usage.cost by policy — we want the provider's price,
+    #    not OpenRouter's markup — so this is intentionally NOT gated on
+    #    is_byok. cost_details may be a pydantic object or a plain dict.
     cost_details = getattr(usage, "cost_details", None)
     if cost_details is not None:
         upstream = (
