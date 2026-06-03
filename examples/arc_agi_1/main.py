@@ -186,6 +186,10 @@ def parse_args():
     # Test evaluation
     parser.add_argument("--eval-test-set", action="store_true", help="Run test-set evaluation after optimization")
     parser.add_argument("--eval-only", action="store_true", help="Skip optimization; evaluate best agent from --resume dir on test set")
+    parser.add_argument("--eval-agent", type=str, default=None,
+                        help="With --eval-only: evaluate this named agent from the --resume dir's "
+                             "agent_pool instead of the best-Elo agent. Results are written to "
+                             "test_results_<agent>.json so they don't clobber the default.")
     # Resume / extend
     parser.add_argument("--resume", type=str, default=None, help="Path to experiment directory to resume")
     parser.add_argument("--extend", type=int, default=None, help="Add N more iterations to a resumed run")
@@ -237,18 +241,37 @@ def main():
         agent_memory_limit_gb=args.agent_memory_gb,
     )
 
-    # --eval-only: skip optimization, evaluate best agent from a prior run
-    # (test set is always the full 400; --num-train does not apply here).
+    if args.eval_agent and not args.eval_only:
+        raise SystemExit("--eval-agent requires --eval-only")
+
+    # --eval-only: skip optimization, evaluate an agent from a prior run on the
+    # test set (always the full 400; --num-train does not apply here). Defaults
+    # to the best-Elo agent; --eval-agent targets a specific agent_pool entry.
     if args.eval_only:
         if not args.resume:
             raise SystemExit("--eval-only requires --resume <experiment_dir>")
         test_data = load_arc_test()
-        eval_result = eval_run(
-            evaluator=evaluator, dataset=test_data, experiment_dir=args.resume,
-            config=RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT),
-        )
+        eval_cfg = RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT)
+        if args.eval_agent:
+            from RoboPhD.runner_utils import find_named_agent
+            try:
+                _, agent_dir = find_named_agent(Path(args.resume), args.eval_agent)
+            except FileNotFoundError as e:
+                raise SystemExit(str(e))
+            logger.info(f"Evaluating named agent: {args.eval_agent} from {agent_dir}")
+            candidate = {"agent.py": (agent_dir / "agent.py").read_text()}
+            eval_result = eval_candidate(
+                evaluator=evaluator, dataset=test_data, candidate=candidate, config=eval_cfg,
+            )
+            results_filename = f"test_results_{args.eval_agent}.json"
+        else:
+            eval_result = eval_run(
+                evaluator=evaluator, dataset=test_data, experiment_dir=args.resume,
+                config=eval_cfg,
+            )
+            results_filename = "test_results.json"
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
-        test_path = Path(args.resume) / "test_results.json"
+        test_path = Path(args.resume) / results_filename
         with open(test_path, "w") as f:
             json.dump({
                 "mean_test_score": eval_result.mean_score,
