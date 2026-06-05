@@ -69,6 +69,33 @@ EVAL_TIMEOUT = 600
 ARC_AGI_1_RUNTIME_CONFIG_FILENAME = "arc_agi_1_runtime_config.json"
 
 
+def _read_checkpoint_max_workers(resume_dir) -> "int | None":
+    """Read max_workers from a resumed run's checkpoint.json, or None if
+    absent / unparseable.
+
+    Walks ``config_manager.iteration_configs`` to the highest iteration with an
+    explicit ``max_workers`` value (skipping nulls, which mean "framework
+    default"), so we recover the value the original run actually used. Mirrors
+    examples/asta_ds1000/main.py. Used so --resume (and --eval-only --resume)
+    honors the original run's worker count, matching the user expectation that
+    resume preserves settings.
+    """
+    cp_path = Path(resume_dir) / "checkpoint.json"
+    if not cp_path.is_file():
+        return None
+    try:
+        cp = json.loads(cp_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+    iter_configs = (cp.get("config_manager") or {}).get("iteration_configs") or {}
+    for k in sorted(iter_configs.keys(),
+                    key=lambda s: int(s) if s.isdigit() else -1, reverse=True):
+        val = (iter_configs[k] or {}).get("max_workers")
+        if val is not None:
+            return int(val)
+    return None
+
+
 def _arc_runtime_path(experiment_dir) -> Path:
     return Path(experiment_dir) / ARC_AGI_1_RUNTIME_CONFIG_FILENAME
 
@@ -244,6 +271,30 @@ def main():
     if args.eval_agent and not args.eval_only:
         raise SystemExit("--eval-agent requires --eval-only")
 
+    # Resolve --max-workers for the EVAL paths (--eval-only / --eval-test-set),
+    # which take a RoboPhDEvalConfig directly and don't go through ConfigManager.
+    # Order: explicit CLI flag wins; else on --resume recover the value the
+    # original run used from its checkpoint; else None = framework default.
+    #
+    # The TRAINING engine is handled differently below: max_workers is packed
+    # into engine_overrides only when the user passed the flag, so it applies as
+    # a config delta that genuinely takes effect on a training --resume. When
+    # the flag is omitted on resume, nothing is packed and ConfigManager's
+    # delta-inheritance carries the original run's value forward (honored when
+    # passed, persisted when not). See the DANGER caller-invariant in api.py.
+    if args.max_workers is not None:
+        effective_max_workers = args.max_workers
+    elif args.resume:
+        cp_mw = _read_checkpoint_max_workers(args.resume)
+        effective_max_workers = cp_mw
+        if cp_mw is not None:
+            logger.info(
+                f"Resume: using max_workers={cp_mw} from checkpoint.json "
+                f"(pass --max-workers N to override)"
+            )
+    else:
+        effective_max_workers = None
+
     # --eval-only: skip optimization, evaluate an agent from a prior run on the
     # test set (always the full 400; --num-train does not apply here). Defaults
     # to the best-Elo agent; --eval-agent targets a specific agent_pool entry.
@@ -251,7 +302,7 @@ def main():
         if not args.resume:
             raise SystemExit("--eval-only requires --resume <experiment_dir>")
         test_data = load_arc_test()
-        eval_cfg = RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT)
+        eval_cfg = RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT, max_workers=effective_max_workers)
         if args.eval_agent:
             from RoboPhD.runner_utils import find_named_agent
             try:
@@ -314,7 +365,7 @@ def main():
         cfg = GEPAConfig(
             evaluation_budget=args.evaluation_budget,
             val_dataset=val,
-            max_workers=args.max_workers,
+            max_workers=effective_max_workers,
             eval_timeout=EVAL_TIMEOUT,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
@@ -324,7 +375,7 @@ def main():
         cfg = AutoresearchConfig(
             evaluation_budget=args.evaluation_budget,
             val_dataset=val,
-            max_workers=args.max_workers,
+            max_workers=effective_max_workers,
             eval_timeout=EVAL_TIMEOUT,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
@@ -335,10 +386,17 @@ def main():
         engine_overrides = {}
         if args.engine_config:
             engine_overrides = json.loads(args.engine_config)
+        # Route max_workers through engine_overrides (not the dedicated
+        # RoboPhDConfig.max_workers field, which only applies on a fresh run).
+        # Pack it ONLY when the user passed the flag, so it applies as a config
+        # delta that takes effect even on a training --resume; omit it otherwise
+        # so ConfigManager carries the original run's value forward. Explicit
+        # flag wins over an --engine-config max_workers.
+        if args.max_workers is not None:
+            engine_overrides["max_workers"] = args.max_workers
         cfg = RoboPhDConfig(
             num_iterations=args.num_iterations,
             evaluation_budget=args.evaluation_budget,
-            max_workers=args.max_workers,
             parent_experiments_dir=args.runs_dir,
             random_seed=args.random_seed,
             eval_timeout=EVAL_TIMEOUT,
@@ -383,7 +441,7 @@ def main():
                 evaluator=evaluator,
                 dataset=test_data,
                 candidate=result.best_candidate,
-                config=RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT),
+                config=RoboPhDEvalConfig(eval_timeout=EVAL_TIMEOUT, max_workers=effective_max_workers),
             )
             logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
 
