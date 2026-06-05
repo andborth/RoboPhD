@@ -48,7 +48,7 @@ class RoboPhDConfig:
 
     # Evolution
     evolution_strategy: str = "use_your_judgment"
-    evolution_model: str = "opus-4.7"
+    evolution_model: str = "opus-4.8"
     evolution_timeout: int = 3600
     """Seconds per evolution session (Claude Code CLI subprocess)."""
 
@@ -187,7 +187,7 @@ class GEPAConfig:
     val_size: int = 100
     """Validation set size. Paper results showed 100 outperforms 200."""
 
-    reflection_model: str = "opus-4.7"
+    reflection_model: str = "opus-4.8"
     """Model for GEPA reflection (mutation proposals)."""
 
     max_workers: Optional[int] = None
@@ -237,7 +237,7 @@ class AutoresearchConfig:
     val_size: int = 100
     """Validation set size. Paper results showed 100 outperforms 200."""
 
-    model: str = "opus-4.7"
+    model: str = "opus-4.8"
     """Claude Code model for the autonomous session."""
 
     max_workers: Optional[int] = None
