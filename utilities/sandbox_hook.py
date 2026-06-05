@@ -320,12 +320,21 @@ def classify_bash_segment(tokens: list) -> tuple:
         # so it's safe to make it the new head. We only bail on a FLAG,
         # which would mean unparsed wrapper options we won't guess at.
         #
-        # NB: bailing here leaves the whole segment for normal
-        # classification. A path FUSED into an option token (`-o/sib/x`,
-        # `--output=/sib/x`) is then NOT scope-checked — a pre-existing
-        # looks_like_path limitation (it rejects any '-'-prefixed token),
-        # not wrapper-specific (`frobnicate --output=/sib/x` leaks too).
-        # Never observed in real runs; see
+        # Bailing leaves the segment for the normal unknown-command
+        # branch, which defaults path args to READ scope. That is
+        # deliberately PERMISSIVE, consistent with that branch's own
+        # policy (see its comment): rather than fail-close into false
+        # positives on legit in-scope work, accept a bounded residual —
+        # a flagged-wrapper command that is actually a WRITE could write
+        # within experiment_dir (e.g. a sibling iter dir, like
+        # `timeout -k 5 rm /exp/agents/iterNNN/x`). That's a run-to-run
+        # hygiene leak, NOT a sandbox escape: the path is still confined
+        # to experiment_dir (read scope), so nothing reaches /etc, a
+        # sibling RUN, the repo, or ~/.claude. The owner's stated
+        # preference is false negatives over false positives, and this
+        # shape has 0 occurrences in real runs. A path FUSED into an
+        # option (`-o/sib/x`) likewise isn't caught — the same
+        # pre-existing looks_like_path limitation; see
         # test_known_limitation_bundled_path_option_not_caught.
         if rest[0].startswith("-"):
             break

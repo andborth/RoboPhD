@@ -2295,6 +2295,35 @@ def test_wrapper_with_options_bails_to_deny_not_escape(experiment_layout):
     assert res["decision"] == "deny", res
 
 
+def test_wrapper_with_flag_bails_permissive_bounded_to_experiment_dir(experiment_layout):
+    """A flagged wrapper bails to the normal unknown-command branch, which
+    is deliberately PERMISSIVE (path args default to read scope) — matching
+    that branch's own policy and the owner's preference for false negatives
+    over false positives.
+
+    Consequence (documented, bounded, 0 real occurrences): a flagged-
+    wrapper command that is actually a WRITE into experiment_dir is allowed
+    — e.g. `timeout -k 5 rm <sibling-iter file>` is read-classified, the
+    path is under experiment_dir, so it's allowed. This is a run-to-run
+    hygiene leak, NOT an escape: the write stays confined to experiment_dir.
+    The two assertions below pin BOTH halves of that boundary."""
+    layout = experiment_layout
+    # (a) Inside experiment_dir but outside the iteration write root:
+    #     permissively ALLOWED (the accepted bounded leak).
+    in_exp = layout["agents_dir"] / "agent.py"
+    res = run_hook(make_envelope("Bash", {"command": f"timeout -k 5 rm {in_exp}"},
+                                 layout["cwd"]),
+                   layout["experiment_dir"], iteration_dir=layout["cwd"])
+    assert res["decision"] is None, res
+    # (b) OUTSIDE experiment_dir (sibling RUN): still DENIED — the leak is
+    #     bounded to experiment_dir; nothing escapes the read scope.
+    out_exp = layout["sibling_agent"]
+    res2 = run_hook(make_envelope("Bash", {"command": f"timeout -k 5 rm {out_exp}"},
+                                  layout["cwd"]),
+                    layout["experiment_dir"], iteration_dir=layout["cwd"])
+    assert res2["decision"] == "deny", res2
+
+
 def test_wrapper_does_not_drop_out_of_scope_command_arg(experiment_layout):
     """Safety: stripping the wrapper must NOT exempt the wrapped command's
     own arguments — `timeout 600 cat /sibling/secret` still read-denies
