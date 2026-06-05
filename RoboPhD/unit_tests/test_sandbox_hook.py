@@ -2265,15 +2265,34 @@ def test_time_interpreter_allows(experiment_layout):
     assert res["decision"] is None, res
 
 
-def test_nice_n_interpreter_allows(experiment_layout):
-    """`nice -n 10 /opt/.../python in_scope.py` — flag+value skipped."""
+def test_nice_bare_interpreter_allows(experiment_layout):
+    """`nice /opt/.../python in_scope.py` — bare wrapper (no options) is
+    stripped to the wrapped command."""
+    layout = experiment_layout
+    target = layout["cwd"] / "run.py"
+    target.write_text("print(1)\n")
+    cmd = f"nice /opt/anaconda3/envs/x/bin/python {target}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_wrapper_with_options_bails_to_deny_not_escape(experiment_layout):
+    """A wrapper invoked WITH options (`nice -n 10 <interp>`) is NOT
+    stripped — we don't guess per-flag arity. The strip bails, leaving
+    the interpreter in argument position where it read-denies. This is a
+    deliberate spurious-deny (the SAFE direction: a blocked legit run,
+    never a path escape). `nice -n` does not occur in real runs; the
+    observed shapes (`timeout N CMD`, `time CMD`, bare `nice CMD`) all
+    still strip. If this shape ever shows up for real, handle its arity
+    explicitly rather than by guessing."""
     layout = experiment_layout
     target = layout["cwd"] / "run.py"
     target.write_text("print(1)\n")
     cmd = f"nice -n 10 /opt/anaconda3/envs/x/bin/python {target}"
     res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
                    layout["experiment_dir"])
-    assert res["decision"] is None, res
+    assert res["decision"] == "deny", res
 
 
 def test_wrapper_does_not_drop_out_of_scope_command_arg(experiment_layout):
@@ -2288,13 +2307,69 @@ def test_wrapper_does_not_drop_out_of_scope_command_arg(experiment_layout):
     assert "outside read scope" in res["reason"]
 
 
-def test_wrapper_path_bearing_option_still_denies(experiment_layout):
-    """Safety: `time -o /sibling/out CMD` — the `-o` value is a path; the
-    strip must bail rather than drop it, so the out-of-scope write/read
-    target is still caught."""
+def test_wrapper_separated_path_option_still_denies(experiment_layout):
+    """Safety: `time -o /sibling/out CMD` — `-o` is a flag, so the strip
+    bails; `/sibling/out` then flows through normal scope-checking as a
+    separate token and is denied."""
     layout = experiment_layout
     sib_out = layout["sibling_agent"].parent / "out.txt"
     cmd = f"time -o {sib_out} /opt/anaconda3/envs/x/bin/python run.py"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny", res
+
+
+def test_timeout_path_where_duration_expected_does_not_strip_blindly(experiment_layout):
+    """`timeout` only consumes a numeric DURATION. A path in the duration
+    slot is not a duration, so it's NOT consumed — `timeout /sibling/x
+    600` leaves `/sibling/x` as the (unchecked) command token, identical
+    to a bare leading `/sibling/x` (command tokens are never scope-checked
+    by policy). No path is dropped or newly exposed."""
+    layout = experiment_layout
+    # The point is robustness of the DURATION gate, not a deny assertion:
+    # a leading command path is allowed with or without the wrapper.
+    cmd = f"timeout {layout['sibling_agent']} 600"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_known_limitation_bundled_path_option_not_caught(experiment_layout):
+    """KNOWN LIMITATION (pre-existing, NOT wrapper-specific): a path fused
+    into an option token — `-o/sib/x`, `--output=/sib/x` — is treated as
+    a flag by looks_like_path (which rejects any '-'-prefixed token) and
+    so is NOT scope-checked, anywhere in the classifier. Demonstrated
+    here with a bare command (no wrapper) so the locus is unambiguous:
+    the out-of-scope path fused into `-o...` is the ONLY out-of-scope
+    token, and it leaks. The identical leak exists with or without a
+    wrapper; the wrapper strip itself is not the cause (it correctly
+    bails on the flag). 0 occurrences across all real logged commands.
+    A real fix belongs in looks_like_path. If one lands, flip to deny.
+    """
+    layout = experiment_layout
+    sib = layout["sibling_agent"].parent / "secret"
+    in_scope = layout["cwd"] / "in.txt"
+    in_scope.write_text("x\n")
+    # Only the bundled -o target is out of scope; the command and its
+    # other operand are in scope. Current behavior: allowed (leak).
+    cmd = f"grep -f{sib} foo {in_scope}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+    # Guard the framing: the SEPARATED form of the same option IS caught,
+    # confirming the gap is specifically the fused spelling.
+    cmd2 = f"grep -f {sib} foo {in_scope}"
+    res2 = run_hook(make_envelope("Bash", {"command": cmd2}, layout["cwd"]),
+                    layout["experiment_dir"])
+    assert res2["decision"] == "deny", res2
+
+
+def test_wrapped_interpreter_with_out_of_scope_script_still_denies(experiment_layout):
+    """The interpreter (command token) is exempt, but a SCRIPT arg that's
+    out of scope is still denied: `timeout 60 python /sibling/x.py`."""
+    layout = experiment_layout
+    sib = layout["sibling_agent"].parent / "x.py"
+    cmd = f"timeout 60 /opt/anaconda3/envs/x/bin/python {sib}"
     res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
                    layout["experiment_dir"])
     assert res["decision"] == "deny", res

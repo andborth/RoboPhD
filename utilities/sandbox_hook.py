@@ -131,11 +131,19 @@ BASH_COMMAND_WRAPPERS = {
     "timeout", "time", "nice", "ionice", "stdbuf", "nohup",
 }
 
-# Of those, the wrappers that take a leading POSITIONAL operand before
-# the command: `timeout DURATION CMD`, `nice N CMD` (bare-number form),
-# `ionice CLASS CMD`. The operand is consumed only when it's a non-path
-# token (a duration/number), never a path.
-BASH_WRAPPER_LEADING_OPERAND = {"timeout", "nice", "ionice"}
+# Of those, the wrappers that take a bare POSITIONAL operand before the
+# command: only `timeout DURATION CMD`. `nice`/`ionice` do NOT — their
+# niceness is always flag-borne (`nice -n 10 CMD`, `ionice -c 2 CMD`);
+# the bare form `nice CMD` runs CMD directly. Listing them here would
+# make the strip consume the real command as a phantom operand and let
+# its args escape (`nice cat /sibling/x` -> `/sibling/x` becomes the
+# unchecked command token). `time` likewise takes no leading positional.
+BASH_WRAPPER_LEADING_OPERAND = {"timeout"}
+
+# A `timeout` DURATION operand: digits with an optional decimal and an
+# optional unit suffix (s/m/h/d), e.g. `600`, `1.5s`, `2m`. Anchored so
+# it never matches a path or a flag — only a genuine duration is consumed.
+DURATION_RE = re.compile(r"^\d+(\.\d+)?[smhd]?$")
 
 # Bash control-flow keywords. shlex collapses newlines to whitespace,
 # so a multi-line `for ...; do echo a; cat /path; done` lands as
@@ -282,47 +290,46 @@ def classify_bash_segment(tokens: list) -> tuple:
     # command token is never scope-checked — see test_*_interpreter_*).
     # Stripping the wrapper down to the wrapped CMD restores that policy.
     #
-    # Safety: we skip the wrapper word, its option flags, and — for
-    # wrappers that take a leading positional (timeout's DURATION,
-    # nice/ionice's niceness) — that operand. We MUST NOT silently drop a
-    # path-shaped token: GNU `time -o FILE` / `timeout ... ` option-args
-    # could be paths, and dropping one would let an out-of-scope path
-    # escape the check. So if a token we'd skip looks like a path, we
-    # STOP stripping and leave the segment as-is (the path then flows
-    # through normal scope-checking, i.e. denies if out of scope). The
-    # only tokens consumed are non-path wrapper scaffolding.
+    # We deliberately handle ONLY the unambiguous, observed shapes —
+    # `timeout DURATION CMD` and `<wrapper> CMD` — and bail on anything
+    # with options. Per-flag arity is unknowable (does `-n` take the next
+    # token? does a bundled `-o/path` carry a value?), and every wrong
+    # guess is either a silent path escape or a phantom command token. So
+    # the moment we see a flag (or a path where a bare operand should be)
+    # we STOP stripping and leave the segment intact: the real command
+    # stays in argument position and flows through normal scope-checking.
+    # That can spuriously deny an exotic `nice -n 10 <interp>` (none seen
+    # in practice) — the safe direction (a blocked legit run, never an
+    # escape). Bare `nice CMD` / `time CMD` / `timeout N CMD` still strip.
     while remaining and remaining[0] in BASH_COMMAND_WRAPPERS:
+        wrapper = remaining[0]
         rest = remaining[1:]
-        j = 0
-        while j < len(rest):
-            tok = rest[j]
-            if tok.startswith("-"):
-                # An option flag. If it's a path-bearing option (e.g.
-                # `time -o /out`, `nice` has none), bail rather than risk
-                # dropping the following path token.
-                if looks_like_path(tok):
-                    j = -1
-                    break
-                # A flag that takes a separate value we can't model
-                # safely (e.g. `-o FILE`): if the NEXT token is path-
-                # shaped, bail. Otherwise skip just the flag.
-                if j + 1 < len(rest) and looks_like_path(rest[j + 1]):
-                    j = -1
-                    break
-                j += 1
-                continue
-            # First non-flag token. For DURATION/niceness wrappers this
-            # is the numeric operand to consume; for others it's the
-            # wrapped command. Consume it ONLY if it's a bare non-path
-            # operand of a positional-taking wrapper; never consume a
-            # path (that would be the command path or an escape).
-            if (remaining[0] in BASH_WRAPPER_LEADING_OPERAND
-                    and not looks_like_path(tok)):
-                j += 1
+        if not rest:
             break
-        if j < 0:
-            break  # path-shaped scaffolding — leave segment intact
-        remaining = rest[j:]
+        # `timeout` takes a bare numeric DURATION before the command
+        # (`timeout 600 CMD`, `timeout 1.5s CMD`). Consume it only if it
+        # is a pure duration token (digits + optional unit suffix), never
+        # a path or flag.
+        if wrapper in BASH_WRAPPER_LEADING_OPERAND and DURATION_RE.match(rest[0]):
+            rest = rest[1:]
+            if not rest:
+                break
+        # Next token is the wrapped command itself — it MAY be a path
+        # (`timeout 600 /opt/.../python`); that's the case we're here to
+        # normalize, and a leading command token is never scope-checked,
+        # so it's safe to make it the new head. We only bail on a FLAG,
+        # which would mean unparsed wrapper options we won't guess at.
+        #
+        # NB: bailing here leaves the whole segment for normal
+        # classification. A path FUSED into an option token (`-o/sib/x`,
+        # `--output=/sib/x`) is then NOT scope-checked — a pre-existing
+        # looks_like_path limitation (it rejects any '-'-prefixed token),
+        # not wrapper-specific (`frobnicate --output=/sib/x` leaks too).
+        # Never observed in real runs; see
+        # test_known_limitation_bundled_path_option_not_caught.
+        if rest[0].startswith("-"):
+            break
+        remaining = rest
 
     # Strip leading variable-assignment prefixes (`x=/path/a`,
     # `A=1 B=/path cmd args`). These appear in two shapes:
