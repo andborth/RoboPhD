@@ -27,6 +27,25 @@ def _rec(**kw):
     return kw
 
 
+# Replay stubs: the catalog now decides FP-FIXED/FP-OPEN/TP-NOW-ALLOWED
+# from the LIVE hook verdict, not a static pattern. A test that asserts
+# one of those outcomes supplies a stub standing in for
+# sandbox_hook.replay_denial_record.
+def _replay_allows(rec):
+    """Live hook NO LONGER denies (the FP is fixed / policy loosened)."""
+    return (False, None)
+
+
+def _replay_denies_same(rec):
+    """Live hook still denies, on the SAME path the record logged."""
+    return (True, rec.get("blocked_path", ""))
+
+
+def _replay_denies_other(rec):
+    """Live hook still denies, but on a DIFFERENT path than logged."""
+    return (True, "/some/other/still-blocked/path")
+
+
 # ---------------------------------------------------------------------
 # True positives
 # ---------------------------------------------------------------------
@@ -152,31 +171,42 @@ def test_tmp_scratch_classifies_tp():
 # ---------------------------------------------------------------------
 
 
-def test_interpreter_binary_with_invocation_in_cmd_is_fp_fixed():
-    """Real interpreter-FP record: blocked is the resolved-symlink
-    path (``python3.11``) while cmd uses the symlink (``python``).
-    The cmd-awareness check must use the DIRNAME (shared between
-    resolved and unresolved), not the full blocked path."""
-    _, cat = catalog.classify(_rec(
+def test_interpreter_run_intent_fp_fixed_when_replay_allows():
+    """Interpreter path that appears only because the interpreter is RUN
+    (leading token / post-cd) is INTENTed FP; with a replay that allows
+    it (HEAD doesn't scope-check the command token), it's FP-FIXED."""
+    label, cat = catalog.classify(_rec(
         scope="read",
         blocked_path="/opt/anaconda3/envs/robophd_demo/bin/python3.11",
         command=("cd /Users/x/iter_010\n"
                  "/opt/anaconda3/envs/robophd_demo/bin/python -c '...'"),
-    ))
+    ), replay=_replay_allows)
     assert cat == "FP-FIXED"
+    assert "interpreter path from a run" in label
 
 
-def test_interpreter_path_without_invocation_in_cmd_is_not_fp_fixed():
-    """Cmd-awareness defense: a path syntactically matching the
-    interpreter regex but whose dirname is absent from cmd must NOT
-    be silently mislabeled FP-FIXED. (e.g., a genuine recon read of
-    a file whose path happens to start with /opt/anaconda3/.)"""
-    label, _ = catalog.classify(_rec(
+def test_interpreter_run_intent_fp_open_when_replay_denies():
+    """Same record, but a replay that STILL denies (same path) -> FP-OPEN.
+    Proves the catalog reads the verdict from the live hook, not a static
+    'fixed' assertion."""
+    _, cat = catalog.classify(_rec(
         scope="read",
-        blocked_path="/opt/anaconda3/envs/some_env/bin/python3.11",
-        command="cat /Users/me/secret",
-    ))
-    assert "interpreter binary" not in label
+        blocked_path="/opt/anaconda3/envs/robophd_demo/bin/python3.11",
+        command="/opt/anaconda3/envs/robophd_demo/bin/python foo.py",
+    ), replay=_replay_denies_same)
+    assert cat == "FP-OPEN"
+
+
+def test_interpreter_probe_is_tp():
+    """`ls`/`test -x`/assignment of an out-of-scope interpreter path is a
+    correct deny (TP), distinct from the run/heredoc FP."""
+    label, cat = catalog.classify(_rec(
+        scope="read",
+        blocked_path="/usr/bin/python3",
+        command="which python3; ls -la /usr/bin/python3",
+    ), replay=_replay_denies_same)
+    assert cat == "TP"
+    assert "interpreter probe" in label
 
 
 def test_sed_script_with_sed_in_cmd_is_fp_fixed():
@@ -185,7 +215,7 @@ def test_sed_script_with_sed_in_cmd_is_fp_fixed():
         blocked_path="/^FORMAT_VAR = /,$p",
         command=("diff <(sed -n '/^FORMAT_VAR = /,$p' a.py) "
                  "<(sed -n '/^FORMAT_VAR = /,$p' b.py)"),
-    ))
+    ), replay=_replay_allows)
     assert cat == "FP-FIXED"
 
 
@@ -207,7 +237,7 @@ def test_auto_memory_write_classifies_fp_fixed():
         scope="write",
         blocked_path="/Users/x/.claude/projects/-slug/memory/insight.md",
         command="",
-    ))
+    ), replay=_replay_allows)
     assert cat == "FP-FIXED"
 
 
@@ -217,7 +247,7 @@ def test_tool_results_read_classifies_fp_fixed():
         blocked_path=("/Users/x/.claude/projects/-slug/sess-uuid/"
                       "tool-results/spill.txt"),
         command="",
-    ))
+    ), replay=_replay_allows)
     assert cat == "FP-FIXED"
 
 
@@ -244,11 +274,11 @@ def test_tool_results_write_is_not_fp_fixed():
 
 
 def test_tr_dash_d_slash_classifies_fp_fixed():
-    """`tr -d /` is now fixed in the hook (BASH_NO_PATH_OPERANDS); its
-    historical records classify FP-FIXED, not FP-OPEN."""
+    """`tr -d /` is fixed in the hook (BASH_NO_PATH_OPERANDS); with a
+    replay that allows it, it's FP-FIXED."""
     _, cat = catalog.classify(_rec(
         scope="read", blocked_path="/", command="ls | tr -d /",
-    ))
+    ), replay=_replay_allows)
     assert cat == "FP-FIXED"
 
 
@@ -259,7 +289,7 @@ def test_find_root_not_swallowed_by_tr_pattern():
     classify as TP (not silently absorbed by an over-loose tr regex)."""
     _, cat = catalog.classify(_rec(
         scope="read", blocked_path="/", command="find / -name foo",
-    ))
+    ), replay=_replay_denies_same)
     assert cat == "TP"
 
 
@@ -270,7 +300,7 @@ def test_find_root_with_tr_elsewhere_still_tp():
     _, cat = catalog.classify(_rec(
         scope="read", blocked_path="/",
         command="find / -name x 2>/dev/null | tr -d ' '",
-    ))
+    ), replay=_replay_denies_same)
     assert cat == "TP"
 
 
@@ -279,7 +309,7 @@ def test_awk_range_program_classifies_fp_fixed():
     _, cat = catalog.classify(_rec(
         scope="read", blocked_path="/^## Step 2/,/^## Step 3",
         command="awk '/^## Step 2/,/^## Step 3/' trace.md",
-    ))
+    ), replay=_replay_allows)
     assert cat == "FP-FIXED"
 
 
@@ -288,8 +318,32 @@ def test_awk_action_program_classifies_fp_fixed():
     _, cat = catalog.classify(_rec(
         scope="read", blocked_path="/[multiblock]/{found=0} /n=2/{c++}",
         command="cat x | awk '/[multiblock]/{found=0} /n=2/{c++}'",
-    ))
+    ), replay=_replay_allows)
     assert cat == "FP-FIXED"
+
+
+def test_fp_intent_open_when_replay_still_denies_same_path():
+    """An FP-intented record whose replay STILL denies on the SAME path is
+    FP-OPEN — the named false positive genuinely still recurs at HEAD
+    (e.g. the wrapper-prefix interpreter FP before its hook fix lands)."""
+    _, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/^## Step 2/,/^## Step 3",
+        command="awk '/^## Step 2/,/^## Step 3/' trace.md",
+    ), replay=_replay_denies_same)
+    assert cat == "FP-OPEN"
+
+
+def test_fp_intent_other_still_denied_when_replay_denies_different_path():
+    """An FP-intented record whose replay denies on a DIFFERENT path is
+    NOT the named FP — the command has a separate still-valid block (e.g.
+    an interpreter path inside `cat > /tmp/x` whose real deny is the /tmp
+    write). Surfaced as a TP so a real positive isn't mislabeled FP."""
+    label, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/opt/anaconda3/envs/x/bin/python3.11",
+        command="cat > /tmp/t.py <<'PY'\n/opt/anaconda3/envs/x/bin/python /tmp/t.py\nPY",
+    ), replay=_replay_denies_other)
+    assert cat == "TP"
+    assert "OTHER-STILL-DENIED" in label
 
 
 def test_arithmetic_split_path_classifies_fp_fixed():
@@ -298,19 +352,20 @@ def test_arithmetic_split_path_classifies_fp_fixed():
     _, cat = catalog.classify(_rec(
         scope="read", blocked_path="/agent.py",
         command="f=/run/iter${v}_v$((v-2))/agent.py; head $f",
-    ))
+    ), replay=_replay_allows)
     assert cat == "FP-FIXED"
 
 
 def test_arithmetic_pattern_requires_dollar_paren():
     """Guard: the arithmetic FP pattern must require `$((` in the cmd so
     a genuine out-of-scope `/agent.py`-shaped read (no arithmetic) isn't
-    mislabeled FP-FIXED."""
+    INTENTed FP. With no `$((`, no FP pattern matches -> a replay that
+    denies yields a non-FP category."""
     label, cat = catalog.classify(_rec(
         scope="read", blocked_path="/agent.py",
         command="cat /agent.py",
-    ))
-    assert cat != "FP-FIXED", (label, cat)
+    ), replay=_replay_denies_same)
+    assert cat not in ("FP-FIXED", "FP-OPEN"), (label, cat)
 
 
 def test_parse_fail_classifies_limitation():
@@ -348,3 +403,59 @@ def test_unrecognized_record_classifies_unknown():
         command="cat /var/log/wifi.log",
     ))
     assert cat == "UNKNOWN"
+
+
+# ---------------------------------------------------------------------
+# Replay-combination contract (the load-bearing redesign): FP-FIXED /
+# FP-OPEN / TP-NOW-ALLOWED are derived from the live hook verdict, never
+# asserted statically.
+# ---------------------------------------------------------------------
+
+
+def test_no_replay_fallback_reports_fp_intent_as_open():
+    """Without a replay (replay=None / --no-replay), an FP-intented record
+    can't be confirmed fixed, so it reports the conservative FP-OPEN
+    rather than a stale FP-FIXED. The safe, attention-drawing direction."""
+    _, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/", command="ls | tr -d /",
+    ), replay=None)
+    assert cat == "FP-OPEN"
+
+
+def test_no_replay_fallback_reports_tp_intent_as_tp():
+    _, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/", command="find / -name foo",
+    ), replay=None)
+    assert cat == "TP"
+
+
+def test_tp_now_allowed_when_replay_allows_a_tp():
+    """A record we judge a true positive but the live hook NO LONGER
+    denies -> TP-NOW-ALLOWED (a possible scope regression the sweep must
+    surface, not bury)."""
+    _, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/", command="find / -name foo",
+    ), replay=_replay_allows)
+    assert cat == "TP-NOW-ALLOWED"
+
+
+def test_replay_exception_falls_back_to_conservative_mapping():
+    """If replay raises (unreconstructable record), classify must not
+    crash — it falls back to the intent's conservative static mapping."""
+    def _boom(rec):
+        raise RuntimeError("cannot reconstruct")
+    _, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/", command="ls | tr -d /",
+    ), replay=_boom)
+    assert cat == "FP-OPEN"
+
+
+def test_static_records_bypass_replay():
+    """parse/error/historical records have no live decision to observe —
+    they keep their static category even when a (bogus) replay is given."""
+    def _wrong(rec):
+        return (False, None)  # would say 'allowed' if consulted
+    _, cat = catalog.classify(_rec(
+        scope="parse", reason="shlex.split failed", command="...",
+    ), replay=_wrong)
+    assert cat == "LIMITATION"

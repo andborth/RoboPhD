@@ -34,6 +34,8 @@ from utilities.sandbox_hook import (  # noqa: E402
     auto_memory_dir,
     auto_session_dirs,
     split_statement_newlines,
+    evaluate_bash,
+    replay_denial_record,
 )
 
 
@@ -2128,3 +2130,103 @@ def test_arithmetic_expansion_does_not_hide_out_of_scope_path(experiment_layout)
     res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
                    layout["experiment_dir"])
     assert res["decision"] == "deny", res
+
+
+# ---------------------------------------------------------------------
+# evaluate_bash / replay_denial_record — the pure decision core shared
+# with the catalog's live-replay classifier. These must agree with the
+# subprocess hook (same pipeline) and reconstruct a logged denial's
+# verdict faithfully.
+# ---------------------------------------------------------------------
+
+
+def test_evaluate_bash_allows_in_scope_read(experiment_layout):
+    layout = experiment_layout
+    exp = str(layout["experiment_dir"].resolve())
+    cwd = str(layout["cwd"].resolve())
+    agent = str((layout["agents_dir"] / "agent.py").resolve())
+    decision, scope, blocked = evaluate_bash(
+        f"cat {agent}", cwd, exp, cwd, [])
+    assert decision == "allow"
+
+
+def test_evaluate_bash_denies_out_of_scope_read(experiment_layout):
+    layout = experiment_layout
+    exp = str(layout["experiment_dir"].resolve())
+    cwd = str(layout["cwd"].resolve())
+    sib = str(layout["sibling_agent"].resolve())
+    decision, scope, blocked = evaluate_bash(
+        f"cat {sib}", cwd, exp, cwd, [])
+    assert decision == "deny"
+    assert scope == "read"
+    assert blocked == sib
+
+
+def test_evaluate_bash_parse_fail_is_deny(experiment_layout):
+    layout = experiment_layout
+    exp = str(layout["experiment_dir"].resolve())
+    cwd = str(layout["cwd"].resolve())
+    # Unbalanced quote -> shlex fails -> fail closed.
+    decision, scope, _ = evaluate_bash('cat "unterminated', cwd, exp, cwd, [])
+    assert decision == "deny"
+    assert scope == "parse"
+
+
+def test_replay_bash_record_reconstructs_deny(experiment_layout):
+    """A logged out-of-scope Bash read replays as still-denying."""
+    layout = experiment_layout
+    sib = str(layout["sibling_agent"].resolve())
+    rec = {
+        "tool": "Bash",
+        "scope": "read",
+        "blocked_path": sib,
+        "command": f"cat {sib}",
+        "cwd": str(layout["cwd"].resolve()),
+    }
+    still, blocked = replay_denial_record(rec, str(layout["experiment_dir"]))
+    assert still is True
+    assert blocked == sib
+
+
+def test_replay_bash_record_now_allows_when_in_scope(experiment_layout):
+    """A logged denial whose path is actually in scope replays as fixed
+    (the verdict the catalog reads to mark FP-FIXED)."""
+    layout = experiment_layout
+    agent = str((layout["agents_dir"] / "agent.py").resolve())
+    rec = {
+        "tool": "Bash",
+        "scope": "read",
+        "blocked_path": agent,
+        "command": f"cat {agent}",
+        "cwd": str(layout["cwd"].resolve()),
+    }
+    still, _ = replay_denial_record(rec, str(layout["experiment_dir"]))
+    assert still is False
+
+
+def test_replay_read_tool_record(experiment_layout):
+    """Read-tool records (empty command, blocked_path set) replay via the
+    read-scope check."""
+    layout = experiment_layout
+    sib = str(layout["sibling_agent"].resolve())
+    rec = {"tool": "Read", "scope": "read", "blocked_path": sib,
+           "command": "", "cwd": str(layout["cwd"].resolve())}
+    still, blocked = replay_denial_record(rec, str(layout["experiment_dir"]))
+    assert still is True
+    assert blocked == sib
+
+
+def test_replay_unreplayable_record_raises(experiment_layout):
+    """A parse record (no blocked_path) can't be replayed; the function
+    raises so the catalog falls back to static classification."""
+    layout = experiment_layout
+    rec = {"tool": "Bash", "scope": "parse", "blocked_path": "",
+           "command": "", "cwd": str(layout["cwd"].resolve())}
+    # Empty command -> evaluate_bash returns allow (no deny to confirm),
+    # which is a faithful "no longer denies" rather than a raise. A truly
+    # unreplayable shape is a non-Bash tool with no blocked_path:
+    rec2 = {"tool": "Read", "scope": "read", "blocked_path": "",
+            "command": "", "cwd": str(layout["cwd"].resolve())}
+    import pytest as _pytest
+    with _pytest.raises(ValueError):
+        replay_denial_record(rec2, str(layout["experiment_dir"]))

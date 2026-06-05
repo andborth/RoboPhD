@@ -895,6 +895,136 @@ def deny_message(
     )
 
 
+def evaluate_bash(
+    command: str,
+    cwd_real: str,
+    experiment_dir: str,
+    write_root: str,
+    extra_read_roots: list,
+) -> tuple:
+    """Pure Bash scope decision shared by main() and replay.
+
+    Runs the same transform + tokenize + per-segment classify + scope-
+    check pipeline main() uses, with NO IO (no emit, no append, no env
+    reads). Returns ``(decision, scope, blocked)`` where:
+
+      * ``("deny", "parse", "")``   — unparseable (heredoc / bad quotes)
+      * ``("deny", "read", path)``  — a read token outside read scope
+      * ``("deny", "write", path)`` — a write token outside write scope
+      * ``("allow", None, None)``   — every segment cleared
+
+    Extracting this lets ``catalog_sandbox_denials.py`` replay a logged
+    denial through the LIVE policy ("does HEAD still deny this?") using
+    the exact code main() runs, so the catalog's FP-FIXED verdict can
+    never drift from the hook's real behavior.
+    """
+    if not command:
+        return "allow", None, None
+
+    command = strip_heredoc_bodies(command)
+    command = collapse_arithmetic_expansions(command)
+    command = split_statement_newlines(command)
+
+    segments = split_compound(command)
+    if segments is None:
+        # shlex couldn't parse — fail closed (see main()'s parse branch).
+        return "deny", "parse", ""
+
+    for tokens in segments:
+        if not tokens:
+            continue
+        read_paths, write_paths, _fail_reason = classify_bash_segment(tokens)
+        ok, blocked = check_read_paths(read_paths, experiment_dir,
+                                       extra_read_roots, cwd_real)
+        if not ok:
+            return "deny", "read", blocked
+        ok, blocked = check_paths(write_paths, write_root, cwd_real, "write")
+        if not ok:
+            return "deny", "write", blocked
+    return "allow", None, None
+
+
+def replay_denial_record(
+    record: dict,
+    experiment_dir: str,
+    write_root: str = None,
+    extra_read_roots: list = None,
+) -> tuple:
+    """Replay a logged denial through the LIVE policy.
+
+    Answers "would HEAD still deny this record?" by reconstructing the
+    decision inputs from the record and running the same code main()
+    runs. Returns ``(still_denies: bool, blocked: str | None)``.
+
+    ``experiment_dir`` is the run dir (the parent of the
+    ``sandbox_denials.jsonl`` the record came from). ``write_root``
+    defaults to the record's ``cwd`` — the legacy (narrowest) write
+    root; an iteration-rooted run had an equal-or-broader write scope,
+    so a cwd-rooted replay can only ever be MORE likely to say "still
+    denies", never less. That's the safe direction for an FP-FIXED claim
+    (we never falsely declare a write fixed).
+
+    Replay is best-effort: a record we can't faithfully reconstruct
+    (missing fields, unreadable shape) raises, and the caller falls back
+    to pattern classification.
+    """
+    tool = record.get("tool", "")
+    cwd = record.get("cwd") or experiment_dir
+    if extra_read_roots is None:
+        extra_read_roots = []
+    if write_root is None:
+        write_root = cwd
+
+    exp = os.path.realpath(experiment_dir)
+    cwd_real = os.path.realpath(cwd)
+    write_root_real = os.path.realpath(write_root)
+
+    # Reconstruct the same auto carve-outs main() applies, so a denial
+    # that HEAD would now allow via a carve-out replays as "fixed". The
+    # auto-memory dir is derived from experiment_dir; the auto-session
+    # read dirs from cwd. Both are recomputed from the record's own
+    # inputs, so the replay matches what the live hook would grant.
+    memory_carveouts = []
+    md = auto_memory_dir(exp)
+    if md:
+        memory_carveouts.append(md)
+    read_roots = list(extra_read_roots) + memory_carveouts
+    for d in auto_session_dirs(cwd_real):
+        if d not in read_roots:
+            read_roots.append(d)
+
+    if tool == "Bash":
+        decision, _scope, blocked = evaluate_bash(
+            record.get("command", ""), cwd_real, exp,
+            write_root_real, read_roots,
+        )
+        return decision == "deny", blocked
+
+    # Read/Write tools log the normalized blocked_path (already an
+    # absolute realpath) rather than the raw file_path. Re-check that
+    # path under the current scope rules — normalize is idempotent on an
+    # absolute realpath, so this faithfully reproduces the tool branch.
+    blocked_path = record.get("blocked_path", "")
+    if not blocked_path:
+        # parse/error records, or a cwd-outside-experiment denial with no
+        # usable path — not replayable here.
+        raise ValueError("record has no replayable blocked_path")
+
+    if tool in READ_TOOLS:
+        ok, blocked = check_read_paths([blocked_path], exp,
+                                       read_roots, cwd_real)
+        return (not ok), blocked
+    if tool in WRITE_TOOLS:
+        ok, blocked = check_paths([blocked_path], write_root_real,
+                                  cwd_real, "write")
+        # Same Write-tool auto-memory carve-out main() applies.
+        if not ok and any(is_under(blocked, mc) for mc in memory_carveouts):
+            ok, blocked = True, None
+        return (not ok), blocked
+
+    raise ValueError(f"unreplayable tool: {tool!r}")
+
+
 def check_read_paths(
     paths: list,
     experiment_dir: str,
@@ -1104,26 +1234,25 @@ def main() -> int:
         if not command:
             return 0  # nothing to check
 
-        # Strip heredoc bodies before tokenizing. Heredoc body content
-        # is opaque data flowing into stdin; tokenizing it makes our
-        # `(`/`)` punctuation check false-positive on legitimate Python
-        # / shell content inside the body (e.g., `print(1)`). The
-        # surrounding command (including the `> file` redirect target)
-        # is still visible and classified normally.
-        command = strip_heredoc_bodies(command)
-        # Collapse `$((expr))` before tokenizing so the surrounding path
-        # token stays intact — split_compound's punctuation_chars splits
-        # on the `((`/`))` otherwise (see collapse_arithmetic_expansions).
-        command = collapse_arithmetic_expansions(command)
-        # Newlines are statement separators; make that explicit so
-        # split_compound doesn't merge newline-separated statements
-        # into one mis-classified segment (see split_statement_newlines).
-        command = split_statement_newlines(command)
+        # Decision is made by evaluate_bash (the same pure pipeline the
+        # catalog replays): strip heredoc bodies (opaque stdin data that
+        # would false-positive the `(`/`)` punctuation check), collapse
+        # `$((expr))` (else split_compound breaks on `((`/`))`), make
+        # newlines explicit statement separators, then per-segment
+        # classify + scope-check. find -exec / xargs / $(...) / subshells
+        # / unknown commands all flow their visible path tokens into the
+        # read check (no fail-closed subprocess_bypass branch). Here we
+        # only translate the verdict into the emit + log IO.
+        decision, scope, blocked = evaluate_bash(
+            command, cwd_real, experiment_dir, write_root, extra_read_roots,
+        )
+        if decision == "allow":
+            return 0
 
-        segments = split_compound(command)
-        if segments is None:
+        if scope == "parse":
             # shlex couldn't parse — likely heredoc, unbalanced quotes,
-            # or a construct we don't model. Fail closed.
+            # or a construct we don't model. Fail closed. Log the
+            # transformed command (matches prior behavior).
             emit_decision(
                 "deny",
                 "Sandbox denied. Could not parse this Bash command (heredoc, "
@@ -1135,64 +1264,29 @@ def main() -> int:
                 "tool": "Bash",
                 "scope": "parse",
                 "blocked_path": "",
-                "command": command,
+                "command": split_statement_newlines(
+                    collapse_arithmetic_expansions(
+                        strip_heredoc_bodies(command))),
                 "cwd": cwd_real,
                 "reason": "shlex.split failed",
             })
             return 0
 
-        for tokens in segments:
-            if not tokens:
-                continue
-            read_paths, write_paths, _fail_reason = classify_bash_segment(tokens)
-
-            # `subprocess_bypass` and `unknown_command` are no longer
-            # produced by classify_bash_segment — find -exec, xargs,
-            # $(...), subshells, and unknown commands all flow their
-            # visible path tokens into read_paths and rely on the
-            # read-scope check below. The user explicitly accepted
-            # losing recall on inner-command path-classification
-            # invisibility (in exchange for not false-positive-ing
-            # in-scope find -exec, in-scope xargs, etc.).
-
-            ok, blocked = check_read_paths(read_paths, experiment_dir,
-                                            extra_read_roots, cwd_real)
-            if not ok:
-                emit_decision(
-                    "deny",
-                    deny_message(experiment_dir, write_root, blocked, "read",
-                                 extra_read_roots,
-                                 write_root_is_iteration=write_root_is_iteration),
-                )
-                append_denial_record({
-                    "ts": datetime.now().isoformat(timespec="seconds"),
-                    "tool": "Bash",
-                    "scope": "read",
-                    "blocked_path": blocked,
-                    "command": command,
-                    "cwd": cwd_real,
-                })
-                return 0
-
-            ok, blocked = check_paths(write_paths, write_root, cwd_real, "write")
-            if not ok:
-                emit_decision(
-                    "deny",
-                    deny_message(experiment_dir, write_root, blocked, "write",
-                                 extra_read_roots,
-                                 write_root_is_iteration=write_root_is_iteration),
-                )
-                append_denial_record({
-                    "ts": datetime.now().isoformat(timespec="seconds"),
-                    "tool": "Bash",
-                    "scope": "write",
-                    "blocked_path": blocked,
-                    "command": command,
-                    "cwd": cwd_real,
-                })
-                return 0
-
-        return 0  # all segments cleared
+        emit_decision(
+            "deny",
+            deny_message(experiment_dir, write_root, blocked, scope,
+                         extra_read_roots,
+                         write_root_is_iteration=write_root_is_iteration),
+        )
+        append_denial_record({
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "tool": "Bash",
+            "scope": scope,
+            "blocked_path": blocked,
+            "command": command,
+            "cwd": cwd_real,
+        })
+        return 0
 
     # Unknown tool — passthrough. Claude CLI may add tools we don't
     # know; we don't want to break unrelated functionality.
