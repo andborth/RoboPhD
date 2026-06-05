@@ -1928,18 +1928,41 @@ def test_find_root_still_denied(experiment_layout):
     assert "outside read scope" in res["reason"]
 
 
-def test_tr_slash_operand_known_limitation(experiment_layout):
-    """KNOWN, ACCEPTED limitation (not fixed): `tr -d /` trips on bare
-    '/'. `tr`'s operand is a SET, not a path — but bare '/' MUST remain
-    path-shaped so `find /` (above) stays blocked, and shlex's `$(`/`)`
-    gluing means a tr-scoped exemption could be turned into an evasion.
-    A safe fix needs the substitution-parser rework, out of scope here.
-    Pinned so the behavior is deliberate and visible, not silent."""
+def test_tr_slash_operand_allows(experiment_layout):
+    """`tr`'s operand is a character SET, not a path, so the bare '/' in
+    `tr -d /` must NOT read-deny (was a pinned FP; now fixed via
+    BASH_NO_PATH_OPERANDS). `tr` only reads stdin / writes stdout, so an
+    operand is never opened as a file. `find /` (full-FS scan) is
+    unaffected — that path flows under the `find` branch, not tr's."""
     layout = experiment_layout
-    cmd = "echo abc | tr -d /"
-    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
-                   layout["experiment_dir"])
-    assert res["decision"] == "deny"
+    for cmd in ("echo abc | tr -d /",
+                "ls -d */ | tr -d '/'",
+                "for p in $(ls -d */ | tr -d /); do echo $p; done"):
+        res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                       layout["experiment_dir"])
+        assert res["decision"] is None, (cmd, res)
+
+
+def test_tr_does_not_open_redirect_or_substitution_paths(experiment_layout):
+    """Guard: the tr exemption covers only its SET operands. A redirect
+    target and a $()-substituted out-of-scope read alongside tr must
+    still be scope-checked (redirect extracted before dispatch;
+    substitution split into its own segment)."""
+    layout = experiment_layout
+    # Redirect target outside cwd is still a write-deny.
+    sib = layout["sibling_agent"]
+    res = run_hook(
+        make_envelope("Bash", {"command": f"echo abc | tr a b > {sib}/x.txt"},
+                      layout["cwd"]),
+        layout["experiment_dir"])
+    assert res["decision"] == "deny", res
+    # Out-of-scope read inside a substitution alongside tr still denies.
+    res = run_hook(
+        make_envelope("Bash", {"command": "tr -d $(cat /etc/passwd)"},
+                      layout["cwd"]),
+        layout["experiment_dir"])
+    assert res["decision"] == "deny", res
+    assert "outside read scope" in res["reason"]
 
 
 def test_sed_bundled_inplace_flag_is_write(experiment_layout):
@@ -1996,3 +2019,112 @@ def test_sed_f_scriptfile_in_scope_allows(experiment_layout):
                    layout["experiment_dir"])
     assert res["rc"] == 0
     assert res["decision"] is None
+
+
+# ---- awk: inline program is not a path (mirrors sed) ----
+
+def test_awk_range_program_with_in_scope_file_allows(experiment_layout):
+    """`awk '/^## Step 2/,/^## Step 3/' FILE` — the `/regex/,/regex/`
+    range is the awk PROGRAM, not a path. With FILE in read scope the
+    whole command must be allowed (was a recurring FP on in-scope
+    agent_trace.md reads)."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "trace.md"  # in read scope
+    target.write_text("## Step 1\n## Step 2\nx\n## Step 3\n")
+    cmd = f"awk '/^## Step 2/,/^## Step 3/' {target}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_awk_action_program_no_file_allows(experiment_layout):
+    """`... | awk '/[multiblock]/{c++} END{print c}'` — program-only awk
+    on piped stdin (no file operand). The `/.../{...}` action guards
+    start with `/` but are program text, not paths."""
+    layout = experiment_layout
+    cmd = "cat in.txt | awk '/foo/{c++} END{print c}'"
+    (layout["cwd"] / "in.txt").write_text("foo\n")
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_awk_file_operand_out_of_scope_still_denies(experiment_layout):
+    """Guard: only the awk PROGRAM is exempt — a real out-of-scope FILE
+    operand after the program is still read-scope-checked."""
+    layout = experiment_layout
+    cmd = f"awk '/re/' {layout['sibling_agent']}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny", res
+    assert "outside read scope" in res["reason"]
+
+
+def test_awk_progfile_is_read_with_in_scope_file(experiment_layout):
+    """`awk -f PROG.awk FILE` — PROG.awk is a READ (the program comes
+    from a file), and the trailing FILE is a read operand. Both in scope
+    -> allowed."""
+    layout = experiment_layout
+    prog = layout["agents_dir"] / "p.awk"
+    prog.write_text("{print}\n")
+    data = layout["agents_dir"] / "d.txt"
+    data.write_text("x\n")
+    cmd = f"awk -f {prog} {data}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_awk_progfile_out_of_scope_denies(experiment_layout):
+    """Guard: `awk -f PROG.awk` with an out-of-scope program file is a
+    read-deny (the -f operand is a real file read)."""
+    layout = experiment_layout
+    cmd = f"awk -f {layout['sibling_agent']}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny", res
+
+
+def test_awk_v_assign_not_treated_as_path(experiment_layout):
+    """`awk -v p=/x/y '{...}' FILE` — the `-v VAR=val` assignment value
+    is not a path operand even when it looks path-shaped."""
+    layout = experiment_layout
+    data = layout["agents_dir"] / "d.txt"
+    data.write_text("x\n")
+    cmd = f"awk -v p=/sibling/secret '{{print p}}' {data}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+# ---- $((arithmetic)) must not split a surrounding path token ----
+
+def test_arithmetic_expansion_in_path_allows(experiment_layout):
+    """`f=.../iter${v}_v$((v-2))/agent.py; head $f` — the `$((v-2))`
+    expansion must not split the path token so the trailing `/agent.py`
+    read-denies as an absolute path. The expansion collapses to a digit;
+    the (in-scope) path stays intact."""
+    layout = experiment_layout
+    # Build an in-scope path with an arithmetic expansion glued into a
+    # path component: agents_dir is `.../agents/iter009_some_agent`, so
+    # `.../agents/iter00$((8+1))_some_agent/agent.py` collapses to the
+    # real in-scope file. Without the collapse, split_compound breaks on
+    # `((`/`))` and the trailing `/agent.py` read-denies as an absolute
+    # path.
+    agents_parent = str(layout["agents_dir"].parent)
+    cmd = f'head {agents_parent}/iter00$((8+1))_some_agent/agent.py'
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_arithmetic_expansion_does_not_hide_out_of_scope_path(experiment_layout):
+    """Guard: collapsing `$((...))` must not let an out-of-scope path
+    slip through — a sibling path with an embedded expansion still
+    denies."""
+    layout = experiment_layout
+    sib_dir = layout["sibling_agent"].parent
+    cmd = f"head {sib_dir}/a$((0))gent.py"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny", res

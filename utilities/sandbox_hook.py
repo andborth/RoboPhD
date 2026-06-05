@@ -65,13 +65,37 @@ READ_TOOLS = {"Read", "Glob", "Grep"}
 WRITE_TOOLS = {"Edit", "Write", "NotebookEdit", "MultiEdit"}
 
 # Bash command names that read files. Path tokens map to the read scope.
+# `awk` is NOT here — its first bare positional is a program (a
+# `/regex/` range looks like a path), so it needs the dedicated branch
+# in classify_bash_segment (mirrors `sed`).
 BASH_READ_COMMANDS = {
     "cat", "head", "tail", "less", "more", "bat",
     "grep", "rg", "ag", "find", "fd",
-    "awk", "jq", "ls", "du", "wc",
+    "jq", "ls", "du", "wc",
     "file", "stat", "diff", "comm", "cmp",
     "xxd", "od", "strings", "tree",
 }
+
+# Bash command names whose positional operands are NEVER filesystem
+# paths. `tr SET1 SET2` operands are character sets — `tr` only ever
+# reads stdin and writes stdout, so an operand is never opened as a
+# file. Redirect targets (`> file`) are extracted before command
+# dispatch and `$(...)` substitutions split into their own scope-checked
+# segment, so neither tr's stdin source nor its output file escapes the
+# check — only the bare SET operand (e.g. the lone `/` in `tr -d '/'`)
+# is exempt.
+#
+# NOTE: `echo`/`printf` are deliberately NOT here even though their
+# operands are also "just strings". Their *output* can become a path
+# via command substitution — `cat $(echo /etc/passwd)` — and that read
+# is caught precisely because the inner `echo /etc/passwd` segment
+# scope-checks its `/etc/passwd` operand. Exempting echo would reopen
+# that hole. tr is safe because its stdout is never re-interpreted as a
+# path by the surrounding command (the substitution segment would be
+# `tr ...`, whose own output we don't and needn't resolve). The cost is
+# a rare spurious deny on `echo "$a / $b"` (arithmetic-looking literal),
+# which is the strictly safer direction.
+BASH_NO_PATH_OPERANDS = {"tr"}
 
 # Bash command names that write to their final positional arg (others
 # are read-from sources). E.g., `cp src1 src2 dst`, `mv src dst`.
@@ -311,6 +335,57 @@ def classify_bash_segment(tokens: list) -> tuple:
             j += 1
         return read_paths, write_paths, None
 
+    # `awk [opts] 'PROGRAM' FILE...` — like sed, the inline PROGRAM is
+    # not a path. An awk program is full of `/regex/` constructs (a
+    # range like `/^## Step 2/,/^## Step 3/`, an action guard like
+    # `/foo/{print}`) that all start with `/` and would otherwise
+    # read-deny as absolute paths (observed in production on in-scope
+    # `awk '/range/' trace.md` reads). Only the trailing FILE operands
+    # are paths. Subtleties:
+    #   * `-f PROGFILE` supplies the program from a file (a READ); the
+    #     next token is that file, and no inline program is then expected.
+    #   * `-v VAR=val` is an assignment option, never a path.
+    #   * the FIRST bare positional (when no `-f`) is the inline program
+    #     and is skipped; everything after it is a file operand.
+    if cmd == "awk":
+        have_program = False
+        expect_progfile = False
+        j = 0
+        while j < len(args):
+            a = args[j]
+            if expect_progfile:
+                if looks_like_path(a):
+                    read_paths.append(a)  # -f program file: a read
+                have_program = True
+                expect_progfile = False
+            elif a in ("-f", "--file"):
+                expect_progfile = True
+            elif a.startswith("--file="):
+                t = a[len("--file="):]
+                if looks_like_path(t):
+                    read_paths.append(t)
+                have_program = True
+            elif a in ("-v", "--assign"):
+                j += 1  # skip the following VAR=val (not a path)
+            elif a.startswith(("-v", "--assign=")):
+                pass  # bundled `-vVAR=val` / `--assign=VAR=val`
+            elif a.startswith("-"):
+                pass  # other option
+            elif not have_program:
+                have_program = True  # first bare positional = inline program
+            elif looks_like_path(a):
+                read_paths.append(a)  # file operand
+            j += 1
+        return read_paths, write_paths, None
+
+    # Commands whose positional operands are never paths (`tr` character
+    # sets — see BASH_NO_PATH_OPERANDS). Redirect targets were already
+    # pulled out above, so `tr a b > /out/file` still write-checks
+    # `/out/file`; only the bare operands (e.g. the lone `/` in
+    # `tr -d '/'`) are exempted here.
+    if cmd in BASH_NO_PATH_OPERANDS:
+        return read_paths, write_paths, None
+
     # `dd if=SRC of=DST bs=N count=N` — `if=` is a read source, `of=` a
     # write target. Other key=val args (bs, count, conv, status...) are
     # not paths. Falling through to BASH_WRITE_ALL_POSITIONAL would have
@@ -439,6 +514,61 @@ def strip_heredoc_bodies(command: str) -> str:
         # Skip past the closing delim line.
         line_end = command.find("\n", em.end())
         pos = em.end() if line_end < 0 else line_end + 1
+    return "".join(out)
+
+
+def collapse_arithmetic_expansions(command: str) -> str:
+    """Replace ``$((expr))`` arithmetic expansions with a literal ``0``.
+
+    ``split_compound`` uses ``punctuation_chars=True``, which treats
+    ``(`` and ``)`` as token separators (needed for subshell / process-
+    substitution splitting). That mangles an arithmetic expansion glued
+    inside a path token: ``iter${v}_v$((v-2))/agent.py`` tokenizes to
+    ``iter${v}_v$``, ``((``, ``v-2``, ``))``, ``/agent.py`` — and the
+    trailing ``/agent.py`` then read-denies as an absolute path (observed
+    in production on an in-scope read of the run's own agents dir).
+
+    Bash substitutes an arithmetic expansion with its integer result, so
+    collapsing ``$((...))`` to ``0`` is faithful in shape: the enclosing
+    token stays a single token whose path-ness (and scope) is unchanged
+    (``iter${v}_v0/agent.py``). Handles nesting via paren depth-counting;
+    an unterminated ``$((`` is left as-is (it will fail to parse and
+    fail closed downstream, which is correct).
+
+    Note: a literal ``$((`` inside single quotes is NOT an arithmetic
+    expansion to bash, but collapsing it there is still harmless — the
+    only effect is on punctuation-driven token splitting, and quoted
+    content is opaque data we don't scope-check by value anyway.
+    """
+    out: list = []
+    i, n = 0, len(command)
+    while i < n:
+        if command.startswith("$((", i):
+            # Count paren depth starting from the first '(' (the two
+            # opening parens of `$((` take depth to 2). The expansion
+            # ends when depth returns to 0 — that index is the second
+            # ')' of the closing '))'. Nested `$((...))` are handled
+            # naturally since inner parens balance out.
+            depth = 0
+            j = i + 1
+            while j < n:
+                if command[j] == "(":
+                    depth += 1
+                elif command[j] == ")":
+                    depth -= 1
+                    if depth == 0:
+                        out.append("0")
+                        i = j + 1
+                        break
+                j += 1
+            else:
+                # Ran off the end without closing — unterminated. Leave
+                # the literal char; downstream parse fails closed.
+                out.append(command[i])
+                i += 1
+            continue
+        out.append(command[i])
+        i += 1
     return "".join(out)
 
 
@@ -981,6 +1111,10 @@ def main() -> int:
         # surrounding command (including the `> file` redirect target)
         # is still visible and classified normally.
         command = strip_heredoc_bodies(command)
+        # Collapse `$((expr))` before tokenizing so the surrounding path
+        # token stays intact — split_compound's punctuation_chars splits
+        # on the `((`/`))` otherwise (see collapse_arithmetic_expansions).
+        command = collapse_arithmetic_expansions(command)
         # Newlines are statement separators; make that explicit so
         # split_compound doesn't merge newline-separated statements
         # into one mis-classified segment (see split_statement_newlines).

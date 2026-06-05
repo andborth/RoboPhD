@@ -93,6 +93,10 @@ _INTERP_PATH_RE = re.compile(
     r"^/(opt/anaconda3|usr|usr/local|opt/homebrew)/.*?/(python|node|ruby)\d*"
 )
 _SED_SCRIPT_RE = re.compile(r"^/\^?[^/]*[ ,].*[,$]p?$")
+# An awk program token blocked-as-path: a `/regex/,/regex/` range or a
+# `/regex/{action}` guard. Both start with `/` and contain a second
+# unescaped `/` (range comma-join) or a `{`/space (action/multi-expr).
+_AWK_PROGRAM_RE = re.compile(r"^/.*(/,|/\{|\}|\{|, )")
 
 
 PATTERNS = [
@@ -117,6 +121,35 @@ PATTERNS = [
                and bool(_SED_SCRIPT_RE.match(_b(r)))
                and bool(re.search(r"\bsed\b", _cmd(r)))),
 
+    ("FP-FIXED: awk program as path (/regex/ range or action)",
+     "FP-FIXED",
+     # awk inline program (`/^## Step 2/,/^## Step 3/`, `/foo/{c++}`)
+     # blocked as a path. Cmd-aware (require `awk`) so a real recon read
+     # that syntactically matches isn't mislabeled.
+     lambda r: _scope(r) == "read"
+               and bool(_AWK_PROGRAM_RE.match(_b(r)))
+               and bool(re.search(r"\bawk\b", _cmd(r)))),
+
+    ("FP-FIXED: tr operand (character set, not a path)",
+     "FP-FIXED",
+     # `tr -d /` etc. — the lone `/` operand is a character set. Cmd-
+     # aware: require `tr` so a genuine `find /` deny (also blocked='/')
+     # isn't absorbed here.
+     lambda r: _scope(r) == "read" and _b(r) == "/"
+               and bool(re.search(r"\btr\b", _cmd(r)))
+               and not bool(re.search(r"\bfind\s+/", _cmd(r)))),
+
+    ("FP-FIXED: $((arithmetic)) split a path token",
+     "FP-FIXED",
+     # `iter${v}_v$((v-2))/agent.py` split on `((`/`))`, leaving a stray
+     # `/agent.py` (or similar trailing component). Recognized by a
+     # blocked path that is a bare leading path component AND a `$((` in
+     # the command. Cmd-aware via `$((` so unrelated `/agent.py`-shaped
+     # denials aren't absorbed.
+     lambda r: _scope(r) == "read"
+               and "$((" in _cmd(r)
+               and bool(re.match(r"^/[A-Za-z0-9._-]+$", _b(r)))),
+
     ("FP-FIXED: auto-memory write under this-run slug",
      "FP-FIXED",
      lambda r: _scope(r) == "write"
@@ -130,10 +163,7 @@ PATTERNS = [
                and ".claude" in _b(r) and "/tool-results/" in _b(r)),
 
     # ---- FP-OPEN: still recurs at HEAD ----
-    ("FP-OPEN: tr -d / operand (parked — needs substitution-parser rework)",
-     "FP-OPEN",
-     lambda r: _scope(r) == "read" and _b(r) == "/"
-               and bool(re.search(r"\btr\s+-d\s+/", _cmd(r)))),
+    # (none currently — tr/awk/$(( )) FPs migrated to FP-FIXED)
 
     # ---- TPs: sandbox correctly catching out-of-policy actions ----
     ("TP: find / full-filesystem scan",

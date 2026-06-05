@@ -243,11 +243,13 @@ def test_tool_results_write_is_not_fp_fixed():
 # ---------------------------------------------------------------------
 
 
-def test_tr_dash_d_slash_classifies_fp_open():
+def test_tr_dash_d_slash_classifies_fp_fixed():
+    """`tr -d /` is now fixed in the hook (BASH_NO_PATH_OPERANDS); its
+    historical records classify FP-FIXED, not FP-OPEN."""
     _, cat = catalog.classify(_rec(
         scope="read", blocked_path="/", command="ls | tr -d /",
     ))
-    assert cat == "FP-OPEN"
+    assert cat == "FP-FIXED"
 
 
 def test_find_root_not_swallowed_by_tr_pattern():
@@ -259,6 +261,56 @@ def test_find_root_not_swallowed_by_tr_pattern():
         scope="read", blocked_path="/", command="find / -name foo",
     ))
     assert cat == "TP"
+
+
+def test_find_root_with_tr_elsewhere_still_tp():
+    """Guard the tr predicate's `find /` exclusion: a command that pipes
+    a real `find /` scan into tr must classify TP (the find-root deny),
+    not be absorbed as a tr FP."""
+    _, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/",
+        command="find / -name x 2>/dev/null | tr -d ' '",
+    ))
+    assert cat == "TP"
+
+
+def test_awk_range_program_classifies_fp_fixed():
+    """awk `/regex/,/regex/` range blocked as a path is now fixed."""
+    _, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/^## Step 2/,/^## Step 3",
+        command="awk '/^## Step 2/,/^## Step 3/' trace.md",
+    ))
+    assert cat == "FP-FIXED"
+
+
+def test_awk_action_program_classifies_fp_fixed():
+    """awk `/regex/{action}` guard blocked as a path is now fixed."""
+    _, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/[multiblock]/{found=0} /n=2/{c++}",
+        command="cat x | awk '/[multiblock]/{found=0} /n=2/{c++}'",
+    ))
+    assert cat == "FP-FIXED"
+
+
+def test_arithmetic_split_path_classifies_fp_fixed():
+    """A `/agent.py`-style stray component from a `$((...))` split is
+    now fixed (collapse_arithmetic_expansions)."""
+    _, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/agent.py",
+        command="f=/run/iter${v}_v$((v-2))/agent.py; head $f",
+    ))
+    assert cat == "FP-FIXED"
+
+
+def test_arithmetic_pattern_requires_dollar_paren():
+    """Guard: the arithmetic FP pattern must require `$((` in the cmd so
+    a genuine out-of-scope `/agent.py`-shaped read (no arithmetic) isn't
+    mislabeled FP-FIXED."""
+    label, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/agent.py",
+        command="cat /agent.py",
+    ))
+    assert cat != "FP-FIXED", (label, cat)
 
 
 def test_parse_fail_classifies_limitation():
