@@ -137,7 +137,7 @@ class MetaEvolutionManager:
         """
         config = self.config_manager.get_config(iteration)
         strategy_name = config["meta_evolution_strategy"]
-        model = config.get("meta_evolution_model", "opus-4.5")
+        model = config.get("meta_evolution_model", "opus-4.8")
         cadence = config.get("meta_evolution_cadence", 3)
         first_iteration = config.get("meta_evolution_first_iteration", 4)
 

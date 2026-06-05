@@ -55,6 +55,8 @@ class RoboPhDConfig:
     # Meta-evolution
     meta_evolution_strategy: Optional[str] = None
     """Meta-evolution strategy name (e.g. ``train_a_winner``); ``None`` disables meta-evolution."""
+    meta_evolution_model: str = "opus-4.8"
+    """Model for meta-evolution sessions (Claude Code CLI subprocess)."""
     meta_evolution_first_iteration: int = 4
     """First iteration at which meta-evolution fires."""
     meta_evolution_cadence: int = 3
@@ -521,6 +523,7 @@ def optimize_anything(
             "eval_timeout": cfg.eval_timeout,
             "examples_per_iteration": cfg.examples_per_iteration,
             "meta_evolution_strategy": cfg.meta_evolution_strategy,
+            "meta_evolution_model": cfg.meta_evolution_model,
             "meta_evolution_first_iteration": cfg.meta_evolution_first_iteration,
             "meta_evolution_cadence": cfg.meta_evolution_cadence,
             "agents_directory": str(seed_dir.parent),
