@@ -2402,14 +2402,3 @@ def test_wrapped_interpreter_with_out_of_scope_script_still_denies(experiment_la
     res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
                    layout["experiment_dir"])
     assert res["decision"] == "deny", res
-
-
-def test_wrapped_interpreter_with_out_of_scope_script_still_denies(experiment_layout):
-    """The interpreter (command token) is exempt, but a SCRIPT arg that's
-    out of scope is still denied: `timeout 60 python /sibling/x.py`."""
-    layout = experiment_layout
-    sib = layout["sibling_agent"].parent / "x.py"
-    cmd = f"timeout 60 /opt/anaconda3/envs/x/bin/python {sib}"
-    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
-                   layout["experiment_dir"])
-    assert res["decision"] == "deny", res
