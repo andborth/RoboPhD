@@ -2230,3 +2230,82 @@ def test_replay_unreplayable_record_raises(experiment_layout):
     import pytest as _pytest
     with _pytest.raises(ValueError):
         replay_denial_record(rec2, str(layout["experiment_dir"]))
+
+
+# ---------------------------------------------------------------------
+# Command-wrapper prefix stripping: timeout/time/nice/... relocate the
+# real command into argument position. An interpreter so relocated must
+# be treated like the bare leading invocation it stands in for (command
+# token not scope-checked), WITHOUT dropping any path-shaped scaffolding.
+# ---------------------------------------------------------------------
+
+
+def test_timeout_interpreter_allows(experiment_layout):
+    """`timeout 600 /opt/.../python in_scope.py` — DURATION consumed,
+    interpreter becomes the (unchecked) command token; the in-scope arg
+    is fine. Was the wrapper-prefix FP-OPEN."""
+    layout = experiment_layout
+    target = layout["cwd"] / "run.py"
+    target.write_text("print(1)\n")
+    cmd = f"timeout 600 /opt/anaconda3/envs/x/bin/python {target}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_time_interpreter_allows(experiment_layout):
+    """`time /opt/.../python in_scope.py` — no leading operand, just the
+    wrapped command."""
+    layout = experiment_layout
+    target = layout["cwd"] / "run.py"
+    target.write_text("print(1)\n")
+    cmd = f"time /opt/anaconda3/envs/x/bin/python {target}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_nice_n_interpreter_allows(experiment_layout):
+    """`nice -n 10 /opt/.../python in_scope.py` — flag+value skipped."""
+    layout = experiment_layout
+    target = layout["cwd"] / "run.py"
+    target.write_text("print(1)\n")
+    cmd = f"nice -n 10 /opt/anaconda3/envs/x/bin/python {target}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_wrapper_does_not_drop_out_of_scope_command_arg(experiment_layout):
+    """Safety: stripping the wrapper must NOT exempt the wrapped command's
+    own arguments — `timeout 600 cat /sibling/secret` still read-denies
+    the out-of-scope arg."""
+    layout = experiment_layout
+    cmd = f"timeout 600 cat {layout['sibling_agent']}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny", res
+    assert "outside read scope" in res["reason"]
+
+
+def test_wrapper_path_bearing_option_still_denies(experiment_layout):
+    """Safety: `time -o /sibling/out CMD` — the `-o` value is a path; the
+    strip must bail rather than drop it, so the out-of-scope write/read
+    target is still caught."""
+    layout = experiment_layout
+    sib_out = layout["sibling_agent"].parent / "out.txt"
+    cmd = f"time -o {sib_out} /opt/anaconda3/envs/x/bin/python run.py"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny", res
+
+
+def test_wrapped_interpreter_with_out_of_scope_script_still_denies(experiment_layout):
+    """The interpreter (command token) is exempt, but a SCRIPT arg that's
+    out of scope is still denied: `timeout 60 python /sibling/x.py`."""
+    layout = experiment_layout
+    sib = layout["sibling_agent"].parent / "x.py"
+    cmd = f"timeout 60 /opt/anaconda3/envs/x/bin/python {sib}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny", res
