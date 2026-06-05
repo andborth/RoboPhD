@@ -36,6 +36,11 @@ logging.getLogger("litellm").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
+# Default parallel eval workers when --max-workers is omitted. None = the
+# framework default (min(32, cpu+4)). Applied as a task default, not argparse's
+# (which stays None so resume can tell "user passed it" from "use the default").
+DEFAULT_MAX_WORKERS = None
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -110,6 +115,22 @@ def main():
 
     seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
 
+    # Resolve --max-workers for the gepa/autoresearch engines (which take it
+    # directly, not via ConfigManager). Order: explicit flag > value recovered
+    # from a resumed checkpoint > task default. The RoboPhD engine instead packs
+    # it into engine_overrides below so it applies as a config delta on resume.
+    from RoboPhD.runner_utils import read_checkpoint_max_workers
+    if args.max_workers is not None:
+        effective_max_workers = args.max_workers
+    elif args.resume:
+        cp_mw = read_checkpoint_max_workers(args.resume)
+        effective_max_workers = cp_mw if cp_mw is not None else DEFAULT_MAX_WORKERS
+        if cp_mw is not None:
+            logger.info(f"Resume: using max_workers={cp_mw} from checkpoint.json "
+                        f"(pass --max-workers N to override)")
+    else:
+        effective_max_workers = DEFAULT_MAX_WORKERS
+
     # Build config based on engine choice
     if args.engine in ("gepa", "autoresearch"):
         _robophd_flags = {"--num-iterations", "--engine-config", "--resume", "--extend", "--from-iteration", "--meta-evolution-strategy"}
@@ -121,7 +142,7 @@ def main():
         cfg = GEPAConfig(
             evaluation_budget=args.evaluation_budget,
             val_dataset=val,
-            max_workers=args.max_workers,
+            max_workers=effective_max_workers,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
@@ -130,7 +151,7 @@ def main():
         cfg = AutoresearchConfig(
             evaluation_budget=args.evaluation_budget,
             val_dataset=val,
-            max_workers=args.max_workers,
+            max_workers=effective_max_workers,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
@@ -140,10 +161,18 @@ def main():
         engine_overrides = {}
         if args.engine_config:
             engine_overrides = json.loads(args.engine_config)
+        # Route max_workers through engine_overrides (not RoboPhDConfig's
+        # dedicated field, which only applies on a fresh run): explicit flag
+        # always packs (takes effect on a training --resume too); with no flag,
+        # pack the task default ONLY on a fresh run — never on resume, where it
+        # would clobber the original value. (DANGER caller-invariant, api.py.)
+        if args.max_workers is not None:
+            engine_overrides["max_workers"] = args.max_workers
+        elif not args.resume and DEFAULT_MAX_WORKERS is not None and "max_workers" not in engine_overrides:
+            engine_overrides["max_workers"] = DEFAULT_MAX_WORKERS
         cfg = RoboPhDConfig(
             num_iterations=args.num_iterations,
             evaluation_budget=args.evaluation_budget,
-            max_workers=args.max_workers,
             parent_experiments_dir=args.runs_dir,
             random_seed=args.random_seed,
             meta_evolution_strategy=args.meta_evolution_strategy,

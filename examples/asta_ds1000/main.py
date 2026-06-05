@@ -774,7 +774,19 @@ def main():
         # default into iteration 1's config so it persists into the
         # checkpoint and is inherited by future iterations.
         engine_overrides["new_agent_test_rounds"] = 0
+    # Route max_workers through engine_overrides for the RoboPhD engine (not the
+    # dedicated RoboPhDConfig field, which only applies on a fresh run — the
+    # resume path re-applies engine_overrides as a config delta but never reads
+    # cfg.max_workers). With no flag, pack the task default ONLY on a fresh run
+    # so resume inherits the checkpoint value instead.
+    if args.max_workers is None and not is_resume:
+        engine_overrides["max_workers"] = DEFAULT_MAX_WORKERS
     engine_overrides.update(parsed_engine_config)
+    # Re-assert an explicit --max-workers AFTER merging --engine-config so the
+    # flag wins over an --engine-config max_workers (matches the other tasks);
+    # done last so it also takes effect on a training --resume.
+    if args.max_workers is not None:
+        engine_overrides["max_workers"] = args.max_workers
 
     if args.engine == "gepa":
         cfg = GEPAConfig(
@@ -801,7 +813,6 @@ def main():
         cfg = RoboPhDConfig(
             num_iterations=num_iterations,
             evaluation_budget=evaluation_budget,
-            max_workers=effective_max_workers,
             parent_experiments_dir=args.runs_dir,
             random_seed=args.random_seed,
             meta_evolution_strategy=args.meta_evolution_strategy,

@@ -68,32 +68,11 @@ EVAL_TIMEOUT = 600
 # ---------------------------------------------------------------------------
 ARC_AGI_1_RUNTIME_CONFIG_FILENAME = "arc_agi_1_runtime_config.json"
 
-
-def _read_checkpoint_max_workers(resume_dir) -> "int | None":
-    """Read max_workers from a resumed run's checkpoint.json, or None if
-    absent / unparseable.
-
-    Walks ``config_manager.iteration_configs`` to the highest iteration with an
-    explicit ``max_workers`` value (skipping nulls, which mean "framework
-    default"), so we recover the value the original run actually used. Mirrors
-    examples/asta_ds1000/main.py. Used so --resume (and --eval-only --resume)
-    honors the original run's worker count, matching the user expectation that
-    resume preserves settings.
-    """
-    cp_path = Path(resume_dir) / "checkpoint.json"
-    if not cp_path.is_file():
-        return None
-    try:
-        cp = json.loads(cp_path.read_text())
-    except (json.JSONDecodeError, OSError):
-        return None
-    iter_configs = (cp.get("config_manager") or {}).get("iteration_configs") or {}
-    for k in sorted(iter_configs.keys(),
-                    key=lambda s: int(s) if s.isdigit() else -1, reverse=True):
-        val = (iter_configs[k] or {}).get("max_workers")
-        if val is not None:
-            return int(val)
-    return None
+# Default parallel eval workers when --max-workers is omitted. Applied as a
+# task default (not argparse's default, which stays None so resume can tell
+# "user passed it" from "use the default"). read_checkpoint_max_workers lives
+# in runner_utils so every example shares one implementation.
+DEFAULT_MAX_WORKERS = 10
 
 
 def _arc_runtime_path(experiment_dir) -> Path:
@@ -191,7 +170,7 @@ def parse_args():
                              "(default: medium reasoning + $0.10 + 20 calls)")
 
     # Infrastructure
-    parser.add_argument("--max-workers", type=int, default=None, help="Parallel eval workers (None = Python default)")
+    parser.add_argument("--max-workers", type=int, default=None, help="Parallel eval workers (default: 10)")
     # BooleanOptionalAction exposes both --agent-isolation and
     # --no-agent-isolation; with default=True the help's "(default: True)" reads
     # against the positive name, where True == on (a store_false
@@ -274,7 +253,7 @@ def main():
     # Resolve --max-workers for the EVAL paths (--eval-only / --eval-test-set),
     # which take a RoboPhDEvalConfig directly and don't go through ConfigManager.
     # Order: explicit CLI flag wins; else on --resume recover the value the
-    # original run used from its checkpoint; else None = framework default.
+    # original run used from its checkpoint; else the task default.
     #
     # The TRAINING engine is handled differently below: max_workers is packed
     # into engine_overrides only when the user passed the flag, so it applies as
@@ -282,18 +261,19 @@ def main():
     # the flag is omitted on resume, nothing is packed and ConfigManager's
     # delta-inheritance carries the original run's value forward (honored when
     # passed, persisted when not). See the DANGER caller-invariant in api.py.
+    from RoboPhD.runner_utils import read_checkpoint_max_workers
     if args.max_workers is not None:
         effective_max_workers = args.max_workers
     elif args.resume:
-        cp_mw = _read_checkpoint_max_workers(args.resume)
-        effective_max_workers = cp_mw
+        cp_mw = read_checkpoint_max_workers(args.resume)
+        effective_max_workers = cp_mw if cp_mw is not None else DEFAULT_MAX_WORKERS
         if cp_mw is not None:
             logger.info(
                 f"Resume: using max_workers={cp_mw} from checkpoint.json "
                 f"(pass --max-workers N to override)"
             )
     else:
-        effective_max_workers = None
+        effective_max_workers = DEFAULT_MAX_WORKERS
 
     # --eval-only: skip optimization, evaluate an agent from a prior run on the
     # test set (always the full 400; --num-train does not apply here). Defaults
@@ -388,12 +368,15 @@ def main():
             engine_overrides = json.loads(args.engine_config)
         # Route max_workers through engine_overrides (not the dedicated
         # RoboPhDConfig.max_workers field, which only applies on a fresh run).
-        # Pack it ONLY when the user passed the flag, so it applies as a config
-        # delta that takes effect even on a training --resume; omit it otherwise
-        # so ConfigManager carries the original run's value forward. Explicit
-        # flag wins over an --engine-config max_workers.
+        # Explicit flag always packs (so it applies as a config delta that takes
+        # effect even on a training --resume). With no flag, pack the task
+        # default ONLY on a fresh run — never on resume, where packing would
+        # clobber the original run's value; ConfigManager's delta-inheritance
+        # carries it forward instead. (DANGER caller-invariant, api.py.)
         if args.max_workers is not None:
             engine_overrides["max_workers"] = args.max_workers
+        elif not args.resume and DEFAULT_MAX_WORKERS is not None and "max_workers" not in engine_overrides:
+            engine_overrides["max_workers"] = DEFAULT_MAX_WORKERS
         cfg = RoboPhDConfig(
             num_iterations=args.num_iterations,
             evaluation_budget=args.evaluation_budget,

@@ -293,6 +293,35 @@ def find_named_agent(run_dir: Path, agent_name: str) -> Tuple[str, Path]:
     return agent_name, agent_dir
 
 
+def read_checkpoint_max_workers(resume_dir) -> "int | None":
+    """Read max_workers from a resumed run's checkpoint.json, or None if
+    absent / unparseable.
+
+    Walks ``config_manager.iteration_configs`` to the highest iteration with an
+    explicit ``max_workers`` value (skipping nulls, which mean "framework
+    default"), recovering the value the original run actually used. Used by
+    example main.py files so the EVAL paths (--eval-only / --eval-test-set,
+    which take a RoboPhDEvalConfig directly and bypass ConfigManager) honor the
+    resumed run's worker count. The training path doesn't need this — it routes
+    max_workers through engine_overrides, where ConfigManager's delta
+    inheritance carries it forward.
+    """
+    cp_path = Path(resume_dir) / "checkpoint.json"
+    if not cp_path.is_file():
+        return None
+    try:
+        cp = json.loads(cp_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+    iter_configs = (cp.get("config_manager") or {}).get("iteration_configs") or {}
+    for k in sorted(iter_configs.keys(),
+                    key=lambda s: int(s) if s.isdigit() else -1, reverse=True):
+        val = (iter_configs[k] or {}).get("max_workers")
+        if val is not None:
+            return int(val)
+    return None
+
+
 def load_best_candidate(
     run_dir: Path,
     file_mapping: Dict[str, str] | None = None,
