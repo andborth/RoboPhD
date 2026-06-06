@@ -79,6 +79,10 @@ def parse_args():
     # Test evaluation
     parser.add_argument("--eval-test-set", action="store_true", help="Run test-set evaluation after optimization")
     parser.add_argument("--eval-only", action="store_true", help="Skip optimization; evaluate best agent from --resume dir on test set")
+    parser.add_argument("--eval-agent", type=str, default=None,
+                        help="With --eval-only: evaluate this named agent from the --resume dir's "
+                             "agent_pool instead of the best-Elo agent. Results are written to "
+                             "test_results_<agent>.json so they don't clobber the default.")
 
     # Resume / extend
     parser.add_argument("--resume", type=str, default=None, help="Path to experiment directory to resume")
@@ -106,6 +110,9 @@ def main():
 
     dataset = load_text2sql_dataset(args.dataset)
     logger.info(f"Dataset: {len(dataset)} problems")
+
+    if args.eval_agent and not args.eval_only:
+        raise SystemExit("--eval-agent requires --eval-only")
 
     # Resolve --max-workers for the eval path + gepa/autoresearch (which take it
     # directly, not via ConfigManager). Order: explicit flag > value recovered
@@ -135,10 +142,29 @@ def main():
             cost_budget=args.cost_budget,
             max_test_sql_calls=args.max_test_sql_calls,
         )
-        eval_result = eval_run(evaluator=test_evaluator, dataset=test_data, experiment_dir=args.resume,
-                               config=RoboPhDEvalConfig(max_workers=effective_max_workers))
+        eval_cfg = RoboPhDEvalConfig(max_workers=effective_max_workers)
+        if args.eval_agent:
+            from RoboPhD.runner_utils import find_named_agent
+            try:
+                _, agent_dir = find_named_agent(Path(args.resume), args.eval_agent)
+            except FileNotFoundError as e:
+                raise SystemExit(str(e))
+            logger.info(f"Evaluating named agent: {args.eval_agent} from {agent_dir}")
+            # Two-artifact domain: load both agent.py and analyze_db.py from the
+            # pool entry (analyze_db.py is optional — older agents may omit it).
+            candidate = {"agent.py": (agent_dir / "agent.py").read_text()}
+            analyze_db = agent_dir / "analyze_db.py"
+            if analyze_db.exists():
+                candidate["analyze_db.py"] = analyze_db.read_text()
+            eval_result = eval_candidate(evaluator=test_evaluator, dataset=test_data,
+                                         candidate=candidate, config=eval_cfg)
+            results_filename = f"test_results_{args.eval_agent}.json"
+        else:
+            eval_result = eval_run(evaluator=test_evaluator, dataset=test_data,
+                                   experiment_dir=args.resume, config=eval_cfg)
+            results_filename = "test_results.json"
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} problems)")
-        test_path = Path(args.resume) / "test_results.json"
+        test_path = Path(args.resume) / results_filename
         with open(test_path, "w") as f:
             json.dump({
                 "mean_test_score": eval_result.mean_score,
