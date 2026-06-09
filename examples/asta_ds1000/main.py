@@ -85,9 +85,11 @@ DEFAULT_EXAMPLES_PER_ITERATION = 20
 # f-string interpolation, so changing this constant updates both.
 DEFAULT_NUM_ITERATIONS = 20
 
-# Framework default for parallel eval workers. Single source of truth:
-# referenced from both --max-workers' resolution logic AND its argparse
-# help text (via f-string), so bumping this constant updates both.
+# Framework default for parallel eval workers. Single source of truth in
+# code: referenced from both --max-workers' resolution logic AND its
+# argparse help text (via f-string), so bumping this constant updates both.
+# The README's "Subprocess isolation" section states the value in prose —
+# update it too when changing this.
 DEFAULT_MAX_WORKERS = 10
 
 
