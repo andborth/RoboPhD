@@ -427,12 +427,7 @@ def parse_args():
     p.add_argument("--cost-per-error", type=float, default=None,
                    help="Dollars of mean batch spend (over --cost-threshold) "
                         "that equals one wrong answer of penalty. Default "
-                        "$0.01 puts cost in active-pull territory. Set "
-                        "large (e.g. $1, $10) for pure-tiebreaker semantics "
-                        "where the penalty sorts within accuracy ties but "
-                        "never overrides a 1-problem accuracy gap. Applied "
-                        "to the iteration aggregate (not per example); "
-                        "test-path scores are raw 0/1 fractions regardless."
+                        "$0.01. See README 'Cost-penalty math' for regimes."
                         "%(default).0s")
 
     p.add_argument("--max-workers", type=int, default=None,
