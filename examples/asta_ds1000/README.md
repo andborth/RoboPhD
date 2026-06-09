@@ -38,7 +38,7 @@ Verify:
 docker info  # should print daemon info without error
 ```
 
-On the **first** evaluator run, AstaBench's image is pulled (~2–2.5 GB; one-time, ~30s–2min depending on connection). If you also run `examples/asta_discoverybench`, the image is shared.
+On the **first** evaluator run, AstaBench's image is pulled (~2–2.5 GB; one-time, ~30s–2min depending on connection).
 
 ### 3. Credentials
 
@@ -208,12 +208,6 @@ Every evaluation runs in its own Python subprocess (`_eval_worker.py`). Inspect-
 `--max-workers` controls the parallel width. Resolution order: (1) the CLI flag if set, (2) on `--resume`, the value stored in the resumed run's `checkpoint.json` (so resume preserves the original run's settings), (3) the framework default of 10. Lower it (e.g. 4–6) if you see ENOSPC errors — each parallel eval takes an overlay snapshot of the inspect-ai sandbox's heavy ML base layer (torch/tensorflow/grpc), and wide parallelism can exhaust disk.
 
 ## Cost notes
-
-DS-1000 is **much cheaper per evaluation than DiscoveryBench**:
-
-- No judge LLM. Programmatic scoring only.
-- Single LLM call per problem in the seed agent (evolution may add more).
-- Sandbox runs the test program (no GPU; CPU torch/tensorflow only).
 
 Rough budget for a full training run + experiment-phase test:
 
