@@ -443,7 +443,7 @@ def test_framing_higher_values_use_same_branch(framing_helper):
 
 # --- background.md model-handle table + temperature-free seed --------------
 # Two invariants:
-# (1) The model-handle table in background.md must list all 9 handles in
+# (1) The model-handle table in background.md must list all 10 handles in
 #     5-column shape and the 3 Gemini handles must share an identical
 #     Available-overrides cell. Pins the table the agent reads.
 # (2) The seed agent's only .generate() call must not pass `temperature`
@@ -455,13 +455,14 @@ SEED_AGENT_PY = REPO_ROOT / "examples" / "asta_ds1000" / "seeds" / "baseline" / 
 EXPECTED_HANDLES = (
     "GPT_5_4_MINI", "GPT_5_4", "GPT_5_5",
     "CLAUDE_HAIKU_4_5", "CLAUDE_SONNET_4_6", "CLAUDE_OPUS_4_7",
-    "GEMINI_3_1_FLASH_LITE", "GEMINI_3_FLASH_PREVIEW",
+    "CLAUDE_FABLE_5",
+    "GEMINI_3_1_FLASH_LITE", "GEMINI_3_5_FLASH",
     "GEMINI_3_1_PRO_PREVIEW",
 )
 
 
-def test_background_md_lists_all_nine_handles_in_five_column_shape():
-    """background.md's model-handle table must include all 9 handles in
+def test_background_md_lists_all_ten_handles_in_five_column_shape():
+    """background.md's model-handle table must include all 10 handles in
     the 5-column shape (Handle | Input | Output | Default reasoning_effort
     | Available overrides). Regression to fewer columns would break the
     rendered markdown table; missing handles would hide them from the

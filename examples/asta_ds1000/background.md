@@ -83,9 +83,10 @@ The following model handles are available, imported from `model_registry`. They 
 | `CLAUDE_HAIKU_4_5` | 1.00 | 5.00 | `"none"` | `"low"`, `"medium"`, `"high"` |
 | `CLAUDE_SONNET_4_6` | 3.00 | 15.00 | `"none"` | `"low"`, `"medium"`, `"high"` |
 | `GEMINI_3_1_FLASH_LITE` | 0.25 | 1.50 | `"low"` | `"low"`, `"high"` |
-| `GEMINI_3_FLASH_PREVIEW` | 0.50 | 3.00 | `"low"` | `"low"`, `"high"` |
+| `GEMINI_3_5_FLASH` | 1.50 | 9.00 | `"low"` | `"low"`, `"high"` |
 | `GPT_5_5` | 5.00 | 30.00 | model-managed | `"low"`, `"medium"`, `"high"` |
 | `CLAUDE_OPUS_4_7` | 5.00 | 25.00 | model-managed | `"low"`, `"medium"`, `"high"` |
+| `CLAUDE_FABLE_5` | 10.00 | 50.00 | model-managed | `"low"`, `"medium"`, `"high"` |
 | `GEMINI_3_1_PRO_PREVIEW` | 2.00 | 12.00 | `"low"` | `"low"`, `"high"` |
 
 Setting `reasoning_effort` to any value in the "available overrides" column adds reasoning tokens above what the default already costs. For handles whose default is `"none"`, picking `"low"` is the cheapest opt-in step but it's still strictly more expensive than omitting `reasoning_effort` entirely. For the Gemini handles whose default is already `"low"`, the only opt-up is `"high"`. To stay at the cheapest path on any handle, omit the `reasoning_effort` field from `GenerateConfig`.

@@ -1,11 +1,12 @@
 """Model registry for DS-1000 evolved agents.
 
-Exports nine pre-resolved Inspect-AI Model handles, grouped by family
-into a cheap/fast tier, a standard tier, and a strong/slow tier:
+Exports ten pre-resolved Inspect-AI Model handles, grouped by family
+into a cheap/fast tier, a standard tier, and a strong/slow tier
+(Anthropic has a fourth handle, CLAUDE_FABLE_5, a tier above Opus):
 
   OpenAI:    GPT_5_4_MINI              GPT_5_4               GPT_5_5
-  Anthropic: CLAUDE_HAIKU_4_5          CLAUDE_SONNET_4_6     CLAUDE_OPUS_4_7
-  Google:    GEMINI_3_1_FLASH_LITE     GEMINI_3_FLASH_PREVIEW  GEMINI_3_1_PRO_PREVIEW
+  Anthropic: CLAUDE_HAIKU_4_5          CLAUDE_SONNET_4_6     CLAUDE_OPUS_4_7, CLAUDE_FABLE_5
+  Google:    GEMINI_3_1_FLASH_LITE     GEMINI_3_5_FLASH      GEMINI_3_1_PRO_PREVIEW
 
 Evolved agents import these handles and call `.generate(...)` on them;
 the underlying provider/model strings live here, OUTSIDE the evolvable
@@ -40,7 +41,7 @@ _CLAUDE_SONNET_4_6_ID = "anthropic/claude-sonnet-4-6"
 # verifying the resulting strings still resolve. Inspect-AI
 # routes to whatever the provider's canonical id is.
 _GEMINI_3_1_FLASH_LITE_ID = "google/gemini-3.1-flash-lite"
-_GEMINI_3_FLASH_PREVIEW_ID = "google/gemini-3-flash-preview"
+_GEMINI_3_5_FLASH_ID = "google/gemini-3.5-flash"
 
 # RoboPhD convention: prefer ANTHROPIC_API_KEY_FOR_ROBOPHD over
 # ANTHROPIC_API_KEY so the user's Claude Code CLI sessions (which read
@@ -67,20 +68,20 @@ GPT_5_4_MINI = get_model(_GPT_5_4_MINI_ID)
 GPT_5_4 = get_model(_GPT_5_4_ID)
 CLAUDE_HAIKU_4_5 = get_model(_CLAUDE_HAIKU_4_5_ID, api_key=_ANTHROPIC_API_KEY)
 CLAUDE_SONNET_4_6 = get_model(_CLAUDE_SONNET_4_6_ID, api_key=_ANTHROPIC_API_KEY)
-# Gemini 3 Flash and Flash Lite are thinking models that default to
+# Gemini 3.5 Flash and 3.1 Flash Lite are thinking models that default to
 # "high" reasoning at the provider — too aggressive for DS-1000's mostly
 # short numpy/pandas idioms (deep reasoning inflates latency and bills
 # as output tokens). Pin both to "low" for cheap throughput; the step-up
 # path is per-call `reasoning_effort="high"` from an evolved agent.
-# Inspect's Google provider maps these to ThinkingLevel.LOW for Gemini 3
+# Inspect's Google provider maps these to ThinkingLevel.LOW for the Gemini
 # Flash family. Per-call configs from evolved agents merge field-by-field
 # over these defaults via Inspect's base_config.merge mechanism.
 #
 # Why "low" for Flash even though it's the heavier of the two Gemini
 # Flash variants? Earlier (ed0c0f5) Flash was pinned at "medium" to
 # act as a "step-up tier" relative to Flash-Lite's "low". That intent
-# is preserved by Flash's higher native price and capability ($0.50/
-# $3.00 vs Flash-Lite's $0.25/$1.50), just shifted: the step-up is now
+# is preserved by Flash's higher native price and capability ($1.50/
+# $9.00 vs Flash-Lite's $0.25/$1.50), just shifted: the step-up is now
 # in default capability, not in default reasoning effort. The agent
 # can still opt up to `"high"` per-call when it wants the original
 # medium-style step-up — the new background.md table makes that
@@ -103,22 +104,34 @@ GEMINI_3_1_FLASH_LITE = get_model(
 # Backwards-compat for evolved agents created before the preview→GA migration.
 # Code-only; not surfaced in background.md or any doc.
 GEMINI_3_1_FLASH_LITE_PREVIEW = GEMINI_3_1_FLASH_LITE
-GEMINI_3_FLASH_PREVIEW = get_model(
-    _GEMINI_3_FLASH_PREVIEW_ID,
+GEMINI_3_5_FLASH = get_model(
+    _GEMINI_3_5_FLASH_ID,
     config=GenerateConfig(reasoning_effort="low"),
 )
+# Backwards-compat for evolved agents created before the 3-flash-preview →
+# 3.5-flash migration. Code-only; not surfaced in background.md or any doc.
+GEMINI_3_FLASH_PREVIEW = GEMINI_3_5_FLASH
 
-# Strong-tier handles. Cost rates are ~5-10× the cheap tier; the
-# cost-penalty in the training scorer disciplines overuse (see
+# Strong-tier handles. Cost rates are ~5-40× the cheap tier (Fable 5,
+# at $10/$50 per MTok, is the most expensive handle in the registry);
+# the cost-penalty in the training scorer disciplines overuse (see
 # background.md). Raise --cost-threshold (e.g. 0.08) for a more
 # generous free zone when relying on these, or raise --cost-per-error
 # to soften the per-call penalty.
 _GPT_5_5_ID = "openai/gpt-5.5"
 _CLAUDE_OPUS_4_7_ID = "anthropic/claude-opus-4-7"
+_CLAUDE_FABLE_5_ID = "anthropic/claude-fable-5"
 _GEMINI_3_1_PRO_PREVIEW_ID = "google/gemini-3.1-pro-preview"
 
 GPT_5_5 = get_model(_GPT_5_5_ID)
 CLAUDE_OPUS_4_7 = get_model(_CLAUDE_OPUS_4_7_ID, api_key=_ANTHROPIC_API_KEY)
+# Fable 5 is Anthropic's tier above Opus. Like the other Claude handles
+# it is intentionally NOT pinned with a reasoning_effort default: with no
+# reasoning_effort, Inspect omits the `thinking` param entirely (required
+# on Fable 5 — an explicit thinking-disabled is a 400 there, unlike Opus);
+# with one set, Inspect's is_claude_latest() path maps it to adaptive
+# thinking + output_config.effort, same as CLAUDE_OPUS_4_7.
+CLAUDE_FABLE_5 = get_model(_CLAUDE_FABLE_5_ID, api_key=_ANTHROPIC_API_KEY)
 # All three Gemini handles default to "low" reasoning_effort for a
 # uniform Gemini family default. Two reasons specific to Pro Preview:
 # (1) Inspect's google provider silently UPGRADES "medium" to

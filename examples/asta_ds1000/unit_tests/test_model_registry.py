@@ -71,7 +71,17 @@ def test_flash_lite_preview_alias_points_to_ga(model_registry):
 
 def test_flash_defaults_to_low(model_registry):
     assert (
-        model_registry.GEMINI_3_FLASH_PREVIEW.config.reasoning_effort == "low"
+        model_registry.GEMINI_3_5_FLASH.config.reasoning_effort == "low"
+    )
+
+
+def test_flash_preview_alias_points_to_3_5(model_registry):
+    """Backwards-compat: evolved agents from before the 3-flash-preview →
+    3.5-flash migration still import GEMINI_3_FLASH_PREVIEW. The alias
+    must resolve to the same Model handle as the canonical new name."""
+    assert (
+        model_registry.GEMINI_3_FLASH_PREVIEW
+        is model_registry.GEMINI_3_5_FLASH
     )
 
 
@@ -99,15 +109,16 @@ def test_get_model_still_accepts_pinned_kwargs():
         )
 
 
-def test_all_nine_handles_exported(model_registry):
-    """All nine handles must be exported unconditionally — the gate
+def test_all_ten_handles_exported(model_registry):
+    """All ten handles must be exported unconditionally — the gate
     was removed in favor of the cost-penalty disciplining overuse.
     If any of these go missing, evolved agents that import them at
     eval time will ImportError silently in subprocess workers."""
     expected = (
         "GPT_5_4_MINI", "GPT_5_4", "GPT_5_5",
         "CLAUDE_HAIKU_4_5", "CLAUDE_SONNET_4_6", "CLAUDE_OPUS_4_7",
-        "GEMINI_3_1_FLASH_LITE", "GEMINI_3_FLASH_PREVIEW",
+        "CLAUDE_FABLE_5",
+        "GEMINI_3_1_FLASH_LITE", "GEMINI_3_5_FLASH",
         "GEMINI_3_1_PRO_PREVIEW",
     )
     missing = [n for n in expected if not hasattr(model_registry, n)]
@@ -116,7 +127,7 @@ def test_all_nine_handles_exported(model_registry):
 
 def test_pro_preview_reasoning_effort_pinned_to_low(model_registry):
     """The Gemini 3.1 Pro Preview handle should default to "low"
-    reasoning, parallel to GEMINI_3_FLASH_PREVIEW and Flash Lite — all
+    reasoning, parallel to GEMINI_3_5_FLASH and Flash Lite — all
     three Gemini handles share the same default. Note: Inspect's google
     provider would silently UPGRADE "medium" to ThinkingLevel.HIGH on
     non-flash Gemini (_providers/google.py:778-780), so any value above
