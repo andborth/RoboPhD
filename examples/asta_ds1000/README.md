@@ -42,11 +42,11 @@ On the **first** evaluator run, AstaBench's image is pulled (~2–2.5 GB; one-ti
 
 ### 3. Credentials
 
-DS-1000 evolution may pick any of six solver models, paired by family into a cheap/fast tier and a stronger/slower tier:
+DS-1000 evolution may pick any of ten solver models, grouped by family into cheap/fast, standard, and strong/slow tiers (see "Model registry" below):
 
-- OpenAI: GPT-5.4 Mini / GPT-5.4 (full)
-- Anthropic: Claude Haiku 4.5 / Claude Sonnet 4.6
-- Google: Gemini 3.1 Flash Lite / Gemini 3 Flash Preview
+- OpenAI: GPT-5.4 Mini / GPT-5.4 (full) / GPT-5.5
+- Anthropic: Claude Haiku 4.5 / Claude Sonnet 4.6 / Claude Opus 4.7, Claude Fable 5
+- Google: Gemini 3.1 Flash Lite / Gemini 3.5 Flash / Gemini 3.1 Pro Preview
 
 All three provider keys must be set before running, even if your seed only uses one — evolution can produce an agent that uses any of the six at any iteration, and a 401 mid-run is the worst time to discover a missing key.
 
