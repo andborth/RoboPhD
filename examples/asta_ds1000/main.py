@@ -436,20 +436,9 @@ def parse_args():
                         "%(default).0s")
 
     p.add_argument("--max-workers", type=int, default=None,
-                   help=f"Parallel eval workers. Each evaluation runs in its "
-                        f"own subprocess to bypass inspect.eval's process-global "
-                        f"singleton lock, so this is real parallelism. "
-                        f"Resolution order: (1) this CLI flag if set, "
-                        f"(2) on --resume, the value stored in the resumed "
-                        f"run's checkpoint.json, (3) the framework default of "
-                        f"{DEFAULT_MAX_WORKERS}. Lower (e.g. 4-6) if seeing "
-                        f"ENOSPC from parallel overlay snapshots of the "
-                        f"inspect-ai sandbox's heavy ML base layer "
-                        f"(torch/tensorflow/grpc)."
-                        # Suppress argparse's auto "(default: None)" suffix;
-                        # the resolution order above describes the actual
-                        # behavior more usefully than "default: None" does.
-                        "%(default).0s")
+                   help=f"Parallel eval workers (default: {DEFAULT_MAX_WORKERS}; "
+                        f"on --resume, the checkpoint's value). See README."
+                        "%(default).0s")  # suppress argparse's auto "(default: None)"
     p.add_argument("--runs-dir", default="../robophd_runs",
                    help="Root directory for experiment output (default: %(default)s)")
     p.add_argument("--random-seed", type=int, default=None,
@@ -647,7 +636,7 @@ def main():
     # Order: explicit CLI flag wins. On --resume with no flag, recover
     # the value the original run used (matches the user expectation that
     # resume preserves settings). Otherwise fall back to
-    # DEFAULT_MAX_WORKERS (see the --max-workers help text for ENOSPC notes).
+    # DEFAULT_MAX_WORKERS (see README "Subprocess isolation" for ENOSPC notes).
     if args.max_workers is not None:
         effective_max_workers = args.max_workers
     elif args.resume:

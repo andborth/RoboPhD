@@ -205,6 +205,8 @@ Provider-prefix translation: Inspect-AI requires `google/...` to route Google mo
 
 Every evaluation runs in its own Python subprocess (`_eval_worker.py`). Inspect-AI's `inspect.eval()` raises if two calls are in flight in the same process — subprocess isolation gives us real parallelism across RoboPhD's worker threads. Each subprocess pays ~7s of cold imports; at ~30–60s/eval that's ~10–20% overhead, acceptable for the parallelism gain.
 
+`--max-workers` controls the parallel width. Resolution order: (1) the CLI flag if set, (2) on `--resume`, the value stored in the resumed run's `checkpoint.json` (so resume preserves the original run's settings), (3) the framework default of 10. Lower it (e.g. 4–6) if you see ENOSPC errors — each parallel eval takes an overlay snapshot of the inspect-ai sandbox's heavy ML base layer (torch/tensorflow/grpc), and wide parallelism can exhaust disk.
+
 ## Cost notes
 
 DS-1000 is **much cheaper per evaluation than DiscoveryBench**:
