@@ -48,7 +48,7 @@ DS-1000 evolution may pick any of ten solver models, grouped by family into chea
 - Anthropic: Claude Haiku 4.5 / Claude Sonnet 4.6 / Claude Opus 4.7, Claude Fable 5
 - Google: Gemini 3.1 Flash Lite / Gemini 3.5 Flash / Gemini 3.1 Pro Preview
 
-All three provider keys must be set before running, even if your seed only uses one — evolution can produce an agent that uses any of the six at any iteration, and a 401 mid-run is the worst time to discover a missing key.
+All three provider keys must be set before running, even if your seed only uses one — evolution can produce an agent that uses any of the ten at any iteration, and a 401 mid-run is the worst time to discover a missing key.
 
 ```bash
 # OpenAI — seed model (gpt-5.4-mini); evolution may also pick gpt-5.4 (full)
@@ -195,9 +195,9 @@ Ten pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside t
 - Anthropic: `CLAUDE_HAIKU_4_5`, `CLAUDE_SONNET_4_6`, `CLAUDE_OPUS_4_7` ($5.00 / $25.00 per M tokens), `CLAUDE_FABLE_5` ($10.00 / $50.00 per M tokens — the priciest handle in the registry)
 - Google: `GEMINI_3_1_FLASH_LITE`, `GEMINI_3_5_FLASH`, `GEMINI_3_1_PRO_PREVIEW` ($2.00 / $12.00 per M tokens for the strong tier)
 
-Evolution chooses cheap, standard, or strong per call. Evolved agents `from model_registry import` whichever they want and call `.generate()`; the underlying model strings are not part of the evolvable artifact, so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — an agent produced at iteration 4 might use Claude Sonnet, and a 401 mid-run is a worse failure mode than a startup error.
+Evolved agents `from model_registry import` whichever handles they want and call `.generate()`. The model strings live outside the evolvable artifact (`agent.py`), so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — see "Credentials" above.
 
-The strong-tier handles cost ~5–40× the cheap tier, so a single naive call could blow past the default $0.04 cost threshold and rack up tens of error-equivalents of penalty at the default `--cost-per-error 0.01`. That's the point — the cost penalty disciplines overuse, so evolution must justify a strong-tier call with extra correctness rather than spraying them at every problem. Raise `--cost-threshold` (e.g. `0.08`) for a more generous free zone, or `--cost-per-error` if you want the penalty to be a tiebreaker rather than an active pull. `GEMINI_3_1_PRO_PREVIEW` ships with `reasoning_effort="low"` pinned, parallel to the rest of the Gemini family — all three Gemini handles share the same `"low"` default, with `"high"` as the only opt-up (the provider can't disable thinking below `"low"`).
+Strong-tier handles cost ~5–40× the cheap tier, so a single naive call can blow past the default $0.04 cost threshold and rack up many error-equivalents at the default `--cost-per-error 0.01`. That's the point: evolution must buy extra correctness with each expensive call. Raise `--cost-threshold` (e.g. `0.08`) for a wider free zone, or `--cost-per-error` to make the penalty a tiebreaker rather than an active pull. All three Gemini handles ship pinned to `reasoning_effort="low"` (the provider can't disable thinking), with `"high"` as the only opt-up.
 
 Provider-prefix translation: Inspect-AI requires `google/...` to route Google models, but litellm prices them under `gemini/...`. `evaluator.py:_estimate_cost` normalizes at the cost-pricing boundary (translates `google/` → `gemini/`) so cost tracking works for the Gemini handles. Without this, Gemini calls would silently price as $0 — the once-per-process "model priced at $0 despite tokens" warning would fire as the symptom.
 
