@@ -20,8 +20,35 @@ from RoboPhD.eval_utils import run_parallel_eval
 def to_litellm_model(name: str) -> str:
     """Translate RoboPhD model shorthand (e.g. 'opus-4.6') to litellm name ('claude-opus-4-6')."""
     if name in SUPPORTED_MODELS:
-        return SUPPORTED_MODELS[name]["name"]
+        full_name = SUPPORTED_MODELS[name]["name"]
+        _ensure_litellm_pricing(name, full_name)
+        return full_name
     return name
+
+
+def _ensure_litellm_pricing(shorthand: str, full_name: str) -> None:
+    """Register pricing for models newer than litellm's bundled registry.
+
+    For models missing from its pricing DB (e.g. claude-fable-5 on litellm
+    1.82), litellm raises "LLM Provider NOT provided" at completion() and
+    "model isn't mapped yet" at completion_cost(). Registering from
+    SUPPORTED_MODELS decouples new-model adoption from litellm releases.
+    """
+    import litellm  # lazy: litellm import is slow; only litellm callers pay it
+
+    if full_name in litellm.model_cost:
+        return
+    pricing = SUPPORTED_MODELS[shorthand]["pricing"]
+    litellm.register_model({
+        full_name: {
+            "litellm_provider": "anthropic",  # all SUPPORTED_MODELS are Claude
+            "mode": "chat",
+            "input_cost_per_token": pricing["input"] / 1e6,
+            "output_cost_per_token": pricing["output"] / 1e6,
+            "cache_creation_input_token_cost": pricing["cache_write"] / 1e6,
+            "cache_read_input_token_cost": pricing["cache_read"] / 1e6,
+        }
+    })
 
 
 class CostTrackingLM:
