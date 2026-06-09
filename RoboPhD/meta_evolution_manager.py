@@ -137,9 +137,12 @@ class MetaEvolutionManager:
         """
         config = self.config_manager.get_config(iteration)
         strategy_name = config["meta_evolution_strategy"]
-        model = config.get("meta_evolution_model", "opus-4.8")
-        cadence = config.get("meta_evolution_cadence", 3)
-        first_iteration = config.get("meta_evolution_first_iteration", 4)
+        # Direct indexing: get_config() always merges ConfigManager defaults, so
+        # these keys are guaranteed present. Inline fallbacks would be a third
+        # copy of each default (after api.py and config_manager.py) that drifts.
+        model = config["meta_evolution_model"]
+        cadence = config["meta_evolution_cadence"]
+        first_iteration = config["meta_evolution_first_iteration"]
 
         # If the initial firing hasn't completed, this firing IS the initial firing.
         # Mint a fresh session id (discarding any abandoned id from a prior crashed
