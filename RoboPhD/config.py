@@ -19,7 +19,7 @@ SUPPORTED_MODELS = {
     },
     'opus-4.8': {
         'name': 'claude-opus-4-8',  # plain ID for pricing/display; the 1M [1m] variant lives in CLAUDE_CLI_MODEL_MAP
-        'pricing': {                 # placeholder = opus-4.7; evolution cost is read from the CLI's total_cost_usd, not this dict
+        'pricing': {                 # official opus-4.8 rates (same as 4.7). Evolution-CLI cost comes from total_cost_usd; GEPA may register these with litellm (runner_utils._ensure_litellm_pricing)
             'input': 5.00,       # $5/MTok (base input)
             'output': 25.00,     # $25/MTok
             'cache_write': 6.25,  # $6.25/MTok (5m cache writes)
