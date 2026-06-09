@@ -74,19 +74,19 @@ Most DS-1000 problems don't need files, but the API is available.
 
 ## LLM calls
 
-The following model handles are available, imported from `model_registry`. They group by family into a cheap/fast tier, a standard tier, and a strong/slow tier:
+The following model handles are available, imported from `model_registry`:
 
 | Handle | Input ($/M tok) | Output ($/M tok) | Default `reasoning_effort` | Available overrides |
 | --- | --- | --- | --- | --- |
 | `GPT_5_4_MINI` | 0.75 | 4.50 | `"none"` | `"low"`, `"medium"`, `"high"` |
 | `GPT_5_4` | 2.50 | 15.00 | `"none"` | `"low"`, `"medium"`, `"high"` |
+| `GPT_5_5` | 5.00 | 30.00 | model-managed | `"low"`, `"medium"`, `"high"` |
 | `CLAUDE_HAIKU_4_5` | 1.00 | 5.00 | `"none"` | `"low"`, `"medium"`, `"high"` |
 | `CLAUDE_SONNET_4_6` | 3.00 | 15.00 | `"none"` | `"low"`, `"medium"`, `"high"` |
-| `GEMINI_3_1_FLASH_LITE` | 0.25 | 1.50 | `"low"` | `"low"`, `"high"` |
-| `GEMINI_3_5_FLASH` | 1.50 | 9.00 | `"low"` | `"low"`, `"high"` |
-| `GPT_5_5` | 5.00 | 30.00 | model-managed | `"low"`, `"medium"`, `"high"` |
 | `CLAUDE_OPUS_4_7` | 5.00 | 25.00 | model-managed | `"low"`, `"medium"`, `"high"` |
 | `CLAUDE_FABLE_5` | 10.00 | 50.00 | model-managed | `"low"`, `"medium"`, `"high"` |
+| `GEMINI_3_1_FLASH_LITE` | 0.25 | 1.50 | `"low"` | `"low"`, `"high"` |
+| `GEMINI_3_5_FLASH` | 1.50 | 9.00 | `"low"` | `"low"`, `"high"` |
 | `GEMINI_3_1_PRO_PREVIEW` | 2.00 | 12.00 | `"low"` | `"low"`, `"high"` |
 
 Setting `reasoning_effort` to any value in the "available overrides" column adds reasoning tokens above what the default already costs. For handles whose default is `"none"`, picking `"low"` is the cheapest opt-in step but it's still strictly more expensive than omitting `reasoning_effort` entirely. For the Gemini handles whose default is already `"low"`, the only opt-up is `"high"`. To stay at the cheapest path on any handle, omit the `reasoning_effort` field from `GenerateConfig`.
