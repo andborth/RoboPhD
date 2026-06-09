@@ -56,23 +56,6 @@ logger = logging.getLogger(__name__)
 # Once-per-process to avoid log spam across hundreds of evals.
 _unpriced_models_warned: set[str] = set()
 
-# Pricing for registry models newer than the installed litellm's bundled
-# registry ($ per token). _estimate_cost registers these lazily; without
-# the patch, litellm prices the model at $0 and the cost penalty silently
-# never fires for it (see the one-shot warning in _estimate_cost). Rates
-# from platform.claude.com/docs/en/about-claude/pricing. Drop an entry
-# once the pinned litellm release includes the model.
-_LITELLM_PRICING_PATCH: dict[str, dict] = {
-    "claude-fable-5": {
-        "litellm_provider": "anthropic",
-        "mode": "chat",
-        "input_cost_per_token": 10.00 / 1e6,
-        "output_cost_per_token": 50.00 / 1e6,
-        "cache_creation_input_token_cost": 12.50 / 1e6,
-        "cache_read_input_token_cost": 1.00 / 1e6,
-    },
-}
-
 
 def _head_tail_truncate(s: str, head: int = 200, tail: int = 1500) -> str:
     """Truncate `s` to `head` + marker + `tail` chars when too long.
@@ -1094,9 +1077,18 @@ class Ds1000Evaluator:
             import litellm
         except ImportError:
             return 0.0
-        for name, entry in _LITELLM_PRICING_PATCH.items():
-            if name not in litellm.model_cost:
-                litellm.register_model({name: entry})
+        try:
+            # Registers pricing for registry models newer than the
+            # installed litellm (e.g. claude-fable-5 on litellm 1.82),
+            # which would otherwise price to $0 and never trip the cost
+            # penalty. Rates are single-sourced from RoboPhD/config.py's
+            # SUPPORTED_MODELS.
+            from RoboPhD.runner_utils import register_supported_model_pricing
+            register_supported_model_pricing()
+        except ImportError:
+            # Standalone evaluator use without RoboPhD on sys.path — the
+            # one-shot $0 warning below still flags unpriced models.
+            pass
         input_tokens = counts.get("input_tokens", 0)
         output_tokens = counts.get("output_tokens", 0)
         litellm_name = (

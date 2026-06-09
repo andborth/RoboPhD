@@ -26,6 +26,18 @@ def to_litellm_model(name: str) -> str:
     return name
 
 
+def register_supported_model_pricing() -> None:
+    """Register litellm pricing for every SUPPORTED_MODELS entry missing
+    from litellm's bundled registry (e.g. claude-fable-5 on litellm 1.82).
+
+    For callers that price usage via litellm.cost_per_token without going
+    through to_litellm_model (e.g. the asta_ds1000 evaluator's
+    _estimate_cost) — keeps SUPPORTED_MODELS the single source of rates.
+    """
+    for shorthand, spec in SUPPORTED_MODELS.items():
+        _ensure_litellm_pricing(shorthand, spec["name"])
+
+
 def _ensure_litellm_pricing(shorthand: str, full_name: str) -> None:
     """Register pricing for models newer than litellm's bundled registry.
 
