@@ -26,7 +26,7 @@ Calibration: for `v0_0_1_soft_cap_0_16` the leaderboard's single batched `astabe
 | Openness | Open source & closed weights |
 | Tools tier | Standard (uses `python_session` provided by the task) |
 | Models (from logs) | claude-sonnet-4-6, gpt-5.4, gpt-5.5, gemini-3.5-flash |
-| URL (form) | this directory |
+| URL (form) | https://github.com/andborth/RoboPhD |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) |
 
 Agent description as submitted on the form:
