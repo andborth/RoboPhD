@@ -22,11 +22,16 @@ Calibration: for `v0_0_1_soft_cap_0_16` the leaderboard's single batched `astabe
 
 | Field | Value |
 |---|---|
-| Agent name | RoboPhD evolved DS-1000 file-mock adjudicator (dual-generation + GPT-5.5 adjudication) |
-| Openness | Open source, closed weights |
+| Agent name (form) | RoboPhD |
+| Openness | Open source & closed weights |
 | Tools tier | Standard (uses `python_session` provided by the task) |
-| Models | claude-sonnet-4-6, gpt-5.4, gpt-5.5, gemini-3.5-flash |
+| Models (from logs) | claude-sonnet-4-6, gpt-5.4, gpt-5.5, gemini-3.5-flash |
+| URL (form) | this directory |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) |
+
+Agent description as submitted on the form:
+
+> Automatically evolved DS-1000 solver (RoboPhD evolves agent code across iterations under an explicit cost penalty; this candidate emerged at iteration 14 of 15). The agent generates two candidate solutions in parallel, executes both in the sandbox with type/tolerance-aware value comparison, and validates results against the expected output displayed in the problem text. On disagreement it generates a third opinion and adjudicates over the full execution evidence. Distinctive features: file-mock reconstruction of data files referenced in problem text so read-based problems can execute, and loop-idiom guards that rewrite control-flow solutions on problems demanding vectorized/idiomatic answers.
 
 ## Approach (iter14_filemock_adjudicate)
 
