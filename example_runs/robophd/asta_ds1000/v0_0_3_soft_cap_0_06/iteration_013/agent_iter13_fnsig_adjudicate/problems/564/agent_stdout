@@ -1,0 +1,8 @@
+
+[564] library=matplotlib
+  targets=[] func_call=None fn_call=None
+  exec: ok_a=True ok_b=True agree=True (verdict=yes)
+  expect check: {'A': 'unknown', 'B': 'unknown'} why=Both candidates plot the line and set ylabel to 'Y', but the dump does not report y-axis label position or y-tick side, so we cannot verify the requir
+  critique flagged: - Y-axis label is set on the right, but the explicit instruction to show the y-axis ticks on the left is not robustly honored; use the ticks-position API (`ax.yaxis.set_ticks_position('left')` or `ax.
+  third-opinion: C: ran OK, result type=figure, repr: figure introspection: [{"title": "", "xlabel": "", "ylabel": "Y", "xscale": "linear", "yscale": "linear", "xlim": [-0.45, 9.45], "ylim": [-0.45, 9.45], "x_inverted
+  path=adjudicated

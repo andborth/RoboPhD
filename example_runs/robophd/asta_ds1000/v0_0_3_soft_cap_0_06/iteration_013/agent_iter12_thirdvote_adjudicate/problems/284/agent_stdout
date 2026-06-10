@@ -1,0 +1,9 @@
+
+[284] library=pandas
+  targets=['df'] func_call=None
+  exec: ok_a=True ok_b=True agree=False (verdict=yes)
+  expect check: {'A': 'match', 'B': 'mismatch'} why=A matches the displayed sample rows (frequent values 0,1,1 and counts 3,3,4). B's freq_count values are 4,4,5 instead of 3,3,4.
+  third-opinion: C: ran OK, result type=DataFrame, repr:    bit1  bit2  bit3  bit4  bit5  frequent  freq_count
+0     0     0     1     1     0         0           4
+1     1     1     0     0     1         1           
+  path=adjudicated

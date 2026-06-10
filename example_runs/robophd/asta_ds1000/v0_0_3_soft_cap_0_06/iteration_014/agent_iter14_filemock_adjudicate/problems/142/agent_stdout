@@ -1,0 +1,10 @@
+
+[142] library=pandas
+  targets=['result'] func_call=None fn_call=None
+  exec: ok_a=True ok_b=False agree=False (verdict=yes)
+  expect check: {'A': 'mismatch'} why=A has the rows in a different order than the displayed expected output: it groups by original row (E,F,G,H,I,J for row 0, then row 1, then row 2) inst
+  third-opinion: C: ran OK, result type=DataFrame, repr:    variable_0 variable_1 variable_2 value
+0           E          B          A     a
+1           E          B          A     b
+2           E          B          
+  path=adjudicated

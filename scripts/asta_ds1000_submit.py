@@ -26,8 +26,10 @@ Cost / time, sequential:
     v0_0_1_seed_gpt54_mini   ~$0.50    30-60 min   (gpt-5.4-mini one-shot)
     v0_0_1_soft_cap_0_16     ~$20-30   2-4 hr      (quad-diverse ensemble + Opus critic)
     v0_0_2_soft_cap_0_08     ~$12-15   1-2 hr      (Sonnet primary + rare Opus fallback)
+    v0_0_3_soft_cap_0_06     ~$40-50   2-4 hr      (dual-gen + GPT-5.5 adjudication;
+                                                    internal final eval cost $41.58)
     --
-    total                   ~$32-45   3.5-7 hr
+    total                   ~$73-95   5.5-11 hr   (use --only to run a subset)
 
 Prerequisites:
   - OPENAI_API_KEY              (seed runs gpt-5.4-mini; v0_0_1_soft_cap_0_16
@@ -42,8 +44,8 @@ Prerequisites:
   - Docker daemon running       (DS-1000 sandbox tier requires it)
   - LITELLM_LOCAL_MODEL_COST_MAP=True is set inside subprocesses
 
-The script does NOT submit. After it finishes, three .tar.gz files are
-ready for manual upload via the HF Spaces leaderboard form.
+The script does NOT submit. After it finishes, one .tar.gz per selected
+submission is ready for manual upload via the HF Spaces leaderboard form.
 """
 
 from __future__ import annotations
@@ -77,13 +79,13 @@ class Submission(NamedTuple):
     # we use `none` so the recorded eval.model field doesn't claim a
     # single primary; per-call usage is captured in stats.model_usage.
     model_arg: str
-    # Set True when the agent imports gated handles from model_registry
-    # (CLAUDE_OPUS_4_7, GPT_5_5, GEMINI_3_1_PRO_PREVIEW). Drives the
-    # ASTA_DS1000_ALLOW_STRONGER_MODELS=1 env var passed to `astabench
-    # eval` so model_registry defines those names at import time. Off
-    # by default — the seed and any cheap-tier-only candidates don't
-    # need it, and leaving it off keeps the staged tarball's eval-time
-    # env honest about which handles the candidate actually needs.
+    # Historical: drove ASTA_DS1000_ALLOW_STRONGER_MODELS=1 when
+    # model_registry gated the strong handles (CLAUDE_OPUS_4_7, GPT_5_5,
+    # GEMINI_3_1_PRO_PREVIEW) behind it. The gate was removed in 7494ff7
+    # — all handles import unconditionally — so the env var is a no-op
+    # against the registry at HEAD. Kept (and still set for the v0_0_1/
+    # v0_0_2 entries) so re-staging those submissions reproduces their
+    # original eval-time env.
     needs_stronger_models: bool = False
 
 
@@ -107,6 +109,14 @@ SUBMISSIONS = [
         agent_rel_path="agents/iter4_ds1000_idiom_probe/agent.py",
         model_arg="none",
         needs_stronger_models=True,
+    ),
+    Submission(
+        name="v0_0_3_soft_cap_0_06",
+        agent_rel_path="agents/iter14_filemock_adjudicate/agent.py",
+        model_arg="none",
+        # No needs_stronger_models: the gate was removed from
+        # model_registry.py (7494ff7) — all handles, including the
+        # GPT-5.5 adjudicator this agent leans on, import unconditionally.
     ),
 ]
 
@@ -423,10 +433,28 @@ def summarize() -> None:
 
 
 def main() -> int:
+    # --only NAME [NAME ...]: restrict to a subset of SUBMISSIONS.
+    # Default remains all submissions (idempotency skips completed
+    # evals, but --only also avoids re-scoring/re-tarring old entries
+    # whose tarballs were already uploaded).
+    args = sys.argv[1:]
+    selected = SUBMISSIONS
+    if args:
+        if args[0] != "--only" or len(args) < 2:
+            print(f"usage: {sys.argv[0]} [--only NAME [NAME ...]]")
+            return 2
+        names = set(args[1:])
+        unknown = names - {s.name for s in SUBMISSIONS}
+        if unknown:
+            print(f"unknown submission(s): {sorted(unknown)}")
+            print(f"known: {[s.name for s in SUBMISSIONS]}")
+            return 2
+        selected = [s for s in SUBMISSIONS if s.name in names]
+
     verify_clean_tree()
     verify_credentials()
     failures = []
-    for s in SUBMISSIONS:
+    for s in selected:
         print(f"\n{'#' * 70}\n# {s.name}\n{'#' * 70}")
         working_dir = stage(s)
         if not eval_submission(s, working_dir):

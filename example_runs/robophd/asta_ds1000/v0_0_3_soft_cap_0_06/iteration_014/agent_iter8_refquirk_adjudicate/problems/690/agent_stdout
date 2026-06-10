@@ -1,0 +1,6 @@
+
+[690] library=tensorflow
+  target=result func_call=f()
+  exec: ok_a=True ok_b=True agree=True (verdict=yes)
+  expect check: {'A': 'match', 'B': 'match'} why=The problem explicitly shows the desired row-wise reduced result [3, 0], and both candidates execute to a tensor with values [3, 0] in the same order 
+  path=agree+critique-OK (chose A)

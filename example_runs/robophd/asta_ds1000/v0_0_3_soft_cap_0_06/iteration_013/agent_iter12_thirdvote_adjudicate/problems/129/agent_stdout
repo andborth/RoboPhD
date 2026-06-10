@@ -1,0 +1,11 @@
+
+[129] library=pandas
+  targets=['df'] func_call=None
+  exec: ok_a=True ok_b=True agree=False (verdict=yes)
+  expect check: {'A': 'match', 'B': 'match'} why=Both candidates show the same rows, index order, columns, and zeroed Quantity values (at indices 2, 7, and 12) as the displayed expected output; float
+  third-opinion: C: raised an error:
+Traceback (most recent call last):
+  File "/tmp/ipykernel_115/2510646608.py", line 105, in <module>
+    exec(compile(_src, "<cand>", "exec"), _ns)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  path=adjudicated

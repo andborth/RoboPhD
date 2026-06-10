@@ -1,0 +1,9 @@
+
+[269] library=pandas
+  targets=['df'] func_call=None fn_call=None
+  exec: ok_a=True ok_b=True agree=True (verdict=yes)
+  expect check: {'A': 'unknown', 'B': 'unknown'} why=The hand-typed expected output is inconsistent with the shown input/example data: the third row's E value is 5 in the displayed output, but the provid
+  critique flagged: - Violates the “most idiomatic way” / hidden no-loop token check: the code contains `lambda`, which is fine, but more importantly uses `map(...)` with manual string construction instead of a direct pa
+  third-opinion: C: ran OK, result type=DataFrame, repr:    A_1  B_1  C_1  D_1  E_1  A_2  B_2  C_2  D_2  E_2  A_3  B_3  C_3  D_3  E_3
+0    1    2    3    4    5    6    7    8    9   10   11   12   13   14   15 | C's 
+  path=adjudicated

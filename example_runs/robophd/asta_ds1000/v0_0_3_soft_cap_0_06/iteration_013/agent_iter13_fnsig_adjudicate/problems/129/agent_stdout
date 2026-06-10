@@ -1,0 +1,12 @@
+
+[129] library=pandas
+  targets=['df'] func_call=None fn_call=None
+  exec: ok_a=True ok_b=True agree=False (verdict=yes)
+  expect check: {'A': 'match', 'B': 'mismatch'} why=A matches the displayed DataFrame (same rows/indexes changed: 2, 7, 12; int vs float display is formatting noise). B zeros different rows (5 and 11 in
+  third-opinion: C: ran OK, result type=DataFrame, repr:     UserId  ProductId  Quantity
+0      1.0        1.0       6.0
+1      1.0        4.0       1.0
+2      1.0        7.0       0.0
+3      1.0        4.0       2.0
+
+  path=adjudicated

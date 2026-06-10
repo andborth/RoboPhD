@@ -1,0 +1,13 @@
+
+[883] library=sklearn
+  targets=['cluster_labels'] func_call=None fn_call=None
+  mock generated (207 chars)
+  exec: ok_a=True ok_b=True agree=True (verdict=yes)
+  critique flagged: - Uses `linkage` directly on the square distance/similarity matrix rows, not a proper condensed distance representation; fragile/wrong for other valid inputs of a distance matrix.
+- The prompt gives a
+  third-opinion: C: raised an error:
+Traceback (most recent call last):
+  File "/tmp/ipykernel_112/2013239690.py", line 105, in <module>
+    exec(compile(_src, "<cand>", "exec"), _ns)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  path=adjudicated

@@ -1,0 +1,7 @@
+
+[444] library=numpy
+  targets=['C'] func_call=None fn_call=None
+  exec: ok_a=True ok_b=True agree=False (verdict=yes)
+  expect check: {'A': 'match', 'B': 'mismatch'} why=The expected output is array([2, 3, 3, 3, 5, 6, 7]); B incorrectly includes 4.
+  third-opinion: C: ran OK, result type=ndarray, repr: array([2, 3, 3, 3, 5, 6, 7]) | C's value equals A's (tolerant comparison): True; equals B's: False
+  path=adjudicated

@@ -1,0 +1,4 @@
+```python
+result = len(a) - rankdata(a).astype(int)
+
+```

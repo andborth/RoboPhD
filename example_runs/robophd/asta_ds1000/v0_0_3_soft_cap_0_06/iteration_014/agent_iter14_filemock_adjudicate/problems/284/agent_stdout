@@ -1,0 +1,9 @@
+
+[284] library=pandas
+  targets=['df'] func_call=None fn_call=None
+  exec: ok_a=True ok_b=True agree=False (verdict=yes)
+  expect check: {'A': 'match', 'B': 'mismatch'} why=A matches the shown rows/values (3 vs 3.0 is formatting noise). B has different column order and row 0 frequent is 1 but the displayed output shows 0.
+  third-opinion: C: ran OK, result type=DataFrame, repr:    bit1  bit2  bit3  bit4  bit5  frequent  freq_count
+0     0     0     1     1     0         0           3
+1     1     1     0     0     1         1           
+  path=adjudicated

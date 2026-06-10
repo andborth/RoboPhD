@@ -1,0 +1,19 @@
+variable_0 variable_1 variable_2 value
+0           E          B          A     a
+1           E          B          A     b
+2           E          B          A     c
+3           F          B          A     1
+4           F          B          A     3
+5           F          B          A     5
+6           G          C          A     2
+7           G          C          A     4
+8           G          C          A     6
+9           H          C          A     3
+10          H          C          A     6
+11          H          C          A     2
+12          I          D          A     7
+13          I          D          A     2
+14          I          D          A     3
+15          J          D          A     2
+16          J          D          A     9
+17          J          D          A     5
