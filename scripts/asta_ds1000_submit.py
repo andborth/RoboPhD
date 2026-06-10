@@ -382,12 +382,40 @@ def eval_submission(s: Submission, working_dir: Path) -> bool:
 
 
 def score_submission(working_dir: Path) -> bool:
+    # LITELLM_LOCAL_MODEL_COST_MAP=True is REQUIRED by `astabench score`
+    # (it refuses to run without it). It forces litellm's *bundled* price
+    # map — so the installed litellm's bundled map must include every
+    # model the agent actually called, or agenteval prices the run to
+    # cost=null and the leaderboard entry ships without a cost figure.
+    # v0_0_3 hit this: gemini-3.5-flash and gpt-5.5 are absent from
+    # litellm <=1.83 bundled maps (agent-eval 0.1.50 over-pins
+    # litellm<=1.83.13; litellm 1.88.1 works in practice and prices
+    # both). The null-cost check below catches it either way.
     rc = run(
         ["astabench", "score", str(working_dir / LOG_SUBDIR)],
         cwd=working_dir,
         extra_env={"LITELLM_LOCAL_MODEL_COST_MAP": "True"},
     )
-    return rc == 0
+    if rc != 0:
+        return False
+    stats_path = working_dir / LOG_SUBDIR / "summary_stats.json"
+    try:
+        stats = json.loads(stats_path.read_text())
+        cost = stats["stats"]["task/DS_1000_test"]["cost"]
+    except Exception as e:
+        print(f"!! could not read cost from {stats_path}: {e}")
+        return False
+    if cost is None:
+        print(
+            "!! astabench score produced cost=null — a model in the eval "
+            "log isn't in the installed litellm's bundled price map. "
+            "Upgrade litellm (bundled map must cover every model the "
+            "agent called) and re-run. Refusing to tar a costless "
+            "submission."
+        )
+        return False
+    print(f"scored: cost/problem = ${cost:.4f}")
+    return True
 
 
 def tar_submission(s: Submission, working_dir: Path) -> bool:
