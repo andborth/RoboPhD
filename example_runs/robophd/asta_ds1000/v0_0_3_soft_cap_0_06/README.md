@@ -31,7 +31,7 @@ Calibration: for `v0_0_1_soft_cap_0_16` the leaderboard's single batched `astabe
 
 Agent description as submitted on the form:
 
-> Automatically evolved DS-1000 solver (RoboPhD evolves agent code across iterations under an explicit cost penalty; this candidate emerged at iteration 14 of 15). The agent generates two candidate solutions in parallel, executes both in the sandbox with type/tolerance-aware value comparison, and validates results against the expected output displayed in the problem text. On disagreement it generates a third opinion and adjudicates over the full execution evidence. Distinctive features: file-mock reconstruction of data files referenced in problem text so read-based problems can execute, and loop-idiom guards that rewrite control-flow solutions on problems demanding vectorized/idiomatic answers.
+> Evolved by RoboPhD with Claude Fable 5 as the evolution (but not a solver) model. The evolved agent generates two candidate solutions in parallel, executes both in the sandbox, and adjudicates disagreements against the execution evidence.
 
 ## Approach (iter14_filemock_adjudicate)
 
