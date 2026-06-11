@@ -22,7 +22,7 @@ Calibration: for `v0_0_1_soft_cap_0_16` the leaderboard's single batched `astabe
 
 | Field | Value |
 |---|---|
-| Agent name (form) | RoboPhD 0.0.3 (submitted 2026-06-10; the leaderboard now enforces unique (submitter, name, split), so the bare "RoboPhD" name used by the two May entries was rejected) |
+| Agent name (form) | RoboPhD 0.0.3 |
 | Openness | Open source & closed weights |
 | Tools tier | Standard (uses `python_session` provided by the task) |
 | Models (from logs) | claude-sonnet-4-6, gpt-5.4, gpt-5.5, gemini-3.5-flash |
