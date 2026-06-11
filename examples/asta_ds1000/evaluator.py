@@ -123,10 +123,10 @@ def _fmt_cost(x: float) -> str:
     """Format a dollar amount with the fewest decimals that lose nothing.
 
     Two decimals when exact at two ($0.04, $0.10); otherwise out to four
-    with trailing zeros trimmed ($0.044, $0.0425). Keep in sync with the
-    same-named helper in main.py — both feed text the evolution AI must
-    reconcile (background.md/objective.md there, per-eval diagnostics
-    here), so the threshold must read identically in both.
+    with trailing zeros trimmed ($0.044, $0.0425). Single source for both
+    audiences the evolution AI must reconcile: the per-eval diagnostics
+    here and the interpolated background.md/objective.md docs (main.py
+    imports this), so the threshold reads identically everywhere.
     """
     return f"${x:.2f}" if x == round(x, 2) else f"${x:.4f}".rstrip("0")
 
