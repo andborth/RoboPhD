@@ -118,6 +118,19 @@ MIN_COST_THRESHOLD = 0.04
 # which is intentional.
 COST_PER_ERROR = 0.01
 
+
+def _fmt_cost(x: float) -> str:
+    """Format a dollar amount with the fewest decimals that lose nothing.
+
+    Two decimals when exact at two ($0.04, $0.10); otherwise out to four
+    with trailing zeros trimmed ($0.044, $0.0425). Keep in sync with the
+    same-named helper in main.py — both feed text the evolution AI must
+    reconcile (background.md/objective.md there, per-eval diagnostics
+    here), so the threshold must read identically in both.
+    """
+    return f"${x:.2f}" if x == round(x, 2) else f"${x:.4f}".rstrip("0")
+
+
 # Keys in state.metadata the agent must NOT see. The scorer reads
 # `code_context`; we keep it on the Sample but pop it from state.metadata
 # at solve time and restore it before the scorer runs. `perturbation_type`
@@ -655,7 +668,7 @@ class Ds1000Evaluator:
         if mean_cost <= self.min_cost_threshold:
             explanation = (
                 f"Mean cost ${mean_cost:.4f} within free zone (threshold "
-                f"${self.min_cost_threshold:.2f}); no penalty applied. "
+                f"{_fmt_cost(self.min_cost_threshold)}); no penalty applied. "
                 f"Raw accuracy {mean_raw:.4f} reported as percentage: {base:.3f}."
             )
             return base, explanation
@@ -665,7 +678,7 @@ class Ds1000Evaluator:
         penalty = errors_equivalent * (SCORE_SCALE / n)
         final = base - penalty
         explanation = (
-            f"Mean cost ${mean_cost:.4f} exceeded threshold ${self.min_cost_threshold:.2f} "
+            f"Mean cost ${mean_cost:.4f} exceeded threshold {_fmt_cost(self.min_cost_threshold)} "
             f"by ${cost_excess:.4f} = {errors_equivalent:.2f} errors of penalty "
             f"(cost_per_error=${self.cost_per_error:.4f}); subtracted "
             f"{penalty:.3f} score pts from raw {base:.3f} → final {final:.3f} (percentage)."

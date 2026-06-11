@@ -465,7 +465,9 @@ def main():
     from evaluator import MIN_COST_THRESHOLD, COST_PER_ERROR
 
     def _fmt_cost(x: float) -> str:
-        return f"${x:.2f}" if x == round(x, 2) else f"${x:.4f}"
+        # Keep in sync with evaluator._fmt_cost (same rendering, two
+        # audiences: docs here, per-eval diagnostics there).
+        return f"${x:.2f}" if x == round(x, 2) else f"${x:.4f}".rstrip("0")
 
     # Read task-specific sidecar (--cost-threshold / --cost-per-error)
     # on --resume. These knobs aren't known to the framework's
