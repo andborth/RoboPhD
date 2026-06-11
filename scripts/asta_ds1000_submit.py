@@ -85,7 +85,10 @@ class Submission(NamedTuple):
     # — all handles import unconditionally — so the env var is a no-op
     # against the registry at HEAD. Kept (and still set for the v0_0_1/
     # v0_0_2 entries) so re-staging those submissions reproduces their
-    # original eval-time env.
+    # original eval-time env. Note that env reproduction is no longer
+    # sufficient for those two entries: since 2065ce4 the live registry
+    # no longer exports CLAUDE_OPUS_4_7, so they fail at import when
+    # staged at HEAD (see the per-entry notes below).
     needs_stronger_models: bool = False
 
 
@@ -98,6 +101,13 @@ SUBMISSIONS = [
         agent_rel_path="agent.py",
         model_arg="openai/gpt-5.4-mini",
     ),
+    # NOT runnable at HEAD: the v0_0_1/v0_0_2 archived agents import
+    # CLAUDE_OPUS_4_7, dropped from the live registry in 2065ce4 — a
+    # deliberate substitution-avoidance choice (aliasing it to 4.8 would
+    # silently re-rank old agents on a model they weren't evaluated on),
+    # so the archived agents stay as-is. To re-stage either entry, check
+    # out the revision recorded in its snapshot's eval log (any
+    # pre-2065ce4 commit works).
     Submission(
         name="v0_0_1_soft_cap_0_16",
         agent_rel_path="agents/iter10_idiomatic_loop_guard_v1/agent.py",
