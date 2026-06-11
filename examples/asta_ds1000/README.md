@@ -49,7 +49,7 @@ On the **first** evaluator run, AstaBench's image is pulled (~2–2.5 GB; one-ti
 DS-1000 evolution may pick any of ten solver models, grouped by family into cheap/fast, standard, and strong/slow tiers (see "Model registry" below):
 
 - OpenAI: GPT-5.4 Mini / GPT-5.4 (full) / GPT-5.5
-- Anthropic: Claude Haiku 4.5 / Claude Sonnet 4.6 / Claude Opus 4.7, Claude Fable 5
+- Anthropic: Claude Haiku 4.5 / Claude Sonnet 4.6 / Claude Opus 4.8, Claude Fable 5
 - Google: Gemini 3.1 Flash Lite / Gemini 3.5 Flash / Gemini 3.1 Pro Preview
 
 All three provider keys must be set before running, even if your seed only uses one — evolution can produce an agent that uses any of the ten at any iteration, and a 401 mid-run is the worst time to discover a missing key.
@@ -196,7 +196,7 @@ The training evaluator applies the formula above. The test evaluator (derived vi
 Ten pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside the candidate's `file_mapping`, which only contains `agent.py`), grouped by family into three tiers:
 
 - OpenAI: `GPT_5_4_MINI`, `GPT_5_4`, `GPT_5_5` ($5.00 / $30.00 per M tokens for the strong tier)
-- Anthropic: `CLAUDE_HAIKU_4_5`, `CLAUDE_SONNET_4_6`, `CLAUDE_OPUS_4_7` ($5.00 / $25.00 per M tokens), `CLAUDE_FABLE_5` ($10.00 / $50.00 per M tokens — the priciest handle in the registry)
+- Anthropic: `CLAUDE_HAIKU_4_5`, `CLAUDE_SONNET_4_6`, `CLAUDE_OPUS_4_8` ($5.00 / $25.00 per M tokens), `CLAUDE_FABLE_5` ($10.00 / $50.00 per M tokens — the priciest handle in the registry)
 - Google: `GEMINI_3_1_FLASH_LITE`, `GEMINI_3_5_FLASH`, `GEMINI_3_1_PRO_PREVIEW` ($2.00 / $12.00 per M tokens for the strong tier)
 
 Evolved agents `from model_registry import` whichever handles they want and call `.generate()`. The model strings live outside the evolvable artifact (`agent.py`), so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — see "Credentials" above.

@@ -454,7 +454,7 @@ SEED_AGENT_PY = REPO_ROOT / "examples" / "asta_ds1000" / "seeds" / "baseline" / 
 
 EXPECTED_HANDLES = (
     "GPT_5_4_MINI", "GPT_5_4", "GPT_5_5",
-    "CLAUDE_HAIKU_4_5", "CLAUDE_SONNET_4_6", "CLAUDE_OPUS_4_7",
+    "CLAUDE_HAIKU_4_5", "CLAUDE_SONNET_4_6", "CLAUDE_OPUS_4_8",
     "CLAUDE_FABLE_5",
     "GEMINI_3_1_FLASH_LITE", "GEMINI_3_5_FLASH",
     "GEMINI_3_1_PRO_PREVIEW",
@@ -535,7 +535,7 @@ def test_seed_generate_call_omits_temperature():
     """The seed's `.generate(...)` call must not pass `temperature`.
 
     Evolution copies the seed's call shape into derived agents. Passing
-    temperature in the seed leaks the param into Opus 4.7 / GPT-5.5
+    temperature in the seed leaks the param into Opus 4.8 / GPT-5.5
     calls in derived agents — those handles 400 on temperature
     (`asta_ds1000_20260510_170547` is the captured incident). Scan for
     every Call where `.generate` is called and assert no keyword arg
@@ -572,7 +572,7 @@ def test_seed_generate_call_omits_temperature():
     assert not offenders, (
         "The seed's .generate() call passes `temperature`, which "
         "anchors evolution toward a parameter that's rejected on "
-        "Opus 4.7 / GPT-5.5 and silently stripped when combined with "
+        "Opus 4.8 / GPT-5.5 and silently stripped when combined with "
         "reasoning_effort elsewhere. Drop the temperature kwarg:\n  "
         + "\n  ".join(offenders)
     )

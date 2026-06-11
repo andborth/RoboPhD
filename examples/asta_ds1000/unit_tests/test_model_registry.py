@@ -116,7 +116,7 @@ def test_all_ten_handles_exported(model_registry):
     eval time will ImportError silently in subprocess workers."""
     expected = (
         "GPT_5_4_MINI", "GPT_5_4", "GPT_5_5",
-        "CLAUDE_HAIKU_4_5", "CLAUDE_SONNET_4_6", "CLAUDE_OPUS_4_7",
+        "CLAUDE_HAIKU_4_5", "CLAUDE_SONNET_4_6", "CLAUDE_OPUS_4_8",
         "CLAUDE_FABLE_5",
         "GEMINI_3_1_FLASH_LITE", "GEMINI_3_5_FLASH",
         "GEMINI_3_1_PRO_PREVIEW",
