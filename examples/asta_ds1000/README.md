@@ -23,6 +23,10 @@ Each snapshot README documents the architecture, lineage, model usage, and submi
 # From the repo root
 pip install -r requirements.txt
 pip install -r examples/asta_ds1000/requirements.txt
+
+# Preparing a leaderboard submission? Also upgrade litellm (separate
+# step — see the comment in examples/asta_ds1000/requirements.txt):
+pip install litellm==1.88.1
 ```
 
 ### 2. Install Docker

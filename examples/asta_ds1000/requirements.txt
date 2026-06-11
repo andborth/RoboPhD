@@ -10,3 +10,16 @@
 # the version we pin.
 astabench==0.5.3
 inspect_evals
+
+# For LEADERBOARD SUBMISSIONS ONLY (scripts/asta_ds1000_submit.py):
+# upgrade litellm AFTER installing this file:
+#
+#   pip install litellm==1.88.1
+#
+# `astabench score` forces litellm's bundled price map, and the litellm
+# <=1.83.13 that agent-eval pins predates gemini-3.5-flash / gpt-5.5 —
+# scoring then prices the run to cost=null (the submit script refuses
+# to tar when that happens). The upgrade can't live as a line in this
+# file: pip's resolver rejects it against agent-eval's pin, so it must
+# be a separate install (pip allows it with a warning). Training and
+# test evals don't need this — only submission scoring does.
