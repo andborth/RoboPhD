@@ -903,3 +903,116 @@ def test_enforce_resume_missing_stored_and_no_cli_is_hard_error(sidecar_helpers)
         "to be supplied together — without this, users who pass only "
         "--cost-threshold hit a second error and don't know why"
     )
+
+
+def test_background_md_prices_match_litellm_registry():
+    """The model-handle table's advertised $/MTok rates must match
+    litellm's price registry for the underlying model IDs.
+
+    The table is hand-maintained, and providers reprice or re-alias
+    models upstream: the asta_ds1000_20260609_144857 run shopped from a
+    table advertising Gemini Flash at $0.50/$3.00 while Google had
+    already routed the preview ID to gemini-3.5-flash billed at
+    $1.50/$9.00. The cost *penalty* was unaffected (it uses measured
+    rates keyed by the response model name), but evolution made routing
+    decisions against a 3x-wrong menu price. This test fails the day
+    the advertised menu and the billed reality diverge.
+
+    Handle -> model ID comes from AST-parsing model_registry.py's
+    `_<HANDLE>_ID` constants rather than importing the module (import
+    requires an Anthropic key at construction time). Models absent from
+    litellm's registry (e.g. claude-fable-5) are covered by RoboPhD's
+    own SUPPORTED_MODELS registration, which is itself the pricing
+    source the rest of the framework trusts.
+
+    Failure-class split: a price MISMATCH always hard-fails — that's
+    the drift signal. A model MISSING from litellm's registry skips
+    instead: offline runs (and stale bundled maps on the litellm <=1.83
+    that agent-eval pins) lack recent models like gemini-3.5-flash
+    while containing older ones, which is registry staleness, not table
+    drift — hard-failing there would cry wolf in any freshly-installed
+    env. The cost: an upstream model *removal* surfaces as a visible
+    skip rather than a failure; repricing (the actual incident class)
+    is always caught when the registry has the model.
+    """
+    import litellm
+
+    from RoboPhD.runner_utils import register_supported_model_pricing
+
+    # Cover models newer than litellm's registry (e.g. claude-fable-5).
+    register_supported_model_pricing()
+
+    # Handle name -> "provider/model" from _<HANDLE>_ID assignments.
+    registry_src = (ASTA_DS1000_DIR / "model_registry.py").read_text()
+    handle_to_id = {}
+    for node in ast.walk(ast.parse(registry_src)):
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id.startswith("_")
+            and node.targets[0].id.endswith("_ID")
+            and isinstance(node.value, ast.Constant)
+        ):
+            handle_to_id[node.targets[0].id[1:-3]] = node.value.value
+
+    background_md = (ASTA_DS1000_DIR / "background.md").read_text()
+    handle_rows = [
+        line for line in background_md.split("\n")
+        if (
+            line.endswith(" |")
+            and any(
+                line.startswith(f"| `{prefix}")
+                for prefix in ("GPT_", "CLAUDE_", "GEMINI_")
+            )
+        )
+    ]
+    assert handle_rows, "no model-handle rows found in background.md"
+
+    mismatches = []     # genuine drift — always a hard failure
+    unverifiable = []   # registry staleness / offline — skip, don't cry wolf
+    broken_rows = []    # repo-internal inconsistency — hard failure
+    for row in handle_rows:
+        cells = [c.strip() for c in row.split("|")]
+        # ['', '`HANDLE`', input, output, default, overrides, '']
+        handle = cells[1].strip("`")
+        advertised_in, advertised_out = float(cells[2]), float(cells[3])
+
+        model_id = handle_to_id.get(handle)
+        if model_id is None:
+            broken_rows.append(f"{handle}: no _<HANDLE>_ID in model_registry.py")
+            continue
+
+        bare = model_id.split("/", 1)[1]
+        key = next(
+            (k for k in (model_id, bare, f"gemini/{bare}") if k in litellm.model_cost),
+            None,
+        )
+        if key is None:
+            unverifiable.append(f"{handle} ({model_id})")
+            continue
+
+        mc = litellm.model_cost[key]
+        actual_in = mc["input_cost_per_token"] * 1e6
+        actual_out = mc["output_cost_per_token"] * 1e6
+        if advertised_in != pytest.approx(actual_in, abs=1e-6) or (
+            advertised_out != pytest.approx(actual_out, abs=1e-6)
+        ):
+            mismatches.append(
+                f"{handle}: background.md advertises "
+                f"${advertised_in}/{advertised_out} per MTok but litellm "
+                f"({key}) says ${actual_in:.2f}/{actual_out:.2f} — the "
+                f"agent-facing menu has drifted from billed reality"
+            )
+
+    assert not broken_rows, (
+        "table rows without a model_registry constant:\n  "
+        + "\n  ".join(broken_rows)
+    )
+    assert not mismatches, "price-table drift:\n  " + "\n  ".join(mismatches)
+    if unverifiable:
+        pytest.skip(
+            "rows unverifiable — models absent from litellm's price "
+            "registry (stale bundled map or offline; not table drift): "
+            + ", ".join(unverifiable)
+        )
