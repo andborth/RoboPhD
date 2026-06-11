@@ -125,9 +125,6 @@ _GEMINI_3_1_PRO_PREVIEW_ID = "google/gemini-3.1-pro-preview"
 
 GPT_5_5 = get_model(_GPT_5_5_ID)
 CLAUDE_OPUS_4_8 = get_model(_CLAUDE_OPUS_4_8_ID, api_key=_ANTHROPIC_API_KEY)
-# Backwards-compat for evolved agents created before the Opus 4.7 → 4.8
-# migration. Code-only; not surfaced in background.md or any doc.
-CLAUDE_OPUS_4_7 = CLAUDE_OPUS_4_8
 # Fable 5 is Anthropic's tier above Opus. Like the other Claude handles
 # it is intentionally NOT pinned with a reasoning_effort default: with no
 # reasoning_effort, Inspect omits the `thinking` param entirely (required
