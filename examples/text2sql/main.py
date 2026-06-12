@@ -236,14 +236,18 @@ def main():
     # evolution sandbox does a realpath check, so we must whitelist wherever the
     # data actually lives — otherwise evolution-time introspection (cat
     # database.sqlite, sqlite3 .schema, smoke-tests against a copy of a problem's
-    # DB) is denied. Read scope only; writes are still cwd-only.
-    benchmark_resources = HERE.parent.parent / "benchmark_resources"
-    extra_read_paths = [str(benchmark_resources.resolve())]
-    bird_data_dir = os.environ.get("BIRD_DATA_DIR")
-    if bird_data_dir:
-        # Resolved so the realpath of the per-problem database.sqlite symlink
-        # (which points into BIRD_DATA_DIR) falls inside the read scope.
-        extra_read_paths.append(str(Path(bird_data_dir).resolve()))
+    # DB) is denied. Read scope only; writes are still cwd-only. The sandbox
+    # only exists on the RoboPhD engine, so the field lives on RoboPhDConfig
+    # (GEPA/Autoresearch runs don't sandbox and don't need the carve-out).
+    if isinstance(cfg, RoboPhDConfig):
+        benchmark_resources = HERE.parent.parent / "benchmark_resources"
+        extra_read_paths = [str(benchmark_resources.resolve())]
+        bird_data_dir = os.environ.get("BIRD_DATA_DIR")
+        if bird_data_dir:
+            # Resolved so the realpath of the per-problem database.sqlite symlink
+            # (which points into BIRD_DATA_DIR) falls inside the read scope.
+            extra_read_paths.append(str(Path(bird_data_dir).resolve()))
+        cfg.extra_read_paths = extra_read_paths
 
     result = optimize_anything(
         evaluator=evaluator,
@@ -253,7 +257,6 @@ def main():
         background=background,
         config=cfg,
         task_name="text2sql",
-        extra_read_paths=extra_read_paths,
     )
 
     logger.info(f"Optimization complete: {result.num_iterations_completed} iterations, "

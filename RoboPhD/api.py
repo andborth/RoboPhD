@@ -85,6 +85,27 @@ class RoboPhDConfig:
     """Extra ConfigManager parameters for power users (e.g.
     weighted_random_configs, config_schedule, new_agent_test_rounds)."""
 
+    # Evolution sandbox
+    extra_read_paths: Optional[List[str]] = None
+    """Absolute paths added to the evolution sandbox's read scope. The
+    default sandbox restricts evolution Claude CLI sessions to reads
+    under the experiment directory only; add paths here when a task uses
+    symlinked-in resources outside that tree (e.g., text2sql adds
+    ``RoboPhD/benchmark_resources``). Read-only — does not grant write
+    permission."""
+
+    # Task-specific persistence
+    task_config_extras: Optional[Dict[str, Any]] = None
+    """Caller-owned keys merged into the run's ``task_config``, which the
+    researcher persists verbatim into ``checkpoint.json`` every iteration
+    and round-trips on resume. Use this for task-specific knobs that must
+    survive interruption (e.g. asta_ds1000's cost-penalty parameters).
+    Nest values under a single task-named key to avoid collisions. The
+    reserved keys ``file_mapping``/``objective``/``background`` cannot be
+    overridden. On resume, extras are merged over the checkpoint's stored
+    task_config, so re-supplying them can bootstrap runs from before the
+    values were persisted."""
+
     # Resume / extend
     experiment_dir: Union[str, Path, None] = None
     """Path to a prior experiment directory to resume from.
@@ -258,6 +279,30 @@ class AutoresearchConfig:
     """Root directory for experiment output. None = ``../robophd_runs``."""
 
 
+_TASK_CONFIG_RESERVED_KEYS = ("file_mapping", "objective", "background")
+
+
+def _merge_task_config_extras(
+    task_config: Dict[str, Any], extras: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Merge caller-owned task_config extras over the framework keys.
+
+    Reserved keys are framework-owned (file_mapping drives candidate
+    materialization; objective/background are recovered on resume) —
+    letting extras shadow them would corrupt resume, so collide loudly.
+    """
+    if not extras:
+        return task_config
+    collisions = sorted(k for k in extras if k in _TASK_CONFIG_RESERVED_KEYS)
+    if collisions:
+        raise ValueError(
+            f"task_config_extras cannot override reserved task_config "
+            f"keys {collisions}; nest task-specific values under a "
+            f"task-named key instead."
+        )
+    return {**task_config, **extras}
+
+
 def _validate_resume_config(cfg: RoboPhDConfig) -> None:
     """Validate resume-related config fields."""
     if cfg.extend_iterations is not None and cfg.experiment_dir is None:
@@ -358,11 +403,19 @@ def _build_resume_kwargs(
             resume_from, cfg.engine_overrides,
         )
 
+    # Merge task_config_extras over the checkpoint's stored task_config
+    # and pass the result explicitly (the explicit param wins over
+    # resume_checkpoint in the researcher). The next _save_checkpoint
+    # persists the merged dict, so a bootstrap resume of a run from
+    # before its extras were persisted heals itself.
+    task_config = _merge_task_config_extras(task_config, cfg.task_config_extras)
+
     researcher_kwargs = dict(
         resume_mode=True,
         resume_from_iteration=resume_from,
         resume_checkpoint=checkpoint,
         resume_experiment_dir=experiment_dir,
+        task_config=task_config,
     )
 
     return config_manager, num_iterations, researcher_kwargs, task_config
@@ -376,7 +429,6 @@ def optimize_anything(
     background: str = "",
     config: Optional[Union[RoboPhDConfig, GEPAConfig, AutoresearchConfig]] = None,
     task_name: str = "optimize_anything",
-    extra_read_paths: Optional[List[str]] = None,
 ) -> OptimizeResult:
     """Optimize text artifacts using evolutionary search.
 
@@ -422,16 +474,11 @@ def optimize_anything(
         objective: Natural-language optimization goal shown to the evolution AI.
         background: Optional domain documentation shown to the evolution AI.
         config: Engine configuration. Type determines the engine. If None,
-            uses ``RoboPhDConfig()`` defaults.
+            uses ``RoboPhDConfig()`` defaults. RoboPhD-engine-specific
+            knobs (e.g. ``extra_read_paths`` for the evolution sandbox,
+            ``task_config_extras`` for checkpoint-persisted task values)
+            live on ``RoboPhDConfig`` — see its field docstrings.
         task_name: Name for the experiment directory.
-        extra_read_paths: Optional list of absolute paths added to the
-            evolution sandbox's read scope. The default sandbox restricts
-            evolution Claude CLI sessions to reads under the experiment
-            directory only; pass extra paths here when a task uses
-            symlinked-in resources outside that tree (e.g., text2sql
-            uses ``RoboPhD/benchmark_resources``). Read-only — does not
-            grant write permission. RoboPhD engine only; GEPA and
-            Autoresearch ignore this argument.
 
     Returns:
         OptimizeResult with best_candidate, best_score, and experiment_dir.
@@ -442,17 +489,6 @@ def optimize_anything(
     cfg = config or RoboPhDConfig()
 
     # Dispatch to engine based on config type
-    if isinstance(cfg, (GEPAConfig, AutoresearchConfig)) and extra_read_paths:
-        import logging as _logging
-        _logging.getLogger(__name__).warning(
-            "[optimize_anything] extra_read_paths=%r is set, but the %s "
-            "engine does not implement the evolution sandbox; the carve-out "
-            "will be silently ignored. The argument only affects the RoboPhD "
-            "engine. Pass it from a RoboPhDConfig() run, or remove it from "
-            "this call.",
-            extra_read_paths, type(cfg).__name__,
-        )
-
     if isinstance(cfg, GEPAConfig):
         from RoboPhD.engines.gepa import run_gepa
         return run_gepa(evaluator, dataset, seed_candidate, objective, background, cfg, task_name)
@@ -489,7 +525,7 @@ def optimize_anything(
             "diagnostic_files": {},
             "runs_dir": str(run_dir),
             "eval_timeout": cfg.eval_timeout,
-            "extra_read_paths": extra_read_paths,
+            "extra_read_paths": cfg.extra_read_paths,
         }
 
         researcher = ParallelAgentResearcher(
@@ -549,20 +585,24 @@ def optimize_anything(
             "diagnostic_files": {},
             "runs_dir": str(run_dir),
             "eval_timeout": cfg.eval_timeout,
-            "extra_read_paths": extra_read_paths,
+            "extra_read_paths": cfg.extra_read_paths,
         }
 
-        # Persist objective/background in task_config so they survive resume
+        # Persist objective/background in task_config so they survive
+        # resume; task_config_extras rides along for task-specific values.
         researcher = ParallelAgentResearcher(
             config_manager=config_manager,
             num_iterations=cfg.num_iterations,
             random_seed=cfg.random_seed,
             runtime_config=runtime_config,
-            task_config={
-                "file_mapping": file_mapping,
-                "objective": objective,
-                "background": background,
-            },
+            task_config=_merge_task_config_extras(
+                {
+                    "file_mapping": file_mapping,
+                    "objective": objective,
+                    "background": background,
+                },
+                cfg.task_config_extras,
+            ),
         )
         initial_agents = [seed_agent_name]
 

@@ -245,45 +245,41 @@ def _read_checkpoint_max_workers(resume_dir: Path) -> int | None:
     return best
 
 
-DS1000_RUNTIME_CONFIG_FILENAME = "ds1000_runtime_config.json"
+# Key under task_config in checkpoint.json that holds DS-1000's
+# task-specific runtime values (cost_threshold / cost_per_error).
+# Persisted by the framework every iteration via RoboPhDConfig's
+# task_config_extras, so the values survive any mid-run interruption
+# that leaves a resumable checkpoint.
+DS1000_TASK_CONFIG_KEY = "ds1000_runtime"
 
-
-def _ds1000_runtime_path(experiment_dir: Path) -> Path:
-    return Path(experiment_dir) / DS1000_RUNTIME_CONFIG_FILENAME
+# Pre-task_config_extras runs persisted the same values in this sidecar,
+# written only after optimize_anything() returned — kept as a read-only
+# fallback so completed historical runs still resume/eval without flags.
+LEGACY_SIDECAR_FILENAME = "ds1000_runtime_config.json"
 
 
 def _read_ds1000_runtime_config(resume_dir: Path) -> dict:
-    """Read DS-1000 task-specific runtime config from a resumed run.
+    """Read DS-1000 task-specific runtime values from a resumed run.
 
-    Returns a dict of stored values (may be missing keys) or {} if the
-    sidecar file is absent / unreadable. The framework's ConfigManager
-    persists framework-level knobs (max_workers, eval_timeout, etc.) but
-    not task-specific ones; this sidecar covers --cost-threshold and
-    --cost-per-error so they survive --resume.
+    Primary source: checkpoint.json's task_config[DS1000_TASK_CONFIG_KEY],
+    written by the framework every iteration. Fallback: the legacy
+    post-completion sidecar. Returns {} when neither has the values
+    (run crashed before iteration 1, or pre-sidecar historical run) —
+    the bootstrap branch in _enforce_immutable_on_resume handles that.
     """
-    cp_path = _ds1000_runtime_path(resume_dir)
-    if not cp_path.is_file():
-        return {}
+    resume_dir = Path(resume_dir)
     try:
-        data = json.loads(cp_path.read_text())
-    except (json.JSONDecodeError, OSError):
-        return {}
-    return data if isinstance(data, dict) else {}
-
-
-def _write_ds1000_runtime_config(experiment_dir: Path, values: dict) -> None:
-    """Persist DS-1000 task-specific runtime config alongside checkpoint.json.
-
-    Idempotent — writing the same values is a no-op semantically. Best-
-    effort: a write failure logs a warning but doesn't abort the run
-    (future resumes would fall back to evaluator defaults, same as today).
-    """
-    cp_path = _ds1000_runtime_path(experiment_dir)
+        checkpoint = json.loads((resume_dir / "checkpoint.json").read_text())
+        stored = checkpoint.get("task_config", {}).get(DS1000_TASK_CONFIG_KEY)
+        if isinstance(stored, dict):
+            return stored
+    except (FileNotFoundError, json.JSONDecodeError, OSError, AttributeError):
+        pass
     try:
-        cp_path.parent.mkdir(parents=True, exist_ok=True)
-        cp_path.write_text(json.dumps(values, indent=2, sort_keys=True))
-    except OSError as e:
-        logger.warning(f"Could not write {cp_path.name}: {e}")
+        data = json.loads((resume_dir / LEGACY_SIDECAR_FILENAME).read_text())
+        return data if isinstance(data, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {}
 
 
 def _enforce_immutable_on_resume(
@@ -293,21 +289,21 @@ def _enforce_immutable_on_resume(
 
     Fresh run: CLI flag wins, else evaluator default.
 
-    Resume + sidecar has stored value:
+    Resume + stored value present (checkpoint task_config or legacy sidecar):
       - CLI flag passed and disagrees: SystemExit (immutability).
       - CLI flag passed and matches: use stored (silent no-op).
       - No CLI flag: use stored.
 
-    Resume + sidecar missing the value (interrupted run that never
-    finished its first iteration, OR a pre-fix historical run):
+    Resume + no stored value (run crashed before its first checkpoint,
+    or a pre-task_config_extras run that crashed before completing):
       - CLI flag passed: one-time bootstrap, return CLI value.
       - No CLI flag: SystemExit (no value to use; user must restart
         or pass the original flag explicitly).
 
-    The bootstrap exception is the only override path on resume. It
-    exists because the sidecar is only written post-iteration-1, so
-    runs interrupted before then need a recovery path. After bootstrap,
-    the value is persisted and locked for any future resume.
+    The bootstrap exception is the only override path on resume. The
+    bootstrapped values are passed through task_config_extras, which
+    the resume path merges into the checkpoint's task_config — so they
+    persist at the next completed iteration and are locked thereafter.
     """
     if not on_resume:
         return cli_value if cli_value is not None else default_value
@@ -322,19 +318,20 @@ def _enforce_immutable_on_resume(
         return stored_value
     if cli_value is not None:
         logger.info(
-            f"Resume: bootstrapping {name}={fmt(cli_value)} into "
-            f"{DS1000_RUNTIME_CONFIG_FILENAME} (no prior stored value)."
+            f"Resume: bootstrapping {name}={fmt(cli_value)} into the "
+            f"checkpoint's task_config (no prior stored value)."
         )
         return cli_value
     raise SystemExit(
-        f"--resume failed: no stored {name} in "
-        f"{DS1000_RUNTIME_CONFIG_FILENAME}. The sidecar is missing — "
-        f"likely a fresh run that crashed before completing its first "
-        f"iteration, or a pre-fix historical run. Pass --{name} <value> "
-        f"to bootstrap it (one-time, then locked). NOTE: if the sidecar "
-        f"is missing entirely, both --cost-threshold and --cost-per-error "
-        f"must be supplied on the same resume invocation — each is "
-        f"checked independently. Or restart the run."
+        f"--resume failed: no stored {name} in the checkpoint's "
+        f"task_config (or legacy {LEGACY_SIDECAR_FILENAME} sidecar). "
+        f"This run predates per-iteration persistence of the cost knobs "
+        f"and was interrupted before completing. Pass --{name} <value> "
+        f"to bootstrap it (one-time — it persists at the next completed "
+        f"iteration, then is locked). NOTE: when no values are stored, "
+        f"both --cost-threshold and --cost-per-error must be supplied on "
+        f"the same resume invocation — each is checked independently. "
+        f"Or restart the run."
     )
 
 
@@ -801,6 +798,14 @@ def main():
             meta_evolution_strategy=args.meta_evolution_strategy,
             engine_overrides=engine_overrides,
             eval_timeout=EVAL_TIMEOUT,
+            # Persisted into checkpoint.json's task_config every iteration,
+            # so the cost knobs survive any interruption that leaves a
+            # resumable checkpoint (the post-completion sidecar this
+            # replaces lost them on mid-run crashes — the bug hit by
+            # asta_ds1000_20260610_203047). On resume this is the same
+            # values re-resolved through _enforce_immutable_on_resume
+            # (idempotent merge), or the one-time bootstrap values.
+            task_config_extras={DS1000_TASK_CONFIG_KEY: resolved_runtime},
         )
         if args.resume:
             cfg.experiment_dir = args.resume
@@ -823,15 +828,6 @@ def main():
                 f"{result.total_evaluations} evaluations")
     logger.info(f"Best agent: Elo {result.best_score:.0f}")
     logger.info(f"Experiment dir: {result.experiment_dir}")
-
-    # Persist the resolved values so future resumes recover them. The
-    # framework's ConfigManager doesn't persist task-specific knobs,
-    # so without this sidecar a resume silently reverts to evaluator
-    # defaults (the bug from asta_ds1000_20260526_120002). Written
-    # after optimize_anything completes — runs interrupted before any
-    # iteration finishes will be missing the sidecar; that case is
-    # handled by the bootstrap branch in _enforce_immutable_on_resume.
-    _write_ds1000_runtime_config(result.experiment_dir, resolved_runtime)
 
     if args.eval_test_set:
         if not result.completed_normally:

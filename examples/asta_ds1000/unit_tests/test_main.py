@@ -22,6 +22,7 @@ Currently covers three bug classes:
     actually warrants.
 """
 import ast
+import json
 import sys
 from pathlib import Path
 
@@ -754,52 +755,74 @@ def test_background_md_eval_timeout_placeholder_and_interpolation():
 
 
 # ----------------------------------------------------------------------
-# DS-1000 runtime sidecar (cost_threshold / cost_per_error). The
-# framework's ConfigManager doesn't persist these task-specific knobs,
-# so without the sidecar they'd silently revert to evaluator defaults
-# on --resume, which for cost_threshold *changes the scoring function*
-# mid-run. The cost knobs are immutable across a run: passing the CLI
-# flag on --resume is a hard error, and a missing sidecar (pre-fix
-# historical run) is also an error rather than silent fallback.
+# DS-1000 runtime values (cost_threshold / cost_per_error). Persisted
+# in checkpoint.json's task_config (via RoboPhDConfig.task_config_extras,
+# rewritten by the framework every iteration) so they survive mid-run
+# interruption; a legacy post-completion sidecar remains a read-only
+# fallback for historical runs. Without recovery they'd silently revert
+# to evaluator defaults on --resume, which for cost_threshold *changes
+# the scoring function* mid-run. The cost knobs are immutable across a
+# run: changing the CLI flag on --resume is a hard error, and a missing
+# stored value is also an error rather than silent fallback.
 # ----------------------------------------------------------------------
 
 
 @pytest.fixture(scope="module")
 def sidecar_helpers():
-    """Import main.py's sidecar helpers once per module."""
+    """Import main.py's runtime-config helpers once per module."""
     sys.path.insert(0, str(ASTA_DS1000_DIR))
     sys.path.insert(0, str(REPO_ROOT))
     try:
         import main as asta_main  # noqa: E402
         return {
             "read": asta_main._read_ds1000_runtime_config,
-            "write": asta_main._write_ds1000_runtime_config,
             "enforce_immutable": asta_main._enforce_immutable_on_resume,
-            "filename": asta_main.DS1000_RUNTIME_CONFIG_FILENAME,
+            "task_key": asta_main.DS1000_TASK_CONFIG_KEY,
+            "legacy_filename": asta_main.LEGACY_SIDECAR_FILENAME,
         }
     finally:
         sys.path.remove(str(ASTA_DS1000_DIR))
         sys.path.remove(str(REPO_ROOT))
 
 
-def test_sidecar_roundtrip(sidecar_helpers, tmp_path):
-    """write → read returns exactly what was written."""
+def _write_checkpoint(tmp_path, task_config):
+    (tmp_path / "checkpoint.json").write_text(
+        json.dumps({"task_config": task_config})
+    )
+
+
+def test_reader_prefers_checkpoint_task_config(sidecar_helpers, tmp_path):
+    """The checkpoint's task_config wins over a legacy sidecar — it's the
+    per-iteration-fresh source; the sidecar is at best as new."""
     payload = {"cost_threshold": 0.06, "cost_per_error": 0.01}
-    sidecar_helpers["write"](tmp_path, payload)
+    _write_checkpoint(tmp_path, {sidecar_helpers["task_key"]: payload})
+    (tmp_path / sidecar_helpers["legacy_filename"]).write_text(
+        json.dumps({"cost_threshold": 0.99, "cost_per_error": 0.99})
+    )
     assert sidecar_helpers["read"](tmp_path) == payload
 
 
-def test_sidecar_missing_file_returns_empty_dict(sidecar_helpers, tmp_path):
-    """An absent sidecar must NOT raise from the reader — the immutability
-    enforcement at the call site is where the historical-run error fires."""
+def test_reader_falls_back_to_legacy_sidecar(sidecar_helpers, tmp_path):
+    """A pre-task_config_extras run has the values only in the sidecar:
+    checkpoint exists but its task_config lacks the ds1000 key."""
+    _write_checkpoint(tmp_path, {"file_mapping": {"agent.py": "agent.py"}})
+    payload = {"cost_threshold": 0.06, "cost_per_error": 0.01}
+    (tmp_path / sidecar_helpers["legacy_filename"]).write_text(json.dumps(payload))
+    assert sidecar_helpers["read"](tmp_path) == payload
+
+
+def test_reader_missing_both_returns_empty_dict(sidecar_helpers, tmp_path):
+    """No checkpoint and no sidecar must NOT raise from the reader — the
+    immutability enforcement at the call site is where the error fires."""
     assert sidecar_helpers["read"](tmp_path) == {}
 
 
-def test_sidecar_malformed_file_returns_empty_dict(sidecar_helpers, tmp_path):
-    """Best-effort read: malformed JSON falls back to {} rather than crashing
-    a resume. The error then surfaces from _enforce_immutable_on_resume
-    with a clear "no stored value" message."""
-    (tmp_path / sidecar_helpers["filename"]).write_text("{not: valid json")
+def test_reader_malformed_sources_return_empty_dict(sidecar_helpers, tmp_path):
+    """Best-effort read: malformed checkpoint AND malformed sidecar fall
+    back to {} rather than crashing a resume. The error then surfaces
+    from _enforce_immutable_on_resume with a clear "no stored" message."""
+    (tmp_path / "checkpoint.json").write_text("{not: valid json")
+    (tmp_path / sidecar_helpers["legacy_filename"]).write_text("{not: valid json")
     assert sidecar_helpers["read"](tmp_path) == {}
 
 
@@ -866,12 +889,12 @@ def test_enforce_resume_with_no_cli_uses_stored(sidecar_helpers):
 
 
 def test_enforce_resume_bootstraps_when_sidecar_missing(sidecar_helpers):
-    """Resume + CLI flag + missing sidecar → returns CLI value (bootstrap).
+    """Resume + CLI flag + no stored value → returns CLI value (bootstrap).
 
-    The sidecar is only written after iteration 1 completes, so a run
-    interrupted before then has no sidecar. Allowing the CLI flag to
-    bootstrap a fresh sidecar is the recovery path; the value is then
-    locked for all subsequent resumes.
+    A pre-task_config_extras run that crashed mid-run has neither the
+    checkpoint task_config key nor the legacy sidecar. Allowing the CLI
+    flag to bootstrap is the recovery path; the resume merge persists
+    the value at the next completed iteration, locked thereafter.
     """
     result = sidecar_helpers["enforce_immutable"](
         cli_value=0.10, stored_value=None, default_value=0.04,
@@ -881,7 +904,7 @@ def test_enforce_resume_bootstraps_when_sidecar_missing(sidecar_helpers):
 
 
 def test_enforce_resume_missing_stored_and_no_cli_is_hard_error(sidecar_helpers):
-    """Resume + no CLI flag + missing sidecar → SystemExit.
+    """Resume + no CLI flag + no stored value → SystemExit.
 
     Silent default fallback here is the bug class that produced the
     $0.10 → $0.04 drift in asta_ds1000_20260526_120002. Error and
