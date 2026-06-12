@@ -102,9 +102,15 @@ class RoboPhDConfig:
     survive interruption (e.g. asta_ds1000's cost-penalty parameters).
     Nest values under a single task-named key to avoid collisions. The
     reserved keys ``file_mapping``/``objective``/``background`` cannot be
-    overridden. On resume, extras are merged over the checkpoint's stored
-    task_config, so re-supplying them can bootstrap runs from before the
-    values were persisted."""
+    overridden.
+
+    Extras are immutable across a run, enforced on resume: a key absent
+    from the checkpoint's stored task_config is added (bootstrapping runs
+    from before the task persisted it), but a key whose value differs
+    from the stored one raises ``ValueError``. Resolve CLI-derived values
+    against the stored ones before passing them — see
+    ``runner_utils.read_task_config_extras`` /
+    ``runner_utils.resolve_run_immutable`` for the standard pattern."""
 
     # Resume / extend
     experiment_dir: Union[str, Path, None] = None
@@ -290,6 +296,11 @@ def _merge_task_config_extras(
     Reserved keys are framework-owned (file_mapping drives candidate
     materialization; objective/background are recovered on resume) —
     letting extras shadow them would corrupt resume, so collide loudly.
+
+    One level deep: when a key holds a dict on both sides (the documented
+    nest-under-a-task-named-key convention), sub-keys are merged rather
+    than the dict replaced wholesale — so extras built by older task code
+    can't silently drop sub-keys a newer version had persisted.
     """
     if not extras:
         return task_config
@@ -300,7 +311,40 @@ def _merge_task_config_extras(
             f"keys {collisions}; nest task-specific values under a "
             f"task-named key instead."
         )
-    return {**task_config, **extras}
+    merged = dict(task_config)
+    for k, v in extras.items():
+        stored = merged.get(k)
+        if isinstance(stored, dict) and isinstance(v, dict):
+            merged[k] = {**stored, **v}
+        else:
+            merged[k] = v
+    return merged
+
+
+def _changed_extras_on_resume(
+    stored: Dict[str, Any], extras: Dict[str, Any],
+) -> List[str]:
+    """List extras entries that would CHANGE a stored task_config value.
+
+    Additions (key or sub-key absent from stored) are fine — that's the
+    bootstrap case. Matches the merge's one-level-deep semantics: for a
+    dict-valued key, sub-keys are compared individually so a task that
+    grew a new knob can still resume its older runs.
+    """
+    changed: List[str] = []
+    for k, v in extras.items():
+        if k not in stored:
+            continue
+        sv = stored[k]
+        if isinstance(sv, dict) and isinstance(v, dict):
+            changed.extend(
+                f"{k}.{sk}: stored={sv[sk]!r} -> extras={sval!r}"
+                for sk, sval in v.items()
+                if sk in sv and sv[sk] != sval
+            )
+        elif sv != v:
+            changed.append(f"{k}: stored={sv!r} -> extras={v!r}")
+    return changed
 
 
 def _validate_resume_config(cfg: RoboPhDConfig) -> None:
@@ -408,6 +452,27 @@ def _build_resume_kwargs(
     # resume_checkpoint in the researcher). The next _save_checkpoint
     # persists the merged dict, so a bootstrap resume of a run from
     # before its extras were persisted heals itself.
+    #
+    # Immutability backstop: extras may ADD keys absent from the stored
+    # task_config (the bootstrap case) but may not CHANGE stored ones.
+    # A changed value here means the caller passed extras computed from
+    # CLI flags without resolving them against the stored values first —
+    # silently accepting it would mutate a "persisted" task knob mid-run
+    # (the failure class task_config_extras exists to prevent). Callers
+    # with a flag-level guard (runner_utils.resolve_run_immutable) error
+    # before reaching this; the backstop protects callers without one.
+    if cfg.task_config_extras:
+        changed = _changed_extras_on_resume(task_config, cfg.task_config_extras)
+        if changed:
+            raise ValueError(
+                f"task_config_extras would change stored task_config "
+                f"value(s) on resume: {'; '.join(changed)}. Extras are "
+                f"immutable across a run: they may add keys missing from "
+                f"the checkpoint (bootstrap) but not change stored ones. "
+                f"Resolve extras against the stored values before passing "
+                f"them (see runner_utils.resolve_run_immutable), or start "
+                f"a new run to change the values."
+            )
     task_config = _merge_task_config_extras(task_config, cfg.task_config_extras)
 
     researcher_kwargs = dict(

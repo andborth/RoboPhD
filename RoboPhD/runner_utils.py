@@ -361,6 +361,88 @@ def read_checkpoint_max_workers(resume_dir) -> "int | None":
     return None
 
 
+def read_task_config_extras(resume_dir, task_key: str,
+                            legacy_sidecar: "str | None" = None) -> dict:
+    """Read a task's run-immutable values from a resumed run.
+
+    Primary source: checkpoint.json's ``task_config[task_key]`` — written
+    by the framework every iteration when the run passes
+    ``RoboPhDConfig.task_config_extras``. Fallback: a task-named legacy
+    sidecar JSON at the experiment-dir root (runs from before the task
+    adopted task_config_extras). Best-effort: missing or malformed
+    sources read as ``{}`` rather than raising — the caller's
+    ``resolve_run_immutable`` is where a missing value becomes an error.
+    """
+    resume_dir = Path(resume_dir)
+    try:
+        checkpoint = json.loads((resume_dir / "checkpoint.json").read_text())
+        stored = (checkpoint.get("task_config") or {}).get(task_key)
+        if isinstance(stored, dict):
+            return stored
+    except (FileNotFoundError, json.JSONDecodeError, OSError, AttributeError):
+        pass
+    if legacy_sidecar:
+        try:
+            data = json.loads((resume_dir / legacy_sidecar).read_text())
+            if isinstance(data, dict):
+                return data
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            pass
+    return {}
+
+
+def resolve_run_immutable(cli_value, stored_value, default_value, flag: str, *,
+                          on_resume: bool, fmt=str, missing_note: str = ""):
+    """Resolve a per-run-immutable task knob (e.g. asta_ds1000's
+    --cost-threshold, arc_agi_1's --num-train).
+
+    Fresh run: CLI flag wins, else the task default.
+
+    Resume + stored value present (from ``read_task_config_extras``):
+      - CLI flag passed and disagrees: SystemExit (immutability).
+      - CLI flag passed and matches: use stored (silent no-op).
+      - No CLI flag: use stored.
+
+    Resume + no stored value (run crashed before its first checkpoint,
+    or predates the task's adoption of task_config_extras):
+      - CLI flag passed: one-time bootstrap, return CLI value. Passing
+        the resolved value back through task_config_extras persists it
+        at the next completed iteration, locked thereafter.
+      - No CLI flag: SystemExit — never a silent default fallback, which
+        would change task behavior mid-run.
+
+    ``missing_note`` is appended to the missing-value error for task-
+    specific guidance (e.g. ds1000's both-flags-together requirement).
+    The api.py resume merge independently backstops immutability at the
+    framework level; this resolver is the friendlier flag-level guard.
+    """
+    if not on_resume:
+        return cli_value if cli_value is not None else default_value
+    if stored_value is not None:
+        if cli_value is not None and cli_value != stored_value:
+            raise SystemExit(
+                f"--{flag} cannot be changed on --resume; the value is "
+                f"locked for the lifetime of the run (stored value: "
+                f"{fmt(stored_value)}). Start a new run to use a "
+                f"different {flag}."
+            )
+        return stored_value
+    if cli_value is not None:
+        logging.getLogger(__name__).info(
+            f"Resume: bootstrapping {flag}={fmt(cli_value)} into the "
+            f"checkpoint's task_config (no prior stored value)."
+        )
+        return cli_value
+    raise SystemExit(
+        f"--resume failed: no stored {flag} in the checkpoint's "
+        f"task_config (or legacy sidecar). This run predates "
+        f"per-iteration persistence of the value and was interrupted "
+        f"before completing. Pass --{flag} <value> to bootstrap it "
+        f"(one-time — it persists at the next completed iteration, then "
+        f"is locked). {missing_note}Or restart the run."
+    )
+
+
 def load_best_candidate(
     run_dir: Path,
     file_mapping: Dict[str, str] | None = None,

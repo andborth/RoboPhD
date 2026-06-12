@@ -24,6 +24,10 @@ from RoboPhD.api import (  # noqa: E402
     _merge_task_config_extras,
     optimize_anything,
 )
+from RoboPhD.runner_utils import (  # noqa: E402
+    read_task_config_extras,
+    resolve_run_immutable,
+)
 
 
 # -- _merge_task_config_extras ------------------------------------------
@@ -124,3 +128,100 @@ def test_resume_kwargs_without_extras_pass_checkpoint_task_config(tmp_path):
     cfg = RoboPhDConfig(experiment_dir=tmp_path)
     _, _, researcher_kwargs, _ = _build_resume_kwargs(cfg)
     assert researcher_kwargs["task_config"] == stored
+
+
+# -- immutability backstop on resume ------------------------------------
+
+
+def test_resume_extras_changing_stored_value_raises(tmp_path):
+    """The backstop: extras computed from CLI flags by a caller WITHOUT a
+    flag-level guard must not silently mutate a persisted knob mid-run.
+    Sub-key granularity — the conflict names the changed leaf."""
+    _write_minimal_checkpoint(tmp_path, {
+        "file_mapping": {"agent.py": "agent.py"},
+        "ds1000_runtime": {"cost_threshold": 0.044, "cost_per_error": 0.01},
+    })
+    cfg = RoboPhDConfig(
+        experiment_dir=tmp_path,
+        task_config_extras={"ds1000_runtime": {"cost_threshold": 0.08,
+                                               "cost_per_error": 0.01}},
+    )
+    with pytest.raises(ValueError) as exc_info:
+        _build_resume_kwargs(cfg)
+    msg = str(exc_info.value)
+    assert "ds1000_runtime.cost_threshold" in msg
+    assert "0.044" in msg and "0.08" in msg
+    assert "resolve_run_immutable" in msg
+
+
+def test_resume_extras_equal_values_pass(tmp_path):
+    """Steady-state resume: a guarded caller passes back the stored
+    values verbatim — idempotent merge, no error."""
+    stored_runtime = {"cost_threshold": 0.044, "cost_per_error": 0.01}
+    _write_minimal_checkpoint(tmp_path, {
+        "file_mapping": {"agent.py": "agent.py"},
+        "ds1000_runtime": dict(stored_runtime),
+    })
+    cfg = RoboPhDConfig(
+        experiment_dir=tmp_path,
+        task_config_extras={"ds1000_runtime": dict(stored_runtime)},
+    )
+    _, _, researcher_kwargs, _ = _build_resume_kwargs(cfg)
+    assert researcher_kwargs["task_config"]["ds1000_runtime"] == stored_runtime
+
+
+def test_resume_extras_new_subkey_merges_and_preserves_stored(tmp_path):
+    """One-level-deep semantics: a task that grew a new knob can resume
+    its older runs (sub-key added), and extras built without a sub-key
+    the checkpoint has don't silently drop it."""
+    _write_minimal_checkpoint(tmp_path, {
+        "file_mapping": {"agent.py": "agent.py"},
+        "ds1000_runtime": {"cost_threshold": 0.044, "old_knob": 7},
+    })
+    cfg = RoboPhDConfig(
+        experiment_dir=tmp_path,
+        task_config_extras={"ds1000_runtime": {"cost_threshold": 0.044,
+                                               "new_knob": True}},
+    )
+    _, _, researcher_kwargs, _ = _build_resume_kwargs(cfg)
+    merged = researcher_kwargs["task_config"]["ds1000_runtime"]
+    assert merged == {"cost_threshold": 0.044, "old_knob": 7, "new_knob": True}
+
+
+# -- shared example-side helpers (runner_utils) --------------------------
+
+
+def test_read_task_config_extras_prefers_checkpoint(tmp_path):
+    _write_minimal_checkpoint(tmp_path, {"t_runtime": {"k": 1}})
+    (tmp_path / "legacy.json").write_text(json.dumps({"k": 99}))
+    assert read_task_config_extras(tmp_path, "t_runtime", "legacy.json") == {"k": 1}
+
+
+def test_read_task_config_extras_falls_back_to_legacy_sidecar(tmp_path):
+    _write_minimal_checkpoint(tmp_path, {"file_mapping": {}})
+    (tmp_path / "legacy.json").write_text(json.dumps({"k": 99}))
+    assert read_task_config_extras(tmp_path, "t_runtime", "legacy.json") == {"k": 99}
+
+
+def test_read_task_config_extras_missing_everything_returns_empty(tmp_path):
+    assert read_task_config_extras(tmp_path, "t_runtime", "legacy.json") == {}
+
+
+def test_resolve_run_immutable_matrix():
+    """The six-cell resolution matrix, shared by all examples."""
+    r = resolve_run_immutable
+    # fresh: cli wins, else default
+    assert r(0.08, None, 0.04, "knob", on_resume=False) == 0.08
+    assert r(None, None, 0.04, "knob", on_resume=False) == 0.04
+    # resume + stored: match ok, absent-cli ok, conflict exits
+    assert r(0.06, 0.06, 0.04, "knob", on_resume=True) == 0.06
+    assert r(None, 0.06, 0.04, "knob", on_resume=True) == 0.06
+    with pytest.raises(SystemExit) as exc_info:
+        r(0.10, 0.06, 0.04, "knob", on_resume=True)
+    assert "cannot be changed on --resume" in str(exc_info.value)
+    # resume + no stored: cli bootstraps, absent-cli exits with the note
+    assert r(0.10, None, 0.04, "knob", on_resume=True) == 0.10
+    with pytest.raises(SystemExit) as exc_info:
+        r(None, None, 0.04, "knob", on_resume=True, missing_note="EXTRA. ")
+    msg = str(exc_info.value)
+    assert "no stored knob" in msg and "bootstrap" in msg and "EXTRA." in msg

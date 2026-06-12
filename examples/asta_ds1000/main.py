@@ -44,6 +44,7 @@ from RoboPhD import (
     GEPAConfig,
     AutoresearchConfig,
 )
+from RoboPhD.runner_utils import read_task_config_extras, resolve_run_immutable
 
 logging.basicConfig(
     level=logging.INFO,
@@ -258,80 +259,30 @@ DS1000_TASK_CONFIG_KEY = "ds1000_runtime"
 LEGACY_SIDECAR_FILENAME = "ds1000_runtime_config.json"
 
 
-def _read_ds1000_runtime_config(resume_dir: Path) -> dict:
-    """Read DS-1000 task-specific runtime values from a resumed run.
+# Both flags resolve through resolve_run_immutable independently, so a
+# fully-missing store needs both supplied on the same invocation.
+_BOTH_FLAGS_NOTE = (
+    "NOTE: when no values are stored, both --cost-threshold and "
+    "--cost-per-error must be supplied on the same resume invocation — "
+    "each is checked independently. "
+)
 
-    Primary source: checkpoint.json's task_config[DS1000_TASK_CONFIG_KEY],
-    written by the framework every iteration. Fallback: the legacy
-    post-completion sidecar. Returns {} when neither has the values
-    (run crashed before iteration 1, or pre-sidecar historical run) —
-    the bootstrap branch in _enforce_immutable_on_resume handles that.
-    """
-    resume_dir = Path(resume_dir)
-    try:
-        checkpoint = json.loads((resume_dir / "checkpoint.json").read_text())
-        stored = checkpoint.get("task_config", {}).get(DS1000_TASK_CONFIG_KEY)
-        if isinstance(stored, dict):
-            return stored
-    except (FileNotFoundError, json.JSONDecodeError, OSError, AttributeError):
-        pass
-    try:
-        data = json.loads((resume_dir / LEGACY_SIDECAR_FILENAME).read_text())
-        return data if isinstance(data, dict) else {}
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
-        return {}
+
+def _read_ds1000_runtime_config(resume_dir: Path) -> dict:
+    """DS-1000 binding of runner_utils.read_task_config_extras."""
+    return read_task_config_extras(
+        resume_dir, DS1000_TASK_CONFIG_KEY, LEGACY_SIDECAR_FILENAME,
+    )
 
 
 def _enforce_immutable_on_resume(
     cli_value, stored_value, default_value, name: str, *, on_resume: bool, fmt=str,
 ):
-    """Resolve a per-run-immutable knob (cost-threshold / cost-per-error).
-
-    Fresh run: CLI flag wins, else evaluator default.
-
-    Resume + stored value present (checkpoint task_config or legacy sidecar):
-      - CLI flag passed and disagrees: SystemExit (immutability).
-      - CLI flag passed and matches: use stored (silent no-op).
-      - No CLI flag: use stored.
-
-    Resume + no stored value (run crashed before its first checkpoint,
-    or a pre-task_config_extras run that crashed before completing):
-      - CLI flag passed: one-time bootstrap, return CLI value.
-      - No CLI flag: SystemExit (no value to use; user must restart
-        or pass the original flag explicitly).
-
-    The bootstrap exception is the only override path on resume. The
-    bootstrapped values are passed through task_config_extras, which
-    the resume path merges into the checkpoint's task_config — so they
-    persist at the next completed iteration and are locked thereafter.
-    """
-    if not on_resume:
-        return cli_value if cli_value is not None else default_value
-    if stored_value is not None:
-        if cli_value is not None and cli_value != stored_value:
-            raise SystemExit(
-                f"--{name} cannot be changed on --resume; the value "
-                f"is locked for the lifetime of the run (stored value: "
-                f"{fmt(stored_value)}). Start a new run to use a "
-                f"different {name}."
-            )
-        return stored_value
-    if cli_value is not None:
-        logger.info(
-            f"Resume: bootstrapping {name}={fmt(cli_value)} into the "
-            f"checkpoint's task_config (no prior stored value)."
-        )
-        return cli_value
-    raise SystemExit(
-        f"--resume failed: no stored {name} in the checkpoint's "
-        f"task_config (or legacy {LEGACY_SIDECAR_FILENAME} sidecar). "
-        f"This run predates per-iteration persistence of the cost knobs "
-        f"and was interrupted before completing. Pass --{name} <value> "
-        f"to bootstrap it (one-time — it persists at the next completed "
-        f"iteration, then is locked). NOTE: when no values are stored, "
-        f"both --cost-threshold and --cost-per-error must be supplied on "
-        f"the same resume invocation — each is checked independently. "
-        f"Or restart the run."
+    """DS-1000 binding of runner_utils.resolve_run_immutable — adds the
+    both-flags-together note to the missing-value error."""
+    return resolve_run_immutable(
+        cli_value, stored_value, default_value, name,
+        on_resume=on_resume, fmt=fmt, missing_note=_BOTH_FLAGS_NOTE,
     )
 
 

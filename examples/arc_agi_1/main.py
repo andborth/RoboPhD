@@ -29,6 +29,7 @@ sys.path.insert(0, str(HERE.parent.parent))
 sys.path.insert(0, str(HERE))
 
 from RoboPhD import optimize_anything, eval_candidate, eval_run, RoboPhDConfig, GEPAConfig, AutoresearchConfig, RoboPhDEvalConfig
+from RoboPhD.runner_utils import read_task_config_extras, resolve_run_immutable
 
 logging.basicConfig(
     level=logging.INFO,
@@ -57,16 +58,16 @@ EVAL_TIMEOUT = 600
 # ---------------------------------------------------------------------------
 # Per-run training-pool sidecar (--num-train), locked across --resume.
 #
-# The framework's checkpoint persists framework-level knobs but not this
-# task-specific one, so a sidecar alongside checkpoint.json carries it across
-# --resume. Mirrors the pattern in examples/asta_ds1000/main.py. The sidecar is
-# written once the experiment dir is known: immediately on --resume, and after
-# optimize_anything() returns for a fresh run (whose dir is auto-created with a
-# timestamp inside that call). A fresh run interrupted before it returns has no
-# sidecar; resuming it requires re-passing --num-train. We never silently fall
-# back to the default, which would mix pool sizes within a single run.
+# Persisted in checkpoint.json's task_config (via RoboPhDConfig's
+# task_config_extras, rewritten by the framework every iteration), so the
+# value survives any interruption that leaves a resumable checkpoint.
+# Mirrors the pattern in examples/asta_ds1000/main.py. Runs from before
+# this migration persisted the value in a sidecar at the experiment-dir
+# root — kept as a read-only fallback. We never silently fall back to the
+# default, which would mix pool sizes within a single run.
 # ---------------------------------------------------------------------------
-ARC_AGI_1_RUNTIME_CONFIG_FILENAME = "arc_agi_1_runtime_config.json"
+ARC_TASK_CONFIG_KEY = "arc_agi_1_runtime"
+LEGACY_SIDECAR_FILENAME = "arc_agi_1_runtime_config.json"
 
 # Default parallel eval workers when --max-workers is omitted. Applied as a
 # task default (not argparse's default, which stays None so resume can tell
@@ -75,63 +76,10 @@ ARC_AGI_1_RUNTIME_CONFIG_FILENAME = "arc_agi_1_runtime_config.json"
 DEFAULT_MAX_WORKERS = 10
 
 
-def _arc_runtime_path(experiment_dir) -> Path:
-    return Path(experiment_dir) / ARC_AGI_1_RUNTIME_CONFIG_FILENAME
-
-
 def _read_arc_runtime_config(resume_dir) -> dict:
-    """Read the per-run sidecar; {} if absent or unreadable."""
-    p = _arc_runtime_path(resume_dir)
-    if not p.is_file():
-        return {}
-    try:
-        data = json.loads(p.read_text())
-    except (json.JSONDecodeError, OSError):
-        return {}
-    return data if isinstance(data, dict) else {}
-
-
-def _write_arc_runtime_config(experiment_dir, values: dict) -> None:
-    """Persist the per-run sidecar; best-effort (warn, don't abort, on failure)."""
-    p = _arc_runtime_path(experiment_dir)
-    try:
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps(values, indent=2, sort_keys=True))
-    except OSError as e:
-        logger.warning(f"Could not write {p.name}: {e}")
-
-
-def _resolve_num_train(cli_value, stored_value, on_resume: bool, default: int = 400) -> int:
-    """Resolve --num-train; immutable for the lifetime of a run.
-
-    Fresh run: CLI value wins, else the default (400 = the full pool).
-
-    On --resume the value persists from the per-run sidecar; re-passing the same
-    value is allowed, a different value is rejected. If the sidecar is absent
-    (the run predates this flag, or was interrupted before the sidecar was
-    written), --num-train must be re-supplied to re-establish it — we never
-    silently fall back to the default, which would mix pool sizes within a run.
-    """
-    if not on_resume:
-        return cli_value if cli_value is not None else default
-    if stored_value is not None:
-        if cli_value is not None and cli_value != stored_value:
-            raise SystemExit(
-                f"--num-train cannot be changed on --resume; it is locked for the "
-                f"run (stored value: {stored_value}). Start a new run to use a "
-                f"different value."
-            )
-        return stored_value
-    if cli_value is not None:
-        logger.info(
-            f"Resume: bootstrapping num_train={cli_value} into "
-            f"{ARC_AGI_1_RUNTIME_CONFIG_FILENAME} (no prior stored value)."
-        )
-        return cli_value
-    raise SystemExit(
-        f"--resume failed: no stored num_train in {ARC_AGI_1_RUNTIME_CONFIG_FILENAME} "
-        f"(this run predates --num-train, or was interrupted before the sidecar was "
-        f"written). Re-pass --num-train <N> to set it, or start a new run."
+    """ARC binding of runner_utils.read_task_config_extras."""
+    return read_task_config_extras(
+        resume_dir, ARC_TASK_CONFIG_KEY, LEGACY_SIDECAR_FILENAME,
     )
 
 
@@ -314,21 +262,17 @@ def main():
         return
 
     # Resolve the training-pool size. --num-train is LOCKED for a run: it is
-    # persisted to a per-run sidecar and re-applied on --resume. Resume is
-    # RoboPhD-only; gepa/autoresearch warn-and-ignore --resume, so the lock only
-    # engages there.
+    # persisted in the checkpoint's task_config and re-applied on --resume.
+    # Resume is RoboPhD-only; gepa/autoresearch warn-and-ignore --resume, so
+    # the lock only engages there.
     on_resume = bool(args.resume) and args.engine == "robophd"
     stored_num_train = _read_arc_runtime_config(args.resume).get("num_train") if on_resume else None
-    num_train = _resolve_num_train(args.num_train, stored_num_train, on_resume)
+    num_train = resolve_run_immutable(
+        args.num_train, stored_num_train, 400, "num-train", on_resume=on_resume,
+    )
     if num_train % 2 != 0 or not (2 <= num_train <= 400):
         raise SystemExit("--num-train must be an even integer in [2, 400] "
                          "(the pool is 400 records, split half train / half val).")
-    # On resume the experiment dir is known now, so persist immediately — this
-    # makes a bootstrapped or re-interrupted run keep its pool size without
-    # re-passing the flag. (Fresh runs are written after optimize_anything,
-    # once their auto-created dir exists.)
-    if on_resume:
-        _write_arc_runtime_config(args.resume, {"num_train": num_train})
     train, val = load_arc_train_val(num_train=num_train)
     logger.info(f"Dataset: {len(train)} train + {len(val)} val  (num_train={num_train})")
 
@@ -385,6 +329,11 @@ def main():
             eval_timeout=EVAL_TIMEOUT,
             meta_evolution_strategy=args.meta_evolution_strategy,
             engine_overrides=engine_overrides or None,
+            # Persisted into checkpoint.json's task_config every iteration
+            # so the pool size survives mid-run interruption; on resume
+            # this is the stored value re-resolved (idempotent) or the
+            # one-time bootstrap value for pre-migration runs.
+            task_config_extras={ARC_TASK_CONFIG_KEY: {"num_train": num_train}},
         )
         if args.resume:
             cfg.experiment_dir = args.resume
@@ -407,9 +356,6 @@ def main():
                 f"{result.total_evaluations} evaluations")
     logger.info(f"Best agent: Elo {result.best_score:.0f}")
     logger.info(f"Experiment dir: {result.experiment_dir}")
-
-    # Persist the training-pool size so a future --resume recovers and locks it.
-    _write_arc_runtime_config(result.experiment_dir, {"num_train": num_train})
 
     if args.eval_test_set:
         if not result.completed_normally:
