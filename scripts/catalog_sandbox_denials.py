@@ -145,6 +145,15 @@ def _scope(rec):
 _INTERP_PATH_RE = re.compile(
     r"^/(opt/anaconda3|usr|usr/local|opt/homebrew)/.*?/(python|node|ruby)\d*"
 )
+# An interpreter BINARY in a bin dir — mirrors sandbox_hook.INTERPRETER_BIN_RE
+# (the read-scope exemption). Used for the interpreter-FP intent so it
+# matches only the exempt binary, NOT a library/site-packages path that
+# merely contains `python` (e.g. `.../lib/python3.11/site-packages/...`,
+# which is a real out-of-scope read, not an interpreter run).
+_INTERP_BIN_RE = re.compile(
+    r"^/(opt/anaconda3|opt/miniconda3|opt/homebrew|usr|usr/local)/"
+    r"(.*/)?bin/(python|node|ruby|perl|pypy)[0-9.]*$"
+)
 _SED_SCRIPT_RE = re.compile(r"^/\^?[^/]*[ ,].*[,$]p?$")
 # An awk program token blocked-as-path: a `/regex/,/regex/` range or a
 # `/regex/{action}` guard. Both start with `/` and contain a second
@@ -174,6 +183,19 @@ INTENT_PATTERNS = [
      lambda r: _scope(r) == "read"
                and bool(_AWK_PROGRAM_RE.match(_b(r)))
                and bool(re.search(r"\bawk\b", _cmd(r)))),
+
+    ("FP: grep pattern as path (slash/regex operand)",
+     "FP",
+     # A `grep` regex operand starting with `/` is misread as a path:
+     #   grep -v "/agents/"            -> blocked '/agents'
+     #   grep -E "/ ?1000|million|/1e" -> blocked the whole alternation
+     # Require `grep` in the command and a blocked path that's either a
+     # slash-delimited word (`/agents`) or carries regex metachars
+     # (`|`, `?`, `*`, `\`) — neither is a real filesystem read.
+     lambda r: _scope(r) == "read"
+               and bool(re.search(r"\bgrep\b", _cmd(r)))
+               and (bool(re.search(r"[|?*\\]", _b(r)))
+                    or bool(re.match(r"^/[A-Za-z0-9_]+$", _b(r))))),
 
     ("FP: tr operand (character set, not a path)",
      "FP",
@@ -218,46 +240,30 @@ INTENT_PATTERNS = [
     # the tr predicate's `find /` exclusion keep them separate.
     ("TP: find / full-filesystem scan",
      "TP",
+     # `find /` (root scan). Match the `find` token at any word boundary
+     # so a newline-preceded `find` after a multi-line `cd` still counts
+     # (the old `" find "` substring missed `\nfind /`).
      lambda r: _scope(r) == "read" and _b(r) == "/"
-               and " find " in " " + _cmd(r) + " "),
+               and bool(re.search(r"\bfind\s+/", _cmd(r)))),
 
-    # Interpreter-path denials split THREE ways and replay is the
-    # arbiter for the FP cases. Order matters (first-match-wins):
-    #
-    #   1. wrapper prefix (timeout/time/nice) — FP, handled ABOVE.
-    #   2. genuine probe / assignment — TP (this pattern). `which`/`ls`/
-    #      `test -x`/`stat`/`readlink` of the path, or `VAR=<path>`. The
-    #      agent reads/assigns an out-of-scope interpreter; correct deny
-    #      (the assignment-value check is the deliberate exfil guard, and
-    #      the hook can't tell `PY=/opt/.../python` from `PY=/etc/passwd`).
-    #   3. everything else with an interpreter path — FP (next pattern):
-    #      the path appears only because the interpreter is RUN (leading
-    #      command token, post-cd, or inside a heredoc body). HEAD no
-    #      longer denies these (command token isn't scope-checked; heredoc
-    #      bodies are stripped), so replay reports FP-FIXED.
-    #
-    # The probe TP requires an explicit probe verb / assignment so a
-    # run/heredoc shape doesn't get INTENTed TP and surface as a spurious
-    # TP-NOW-ALLOWED.
-    ("TP: interpreter probe by absolute path (ls/which/test/assign)",
-     "TP",
-     lambda r: _scope(r) == "read"
-               and bool(_INTERP_PATH_RE.match(_b(r)))
-               and (bool(re.search(
-                       r"\b(ls|which|test|stat|file|readlink|type)\b"
-                       r"[^|;&]*" + re.escape(os.path.dirname(_b(r))), _cmd(r)))
-                    or bool(re.search(
-                       r"(^|[;&|]\s*)[A-Za-z_][A-Za-z0-9_]*="
-                       + re.escape(os.path.dirname(_b(r))), _cmd(r))))),
-
-    ("FP: interpreter path from a run/heredoc (not a probe)",
+    # Interpreter-path denials are ALL false positives now. The hook
+    # exempts system interpreter binaries from read scope
+    # (sandbox_hook.INTERPRETER_BIN_RE), because running an interpreter is
+    # benign and a bare leading `/opt/.../python foo.py` was always
+    # allowed. So every shape that read-denied an interpreter path — the
+    # `PY=/opt/.../python; $PY` assignment, `find -exec python`, loop
+    # lists, probes like `ls /opt/.../python`, leading-token runs, heredoc
+    # bodies — is a historical FP that replay now reports FIXED. (Earlier
+    # this split into a probe-TP vs run-FP; that distinction is gone — the
+    # hook no longer treats ANY interpreter-path read as a real deny.)
+    ("FP: interpreter path read (now exempt — assign/exec/probe/run)",
      "FP",
-     # Catch-all for interpreter-path denials that aren't the wrapper FP
-     # or a probe TP: leading-token invocation (`/opt/.../python -m
-     # py_compile`), post-cd run, or path inside a heredoc body. Replay
-     # decides FIXED vs OPEN — these are FIXED at HEAD.
+     # Match only an interpreter BINARY (the exempt shape), not any path
+     # containing `python` — a `.../lib/python3.11/site-packages` read or
+     # a `find` into the conda lib tree is a real out-of-scope access (TP),
+     # caught by the find/system-dir patterns below, not exempted here.
      lambda r: _scope(r) == "read"
-               and bool(_INTERP_PATH_RE.match(_b(r)))),
+               and bool(_INTERP_BIN_RE.match(_b(r)))),
 
     ("TP: read of hallucinated path (malformed run-name segment)",
      "TP",
@@ -311,6 +317,20 @@ INTENT_PATTERNS = [
                and bool(_b(r)) and _b(r) != "/"
                and bool(re.search(rf"\bfind\s+{re.escape(_b(r))}\b",
                                   _cmd(r)))),
+
+    ("TP: probe of out-of-scope system directory (ls/cat/stat ...)",
+     "TP",
+     # An out-of-scope SYSTEM dir read that isn't an interpreter binary
+     # (those are now exempt) and isn't a find root (caught above) —
+     # e.g. `ls /opt/anaconda3/envs/`, `cat /etc/hosts`, `ls /usr/lib`.
+     # The blocked path is under a real system root and the command names
+     # it as an operand. Correct deny: out-of-policy read of a system
+     # location. (INTERPRETER_BIN_RE-shaped paths never reach here — the
+     # interpreter FP matches them first.)
+     lambda r: _scope(r) == "read"
+               and bool(re.match(r"^/(opt|usr|etc|var|private/var|Library|System)/",
+                                 _b(r)))
+               and _b(r) in _cmd(r)),
 ]
 
 

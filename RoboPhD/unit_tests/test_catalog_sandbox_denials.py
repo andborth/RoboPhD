@@ -171,42 +171,101 @@ def test_tmp_scratch_classifies_tp():
 # ---------------------------------------------------------------------
 
 
-def test_interpreter_run_intent_fp_fixed_when_replay_allows():
-    """Interpreter path that appears only because the interpreter is RUN
-    (leading token / post-cd) is INTENTed FP; with a replay that allows
-    it (HEAD doesn't scope-check the command token), it's FP-FIXED."""
+def test_interpreter_binary_read_is_fp_fixed_when_replay_allows():
+    """Any read of an interpreter BINARY — assignment, find -exec, loop
+    list, probe, leading-token run — is INTENTed FP now that the hook
+    exempts interpreter binaries from read scope. With a replay that
+    allows it, FP-FIXED."""
     label, cat = catalog.classify(_rec(
         scope="read",
         blocked_path="/opt/anaconda3/envs/robophd_demo/bin/python3.11",
-        command=("cd /Users/x/iter_010\n"
-                 "/opt/anaconda3/envs/robophd_demo/bin/python -c '...'"),
+        command=("PY=/opt/anaconda3/envs/robophd_demo/bin/python\n"
+                 "$PY -c '...'"),
     ), replay=_replay_allows)
     assert cat == "FP-FIXED"
-    assert "interpreter path from a run" in label
+    assert "interpreter path read" in label
 
 
-def test_interpreter_run_intent_fp_open_when_replay_denies():
-    """Same record, but a replay that STILL denies (same path) -> FP-OPEN.
+def test_interpreter_binary_intent_fp_open_when_replay_denies():
+    """Same intent, but a replay that STILL denies (same path) -> FP-OPEN.
     Proves the catalog reads the verdict from the live hook, not a static
     'fixed' assertion."""
     _, cat = catalog.classify(_rec(
         scope="read",
         blocked_path="/opt/anaconda3/envs/robophd_demo/bin/python3.11",
-        command="/opt/anaconda3/envs/robophd_demo/bin/python foo.py",
+        command="PY=/opt/anaconda3/envs/robophd_demo/bin/python; $PY foo.py",
     ), replay=_replay_denies_same)
     assert cat == "FP-OPEN"
 
 
-def test_interpreter_probe_is_tp():
-    """`ls`/`test -x`/assignment of an out-of-scope interpreter path is a
-    correct deny (TP), distinct from the run/heredoc FP."""
+def test_interpreter_library_path_is_not_interpreter_fp():
+    """A `.../lib/pythonX/site-packages/...` read (or a find into the
+    conda lib tree) merely CONTAINS `python`; it's a real out-of-scope
+    access, NOT the exempt interpreter-binary shape. Must NOT match the
+    interpreter FP — it falls to a find/system-dir TP instead."""
     label, cat = catalog.classify(_rec(
         scope="read",
-        blocked_path="/usr/bin/python3",
-        command="which python3; ls -la /usr/bin/python3",
+        blocked_path="/opt/anaconda3/envs/x/lib/python3.11/site-packages/foo",
+        command="find /opt/anaconda3/envs/x/lib/python3.11/site-packages/foo",
+    ), replay=_replay_denies_same)
+    assert "interpreter path read" not in label
+    assert cat == "TP"
+
+
+def test_grep_slash_pattern_is_fp():
+    """`grep -v "/agents/"` — the slash-delimited regex operand is misread
+    as a path. With `grep` in the command it's INTENTed FP; a replay that
+    still denies (the tokenizer FP is unfixed) -> FP-OPEN."""
+    label, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/agents",
+        command='find . -name "*.py" | grep -v "/agents/" | head',
+    ), replay=_replay_denies_same)
+    assert "grep pattern" in label
+    assert cat == "FP-OPEN"
+
+
+def test_grep_regex_alternation_is_fp():
+    """A `grep -E "/ ?1000|million|/1e"` alternation string starting with
+    `/` and full of regex metachars is misread as a path -> grep FP."""
+    label, _ = catalog.classify(_rec(
+        scope="read", blocked_path="/ ?1000|/ ?1_000|million|/1e",
+        command='grep -iE "/ ?1000|/ ?1_000|million|/1e" prog | head',
+    ), replay=_replay_denies_same)
+    assert "grep pattern" in label
+
+
+def test_grep_real_path_arg_not_swallowed_by_grep_fp():
+    """Guard: a genuine out-of-scope FILE arg to grep (a normal path, no
+    regex metachars, not a bare /word) must not be mislabeled the grep
+    pattern FP — it's a real read. `grep foo /sibling/run/x` denies."""
+    label, cat = catalog.classify(_rec(
+        scope="read",
+        blocked_path="/Users/x/robophd_runs/robophd/other_20260101_000000/agents/a/agent.py",
+        command="grep foo /Users/x/robophd_runs/robophd/other_20260101_000000/agents/a/agent.py",
+    ), replay=_replay_denies_same)
+    assert "grep pattern" not in label
+
+
+def test_system_dir_probe_is_tp():
+    """`ls /opt/anaconda3/envs/` — listing a system directory (not an
+    interpreter binary, not a find root) is a correct out-of-scope deny."""
+    label, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/opt/anaconda3/envs",
+        command="/opt/x/bin/python -c 1; ls /opt/anaconda3/envs/ 2>/dev/null",
     ), replay=_replay_denies_same)
     assert cat == "TP"
-    assert "interpreter probe" in label
+    assert "system directory" in label
+
+
+def test_find_root_after_newline_cd_is_tp():
+    """`cd <run>\\nfind / ...` — the `find /` token is newline-preceded
+    after a multi-line cd. The TP must still catch it (the old `" find "`
+    substring missed it)."""
+    _, cat = catalog.classify(_rec(
+        scope="read", blocked_path="/",
+        command="cd /Users/x/run\nfind / -name doc 2>/dev/null | head",
+    ), replay=_replay_denies_same)
+    assert cat == "TP"
 
 
 def test_sed_script_with_sed_in_cmd_is_fp_fixed():
@@ -396,11 +455,13 @@ def test_retired_scope_classifies_historical():
 def test_unrecognized_record_classifies_unknown():
     """A novel pattern we haven't seen must fall through to UNKNOWN,
     not silently absorb into any existing label. UNKNOWN is what
-    drives `add a pattern` pressure via exit code 2."""
+    drives `add a pattern` pressure via exit code 2. Use a path under no
+    system root and no runs root (a bare home-dir read) so no TP/FP
+    pattern claims it."""
     _, cat = catalog.classify(_rec(
         scope="read",
-        blocked_path="/var/log/wifi.log",
-        command="cat /var/log/wifi.log",
+        blocked_path="/Users/someone/Documents/notes.txt",
+        command="cat /Users/someone/Documents/notes.txt",
     ))
     assert cat == "UNKNOWN"
 
