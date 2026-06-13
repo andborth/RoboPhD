@@ -70,11 +70,20 @@ WRITE_TOOLS = {"Edit", "Write", "NotebookEdit", "MultiEdit"}
 # in classify_bash_segment (mirrors `sed`).
 BASH_READ_COMMANDS = {
     "cat", "head", "tail", "less", "more", "bat",
-    "grep", "rg", "ag", "find", "fd",
+    "find", "fd",
     "jq", "ls", "du", "wc",
     "file", "stat", "diff", "comm", "cmp",
     "xxd", "od", "strings", "tree",
 }
+
+# grep-family: `grep [OPTS] PATTERN [FILE...]`. Like awk/sed, the first
+# bare positional is the inline PATTERN (a regex), NOT a path — a
+# `/regex/`-style operand (`grep -v "/agents/"`, `grep -E "/re|.."`)
+# would otherwise read-deny as an absolute path. Only the trailing FILE
+# operands are paths. Handled by the dedicated grep branch in
+# classify_bash_segment. (`grep` was previously in BASH_READ_COMMANDS,
+# which mis-classified the pattern as a read.)
+BASH_GREP_COMMANDS = {"grep", "egrep", "fgrep", "rg", "ag"}
 
 # Bash command names whose positional operands are NEVER filesystem
 # paths. `tr SET1 SET2` operands are character sets — `tr` only ever
@@ -477,6 +486,65 @@ def classify_bash_segment(tokens: list) -> tuple:
                 have_program = True  # first bare positional = inline program
             elif looks_like_path(a):
                 read_paths.append(a)  # file operand
+            j += 1
+        return read_paths, write_paths, None
+
+    # `grep [OPTS] PATTERN [FILE...]` — like awk, the first bare
+    # positional is the inline PATTERN (a regex), not a path. A
+    # `/regex/`-style pattern (`grep -v "/agents/"`, `grep -iE "/re|.."`)
+    # would otherwise read-deny as an absolute path. Only the trailing
+    # FILE operands are paths. Subtleties:
+    #   * `-e PATTERN` / `-f FILE` supply the pattern via flag, so there
+    #     is NO inline-pattern positional — every bare positional is then
+    #     a FILE. We MUST detect these (set have_pattern) or a real
+    #     out-of-scope FILE would be skipped as the "pattern" (an escape).
+    #     `-f FILE`'s own argument is itself a read (a pattern file).
+    #   * value-taking option flags (`-m N`, `-A N`, `--include=GLOB`,
+    #     ...) must not have their value misread as a pattern/path. We
+    #     skip a known set of separated-value short flags; `--long=val`
+    #     forms carry their value inline so need no lookahead.
+    if cmd in BASH_GREP_COMMANDS:
+        have_pattern = False
+        expect_pattern_file = False       # token after -f is a pattern FILE (read)
+        expect_skip_value = False         # token after a value-flag: skip
+        # Separated-value flags whose NEXT token is a non-path value.
+        grep_value_flags = {
+            "-e", "--regexp", "-m", "--max-count", "-A", "--after-context",
+            "-B", "--before-context", "-C", "--context", "-d", "--directories",
+            "--color", "--colour", "--label", "--group-separator",
+        }
+        j = 0
+        while j < len(args):
+            a = args[j]
+            if expect_pattern_file:
+                if looks_like_path(a):
+                    read_paths.append(a)   # -f pattern file: a read
+                have_pattern = True
+                expect_pattern_file = False
+            elif expect_skip_value:
+                expect_skip_value = False  # consume the flag's value
+            elif a in ("-f", "--file"):
+                expect_pattern_file = True
+            elif a.startswith("--file="):
+                t = a[len("--file="):]
+                if looks_like_path(t):
+                    read_paths.append(t)
+                have_pattern = True
+            elif a in ("-e", "--regexp"):
+                have_pattern = True        # pattern supplied by flag
+                expect_skip_value = True   # ...the next token IS that pattern
+            elif a.startswith("--regexp="):
+                have_pattern = True
+            elif a in grep_value_flags:
+                expect_skip_value = True
+            elif a.startswith("--") and "=" in a:
+                pass  # long option with inline value (no path operand)
+            elif a.startswith("-"):
+                pass  # other flag / bundled short cluster
+            elif not have_pattern:
+                have_pattern = True        # first bare positional = the PATTERN
+            elif looks_like_path(a):
+                read_paths.append(a)       # file operand
             j += 1
         return read_paths, write_paths, None
 

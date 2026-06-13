@@ -2062,6 +2062,76 @@ def test_awk_file_operand_out_of_scope_still_denies(experiment_layout):
     assert "outside read scope" in res["reason"]
 
 
+def test_grep_slash_pattern_allows(experiment_layout):
+    """`grep -v "/agents/" <in-scope file>` — the `/agents/` is the regex
+    PATTERN, not a path. Was a recurring FP. The file operand is in
+    scope, so the whole command is allowed."""
+    layout = experiment_layout
+    target = layout["cwd"] / "list.txt"
+    target.write_text("x\n")
+    cmd = f'grep -v "/agents/" {target}'
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_grep_pattern_only_piped_allows(experiment_layout):
+    """`... | grep -iE "/ ?1000|million|/1e"` — pattern-only grep on piped
+    stdin (no file operand). The regex alternation starts with `/` but is
+    program text, not a path."""
+    layout = experiment_layout
+    cmd = 'cat in.txt | grep -iE "/ ?1000|million|/1e"'
+    (layout["cwd"] / "in.txt").write_text("x\n")
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_grep_file_operand_out_of_scope_still_denies(experiment_layout):
+    """Guard: only the grep PATTERN is exempt — a real out-of-scope FILE
+    operand after the pattern is still read-scope-checked."""
+    layout = experiment_layout
+    cmd = f'grep -v "/agents/" {layout["sibling_agent"]}'
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny", res
+    assert "outside read scope" in res["reason"]
+
+
+def test_grep_dash_e_pattern_then_out_of_scope_file_denies(experiment_layout):
+    """Safety-critical: `-e PATTERN` means there's no inline-pattern
+    positional, so EVERY bare positional is a FILE. An out-of-scope file
+    must NOT be skipped as a phantom pattern — `grep -e foo /sibling/x`
+    denies the file."""
+    layout = experiment_layout
+    cmd = f"grep -e foo {layout['sibling_agent']}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny", res
+
+
+def test_grep_dash_f_out_of_scope_patternfile_denies(experiment_layout):
+    """`grep -f /sibling/patterns.txt` — the `-f` pattern FILE is itself a
+    read; out of scope -> denied."""
+    layout = experiment_layout
+    patfile = layout["sibling_agent"].parent / "patterns.txt"
+    cmd = f"grep -f {patfile} in.txt"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny", res
+
+
+def test_grep_value_flag_does_not_unmask_out_of_scope_file(experiment_layout):
+    """`grep -m 5 foo /sibling/x` — the `-m` value (`5`) is skipped, `foo`
+    is the pattern, and the out-of-scope file is still denied (the
+    value-flag skip must not consume the file)."""
+    layout = experiment_layout
+    cmd = f"grep -m 5 foo {layout['sibling_agent']}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny", res
+
+
 def test_awk_progfile_is_read_with_in_scope_file(experiment_layout):
     """`awk -f PROG.awk FILE` — PROG.awk is a READ (the program comes
     from a file), and the trailing FILE is a read operand. Both in scope
