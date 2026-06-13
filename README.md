@@ -15,7 +15,7 @@ Give RoboPhD a scoring function and example problems, and it evolves an AI agent
 evolved_agent = optimize_anything(evaluator, dataset, seed_agent, objective, background_about_the_task)
 ```
 
-What comes back is a readable Python agent you own — and it won't look much like what you put in. The seed agent is typically a few dozen lines that demonstrate the API and may score terribly on your metric; the evolved agent can run 1,000+ lines, with a sophisticated prompt and multiple calls to one or more LLMs — and a far higher score (ARC-AGI: 27.8% → 65.8%; Sudoku: 0% → 90.3%; see Key Results below).
+What comes back is a readable Python agent you own — and it won't look much like what you put in. The seed agent is typically a few dozen lines that demonstrate the API and may score terribly on your metric; the evolved agent can run 1,000+ lines, with a sophisticated prompt and multiple calls to one or more LLMs — and a far higher score (see Key Results below).
 
 > 📄 Paper: [*RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets*](https://arxiv.org/abs/2604.04347)
 
