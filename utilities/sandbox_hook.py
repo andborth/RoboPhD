@@ -160,6 +160,26 @@ BASH_CONTROL_KEYWORDS = {
 # Special path strings that are never scope-checked.
 PATH_EXEMPT = {"/dev/null", "/dev/stdout", "/dev/stderr", "/dev/tty", "-"}
 
+# A language interpreter living in a system bin dir, e.g.
+# `/opt/anaconda3/envs/x/bin/python3.11`, `/usr/bin/python3`,
+# `/opt/homebrew/bin/node`, `/usr/local/bin/ruby2.7`. Read-scope exempt:
+# running the interpreter is benign, and a bare leading `/opt/.../python
+# foo.py` is ALREADY allowed (the command token is never scope-checked).
+# Denying it only when it lands in a non-command position — `PY=/opt/.../
+# python; $PY ...`, `find ... -exec /opt/.../python ...`, `for p in
+# /opt/.../python ...` — is a pure false positive: the same benign action,
+# blocked by spelling. Exempting it removes that friction.
+#
+# Safety: matched against the realpath'd token (see check_read_paths), so
+# a symlink `ln -s /etc/passwd ./py` resolves to /etc/passwd and FAILS
+# this pattern — no exfil bypass. The path must point at an interpreter
+# binary in a bin dir; a secret data file can't masquerade as one, and
+# reading the public interpreter binary itself exfiltrates nothing.
+INTERPRETER_BIN_RE = re.compile(
+    r"^/(opt/anaconda3|opt/miniconda3|opt/homebrew|usr|usr/local)/"
+    r"(.*/)?bin/(python|node|ruby|perl|pypy)[0-9.]*$"
+)
+
 
 def looks_like_path(token: str) -> bool:
     """Heuristic: does this token reference a filesystem path?"""
@@ -1125,6 +1145,13 @@ def check_read_paths(
         if is_under(norm, experiment_dir):
             continue
         if any(is_under(norm, root) for root in extra_read_roots):
+            continue
+        # A system interpreter binary (matched on the REALPATH, so a
+        # symlink to a secret resolves elsewhere and isn't exempt) is
+        # read-scope exempt: running it is benign and the bare leading
+        # invocation is already allowed (command token unchecked). See
+        # INTERPRETER_BIN_RE.
+        if INTERPRETER_BIN_RE.match(norm):
             continue
         return False, norm
     return True, None

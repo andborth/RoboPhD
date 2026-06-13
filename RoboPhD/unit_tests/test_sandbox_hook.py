@@ -2277,19 +2277,16 @@ def test_nice_bare_interpreter_allows(experiment_layout):
     assert res["decision"] is None, res
 
 
-def test_wrapper_with_options_bails_to_deny_not_escape(experiment_layout):
-    """A wrapper invoked WITH options (`nice -n 10 <interp>`) is NOT
-    stripped — we don't guess per-flag arity. The strip bails, leaving
-    the interpreter in argument position where it read-denies. This is a
-    deliberate spurious-deny (the SAFE direction: a blocked legit run,
-    never a path escape). `nice -n` does not occur in real runs; the
-    observed shapes (`timeout N CMD`, `time CMD`, bare `nice CMD`) all
-    still strip. If this shape ever shows up for real, handle its arity
-    explicitly rather than by guessing."""
+def test_wrapper_with_options_bails_does_not_escape(experiment_layout):
+    """A wrapper invoked WITH options (`nice -n 10 CMD`) is NOT stripped —
+    we don't guess per-flag arity. The strip bails, leaving CMD in
+    argument position. The safety property: an OUT-OF-SCOPE path among the
+    bailed tokens is still read-checked and denied (no escape). Use a real
+    out-of-scope sibling path (NOT an interpreter, which is now read-scope
+    exempt by design)."""
     layout = experiment_layout
-    target = layout["cwd"] / "run.py"
-    target.write_text("print(1)\n")
-    cmd = f"nice -n 10 /opt/anaconda3/envs/x/bin/python {target}"
+    sib = layout["sibling_agent"]
+    cmd = f"nice -n 10 cat {sib}"
     res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
                    layout["experiment_dir"])
     assert res["decision"] == "deny", res
@@ -2399,6 +2396,81 @@ def test_wrapped_interpreter_with_out_of_scope_script_still_denies(experiment_la
     layout = experiment_layout
     sib = layout["sibling_agent"].parent / "x.py"
     cmd = f"timeout 60 /opt/anaconda3/envs/x/bin/python {sib}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny", res
+
+
+# ---------------------------------------------------------------------
+# Interpreter-binary read-scope exemption: running a system interpreter
+# is benign, and a bare leading `/opt/.../python foo.py` is already
+# allowed (command token unchecked). Denying it only when the path lands
+# in a non-command position (assignment, find -exec, loop list) is a
+# pure false positive. INTERPRETER_BIN_RE exempts it — matched on the
+# REALPATH so a symlink to a secret can't bypass.
+# ---------------------------------------------------------------------
+
+
+def test_interpreter_assignment_then_use_allows(experiment_layout):
+    """`PY=/opt/.../python; $PY ...` — the dominant real shape. The
+    assignment value is an interpreter path, read-scope exempt, allowed."""
+    layout = experiment_layout
+    cmd = ("PY=/opt/anaconda3/envs/robophd_demo/bin/python\n"
+           "$PY -c 'import ast; ast.parse(open(\"agent.py\").read())'")
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_interpreter_in_find_exec_allows(experiment_layout):
+    """`find ... -exec /opt/.../python -c ... {} \\;` — interpreter in arg
+    position is exempt."""
+    layout = experiment_layout
+    cmd = ("find . -name '*.py' -exec "
+           "/opt/anaconda3/envs/x/bin/python -c 'pass' {} \\;")
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_interpreter_in_for_loop_list_allows(experiment_layout):
+    """`for p in /opt/.../python /usr/bin/python3; do ...` — interpreter
+    paths as loop-list values are exempt."""
+    layout = experiment_layout
+    cmd = ("for p in /opt/anaconda3/envs/x/bin/python /usr/bin/python3; "
+           "do $p -c 1 && break; done")
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, res
+
+
+def test_non_interpreter_assignment_still_denies(experiment_layout):
+    """Safety: the exemption is interpreter-specific. Assigning an
+    out-of-scope NON-interpreter path and reading it still denies —
+    `X=/sibling/secret; cat $X` (the exfil shape the assignment-value
+    guard exists for) is unaffected."""
+    layout = experiment_layout
+    sib = layout["sibling_agent"]
+    cmd = f"X={sib}; cat $X"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny", res
+
+
+def test_interpreter_symlink_to_secret_still_denies(experiment_layout):
+    """Safety: the exemption matches the REALPATH. A symlink named like an
+    interpreter but pointing at an out-of-scope secret resolves to the
+    secret and is NOT exempt — no exfil bypass."""
+    layout = experiment_layout
+    secret = layout["sibling_agent"]  # out of scope
+    link = layout["cwd"] / "python3.11"
+    try:
+        link.symlink_to(secret)
+    except (OSError, NotImplementedError):
+        import pytest as _pytest
+        _pytest.skip("symlinks unavailable")
+    # The link sits in cwd, but its realpath is the out-of-scope secret.
+    cmd = f"PY={link}; cat $PY"
     res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
                    layout["experiment_dir"])
     assert res["decision"] == "deny", res
