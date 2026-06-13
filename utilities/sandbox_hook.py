@@ -185,7 +185,9 @@ PATH_EXEMPT = {"/dev/null", "/dev/stdout", "/dev/stderr", "/dev/tty", "-"}
 # binary in a bin dir; a secret data file can't masquerade as one, and
 # reading the public interpreter binary itself exfiltrates nothing.
 INTERPRETER_BIN_RE = re.compile(
-    r"^/(opt/anaconda3|opt/miniconda3|opt/homebrew|usr|usr/local)/"
+    # `usr` covers `/usr/local/...` too via the `(.*/)?` middle, so no
+    # separate `usr/local` alternative is needed.
+    r"^/(opt/anaconda3|opt/miniconda3|opt/homebrew|usr)/"
     r"(.*/)?bin/(python|node|ruby|perl|pypy)[0-9.]*$"
 )
 
@@ -499,19 +501,32 @@ def classify_bash_segment(tokens: list) -> tuple:
     #     a FILE. We MUST detect these (set have_pattern) or a real
     #     out-of-scope FILE would be skipped as the "pattern" (an escape).
     #     `-f FILE`'s own argument is itself a read (a pattern file).
-    #   * value-taking option flags (`-m N`, `-A N`, `--include=GLOB`,
-    #     ...) must not have their value misread as a pattern/path. We
-    #     skip a known set of separated-value short flags; `--long=val`
-    #     forms carry their value inline so need no lookahead.
+    #   * value-taking option flags (`-m N`, `-A N`, ...) must not have
+    #     their value misread as a pattern/path. We skip a known set of
+    #     flags that take a SEPARATED value; `--long=val` forms carry the
+    #     value inline so need no lookahead.
+    #
+    # CRITICAL: only flags that ALWAYS take a separated value belong in
+    # grep_value_flags. An OPTIONAL-value flag (`--color[=WHEN]`,
+    # `--colour`) takes its value ONLY attached (`--color=auto`), never as
+    # the next token — listing it would consume the real PATTERN as a
+    # phantom value, leaving the trailing FILE to be misread as the
+    # pattern and NEVER scope-checked (a read-scope escape:
+    # `grep --color foo /sibling/x` would open /sibling/x). The
+    # wrong-direction error is the only unsafe one here, so when unsure
+    # whether a flag separates its value, leave it OUT (a wrongly-kept
+    # token at worst over-classifies a pattern as a path -> spurious deny,
+    # never an escape).
     if cmd in BASH_GREP_COMMANDS:
         have_pattern = False
         expect_pattern_file = False       # token after -f is a pattern FILE (read)
         expect_skip_value = False         # token after a value-flag: skip
-        # Separated-value flags whose NEXT token is a non-path value.
+        # Flags that ALWAYS take a SEPARATED value (the next token). NOT
+        # included: optional-value flags like --color/--colour (attached
+        # `=WHEN` only) — see the CRITICAL note above.
         grep_value_flags = {
             "-e", "--regexp", "-m", "--max-count", "-A", "--after-context",
             "-B", "--before-context", "-C", "--context", "-d", "--directories",
-            "--color", "--colour", "--label", "--group-separator",
         }
         j = 0
         while j < len(args):

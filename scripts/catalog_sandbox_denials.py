@@ -151,7 +151,9 @@ _INTERP_PATH_RE = re.compile(
 # merely contains `python` (e.g. `.../lib/python3.11/site-packages/...`,
 # which is a real out-of-scope read, not an interpreter run).
 _INTERP_BIN_RE = re.compile(
-    r"^/(opt/anaconda3|opt/miniconda3|opt/homebrew|usr|usr/local)/"
+    # `usr` covers `/usr/local/...` too via the `(.*/)?` middle, so no
+    # separate `usr/local` alternative is needed.
+    r"^/(opt/anaconda3|opt/miniconda3|opt/homebrew|usr)/"
     r"(.*/)?bin/(python|node|ruby|perl|pypy)[0-9.]*$"
 )
 _SED_SCRIPT_RE = re.compile(r"^/\^?[^/]*[ ,].*[,$]p?$")

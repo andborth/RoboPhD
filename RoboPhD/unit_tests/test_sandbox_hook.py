@@ -2132,6 +2132,36 @@ def test_grep_value_flag_does_not_unmask_out_of_scope_file(experiment_layout):
     assert res["decision"] == "deny", res
 
 
+def test_grep_optional_value_flag_color_does_not_escape(experiment_layout):
+    """Read-scope escape guard. `--color`/`--colour` take an OPTIONAL value
+    only ATTACHED (`--color=auto`), never as the next token. They must NOT
+    be in the separated-value skip set: otherwise `grep --color PATTERN
+    /sibling/x` consumes PATTERN as a phantom value, leaving /sibling/x to
+    be misread as the pattern and never scope-checked. Every spelling must
+    still DENY the out-of-scope file."""
+    layout = experiment_layout
+    sib = layout["sibling_agent"]
+    for cmd in (f"grep --color foo {sib}",
+                f"grep --colour foo {sib}",
+                f"grep --color=auto foo {sib}"):
+        res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                       layout["experiment_dir"])
+        assert res["decision"] == "deny", (cmd, res)
+
+
+def test_grep_color_in_scope_allows(experiment_layout):
+    """Legit `grep --color=auto PATTERN <in-scope file>` is still allowed —
+    closing the escape must not over-deny normal colored grep."""
+    layout = experiment_layout
+    target = layout["cwd"] / "in.txt"
+    target.write_text("x\n")
+    for cmd in (f"grep --color=auto foo {target}",
+                f"grep --color foo {target}"):
+        res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                       layout["experiment_dir"])
+        assert res["decision"] is None, (cmd, res)
+
+
 def test_awk_progfile_is_read_with_in_scope_file(experiment_layout):
     """`awk -f PROG.awk FILE` — PROG.awk is a READ (the program comes
     from a file), and the trailing FILE is a read operand. Both in scope
