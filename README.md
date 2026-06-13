@@ -1,4 +1,6 @@
-# RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets
+# RoboPhD
+
+**If you can benchmark it, RoboPhD can optimize it.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04347-b31b1b.svg)](https://arxiv.org/abs/2604.04347)
@@ -7,7 +9,15 @@
   <img src="assets/robophd-banner.jpg" alt="RoboPhD: Agentic evaluation and optimization framework for LLMs" width="800">
 </p>
 
-RoboPhD evolves AI agents to improve task performance without human intervention or author-supplied domain knowledge. It implements a closed-loop evolution cycle where an Evolution agent designs new versions of task agents based on performance feedback, using Elo-based competition to select the best agents across iterations.
+Give RoboPhD a scoring function and example problems, and it evolves an AI agent that climbs your metric — autonomously, with a training and inference budget you set. You write the evaluator; RoboPhD writes the agent. The interface is one call:
+
+```python
+evolved_agent = optimize_anything(evaluator, dataset, seed_agent, objective, background_about_the_task)
+```
+
+What comes back is a readable Python agent you own — and it won't look much like what you put in. The seed agent is typically a few dozen lines that demonstrate the API and may score terribly on your metric; the evolved agent can run 1,000+ lines, with a sophisticated prompt and multiple calls to one or more LLMs — and a far higher score (ARC-AGI: 27.8% → 65.8%; Sudoku: 0% → 90.3%; see Key Results below).
+
+> 📄 Paper: [*RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets*](https://arxiv.org/abs/2604.04347)
 
 ## AstaBench DS-1000 Leaderboard
 
@@ -51,6 +61,8 @@ Using a single default configuration, RoboPhD outperforms both GEPA and Autorese
 
 ## How It Works
 
+RoboPhD runs a closed-loop evolution cycle: an Evolution agent designs new versions of task agents based on performance feedback, and Elo-based competition selects the best agents across iterations — no human intervention or author-supplied domain knowledge.
+
 RoboPhD uses AI throughout:
 
 1. **Task Execution**: Solver agents execute domain tasks (SQL generation, puzzle solving, scheduling)
@@ -87,15 +99,15 @@ RoboPhD uses AI throughout:
 
 ### Supported Domains
 
-| Domain | Benchmark | What Evolves | Solver Model |
+| Domain | Benchmark | What Evolves | Models Used |
 |---|---|---|---|
-| ARC-AGI | ARC-AGI (HuggingFace) | `agent.py` — Python solver with `solve()` | Gemini 3.1 Flash Lite (via OpenRouter) |
+| ARC-AGI | ARC-AGI (HuggingFace) | `agent.py` — Python solver with `solve()` | Gemini 3.1 Flash Lite |
 | Can't Be Late | AWS spot traces (NSDI'24) | `agent.py` — scheduling strategy class | Pure algorithmic (no LLM) |
 | Text2SQL | BIRD | `agent.py` + `analyze_db.py` — SQL generation with `llm()` + `test_sql()` | Claude Haiku 4.5 |
 | DocFinQA | DocFinQA (ACL 2024) | `agent.py` — retrieval + QA pipeline | GPT-4.1-mini + text-embedding-3-small |
 | Sudoku | [sapientinc/sudoku-extreme](https://huggingface.co/datasets/sapientinc/sudoku-extreme) | `agent.py` — Python solver with `solve()` | Pure algorithmic (no LLM) |
 | Protein GO | [ProteInfer](https://github.com/google-research/proteinfer) + [Price-149 (CLEAN)](https://github.com/tttianhao/CLEAN) | `agent.py` — GO-MFO prediction with BLAST / ESM / LLM tools | Gemini 3.1 Flash Lite + text-embedding-3-small + ESM-2 |
-| AstaBench DS-1000 | [AstaBench DS-1000](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | `agent.py` — Inspect-AI `@solver` with `python_session` Docker sandbox | Varies — evolution picks from 9 handles across 3 providers: Anthropic (Haiku 4.5 / Sonnet 4.6 / Opus 4.7), OpenAI (GPT-5.4-mini / GPT-5.4 / GPT-5.5), Google (Gemini 3.1 Flash Lite / 3 Flash Preview / 3.1 Pro Preview) |
+| AstaBench DS-1000 | [AstaBench DS-1000](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | `agent.py` — Inspect-AI `@solver` with `python_session` Docker sandbox | Varies — evolution picks from 10 handles across 3 providers: Anthropic (Haiku 4.5 / Sonnet 4.6 / Opus 4.8 / Fable 5), OpenAI (GPT-5.4-mini / GPT-5.4 / GPT-5.5), Google (Gemini 3.1 Flash Lite / 3.5 Flash / 3.1 Pro Preview) |
 
 Each domain has a self-contained example under [`examples/`](examples/) with evaluator, seed agent, and documentation.
 
