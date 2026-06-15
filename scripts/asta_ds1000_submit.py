@@ -128,6 +128,16 @@ SUBMISSIONS = [
         # model_registry.py (7494ff7) — all handles, including the
         # GPT-5.5 adjudicator this agent leans on, import unconditionally.
     ),
+    Submission(
+        name="v0_0_4_soft_cap_0_08",
+        agent_rel_path="agents/iter11_ds1000_tridtype_judge/agent.py",
+        model_arg="none",
+        # Run robophd-asta_ds1000-028 (Opus-4.8-evolved). Three-family
+        # ensemble: gpt-5.4-2026-03-05 / claude-sonnet-4-6 /
+        # gemini-3.1-pro-preview — all three are in the leaderboard price
+        # map, so cost computes (unlike v0_0_3's gemini-3.5-flash). The
+        # needs_stronger_models field is inert at HEAD (gate removed).
+    ),
 ]
 
 
