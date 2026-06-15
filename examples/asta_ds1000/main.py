@@ -719,10 +719,21 @@ def main():
     if args.max_workers is not None:
         engine_overrides["max_workers"] = args.max_workers
 
+    # GEPA and Autoresearch validate-then-select: the val set drives their
+    # keep/discard decisions, so it must NOT be the held-out test set —
+    # validating against test selects the agent directly on the data the
+    # --eval-test-set score then reports, a leak (and in --phase final,
+    # build_val_split would also dump the unsampled test remainder into the
+    # training pool). Instead carve validation out of the 100-sample train
+    # pool: pass no val_dataset and set val_size to half the pool, so
+    # build_val_split splits train into equal train/val halves. RoboPhD is
+    # unaffected — it has no separate val set and never touches test until
+    # --eval-test-set.
+    engine_val_size = len(train) // 2
     if args.engine == "gepa":
         cfg = GEPAConfig(
             evaluation_budget=evaluation_budget,
-            val_dataset=test,
+            val_size=engine_val_size,
             max_workers=effective_max_workers,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
@@ -732,7 +743,7 @@ def main():
     elif args.engine == "autoresearch":
         cfg = AutoresearchConfig(
             evaluation_budget=evaluation_budget,
-            val_dataset=test,
+            val_size=engine_val_size,
             max_workers=effective_max_workers,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
