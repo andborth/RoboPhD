@@ -777,6 +777,7 @@ def sidecar_helpers():
         return {
             "read": asta_main._read_ds1000_runtime_config,
             "enforce_immutable": asta_main._enforce_immutable_on_resume,
+            "resume_enforces_cost_knobs": asta_main._resume_enforces_cost_knobs,
             "task_key": asta_main.DS1000_TASK_CONFIG_KEY,
             "legacy_filename": asta_main.LEGACY_SIDECAR_FILENAME,
         }
@@ -926,6 +927,54 @@ def test_enforce_resume_missing_stored_and_no_cli_is_hard_error(sidecar_helpers)
         "to be supplied together — without this, users who pass only "
         "--cost-threshold hit a second error and don't know why"
     )
+
+
+def test_eval_only_resume_does_not_enforce_cost_knobs(sidecar_helpers):
+    """--eval-only --resume must NOT enforce the cost knobs.
+
+    The cost knobs are training-only (test evaluator runs with
+    apply_cost_penalty=False), and GEPA/Autoresearch never persist them
+    (no task_config_extras), so enforcing on an eval-only resume made
+    --eval-only --resume impossible for those engines. on_resume must be
+    False so resolve_run_immutable falls to the harmless unused default.
+    """
+    for engine in ("autoresearch", "gepa", "robophd"):
+        assert sidecar_helpers["resume_enforces_cost_knobs"](
+            engine, resume=True, eval_only=True
+        ) is False
+
+
+def test_gepa_autoresearch_training_resume_is_rejected(sidecar_helpers):
+    """--resume without --eval-only on GEPA/Autoresearch → SystemExit.
+
+    Those engines have no training-resume path; reject the misuse with a
+    clear message instead of the misleading cost-threshold error.
+    """
+    for engine in ("gepa", "autoresearch"):
+        with pytest.raises(SystemExit) as exc_info:
+            sidecar_helpers["resume_enforces_cost_knobs"](
+                engine, resume=True, eval_only=False
+            )
+        msg = str(exc_info.value)
+        assert "only supported" in msg
+        assert "--eval-only" in msg
+
+
+def test_robophd_training_resume_still_enforces_cost_knobs(sidecar_helpers):
+    """RoboPhD training resume (not eval-only) still enforces immutability
+    — the eval-only carve-out must not regress the load-bearing guard."""
+    assert sidecar_helpers["resume_enforces_cost_knobs"](
+        "robophd", resume=True, eval_only=False
+    ) is True
+
+
+def test_fresh_run_never_enforces_cost_knobs(sidecar_helpers):
+    """No --resume → cost knobs resolve from CLI/default, never enforced,
+    for every engine (including the guarded GEPA/Autoresearch pair)."""
+    for engine in ("robophd", "gepa", "autoresearch"):
+        assert sidecar_helpers["resume_enforces_cost_knobs"](
+            engine, resume=False, eval_only=False
+        ) is False
 
 
 def test_background_md_prices_match_litellm_registry():

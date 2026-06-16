@@ -286,6 +286,29 @@ def _enforce_immutable_on_resume(
     )
 
 
+def _resume_enforces_cost_knobs(engine: str, resume: bool, eval_only: bool) -> bool:
+    """Validate --resume usage and report whether the run-immutable cost
+    knobs (cost-threshold / cost-per-error) must be enforced on this run.
+
+    The cost knobs are training-only — the test evaluator runs with
+    apply_cost_penalty=False, so --eval-only never reads them. Enforcing
+    their stored-value immutability on an eval-only resume would be wrong,
+    and impossible for GEPA/Autoresearch, which never persist ds1000_runtime
+    (only RoboPhDConfig carries task_config_extras).
+
+    GEPA/Autoresearch additionally only support --resume in --eval-only mode
+    (there is no training-resume path for them); reject the misuse with a
+    clear message instead of letting it fall through to a confusing error.
+    """
+    if engine in ("gepa", "autoresearch") and resume and not eval_only:
+        raise SystemExit(
+            "--resume for the gepa/autoresearch engines is only supported "
+            "with --eval-only (training-resume is not available for these "
+            "engines). Re-run with --eval-only, or start a fresh run."
+        )
+    return resume and not eval_only
+
+
 def _test_rounds_framing(rounds: int) -> str:
     """Return objective.md paragraph 3's last-sentence framing for the
     given new_agent_test_rounds value.
@@ -419,7 +442,9 @@ def main():
     # are immutable across a run: passing the CLI flag on --resume is a
     # hard error, and a missing sidecar (historical pre-fix runs) is
     # also an error rather than a silent default fallback.
-    on_resume = bool(args.resume)
+    on_resume = _resume_enforces_cost_knobs(
+        args.engine, bool(args.resume), args.eval_only
+    )
     checkpoint_ds1000 = (
         _read_ds1000_runtime_config(Path(args.resume)) if args.resume else {}
     )
