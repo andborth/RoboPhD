@@ -9,34 +9,34 @@ The `0_0_4` bump from `v0_0_3_soft_cap_0_06` is a new submission from a distinct
 
 The `soft_cap_0_08` tail names the per-iteration mean-spend free-zone the run was trained under (`cost_threshold=0.08`, `cost_per_error=0.01`).
 
-## Leaderboard verified score
+## Leaderboard score
 
-**Pending — submission in progress.** This section will be updated with the leaderboard-verified numbers once the AstaBench submission is processed. Internal expectation below.
+**Submitted 2026-06-16 as `RoboPhD (Opus 4.8-evolved)`; leaderboard validation pending (~5–7 business days).** The as-submitted `astabench score` numbers (what's in the uploaded tarball) and the development-internal numbers:
 
-| | Internal value (pre-submission) |
-|---|---|
-| Accuracy (RoboPhD-internal eval, full 900-sample test) | **84.44%** (0.8444, 760/900) |
-| Per-problem inference cost | **$0.0295** |
-| Submission name | `v0_0_4_soft_cap_0_08` / form: `RoboPhD 0.0.4` |
-| Expected Pareto position | On/near the frontier: more accurate than the sub-$0.05 entries (Button 0.836 @ $0.03, ReAct gpt-5.4 0.838 @ $0.04) at comparable cost |
-| Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) |
+| | As submitted (`astabench score`) | Internal dev eval |
+|---|---|---|
+| Accuracy (DS-1000 test, 900 samples) | **0.8533** (768/900) | 0.8444 (760/900) |
+| Per-problem cost | **$0.0368** | $0.0295 |
+| Submission name | `v0_0_4_soft_cap_0_08` / form: `RoboPhD (Opus 4.8-evolved)` | — |
+| Pareto position | Dominates ReAct gpt-5.5 (0.847 @ $0.05) and gpt-5.4 (0.838 @ $0.04); cheapest agent at ~0.853 | — |
+| Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | — |
 
-Calibration from prior submissions: `v0_0_1_soft_cap_0_16` measured +2.3pp on the leaderboard vs the internal number (0.862 vs 0.8389); `v0_0_2_soft_cap_0_08` landed at parity (0.809 vs 0.8044). The recomputed leaderboard cost depends on how Ai2's time-invariant price map values the one `gemini-3.1-pro-preview` candidate per problem.
+Supersedes `v0_0_3_soft_cap_0_06` (RoboPhD 0.0.3): same 0.8533 accuracy, but a real (non-Missing) cost that is also lower than 0.0.3's locally-rescored $0.0519. Calibration from prior submissions: `v0_0_1_soft_cap_0_16` measured +2.3pp on the leaderboard vs internal (0.862 vs 0.8389); `v0_0_2_soft_cap_0_08` at parity (0.809 vs 0.8044). The leaderboard-displayed cost may differ slightly from $0.0368 if Ai2's time-invariant price map values `gemini-3.1-pro-preview` differently — but it will not be Missing, since all three solver models are priced.
 
 ## Submission metadata
 
 | Field | Value |
 |---|---|
-| Agent name (form) | RoboPhD 0.0.4 |
+| Agent name (form) | RoboPhD (Opus 4.8-evolved) |
 | Openness | Open source & closed weights |
 | Tools tier | Standard (uses `python_session` provided by the task) |
 | Models (solver, from logs) | gpt-5.4-2026-03-05, claude-sonnet-4-6, gemini-3.1-pro-preview |
 | URL (form) | https://github.com/andborth/RoboPhD |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) |
 
-Agent description as submitted on the form:
+Agent description as submitted on the form (verbatim):
 
-> Evolved by RoboPhD with Claude Opus 4.8 as the evolution (not a solver) model. The evolved agent generates three candidate solutions in parallel from three model families, executes them in the sandbox with dtype/structure-aware diagnostics, and resolves ambiguous cases with an output-grounded GPT-5.4 judge.
+> Evolved by RoboPhD with Claude Opus 4.8 as the evolution (but not a solver) model. The evolved agent generates three candidate solutions in parallel from different model families, executes them in the sandbox with dtype/structure-aware diagnostics, and adjudicates disagreements against the execution evidence with an output-grounded judge, followed by a repair pass. Evolution worked under a soft cost cap of $0.08 set deliberately above our desired target because Opus typically greatly undershoots its cost cap (unlike Fable, which, in a handful of trials, seemed to hug the target with an appropriate safety margin).
 
 ## Approach (iter11_ds1000_tridtype_judge)
 
