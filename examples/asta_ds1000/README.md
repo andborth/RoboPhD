@@ -46,13 +46,13 @@ On the **first** evaluator run, AstaBench's image is pulled (~2–2.5 GB; one-ti
 
 ### 3. Credentials
 
-DS-1000 evolution may pick any of ten solver models, grouped by family into cheap/fast, standard, and strong/slow tiers (see "Model registry" below):
+DS-1000 evolution may pick any of nine solver models, grouped by family into cheap/fast, standard, and strong/slow tiers (see "Model registry" below):
 
 - OpenAI: GPT-5.4 Mini / GPT-5.4 (full) / GPT-5.5
-- Anthropic: Claude Haiku 4.5 / Claude Sonnet 4.6 / Claude Opus 4.8, Claude Fable 5
+- Anthropic: Claude Haiku 4.5 / Claude Sonnet 4.6 / Claude Opus 4.8
 - Google: Gemini 3.1 Flash Lite / Gemini 3.5 Flash / Gemini 3.1 Pro Preview
 
-All three provider keys must be set before running, even if your seed only uses one — evolution can produce an agent that uses any of the ten at any iteration, and a 401 mid-run is the worst time to discover a missing key.
+All three provider keys must be set before running, even if your seed only uses one — evolution can produce an agent that uses any of the nine at any iteration, and a 401 mid-run is the worst time to discover a missing key.
 
 ```bash
 # OpenAI — seed model (gpt-5.4-mini); evolution may also pick gpt-5.4 (full)
@@ -112,7 +112,7 @@ python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir>
 python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir> --phase final
 ```
 
-Default models: ten handles in `model_registry.py`, grouped by family into mini / standard / stronger tiers (the seed picks GPT-5.4 Mini; evolution may pick any of the ten per call). All ten handles are always available; the cost-penalty disciplines overuse of the strong tier — see "Model registry" below for the cost shape.
+Default models: nine handles in `model_registry.py`, grouped by family into mini / standard / stronger tiers (the seed picks GPT-5.4 Mini; evolution may pick any of the nine per call). All nine handles are always available; the cost-penalty disciplines overuse of the strong tier — see "Model registry" below for the cost shape.
 
 ```bash
 # Tighten the cost-penalty endpoints (ablation): cheaper free zone +
@@ -193,10 +193,10 @@ The training evaluator applies the formula above. The test evaluator (derived vi
 
 ### Model registry
 
-Ten pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside the candidate's `file_mapping`, which only contains `agent.py`), grouped by family into three tiers:
+Nine pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside the candidate's `file_mapping`, which only contains `agent.py`), grouped by family into three tiers:
 
 - OpenAI: `GPT_5_4_MINI`, `GPT_5_4`, `GPT_5_5` ($5.00 / $30.00 per M tokens for the strong tier)
-- Anthropic: `CLAUDE_HAIKU_4_5`, `CLAUDE_SONNET_4_6`, `CLAUDE_OPUS_4_8` ($5.00 / $25.00 per M tokens), `CLAUDE_FABLE_5` ($10.00 / $50.00 per M tokens — the priciest handle in the registry)
+- Anthropic: `CLAUDE_HAIKU_4_5`, `CLAUDE_SONNET_4_6`, `CLAUDE_OPUS_4_8` ($5.00 / $25.00 per M tokens — the priciest Anthropic handle while Claude Fable 5 is temporarily unavailable)
 - Google: `GEMINI_3_1_FLASH_LITE`, `GEMINI_3_5_FLASH`, `GEMINI_3_1_PRO_PREVIEW` ($2.00 / $12.00 per M tokens for the strong tier)
 
 Evolved agents `from model_registry import` whichever handles they want and call `.generate()`. The model strings live outside the evolvable artifact (`agent.py`), so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — see "Credentials" above.

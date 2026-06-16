@@ -8,15 +8,6 @@ from typing import Dict, Optional, Union
 
 # Model configuration with pricing from official Anthropic pricing
 SUPPORTED_MODELS = {
-    'fable-5': {
-        'name': 'claude-fable-5',  # plain ID for pricing/display; the 1M [1m] variant lives in CLAUDE_CLI_MODEL_MAP
-        'pricing': {
-            'input': 10.00,       # $10/MTok (base input)
-            'output': 50.00,      # $50/MTok
-            'cache_write': 12.50,  # $12.50/MTok (5m cache writes)
-            'cache_read': 1.00     # $1/MTok (cache hits & refreshes)
-        }
-    },
     'opus-4.8': {
         'name': 'claude-opus-4-8',  # plain ID for pricing/display; the 1M [1m] variant lives in CLAUDE_CLI_MODEL_MAP
         'pricing': {                 # official opus-4.8 rates (same as 4.7). Evolution-CLI cost comes from total_cost_usd; GEPA may register these with litellm (runner_utils._ensure_litellm_pricing)
@@ -78,7 +69,6 @@ SUPPORTED_MODELS = {
 # Claude CLI accepts both aliases ('haiku') and full IDs; full IDs are
 # preferred so cache keys stay stable when aliases roll forward.
 CLAUDE_CLI_MODEL_MAP = {
-    'fable-5': 'claude-fable-5[1m]',    # [1m] = explicit 1M-context request for the evolution CLI session
     'opus-4.8': 'claude-opus-4-8[1m]',
     'opus-4.7': 'claude-opus-4-7',
     'opus-4.6': 'claude-opus-4-6[1m]',

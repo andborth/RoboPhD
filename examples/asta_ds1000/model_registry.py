@@ -1,11 +1,10 @@
 """Model registry for DS-1000 evolved agents.
 
-Exports ten pre-resolved Inspect-AI Model handles, grouped by family
-into a cheap/fast tier, a standard tier, and a strong/slow tier
-(Anthropic has a fourth handle, CLAUDE_FABLE_5, a tier above Opus):
+Exports nine pre-resolved Inspect-AI Model handles, grouped by family
+into a cheap/fast tier, a standard tier, and a strong/slow tier:
 
   OpenAI:    GPT_5_4_MINI              GPT_5_4               GPT_5_5
-  Anthropic: CLAUDE_HAIKU_4_5          CLAUDE_SONNET_4_6     CLAUDE_OPUS_4_8, CLAUDE_FABLE_5
+  Anthropic: CLAUDE_HAIKU_4_5          CLAUDE_SONNET_4_6     CLAUDE_OPUS_4_8
   Google:    GEMINI_3_1_FLASH_LITE     GEMINI_3_5_FLASH      GEMINI_3_1_PRO_PREVIEW
 
 Evolved agents import these handles and call `.generate(...)` on them;
@@ -112,26 +111,17 @@ GEMINI_3_5_FLASH = get_model(
 # 3.5-flash migration. Code-only; not surfaced in background.md or any doc.
 GEMINI_3_FLASH_PREVIEW = GEMINI_3_5_FLASH
 
-# Strong-tier handles. Cost rates are ~5-40× the cheap tier (Fable 5,
-# at $10/$50 per MTok, is the most expensive handle in the registry);
-# the cost-penalty in the training scorer disciplines overuse (see
+# Strong-tier handles. Cost rates are ~5-40× the cheap tier; the
+# cost-penalty in the training scorer disciplines overuse (see
 # background.md). Raise --cost-threshold (e.g. 0.08) for a more
 # generous free zone when relying on these, or raise --cost-per-error
 # to soften the per-call penalty.
 _GPT_5_5_ID = "openai/gpt-5.5"
 _CLAUDE_OPUS_4_8_ID = "anthropic/claude-opus-4-8"
-_CLAUDE_FABLE_5_ID = "anthropic/claude-fable-5"
 _GEMINI_3_1_PRO_PREVIEW_ID = "google/gemini-3.1-pro-preview"
 
 GPT_5_5 = get_model(_GPT_5_5_ID)
 CLAUDE_OPUS_4_8 = get_model(_CLAUDE_OPUS_4_8_ID, api_key=_ANTHROPIC_API_KEY)
-# Fable 5 is Anthropic's tier above Opus. Like the other Claude handles
-# it is intentionally NOT pinned with a reasoning_effort default: with no
-# reasoning_effort, Inspect omits the `thinking` param entirely (required
-# on Fable 5 — an explicit thinking-disabled is a 400 there, unlike Opus);
-# with one set, Inspect's is_claude_latest() path maps it to adaptive
-# thinking + output_config.effort, same as CLAUDE_OPUS_4_8.
-CLAUDE_FABLE_5 = get_model(_CLAUDE_FABLE_5_ID, api_key=_ANTHROPIC_API_KEY)
 # All three Gemini handles default to "low" reasoning_effort for a
 # uniform Gemini family default. Two reasons specific to Pro Preview:
 # (1) Inspect's google provider silently UPGRADES "medium" to

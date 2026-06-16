@@ -107,7 +107,7 @@ RoboPhD uses AI throughout:
 | DocFinQA | DocFinQA (ACL 2024) | `agent.py` — retrieval + QA pipeline | GPT-4.1-mini + text-embedding-3-small |
 | Sudoku | [sapientinc/sudoku-extreme](https://huggingface.co/datasets/sapientinc/sudoku-extreme) | `agent.py` — Python solver with `solve()` | Pure algorithmic (no LLM) |
 | Protein GO | [ProteInfer](https://github.com/google-research/proteinfer) + [Price-149 (CLEAN)](https://github.com/tttianhao/CLEAN) | `agent.py` — GO-MFO prediction with BLAST / ESM / LLM tools | Gemini 3.1 Flash Lite + text-embedding-3-small + ESM-2 |
-| AstaBench DS-1000 | [AstaBench DS-1000](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | `agent.py` — Inspect-AI `@solver` with `python_session` Docker sandbox | Varies — evolution picks from 10 handles across 3 providers: Anthropic (Haiku 4.5 / Sonnet 4.6 / Opus 4.8 / Fable 5), OpenAI (GPT-5.4-mini / GPT-5.4 / GPT-5.5), Google (Gemini 3.1 Flash Lite / 3.5 Flash / 3.1 Pro Preview) |
+| AstaBench DS-1000 | [AstaBench DS-1000](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | `agent.py` — Inspect-AI `@solver` with `python_session` Docker sandbox | Varies — evolution picks from 9 handles across 3 providers: Anthropic (Haiku 4.5 / Sonnet 4.6 / Opus 4.8), OpenAI (GPT-5.4-mini / GPT-5.4 / GPT-5.5), Google (Gemini 3.1 Flash Lite / 3.5 Flash / 3.1 Pro Preview) |
 
 Each domain has a self-contained example under [`examples/`](examples/) with evaluator, seed agent, and documentation.
 

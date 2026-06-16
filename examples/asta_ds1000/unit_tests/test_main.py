@@ -456,18 +456,18 @@ SEED_AGENT_PY = REPO_ROOT / "examples" / "asta_ds1000" / "seeds" / "baseline" / 
 EXPECTED_HANDLES = (
     "GPT_5_4_MINI", "GPT_5_4", "GPT_5_5",
     "CLAUDE_HAIKU_4_5", "CLAUDE_SONNET_4_6", "CLAUDE_OPUS_4_8",
-    "CLAUDE_FABLE_5",
     "GEMINI_3_1_FLASH_LITE", "GEMINI_3_5_FLASH",
     "GEMINI_3_1_PRO_PREVIEW",
 )
 
 
-def test_background_md_lists_all_ten_handles_in_five_column_shape():
-    """background.md's model-handle table must include all 10 handles in
+def test_background_md_lists_all_nine_handles_in_five_column_shape():
+    """background.md's model-handle table must include all 9 handles in
     the 5-column shape (Handle | Input | Output | Default reasoning_effort
     | Available overrides). Regression to fewer columns would break the
     rendered markdown table; missing handles would hide them from the
-    evolution agent's menu."""
+    evolution agent's menu. (CLAUDE_FABLE_5 is temporarily removed — Fable 5
+    is unavailable under a US Gov regulation; revert that commit to restore.)"""
     background_md = (ASTA_DS1000_DIR / "background.md").read_text()
     # Match the model-handle rows specifically — other tables (e.g.
     # `state.input` row in the inspect-ai input doc) also start with

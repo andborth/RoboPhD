@@ -109,15 +109,16 @@ def test_get_model_still_accepts_pinned_kwargs():
         )
 
 
-def test_all_ten_handles_exported(model_registry):
-    """All ten handles must be exported unconditionally — the gate
+def test_all_nine_handles_exported(model_registry):
+    """All nine handles must be exported unconditionally — the gate
     was removed in favor of the cost-penalty disciplining overuse.
     If any of these go missing, evolved agents that import them at
-    eval time will ImportError silently in subprocess workers."""
+    eval time will ImportError silently in subprocess workers.
+    (CLAUDE_FABLE_5 is temporarily removed — Fable 5 is unavailable
+    under a US Gov regulation; revert that commit to restore.)"""
     expected = (
         "GPT_5_4_MINI", "GPT_5_4", "GPT_5_5",
         "CLAUDE_HAIKU_4_5", "CLAUDE_SONNET_4_6", "CLAUDE_OPUS_4_8",
-        "CLAUDE_FABLE_5",
         "GEMINI_3_1_FLASH_LITE", "GEMINI_3_5_FLASH",
         "GEMINI_3_1_PRO_PREVIEW",
     )

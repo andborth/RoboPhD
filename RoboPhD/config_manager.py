@@ -81,7 +81,7 @@ class ConfigManager:
             "meta_evolution_strategy": None,       # Which meta-evolution strategy to use (None = off)
             "meta_evolution_first_iteration": 4,   # First iteration at which meta-evolution fires
             "meta_evolution_cadence": 3,           # Iterations between meta-evolution firings
-            "meta_evolution_model": "fable-5",     # Model for meta-evolution
+            "meta_evolution_model": "opus-4.8",    # Model for meta-evolution (was "fable-5"; Fable 5 temporarily unavailable, US Gov regulation)
             "meta_evolution_domain": None,         # Override domain name for meta-evo prompts (e.g., "codegen" when domain="external")
             "dollar_budget": None,         # Total budget in dollars (default: no limit)
             "evaluation_budget": None,             # Max fresh evaluations across all iterations (default: no limit)
