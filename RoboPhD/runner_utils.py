@@ -292,9 +292,9 @@ def find_named_agent(run_dir: Path, agent_name: str) -> Tuple[str, Path]:
     """Find a specific named agent from a run's agent_pool.
 
     Symmetric to find_best_agent but looks up by explicit name rather than
-    Elo. Used by --eval-agent CLI surfaces (currently sudoku and protein_go)
-    so the user can baseline the seed, inspect a specific iteration's agent,
-    or compare any two agents on the same held-out data.
+    Elo. Backs the examples' --eval-agent CLI surfaces so the user can
+    baseline the seed, inspect a specific iteration's agent, or compare any
+    two agents on the same held-out data.
 
     Returns (agent_name, agent_dir). Raises FileNotFoundError consistently
     for any lookup failure: missing checkpoint.json, missing agent_pool key
@@ -459,16 +459,15 @@ def load_best_candidate(
       - <agent_name>     — loaded from the highest-Elo checkpoint agent
 
     Callers use `label` for user-facing identification (log lines, output
-    filename suffixes); `eval_run` ignores it, sudoku test_eval uses it
-    to distinguish output files.
+    filename suffixes); `eval_run` ignores it, while the test-eval surfaces
+    use it to distinguish output files.
 
     file_mapping controls how non-flat candidates are read from disk:
       - best_candidate.json: ignored (the file IS the candidate dict)
       - best_agent/: used by extract_candidate when provided; if None,
         auto-falls-back only when the directory contains exactly a single
-        agent.py (today's single-file tasks — sudoku, protein_go). A
-        multi-file best_agent/ with no explicit mapping raises rather
-        than silently dropping files.
+        agent.py (the single-file tasks). A multi-file best_agent/ with no
+        explicit mapping raises rather than silently dropping files.
       - checkpoint (Elo fallthrough): used by extract_candidate; if None,
         read from checkpoint.task_config.
 
