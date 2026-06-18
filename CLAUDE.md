@@ -114,6 +114,11 @@ python examples/arc_agi_1/main.py --eval-test-set  # after optimization
 # Evaluate a prior run without re-optimizing
 python examples/arc_agi_1/main.py \
   --eval-only --resume ../robophd_runs/robophd/arc_agi_1_20260322_183016
+
+# Evaluate a specific named agent from the pool (defaults to the best-Elo agent)
+python examples/arc_agi_1/main.py \
+  --eval-only --resume ../robophd_runs/robophd/arc_agi_1_20260322_183016 \
+  --eval-agent iter12_some_agent
 ```
 
 ## System Architecture
@@ -191,7 +196,7 @@ python examples/arc_agi_1/main.py --engine-config '{
 # Deep Focus tuning
 python examples/text2sql/main.py --engine-config '{
   "new_agent_test_rounds": 2,
-  "evolution_model": "opus-4.7"
+  "evolution_model": "opus-4.8"
 }'
 
 # Weighted random strategies
