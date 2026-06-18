@@ -427,8 +427,7 @@ def _build_resume_kwargs(
     # main.py will clobber the original run's setting — this is the
     # bug pattern fixed in commits 5d654f0 + b684c11 for asta_ds1000.
     #
-    # The safe pattern (see examples/asta_ds1000/main.py and
-    # examples/asta_discoverybench/main.py):
+    # The safe pattern (see examples/asta_ds1000/main.py):
     #   1. argparse default=None for any flag exposed in engine_overrides
     #   2. `if args.X is not None: engine_overrides["X"] = args.X`
     #   3. If the task has a default that differs from RoboPhD's
