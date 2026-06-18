@@ -16,6 +16,8 @@ RoboPhD evolves AI agents to improve task performance without human intervention
 - **DocFinQA**: Retrieval + QA for long financial documents (GPT-4.1-mini)
 - **Text2SQL**: SQL generation with `llm()` + `test_sql()` callables (BIRD benchmark)
 - **Sudoku**: Pure-Python solver optimization, no LLM calls
+- **DS-1000 (AstaBench)**: Inspect-AI `@solver` code agents, Docker `python_session`; agent picks from a multi-family `model_registry` (OpenAI GPT-5.4/5.5, Claude 4.x, Gemini 3.x)
+- **Protein GO**: GO-MF term prediction from sequences via BLAST/ESM/`llm()` callables (Gemini 3.1 Flash Lite via OpenRouter)
 
 **Paper**: [RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets](https://arxiv.org/abs/2604.04347)
 
@@ -28,6 +30,8 @@ RoboPhD evolves AI agents to improve task performance without human intervention
 | DocFinQA | DocFinQA (ACL 2024) | `agent.py` | `examples/docfinqa/` |
 | Text2SQL | BIRD | `agent.py` + `analyze_db.py` | `examples/text2sql/` |
 | Sudoku | sapientinc/sudoku-extreme | `agent.py` | `examples/sudoku/` |
+| DS-1000 (AstaBench) | DS-1000 (AstaBench) | `agent.py` | `examples/asta_ds1000/` |
+| Protein GO | CAFA Fmax (ProteInfer split + Price-149) | `agent.py` | `examples/protein_go/` |
 
 Each example is self-contained: `main.py` (entry point), `evaluator.py` (scoring), `objective.md` + `background.md` (evolution context), and `seeds/baseline/` (seed agent).
 
