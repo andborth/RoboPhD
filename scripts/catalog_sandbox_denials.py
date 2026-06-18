@@ -49,24 +49,27 @@ not asserted by a pattern, so they can't drift from the code):
 Pass --no-replay to skip the live-hook replay (FP intents then report as
 FP-OPEN conservatively); useful for a fast, FS-independent pass.
 
-REPLAY BLIND SPOT — own-iteration write records.
-A denial record stores only {ts, tool, scope, blocked_path, command, cwd}.
-It does NOT store ROBOPHD_EVOLUTION_ITERATION_DIR, the per-iteration env
-var the harness sets and the hook uses to anchor the WRITE scope on the
-iteration root (sandbox_hook commit 8ef3d45, 2026-05-24) rather than the
-literal cwd. So when replay re-runs a write record, that env var is unset
-and the hook falls back to write_root=cwd. A record where the agent wrote
-to its OWN current iteration dir from a deeper subdir (e.g. cwd
-.../iteration_015/<test>/<agent>, blocked .../iteration_015/agent.py) was
-a real FP BEFORE the fix, but the live hook ALLOWS it now — yet replay
-still denies it, because it can't reconstruct the env var. Such records
-therefore surface as "TP: write outside cwd" / still-denied even though
-HEAD no longer denies them. Treat the still-denied verdict on a write
-that targets the run's own iteration dir as UNRELIABLE, not as proof the
-scope is still tight. (Writes to a PRIOR iteration are correctly denied
-at HEAD regardless — that's the immutable-history boundary, not this
-blind spot.) Fixing it properly would require logging the iteration dir
-into the record; until then the caveat lives here and on the pattern.
+REPLAY BLIND SPOT — records written before scope-input logging.
+Replay rebuilds the auto memory/session carve-outs from a record's own
+experiment_dir/cwd, but two decision inputs are NOT derivable from the
+record: the iteration WRITE-root (ROBOPHD_EVOLUTION_ITERATION_DIR) and the
+config-provided extra READ roots (e.g. BIRD_DATA_DIR). The hook now stamps
+both into every denial record (sandbox_hook set_scope_context), so replay
+of a record carrying them is faithful. Records written BEFORE that landed
+lack the fields and replay falls back to write_root=cwd / extra_read_roots
+=[], which produces two stale verdicts:
+  * a WRITE to the run's OWN current iteration dir from a deeper subdir
+    (cwd .../iteration_015/<test>/<agent>, blocked .../iteration_015/
+    agent.py) replays as still-denied even though the live hook (iteration
+    write-root, commit 8ef3d45, 2026-05-24) ALLOWS it — surfaces as
+    "TP: write outside cwd";
+  * a READ under a config read root (a BIRD_DATA_DIR .sqlite) replays as
+    still-denied even though the live hook ALLOWS it — surfaces inside
+    "OTHER-STILL-DENIED" with the dataset path as the "real" block.
+Treat a still-denied verdict on EITHER shape as UNRELIABLE for a record
+that predates scope-input logging — not as proof the scope is still tight.
+(A WRITE to a PRIOR iteration is correctly denied at HEAD regardless —
+that's the immutable-history boundary, not this blind spot.)
 """
 
 import argparse
@@ -353,12 +356,14 @@ INTENT_PATTERNS = [
 
     ("TP: write outside cwd",
      "TP",
-     # CAVEAT: when the blocked path is the run's OWN current iteration
-     # dir (cwd .../iteration_N/<sub>, blocked .../iteration_N/agent.py),
-     # the still-denied replay verdict is UNRELIABLE — replay can't set
-     # ROBOPHD_EVOLUTION_ITERATION_DIR, so it re-denies an own-iteration
-     # write the live hook now allows. See "REPLAY BLIND SPOT" in the
-     # module docstring. A write to a PRIOR iteration is a correct deny.
+     # CAVEAT (pre-scope-logging records only): when the blocked path is
+     # the run's OWN current iteration dir (cwd .../iteration_N/<sub>,
+     # blocked .../iteration_N/agent.py), the still-denied replay verdict
+     # is UNRELIABLE for records written before the hook stamped the
+     # write-root into the record — replay then falls back to write_root
+     # =cwd and re-denies an own-iteration write the live hook allows.
+     # See "REPLAY BLIND SPOT" in the module docstring. A write to a
+     # PRIOR iteration is a correct deny.
      lambda r: _scope(r) == "write"
                and not _b(r).startswith(os.path.expanduser("~/.claude"))),
 

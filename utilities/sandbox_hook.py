@@ -854,13 +854,51 @@ def split_compound(command: str) -> list:
     return segments
 
 
+# The effective, non-reconstructable scope inputs for THIS hook
+# invocation. main() populates this (set_scope_context) once the inputs
+# are known; append_denial_record stamps them into every denial record so
+# offline replay (replay_denial_record) can faithfully rebuild the
+# decision. These two inputs — the iteration write-root and the
+# config-provided extra read roots (e.g. BIRD_DATA_DIR) — are the ones
+# replay CANNOT re-derive from the record alone (it can rebuild the auto
+# memory/session carve-outs from experiment_dir/cwd, but not these).
+#
+# LOGGING ONLY. Nothing in the enforcement path ever reads this — the
+# allow/deny decision is computed from the live arguments in main(), and
+# this context is consulted solely when writing the post-decision record.
+_SCOPE_CONTEXT: dict = {}
+
+
+def set_scope_context(write_root=None, extra_read_roots=None) -> None:
+    """Record the effective scope inputs for denial logging (see
+    _SCOPE_CONTEXT). Best-effort and never raises: a failure here must not
+    perturb the decision path that calls it."""
+    try:
+        if write_root is not None:
+            _SCOPE_CONTEXT["write_root"] = str(write_root)
+        if extra_read_roots is not None:
+            _SCOPE_CONTEXT["extra_read_roots"] = [str(r) for r in extra_read_roots]
+    except Exception:  # pragma: no cover - defensive; logging must not fail
+        pass
+
+
 def append_denial_record(record: dict) -> None:
     """Append a JSON line to $ROBOPHD_EXPERIMENT_DIR/sandbox_denials.jsonl.
 
-    Best-effort: if the env var or the directory is missing, write a
-    fallback record to /tmp/robophd_sandbox_denials.jsonl so the failure
-    isn't completely silent.
+    Stamps the effective scope inputs (set_scope_context) into the record
+    when absent, so replay can reconstruct the decision. Best-effort: if
+    the env var or the directory is missing, write a fallback record to
+    /tmp/robophd_sandbox_denials.jsonl so the failure isn't completely
+    silent.
     """
+    # Stamp scope inputs without clobbering anything a call site set
+    # explicitly. setdefault on a plain dict can't raise, but keep the
+    # whole block defensive — logging must never break the deny path.
+    try:
+        for k, v in _SCOPE_CONTEXT.items():
+            record.setdefault(k, v)
+    except Exception:  # pragma: no cover - defensive
+        pass
     exp_dir = os.environ.get("ROBOPHD_EXPERIMENT_DIR")
     if exp_dir and os.path.isdir(exp_dir):
         out_path = os.path.join(exp_dir, "sandbox_denials.jsonl")
@@ -1142,12 +1180,20 @@ def replay_denial_record(
     runs. Returns ``(still_denies: bool, blocked: str | None)``.
 
     ``experiment_dir`` is the run dir (the parent of the
-    ``sandbox_denials.jsonl`` the record came from). ``write_root``
-    defaults to the record's ``cwd`` — the legacy (narrowest) write
-    root; an iteration-rooted run had an equal-or-broader write scope,
-    so a cwd-rooted replay can only ever be MORE likely to say "still
-    denies", never less. That's the safe direction for an FP-FIXED claim
-    (we never falsely declare a write fixed).
+    ``sandbox_denials.jsonl`` the record came from).
+
+    ``write_root`` and ``extra_read_roots`` default (when the caller
+    passes None) to the values stamped into the record at denial time
+    (set_scope_context) — the iteration write-root and the
+    config-provided read roots (e.g. BIRD_DATA_DIR) that replay cannot
+    otherwise see. Records written BEFORE that stamping landed lack the
+    fields and fall back to the record's ``cwd`` (write) and ``[]``
+    (read). Those fallbacks are the legacy replay blind spots: a
+    cwd-rooted write replay can only ever be MORE likely to say "still
+    denies" (safe for an FP-FIXED claim — we never falsely declare a
+    write fixed), and an empty read-root replay may phantom-deny a read
+    the live hook would have allowed via a config read root. New records
+    carry the inputs and replay faithfully.
 
     Replay is best-effort: a record we can't faithfully reconstruct
     (missing fields, unreadable shape) raises, and the caller falls back
@@ -1156,9 +1202,16 @@ def replay_denial_record(
     tool = record.get("tool", "")
     cwd = record.get("cwd") or experiment_dir
     if extra_read_roots is None:
-        extra_read_roots = []
+        # Prefer the scope inputs stamped into the record at denial time
+        # (set_scope_context). Records written before that field existed
+        # lack it -> fall back to [], the legacy blind spot where replay
+        # can't see config-provided read roots (e.g. BIRD_DATA_DIR) and so
+        # may phantom-deny a read the live hook would have allowed.
+        extra_read_roots = record.get("extra_read_roots") or []
     if write_root is None:
-        write_root = cwd
+        # Likewise prefer the recorded iteration write-root; older records
+        # fall back to cwd (the narrowest, safe-direction default).
+        write_root = record.get("write_root") or cwd
 
     exp = os.path.realpath(experiment_dir)
     cwd_real = os.path.realpath(cwd)
@@ -1304,6 +1357,15 @@ def main() -> int:
     write_root_is_iteration = bool(write_root_env)
 
     extra_read_roots = parse_extra_read_paths(sys.argv)
+
+    # Stamp the non-reconstructable scope inputs into any denial we log
+    # this invocation (logging only — see set_scope_context). We capture
+    # the RAW extra-read list here, BEFORE the memory/session carve-outs
+    # are appended below, because replay re-derives those carve-outs
+    # itself from the record's experiment_dir/cwd; it only needs the
+    # config-provided roots (e.g. BIRD_DATA_DIR) and the iteration
+    # write-root, which it cannot otherwise see.
+    set_scope_context(write_root=write_root, extra_read_roots=extra_read_roots)
 
     # Run-scoped auto-memory carve-out. Read is granted via the normal
     # extra-read mechanism (covers Read/Glob/Grep and Bash read

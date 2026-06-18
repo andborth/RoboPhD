@@ -36,6 +36,8 @@ from utilities.sandbox_hook import (  # noqa: E402
     split_statement_newlines,
     evaluate_bash,
     replay_denial_record,
+    set_scope_context,
+    append_denial_record,
 )
 
 
@@ -2314,6 +2316,66 @@ def test_replay_read_tool_record(experiment_layout):
     still, blocked = replay_denial_record(rec, str(layout["experiment_dir"]))
     assert still is True
     assert blocked == sib
+
+
+def test_replay_uses_recorded_extra_read_roots(experiment_layout):
+    """A read of a config-provided read root (e.g. BIRD_DATA_DIR) is out of
+    scope by default, so an OLD record (no stamped scope inputs) phantom-
+    replays as still-denied. A record that carries the effective
+    extra_read_roots replays as ALLOWED — matching the live hook, closing
+    the read-root replay blind spot."""
+    layout = experiment_layout
+    data = str(layout["repo_stub"].resolve())  # stand-in config read root
+    target = str((layout["repo_stub"] / "model_registry.py").resolve())
+    rec = {"tool": "Read", "scope": "read", "blocked_path": target,
+           "command": "", "cwd": str(layout["cwd"].resolve())}
+
+    # Old record (no stamped fields) -> phantom deny (the legacy blind spot).
+    still, _ = replay_denial_record(rec, str(layout["experiment_dir"]))
+    assert still is True
+
+    # New record carrying the run-time read root -> faithfully allowed.
+    rec_stamped = dict(rec, extra_read_roots=[data])
+    still, _ = replay_denial_record(rec_stamped, str(layout["experiment_dir"]))
+    assert still is False
+
+
+def test_replay_uses_recorded_write_root(experiment_layout):
+    """A write to the run's own iteration dir from a deeper cwd is denied
+    under a cwd-rooted replay (old record) but allowed when the record
+    carries the iteration write-root."""
+    layout = experiment_layout
+    iter_dir = layout["experiment_dir"] / "evolution_output" / "iteration_002"
+    target = str((iter_dir / "agent.py").resolve())
+    deep_cwd = iter_dir / "iter000_test" / "agent_x"
+    deep_cwd.mkdir(parents=True)
+    rec = {"tool": "Write", "scope": "write", "blocked_path": target,
+           "command": "", "cwd": str(deep_cwd.resolve())}
+
+    still, _ = replay_denial_record(rec, str(layout["experiment_dir"]))
+    assert still is True  # cwd-rooted fallback: own-iteration write denied
+
+    rec_stamped = dict(rec, write_root=str(iter_dir.resolve()))
+    still, _ = replay_denial_record(rec_stamped, str(layout["experiment_dir"]))
+    assert still is False  # iteration-rooted: own-iteration write allowed
+
+
+def test_append_denial_record_stamps_scope_context(tmp_path, monkeypatch):
+    """set_scope_context -> append_denial_record writes the effective scope
+    inputs into the record (logging only), without clobbering explicit
+    fields."""
+    import json as _json
+    monkeypatch.setenv("ROBOPHD_EXPERIMENT_DIR", str(tmp_path))
+    set_scope_context(write_root="/x/iter", extra_read_roots=["/data/bird"])
+    try:
+        append_denial_record({"tool": "Read", "scope": "read",
+                              "blocked_path": "p", "command": "", "cwd": "/x/iter/sub"})
+        rec = _json.loads((tmp_path / "sandbox_denials.jsonl").read_text().splitlines()[0])
+        assert rec["extra_read_roots"] == ["/data/bird"]
+        assert rec["write_root"] == "/x/iter"
+    finally:
+        # Don't leak context into other tests sharing the module global.
+        set_scope_context.__globals__["_SCOPE_CONTEXT"].clear()
 
 
 def test_replay_unreplayable_record_raises(experiment_layout):
