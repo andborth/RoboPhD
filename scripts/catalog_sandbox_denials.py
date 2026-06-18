@@ -48,6 +48,25 @@ not asserted by a pattern, so they can't drift from the code):
 
 Pass --no-replay to skip the live-hook replay (FP intents then report as
 FP-OPEN conservatively); useful for a fast, FS-independent pass.
+
+REPLAY BLIND SPOT — own-iteration write records.
+A denial record stores only {ts, tool, scope, blocked_path, command, cwd}.
+It does NOT store ROBOPHD_EVOLUTION_ITERATION_DIR, the per-iteration env
+var the harness sets and the hook uses to anchor the WRITE scope on the
+iteration root (sandbox_hook commit 8ef3d45, 2026-05-24) rather than the
+literal cwd. So when replay re-runs a write record, that env var is unset
+and the hook falls back to write_root=cwd. A record where the agent wrote
+to its OWN current iteration dir from a deeper subdir (e.g. cwd
+.../iteration_015/<test>/<agent>, blocked .../iteration_015/agent.py) was
+a real FP BEFORE the fix, but the live hook ALLOWS it now — yet replay
+still denies it, because it can't reconstruct the env var. Such records
+therefore surface as "TP: write outside cwd" / still-denied even though
+HEAD no longer denies them. Treat the still-denied verdict on a write
+that targets the run's own iteration dir as UNRELIABLE, not as proof the
+scope is still tight. (Writes to a PRIOR iteration are correctly denied
+at HEAD regardless — that's the immutable-history boundary, not this
+blind spot.) Fixing it properly would require logging the iteration dir
+into the record; until then the caveat lives here and on the pattern.
 """
 
 import argparse
@@ -142,6 +161,23 @@ def _scope(rec):
     return rec.get("scope") or ""
 
 
+def _tool(rec):
+    return rec.get("tool") or ""
+
+
+# Tools that carry the auto-memory WRITE carve-out in the live hook
+# (sandbox_hook.WRITE_TOOLS). A write to the run's memory dir is only a
+# false positive when it arrives through one of these — a Bash write to
+# the same dir is denied BY DESIGN (injection-hardening), so it is a TP,
+# not an open FP. Kept in sync with the hook by mirroring the set here.
+_WRITE_TOOLS = {"Edit", "Write", "NotebookEdit", "MultiEdit"}
+
+
+def _is_memory_write(rec):
+    return (_scope(rec) == "write"
+            and ".claude/projects/" in _b(rec) and "/memory/" in _b(rec))
+
+
 _INTERP_PATH_RE = re.compile(
     r"^/(opt/anaconda3|usr|usr/local|opt/homebrew)/.*?/(python|node|ruby)\d*"
 )
@@ -227,10 +263,13 @@ INTENT_PATTERNS = [
                and bool(re.search(r"\b(timeout|time|nice|ionice|stdbuf|nohup)\b",
                                   _cmd(r)))),
 
-    ("FP: auto-memory write under this-run slug",
+    ("FP: auto-memory write under this-run slug (Write tool)",
      "FP",
-     lambda r: _scope(r) == "write"
-               and ".claude/projects/" in _b(r) and "/memory/" in _b(r)),
+     # Only the WRITE_TOOLS branch carves out memory writes. A write here
+     # via Write/Edit is the legit relocated auto-memory -> FP. A Bash
+     # write to the same dir is a deliberate deny (see the TP pattern
+     # below), so gate on the tool to mirror the hook's own split.
+     lambda r: _is_memory_write(r) and _tool(r) in _WRITE_TOOLS),
 
     ("FP: Claude CLI tool-results spill readback",
      "FP",
@@ -238,6 +277,16 @@ INTENT_PATTERNS = [
                and ".claude" in _b(r) and "/tool-results/" in _b(r)),
 
     # ---- intent TP: sandbox correctly catching out-of-policy actions ----
+    ("TP: Bash write to auto-memory dir (injection-hardening deny)",
+     "TP",
+     # A write to the run's own memory dir is carved out ONLY for the
+     # Write tool; a Bash `cat >> ~/.claude/.../memory/x` is denied by
+     # design (a shell write to ~/.claude is an injection vector, and the
+     # sanctioned path is the Write tool). Correct deny, not an open FP.
+     # Ordered before the memory-write FP can't fire (that's now Write-
+     # tool-gated) so any non-Write memory write lands here.
+     lambda r: _is_memory_write(r) and _tool(r) not in _WRITE_TOOLS),
+
     # `find /` is also blocked='/' like the tr FP above, but ordering and
     # the tr predicate's `find /` exclusion keep them separate.
     ("TP: find / full-filesystem scan",
@@ -304,6 +353,12 @@ INTENT_PATTERNS = [
 
     ("TP: write outside cwd",
      "TP",
+     # CAVEAT: when the blocked path is the run's OWN current iteration
+     # dir (cwd .../iteration_N/<sub>, blocked .../iteration_N/agent.py),
+     # the still-denied replay verdict is UNRELIABLE — replay can't set
+     # ROBOPHD_EVOLUTION_ITERATION_DIR, so it re-denies an own-iteration
+     # write the live hook now allows. See "REPLAY BLIND SPOT" in the
+     # module docstring. A write to a PRIOR iteration is a correct deny.
      lambda r: _scope(r) == "write"
                and not _b(r).startswith(os.path.expanduser("~/.claude"))),
 
