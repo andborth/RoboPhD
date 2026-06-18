@@ -3,17 +3,23 @@
 Clean up short/experimental/failed runs.
 
 Targets, by engine:
-  - robophd/      : last_completed_iteration < --min-iterations
-  - gepa/         : num_candidates_explored  < --min-iterations
-  - autoresearch/ : no best_agent/agent.py   (i.e. the run never produced an agent)
+  - robophd/      : last_completed_iteration < --min-iterations (abandoned early)
+  - gepa/         : no best_agent/ directory (the run produced no agent)
+  - autoresearch/ : no best_agent/ directory (the run produced no agent)
+
+  gepa/autoresearch are judged by best_agent/ presence (not a candidate/
+  iteration count): a run that explored few candidates but still produced a
+  best agent is valid. The agent file name varies by task (agent.py,
+  eval_instructions.md, system_prompt.md, ...), so the directory is checked,
+  not a specific file.
 
 Safety:
   - runs referenced by a symlink under <runs-dir>/results/ (e.g. a recorded
     result's results/runs/<id> link) are never cleaned, so cleanup can't
     orphan a recorded result.
   - runs modified within --min-age-hours are skipped (they may still be
-    running); this guards every engine, since a mid-run autoresearch run has
-    no best_agent/agent.py yet and a mid-run robophd/gepa run looks short.
+    running); this guards every engine, since a mid-run gepa/autoresearch run
+    has no best_agent/ yet and a mid-run robophd run looks short.
 
 Usage:
     # Dry-run: show what would be cleaned up
@@ -76,6 +82,20 @@ def get_dir_size(path: Path) -> int:
     except (PermissionError, OSError):
         pass
     return total
+
+
+def has_best_agent(run_dir: Path) -> bool:
+    """True if the run produced a non-empty best_agent/ directory.
+
+    The agent artifact's filename varies by task (agent.py, eval_instructions.md,
+    system_prompt.md, tools/, ...), so success is judged by the directory having
+    any content, not by a specific file name.
+    """
+    ba = run_dir / "best_agent"
+    try:
+        return ba.is_dir() and any(ba.iterdir())
+    except OSError:
+        return False
 
 
 def newest_mtime(path: Path) -> float:
@@ -144,63 +164,41 @@ def scan_robophd_runs(runs_dir: Path, threshold: int) -> list[dict]:
     return results
 
 
-def scan_gepa_runs(runs_dir: Path, threshold: int) -> list[dict]:
-    """Scan gepa/ for short runs based on optimization_summary.json."""
-    results = []
-    gepa_dir = runs_dir / "gepa"
-    if not gepa_dir.exists():
-        return results
+def scan_gepa_runs(runs_dir: Path) -> list[dict]:
+    """Scan gepa/ for FAILED runs — ones that never produced a best_agent/.
 
-    for run_dir in sorted(gepa_dir.iterdir()):
-        if not run_dir.is_dir() or is_ignored_dir(run_dir):
-            continue
-        summary = run_dir / "optimization_summary.json"
-        candidates = None
-        if summary.exists():
-            try:
-                data = json.loads(summary.read_text())
-                candidates = data.get("num_candidates_explored", 0)
-            except (json.JSONDecodeError, OSError):
-                candidates = 0
-        else:
-            candidates = 0
-
-        if candidates < threshold:
-            size = get_dir_size(run_dir)
-            results.append({
-                "path": run_dir,
-                "type": "gepa",
-                "candidates": candidates,
-                "size": size,
-            })
-
-    return results
+    The candidate count is NOT used as the criterion: a run that explored only
+    a few candidates but still produced a best agent is a valid result. A run
+    is cleanup-worthy only if it has no non-empty best_agent/ directory.
+    """
+    return _scan_by_best_agent(runs_dir, "gepa")
 
 
 def scan_autoresearch_runs(runs_dir: Path) -> list[dict]:
-    """Scan autoresearch/ for FAILED runs.
+    """Scan autoresearch/ for FAILED runs — no best_agent/ directory produced.
 
-    Autoresearch has no iteration/candidate ladder, so the "short run" notion
-    doesn't apply. Instead a run is considered cleanup-worthy if it never
-    produced a usable agent — i.e. there is no best_agent/agent.py.
+    Autoresearch has no iteration/candidate ladder, so success is judged the
+    same way as gepa: did it produce a (non-empty) best_agent/?
     """
-    results = []
-    ar_dir = runs_dir / "autoresearch"
-    if not ar_dir.exists():
-        return results
+    return _scan_by_best_agent(runs_dir, "autoresearch")
 
-    for run_dir in sorted(ar_dir.iterdir()):
+
+def _scan_by_best_agent(runs_dir: Path, engine: str) -> list[dict]:
+    """Flag runs under <runs-dir>/<engine>/ that lack a non-empty best_agent/."""
+    results = []
+    engine_dir = runs_dir / engine
+    if not engine_dir.exists():
+        return results
+    for run_dir in sorted(engine_dir.iterdir()):
         if not run_dir.is_dir() or is_ignored_dir(run_dir):
             continue
-        if not (run_dir / "best_agent" / "agent.py").exists():
-            size = get_dir_size(run_dir)
+        if not has_best_agent(run_dir):
             results.append({
                 "path": run_dir,
-                "type": "autoresearch",
-                "detail": "no best_agent/agent.py",
-                "size": size,
+                "type": engine,
+                "detail": "no best_agent/",
+                "size": get_dir_size(run_dir),
             })
-
     return results
 
 
@@ -238,7 +236,7 @@ def main():
         "--min-iterations",
         type=int,
         default=5,
-        help="Minimum iterations/candidates to keep (default: 5)",
+        help="Minimum iterations for a robophd run to keep (default: 5). gepa/autoresearch use best_agent/ presence instead.",
     )
     parser.add_argument(
         "--min-age-hours",
@@ -271,7 +269,7 @@ def main():
 
     # Scan
     robophd_targets = scan_robophd_runs(runs_dir, threshold)
-    gepa_targets = scan_gepa_runs(runs_dir, threshold)
+    gepa_targets = scan_gepa_runs(runs_dir)
     autoresearch_targets = scan_autoresearch_runs(runs_dir)
     candidates_to_clean = robophd_targets + gepa_targets + autoresearch_targets
 
@@ -307,21 +305,20 @@ def main():
 
     # Report
     if not all_targets:
-        print(f"No cleanable runs found (threshold: {threshold} iterations/candidates; "
-              f"autoresearch: missing best_agent/agent.py)")
+        print(f"No cleanable runs found (robophd: < {threshold} iterations; "
+              f"gepa/autoresearch: no best_agent/)")
         print(f"Scanned: {runs_dir}")
         return
 
     total_size = sum(t["size"] for t in all_targets)
-    print(f"Found {len(all_targets)} short run(s) below threshold ({threshold}):\n")
+    print(f"Found {len(all_targets)} cleanable run(s) "
+          f"(robophd: < {threshold} iterations; gepa/autoresearch: no best_agent/):\n")
 
     for t in all_targets:
         rel = t["path"].relative_to(runs_dir)
         if t["type"] == "robophd":
             detail = f"{t['iterations']} iterations"
-        elif t["type"] == "gepa":
-            detail = f"{t['candidates']} candidates"
-        else:  # autoresearch
+        else:  # gepa / autoresearch
             detail = t["detail"]
         print(f"  {str(rel):<50s}  {detail:<20s}  {fmt_size(t['size'])}")
 
