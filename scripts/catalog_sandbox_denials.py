@@ -556,6 +556,29 @@ def load_records(path: Path) -> list:
 # ---------------------------------------------------------------------
 
 
+# "Benign-intent friction" labels: denials that are policy-CORRECT (TP)
+# but where the agent's intent was legitimate and it simply had no
+# sanctioned path — so the deny is friction, not a caught attack. These
+# don't trip the ⚠ accountability lines (they're true positives, not
+# FP-OPEN / TP-NOW-ALLOWED), so without a dedicated headline a rising
+# trend would sit buried in LABEL TOTALS. The TP/FP axis answers "is the
+# deny correct?"; this set answers the orthogonal "did we block benign
+# work?" — a signal that, if it grows, argues for a sanctioned affordance
+# (e.g. a memory-append path, a scratch dir) rather than a policy change.
+# Labels must match the pattern labels in INTENT_PATTERNS exactly.
+FRICTION_LABELS = (
+    "TP: Bash write to auto-memory dir (injection-hardening deny)",
+    "TP: /tmp scratch attempt outside scope",
+)
+
+
+def _friction_breakdown(totals_by_label):
+    """Return (total, [(label, n), ...]) for friction labels that occurred."""
+    items = [(lab, totals_by_label.get(lab, 0)) for lab in FRICTION_LABELS]
+    items = [(lab, n) for lab, n in items if n]
+    return sum(n for _, n in items), items
+
+
 def render_text(files, all_runs, totals_by_cat, totals_by_label,
                 unclassified, show_unclassified):
     print(f"Scanned {len(files)} sandbox_denials.jsonl file(s) across "
@@ -609,6 +632,17 @@ def render_text(files, all_runs, totals_by_cat, totals_by_label,
     elif not loosened_n:
         print("✓ No FP-OPEN or TP-NOW-ALLOWED denials in this sweep.")
 
+    # Friction line: correct denies of benign-intent work. Informational
+    # (does NOT affect exit code) — a rising count argues for a sanctioned
+    # affordance, not a policy fix.
+    friction_n, friction_items = _friction_breakdown(totals_by_label)
+    if friction_n:
+        parts = ", ".join(f"{lab.split(':', 1)[1].strip()}={n}"
+                          for lab, n in friction_items)
+        print(f"ℹ  {friction_n} benign-intent friction denial(s) — correct "
+              f"denies of legitimate work with no sanctioned path ({parts}). "
+              f"If rising, add an affordance rather than loosening policy.")
+
 
 def render_json(files, all_runs, totals_by_cat, totals_by_label, unclassified):
     out = {
@@ -620,6 +654,7 @@ def render_json(files, all_runs, totals_by_cat, totals_by_label, unclassified):
         ],
         "totals_by_category": dict(totals_by_cat),
         "totals_by_label": dict(totals_by_label.most_common()),
+        "benign_intent_friction": dict(_friction_breakdown(totals_by_label)[1]),
         "unclassified": [
             {"run": run_label, "record": rec}
             for run_label, rec in unclassified
