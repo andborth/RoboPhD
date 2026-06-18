@@ -14,9 +14,11 @@ Targets, by engine:
   not a specific file.
 
 Safety:
-  - runs referenced by a symlink under <runs-dir>/results/ (e.g. a recorded
-    result's results/runs/<id> link) are never cleaned, so cleanup can't
-    orphan a recorded result.
+  - runs referenced by a symlink under any scanned results/ dir (e.g. a
+    recorded result's results/runs/<id> link) are never cleaned, so cleanup
+    can't orphan a recorded result. Both <runs-dir>/results AND the canonical
+    robophd_runs/results are scanned (plus any --results-dir), so cleaning
+    alt_robophd_runs still honours results recorded in the main results dir.
   - runs modified within --min-age-hours are skipped (they may still be
     running); this guards every engine, since a mid-run gepa/autoresearch run
     has no best_agent/ yet and a mid-run robophd run looks short.
@@ -202,25 +204,29 @@ def _scan_by_best_agent(runs_dir: Path, engine: str) -> list[dict]:
     return results
 
 
-def collect_referenced_run_dirs(runs_dir: Path) -> set[str]:
-    """Realpath targets of every symlink under <runs-dir>/results/.
+def collect_referenced_run_dirs(results_dirs: list[Path]) -> set[str]:
+    """Realpath targets of every symlink under each given results/ dir.
 
     A run that is the target of such a symlink is referenced by a recorded
     result (e.g. results/runs/<id> -> <run_dir>), so it must NOT be cleaned
     even if it looks short/failed — that would orphan a recorded result.
-    Dangling symlinks still resolve to their intended absolute target, so a
-    run is protected as soon as any results/ symlink names it.
+
+    Recorded results are CENTRALIZED in robophd_runs/results/ even for runs
+    that live in alt_robophd_runs/, so several results dirs may protect a run.
+    Scan all of them, not just <runs-dir>/results. Dangling symlinks still
+    resolve to their intended absolute target, so a run is protected as soon
+    as any scanned results/ symlink names it.
     """
     referenced: set[str] = set()
-    results_dir = runs_dir / "results"
-    if not results_dir.exists():
-        return referenced
-    for p in results_dir.rglob("*"):
-        try:
-            if p.is_symlink():
-                referenced.add(os.path.realpath(p))
-        except OSError:
+    for results_dir in results_dirs:
+        if not results_dir.exists():
             continue
+        for p in results_dir.rglob("*"):
+            try:
+                if p.is_symlink():
+                    referenced.add(os.path.realpath(p))
+            except OSError:
+                continue
     return referenced
 
 
@@ -244,6 +250,15 @@ def main():
         default=2.0,
         help="Never clean a run modified within this many hours — it may still "
              "be running (default: 2.0)",
+    )
+    parser.add_argument(
+        "--results-dir",
+        type=Path,
+        action="append",
+        default=None,
+        help="Extra results/ dir(s) whose symlinks protect runs from cleanup "
+             "(repeatable). <runs-dir>/results and the canonical "
+             "robophd_runs/results are always scanned.",
     )
     action = parser.add_mutually_exclusive_group()
     action.add_argument(
@@ -274,7 +289,23 @@ def main():
     candidates_to_clean = robophd_targets + gepa_targets + autoresearch_targets
 
     # Safety: never clean a run that a results/ symlink points to.
-    referenced = collect_referenced_run_dirs(runs_dir)
+    # Recorded results are centralized in robophd_runs/results even for runs
+    # living in alt_robophd_runs, so protect against every relevant results
+    # dir — not just <runs-dir>/results — or cleaning alt could orphan a run
+    # recorded in the main results dir.
+    results_dirs = [runs_dir / "results",
+                    _PROJECT_ROOT.parent / "robophd_runs" / "results"]
+    if args.results_dir:
+        results_dirs += list(args.results_dir)
+    seen, scan_dirs = set(), []
+    for rdp in results_dirs:
+        rp = os.path.realpath(rdp)
+        if rp not in seen and rdp.exists():
+            seen.add(rp)
+            scan_dirs.append(rdp)
+    referenced = collect_referenced_run_dirs(scan_dirs)
+    print(f"Symlink protection scanning {len(scan_dirs)} results dir(s): "
+          f"{', '.join(os.path.relpath(p) for p in scan_dirs)}\n")
     protected = [t for t in candidates_to_clean
                  if os.path.realpath(t["path"]) in referenced]
     all_targets = [t for t in candidates_to_clean
