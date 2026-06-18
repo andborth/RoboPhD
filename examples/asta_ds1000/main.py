@@ -80,11 +80,19 @@ SPLIT_SEED = 42
 # objective.md).
 DEFAULT_EXAMPLES_PER_ITERATION = 20
 
-# Default iteration cap. Same single-source-of-truth pattern as
-# DEFAULT_EXAMPLES_PER_ITERATION above — referenced from
-# _build_dataset's return tuple and from the argparse help text via
-# f-string interpolation, so changing this constant updates both.
-DEFAULT_NUM_ITERATIONS = 20
+# Iteration cap, deliberately loose. Like the standard RoboPhD tasks,
+# DS-1000 runs are bound by the evaluation budget (below), NOT by an
+# iteration count — this conforms to the GEPA/Autoresearch engines, which
+# only honor a budget. Same single-source-of-truth pattern as
+# DEFAULT_EXAMPLES_PER_ITERATION above (argparse help interpolates it).
+DEFAULT_NUM_ITERATIONS = 999
+
+# Default evaluation budget (max fresh evaluator calls across all
+# iterations) — the binding limit for a DS-1000 run. Set to 750 because the
+# train pool is only 100 examples, so a larger budget mostly re-samples the
+# same problems with diminishing signal. Mirrors the standard tasks'
+# budget-bound regime for GEPA/Autoresearch parity.
+DEFAULT_EVALUATION_BUDGET = 750
 
 # Framework default for parallel eval workers. Single source of truth in
 # code: referenced from both --max-workers' resolution logic AND its
@@ -118,10 +126,10 @@ def _build_dataset(phase: str):
     else:  # final
         test = test_full
 
-    # Iteration-bounded: examples/iter=DEFAULT_EXAMPLES_PER_ITERATION,
-    # num_iterations=DEFAULT_NUM_ITERATIONS → 150 evals at the default.
-    # Set evaluation_budget high enough not to bind.
-    return train, test, DEFAULT_EXAMPLES_PER_ITERATION, 999_999, DEFAULT_NUM_ITERATIONS
+    # Budget-bounded: evaluation_budget=DEFAULT_EVALUATION_BUDGET is the
+    # binding limit; the iteration cap (DEFAULT_NUM_ITERATIONS) is loose and
+    # won't normally be reached. examples/iter=DEFAULT_EXAMPLES_PER_ITERATION.
+    return train, test, DEFAULT_EXAMPLES_PER_ITERATION, DEFAULT_EVALUATION_BUDGET, DEFAULT_NUM_ITERATIONS
 
 
 # ---------------------------------------------------------------------------
@@ -358,9 +366,10 @@ def parse_args():
         description="Evolve DS-1000 agents on AstaBench (Standard tools, Docker sandbox)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    p.add_argument("--phase", choices=["experiment", "final"], default="experiment",
-                   help="experiment: 90-sample held-out test (~10%% of ds1000_test). "
-                        "final: all 900 ds1000_test samples (leaderboard metric).")
+    p.add_argument("--phase", choices=["experiment", "final"], default="final",
+                   help="final (default): all 900 ds1000_test samples (leaderboard "
+                        "metric). experiment: 90-sample held-out test (~10%% of "
+                        "ds1000_test) for cheaper iteration.")
 
     p.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd")
     p.add_argument("--num-iterations", type=int, default=None,
@@ -370,7 +379,8 @@ def parse_args():
                    help=f"Override the default per-iteration sample size ({DEFAULT_EXAMPLES_PER_ITERATION})"
                         "%(default).0s")
     p.add_argument("--evaluation-budget", type=int, default=None,
-                   help="Override the default evaluation budget (iter-bounded)"
+                   help=f"Override the default evaluation budget ({DEFAULT_EVALUATION_BUDGET} "
+                        "— the binding limit; the iteration cap is loose)"
                         "%(default).0s")
     p.add_argument("--new-agent-test-rounds", type=int, default=None,
                    help="Number of Deep-Focus refinement rounds per new agent. "
@@ -395,7 +405,7 @@ def parse_args():
 
     p.add_argument("--cost-threshold", type=float, default=None,
                    help="Mean cost across an iteration's batch below this "
-                        "is in the free zone (no penalty). Default $0.04."
+                        "is in the free zone (no penalty). Default $0.05."
                         "%(default).0s")
     p.add_argument("--cost-per-error", type=float, default=None,
                    help="Dollars of mean batch spend (over --cost-threshold) "

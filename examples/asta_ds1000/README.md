@@ -85,10 +85,12 @@ The example's `load_ds1000` helper sets `INSPECT_EVAL_MODEL` defensively before 
 
 The 100 / 900 validation/test split is fixed and cached in `astabench/evals/inspect_eval_wrappers/ds1000_splits.json` (a one-time random shuffle with `seed=0` of the canonical `inspect_evals.ds1000` dataset). Don't expect the validation set to be a representative sub-sample of the test set — it's a uniform random pick.
 
-| Phase | Train pool | Test set | Iter | Examples/iter | Total evals |
-| --- | --- | --- | --- | --- | --- |
-| **experiment** | full 100-sample `ds1000_validation` | 90-sample fixed sub-sample (~10%) of `ds1000_test` | 15 | 20 | 300 |
-| **final** | same 100 | all **900** `ds1000_test` (leaderboard metric) | 15 | 20 | 300 |
+| Phase | Train pool | Test set | Examples/iter | Evaluation budget |
+| --- | --- | --- | --- | --- |
+| **final** (default) | full 100-sample `ds1000_validation` | all **900** `ds1000_test` (leaderboard metric) | 20 | 750 (the binding limit) |
+| **experiment** | same 100 | 90-sample fixed sub-sample (~10%) of `ds1000_test` | 20 | 750 (the binding limit) |
+
+The run is bound by the **evaluation budget** (750 fresh evals — the same budget-bound regime as the standard RoboPhD tasks), not by an iteration count; the iteration cap (999) is loose and won't normally be reached. 750 is sized to the 100-sample train pool, past which extra budget mostly re-samples the same problems.
 
 ### Sampling
 
@@ -99,17 +101,18 @@ Test sub-sampling for the experiment phase is **deterministic** — driven by a 
 ## Running
 
 ```bash
-# Default: phase=experiment, full 100-sample validation train, 90-sample held-out test.
+# Default: phase=final — train on the 100-sample validation pool, evaluate
+# against all 900 ds1000_test (the leaderboard metric).
 python examples/asta_ds1000/main.py --eval-test-set
 
-# Final: train on the same 100, evaluate against all 900 ds1000_test.
-python examples/asta_ds1000/main.py --phase final --eval-test-set
+# Experiment: cheaper 90-sample held-out test (~10% of ds1000_test) for faster iteration.
+python examples/asta_ds1000/main.py --phase experiment --eval-test-set
 
-# Re-evaluate a prior run's best agent on the experiment-phase test set:
+# Re-evaluate a prior run's best agent on the full ds1000_test (writes test_results_final.json):
 python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir>
 
-# Re-evaluate against the full ds1000_test (writes to test_results_final.json):
-python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir> --phase final
+# Re-evaluate against the cheaper experiment-phase test set:
+python examples/asta_ds1000/main.py --eval-only --resume <prior-run-dir> --phase experiment
 ```
 
 Default models: nine handles in `model_registry.py`, grouped by family into mini / standard / stronger tiers (the seed picks GPT-5.4 Mini; evolution may pick any of the nine per call). All nine handles are always available; the cost-penalty disciplines overuse of the strong tier — see "Model registry" below for the cost shape.
@@ -171,19 +174,19 @@ This is deliberate — we enforce the no-leakage invariant in code rather than r
 The iteration-aggregate score during training is:
 
 ```
-errors_equivalent = max(0, mean_cost − $0.04) / $0.01
+errors_equivalent = max(0, mean_cost − $0.05) / $0.01
 score = 100 · mean_accuracy − errors_equivalent · (100 / n)
 ```
 
-where `mean_cost` is the batch's mean agent spend and `n` is the iteration batch size. One error-equivalent of penalty costs exactly one wrong answer of raw score, so the penalty lives in the agent's own currency (errors), not dollars. The free-zone width ($0.04) gives typical "cheap" leaderboard entries (~$0.02/problem) headroom to stay fully inside the free zone. Above the threshold, the penalty is **unbounded** — a catastrophically expensive agent can score well negative, which is intentional.
+where `mean_cost` is the batch's mean agent spend and `n` is the iteration batch size. One error-equivalent of penalty costs exactly one wrong answer of raw score, so the penalty lives in the agent's own currency (errors), not dollars. The free-zone width ($0.05) gives typical "cheap" leaderboard entries (~$0.02/problem) headroom to stay fully inside the free zone. Above the threshold, the penalty is **unbounded** — a catastrophically expensive agent can score well negative, which is intentional.
 
 The two knobs are independently tunable. `--cost-threshold` widens the free zone; `--cost-per-error` chooses the regime:
 
-| `--cost-per-error` | At iter7 mean cost ($0.13, $0.09 excess) | Crosses 1 error of penalty at | Behavior |
+| `--cost-per-error` | At iter7 mean cost ($0.13, $0.08 excess) | Crosses 1 error of penalty at | Behavior |
 | --- | --- | --- | --- |
-| $10 (≈ legacy default) | 0.045 pts | mean $10.04 | Pure tiebreaker — sorts ties, never overrides |
-| $1 | 0.45 pts | mean $1.04 | Pure tiebreaker (slightly stronger sort) |
-| $0.01 (new default) | 45 pts | mean $0.05 | Active pull — penalty trades off against accuracy |
+| $10 (≈ legacy default) | 0.04 pts | mean $10.05 | Pure tiebreaker — sorts ties, never overrides |
+| $1 | 0.40 pts | mean $1.05 | Pure tiebreaker (slightly stronger sort) |
+| $0.01 (default) | 40 pts | mean $0.06 | Active pull — penalty trades off against accuracy |
 
 The per-iteration `aggregate_explanation` (in `evaluation.json`) carries the resolved excess and error-count so failure analysis can read "correct but expensive" off the page without back-deriving the formula.
 
@@ -201,7 +204,7 @@ Nine pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside 
 
 Evolved agents `from model_registry import` whichever handles they want and call `.generate()`. The model strings live outside the evolvable artifact (`agent.py`), so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — see "Credentials" above.
 
-Strong-tier handles cost ~5–40× the cheap tier, so a single naive call can blow past the default $0.04 cost threshold and rack up many error-equivalents at the default `--cost-per-error 0.01`. That's the point: evolution must buy extra correctness with each expensive call. Raise `--cost-threshold` (e.g. `0.08`) for a wider free zone, or `--cost-per-error` to make the penalty a tiebreaker rather than an active pull. All three Gemini handles ship pinned to `reasoning_effort="low"` (the provider can't disable thinking), with `"high"` as the only opt-up.
+Strong-tier handles cost ~5–40× the cheap tier, so a single naive call can blow past the default $0.05 cost threshold and rack up many error-equivalents at the default `--cost-per-error 0.01`. That's the point: evolution must buy extra correctness with each expensive call. Raise `--cost-threshold` (e.g. `0.08`) for a wider free zone, or `--cost-per-error` to make the penalty a tiebreaker rather than an active pull. All three Gemini handles ship pinned to `reasoning_effort="low"` (the provider can't disable thinking), with `"high"` as the only opt-up.
 
 Provider-prefix translation: Inspect-AI requires `google/...` to route Google models, but litellm prices them under `gemini/...`. `evaluator.py:_estimate_cost` normalizes at the cost-pricing boundary (translates `google/` → `gemini/`) so cost tracking works for the Gemini handles. Without this, Gemini calls would silently price as $0 — the once-per-process "model priced at $0 despite tokens" warning would fire as the symptom.
 
@@ -213,13 +216,13 @@ Every evaluation runs in its own Python subprocess (`_eval_worker.py`). Inspect-
 
 ## Cost notes
 
-Rough budget for a full training run + experiment-phase test:
+Rough budget for a full training run + the default final-phase test:
 
-- 300 training evals × ~$0.005/eval = ~$1.50 (well in the cost-penalty free zone)
-- 90-sample experiment-phase test × ~$0.005 = ~$0.45
-- Total: ~$2 for a complete experiment-phase run
+- 750 training evals (the evaluation budget) × ~$0.005/eval = ~$3.75 (well in the cost-penalty free zone)
+- 900-sample final-phase test × ~$0.005 = ~$4.50
+- Total: ~$8 for a complete default (final-phase) run
 
-A `--phase final` test sweep (900 samples) costs ~$5 on top.
+Using `--phase experiment` swaps in the cheaper 90-sample test (~$0.45 instead of ~$4.50).
 
 ## Files
 

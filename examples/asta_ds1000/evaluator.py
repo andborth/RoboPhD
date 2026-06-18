@@ -101,13 +101,13 @@ def _head_tail_truncate(s: str, head: int = 200, tail: int = 1500) -> str:
 # scores (apply_cost_penalty=False) skip SCORE_SCALE entirely and report
 # mean_raw as a [0, 1] fraction — leaderboard parity.
 SCORE_SCALE = 100.0
-# Free-zone width set to $0.04 so the typical "cheap" leaderboard entries
+# Free-zone width set to $0.05 so the typical "cheap" leaderboard entries
 # (~$0.02/problem) sit safely inside the free zone. With the mean-cost
 # formulation (penalty applies to the batch mean rather than per
 # example), epsilon-cost variance no longer pushes individual examples
 # over threshold — the buffer mainly protects against sample-mean noise
 # at small batch sizes.
-MIN_COST_THRESHOLD = 0.04
+MIN_COST_THRESHOLD = 0.05
 # Dollars of mean batch spend (over threshold) that equals one wrong
 # answer of penalty. Default $0.01 puts cost in "active pull" territory:
 # every $0.01 over threshold subtracts one error's worth of score
