@@ -1,6 +1,19 @@
 #!/usr/bin/env python3
 """
-Clean up short/experimental RoboPhD and GEPA runs.
+Clean up short/experimental/failed runs.
+
+Targets, by engine:
+  - robophd/      : last_completed_iteration < --min-iterations
+  - gepa/         : num_candidates_explored  < --min-iterations
+  - autoresearch/ : no best_agent/agent.py   (i.e. the run never produced an agent)
+
+Safety:
+  - runs referenced by a symlink under <runs-dir>/results/ (e.g. a recorded
+    result's results/runs/<id> link) are never cleaned, so cleanup can't
+    orphan a recorded result.
+  - runs modified within --min-age-hours are skipped (they may still be
+    running); this guards every engine, since a mid-run autoresearch run has
+    no best_agent/agent.py yet and a mid-run robophd/gepa run looks short.
 
 Usage:
     # Dry-run: show what would be cleaned up
@@ -21,10 +34,21 @@ import json
 import os
 import shutil
 import sys
+import time
 from pathlib import Path
 
 # Resolve default relative to repo root, not CWD
 _PROJECT_ROOT = Path(__file__).parent.parent
+
+# Directory names under an engine subdir that are NOT evolution runs and must
+# never be treated as cleanup targets (archives, seed/scratch dirs, etc.).
+IGNORE_DIR_NAMES = {"archived"}
+
+
+def is_ignored_dir(run_dir: Path) -> bool:
+    """True for non-run helper dirs: the ignore-list or any '_'-prefixed name."""
+    name = run_dir.name
+    return name in IGNORE_DIR_NAMES or name.startswith("_")
 
 
 def safe_rmtree(path: Path) -> None:
@@ -54,6 +78,26 @@ def get_dir_size(path: Path) -> int:
     return total
 
 
+def newest_mtime(path: Path) -> float:
+    """Most-recent mtime of the dir or any non-symlink file under it (0 if none).
+
+    Used as an 'is it still being written?' signal: an actively-running run
+    writes continuously, so a recent mtime means it may still be in progress.
+    """
+    latest = 0.0
+    try:
+        latest = path.stat().st_mtime
+    except OSError:
+        return latest
+    for f in path.rglob("*"):
+        try:
+            if not f.is_symlink():
+                latest = max(latest, f.stat().st_mtime)
+        except OSError:
+            continue
+    return latest
+
+
 def fmt_size(size_bytes: int) -> str:
     """Format bytes as human-readable string."""
     if size_bytes < 1024:
@@ -74,7 +118,7 @@ def scan_robophd_runs(runs_dir: Path, threshold: int) -> list[dict]:
         return results
 
     for run_dir in sorted(robophd_dir.iterdir()):
-        if not run_dir.is_dir():
+        if not run_dir.is_dir() or is_ignored_dir(run_dir):
             continue
         checkpoint = run_dir / "checkpoint.json"
         iterations = None
@@ -108,7 +152,7 @@ def scan_gepa_runs(runs_dir: Path, threshold: int) -> list[dict]:
         return results
 
     for run_dir in sorted(gepa_dir.iterdir()):
-        if not run_dir.is_dir():
+        if not run_dir.is_dir() or is_ignored_dir(run_dir):
             continue
         summary = run_dir / "optimization_summary.json"
         candidates = None
@@ -133,6 +177,55 @@ def scan_gepa_runs(runs_dir: Path, threshold: int) -> list[dict]:
     return results
 
 
+def scan_autoresearch_runs(runs_dir: Path) -> list[dict]:
+    """Scan autoresearch/ for FAILED runs.
+
+    Autoresearch has no iteration/candidate ladder, so the "short run" notion
+    doesn't apply. Instead a run is considered cleanup-worthy if it never
+    produced a usable agent — i.e. there is no best_agent/agent.py.
+    """
+    results = []
+    ar_dir = runs_dir / "autoresearch"
+    if not ar_dir.exists():
+        return results
+
+    for run_dir in sorted(ar_dir.iterdir()):
+        if not run_dir.is_dir() or is_ignored_dir(run_dir):
+            continue
+        if not (run_dir / "best_agent" / "agent.py").exists():
+            size = get_dir_size(run_dir)
+            results.append({
+                "path": run_dir,
+                "type": "autoresearch",
+                "detail": "no best_agent/agent.py",
+                "size": size,
+            })
+
+    return results
+
+
+def collect_referenced_run_dirs(runs_dir: Path) -> set[str]:
+    """Realpath targets of every symlink under <runs-dir>/results/.
+
+    A run that is the target of such a symlink is referenced by a recorded
+    result (e.g. results/runs/<id> -> <run_dir>), so it must NOT be cleaned
+    even if it looks short/failed — that would orphan a recorded result.
+    Dangling symlinks still resolve to their intended absolute target, so a
+    run is protected as soon as any results/ symlink names it.
+    """
+    referenced: set[str] = set()
+    results_dir = runs_dir / "results"
+    if not results_dir.exists():
+        return referenced
+    for p in results_dir.rglob("*"):
+        try:
+            if p.is_symlink():
+                referenced.add(os.path.realpath(p))
+        except OSError:
+            continue
+    return referenced
+
+
 def main():
     parser = argparse.ArgumentParser(description="Clean up short/experimental runs")
     parser.add_argument(
@@ -146,6 +239,13 @@ def main():
         type=int,
         default=5,
         help="Minimum iterations/candidates to keep (default: 5)",
+    )
+    parser.add_argument(
+        "--min-age-hours",
+        type=float,
+        default=2.0,
+        help="Never clean a run modified within this many hours — it may still "
+             "be running (default: 2.0)",
     )
     action = parser.add_mutually_exclusive_group()
     action.add_argument(
@@ -172,11 +272,43 @@ def main():
     # Scan
     robophd_targets = scan_robophd_runs(runs_dir, threshold)
     gepa_targets = scan_gepa_runs(runs_dir, threshold)
-    all_targets = robophd_targets + gepa_targets
+    autoresearch_targets = scan_autoresearch_runs(runs_dir)
+    candidates_to_clean = robophd_targets + gepa_targets + autoresearch_targets
+
+    # Safety: never clean a run that a results/ symlink points to.
+    referenced = collect_referenced_run_dirs(runs_dir)
+    protected = [t for t in candidates_to_clean
+                 if os.path.realpath(t["path"]) in referenced]
+    all_targets = [t for t in candidates_to_clean
+                   if os.path.realpath(t["path"]) not in referenced]
+
+    if protected:
+        print(f"Protected {len(protected)} run(s) referenced by a results/ symlink "
+              f"(will NOT be cleaned):")
+        for t in protected:
+            print(f"  {t['path'].relative_to(runs_dir)}")
+        print()
+
+    # Safety: never clean a run that's been written to recently — it may still
+    # be running (a mid-run robophd/gepa run looks short; a mid-run autoresearch
+    # run has no best_agent/agent.py yet).
+    min_age = args.min_age_hours * 3600
+    now = time.time()
+    active, fresh_enough = [], []
+    for t in all_targets:
+        (active if now - newest_mtime(t["path"]) < min_age else fresh_enough).append(t)
+    all_targets = fresh_enough
+    if active:
+        print(f"Skipped {len(active)} run(s) modified in the last {args.min_age_hours:g}h "
+              f"(possibly still running):")
+        for t in active:
+            print(f"  {t['path'].relative_to(runs_dir)}")
+        print()
 
     # Report
     if not all_targets:
-        print(f"No short runs found (threshold: {threshold} iterations/candidates)")
+        print(f"No cleanable runs found (threshold: {threshold} iterations/candidates; "
+              f"autoresearch: missing best_agent/agent.py)")
         print(f"Scanned: {runs_dir}")
         return
 
@@ -187,8 +319,10 @@ def main():
         rel = t["path"].relative_to(runs_dir)
         if t["type"] == "robophd":
             detail = f"{t['iterations']} iterations"
-        else:
+        elif t["type"] == "gepa":
             detail = f"{t['candidates']} candidates"
+        else:  # autoresearch
+            detail = t["detail"]
         print(f"  {str(rel):<50s}  {detail:<20s}  {fmt_size(t['size'])}")
 
     print(f"\nTotal: {fmt_size(total_size)}")
