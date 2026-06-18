@@ -243,7 +243,7 @@ RoboPhD builds on several excellent open-source projects and benchmarks:
 
 ## Citation
 
-If you use RoboPhD in your research, please cite:
+If you use RoboPhD in your research, please cite the paper — [*RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets*](https://arxiv.org/abs/2604.04347):
 
 ```bibtex
 @article{borthwick2026robophd,
