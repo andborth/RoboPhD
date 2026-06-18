@@ -21,17 +21,21 @@ What comes back is a readable Python agent you own — and it won't look much li
 
 ## AstaBench DS-1000 Leaderboard
 
-RoboPhD evolved two agents that earned spots on the [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution), an externally-administered benchmark from the Allen Institute for AI that scores agents on both **accuracy and cost per problem**.
+RoboPhD evolved several agents that earned spots on the [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution), an externally-administered benchmark from the Allen Institute for AI that scores agents on both **accuracy and cost per problem**. RoboPhD now holds the **top three positions** on it.
 
-- One RoboPhD agent achieved the **highest accuracy on the entire leaderboard** (86.2%), at **roughly half the cost** of the previous accuracy leader (Ai2's ReAct/gemini-3.1-pro-preview at 84.9%, $0.25/problem vs $0.13/problem).
-- A second RoboPhD agent — using only Claude Sonnet — runs at **just $0.01 per problem** while outscoring five more expensive submissions.
+- The top RoboPhD agent has the **highest accuracy on the entire leaderboard** (86.2%), at **roughly half the cost** of the strongest non-RoboPhD agent (Ai2's ReAct/gemini-3.1-pro-preview at 84.9%, $0.25/problem vs $0.13/problem).
+- Two more RoboPhD agents take **second and third** at **85.3%** accuracy for just **$0.04–$0.05 per problem** — beating every non-RoboPhD submission on accuracy at a fraction of the cost.
+- A separate RoboPhD agent — using only Claude Sonnet — runs at **just $0.01 per problem** while outscoring five more expensive submissions.
 
 | Accuracy | Cost / problem | Agent |
 |---|---|---|
 | **86.2%** | **$0.13** | **RoboPhD** (claude-opus-4-7 + 4 others) |
-| 84.9% | $0.25 | ReAct (gemini-3.1-pro-preview) — *previous accuracy leader* |
+| **85.3%** | **$0.05** | **RoboPhD** (gpt-5.4 + 3 others) |
+| **85.3%** | **$0.04** | **RoboPhD** (gpt-5.4 + 2 others) |
+| 84.9% | $0.25 | ReAct (gemini-3.1-pro-preview) — *strongest non-RoboPhD agent* |
 | 84.7% | $0.05 | ReAct (gpt-5.5) |
 | 83.8% | $0.04 | ReAct (gpt-5.4) |
+| 83.7% | $0.04 | ReAct (claude-opus-4-6) |
 | 83.6% | $0.03 | Button (claude-opus-4-6) |
 | **80.9%** | **$0.01** | **RoboPhD** (claude-sonnet-4-6) |
 | 78.6% | $0.06 | ReAct (claude-opus-4-7) |
