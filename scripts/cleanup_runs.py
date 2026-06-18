@@ -133,16 +133,6 @@ def scan_gepa_runs(runs_dir: Path, threshold: int) -> list[dict]:
     return results
 
 
-def scan_legacy_locations() -> list[Path]:
-    """Check for runs in legacy locations (evolution/, gepa_runs/)."""
-    legacy = []
-    for name in ("evolution", "gepa_runs"):
-        p = Path(name)
-        if p.exists() and p.is_dir() and any(p.iterdir()):
-            legacy.append(p)
-    return legacy
-
-
 def main():
     parser = argparse.ArgumentParser(description="Clean up short/experimental runs")
     parser.add_argument(
@@ -183,37 +173,25 @@ def main():
     robophd_targets = scan_robophd_runs(runs_dir, threshold)
     gepa_targets = scan_gepa_runs(runs_dir, threshold)
     all_targets = robophd_targets + gepa_targets
-    legacy = scan_legacy_locations()
 
     # Report
-    if not all_targets and not legacy:
+    if not all_targets:
         print(f"No short runs found (threshold: {threshold} iterations/candidates)")
         print(f"Scanned: {runs_dir}")
         return
 
-    if all_targets:
-        total_size = sum(t["size"] for t in all_targets)
-        print(f"Found {len(all_targets)} short run(s) below threshold ({threshold}):\n")
+    total_size = sum(t["size"] for t in all_targets)
+    print(f"Found {len(all_targets)} short run(s) below threshold ({threshold}):\n")
 
-        for t in all_targets:
-            rel = t["path"].relative_to(runs_dir)
-            if t["type"] == "robophd":
-                detail = f"{t['iterations']} iterations"
-            else:
-                detail = f"{t['candidates']} candidates"
-            print(f"  {str(rel):<50s}  {detail:<20s}  {fmt_size(t['size'])}")
+    for t in all_targets:
+        rel = t["path"].relative_to(runs_dir)
+        if t["type"] == "robophd":
+            detail = f"{t['iterations']} iterations"
+        else:
+            detail = f"{t['candidates']} candidates"
+        print(f"  {str(rel):<50s}  {detail:<20s}  {fmt_size(t['size'])}")
 
-        print(f"\nTotal: {fmt_size(total_size)}")
-
-    if legacy:
-        print(f"\nLegacy run directories found (consider migrating):")
-        for p in legacy:
-            size = get_dir_size(p)
-            count = sum(1 for d in p.iterdir() if d.is_dir())
-            print(f"  {p}/  ({count} subdirectories, {fmt_size(size)})")
-
-    if not all_targets:
-        return
+    print(f"\nTotal: {fmt_size(total_size)}")
 
     # Act
     if args.move:
