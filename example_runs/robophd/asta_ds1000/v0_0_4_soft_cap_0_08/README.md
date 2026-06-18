@@ -11,17 +11,17 @@ The `soft_cap_0_08` tail names the per-iteration mean-spend free-zone the run wa
 
 ## Leaderboard score
 
-**Submitted 2026-06-16 as `RoboPhD (Opus 4.8-evolved)`; leaderboard validation pending (~5–7 business days).** The as-submitted `astabench score` numbers (what's in the uploaded tarball) and the development-internal numbers:
+**Submitted 2026-06-16 as `RoboPhD (Opus 4.8-evolved)` — now VALIDATED and live on the leaderboard** (the 2026-06-16 row, displayed as **0.853 @ $0.04**). With it, RoboPhD holds the **top three DS-1000 placements** (0.862 / 0.853 / 0.853), and this run is the cheapest of the three (the 2026-06-10 RoboPhD row is the same 0.853 at $0.05). The leaderboard publishes the as-submitted `astabench score` numbers **unchanged** — only rounded for display (cost $0.0368 shown as $0.04, or ~$0.037 at three decimals; accuracy 0.8533 shown as 0.853). The as-submitted/leaderboard figure came in +0.9pp above the earlier development-internal eval (0.853 vs 0.8444), consistent with prior submissions:
 
-| | As submitted (`astabench score`) | Internal dev eval |
+| | Leaderboard / as-submitted (`astabench score`) | Internal dev eval |
 |---|---|---|
-| Accuracy (DS-1000 test, 900 samples) | **0.8533** (768/900) | 0.8444 (760/900) |
-| Per-problem cost | **$0.0368** | $0.0295 |
-| Submission name | `v0_0_4_soft_cap_0_08` / form: `RoboPhD (Opus 4.8-evolved)` | — |
-| Pareto position | Dominates ReAct gpt-5.5 (0.847 @ $0.05) and gpt-5.4 (0.838 @ $0.04); cheapest agent at ~0.853 | — |
+| Accuracy (DS-1000 test, 900 samples) | **0.853** (0.8533 = 768/900) | 0.8444 (760/900) |
+| Per-problem cost | **$0.037** (submitted $0.0368; leaderboard shows $0.04) | $0.0295 |
+| Submission name | `RoboPhD (Opus 4.8-evolved)` / `v0_0_4_soft_cap_0_08` | — |
+| Pareto position | #3 overall; cheapest agent at 0.853; dominates ReAct gpt-5.5 (0.847 @ $0.05) and gpt-5.4 (0.838 @ $0.04) | — |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | — |
 
-Supersedes `v0_0_3_soft_cap_0_06` (RoboPhD 0.0.3): same 0.8533 accuracy, but a real (non-Missing) cost that is also lower than 0.0.3's locally-rescored $0.0519. Calibration from prior submissions: `v0_0_1_soft_cap_0_16` measured +2.3pp on the leaderboard vs internal (0.862 vs 0.8389); `v0_0_2_soft_cap_0_08` at parity (0.809 vs 0.8044). The leaderboard-displayed cost may differ slightly from $0.0368 if Ai2's time-invariant price map values `gemini-3.1-pro-preview` differently — but it will not be Missing, since all three solver models are priced.
+Supersedes `v0_0_3_soft_cap_0_06` (RoboPhD 0.0.3): same 0.8533 accuracy, but a real (non-Missing) cost that is also lower than 0.0.3's locally-rescored $0.0519. Calibration from prior submissions: `v0_0_1_soft_cap_0_16` measured +2.3pp on the leaderboard vs internal (0.862 vs 0.8389); `v0_0_2_soft_cap_0_08` at parity (0.809 vs 0.8044). The leaderboard left the as-submitted cost **unchanged** at $0.0368 (displayed as $0.04, ~$0.037 at three decimals) — a real, non-Missing figure, since all three solver models are priced (Ai2's time-invariant price map did not re-value them).
 
 ## Submission metadata
 
