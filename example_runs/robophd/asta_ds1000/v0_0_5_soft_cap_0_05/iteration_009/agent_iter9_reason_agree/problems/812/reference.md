@@ -1,0 +1,5 @@
+```python
+weights = (a.values / a.values.sum()).squeeze()
+
+
+```

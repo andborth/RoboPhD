@@ -138,6 +138,17 @@ SUBMISSIONS = [
         # map, so cost computes (unlike v0_0_3's gemini-3.5-flash). The
         # needs_stronger_models field is inert at HEAD (gate removed).
     ),
+    Submission(
+        name="v0_0_5_soft_cap_0_05",
+        agent_rel_path="agents/iter10_literal_consensus/agent.py",
+        model_arg="none",
+        # Run robophd-asta_ds1000-029 (Opus-4.8-evolved). Lean 2-model
+        # cross-agreement: gpt-5.4-2026-03-05 + claude-sonnet-4-6 (no
+        # Gemini) -- both priced on the board, so cost computes. Cheapest
+        # RoboPhD agent at the ~0.84 tier ($0.0173/problem; the sonnet-only
+        # v0_0_2 is cheaper at $0.01 but only 0.809); internal 0.8378 would
+        # Pareto-dominate the Button leaderboard entry (0.836 @ $0.03).
+    ),
 ]
 
 
