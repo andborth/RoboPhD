@@ -12,14 +12,14 @@ The `soft_cap_0_05` tail names the per-iteration mean-spend free-zone the run wa
 
 ## Leaderboard score
 
-**Submission prepared — to be uploaded as `RoboPhD`.** Leaderboard-verified numbers will be filled once processed. As-submitted (`astabench score`) and internal-dev numbers:
+**Submitted as `RoboPhD`.** Leaderboard-verified numbers will be filled once processed. As-submitted (`astabench score`) and internal-dev numbers:
 
 | | As scored (`astabench score`) | Internal dev eval |
 |---|---|---|
-| Accuracy (DS-1000 test, 900 samples) | _pending upload_ | 0.8378 (754/900) |
-| Per-problem cost | _pending upload_ | $0.0173 |
+| Accuracy (DS-1000 test, 900 samples) | **0.83** (747/900) | 0.8378 (754/900) |
+| Per-problem cost | **$0.017** | $0.0173 |
 | Submission name | `v0_0_5_soft_cap_0_05` / form: `RoboPhD` | — |
-| Pareto target | Would dominate Button (0.836 @ $0.03) — higher score, ~40% cheaper; a new frontier point at the ~0.84 tier (NOT the cheapest RoboPhD point — sonnet-only v0_0_2 is $0.01 @ 0.809) | — |
+| Pareto position | Distinct cheap frontier point — cheapest agent reaching ~0.83, ~40% cheaper than Button. Does NOT dominate Button (0.83 < 0.836); it's the cheaper-but-lower-accuracy neighbor on the frontier (sonnet-only v0_0_2 at $0.01/0.809 sits below it) | — |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | — |
 
 ## Submission metadata
@@ -29,13 +29,13 @@ The `soft_cap_0_05` tail names the per-iteration mean-spend free-zone the run wa
 | Agent name (form) | RoboPhD |
 | Openness | Open source & closed weights |
 | Tools tier | Standard (uses `python_session` provided by the task) |
-| Models (solver, from logs) | gpt-5.4-2026-03-05, claude-sonnet-4-6 |
+| Models (solver, from logs) | gpt-5.4-2026-03-05, claude-sonnet-4-6 (+ gpt-5.4-mini seed-fallback, fired 1/900) |
 | URL (form) | https://github.com/andborth/RoboPhD |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) |
 
 Suggested agent description for the form:
 
-> Evolved by RoboPhD with Claude Opus 4.8 as the evolution (but not a solver) model. The evolved agent generates two independent strong-model candidates, executes both in the sandbox with dtype/structure-aware value comparison, short-circuits on agreement and escalates disagreements to a high-reasoning tiebreaker (with verify/repair). A "literal-reference" prompting rule steers every stage toward the most direct, literal reading of the problem and the simplest call reproducing the shown example. This heuristic addresses a class of errors that cross-model agreement alone could not fix.
+> Evolved by RoboPhD with Claude Opus 4.8 as the evolution (but not a solver) model. Evolution ran under a soft cost cap of $0.05, set deliberately above our desired target because Opus evolvers typically undershoot their cap by a wide margin. The evolved agent generates two independent candidates — from GPT-5.4 and Claude Sonnet 4.6 — executes both in the sandbox with dtype/structure-aware value comparison, short-circuits on agreement, and escalates disagreements to a high-reasoning GPT-5.4 tiebreaker (with verify/repair). A "literal-reference" prompting rule steers every stage toward the most direct, literal reading of the problem and the simplest call reproducing the shown example, addressing a class of errors that cross-model agreement alone could not fix. (A GPT-5.4-mini seed agent runs only as a crash-fallback — it fired on just 1 of the 900 problems here.)
 
 ## Approach (iter10_literal_consensus)
 
