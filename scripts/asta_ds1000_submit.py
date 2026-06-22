@@ -150,14 +150,16 @@ SUBMISSIONS = [
         # Pareto-dominate the Button leaderboard entry (0.836 @ $0.03).
     ),
     Submission(
-        name="v0_0_6_soft_cap_0_05",
+        name="v0_0_5_soft_cap_0_05_deep_focus",
         agent_rel_path="agents/iter8_perspective_consensus_ds1000/agent.py",
         model_arg="none",
-        # Run robophd-asta_ds1000-032 (Opus-4.8-evolved). Cheap-tier agent:
-        # gpt-5.4-mini 3-perspective ensemble + gpt-5.4 no-consensus
-        # escalation -- both priced on the board, so cost computes. Internal
-        # 0.7678 @ $0.0069; a new cheap frontier point that dominates ReAct
-        # o3 (0.749 @ $0.01) and Asta v0 (0.748 @ $0.01).
+        # Run robophd-asta_ds1000-032 (Opus-4.8-evolved). Deep-Focus variant
+        # of v0_0_5: same config except new_agent_test_rounds=1 (vs 0). It
+        # converged on a different, cheaper agent -- a gpt-5.4-mini
+        # 3-perspective ensemble + gpt-5.4 no-consensus escalation (both
+        # priced on the board, so cost computes). Internal 0.7678 @ $0.0069;
+        # projected new cheap frontier point dominating ReAct o3 (0.749 @
+        # $0.01) and Asta v0 (0.748 @ $0.01), pending the official number.
     ),
 ]
 
