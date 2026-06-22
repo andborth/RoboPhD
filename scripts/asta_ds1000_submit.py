@@ -501,6 +501,48 @@ def summarize() -> None:
     print("  Tools tier:  Standard")
 
 
+def warm_base_image() -> None:
+    """Best-effort pre-pull of the sandbox base image before evaluating.
+
+    astabench's DS-1000 sandbox uses `build: .` against a Dockerfile whose
+    `FROM` is a Docker Hub tag, so every per-sample sandbox build resolves
+    that tag against Hub. Warming the image locally first reduces (does not
+    eliminate) the per-build Hub auth contact that intermittently 404s
+    mid-run. Authenticating with `docker login` is the stronger lever for
+    that (higher rate limits, stabler tokens) but is per-machine secret
+    state, so it stays a documented prerequisite rather than living here.
+
+    The tag is read from astabench's own Dockerfile rather than hardcoded,
+    so a future astabench base bump can't silently leave us warming the
+    wrong image; if it can't be resolved the warm is skipped.
+
+    Non-fatal: a pull failure (Docker down, transient Hub blip) only warns.
+    The eval step surfaces a clearer error if Docker is truly unavailable,
+    and already-evaluated runs skip eval entirely -- neither should be
+    blocked by a best-effort warm.
+    """
+    try:
+        import astabench
+
+        dockerfile = Path(astabench.__file__).parent / "util" / "sandbox" / "Dockerfile"
+        from_line = next(
+            (ln for ln in dockerfile.read_text().splitlines()
+             if ln.strip().upper().startswith("FROM ")),
+            None,
+        )
+        if not from_line:
+            print("[warm] no FROM line in astabench sandbox Dockerfile; skipping pre-pull")
+            return
+        image = from_line.split()[1]
+    except Exception as e:
+        print(f"[warm] could not resolve sandbox base image; skipping pre-pull ({e})")
+        return
+    print(f"[warm] pre-pulling sandbox base image {image} (best-effort)")
+    if subprocess.run(["docker", "pull", image]).returncode != 0:
+        print(f"[warm] pre-pull of {image} failed; continuing -- the eval will "
+              "attempt its own pull (see README 'Docker prerequisites')")
+
+
 def main() -> int:
     # --only NAME [NAME ...]: restrict to a subset of SUBMISSIONS.
     # Default remains all submissions (idempotency skips completed
@@ -522,6 +564,7 @@ def main() -> int:
 
     verify_clean_tree()
     verify_credentials()
+    warm_base_image()
     failures = []
     for s in selected:
         print(f"\n{'#' * 70}\n# {s.name}\n{'#' * 70}")

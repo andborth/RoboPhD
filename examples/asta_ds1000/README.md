@@ -44,6 +44,20 @@ docker info  # should print daemon info without error
 
 On the **first** evaluator run, AstaBench's image is pulled (~2–2.5 GB; one-time, ~30s–2min depending on connection).
 
+#### Docker prerequisites for reliable submission runs
+
+The sandbox builds `FROM python:3.11-bookworm` (`build: .` in AstaBench's `util/sandbox/sandbox_compose.yaml`), so **every per-sample sandbox build resolves that tag against Docker Hub**. Over a 900-sample eval that's ~900 Hub auth contacts; transient `auth.docker.io … 404` blips occasionally fail a sandbox build mid-run (observed: 2 brief windows, 4/900 samples, in run -032). The two-tier seed-fallback wrapper catches these, so they rarely cost more than a problem or two — but to minimize them:
+
+- **`docker login`** (free Docker Hub account) — the strongest lever: authenticated pulls get higher rate limits and stabler tokens, which is what reduces the intermittent auth 404s. This is per-machine secret state, so it can't be committed — do it once per machine.
+- **Keep the base image cached.** `scripts/asta_ds1000_submit.py` pre-pulls it automatically (best-effort) before evaluating, but a cold cache still has to fetch once. To warm manually: `docker pull python:3.11-bookworm`.
+- **Do NOT `docker system prune -af`.** It wipes the base image + build cache, forcing fresh Hub fetches on the next run (and re-bloating afterward). To relieve Docker storage, prune *scoped*: `docker container prune` and `docker image prune` (dangling only).
+
+**OrbStack startup wedge.** Separately, OrbStack (2.2.1) has intermittently failed to start its Docker daemon (containerd `boltdb open` timeout → crash-loop). `orb start` / the GUI report "already running" and do nothing; the fix is a force-restart:
+```bash
+killall OrbStack; sleep 3; open -a OrbStack   # then wait ~10s and re-check `docker ps`
+```
+If it recurs, updating OrbStack past 2.2.1 is the likely durable fix (cause unconfirmed; disk/Time-Machine ruled out).
+
 ### 3. Credentials
 
 DS-1000 evolution may pick any of nine solver models, grouped by family into cheap/fast, standard, and strong/slow tiers (see "Model registry" below):
