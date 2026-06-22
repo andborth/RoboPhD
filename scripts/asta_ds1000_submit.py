@@ -514,33 +514,48 @@ def warm_base_image() -> None:
     that (higher rate limits, stabler tokens) but is per-machine secret
     state, so it stays a documented prerequisite rather than living here.
 
-    The tag is read from astabench's own Dockerfile rather than hardcoded,
-    so a future astabench base bump can't silently leave us warming the
-    wrong image; if it can't be resolved the warm is skipped.
+    The image TAG is read from astabench's own Dockerfile rather than
+    hardcoded, so a future astabench base bump can't silently leave us
+    warming the wrong image. (The Dockerfile's package-relative PATH is a
+    structural assumption; a layout change degrades safely to skip-warm,
+    since the eval pulls on its own.)
 
-    Non-fatal: a pull failure (Docker down, transient Hub blip) only warns.
-    The eval step surfaces a clearer error if Docker is truly unavailable,
-    and already-evaluated runs skip eval entirely -- neither should be
-    blocked by a best-effort warm.
+    Strictly non-fatal: image-resolution errors, a missing/broken docker
+    binary, a hung pull (timeout), and a non-zero pull all only warn. A
+    best-effort warm must never block the run -- the eval surfaces a clearer
+    error if Docker is truly unavailable, and the caller already skips this
+    entirely when no eval is pending.
     """
     try:
         import astabench
 
         dockerfile = Path(astabench.__file__).parent / "util" / "sandbox" / "Dockerfile"
-        from_line = next(
-            (ln for ln in dockerfile.read_text().splitlines()
-             if ln.strip().upper().startswith("FROM ")),
-            None,
-        )
-        if not from_line:
-            print("[warm] no FROM line in astabench sandbox Dockerfile; skipping pre-pull")
+        # FROM [--flag=val ...] <image> [AS <stage>] -- the image is the
+        # first non-flag token after FROM (flag-aware so a future
+        # `FROM --platform=... python:...` resolves to the image, not --platform).
+        image = None
+        for ln in dockerfile.read_text().splitlines():
+            if ln.strip().upper().startswith("FROM "):
+                image = next((t for t in ln.split()[1:] if not t.startswith("--")), None)
+                break
+        if not image:
+            print("[warm] no FROM image in astabench sandbox Dockerfile; skipping pre-pull")
             return
-        image = from_line.split()[1]
     except Exception as e:
         print(f"[warm] could not resolve sandbox base image; skipping pre-pull ({e})")
         return
     print(f"[warm] pre-pulling sandbox base image {image} (best-effort)")
-    if subprocess.run(["docker", "pull", image]).returncode != 0:
+    try:
+        rc = subprocess.run(["docker", "pull", image], timeout=600).returncode
+    except subprocess.TimeoutExpired:
+        print(f"[warm] pre-pull of {image} timed out (>600s); continuing -- the eval "
+              "will attempt its own pull (see README 'Docker prerequisites')")
+        return
+    except OSError as e:
+        print(f"[warm] could not run docker pull ({e}); continuing -- the eval will "
+              "surface a clearer error if Docker is unavailable")
+        return
+    if rc != 0:
         print(f"[warm] pre-pull of {image} failed; continuing -- the eval will "
               "attempt its own pull (see README 'Docker prerequisites')")
 
@@ -566,7 +581,11 @@ def main() -> int:
 
     verify_clean_tree()
     verify_credentials()
-    warm_base_image()
+    # Only warm the sandbox base image if an eval is actually pending --
+    # a re-run that just re-scores/re-tars already-evaluated submissions
+    # shouldn't trigger a redundant pull.
+    if any(not already_evaluated(WORKING_BASE / s.name) for s in selected):
+        warm_base_image()
     failures = []
     for s in selected:
         print(f"\n{'#' * 70}\n# {s.name}\n{'#' * 70}")
