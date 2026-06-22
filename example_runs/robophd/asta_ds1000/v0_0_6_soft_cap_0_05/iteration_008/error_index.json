@@ -1,0 +1,249 @@
+{
+  "summary": {
+    "agents": [
+      "iter3_safe_repair_ds1000",
+      "iter7_grounded_reconcile_ds1000",
+      "iter8_perspective_consensus_ds1000"
+    ],
+    "total_questions": 20,
+    "total_unique_questions": 20,
+    "agent_accuracies": {
+      "iter3_safe_repair_ds1000": 90.0,
+      "iter7_grounded_reconcile_ds1000": 75.0,
+      "iter8_perspective_consensus_ds1000": 95.0
+    },
+    "agent_aggregate_scores": {
+      "iter3_safe_repair_ds1000": 90.0,
+      "iter7_grounded_reconcile_ds1000": 75.0,
+      "iter8_perspective_consensus_ds1000": 95.0
+    },
+    "agent_explanations": {
+      "iter3_safe_repair_ds1000": "Mean cost $0.0021 within free zone (threshold $0.05); no penalty applied. Raw accuracy 0.9000 reported as percentage: 90.000.",
+      "iter7_grounded_reconcile_ds1000": "Mean cost $0.0054 within free zone (threshold $0.05); no penalty applied. Raw accuracy 0.7500 reported as percentage: 75.000.",
+      "iter8_perspective_consensus_ds1000": "Mean cost $0.0065 within free zone (threshold $0.05); no penalty applied. Raw accuracy 0.9500 reported as percentage: 95.000."
+    },
+    "consensus_stats": {
+      "all_correct": 15,
+      "all_correct_pct": 75.0,
+      "all_failed": 1,
+      "all_failed_pct": 5.0,
+      "split_decisions": 4,
+      "split_decisions_pct": 20.0
+    }
+  },
+  "by_agent": {
+    "iter3_safe_repair_ds1000": {
+      "total_correct": 18,
+      "total_failed": 2,
+      "total_errors": 0,
+      "total_questions": 20,
+      "accuracy": 90.0,
+      "unique_successes": [],
+      "unique_failures": [],
+      "failed_ids": [
+        "763",
+        "883"
+      ],
+      "error_ids": []
+    },
+    "iter7_grounded_reconcile_ds1000": {
+      "total_correct": 15,
+      "total_failed": 5,
+      "total_errors": 0,
+      "total_questions": 20,
+      "accuracy": 75.0,
+      "unique_successes": [],
+      "unique_failures": [
+        "723",
+        "667",
+        "906"
+      ],
+      "failed_ids": [
+        "723",
+        "667",
+        "763",
+        "906",
+        "883"
+      ],
+      "error_ids": []
+    },
+    "iter8_perspective_consensus_ds1000": {
+      "total_correct": 19,
+      "total_failed": 1,
+      "total_errors": 0,
+      "total_questions": 20,
+      "accuracy": 95.0,
+      "unique_successes": [
+        "763"
+      ],
+      "unique_failures": [],
+      "failed_ids": [
+        "883"
+      ],
+      "error_ids": []
+    }
+  },
+  "cross_agent_patterns": {
+    "consensus_correct": [
+      "38",
+      "526",
+      "415",
+      "383",
+      "441",
+      "760",
+      "324",
+      "213",
+      "113",
+      "11",
+      "492",
+      "761",
+      "804",
+      "999",
+      "838"
+    ],
+    "consensus_failures": [
+      "883"
+    ],
+    "split_decisions": {
+      "723": {
+        "correct": [
+          "iter3_safe_repair_ds1000",
+          "iter8_perspective_consensus_ds1000"
+        ],
+        "wrong": [
+          "iter7_grounded_reconcile_ds1000"
+        ]
+      },
+      "667": {
+        "correct": [
+          "iter3_safe_repair_ds1000",
+          "iter8_perspective_consensus_ds1000"
+        ],
+        "wrong": [
+          "iter7_grounded_reconcile_ds1000"
+        ]
+      },
+      "763": {
+        "correct": [
+          "iter8_perspective_consensus_ds1000"
+        ],
+        "wrong": [
+          "iter3_safe_repair_ds1000",
+          "iter7_grounded_reconcile_ds1000"
+        ]
+      },
+      "906": {
+        "correct": [
+          "iter3_safe_repair_ds1000",
+          "iter8_perspective_consensus_ds1000"
+        ],
+        "wrong": [
+          "iter7_grounded_reconcile_ds1000"
+        ]
+      }
+    }
+  },
+  "non_binary_scores": {},
+  "scores_by_question": {
+    "723": {
+      "iter7_grounded_reconcile_ds1000": 0.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "667": {
+      "iter7_grounded_reconcile_ds1000": 0.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "38": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "526": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "415": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "383": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "441": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "760": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "324": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "213": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "113": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "11": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "492": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "761": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "804": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "763": {
+      "iter7_grounded_reconcile_ds1000": 0.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 0.0
+    },
+    "999": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "838": {
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "906": {
+      "iter7_grounded_reconcile_ds1000": 0.0,
+      "iter8_perspective_consensus_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "883": {
+      "iter7_grounded_reconcile_ds1000": 0.0,
+      "iter8_perspective_consensus_ds1000": 0.0,
+      "iter3_safe_repair_ds1000": 0.0
+    }
+  }
+}

@@ -1,0 +1,7 @@
+```python
+spl = scipy.interpolate.RectBivariateSpline(x, y, z)
+result = spl(s, t, grid=False)
+
+
+
+```

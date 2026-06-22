@@ -1,0 +1,6 @@
+```python
+    result = sA.multiply(sB)
+
+    return result
+
+```

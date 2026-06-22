@@ -1,0 +1,7 @@
+```python
+def g(df):
+    return df.groupby(df.index // 3).mean()
+
+result = g(df.copy())
+
+```

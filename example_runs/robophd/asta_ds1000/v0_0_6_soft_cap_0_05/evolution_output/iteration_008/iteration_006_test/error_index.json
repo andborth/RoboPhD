@@ -1,0 +1,284 @@
+{
+  "summary": {
+    "new_agent": "iter8_perspective_consensus_ds1000",
+    "baseline_agents": [
+      "iter6_grounded_repair_ds1000",
+      "iter3_safe_repair_ds1000",
+      "iter5_strong_dualcheck_ds1000"
+    ],
+    "total_questions": 20,
+    "new_agent_failed": 3,
+    "new_agent_errors": 0,
+    "new_agent_accuracy": 85.0,
+    "agent_explanations": {
+      "iter8_perspective_consensus_ds1000": "Mean cost $0.0053 within free zone (threshold $0.05); no penalty applied. Raw accuracy 0.8500 reported as percentage: 85.000.",
+      "iter6_grounded_repair_ds1000": "Mean cost $0.0033 within free zone (threshold $0.05); no penalty applied. Raw accuracy 0.8000 reported as percentage: 80.000.",
+      "iter3_safe_repair_ds1000": "Mean cost $0.0019 within free zone (threshold $0.05); no penalty applied. Raw accuracy 0.7500 reported as percentage: 75.000.",
+      "iter5_strong_dualcheck_ds1000": "Mean cost $0.0106 within free zone (threshold $0.05); no penalty applied. Raw accuracy 0.7500 reported as percentage: 75.000."
+    },
+    "agent_aggregate_scores": {
+      "iter8_perspective_consensus_ds1000": 85.0,
+      "iter6_grounded_repair_ds1000": 80.0,
+      "iter3_safe_repair_ds1000": 75.0,
+      "iter5_strong_dualcheck_ds1000": 75.0
+    },
+    "baseline_comparison": {
+      "unique_failures": 0,
+      "unique_successes": 1,
+      "consensus_failures": 3,
+      "mixed_results": 2
+    }
+  },
+  "by_agent": {
+    "iter8_perspective_consensus_ds1000": {
+      "total_correct": 17,
+      "total_failed": 3,
+      "total_errors": 0,
+      "total_questions": 20,
+      "accuracy": 85.0,
+      "failed_ids": [
+        "165",
+        "129",
+        "706"
+      ],
+      "error_ids": []
+    },
+    "iter6_grounded_repair_ds1000": {
+      "total_correct": 16,
+      "total_failed": 4,
+      "total_errors": 0,
+      "total_questions": 20,
+      "accuracy": 80.0,
+      "failed_ids": [
+        "165",
+        "129",
+        "238",
+        "706"
+      ],
+      "error_ids": []
+    },
+    "iter3_safe_repair_ds1000": {
+      "total_correct": 15,
+      "total_failed": 5,
+      "total_errors": 0,
+      "total_questions": 20,
+      "accuracy": 75.0,
+      "failed_ids": [
+        "238",
+        "165",
+        "706",
+        "129",
+        "961"
+      ],
+      "error_ids": []
+    },
+    "iter5_strong_dualcheck_ds1000": {
+      "total_correct": 15,
+      "total_failed": 5,
+      "total_errors": 0,
+      "total_questions": 20,
+      "accuracy": 75.0,
+      "failed_ids": [
+        "238",
+        "165",
+        "129",
+        "365",
+        "706"
+      ],
+      "error_ids": []
+    }
+  },
+  "cross_agent_analysis": {
+    "new_vs_baseline": {
+      "unique_successes": [
+        "238"
+      ],
+      "unique_failures": [],
+      "consensus_failures": [
+        "165",
+        "129",
+        "706"
+      ],
+      "mixed_results": {
+        "365": {
+          "new_agent_correct": true,
+          "baseline_correct": [
+            "iter6_grounded_repair_ds1000",
+            "iter3_safe_repair_ds1000"
+          ],
+          "baseline_wrong": [
+            "iter5_strong_dualcheck_ds1000"
+          ]
+        },
+        "961": {
+          "new_agent_correct": true,
+          "baseline_correct": [
+            "iter6_grounded_repair_ds1000",
+            "iter5_strong_dualcheck_ds1000"
+          ],
+          "baseline_wrong": [
+            "iter3_safe_repair_ds1000"
+          ]
+        }
+      }
+    },
+    "new_vs_agent_iter6_grounded_repair_ds1000": {
+      "new_wrong_A_right": [],
+      "new_right_A_wrong": [
+        "238"
+      ],
+      "both_wrong": [
+        "165",
+        "129",
+        "706"
+      ]
+    },
+    "new_vs_agent_iter3_safe_repair_ds1000": {
+      "new_wrong_A_right": [],
+      "new_right_A_wrong": [
+        "238",
+        "961"
+      ],
+      "both_wrong": [
+        "165",
+        "129",
+        "706"
+      ]
+    },
+    "new_vs_agent_iter5_strong_dualcheck_ds1000": {
+      "new_wrong_A_right": [],
+      "new_right_A_wrong": [
+        "365",
+        "238"
+      ],
+      "both_wrong": [
+        "165",
+        "129",
+        "706"
+      ]
+    }
+  },
+  "non_binary_scores": {},
+  "scores_by_question": {
+    "165": {
+      "iter6_grounded_repair_ds1000": 0.0,
+      "iter5_strong_dualcheck_ds1000": 0.0,
+      "iter3_safe_repair_ds1000": 0.0,
+      "iter8_perspective_consensus_ds1000": 0.0
+    },
+    "301": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "324": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "415": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "124": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "185": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "294": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "365": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 0.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "129": {
+      "iter6_grounded_repair_ds1000": 0.0,
+      "iter5_strong_dualcheck_ds1000": 0.0,
+      "iter3_safe_repair_ds1000": 0.0,
+      "iter8_perspective_consensus_ds1000": 0.0
+    },
+    "238": {
+      "iter6_grounded_repair_ds1000": 0.0,
+      "iter5_strong_dualcheck_ds1000": 0.0,
+      "iter3_safe_repair_ds1000": 0.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "440": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "662": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "792": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "441": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "77": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "451": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "759": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "961": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 0.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "906": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter5_strong_dualcheck_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0,
+      "iter8_perspective_consensus_ds1000": 1.0
+    },
+    "706": {
+      "iter6_grounded_repair_ds1000": 0.0,
+      "iter5_strong_dualcheck_ds1000": 0.0,
+      "iter3_safe_repair_ds1000": 0.0,
+      "iter8_perspective_consensus_ds1000": 0.0
+    }
+  }
+}

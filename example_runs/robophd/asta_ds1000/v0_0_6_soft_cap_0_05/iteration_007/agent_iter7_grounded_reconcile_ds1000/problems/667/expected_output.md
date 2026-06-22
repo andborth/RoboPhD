@@ -1,0 +1,1 @@
+<tf.Variable 'Variable:0' shape=() dtype=int32, numpy=114514>

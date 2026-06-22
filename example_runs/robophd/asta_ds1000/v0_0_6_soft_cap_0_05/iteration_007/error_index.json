@@ -1,0 +1,237 @@
+{
+  "summary": {
+    "agents": [
+      "iter3_safe_repair_ds1000",
+      "iter6_grounded_repair_ds1000",
+      "iter7_grounded_reconcile_ds1000"
+    ],
+    "total_questions": 20,
+    "total_unique_questions": 20,
+    "agent_accuracies": {
+      "iter3_safe_repair_ds1000": 95.0,
+      "iter6_grounded_repair_ds1000": 85.0,
+      "iter7_grounded_reconcile_ds1000": 90.0
+    },
+    "agent_aggregate_scores": {
+      "iter3_safe_repair_ds1000": 95.0,
+      "iter6_grounded_repair_ds1000": 85.0,
+      "iter7_grounded_reconcile_ds1000": 90.0
+    },
+    "agent_explanations": {
+      "iter3_safe_repair_ds1000": "Mean cost $0.0024 within free zone (threshold $0.05); no penalty applied. Raw accuracy 0.9500 reported as percentage: 95.000.",
+      "iter6_grounded_repair_ds1000": "Mean cost $0.0048 within free zone (threshold $0.05); no penalty applied. Raw accuracy 0.8500 reported as percentage: 85.000.",
+      "iter7_grounded_reconcile_ds1000": "Mean cost $0.0064 within free zone (threshold $0.05); no penalty applied. Raw accuracy 0.9000 reported as percentage: 90.000."
+    },
+    "consensus_stats": {
+      "all_correct": 17,
+      "all_correct_pct": 85.0,
+      "all_failed": 0,
+      "all_failed_pct": 0.0,
+      "split_decisions": 3,
+      "split_decisions_pct": 15.0
+    }
+  },
+  "by_agent": {
+    "iter3_safe_repair_ds1000": {
+      "total_correct": 19,
+      "total_failed": 1,
+      "total_errors": 0,
+      "total_questions": 20,
+      "accuracy": 95.0,
+      "unique_successes": [
+        "723",
+        "667"
+      ],
+      "unique_failures": [],
+      "failed_ids": [
+        "129"
+      ],
+      "error_ids": []
+    },
+    "iter6_grounded_repair_ds1000": {
+      "total_correct": 17,
+      "total_failed": 3,
+      "total_errors": 0,
+      "total_questions": 20,
+      "accuracy": 85.0,
+      "unique_successes": [],
+      "unique_failures": [],
+      "failed_ids": [
+        "129",
+        "667",
+        "723"
+      ],
+      "error_ids": []
+    },
+    "iter7_grounded_reconcile_ds1000": {
+      "total_correct": 18,
+      "total_failed": 2,
+      "total_errors": 0,
+      "total_questions": 20,
+      "accuracy": 90.0,
+      "unique_successes": [
+        "129"
+      ],
+      "unique_failures": [],
+      "failed_ids": [
+        "723",
+        "667"
+      ],
+      "error_ids": []
+    }
+  },
+  "cross_agent_patterns": {
+    "consensus_correct": [
+      "440",
+      "365",
+      "513",
+      "517",
+      "601",
+      "175",
+      "432",
+      "38",
+      "398",
+      "386",
+      "426",
+      "826",
+      "962",
+      "822",
+      "977",
+      "841",
+      "940"
+    ],
+    "consensus_failures": [],
+    "split_decisions": {
+      "129": {
+        "correct": [
+          "iter7_grounded_reconcile_ds1000"
+        ],
+        "wrong": [
+          "iter3_safe_repair_ds1000",
+          "iter6_grounded_repair_ds1000"
+        ]
+      },
+      "667": {
+        "correct": [
+          "iter3_safe_repair_ds1000"
+        ],
+        "wrong": [
+          "iter6_grounded_repair_ds1000",
+          "iter7_grounded_reconcile_ds1000"
+        ]
+      },
+      "723": {
+        "correct": [
+          "iter3_safe_repair_ds1000"
+        ],
+        "wrong": [
+          "iter6_grounded_repair_ds1000",
+          "iter7_grounded_reconcile_ds1000"
+        ]
+      }
+    }
+  },
+  "non_binary_scores": {},
+  "scores_by_question": {
+    "440": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "129": {
+      "iter6_grounded_repair_ds1000": 0.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 0.0
+    },
+    "365": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "513": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "517": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "601": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "175": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "432": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "38": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "398": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "386": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "426": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "667": {
+      "iter6_grounded_repair_ds1000": 0.0,
+      "iter7_grounded_reconcile_ds1000": 0.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "723": {
+      "iter6_grounded_repair_ds1000": 0.0,
+      "iter7_grounded_reconcile_ds1000": 0.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "826": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "962": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "822": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "977": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "841": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    },
+    "940": {
+      "iter6_grounded_repair_ds1000": 1.0,
+      "iter7_grounded_reconcile_ds1000": 1.0,
+      "iter3_safe_repair_ds1000": 1.0
+    }
+  }
+}
