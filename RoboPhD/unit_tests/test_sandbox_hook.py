@@ -1551,6 +1551,94 @@ def test_bash_subshell_in_scope_allows(experiment_layout):
 
 
 # ---------------------------------------------------------------------
+# Test commands: [ ... ] / [[ ... ]] path operands are scope-checked
+#
+# tree-sitter parses the bracket forms as `test_command` (NOT a `command`
+# node), so without a dedicated walk handler their path operands would
+# skip scope-checking — a silent widening vs. the old parser, which fed
+# `[` to the unknown-command read-default. These pin that an out-of-scope
+# existence/metadata probe still denies, that in-scope tests still allow,
+# and (regression) that the non-bracket `test` form is unaffected.
+# ---------------------------------------------------------------------
+
+
+def test_bash_single_bracket_test_out_of_scope_denies(experiment_layout):
+    layout = experiment_layout
+    cmd = f"[ -f {layout['sibling_agent']} ] && echo yes"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_bash_double_bracket_test_out_of_scope_denies(experiment_layout):
+    layout = experiment_layout
+    cmd = f"[[ -f {layout['sibling_agent']} ]] && echo yes"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_bash_test_in_scope_allows(experiment_layout):
+    layout = experiment_layout
+    target = layout["agents_dir"] / "agent.py"  # in read scope
+    for cmd in (f"[ -f {target} ]", f"[[ -s {target} ]] && echo big"):
+        res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                       layout["experiment_dir"])
+        assert res["decision"] is None, (cmd, res)
+
+
+def test_bash_double_bracket_mixed_operands_denies_out_of_scope(experiment_layout):
+    """One in-scope operand, one out-of-scope: the out-of-scope one must
+    still be caught (not masked by the in-scope one)."""
+    layout = experiment_layout
+    inscope = layout["agents_dir"] / "agent.py"
+    cmd = f"[[ -f {inscope} || -s {layout['sibling_agent']} ]]"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_bash_test_command_substitution_still_denies(experiment_layout):
+    """A `$(...)` inside `[[ ]]` reading an out-of-scope path is caught by
+    the walk descending into the inner command (and not double-counted by
+    the test-operand collector)."""
+    layout = experiment_layout
+    cmd = f"[[ $(cat {layout['sibling_agent']}) == x ]]"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_bash_test_non_bracket_form_still_denies(experiment_layout):
+    """Regression guard: `test -f <path>` (no brackets) parses as an
+    ordinary `command`, so it always flowed through the classifier — it
+    must stay denied for an out-of-scope operand."""
+    layout = experiment_layout
+    cmd = f"test -f {layout['sibling_agent']}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_bash_readwrite_redirect_out_of_scope_denies(experiment_layout):
+    """`<>` opens a file read-write; a `<>` to an out-of-scope path must
+    deny. This tree-sitter version fails-closed on `<>` with a parse error,
+    and the walk also routes a (future) parsed `<>` to BOTH read and write
+    scope — so the deny holds either way. Asserts the outcome (deny), not
+    the specific scope, since it currently arrives via parse-deny."""
+    layout = experiment_layout
+    cmd = f"exec 3<> {layout['sibling_agent']}"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+
+
+# ---------------------------------------------------------------------
 # Symlink bypass
 # ---------------------------------------------------------------------
 

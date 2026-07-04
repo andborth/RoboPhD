@@ -289,6 +289,13 @@ INTENT_PATTERNS = [
     # to FP-FIXED instead of the alarming TP-NOW-ALLOWED. A genuine write
     # to such a path (rare) still replays as denied -> surfaces as FP-OPEN
     # for triage, so the backstop holds even if these over-match.
+    # No in-command guard (unlike the sed sibling below): the logged
+    # blocked_path is realpath-resolved (e.g. `.../bin/python3.11`) while
+    # the command spells the symlink (`.../bin/python`), so `_b(r) in
+    # _cmd(r)` would false-negative the very records this exists for. An
+    # interpreter binary is never a legit write target regardless of
+    # command content; the replay backstop (a genuine write still denies ->
+    # FP-OPEN) covers any over-match.
     ("FP: interpreter path mis-recorded as write (old-parser merge artifact)",
      "FP",
      lambda r: _scope(r) == "write" and bool(_INTERP_BIN_RE.match(_b(r)))),

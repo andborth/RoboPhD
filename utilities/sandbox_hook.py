@@ -826,6 +826,40 @@ def _for_list_words(node) -> list:
     return out
 
 
+def _test_command_reads(node) -> list:
+    """Path-shaped operand words inside a ``[ ... ]`` / ``[[ ... ]]`` test.
+
+    Mirrors the old parser, which fed ``[`` to the unknown-command branch
+    and read-checked its path tokens (so ``[ -f /sibling/x ]`` — an
+    existence/metadata probe of an out-of-scope path — was denied). Test
+    operators (``-f``, ``-s``, ``=``, ...) are their own ``test_operator``
+    nodes, not words, so they are not collected. Command/process
+    substitutions are skipped here — the main walk reaches their inner
+    ``command`` nodes and scope-checks those directly, so a
+    ``[[ $(cat /sibling) ]]`` content read is still caught (and not
+    double-counted). A ``concatenation`` is taken as one token rather than
+    descending into its parts.
+    """
+    out: list = []
+
+    def visit(n):
+        t = n.type
+        if t in _TS_SUBSTITUTION_NODES or t == "command":
+            return  # handled by the main walk
+        if t in ("word", "string", "raw_string", "ansi_c_string",
+                 "concatenation"):
+            tok = _ts_word(n)
+            if tok and looks_like_path(tok):
+                out.append(tok)
+            return  # a token is atomic; don't descend into its parts
+        for c in n.children:
+            visit(c)
+
+    for c in node.children:
+        visit(c)
+    return out
+
+
 # The effective, non-reconstructable scope inputs for THIS hook
 # invocation. main() populates this (set_scope_context) once the inputs
 # are known; append_denial_record stamps them into every denial record so
@@ -1151,11 +1185,27 @@ def evaluate_bash(
         elif ntype == "file_redirect":
             op, target = _redirect_parts(node)
             if target and looks_like_path(target):
-                (write_paths if ">" in op else read_paths).append(target)
+                if "<" in op and ">" in op:
+                    # `<>` opens the file read-write: check BOTH scopes so
+                    # correctness doesn't rest on the (currently true, but
+                    # implicit) write-scope ⊆ read-scope invariant.
+                    read_paths.append(target)
+                    write_paths.append(target)
+                elif ">" in op:
+                    write_paths.append(target)
+                else:
+                    read_paths.append(target)
         elif ntype == "for_statement":
             for word in _for_list_words(node):
                 if looks_like_path(word):
                     read_paths.append(word)
+        elif ntype == "test_command":
+            # `[ -f /p ]` / `[[ -f /p ]]` parse as test_command (NOT a
+            # `command` node), so their path operands would otherwise skip
+            # scope-checking — a silent widening vs. the old parser, which
+            # fed `[` to the unknown-command read-default. Route path-shaped
+            # operands to the read check to restore that behavior.
+            read_paths.extend(_test_command_reads(node))
         stack.extend(node.children)
 
     ok, blocked = check_read_paths(read_paths, experiment_dir,
