@@ -292,7 +292,11 @@ def test_sed_lookalike_path_without_sed_in_cmd_is_not_fp_fixed():
 
 
 def test_auto_memory_write_classifies_fp_fixed():
+    # The auto-memory-write FP pattern is Write-tool-gated (a Bash write
+    # to the same dir is a deliberate injection-hardening deny, not an
+    # FP), so the record must carry a WRITE_TOOL to exercise it.
     _, cat = catalog.classify(_rec(
+        tool="Write",
         scope="write",
         blocked_path="/Users/x/.claude/projects/-slug/memory/insight.md",
         command="",

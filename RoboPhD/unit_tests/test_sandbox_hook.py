@@ -33,7 +33,6 @@ from utilities.sandbox_hook import (  # noqa: E402
     project_slug,
     auto_memory_dir,
     auto_session_dirs,
-    split_statement_newlines,
     evaluate_bash,
     replay_denial_record,
     set_scope_context,
@@ -1628,6 +1627,38 @@ def test_missing_env_var_fails_closed(experiment_layout):
     assert proc.returncode == 2
 
 
+def test_missing_tree_sitter_dependency_is_named(experiment_layout, tmp_path):
+    """When tree-sitter-bash can't be imported, a Bash command must
+    fail closed (deny) AND the denial must NAME the missing dependency
+    with the install command — not masquerade as a malformed-command
+    "parse error". Simulated by shadowing tree_sitter_bash with an
+    import-raising stub earlier on sys.path."""
+    layout = experiment_layout
+    shim = tmp_path / "ts_shim"
+    shim.mkdir()
+    (shim / "tree_sitter_bash.py").write_text(
+        'raise ImportError("simulated missing dependency")\n'
+    )
+    env = dict(os.environ)
+    env["ROBOPHD_EXPERIMENT_DIR"] = str(layout["experiment_dir"])
+    env.pop("ROBOPHD_EVOLUTION_ITERATION_DIR", None)
+    # Prepend the shim so `import tree_sitter_bash` hits the raising stub.
+    env["PYTHONPATH"] = str(shim) + os.pathsep + env.get("PYTHONPATH", "")
+    proc = subprocess.run(
+        [sys.executable, str(HOOK)],
+        input=json.dumps(make_envelope("Bash", {"command": "cat agent.py"},
+                                       layout["cwd"])),
+        capture_output=True, text=True, env=env, timeout=10,
+    )
+    payload = json.loads(proc.stdout)["hookSpecificOutput"]
+    assert payload["permissionDecision"] == "deny"
+    reason = payload["permissionDecisionReason"]
+    assert "tree-sitter" in reason
+    assert "pip install" in reason
+    # And it must NOT be mislabeled as a malformed-command parse error.
+    assert "unbalanced quotes" not in reason
+
+
 def test_bad_stdin_fails_closed(experiment_layout):
     """Garbage on stdin must exit 2, not silently allow."""
     layout = experiment_layout
@@ -1799,18 +1830,6 @@ def test_deny_message_lists_extra_roots(carveout_layout):
 # be denied, and `find /` must stay blocked (it is a correct catch, not
 # a false positive).
 # ---------------------------------------------------------------------
-
-
-def test_split_statement_newlines_unit():
-    assert split_statement_newlines("a\nb\nc") == "a;b;c"
-    # Newlines inside quotes are data, not separators.
-    assert split_statement_newlines("echo '1\n2'") == "echo '1\n2'"
-    assert split_statement_newlines('echo "1\n2"') == 'echo "1\n2"'
-    # bash line-continuation JOINS with no separator (a\<nl>b -> ab),
-    # NOT a space. A space would mis-split a path token and is
-    # exploitable (see test_backslash_newline_join_keeps_path_denied).
-    assert split_statement_newlines("a\\\nb") == "ab"
-    assert split_statement_newlines("a \\\nb") == "a b"  # real space kept
 
 
 def test_backslash_newline_join_keeps_path_denied(experiment_layout):

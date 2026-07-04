@@ -279,6 +279,28 @@ INTENT_PATTERNS = [
      lambda r: _scope(r) == "read"
                and ".claude" in _b(r) and "/tool-results/" in _b(r)),
 
+    # ---- intent FP: write-scope denials that were old-parser artifacts ----
+    # The former hand-rolled Bash front-end (shlex + manual quote/heredoc/
+    # arithmetic handling, replaced by tree-sitter-bash) sometimes sank a
+    # NON-path token into write scope: a quote-desync merge pushed an
+    # interpreter path into a `rm`/redirect write, and BSD `sed -i ''`
+    # made the sed SCRIPT look like the in-place target. Neither is a real
+    # write; the live (tree-sitter) hook allows them, so replay flips these
+    # to FP-FIXED instead of the alarming TP-NOW-ALLOWED. A genuine write
+    # to such a path (rare) still replays as denied -> surfaces as FP-OPEN
+    # for triage, so the backstop holds even if these over-match.
+    ("FP: interpreter path mis-recorded as write (old-parser merge artifact)",
+     "FP",
+     lambda r: _scope(r) == "write" and bool(_INTERP_BIN_RE.match(_b(r)))),
+
+    ("FP: sed script mis-recorded as write (old-parser sed-arg artifact)",
+     "FP",
+     lambda r: _scope(r) == "write"
+               and bool(re.search(r"\bsed\b", _cmd(r)))
+               and _b(r).startswith("/")
+               and _b(r) in _cmd(r)
+               and (" " in _b(r) or bool(re.search(r"/[a-z]{1,2}$", _b(r))))),
+
     # ---- intent TP: sandbox correctly catching out-of-policy actions ----
     ("TP: Bash write to auto-memory dir (injection-hardening deny)",
      "TP",

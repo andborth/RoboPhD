@@ -31,11 +31,32 @@ import json
 import os
 import os.path
 import re
-import shlex
 import sys
 import traceback
 from datetime import datetime
 from pathlib import Path
+
+# tree-sitter-bash is the Bash front-end: it parses the real shell
+# grammar (quoting, escapes, heredocs, arithmetic/command/process
+# substitution, redirects, control flow), replacing the former
+# hand-rolled preprocessor stack whose partial quote/escape tracking
+# was a recurring source of false-positive denials. Imported
+# defensively: if the dependency is missing, evaluate_bash fails CLOSED
+# (deny) rather than run unprotected — a loud, safe failure. It is a
+# hard dependency; see requirements.txt.
+try:
+    import tree_sitter_bash as _ts_bash
+    from tree_sitter import Language as _TSLanguage, Parser as _TSParser
+    _TS_LANGUAGE = _TSLanguage(_ts_bash.language())
+    _TS_PARSER = _TSParser(_TS_LANGUAGE)
+    _TS_IMPORT_ERROR = None
+except Exception as _ts_exc:  # pragma: no cover - dependency missing at runtime
+    _TS_PARSER = None
+    # Capture WHY, so the fail-closed denial can name the missing
+    # dependency instead of blaming the command (see main()'s parse
+    # branch). Without this, a missing install looks identical to a
+    # malformed command — a loud but misleading failure.
+    _TS_IMPORT_ERROR = repr(_ts_exc)
 
 # Bash variable-assignment prefix (`x=...`, `MY_VAR=...`). Used to
 # identify leading-token assignments like `x=/sibling/a; cat $x` or
@@ -632,226 +653,177 @@ def classify_bash_segment(tokens: list) -> tuple:
     return read_paths, write_paths, None
 
 
-def strip_heredoc_bodies(command: str) -> str:
-    """Remove heredoc bodies from a Bash command string before tokenizing.
+# ---------------------------------------------------------------------
+# Bash front-end (tree-sitter-bash)
+#
+# Parse the command with tree-sitter-bash and walk the concrete syntax
+# tree, routing each path-bearing node to the read or write scope. This
+# replaces the former hand-rolled stack (strip_heredoc_bodies,
+# collapse_arithmetic_expansions, split_statement_newlines,
+# split_compound) plus their manual quote/escape tracking, which was the
+# recurring source of false-positive denials (a legit in-scope command
+# mis-tokenized and blocked). The per-command classifier
+# classify_bash_segment (which arg tokens are reads vs writes, by command
+# name) is UNCHANGED — it is fed a clean ``[name, arg, ...]`` token list
+# extracted from each ``command`` node.
+#
+# Fail-closed: a parse with any error node (unbalanced quotes, a
+# construct the grammar rejects) denies with scope "parse", matching the
+# old shlex-ValueError behavior. A missing tree-sitter dependency does
+# the same, so the sandbox never silently runs unprotected.
+# ---------------------------------------------------------------------
 
-    A heredoc is a way to send multi-line stdin to a command:
+# Subtrees that are opaque data, not shell to descend into for path
+# tokens. A heredoc BODY is stdin content (usually a file being
+# written); its same-line ``> target`` redirect is a SIBLING node and is
+# still scope-checked. Skipping the body mirrors the old
+# strip_heredoc_bodies: opaque body, visible redirect.
+_TS_OPAQUE_NODES = {"heredoc_body"}
 
-        cat <<EOF > scratch.py
-        # Run with `python scratch.py`
-        print(1)
-        EOF
+# Node types that introduce their own nested command(s) — the walk
+# descends into them so an inner out-of-scope path (e.g. ``cat
+# $(cat /sibling)``) is scope-checked, but the OUTER command does not
+# treat them as a path token (their runtime value is unknown; the inner
+# command is what actually reads).
+_TS_SUBSTITUTION_NODES = {"command_substitution", "process_substitution"}
 
-    The body is opaque content, not bash code we can usefully classify.
-    Without stripping, our tokenizer sees the body's `(`, `)`, and
-    backticks as standalone shell constructs and false-positives on
-    legitimate file writes — a Python script with `print(1)` becomes a
-    "subshell," a comment containing markdown backticks becomes
-    "command substitution," etc.
 
-    Stripping keeps the redirect target visible (the `> scratch.py`
-    part still gets write-scope-checked) while leaving the body
-    invisible. The tradeoff: an agent could exfil sibling files via
-    heredoc-body backtick substitution (`<<EOF` is not literal — bash
-    *will* substitute), but that exfil shape has not been observed in
-    practice and the user's policy is "defend the patterns we've
-    actually seen, don't preemptively block legitimate work."
+def _strip_line_continuations(command: str) -> str:
+    r"""Remove bash line-continuations (``\<newline>`` -> joined).
 
-    Handles:
-      * `<<DELIM`, `<<-DELIM`, `<< DELIM`, `<<'DELIM'`, `<<"DELIM"`
-      * Multiple heredocs in one command (rare; processed iteratively)
-      * Unterminated heredoc (no closing DELIM line) — strips to end
+    bash strips a backslash-newline before tokenizing, so
+    ``/exp\<nl>_escape/secret`` is the single word
+    ``/exp_escape/secret``. tree-sitter-bash does NOT perform this join
+    (it yields two words), which would let a path split at an in-scope
+    prefix boundary slip the scope check. Joining here, before parsing,
+    restores bash semantics.
+
+    Quote-insensitive by design: inside single quotes bash keeps the
+    literal backslash-newline, but that content is opaque data we never
+    scope-check by value, and a mis-join only ever MERGES two tokens
+    into one — a narrowing, the safe direction (a merged out-of-scope
+    token denies; it can never widen scope).
     """
-    out: list = []
-    pos = 0
-    while pos < len(command):
-        m = HEREDOC_START_RE.search(command, pos)
-        if not m:
-            out.append(command[pos:])
-            break
-        delim = m.group(1) or m.group(2) or m.group(3)
-        # Body begins after the next newline. The same-line tokens
-        # *between* the heredoc start and that newline (e.g.,
-        # `> outfile` redirects, pipes, additional args) MUST stay
-        # visible to the classifier — appending only up to m.end()
-        # would drop the redirect target and silently allow writes.
-        nl = command.find("\n", m.end())
-        if nl < 0:
-            # No newline after heredoc start — there's no body. Append
-            # the rest verbatim and we're done.
-            out.append(command[pos:])
-            break
-        # Append everything up to and including the newline (covers
-        # heredoc-start + same-line redirects/pipes/args).
-        out.append(command[pos:nl + 1])
-        # Find the closing delimiter on its own line. Bash matches a
-        # line consisting only of DELIM (with optional leading whitespace
-        # for the `<<-` form; we accept any leading whitespace since the
-        # body is being discarded either way).
-        end_pattern = re.compile(
-            rf"^[ \t]*{re.escape(delim)}\s*$",
-            re.MULTILINE,
-        )
-        em = end_pattern.search(command, nl + 1)
-        if not em:
-            # Unterminated heredoc — strip to end of command.
-            break
-        # Skip past the closing delim line.
-        line_end = command.find("\n", em.end())
-        pos = em.end() if line_end < 0 else line_end + 1
-    return "".join(out)
+    return command.replace("\\\n", "")
 
 
-def collapse_arithmetic_expansions(command: str) -> str:
-    """Replace ``$((expr))`` arithmetic expansions with a literal ``0``.
+def _ts_word(node) -> str:
+    """Reconstruct the shell-word string a value node contributes to
+    path classification.
 
-    ``split_compound`` uses ``punctuation_chars=True``, which treats
-    ``(`` and ``)`` as token separators (needed for subshell / process-
-    substitution splitting). That mangles an arithmetic expansion glued
-    inside a path token: ``iter${v}_v$((v-2))/agent.py`` tokenizes to
-    ``iter${v}_v$``, ``((``, ``v-2``, ``))``, ``/agent.py`` — and the
-    trailing ``/agent.py`` then read-denies as an absolute path (observed
-    in production on an in-scope read of the run's own agents dir).
-
-    Bash substitutes an arithmetic expansion with its integer result, so
-    collapsing ``$((...))`` to ``0`` is faithful in shape: the enclosing
-    token stays a single token whose path-ness (and scope) is unchanged
-    (``iter${v}_v0/agent.py``). Handles nesting via paren depth-counting;
-    an unterminated ``$((`` is left as-is (it will fail to parse and
-    fail closed downstream, which is correct).
-
-    Note: a literal ``$((`` inside single quotes is NOT an arithmetic
-    expansion to bash, but collapsing it there is still harmless — the
-    only effect is on punctuation-driven token splitting, and quoted
-    content is opaque data we don't scope-check by value anyway.
+    Quotes are resolved by the grammar. An embedded arithmetic expansion
+    collapses to a digit (faithful in shape — bash substitutes the
+    integer result, and the enclosing token's path-ness is unchanged). A
+    command/process substitution keeps its raw text ONLY when embedded in
+    a larger token (concatenation/string), so the surrounding path keeps
+    its shape; as a standalone argument it is dropped by
+    ``_command_tokens`` (the inner command is scope-checked by the walk).
+    Returns "" for nodes carrying no static token.
     """
-    out: list = []
-    i, n = 0, len(command)
-    while i < n:
-        if command.startswith("$((", i):
-            # Count paren depth starting from the first '(' (the two
-            # opening parens of `$((` take depth to 2). The expansion
-            # ends when depth returns to 0 — that index is the second
-            # ')' of the closing '))'. Nested `$((...))` are handled
-            # naturally since inner parens balance out.
-            depth = 0
-            j = i + 1
-            while j < n:
-                if command[j] == "(":
-                    depth += 1
-                elif command[j] == ")":
-                    depth -= 1
-                    if depth == 0:
-                        out.append("0")
-                        i = j + 1
-                        break
-                j += 1
-            else:
-                # Ran off the end without closing — unterminated. Leave
-                # the literal char; downstream parse fails closed.
-                out.append(command[i])
-                i += 1
-            continue
-        out.append(command[i])
-        i += 1
-    return "".join(out)
+    t = node.type
+    if t in ("word", "number", "variable_name", "simple_expansion",
+             "expansion", "regex"):
+        return node.text.decode(errors="replace")
+    if t == "arithmetic_expansion":
+        return "0"
+    if t in _TS_SUBSTITUTION_NODES:
+        return node.text.decode(errors="replace")
+    if t == "raw_string":  # '...' : literal; strip the single quotes
+        s = node.text.decode(errors="replace")
+        return s[1:-1] if len(s) >= 2 and s[0] == "'" else s
+    if t == "ansi_c_string":  # $'...'
+        s = node.text.decode(errors="replace")
+        return s[2:-1] if s.startswith("$'") and s.endswith("'") else s
+    if t in ("string", "translated_string"):  # "..." : literal + inline exp
+        parts: list = []
+        for c in node.children:
+            if c.type == "string_content":
+                parts.append(c.text.decode(errors="replace"))
+            elif c.type == "arithmetic_expansion":
+                parts.append("0")
+            elif c.type in ("simple_expansion", "expansion",
+                            "command_substitution"):
+                parts.append(c.text.decode(errors="replace"))
+        return "".join(parts)
+    if t == "concatenation":
+        return "".join(_ts_word(c) for c in node.children)
+    return ""
 
 
-def split_statement_newlines(command: str) -> str:
-    """Replace unquoted, top-level newlines with ';'.
+def _command_tokens(cmd_node) -> list:
+    """Extract a ``[name, arg, ...]`` token list from a ``command`` node
+    for classify_bash_segment.
 
-    shlex (used by ``split_compound``) treats a newline as plain
-    whitespace, so ``a\\nb\\nc`` collapses into ONE segment and the
-    leading command's classifier wrongly consumes the *later*
-    statements' tokens. Observed in production: a ``cd <in-scope-dir>``
-    on line 1 swallowed line 2's absolute ``/opt/.../python`` as one of
-    *its* arguments, producing a spurious read-scope denial of the
-    interpreter path. Newlines ARE statement separators in bash; making
-    that explicit lets each statement be classified on its own command.
-
-    Newlines inside single/double quotes are preserved (a quoted
-    multi-line string is data, not a statement boundary — e.g.
-    ``python -c "import os\\nos.do()"``). Heredoc bodies are already
-    removed by ``strip_heredoc_bodies`` before this runs. A
-    backslash-newline line-continuation is removed entirely (bash
-    JOINS the two physical lines with no separator: ``a\\<nl>b`` -> the
-    single token ``ab``). Emitting a space instead would be wrong and
-    actively unsafe: ``/exp\\<nl>iltrate/secret`` would split into the
-    in-scope token ``/exp`` plus a harmless-looking relative token,
-    while bash reads the out-of-scope ``/expiltrate/secret``. Joining
-    keeps it one token that the scope check correctly denies.
-
-    Strictly increases splitting precision: more, smaller segments can
-    only classify a path under a *narrower* command (or none, which
-    still hits the read-scope default) — it never hides a path or
-    widens scope.
+    Variable assignments, redirects, and (standalone) substitutions are
+    excluded here — the tree walk handles them structurally — so the
+    classifier receives exactly the command name and its literal
+    argument words, the shape its per-command grammar expects.
     """
-    out: list = []
-    in_single = in_double = False
-    i, n = 0, len(command)
-    while i < n:
-        c = command[i]
-        if (c == "\\" and i + 1 < n and command[i + 1] == "\n"
-                and not in_single and not in_double):
-            # bash line-continuation: remove BOTH chars, join with
-            # nothing (a\<nl>b -> ab). See docstring for why a space
-            # here would be an exploitable mis-split.
-            i += 2
-            continue
-        if c == "'" and not in_double:
-            in_single = not in_single
-        elif c == '"' and not in_single:
-            in_double = not in_double
-        if c == "\n" and not in_single and not in_double:
-            out.append(";")
+    tokens: list = []
+    for child in cmd_node.children:
+        ct = child.type
+        if ct == "command_name":
+            tokens.append(child.text.decode(errors="replace"))
+        elif ct in ("variable_assignment", "file_redirect",
+                    "heredoc_redirect") or ct in _TS_SUBSTITUTION_NODES:
+            continue  # handled by the walk, not a literal arg token
         else:
-            out.append(c)
-        i += 1
-    return "".join(out)
+            tok = _ts_word(child)
+            if tok:
+                tokens.append(tok)
+    return tokens
 
 
-def split_compound(command: str) -> list:
-    """Split a Bash command on top-level pipes/semicolons/&&/|| boundaries.
+def _assignment_value(node) -> str:
+    """The right-hand value of a ``variable_assignment`` node as a word
+    token (``x=/a`` -> ``/a``), or "" if not a static path-shaped value."""
+    for c in node.children:
+        if not c.is_named or c.type == "variable_name":
+            continue
+        return _ts_word(c)
+    return ""
 
-    Returns a list of token-lists, one per segment. If shlex fails
-    (unbalanced quotes, heredocs we don't model), returns None to
-    signal "unparseable — fail closed."
 
-    Uses ``punctuation_chars=True`` so separators glued to other tokens
-    (``false;`` → ``false ;``) split correctly. Plain ``shlex.split``
-    keeps ``;`` glued to the preceding token, which silently broke
-    every for/while loop body classification.
+def _redirect_parts(node) -> tuple:
+    """Return ``(operator, target)`` for a ``file_redirect`` node.
 
-    Also breaks on subshell / process- / command-substitution
-    boundaries (``(``, ``)``, ``<(``, ``>(``). Without this an inner
-    command keeps its outer command's classifier rules — e.g.
-    ``diff <(sed -n '/re/,$p' f) ...`` was classified as ``diff`` so
-    the ``sed`` script ``/re/,$p`` was scanned as a path and spuriously
-    denied. Splitting here only makes classification *more* precise
-    (each command judged by its own rules); every path token still
-    flows through the same read/write scope check, so nothing is hidden
-    and scope is never widened.
+    The operator carries the direction (``>``/``>>``/``&>``/``2>`` write,
+    ``<`` read); the target is the file word. A leading
+    ``file_descriptor`` child (the ``2`` in ``2>``) is not a target.
     """
-    try:
-        lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
-        lexer.whitespace_split = True
-        all_tokens = list(lexer)
-    except ValueError:
-        return None
-
-    separators = {"|", "||", "&&", ";", "&", "(", ")", "<(", ">("}
-    segments: list = []
-    current: list = []
-    for tok in all_tokens:
-        if tok in separators:
-            if current:
-                segments.append(current)
-                current = []
+    op = ""
+    target = ""
+    for c in node.children:
+        if not c.is_named:
+            txt = c.text.decode(errors="replace")
+            if "<" in txt or ">" in txt:
+                op = txt
+        elif c.type == "file_descriptor":
+            continue
         else:
-            current.append(tok)
-    if current:
-        segments.append(current)
-    return segments
+            tok = _ts_word(c)
+            if tok:
+                target = tok
+    return op, target
+
+
+def _for_list_words(node) -> list:
+    """Loop-list element words of a ``for_statement`` (``for p in A B; ...``
+    -> ``[A, B]``). These are read operands: ``for p in /sibling/x; do
+    cat $p; done`` must deny on the out-of-scope list element, matching
+    the old classifier which routed the stripped loop body's leading
+    tokens through the read check. The do-group body's commands are
+    visited separately by the walk.
+    """
+    out: list = []
+    for c in node.children:
+        if not c.is_named or c.type in ("variable_name", "do_group",
+                                        "compound_statement", "comment"):
+            continue
+        tok = _ts_word(c)
+        if tok:
+            out.append(tok)
+    return out
 
 
 # The effective, non-reconstructable scope inputs for THIS hook
@@ -1127,43 +1099,72 @@ def evaluate_bash(
 ) -> tuple:
     """Pure Bash scope decision shared by main() and replay.
 
-    Runs the same transform + tokenize + per-segment classify + scope-
-    check pipeline main() uses, with NO IO (no emit, no append, no env
-    reads). Returns ``(decision, scope, blocked)`` where:
+    Parses ``command`` with tree-sitter-bash and walks the parse tree,
+    routing every path-bearing node to the read or write scope. NO IO
+    (no emit, no append, no env reads). Returns ``(decision, scope,
+    blocked)`` where:
 
-      * ``("deny", "parse", "")``   — unparseable (heredoc / bad quotes)
+      * ``("deny", "parse", "")``   — unparseable (error node / bad quotes)
       * ``("deny", "read", path)``  — a read token outside read scope
       * ``("deny", "write", path)`` — a write token outside write scope
-      * ``("allow", None, None)``   — every segment cleared
+      * ``("allow", None, None)``   — every path cleared
 
     Extracting this lets ``catalog_sandbox_denials.py`` replay a logged
     denial through the LIVE policy ("does HEAD still deny this?") using
     the exact code main() runs, so the catalog's FP-FIXED verdict can
     never drift from the hook's real behavior.
+
+    All reads are checked before any writes: on a command that violates
+    both, the read violation is reported (matching the old per-segment
+    read-before-write ordering).
     """
     if not command:
         return "allow", None, None
-
-    command = strip_heredoc_bodies(command)
-    command = collapse_arithmetic_expansions(command)
-    command = split_statement_newlines(command)
-
-    segments = split_compound(command)
-    if segments is None:
-        # shlex couldn't parse — fail closed (see main()'s parse branch).
+    if _TS_PARSER is None:
+        # Security-critical dependency missing — fail closed so the
+        # sandbox never runs unprotected (see the import block).
         return "deny", "parse", ""
 
-    for tokens in segments:
-        if not tokens:
-            continue
-        read_paths, write_paths, _fail_reason = classify_bash_segment(tokens)
-        ok, blocked = check_read_paths(read_paths, experiment_dir,
-                                       extra_read_roots, cwd_real)
-        if not ok:
-            return "deny", "read", blocked
-        ok, blocked = check_paths(write_paths, write_root, cwd_real, "write")
-        if not ok:
-            return "deny", "write", blocked
+    command = _strip_line_continuations(command)
+    root = _TS_PARSER.parse(command.encode()).root_node
+    if root.has_error:
+        # Unbalanced quotes / a construct the grammar rejects — fail
+        # closed, same direction as the old shlex-ValueError branch.
+        return "deny", "parse", ""
+
+    read_paths: list = []
+    write_paths: list = []
+    stack = [root]
+    while stack:
+        node = stack.pop()
+        ntype = node.type
+        if ntype in _TS_OPAQUE_NODES:
+            continue  # heredoc body: opaque stdin data, don't descend
+        if ntype == "command":
+            rp, wp, _ = classify_bash_segment(_command_tokens(node))
+            read_paths.extend(rp)
+            write_paths.extend(wp)
+        elif ntype == "variable_assignment":
+            val = _assignment_value(node)
+            if val and looks_like_path(val):
+                read_paths.append(val)
+        elif ntype == "file_redirect":
+            op, target = _redirect_parts(node)
+            if target and looks_like_path(target):
+                (write_paths if ">" in op else read_paths).append(target)
+        elif ntype == "for_statement":
+            for word in _for_list_words(node):
+                if looks_like_path(word):
+                    read_paths.append(word)
+        stack.extend(node.children)
+
+    ok, blocked = check_read_paths(read_paths, experiment_dir,
+                                   extra_read_roots, cwd_real)
+    if not ok:
+        return "deny", "read", blocked
+    ok, blocked = check_paths(write_paths, write_root, cwd_real, "write")
+    if not ok:
+        return "deny", "write", blocked
     return "allow", None, None
 
 
@@ -1489,14 +1490,13 @@ def main() -> int:
             return 0  # nothing to check
 
         # Decision is made by evaluate_bash (the same pure pipeline the
-        # catalog replays): strip heredoc bodies (opaque stdin data that
-        # would false-positive the `(`/`)` punctuation check), collapse
-        # `$((expr))` (else split_compound breaks on `((`/`))`), make
-        # newlines explicit statement separators, then per-segment
-        # classify + scope-check. find -exec / xargs / $(...) / subshells
-        # / unknown commands all flow their visible path tokens into the
-        # read check (no fail-closed subprocess_bypass branch). Here we
-        # only translate the verdict into the emit + log IO.
+        # catalog replays): parse with tree-sitter-bash and walk the
+        # tree, routing each command's path tokens through the per-command
+        # classifier and each redirect / assignment / loop-list operand to
+        # the right scope. find -exec / xargs / $(...) / subshells / unknown
+        # commands all flow their visible path tokens into the read check
+        # (no fail-closed subprocess_bypass branch). Here we only translate
+        # the verdict into the emit + log IO.
         decision, scope, blocked = evaluate_bash(
             command, cwd_real, experiment_dir, write_root, extra_read_roots,
         )
@@ -1504,25 +1504,39 @@ def main() -> int:
             return 0
 
         if scope == "parse":
-            # shlex couldn't parse — likely heredoc, unbalanced quotes,
-            # or a construct we don't model. Fail closed. Log the
-            # transformed command (matches prior behavior).
-            emit_decision(
-                "deny",
-                "Sandbox denied. Could not parse this Bash command (heredoc, "
-                "unbalanced quotes, or unsupported construct). Use Read/Edit/"
-                "Write tools instead, or simplify the command.",
-            )
+            # Fail closed. Two distinct causes share this branch; name
+            # which one so a missing install doesn't masquerade as a
+            # malformed command (both deny, but the fix differs).
+            if _TS_PARSER is None:
+                reason = (f"tree-sitter dependency missing "
+                          f"({_TS_IMPORT_ERROR}) — Bash cannot be "
+                          f"scope-checked; install with "
+                          f"'pip install -r requirements.txt'")
+                sys.stderr.write(f"[sandbox] {reason}\n")
+                message = (
+                    "Sandbox denied. The Bash command parser dependency "
+                    "(tree-sitter / tree-sitter-bash) is not installed, so "
+                    "Bash commands cannot be scope-checked and are denied. "
+                    "Install it: pip install -r requirements.txt. "
+                    "(Read/Edit/Write tools still work.)"
+                )
+            else:
+                reason = "tree-sitter parse error"
+                message = (
+                    "Sandbox denied. Could not parse this Bash command "
+                    "(heredoc, unbalanced quotes, or unsupported construct). "
+                    "Use Read/Edit/Write tools instead, or simplify the "
+                    "command."
+                )
+            emit_decision("deny", message)
             append_denial_record({
                 "ts": datetime.now().isoformat(timespec="seconds"),
                 "tool": "Bash",
                 "scope": "parse",
                 "blocked_path": "",
-                "command": split_statement_newlines(
-                    collapse_arithmetic_expansions(
-                        strip_heredoc_bodies(command))),
+                "command": command,
                 "cwd": cwd_real,
-                "reason": "shlex.split failed",
+                "reason": reason,
             })
             return 0
 
