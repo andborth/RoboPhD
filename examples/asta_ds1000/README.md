@@ -213,7 +213,7 @@ The training evaluator applies the formula above. The test evaluator (derived vi
 Nine pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside the candidate's `file_mapping`, which only contains `agent.py`), grouped by family into three tiers:
 
 - OpenAI: `GPT_5_4_MINI`, `GPT_5_4`, `GPT_5_5` ($5.00 / $30.00 per M tokens for the strong tier)
-- Anthropic: `CLAUDE_HAIKU_4_5`, `CLAUDE_SONNET_4_6`, `CLAUDE_OPUS_4_8` ($5.00 / $25.00 per M tokens — the priciest Anthropic handle while Claude Fable 5 is temporarily unavailable)
+- Anthropic: `CLAUDE_HAIKU_4_5`, `CLAUDE_SONNET_4_6`, `CLAUDE_OPUS_4_8` ($5.00 / $25.00 per M tokens for the strong tier. Claude Fable 5 is intentionally excluded to keep runs comparable with the existing experimental campaign — no evolved agent ever selected it as a solver during its brief availability)
 - Google: `GEMINI_3_1_FLASH_LITE`, `GEMINI_3_5_FLASH`, `GEMINI_3_1_PRO_PREVIEW` ($2.00 / $12.00 per M tokens for the strong tier)
 
 Evolved agents `from model_registry import` whichever handles they want and call `.generate()`. The model strings live outside the evolvable artifact (`agent.py`), so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — see "Credentials" above.

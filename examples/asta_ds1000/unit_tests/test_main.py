@@ -466,8 +466,9 @@ def test_background_md_lists_all_nine_handles_in_five_column_shape():
     the 5-column shape (Handle | Input | Output | Default reasoning_effort
     | Available overrides). Regression to fewer columns would break the
     rendered markdown table; missing handles would hide them from the
-    evolution agent's menu. (CLAUDE_FABLE_5 is temporarily removed — Fable 5
-    is unavailable under a US Gov regulation; revert that commit to restore.)"""
+    evolution agent's menu. (CLAUDE_FABLE_5 is intentionally excluded to
+    keep runs comparable with the existing experimental campaign — no
+    evolved agent ever selected it as a solver during its brief availability.)"""
     background_md = (ASTA_DS1000_DIR / "background.md").read_text()
     # Match the model-handle rows specifically — other tables (e.g.
     # `state.input` row in the inspect-ai input doc) also start with

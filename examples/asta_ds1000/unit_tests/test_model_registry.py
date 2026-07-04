@@ -114,8 +114,9 @@ def test_all_nine_handles_exported(model_registry):
     was removed in favor of the cost-penalty disciplining overuse.
     If any of these go missing, evolved agents that import them at
     eval time will ImportError silently in subprocess workers.
-    (CLAUDE_FABLE_5 is temporarily removed — Fable 5 is unavailable
-    under a US Gov regulation; revert that commit to restore.)"""
+    (CLAUDE_FABLE_5 is intentionally excluded to keep runs comparable
+    with the existing experimental campaign — no evolved agent ever
+    selected it as a solver during its brief availability.)"""
     expected = (
         "GPT_5_4_MINI", "GPT_5_4", "GPT_5_5",
         "CLAUDE_HAIKU_4_5", "CLAUDE_SONNET_4_6", "CLAUDE_OPUS_4_8",

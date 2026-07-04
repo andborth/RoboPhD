@@ -56,9 +56,7 @@ class RoboPhDConfig:
     meta_evolution_strategy: Optional[str] = None
     """Meta-evolution strategy name (e.g. ``train_a_winner``); ``None`` disables meta-evolution."""
     meta_evolution_model: str = "opus-4.8"
-    """Model for meta-evolution sessions (Claude Code CLI subprocess).
-    Was "fable-5"; temporarily switched to opus-4.8 while Fable 5 is
-    unavailable under a US Gov regulation. Revert that commit to restore."""
+    """Model for meta-evolution sessions (Claude Code CLI subprocess)."""
     meta_evolution_first_iteration: int = 4
     """First iteration at which meta-evolution fires."""
     meta_evolution_cadence: int = 3
