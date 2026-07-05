@@ -161,6 +161,19 @@ SUBMISSIONS = [
         # projected new cheap frontier point dominating ReAct o3 (0.749 @
         # $0.01) and Asta v0 (0.748 @ $0.01), pending the official number.
     ),
+    Submission(
+        name="v0_0_6_soft_cap_0_003_fable",
+        agent_rel_path="agents/iter8_expected_diff_cascade/agent.py",
+        model_arg="none",
+        # Run robophd-asta_ds1000-036 (FIRST fable-5-evolved submission).
+        # Ultra-low cap $0.003/$0.001. Budget-tier cascade: gpt-5.4-mini +
+        # gemini-3.1-flash-lite generators, claude-haiku-4-5 escalation,
+        # gpt-5.4 only as a rare 450-token arbiter -- all four priced in the
+        # litellm 1.88.1 bundled map (verified), so cost computes. Train mean
+        # 86.8 over 11 Elo rounds (~220 problems); internal 900-test
+        # 0.7322 @ $0.00294 (98% of cap); targets ReAct/GPT-5-Mini
+        # (0.710 @ $0.003 true cost) on the official frontier.
+    ),
 ]
 
 
