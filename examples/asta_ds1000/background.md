@@ -74,7 +74,7 @@ Most DS-1000 problems don't need files, but the API is available.
 
 ## LLM calls
 
-The following model handles are available, imported from `model_registry`. Prices are the rates this benchmark's scoring actually bills (its pinned price table); they may differ from a provider's current list price:
+The following model handles are available, imported from `model_registry`. Prices are the rates this benchmark's scoring bills:
 
 | Handle | Input ($/M tok) | Output ($/M tok) | Default `reasoning_effort` | Available overrides |
 | --- | --- | --- | --- | --- |
