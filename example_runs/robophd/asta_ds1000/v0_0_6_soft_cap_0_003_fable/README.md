@@ -36,6 +36,16 @@ The internal $0.00294 was never achievable officially — it was measured on a f
 
 Consequence for this run: evolution optimized under prices that made flash-lite thinking look ~2.6x cheaper than the board bills it, converged on a flash-lite-heavy cascade, and "hugged" a cap it was actually 43% over. Under correct billing, this architecture doesn't fit $0.003 even with thinking removed (~$0.0036), so the miss was structural, not marginal.
 
+**Token-usage stability — the delta is accounting, not behavior.** The agent essentially reproduced its internal behavior in the official run: repricing the official run's logged tokens on the internal (pre-fix) basis gives $2.73 vs the internal run's recorded $2.645 (within 3.2%), and the score was identical (659/900 both; equal counts don't strictly prove the same 659 problems — overlap unchecked). Same tokens, different price tag. The same logged usage priced three ways:
+
+| Basis | Per problem | vs $0.003 cap |
+|---|---|---|
+| Pre-fix (reasoning dropped + live prices) | $0.00294 | 98% |
+| Reasoning billed + true live prices | $0.00343 | 114% |
+| Reasoning billed + leaderboard bundled prices (= official) | $0.00428 | 143% |
+
+The middle row shows the reasoning bug ALONE breaks the cap, independent of the price-map skew — the miss did not require Ai2's stale prices.
+
 Policy going forward (decided 2026-07-05): internal costs track **Ai2's billing basis** — litellm's bundled snapshot, reasoning tokens folded per agenteval's rule — for comparability with other leaderboard systems, even where the bundled map lags true provider prices; we alert Ai2 to stale entries but move only when they move. Implemented in commits `b74f8e7` (bundled-map basis + live-map fallback warnings) and `ae1e410` (drift warnings + unit tests incl. a golden regression pinning this run's official cost). Cost-capped runs recorded before these commits understate Gemini-using agents' costs (v0_0_4 official +36%, this run +46% vs internal).
 
 ## Submission metadata
