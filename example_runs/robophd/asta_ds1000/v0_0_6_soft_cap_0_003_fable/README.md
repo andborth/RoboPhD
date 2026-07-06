@@ -2,29 +2,41 @@
 
 RoboPhD evolution run on AstaBench's DS-1000 task. Headline submitted agent: **`iter8_expected_diff_cascade`**. Run id: `robophd-asta_ds1000-036`. Evolved by **Claude Fable 5** (the evolution model; not a solver) — our first fable-5-evolved submission.
 
-**This is the ultra-low-cap experiment.** Same run configuration family as v0_0_5 (budget 750, examples-per-iteration 20, Deep Focus off) with two deliberate changes: the evolution model (**fable-5** vs opus-4.8) and a **17x lower cost cap** (`cost_threshold=0.003`, `cost_per_error=0.001` — vs the $0.05/$0.01 default). The motivation is twofold: (a) probe what evolution produces at the extreme low end of the cost axis, and (b) take the official leaderboard's **ReAct/GPT-5-Mini** frontier point (0.710 displayed @ $0.00 band; true cost $0.003), one of the two entries our submissions do not yet Pareto-dominate.
+**This is the ultra-low-cap experiment.** Same run configuration family as v0_0_5 (budget 750, examples-per-iteration 20, Deep Focus off) with two deliberate changes: the evolution model (**fable-5** vs opus-4.8) and a **17x lower cost cap** (`cost_threshold=0.003`, `cost_per_error=0.001` — vs the $0.05/$0.01 default). The motivation was twofold: (a) probe what evolution produces at the extreme low end of the cost axis, and (b) take the official leaderboard's **ReAct/GPT-5-Mini** frontier point (0.710 displayed @ $0.00 band; true cost $0.003), one of the two entries our submissions do not yet Pareto-dominate. Outcome: (a) yes, (b) no — the official cost came in at $0.004280, above the target; see "Post-run cost postmortem" for the two-part cause. The entry still lands on the frontier as a new point between ReAct/GPT-5-Mini and our deep_focus entry.
 
 What's distinctive about this submission:
 
 - **A budget-tier cascade with no strong generator.** Generation is entirely gpt-5.4-mini + gemini-3.1-flash-lite (with claude-haiku-4-5 escalation); the strong gpt-5.4 appears **only as a rare, 450-token-capped tie-break arbiter** (two call sites: failed majority vote, and the no-sandbox disagreement fallback), so its cost amortizes to noise under the batch-average free zone. No dependence on any single relatively strong model — relevant to deployment scenarios where that dependence is itself the thing to avoid.
-- **Cap-hugging at 98%.** Internal mean agent cost $0.00294/problem against the $0.003 cap. This extends the fable-5 pattern (its $0.03-cap sibling `robophd-asta_ds1000-035` used 84% of its cap; opus-4.8 runs typically leave 60%+ unused).
+- **Cap-hugging at 98% — but against a mis-measured basis.** Internal mean agent cost was $0.00294/problem against the $0.003 cap, extending the fable-5 pattern (its $0.03-cap sibling `robophd-asta_ds1000-035` used 84% of its cap; opus-4.8 runs typically leave 60%+ unused). The post-run cost postmortem (below) found the internal number understated: on the leaderboard's billing basis the agent actually spends **$0.00428/problem — 143% of the intended cap**. Evolution hugged a cap it was mis-measuring.
 - **Mechanical detection instead of LLM triage.** The iter8 delta over the iter7 champion replaces flash-lite MATCH/MISMATCH judgment with expected-output diffing: a flash-lite call quotes the desired-output block the asker printed in the problem text (mechanically validated), rendered candidate values are scored by canonicalized order-aware containment (difflib), and the score drives candidate selection, audit mismatch detection, and fix adoption behind a no-hardcoded-literals AST guard. Per the iter8 docstring: "Detection — not audit coverage — was the weak link."
 
 The `soft_cap_0_003` tail names the per-iteration mean-spend free-zone the run was trained under (`cost_threshold=0.003`, `cost_per_error=0.001`); the `fable` tail marks the evolution model (Claude Fable 5).
 
 ## Leaderboard score
 
-**To be submitted as `RoboPhD`.** Official `astabench score` numbers pending the official run; internal-dev numbers:
+**To be submitted as `RoboPhD`.** Official `astabench score` run completed 2026-07-05:
 
 | | Official (`astabench score`) | Internal dev eval |
 |---|---|---|
-| Accuracy (DS-1000 test, 900 samples) | pending | 0.7322 (659/900) |
-| Per-problem cost | pending | $0.00294 |
+| Accuracy (DS-1000 test, 900 samples) | **0.7322** (659/900, stderr 0.0148) | 0.7322 (659/900) |
+| Per-problem cost | **$0.004280** | $0.00294 (pre-fix basis; see postmortem) |
+| Wrapper fallbacks | 0 / 900 | 0 / 900 |
 | Submission name | `v0_0_6_soft_cap_0_003_fable` / form: `RoboPhD` | — |
-| Pareto target | ReAct/GPT-5-Mini (0.710 @ $0.003 true cost): internal numbers beat it by +2.2pp at slightly lower cost — domination pending the official cost measurement holding ≤ $0.003 | — |
+| Pareto outcome | ReAct/GPT-5-Mini (0.710 @ $0.003 true cost) is **NOT dominated** — we are +2.2pp on accuracy but 43% above it on true cost. The entry is instead a **new frontier point in its own right**: nothing on the board is both cheaper and more accurate, and it slots between ReAct/GPT-5-Mini and our deep_focus entry (0.751 @ $0.0069). Displays as 0.732 @ $0.00 (the rounded band covers ≤$0.0049). | — |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | — |
 
-Margin note: the accuracy edge over ReAct/GPT-5-Mini (+2.2pp, 20 problems) is outside the ±1.4pp stderr, but the cost side is tight — internal $0.00294 vs the target's $0.003 true cost leaves only a $0.00006 margin, and internal→official cost has historically held steady (v0_0_5_deep_focus: $0.0069 both) while accuracy moved ±1-2pp. Both leaderboard costs display in the rounded $0.00 band.
+Margin note: the score replicated internally→officially EXACTLY (659/900 both — the tightest replication of any of our submissions; prior deltas ±0.8-1.7pp). The cost did not: see the postmortem below for the two-part cause.
+
+## Post-run cost postmortem (why the $0.003 target was missed)
+
+The internal $0.00294 was never achievable officially — it was measured on a flawed basis, in two independent ways:
+
+1. **Gemini reasoning tokens were dropped** (our bug). Gemini reports thinking tokens separately from `output_tokens` (total = input + output + reasoning) but bills them at the output rate; the internal evaluator collected only input/output and priced 233k flash-lite thinking tokens at $0. `astabench score` bills them (agenteval folds reasoning into completion tokens when the token arithmetic proves output excludes it). Fixed in commit `dde6356`.
+2. **Price-map version skew** (leaderboard-side artifact). The official scorer pins litellm 1.88.1's bundled price map (`LITELLM_LOCAL_MODEL_COST_MAP=True`), which bills gemini-3.1-flash-lite at $0.45/$2.70 per M — 1.8x Google's current $0.25/$1.50 that the live map (and our internal tracking) used. Repricing this run's logged usage on the bundled map reproduces the official $0.004280 to six decimal places.
+
+Consequence for this run: evolution optimized under prices that made flash-lite thinking look ~2.6x cheaper than the board bills it, converged on a flash-lite-heavy cascade, and "hugged" a cap it was actually 43% over. Under correct billing, this architecture doesn't fit $0.003 even with thinking removed (~$0.0036), so the miss was structural, not marginal.
+
+Policy going forward (decided 2026-07-05): internal costs track **Ai2's billing basis** — litellm's bundled snapshot, reasoning tokens folded per agenteval's rule — for comparability with other leaderboard systems, even where the bundled map lags true provider prices; we alert Ai2 to stale entries but move only when they move. Implemented in commits `b74f8e7` (bundled-map basis + live-map fallback warnings) and `ae1e410` (drift warnings + unit tests incl. a golden regression pinning this run's official cost). Cost-capped runs recorded before these commits understate Gemini-using agents' costs (v0_0_4 official +36%, this run +46% vs internal).
 
 ## Submission metadata
 
@@ -63,7 +75,7 @@ The submitted `agent.py` (inside the tarball) is the same auto-generated two-tie
 | | Value |
 |---|---|
 | Score (RoboPhD-internal eval, full test) | **0.7322** (659 / 900) |
-| Per-problem inference cost | $0.00294 (98% of the $0.003 cap) |
+| Per-problem inference cost | $0.00294 as measured pre-fix (98% of the $0.003 cap); $0.004280 on the leaderboard billing basis — see postmortem |
 | Test eval total cost | $2.65 |
 | Train mean (11 ELO rounds, ~220 problems) | **0.868** |
 | Best-agent ELO | 1650 (next-best iter7 at 1546) |
