@@ -80,7 +80,8 @@ CLAUDE_SONNET_4_6 = get_model(_CLAUDE_SONNET_4_6_ID, api_key=_ANTHROPIC_API_KEY)
 # Flash variants? Earlier (ed0c0f5) Flash was pinned at "medium" to
 # act as a "step-up tier" relative to Flash-Lite's "low". That intent
 # is preserved by Flash's higher native price and capability ($1.50/
-# $9.00 vs Flash-Lite's $0.25/$1.50), just shifted: the step-up is now
+# $9.00 vs Flash-Lite's $0.45/$2.70 as billed — see background.md's
+# note on billed-vs-list prices), just shifted: the step-up is now
 # in default capability, not in default reasoning effort. The agent
 # can still opt up to `"high"` per-call when it wants the original
 # medium-style step-up — the new background.md table makes that

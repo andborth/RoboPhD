@@ -1007,13 +1007,35 @@ def test_background_md_prices_match_litellm_registry():
     env. The cost: an upstream model *removal* surfaces as a visible
     skip rather than a failure; repricing (the actual incident class)
     is always caught when the registry has the model.
+
+    "Billed reality" is defined by evaluator._estimate_cost (b74f8e7):
+    litellm's BUNDLED price snapshot first — the leaderboard's billing
+    basis (`astabench score` under LITELLM_LOCAL_MODEL_COST_MAP=True) —
+    falling back to the live map only for models the snapshot lacks.
+    The bundled and live maps can genuinely diverge (the v0_0_6
+    postmortem: gemini-3.1-flash-lite bundled $0.45/$2.70 vs live
+    $0.25/$1.50), and the table must advertise what the evaluator
+    charges, so the lookup order here mirrors the evaluator exactly.
     """
+    import json
+
     import litellm
 
     from RoboPhD.runner_utils import register_supported_model_pricing
 
     # Cover models newer than litellm's registry (e.g. claude-fable-5).
     register_supported_model_pricing()
+
+    # The leaderboard's billing basis — same snapshot the evaluator
+    # prices from. Missing snapshot degrades to live-map-only checking
+    # (matching the evaluator's own fallback) rather than failing here.
+    try:
+        bundled_map = json.loads(
+            (Path(litellm.__file__).parent
+             / "model_prices_and_context_window_backup.json").read_text()
+        )
+    except Exception:
+        bundled_map = {}
 
     # Handle name -> "provider/model" from _<HANDLE>_ID assignments.
     registry_src = (ASTA_DS1000_DIR / "model_registry.py").read_text()
@@ -1057,15 +1079,25 @@ def test_background_md_prices_match_litellm_registry():
             continue
 
         bare = model_id.split("/", 1)[1]
+        candidates = (model_id, bare, f"gemini/{bare}")
+        # Bundled snapshot first (what the evaluator bills), live map
+        # as fallback — same order as evaluator._estimate_cost.
         key = next(
-            (k for k in (model_id, bare, f"gemini/{bare}") if k in litellm.model_cost),
+            (k for k in candidates
+             if bundled_map.get(k, {}).get("input_cost_per_token") is not None),
             None,
         )
+        source = bundled_map
+        if key is None:
+            key = next(
+                (k for k in candidates if k in litellm.model_cost), None
+            )
+            source = litellm.model_cost
         if key is None:
             unverifiable.append(f"{handle} ({model_id})")
             continue
 
-        mc = litellm.model_cost[key]
+        mc = source[key]
         actual_in = mc["input_cost_per_token"] * 1e6
         actual_out = mc["output_cost_per_token"] * 1e6
         if advertised_in != pytest.approx(actual_in, abs=1e-6) or (

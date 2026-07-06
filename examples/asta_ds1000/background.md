@@ -74,7 +74,7 @@ Most DS-1000 problems don't need files, but the API is available.
 
 ## LLM calls
 
-The following model handles are available, imported from `model_registry`:
+The following model handles are available, imported from `model_registry`. Prices are the rates this benchmark's scoring actually bills (its pinned price table); they may differ from a provider's current list price:
 
 | Handle | Input ($/M tok) | Output ($/M tok) | Default `reasoning_effort` | Available overrides |
 | --- | --- | --- | --- | --- |
@@ -84,7 +84,7 @@ The following model handles are available, imported from `model_registry`:
 | `CLAUDE_HAIKU_4_5` | 1.00 | 5.00 | `"none"` | `"low"`, `"medium"`, `"high"` |
 | `CLAUDE_SONNET_4_6` | 3.00 | 15.00 | `"none"` | `"low"`, `"medium"`, `"high"` |
 | `CLAUDE_OPUS_4_8` | 5.00 | 25.00 | model-managed | `"low"`, `"medium"`, `"high"` |
-| `GEMINI_3_1_FLASH_LITE` | 0.25 | 1.50 | `"low"` | `"low"`, `"high"` |
+| `GEMINI_3_1_FLASH_LITE` | 0.45 | 2.70 | `"low"` | `"low"`, `"high"` |
 | `GEMINI_3_5_FLASH` | 1.50 | 9.00 | `"low"` | `"low"`, `"high"` |
 | `GEMINI_3_1_PRO_PREVIEW` | 2.00 | 12.00 | `"low"` | `"low"`, `"high"` |
 
