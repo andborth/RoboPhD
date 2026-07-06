@@ -56,6 +56,36 @@ logger = logging.getLogger(__name__)
 # Once-per-process to avoid log spam across hundreds of evals.
 _unpriced_models_warned: set[str] = set()
 
+_BUNDLED_PRICE_MAP: dict | None = None
+
+
+def _bundled_price_map() -> dict:
+    """litellm's BUNDLED price map — the leaderboard's cost basis.
+
+    `astabench score` runs with LITELLM_LOCAL_MODEL_COST_MAP=True, which
+    makes litellm price from the JSON snapshot shipped inside the
+    installed package rather than the live remote map. We load that same
+    snapshot directly (env-var-free: the flag only takes effect at
+    litellm import time, which may already have happened) so internal
+    costs match what the leaderboard will bill. Empty dict if litellm
+    isn't installed or the snapshot can't be read — callers fall back
+    to litellm.cost_per_token.
+    """
+    global _BUNDLED_PRICE_MAP
+    if _BUNDLED_PRICE_MAP is None:
+        try:
+            import json as _json
+            from pathlib import Path as _Path
+            import litellm as _litellm
+            snapshot = (
+                _Path(_litellm.__file__).parent
+                / "model_prices_and_context_window_backup.json"
+            )
+            _BUNDLED_PRICE_MAP = _json.loads(snapshot.read_text())
+        except Exception:
+            _BUNDLED_PRICE_MAP = {}
+    return _BUNDLED_PRICE_MAP
+
 
 def _head_tail_truncate(s: str, head: int = 200, tail: int = 1500) -> str:
     """Truncate `s` to `head` + marker + `tail` chars when too long.
@@ -1082,7 +1112,19 @@ class Ds1000Evaluator:
 
     @staticmethod
     def _estimate_cost(model_name: str, counts: dict) -> float:
-        """Estimate cost via litellm.cost_per_token.
+        """Estimate cost on the LEADERBOARD'S price basis.
+
+        Prices with litellm's BUNDLED local price map — the same table
+        `astabench score` uses (agenteval runs under
+        LITELLM_LOCAL_MODEL_COST_MAP=True) — NOT the live remote map.
+        The two can diverge (the 1.88.1 bundled map bills
+        gemini-3.1-flash-lite at $0.45/$2.70 per M vs the current true
+        $0.25/$1.50), and the v0_0_6 postmortem (2026-07-05) showed the
+        official score billing the stale bundled rate. Decision: track
+        Ai2's numbers for comparability with other leaderboard systems,
+        even where they lag true provider prices — revisit only when
+        Ai2 moves. Falls back to litellm.cost_per_token (live map +
+        registry overlay) for models absent from the bundled map.
 
         Returns 0.0 if litellm isn't installed, can't price the model,
         or raises. Logs a one-shot warning the first time a model with
@@ -1137,12 +1179,27 @@ class Ds1000Evaluator:
             else model_name
         )
         try:
-            pin, pout = litellm.cost_per_token(
-                model=litellm_name,
-                prompt_tokens=input_tokens,
-                completion_tokens=completion_tokens,
+            bundled = _bundled_price_map()
+            entry = bundled.get(litellm_name) or bundled.get(
+                litellm_name.split("/", 1)[-1]
             )
-            cost = (pin or 0.0) + (pout or 0.0)
+            if entry and entry.get("input_cost_per_token") is not None:
+                # Leaderboard basis: flat bundled-map rates, reasoning
+                # billed at the output rate (matches agenteval).
+                cost = (
+                    input_tokens * (entry.get("input_cost_per_token") or 0.0)
+                    + completion_tokens * (entry.get("output_cost_per_token") or 0.0)
+                )
+            else:
+                # Model not in the bundled map (e.g. newer than the
+                # installed litellm): fall back to the live map plus the
+                # registry overlay so the cost cap still fires.
+                pin, pout = litellm.cost_per_token(
+                    model=litellm_name,
+                    prompt_tokens=input_tokens,
+                    completion_tokens=completion_tokens,
+                )
+                cost = (pin or 0.0) + (pout or 0.0)
         except Exception:
             cost = 0.0
 
