@@ -55,6 +55,7 @@ logger = logging.getLogger(__name__)
 # Tracks whether we've already warned about a model litellm couldn't price.
 # Once-per-process to avoid log spam across hundreds of evals.
 _unpriced_models_warned: set[str] = set()
+_live_map_fallback_warned: set[str] = set()
 
 _BUNDLED_PRICE_MAP: dict | None = None
 
@@ -82,8 +83,21 @@ def _bundled_price_map() -> dict:
                 / "model_prices_and_context_window_backup.json"
             )
             _BUNDLED_PRICE_MAP = _json.loads(snapshot.read_text())
-        except Exception:
+        except Exception as exc:
             _BUNDLED_PRICE_MAP = {}
+            # Loud one-shot (cached {} skips this branch on later calls):
+            # without the snapshot every model silently reprices on the
+            # LIVE map — reintroducing the internal-vs-official basis
+            # drift this loader exists to prevent (see _estimate_cost).
+            logger.warning(
+                "Could not load litellm's bundled price snapshot (%s). "
+                "ALL internal costs will fall back to the live price map, "
+                "which can diverge from the leaderboard's billing basis "
+                "(e.g. gemini-3.1-flash-lite: live $0.25/$1.50 vs bundled "
+                "$0.45/$2.70 per M). Fix the snapshot path/litellm install "
+                "before trusting cost-capped results.",
+                exc,
+            )
     return _BUNDLED_PRICE_MAP
 
 
@@ -1193,7 +1207,19 @@ class Ds1000Evaluator:
             else:
                 # Model not in the bundled map (e.g. newer than the
                 # installed litellm): fall back to the live map plus the
-                # registry overlay so the cost cap still fires.
+                # registry overlay so the cost cap still fires. One-shot
+                # warning per model — this is expected for brand-new
+                # models, but it means this model's cost is NOT on the
+                # leaderboard's billing basis, so it must be visible.
+                if litellm_name not in _live_map_fallback_warned:
+                    _live_map_fallback_warned.add(litellm_name)
+                    logger.warning(
+                        "%r is not in litellm's bundled price snapshot; "
+                        "pricing it from the live map instead. Its cost is "
+                        "NOT on the leaderboard's billing basis and may "
+                        "diverge from an official astabench score.",
+                        litellm_name,
+                    )
                 pin, pout = litellm.cost_per_token(
                     model=litellm_name,
                     prompt_tokens=input_tokens,
