@@ -1042,6 +1042,16 @@ class Ds1000Evaluator:
                         "input_tokens": getattr(u, "input_tokens", 0),
                         "output_tokens": getattr(u, "output_tokens", 0),
                         "total_tokens": getattr(u, "total_tokens", 0),
+                        # Reasoning ("thinking") tokens are reported
+                        # SEPARATELY from output_tokens by Gemini models
+                        # (total = input + output + reasoning) but billed
+                        # at the output rate. Dropping them here silently
+                        # underpriced Gemini agents by the full thinking
+                        # spend — discovered when the v0_0_6 official
+                        # astabench score came in 46% above our internal
+                        # number. Persisted into usage_summary so recorded
+                        # runs retain the full accounting.
+                        "reasoning_tokens": getattr(u, "reasoning_tokens", None) or 0,
                     }
                     usage_summary[model_name] = counts
                     model_cost = self._estimate_cost(model_name, counts)
@@ -1104,6 +1114,23 @@ class Ds1000Evaluator:
             pass
         input_tokens = counts.get("input_tokens", 0)
         output_tokens = counts.get("output_tokens", 0)
+        total_tokens = counts.get("total_tokens", 0)
+        reasoning_tokens = counts.get("reasoning_tokens", 0) or 0
+        # Gemini reports reasoning ("thinking") tokens separately and
+        # EXCLUDES them from output_tokens (total = input + output +
+        # reasoning), yet Google bills them at the output rate. Mirror
+        # agenteval's rule (agenteval/log.py compute_model_cost): fold
+        # reasoning into completion tokens only when the token arithmetic
+        # proves output excludes it — OpenAI reports reasoning already
+        # inside output_tokens (input == total - output), and Anthropic's
+        # cache-token pattern must not be mistaken for reasoning, so the
+        # strict equality guard is load-bearing.
+        completion_tokens = output_tokens
+        if (
+            reasoning_tokens
+            and input_tokens == total_tokens - output_tokens - reasoning_tokens
+        ):
+            completion_tokens = output_tokens + reasoning_tokens
         litellm_name = (
             "gemini/" + model_name[len("google/"):]
             if model_name.startswith("google/")
@@ -1113,7 +1140,7 @@ class Ds1000Evaluator:
             pin, pout = litellm.cost_per_token(
                 model=litellm_name,
                 prompt_tokens=input_tokens,
-                completion_tokens=output_tokens,
+                completion_tokens=completion_tokens,
             )
             cost = (pin or 0.0) + (pout or 0.0)
         except Exception:
