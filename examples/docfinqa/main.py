@@ -29,6 +29,7 @@ sys.path.insert(0, str(HERE.parent.parent))
 sys.path.insert(0, str(HERE))
 
 from RoboPhD import optimize_anything, eval_candidate, eval_run, RoboPhDConfig, GEPAConfig, AutoresearchConfig, RoboPhDEvalConfig
+from RoboPhD.runner_utils import apply_engine_config
 
 logging.basicConfig(
     level=logging.INFO,
@@ -165,7 +166,7 @@ def main():
 
     # Build config based on engine choice
     if args.engine in ("gepa", "autoresearch"):
-        _robophd_flags = {"--num-iterations", "--engine-config", "--resume", "--extend", "--from-iteration", "--meta-evolution-strategy"}
+        _robophd_flags = {"--num-iterations", "--resume", "--extend", "--from-iteration", "--meta-evolution-strategy"}
         passed = {f for f in _robophd_flags if any(a == f or a.startswith(f + "=") for a in sys.argv)}
         if passed:
             logger.warning(f"Flags ignored by {args.engine} engine: {', '.join(sorted(passed))}")
@@ -178,6 +179,7 @@ def main():
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
+        cfg = apply_engine_config(cfg, args.engine_config)
         dataset = train
     elif args.engine == "autoresearch":
         cfg = AutoresearchConfig(
@@ -187,6 +189,7 @@ def main():
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
         )
+        cfg = apply_engine_config(cfg, args.engine_config)
         dataset = train
     else:
         dataset = train + val

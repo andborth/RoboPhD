@@ -3,6 +3,7 @@ Shared utilities for runner scripts (run_gepa.py, run_robophd.py, run_autoresear
 """
 
 import argparse
+import dataclasses
 import json
 import logging
 import os
@@ -131,6 +132,37 @@ class CostTrackingLM:
         )
 
         return response_text
+
+
+def apply_engine_config(cfg: Any, engine_config: Any) -> Any:
+    """Overlay --engine-config values onto an engine config dataclass
+    (e.g. GEPAConfig, AutoresearchConfig).
+
+    Accepts the raw JSON string from the CLI flag, an already-parsed
+    dict, or None/empty (no-op). Every key must be a field of the
+    dataclass; unknown keys raise ValueError listing the valid names
+    rather than being silently dropped. Applied after construction, so
+    these values win over flag-derived constructor arguments — the JSON
+    overlay is the escape hatch, same precedence as the RoboPhD
+    engine's engine_overrides.
+    """
+    if not engine_config:
+        return cfg
+    overrides = (
+        json.loads(engine_config)
+        if isinstance(engine_config, str)
+        else engine_config
+    )
+    valid = {f.name for f in dataclasses.fields(cfg)}
+    unknown = sorted(set(overrides) - valid)
+    if unknown:
+        raise ValueError(
+            f"Unknown --engine-config key(s) for {type(cfg).__name__}: "
+            f"{', '.join(unknown)}. Valid keys: {', '.join(sorted(valid))}"
+        )
+    for key, value in overrides.items():
+        setattr(cfg, key, value)
+    return cfg
 
 
 def fmt_val(val: Any) -> str:

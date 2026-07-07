@@ -44,7 +44,11 @@ from RoboPhD import (
     GEPAConfig,
     AutoresearchConfig,
 )
-from RoboPhD.runner_utils import read_task_config_extras, resolve_run_immutable
+from RoboPhD.runner_utils import (
+    apply_engine_config,
+    read_task_config_extras,
+    resolve_run_immutable,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -774,6 +778,7 @@ def main():
             parent_experiments_dir=args.runs_dir,
             eval_timeout=EVAL_TIMEOUT,
         )
+        cfg = apply_engine_config(cfg, parsed_engine_config)
         dataset = train
     elif args.engine == "autoresearch":
         cfg = AutoresearchConfig(
@@ -784,6 +789,7 @@ def main():
             parent_experiments_dir=args.runs_dir,
             eval_timeout=EVAL_TIMEOUT,
         )
+        cfg = apply_engine_config(cfg, parsed_engine_config)
         dataset = train
     else:
         dataset = train

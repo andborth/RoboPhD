@@ -186,6 +186,15 @@ The `optimize_anything()` API supports three engines, selected by config type:
 
 ### Advanced Configuration (via `--engine-config`)
 
+With `--engine gepa` or `--engine autoresearch`, `--engine-config` keys map to `GEPAConfig` / `AutoresearchConfig` fields (unknown keys fail loudly):
+
+```bash
+# GEPA reflection model
+python examples/docfinqa/main.py --engine gepa --engine-config '{"reflection_model": "fable-5"}'
+```
+
+For the default RoboPhD engine:
+
 ```bash
 # Evolution schedule
 python examples/arc_agi_1/main.py --engine-config '{
