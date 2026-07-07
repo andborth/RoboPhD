@@ -44,11 +44,11 @@ RoboPhD evolved several agents that earned spots on the [AstaBench DS-1000 leade
 | 75.7% | $0.02 | Smolagents Coder (GPT-5) |
 | 75.6% | $0.04 | ReAct (Claude Sonnet 4) |
 
-The Key Results table below complements the leaderboard above with a controlled comparison against two alternative agent-evolution approaches (GEPA and Autoresearch) across six additional benchmarks, run at a fixed evaluation budget of 1,500 problems each.
+The Key Results table below complements the leaderboard above with a controlled comparison against two alternative agent-evolution approaches (GEPA and Autoresearch) across seven benchmarks, run at a fixed evaluation budget of 1,500 problems each (750 for DS-1000).
 
 ## Key Results
 
-Tested across six benchmarks with diverse task types — abstract reasoning, cloud scheduling, SQL generation, financial document QA, puzzle-solving speed, and protein function prediction. All runs use a fixed budget of 1,500 evaluations. Scores show test set performance; numbers in parentheses are agent lines of code.
+Tested across seven benchmarks with diverse task types — abstract reasoning, cloud scheduling, SQL generation, financial document QA, puzzle-solving speed, protein function prediction, and data-science code generation. All runs use a fixed budget of 1,500 evaluations, except DS-1000 at 750. Scores show test set performance; numbers in parentheses are agent lines of code.
 
 | Benchmark | Seed | RoboPhD | GEPA | Autoresearch |
 |-----------|------|---------|------|--------------|
@@ -58,10 +58,11 @@ Tested across six benchmarks with diverse task types — abstract reasoning, clo
 | [DocFinQA](https://huggingface.co/datasets/kensho/DocFinQA) (%) | 17.7 (29) | **50.4** (825) | 40.0 (207) | 48.2 (198) |
 | [Sudoku](https://huggingface.co/datasets/sapientinc/sudoku-extreme) (%) | 0.0 (25) | **90.3** (329) | 83.2 (151) | 87.4 (243) |
 | [Protein GO (Price-149)](https://github.com/tttianhao/CLEAN) (%) | 48.4 (53) | **65.9** (682) | 55.7 (317) | 57.7 (200) |
+| [DS-1000 (AstaBench)](https://allenai-asta-bench-leaderboard.hf.space/code-execution) (%) | 69.3 (58) | **84.2** (797) | 72.1 (502) | 82.3 (251) |
 
 *Can't Be Late scores are negative costs (higher = better). Protein GO scored as canonical CAFA Fmax on the homology-resistant Price-149 split (Yu et al., 2023).*
 
-Using a single default configuration, RoboPhD outperforms both GEPA and Autoresearch on five of six benchmarks, losing only on Can't Be Late — the simplest task, where the winning solution required just 87 lines of code. On the five complex benchmarks, RoboPhD's multi-iteration Elo competition produces substantially larger agents (up to 1,000+ lines) that combine strategies discovered across many evolutionary cycles.
+Using a single default configuration, RoboPhD outperforms both GEPA and Autoresearch on six of seven benchmarks, losing only on Can't Be Late — the simplest task, where the winning solution required just 87 lines of code. On the six complex benchmarks, RoboPhD's multi-iteration Elo competition produces substantially larger agents (up to 1,000+ lines) that combine strategies discovered across many evolutionary cycles.
 
 ## How It Works
 
