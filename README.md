@@ -37,6 +37,7 @@ RoboPhD evolved several agents that earned spots on the [AstaBench DS-1000 leade
 | 83.8% | $0.04 | ReAct (gpt-5.4) |
 | 83.7% | $0.04 | ReAct (claude-opus-4-6) |
 | 83.6% | $0.03 | Button (claude-opus-4-6) |
+| **83.0%** | **$0.02** | **RoboPhD** (gpt-5.4 + 2 others) |
 | **80.9%** | **$0.01** | **RoboPhD** (claude-sonnet-4-6) |
 | 78.6% | $0.06 | ReAct (claude-opus-4-7) |
 | 78.4% | $0.03 | EvoScientist-Code (GPT-5) |
