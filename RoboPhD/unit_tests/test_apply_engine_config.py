@@ -101,6 +101,15 @@ def test_structural_fields_pass_through_unchecked():
 EXAMPLES_DIR = Path(__file__).resolve().parents[2] / "examples"
 ENGINE_CONFIG_CLASSES = {"GEPAConfig", "AutoresearchConfig"}
 
+# Compound statements own nested blocks; their inner statements are
+# scanned when ast.walk reaches those blocks. Skipped at the outer
+# level so a construction inside e.g. an `if` isn't double-reported
+# against the outer block, where a same-branch apply wouldn't be seen.
+_COMPOUND_STMTS = (
+    ast.If, ast.For, ast.While, ast.With, ast.Try,
+    ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef,
+)
+
 
 def _statement_calls_apply(stmt: ast.stmt) -> bool:
     for node in ast.walk(stmt):
@@ -112,9 +121,41 @@ def _statement_calls_apply(stmt: ast.stmt) -> bool:
     return False
 
 
-def _unapplied_constructions(tree: ast.AST) -> list:
-    """Line numbers of GEPAConfig/AutoresearchConfig constructions not
-    followed by an apply_engine_config call in the same statement block."""
+def _engine_class_names(tree: ast.AST) -> set:
+    """Bare names that refer to an engine config class in this module —
+    the class names themselves plus any import aliases
+    (`from RoboPhD import GEPAConfig as GC`)."""
+    names = set(ENGINE_CONFIG_CLASSES)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if alias.name in ENGINE_CONFIG_CLASSES and alias.asname:
+                    names.add(alias.asname)
+    return names
+
+
+def _statement_constructs_engine_config(stmt: ast.stmt, names: set) -> bool:
+    """True if any call inside the statement constructs an engine config
+    class — bare name (incl. import aliases), attribute access
+    (api.GEPAConfig), any statement/assignment shape (plain, annotated,
+    tuple-unpacking, expression)."""
+    for node in ast.walk(stmt):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id in names:
+            return True
+        if isinstance(func, ast.Attribute) and func.attr in ENGINE_CONFIG_CLASSES:
+            return True
+    return False
+
+
+def _scan_constructions(tree: ast.AST) -> tuple:
+    """(construction_count, missing_linenos): engine-config constructions
+    found, and those not paired with an apply_engine_config call in the
+    same statement or a following statement of the same block."""
+    names = _engine_class_names(tree)
+    found = 0
     missing = []
     for node in ast.walk(tree):
         for attr in ("body", "orelse", "finalbody"):
@@ -122,16 +163,16 @@ def _unapplied_constructions(tree: ast.AST) -> list:
             if not isinstance(block, list):
                 continue
             for idx, stmt in enumerate(block):
-                if not (
-                    isinstance(stmt, ast.Assign)
-                    and isinstance(stmt.value, ast.Call)
-                    and isinstance(stmt.value.func, ast.Name)
-                    and stmt.value.func.id in ENGINE_CONFIG_CLASSES
-                ):
+                if isinstance(stmt, _COMPOUND_STMTS):
                     continue
+                if not _statement_constructs_engine_config(stmt, names):
+                    continue
+                found += 1
+                if _statement_calls_apply(stmt):
+                    continue  # constructed and applied in one statement
                 if not any(_statement_calls_apply(s) for s in block[idx + 1:]):
                     missing.append(stmt.lineno)
-    return missing
+    return found, missing
 
 
 def test_every_example_applies_engine_config_after_construction():
@@ -141,13 +182,51 @@ def test_every_example_applies_engine_config_after_construction():
     engine, the exact bug this helper exists to prevent."""
     mains = sorted(EXAMPLES_DIR.glob("*/main.py"))
     assert mains, f"no example main.py files found under {EXAMPLES_DIR}"
+    total_found = 0
     offenders = {}
     for main_py in mains:
-        tree = ast.parse(main_py.read_text())
-        missing = _unapplied_constructions(tree)
+        found, missing = _scan_constructions(ast.parse(main_py.read_text()))
+        total_found += found
         if missing:
             offenders[str(main_py.relative_to(EXAMPLES_DIR))] = missing
+    # Canary: zero constructions means the detector went stale (class
+    # renames, import style the scanner can't see) and the invariant
+    # above would pass vacuously.
+    assert total_found > 0, (
+        "no engine config constructions detected in any example — "
+        "detector is stale, not the examples clean"
+    )
     assert not offenders, (
         "engine config constructed without a following apply_engine_config "
         f"(file -> line numbers): {offenders}"
     )
+
+
+@pytest.mark.parametrize(
+    "snippet",
+    [
+        pytest.param("cfg = GEPAConfig(a=1)\n", id="plain-assign"),
+        pytest.param("cfg: GEPAConfig = GEPAConfig(a=1)\n", id="annotated-assign"),
+        pytest.param("cfg = api.GEPAConfig(a=1)\n", id="attribute-call"),
+        pytest.param("cfg, dataset = AutoresearchConfig(a=1), train\n", id="tuple-unpacking"),
+        pytest.param(
+            "from RoboPhD import GEPAConfig as GC\ncfg = GC(a=1)\n",
+            id="aliased-import",
+        ),
+    ],
+)
+def test_detector_catches_unapplied_construction_shapes(snippet):
+    found, missing = _scan_constructions(ast.parse(snippet))
+    assert found == 1 and len(missing) == 1
+
+
+def test_detector_accepts_applied_constructions():
+    compliant = (
+        "if engine == 'gepa':\n"
+        "    cfg = GEPAConfig(a=1)\n"
+        "    cfg = apply_engine_config(cfg, ec)\n"
+        "    dataset = train\n"
+        "one_liner = apply_engine_config(GEPAConfig(a=1), ec)\n"
+    )
+    found, missing = _scan_constructions(ast.parse(compliant))
+    assert found == 2 and missing == []
