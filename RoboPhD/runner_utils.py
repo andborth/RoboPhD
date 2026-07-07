@@ -9,6 +9,8 @@ import logging
 import os
 import random
 import threading
+import types
+import typing
 from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
 
@@ -141,10 +143,13 @@ def apply_engine_config(cfg: Any, engine_config: Any) -> Any:
     Accepts the raw JSON string from the CLI flag, an already-parsed
     dict, or None/empty (no-op). Every key must be a field of the
     dataclass; unknown keys raise ValueError listing the valid names
-    rather than being silently dropped. Applied after construction, so
-    these values win over flag-derived constructor arguments — the JSON
-    overlay is the escape hatch, same precedence as the RoboPhD
-    engine's engine_overrides.
+    rather than being silently dropped. Values for scalar-annotated
+    fields (int/float/str/bool, incl. Optional) are type-checked with
+    no coercion — '{"max_workers": "8"}' fails here, not downstream in
+    the thread pool; structural fields (e.g. val_dataset) pass through
+    unchecked. Applied after construction, so these values win over
+    flag-derived constructor arguments — the JSON overlay is the escape
+    hatch, same precedence as the RoboPhD engine's engine_overrides.
     """
     if not engine_config:
         return cfg
@@ -153,6 +158,11 @@ def apply_engine_config(cfg: Any, engine_config: Any) -> Any:
         if isinstance(engine_config, str)
         else engine_config
     )
+    if not isinstance(overrides, dict):
+        raise ValueError(
+            f"--engine-config must be a JSON object of "
+            f"{type(cfg).__name__} fields, got {type(overrides).__name__}"
+        )
     valid = {f.name for f in dataclasses.fields(cfg)}
     unknown = sorted(set(overrides) - valid)
     if unknown:
@@ -160,9 +170,50 @@ def apply_engine_config(cfg: Any, engine_config: Any) -> Any:
             f"Unknown --engine-config key(s) for {type(cfg).__name__}: "
             f"{', '.join(unknown)}. Valid keys: {', '.join(sorted(valid))}"
         )
+    hints = typing.get_type_hints(type(cfg))
     for key, value in overrides.items():
+        _validate_scalar_override(type(cfg).__name__, key, value, hints.get(key))
         setattr(cfg, key, value)
     return cfg
+
+
+def _validate_scalar_override(
+    cfg_name: str, key: str, value: Any, annotation: Any
+) -> None:
+    """Reject type-mismatched --engine-config values for scalar fields.
+
+    Only plain int/float/str/bool annotations (and their Optional
+    wrappers) are enforced; structural annotations like
+    Optional[List[Dict]] are skipped. No coercion — a digit string for
+    an int field is an error, not a convenience. bool is not accepted
+    where int is expected (despite the subclass relationship); int is
+    accepted where float is expected (JSON has one number type).
+    """
+    if annotation is None:
+        return
+    if typing.get_origin(annotation) in (typing.Union, types.UnionType):
+        args = typing.get_args(annotation)
+        non_none = [a for a in args if a is not type(None)]
+        if value is None and len(non_none) < len(args):
+            return  # Optional field explicitly set to null
+        if len(non_none) != 1:
+            return  # complex union — skip
+        annotation = non_none[0]
+    if annotation not in (int, float, str, bool):
+        return
+    if annotation is bool:
+        ok = isinstance(value, bool)
+    elif annotation is int:
+        ok = isinstance(value, int) and not isinstance(value, bool)
+    elif annotation is float:
+        ok = isinstance(value, (int, float)) and not isinstance(value, bool)
+    else:
+        ok = isinstance(value, str)
+    if not ok:
+        raise ValueError(
+            f"--engine-config key '{key}' for {cfg_name} expects "
+            f"{annotation.__name__}, got {type(value).__name__} ({value!r})"
+        )
 
 
 def fmt_val(val: Any) -> str:
