@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""Subprocess worker for PaperFinderEvaluator.
+
+Process-isolation strategy: inspect-ai's `inspect.eval()` raises if two
+calls are in flight in the same Python process. To get real parallelism
+across RoboPhD's worker threads, the evaluator spawns one of these
+workers per evaluation. Each subprocess imports inspect-ai/astabench
+freshly (~5–10s) but has its own process-global state, so concurrent
+workers don't fight for the eval_async singleton.
+
+Protocol:
+  python _eval_worker.py <input.json> <output.json>
+
+Input JSON shape:
+  {"candidate": {"agent.py": "..."},
+   "example": {<Sample.model_dump()>},
+   "tool_source": "mcp",
+   "apply_cost_penalty": true,
+   "min_cost_threshold": 0.10,
+   "cost_per_error": 0.02}
+
+Output JSON shape:
+  {"score": <float>, "diagnostics": <dict>}
+
+Note: the worker returns per-example raw F1; the iteration-level cost
+penalty is computed by PaperFinderEvaluator.aggregate in the parent
+process after all per-example results are in. The cost knobs ride
+along only so the worker's constructor validation matches the parent's.
+"""
+
+import json
+import sys
+import traceback
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+
+def main() -> int:
+    if len(sys.argv) != 3:
+        print(f"usage: {sys.argv[0]} <input.json> <output.json>", file=sys.stderr)
+        return 2
+
+    input_path, output_path = sys.argv[1], sys.argv[2]
+
+    try:
+        with open(input_path) as f:
+            params = json.load(f)
+    except Exception:
+        traceback.print_exc(file=sys.stderr)
+        return 3
+
+    try:
+        from evaluator import PaperFinderEvaluator
+
+        evaluator = PaperFinderEvaluator(
+            tool_source=params.get("tool_source"),
+            # We ARE the subprocess — don't recurse.
+            subprocess_isolation=False,
+            apply_cost_penalty=params["apply_cost_penalty"],
+            min_cost_threshold=params["min_cost_threshold"],
+            cost_per_error=params["cost_per_error"],
+        )
+        score, diagnostics = evaluator.evaluate(params["candidate"], params["example"])
+    except Exception:
+        traceback.print_exc(file=sys.stderr)
+        return 4
+
+    try:
+        with open(output_path, "w") as f:
+            json.dump({"score": score, "diagnostics": diagnostics}, f, default=str)
+    except Exception:
+        traceback.print_exc(file=sys.stderr)
+        return 5
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
