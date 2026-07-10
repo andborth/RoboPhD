@@ -32,6 +32,7 @@ if str(REPO_ROOT) not in sys.path:
 from utilities.sandbox_hook import (  # noqa: E402
     project_slug,
     auto_memory_dir,
+    auto_scratch_dirs,
     auto_session_dirs,
     evaluate_bash,
     replay_denial_record,
@@ -509,6 +510,87 @@ def test_tool_results_write_tool_still_denied(experiment_layout):
     deny — keeps the documented ~/.claude write boundary intact."""
     layout = experiment_layout
     target = _tool_results_path(layout["cwd"])
+    res = run_hook(
+        make_envelope("Write", {"file_path": target, "content": "x"},
+                      layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside write scope" in res["reason"]
+
+
+# ---------------------------------------------------------------------
+# Per-session scratch READ carve-out (<tmp>/claude-<uid>/<slug(cwd)>/)
+#
+# Besides <config-dir>/projects/, the Claude CLI keeps a per-session
+# scratch tree at /tmp/claude-<uid>/<slug(cwd)>/<session>/ — the
+# advertised scratchpad/ plus tasks/<id>.output spills of background-
+# task output the model must Read back. Regression source: autoresearch
+# run sudoku_20260709_215531 lost a val score to a DENY on exactly this
+# tasks/*.output readback. Same containment shape as the tool-results
+# carve-out: cwd-slug-keyed, READ-only, sibling slugs stay denied.
+# ---------------------------------------------------------------------
+
+
+def _scratch_path(cwd: Path, name: str = "bvqujqfnr.output") -> str:
+    slug = project_slug(os.path.realpath(str(cwd)))
+    return os.path.join(
+        "/tmp", f"claude-{os.getuid()}", slug,
+        "fe6e8d76-65ae-405e-b2d1-7a0f8ba1cc7b", "tasks", name,
+    )
+
+
+def test_auto_scratch_dirs_includes_tmp_uid_slug(tmp_path):
+    d = tmp_path / "iter"
+    d.mkdir()
+    out = auto_scratch_dirs(str(d))
+    slug = project_slug(os.path.realpath(str(d)))
+    expected = os.path.realpath(
+        os.path.join("/tmp", f"claude-{os.getuid()}", slug)
+    )
+    assert expected in out
+
+
+def test_scratch_task_output_read_under_cwd_slug_allows(experiment_layout):
+    """The CLI's background-task output spill readback (this cwd's
+    slug) must succeed — the denial of exactly this path shape is what
+    cost sudoku_20260709_215531 a val score."""
+    layout = experiment_layout
+    target = _scratch_path(layout["cwd"])
+    res = run_hook(
+        make_envelope("Read", {"file_path": target}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["rc"] == 0
+    assert res["decision"] is None
+
+
+def test_scratch_sibling_slug_denies(experiment_layout):
+    """A different cwd's slug under /tmp/claude-<uid>/ is not on the
+    carve-out — read denied. Pins containment: exactly this cwd's slug,
+    not all of the CLI's tmp scratch root."""
+    layout = experiment_layout
+    other_cwd = (layout["experiment_dir"].parent / "task_20251231_120000"
+                 / "evolution_output" / "iteration_002")
+    other_slug = project_slug(os.path.realpath(str(other_cwd)))
+    target = os.path.join(
+        "/tmp", f"claude-{os.getuid()}", other_slug,
+        "session-xyz", "tasks", "leak.output",
+    )
+    res = run_hook(
+        make_envelope("Read", {"file_path": target}, layout["cwd"]),
+        layout["experiment_dir"],
+    )
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_scratch_write_tool_still_denied(experiment_layout):
+    """Carve-out is READ-only: the CLI writes these files itself. A
+    model write into the scratch tree must still deny so /tmp doesn't
+    become a writable cross-run channel."""
+    layout = experiment_layout
+    target = _scratch_path(layout["cwd"])
     res = run_hook(
         make_envelope("Write", {"file_path": target, "content": "x"},
                       layout["cwd"]),

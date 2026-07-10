@@ -32,6 +32,7 @@ import os
 import os.path
 import re
 import sys
+import tempfile
 import traceback
 from datetime import datetime
 from pathlib import Path
@@ -1080,6 +1081,51 @@ def auto_session_dirs(cwd: str) -> list:
     return out
 
 
+def auto_scratch_dirs(cwd: str) -> list:
+    """READ-ONLY carve-outs for the Claude CLI's per-session scratch root.
+
+    Besides ``<config-dir>/projects/`` (see auto_session_dirs), the CLI
+    keeps a per-session scratch tree under
+    ``<tmp>/claude-<uid>/<slug(cwd)>/<session-id>/`` — an advertised
+    ``scratchpad/`` plus ``tasks/<id>.output`` spills, where a
+    background task's full output lands for the model to Read back
+    when it exceeds the inline limit. Without this carve-out that Read
+    is denied (outside EXPERIMENT_DIR): observed in autoresearch run
+    sudoku_20260709_215531, where a val-eval score was lost to exactly
+    this denial and the session journaled a sentinel string instead of
+    the number.
+
+    Same key (slug of the runtime cwd), same READ-ONLY rationale (the
+    CLI writes these files itself; any model write to ``/tmp/...``
+    stays denied), and same fragile-but-fail-safe profile as
+    auto_session_dirs: slug or layout drift => ordinary deny + logged
+    record, never an escape. Which tmp base the CLI uses is
+    undocumented — the literal ``/tmp`` (observed on macOS, realpathing
+    to /private/tmp) and ``tempfile.gettempdir()`` are both covered;
+    each form is still scoped to this run's own cwd slug.
+    """
+    getuid = getattr(os, "getuid", None)
+    if getuid is None:
+        return []
+    leaf = f"claude-{getuid()}"
+    bases = ["/tmp"]
+    tmpdir = tempfile.gettempdir()
+    if tmpdir and tmpdir not in bases:
+        bases.append(tmpdir)
+    out: list = []
+    seen_slugs: set = set()
+    for cand in (cwd, os.path.realpath(cwd)):
+        slug = project_slug(cand)
+        if slug in seen_slugs:
+            continue
+        seen_slugs.add(slug)
+        for base in bases:
+            p = os.path.realpath(os.path.join(base, leaf, slug))
+            if p not in out:
+                out.append(p)
+    return out
+
+
 def deny_message(
     experiment_dir: str,
     write_root: str,
@@ -1278,7 +1324,7 @@ def replay_denial_record(
     if md:
         memory_carveouts.append(md)
     read_roots = list(extra_read_roots) + memory_carveouts
-    for d in auto_session_dirs(cwd_real):
+    for d in auto_session_dirs(cwd_real) + auto_scratch_dirs(cwd_real):
         if d not in read_roots:
             read_roots.append(d)
 
@@ -1441,14 +1487,16 @@ def main() -> int:
             memory_carveouts.append(d)
     extra_read_roots = extra_read_roots + memory_carveouts
 
-    # Session-project READ carve-out: the Claude CLI spills large tool
+    # Session-project READ carve-outs: the Claude CLI spills large tool
     # outputs and stores transcripts under <config-dir>/projects/
-    # <slug(cwd)>/. The model must Read its own spilled output back; the
-    # raw experiment-dir read scope would deny. See auto_session_dirs.
+    # <slug(cwd)>/, and background-task outputs + scratchpad under
+    # <tmp>/claude-<uid>/<slug(cwd)>/. The model must Read its own
+    # spilled output back; the raw experiment-dir read scope would
+    # deny. See auto_session_dirs / auto_scratch_dirs.
     # READ-ONLY by design — NOT added to memory_carveouts (write),
-    # so an injection writing to ~/.claude/... via Write or Bash stays
-    # denied.
-    session_carveouts = auto_session_dirs(cwd)
+    # so an injection writing to ~/.claude/... or /tmp/... via Write
+    # or Bash stays denied.
+    session_carveouts = auto_session_dirs(cwd) + auto_scratch_dirs(cwd)
     for d in session_carveouts:
         if d not in extra_read_roots:
             extra_read_roots = extra_read_roots + [d]
