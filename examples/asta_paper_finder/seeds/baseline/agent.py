@@ -11,9 +11,9 @@ The seed makes two LLM calls on the cheapest OpenAI handle — distill
 the conversational query into a keyword phrase, then rerank the hits —
 around a single search call. The distillation step is load-bearing:
 `search_papers_by_relevance` is a literal keyword search and returns
-ZERO hits for full natural-language questions. See background.md for
-the full tool inventory, the nine-model menu, and the per-score-type
-strategies evolution may want to introduce.
+ZERO hits for full natural-language questions. See CLAUDE.md (Domain
+Background) for the full tool inventory, the nine-model menu, and the
+per-score-type strategies evolution may want to introduce.
 """
 
 import json
@@ -21,12 +21,9 @@ import json
 from inspect_ai.solver import Generate, TaskState, solver
 from inspect_ai.tool import ToolDef
 
-# All LLM calls go through model_registry handles — never get_model()
-# with a hardcoded string, and never a raw openai/anthropic/google
-# client. The registry exposes nine handles across three families and
-# price tiers (see background.md's price table); pick one per call or
-# mix across calls. Handle usage is recorded into the .eval log, which
-# is what cost accounting reads.
+# LLM handles are imported from `model_registry`. Pick one per call,
+# or mix across calls. See CLAUDE.md (Domain Background) for the
+# full list of handles and their pricing.
 from model_registry import GPT_5_4_MINI
 
 
