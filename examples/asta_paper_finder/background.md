@@ -4,7 +4,7 @@ Each example is a literature-search query: a natural-language description of pap
 
 ## Three query types (`state.metadata["score_type"]`)
 
-| score_type | meaning | gold form | scoring path | val/test count |
+| score_type | meaning | gold form | scoring path | train / held-out test count |
 | --- | --- | --- | --- | --- |
 | `specific_f1` | "the X paper" — known target | `{"corpus_ids":[...]}` | exact-match against `corpus_ids` | 10 / ~40 |
 | `metadata_f1` | author/year/venue filters | `{"corpus_ids":[...]}` | exact-match against `corpus_ids` | 8 / ~30 |
@@ -134,7 +134,7 @@ Your cost is the LLM calls your agent makes through `model_registry` handles (`a
 
 ## The relevance judge (semantic queries)
 
-On `semantic_f1` queries (73% of the validation split), the benchmark's scorer runs a GPT-4o relevance judge over every paper you return, grading each against the query's weighted `relevance_criteria`. Understanding the judge is a score lever: it reads each result's `markdown_evidence` when deciding relevance, so evidence quality (title + a passage that speaks to the criteria) directly moves your F1. For each training query, the exact criteria the judge scored against are visible post-hoc in that problem's `gold_criteria.md` diagnostic — read them when diagnosing why a semantic query scored low.
+On `semantic_f1` queries (73% of the training queries, and the same share of the held-out test set), the benchmark's scorer runs a GPT-4o relevance judge over every paper you return, grading each against the query's weighted `relevance_criteria`. Understanding the judge is a score lever: it reads each result's `markdown_evidence` when deciding relevance, so evidence quality (title + a passage that speaks to the criteria) directly moves your F1. For each training query, the exact criteria the judge scored against are visible post-hoc in that problem's `gold_criteria.md` diagnostic — read them when diagnosing why a semantic query scored low.
 
 The judge's own LLM spend appears in each problem's `result.json` as `other_cost`. That field is informational only — it is never penalized, never counts toward your batch mean, and is outside your control. Do not optimize for it.
 
