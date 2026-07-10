@@ -153,6 +153,19 @@ def test_fresh_run_packs_task_defaults():
     assert -(-66 // 5) == 14
 
 
+def test_auto_tool_source_hard_errors_without_key():
+    """The silent search fallback is dead: auto resolution must raise
+    SystemExit when ASTA_TOOL_KEY is unset, never warn-and-degrade."""
+    # The old silent auto rule must be gone...
+    assert '"mcp" if os.environ.get("ASTA_TOOL_KEY") else "search"' not in MAIN_SRC
+    # ...replaced by the erroring resolver.
+    assert "def _auto_tool_source" in MAIN_SRC
+    resolver = MAIN_SRC[MAIN_SRC.index("def _auto_tool_source"):]
+    resolver = resolver[:resolver.index("\n\n")]
+    assert "raise SystemExit" in resolver
+    assert "--tool-source search" in resolver
+
+
 def test_gepa_and_autoresearch_apply_engine_config():
     """Finding D: --engine-config must not be a silent no-op on the
     non-default engines."""

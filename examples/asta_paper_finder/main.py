@@ -273,10 +273,11 @@ def parse_args():
 
     p.add_argument("--tool-source", choices=["mcp", "search", "auto"], default=None,
                    help="Tool kit: 'mcp' (Asta MCP, Standard tier), 'search' "
-                        "(public S2 fallback), or 'auto' (mcp if ASTA_TOOL_KEY "
-                        "set). Resolved to a concrete value at run start and "
-                        "locked for the lifetime of the run (immutable on "
-                        "--resume). Default: auto."
+                        "(public S2 fallback, explicit dev opt-in), or 'auto' "
+                        "(mcp; hard error if ASTA_TOOL_KEY is unset — never a "
+                        "silent fallback). Resolved to a concrete value at run "
+                        "start and locked for the lifetime of the run "
+                        "(immutable on --resume). Default: auto."
                         "%(default).0s")
 
     p.add_argument("--cost-threshold", type=float, default=None,
@@ -361,30 +362,49 @@ def main():
     # tool_source: resolve "auto" (or absent) to a CONCRETE value before
     # persisting, so a resume on a machine without ASTA_TOOL_KEY can't
     # silently flip a Standard-tier run down to the search fallback.
+    # Auto resolves ONLY to mcp — with no key it's a hard startup error,
+    # never a silent fallback (a warning was tried first and got missed;
+    # run asta_paper_finder_20260710_081139 burned its budget on
+    # unauthenticated-S2 429s). --tool-source search remains the explicit
+    # dev escape hatch.
     cli_tool_source = args.tool_source if args.tool_source in ("mcp", "search") else None
-    auto_tool_source = "mcp" if os.environ.get("ASTA_TOOL_KEY") else "search"
+
+    def _auto_tool_source() -> str:
+        if os.environ.get("ASTA_TOOL_KEY"):
+            return "mcp"
+        raise SystemExit(
+            "ASTA_TOOL_KEY is not set. The AstaBench Standard tier requires "
+            "the Asta MCP corpus tools; export ASTA_TOOL_KEY in the shell "
+            "that launches the run. For key-less dev against public "
+            "Semantic Scholar (scores will NOT match the leaderboard), opt "
+            "in explicitly with --tool-source search."
+        )
+
     if on_resume:
         resolved_tool_source = _enforce_immutable_on_resume(
             cli_value=cli_tool_source,
             stored_value=checkpoint_pfb.get("tool_source"),
-            default_value=auto_tool_source,
+            # Only consulted if the checkpoint predates tool_source
+            # persistence AND no CLI flag was passed — resolve_run_immutable
+            # errors in that case before reading the default, but keep the
+            # auto rule here for coherence.
+            default_value=None,
             name="tool-source",
             on_resume=True,
         )
     else:
-        # Fresh run: CLI wins, else auto. --eval-only: CLI wins, else the
-        # resumed run's stored value (evaluate with the tier the run was
-        # trained on), else auto.
+        # Fresh run: CLI wins, else auto (mcp-or-error). --eval-only: CLI
+        # wins, else the resumed run's stored value (evaluate with the
+        # tier the run was trained on), else auto.
         resolved_tool_source = (
-            cli_tool_source or checkpoint_pfb.get("tool_source") or auto_tool_source
+            cli_tool_source or checkpoint_pfb.get("tool_source") or _auto_tool_source()
         )
-    if cli_tool_source is None and resolved_tool_source == "search":
+    if resolved_tool_source == "search" and not os.environ.get("ASTA_TOOL_KEY"):
         logger.warning(
-            "tool_source resolved to 'search' (public Semantic Scholar; "
-            "ASTA_TOOL_KEY not set and no stored value). Scores will NOT "
-            "match the AstaBench leaderboard — the Standard tier requires "
-            "the Asta MCP corpus. Set ASTA_TOOL_KEY, or pass "
-            "--tool-source search to make the fallback explicit."
+            "tool_source='search' with no ASTA_TOOL_KEY set: requests hit "
+            "Semantic Scholar unauthenticated and will throttle hard under "
+            "parallel workers. Get a free personal S2 API key "
+            "(semanticscholar.org/product/api) and export it as ASTA_TOOL_KEY."
         )
 
     resolved_runtime = {

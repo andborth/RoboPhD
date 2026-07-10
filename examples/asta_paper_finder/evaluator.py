@@ -238,17 +238,35 @@ def _build_tools(sample_id: str, tool_source: str):
       - "search" : Public-Semantic-Scholar paper_search + snippet_search
                    factories. Lets us smoke-test without the MCP key, but
                    scores will not match the leaderboard exactly.
+
+    Retry parity: astabench's MCP factory wraps every tool in
+    make_retry_wrapper (429/529/504 + BrokenResourceError, exponential
+    backoff), so agents on the leaderboard tier never see a transient
+    rate limit. The search factories ship with NO retry — a raw 429
+    propagates into the agent and scores the problem 0 (the
+    asta_paper_finder_20260710_081139 failure mode, where evolution
+    then wasted an iteration evolving its own retry machinery). Wrap
+    the search kit in the SAME astabench wrapper so both tiers absorb
+    transient rate limits identically and score differences reflect
+    agent quality, never the tier.
     """
     inserted_before = get_inserted_before_per_dataset_type(sample_id)
     if tool_source == "mcp":
         from astabench.tools import make_asta_mcp_tools
         return make_asta_mcp_tools(insertion_date=inserted_before)
     if tool_source == "search":
+        from astabench.tools.asta_tools import make_retry_wrapper
         from astabench.tools.search import make_paper_search, make_snippet_search
-        return [
+        from inspect_ai.tool import ToolDef
+        wrapped = []
+        for t in (
             make_paper_search(inserted_before=inserted_before),
             make_snippet_search(inserted_before=inserted_before),
-        ]
+        ):
+            td = ToolDef(t)
+            td.tool = make_retry_wrapper(td)
+            wrapped.append(td.as_tool())
+        return wrapped
     raise ValueError(f"unknown tool_source: {tool_source!r}")
 
 
@@ -388,24 +406,36 @@ class PaperFinderEvaluator:
         self.eval_timeout = eval_timeout
         self.subprocess_timeout = max(eval_timeout - 30, 60)
 
-        # Default to MCP if ASTA_TOOL_KEY is set, else fall back to search-only
-        # for offline development. This is honest about which mode you're in
-        # via the diagnostics["tool_source"] field per evaluation.
-        explicit_choice = tool_source is not None
+        # tool_source=None means "auto", which resolves ONLY to mcp.
+        # There is deliberately no silent fallback to the search tier: a
+        # warning was tried first and got missed, and the resulting run
+        # (asta_paper_finder_20260710_081139) burned its budget on
+        # unauthenticated-S2 429s. Search mode remains available, but
+        # only as an explicit choice.
         if tool_source is None:
-            tool_source = "mcp" if os.environ.get("ASTA_TOOL_KEY") else "search"
+            if not os.environ.get("ASTA_TOOL_KEY"):
+                raise RuntimeError(
+                    "ASTA_TOOL_KEY is not set. The AstaBench Standard tier "
+                    "requires the Asta MCP corpus tools; export ASTA_TOOL_KEY "
+                    "in the shell that launches the run. For key-less dev "
+                    "against public Semantic Scholar (scores will NOT match "
+                    "the leaderboard), opt in explicitly with "
+                    "tool_source='search' / --tool-source search."
+                )
+            tool_source = "mcp"
         self.tool_source = tool_source
 
-        # Surface the silent-fallback case loudly. A user expecting
-        # leaderboard-tier scores who forgets ASTA_TOOL_KEY would
-        # otherwise get search-tier results without realizing it.
-        if not explicit_choice and tool_source == "search":
+        # Explicit search mode with no key at all: the fallback factories
+        # send ASTA_TOOL_KEY as the S2 x-api-key header, so an empty env
+        # var means UNAUTHENTICATED S2 — a shared, very tight rate pool
+        # that 429s under any parallelism even with the retry wrapper.
+        if tool_source == "search" and not os.environ.get("ASTA_TOOL_KEY"):
             logger.warning(
-                "ASTA_TOOL_KEY is not set; falling back to tool_source='search' "
-                "(public Semantic Scholar). Scores will NOT match the AstaBench "
-                "leaderboard — the Standard tier requires the Asta MCP corpus. "
-                "Set ASTA_TOOL_KEY for leaderboard-comparable runs, or pass "
-                "tool_source='search' explicitly to silence this warning."
+                "tool_source='search' with no ASTA_TOOL_KEY set: requests "
+                "hit Semantic Scholar unauthenticated and will throttle "
+                "hard under parallel workers. Get a free personal S2 API "
+                "key (semanticscholar.org/product/api) and export it as "
+                "ASTA_TOOL_KEY."
             )
 
         # inspect.eval() insists on a log dir; use a per-evaluator temp dir

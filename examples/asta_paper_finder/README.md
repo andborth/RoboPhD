@@ -59,7 +59,11 @@ The leaderboard's Standard tools tier requires the Asta MCP corpus tools, served
 export ASTA_TOOL_KEY="..."
 ```
 
-If `ASTA_TOOL_KEY` is unset, the evaluator falls back to the Python-importable `paper_search` and `snippet_search` factories. Note: those factories also use `ASTA_TOOL_KEY` as the Semantic Scholar `x-api-key` header (`astabench/tools/search.py`), so without *any* key you'll hit S2's unauthenticated rate limits (HTTP 429) within a handful of calls. For dev without the AI2 ASTA_TOOL_KEY, request a free personal Semantic Scholar API key at https://www.semanticscholar.org/product/api and set it as `ASTA_TOOL_KEY`. Scores from the `search` fallback **do not match the leaderboard exactly** (the MCP tool set has different filtering and date semantics) but the structure is the same. The evaluator records `tool_source` ("mcp" or "search") in every diagnostics dict, and the resolved value is locked for the lifetime of a run (immutable on `--resume`).
+`ASTA_TOOL_KEY` is **required** unless you pass `--tool-source search` explicitly: with no key and no flag, the run hard-errors at startup. (It used to warn and silently fall back to the public-S2 tier — run `asta_paper_finder_20260710_081139` burned its budget on unauthenticated 429s that way.)
+
+The explicit `search` mode uses the Python-importable `paper_search`/`snippet_search` factories, which send `ASTA_TOOL_KEY` as the Semantic Scholar `x-api-key` header (`astabench/tools/search.py`). For dev without the AI2 key, request a free personal Semantic Scholar API key at https://www.semanticscholar.org/product/api and set it as `ASTA_TOOL_KEY` — with no key at all you're on S2's unauthenticated shared pool and will throttle under any parallelism. Both tool tiers absorb transient 429/5xx identically: the MCP factory has astabench's `make_retry_wrapper` built in, and `_build_tools` applies the same wrapper to the search kit, so agents never see (and never need to evolve handling for) transient rate limits. Scores from the `search` fallback **do not match the leaderboard exactly** (the MCP tool set has different filtering and date semantics) but the structure is the same. The evaluator records `tool_source` ("mcp" or "search") in every diagnostics dict, and the resolved value is locked for the lifetime of a run (immutable on `--resume`).
+
+Troubleshooting: 429 storms against `api.semanticscholar.org/graph/v1/...` in `error.md` files mean the run is on the `search` tier (check `checkpoint.json` → `task_config.paper_finder_runtime.tool_source`), not that the Asta MCP limit was hit.
 
 ## Running
 
@@ -138,6 +142,7 @@ On `semantic_f1` queries (73% of validation) the scorer runs a GPT-4o relevance 
 - [x] `inspect.eval()` runs end-to-end on a 1-sample dataset; sample-level errors surface cleanly into diagnostics
 - [x] `ASTA_TOOL_KEY` acquired (2026-07-09); MCP tools verified live
 - [x] ds1000-parity modernization: model registry, mean-cost penalty aggregator with train/test asymmetry, agent-vs-judge cost split, task_config_extras persistence, subprocess killpg machinery
+- [x] Rate-limit hardening (2026-07-10): auto tool_source hard-errors without ASTA_TOOL_KEY (no silent search fallback); search kit wrapped in astabench's `make_retry_wrapper` for parity with the MCP kit
 
 ### Verification (in progress)
 
