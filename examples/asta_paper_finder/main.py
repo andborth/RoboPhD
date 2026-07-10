@@ -552,6 +552,16 @@ def main():
     # framework default is 1, so on initial runs we MUST pack the task
     # default; only on resume do we omit it. Override via
     # --engine-config '{"new_agent_test_rounds": 1}'.
+    #
+    # examples_per_iteration: ceil(train_pool / 5), i.e. 14 for the
+    # 66-sample pool — below RoboPhD's framework default of 20. Each
+    # iteration re-samples from only 66 queries, so at 20/iteration a
+    # 1500-eval budget reuses every example ~23x and concentrates that
+    # reuse fast; capping the per-iteration draw at a fifth of the pool
+    # slows per-example exposure to limit overfitting to the training
+    # queries. Derived from len(train) rather than hardcoded so a future
+    # thermometer holdout (see README) shrinks it automatically.
+    # Override via --engine-config '{"examples_per_iteration": N}'.
     parsed_engine_config = (
         json.loads(args.engine_config) if args.engine_config else {}
     )
@@ -559,6 +569,7 @@ def main():
     engine_overrides: dict = {}
     if not is_resume:
         engine_overrides["new_agent_test_rounds"] = 0
+        engine_overrides["examples_per_iteration"] = -(-len(train) // 5)
     # Route max_workers through engine_overrides for the RoboPhD engine (not the
     # dedicated RoboPhDConfig field, which only applies on a fresh run — the
     # resume path re-applies engine_overrides as a config delta but never reads

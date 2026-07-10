@@ -140,6 +140,19 @@ def test_max_workers_defaults_none():
     pytest.fail("--max-workers flag not found")
 
 
+def test_fresh_run_packs_task_defaults():
+    """PFB's task defaults that differ from the framework's must be
+    stamped into engine_overrides on fresh runs: new_agent_test_rounds=0
+    (framework default 1) and examples_per_iteration=ceil(train/5)=14
+    for the 66-sample pool (framework default 20 — too much per-example
+    reuse for a pool this small). Both live under the fresh-run-only
+    branch so --resume inherits the checkpoint instead."""
+    assert 'engine_overrides["new_agent_test_rounds"] = 0' in MAIN_SRC
+    assert 'engine_overrides["examples_per_iteration"] = -(-len(train) // 5)' in MAIN_SRC
+    # ceiling-division sanity for the current pool size
+    assert -(-66 // 5) == 14
+
+
 def test_gepa_and_autoresearch_apply_engine_config():
     """Finding D: --engine-config must not be a silent no-op on the
     non-default engines."""
