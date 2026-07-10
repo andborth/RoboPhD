@@ -256,6 +256,94 @@ def test_gepa_and_autoresearch_apply_engine_config():
     assert MAIN_SRC.count("apply_engine_config(cfg, parsed_engine_config)") >= 2
 
 
+# --- doc <-> code name agreement --------------------------------------------------
+#
+# background.md tells the evolution AI about concrete field/file names it
+# will encounter in diagnostics and must produce in output. Each name is
+# owned by a different piece of code, and nothing else ties the doc to the
+# emitters — a rename would leave the doc pointing at a nonexistent name
+# with every other test green (the silent-staleness failure mode).
+
+
+def _background() -> str:
+    return (PFB_DIR / "background.md").read_text()
+
+
+def _evaluator_emitted_keys() -> set[str]:
+    """String keys the evaluator writes into diagnostics: subscript
+    assignments on `diagnostics` plus dict-literal keys anywhere in the
+    module (the error-path returns and the initial diagnostics literal)."""
+    src = (PFB_DIR / "evaluator.py").read_text()
+    keys: set[str] = set()
+    for node in ast.walk(ast.parse(src)):
+        if (
+            isinstance(node, ast.Subscript)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "diagnostics"
+            and isinstance(node.slice, ast.Constant)
+            and isinstance(node.slice.value, str)
+        ):
+            keys.add(node.slice.value)
+        elif isinstance(node, ast.Dict):
+            keys |= {
+                k.value for k in node.keys
+                if isinstance(k, ast.Constant) and isinstance(k.value, str)
+            }
+    return keys
+
+
+def test_doc_diagnostic_names_match_evaluator():
+    """Names background.md attributes to per-problem diagnostics must be
+    keys the evaluator actually emits (and must still appear in the doc,
+    so this list can't silently outlive the prose it guards)."""
+    background = _background()
+    emitted = _evaluator_emitted_keys()
+    for name in ("gold_criteria.md", "agent_stdout", "eval_wall_clock_seconds"):
+        assert name in background, f"{name} no longer mentioned in background.md — prune it here"
+        assert name in emitted, (
+            f"background.md documents diagnostic {name!r} but evaluator.py "
+            f"never emits that key — the doc points at a nonexistent field"
+        )
+
+
+def test_doc_other_cost_name_matches_domain_mapping():
+    """background.md tells the agent the judge spend appears in
+    result.json as `other_cost`. That name is produced by the FRAMEWORK:
+    domain.py maps the evaluator's other_cost_usd diagnostic into a
+    result field literally named other_cost. Pin both halves of the
+    contract so a rename on either side fails here instead of silently
+    stranding the doc."""
+    assert "`other_cost`" in _background()
+    domain_src = (REPO_ROOT / "RoboPhD" / "domains" / "external" / "domain.py").read_text()
+    assert '"other_cost_usd"' in domain_src, (
+        "domain.py no longer reads the other_cost_usd diagnostic bucket"
+    )
+    assert '"other_cost"' in domain_src, (
+        "domain.py no longer writes an other_cost result field — update "
+        "background.md's judge section to the new name"
+    )
+
+
+def test_doc_output_schema_names_match_astabench():
+    """`paper_id` and `markdown_evidence` are astabench's output-schema
+    contract (paper_finder/datamodel.py); the doc and the seed both spell
+    them. Introspect the installed datamodel so an upstream rename fails
+    loudly on the version bump that introduces it."""
+    import astabench.evals.paper_finder.datamodel as dm
+
+    fields: set[str] = set()
+    for obj in vars(dm).values():
+        if isinstance(obj, type) and hasattr(obj, "model_fields"):
+            fields |= set(obj.model_fields)
+    background = _background()
+    for name in ("paper_id", "markdown_evidence"):
+        assert name in background
+        assert name in fields, (
+            f"astabench's paper_finder datamodel no longer has a {name!r} "
+            f"field — background.md's output schema and the seed are stale"
+        )
+
+
 # --- price-table consistency -----------------------------------------------------
 
 
