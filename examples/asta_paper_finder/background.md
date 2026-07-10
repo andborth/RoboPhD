@@ -132,6 +132,14 @@ It must **not** import third-party search backends (Elasticsearch, Pinecone, cus
 
 Your cost is the LLM calls your agent makes through `model_registry` handles (`agent_cost_usd`). Tool calls (`paper_search`, `snippet_search`, the rest of the MCP suite) are free, in unlimited quantity.
 
+## The relevance judge (semantic queries)
+
+On `semantic_f1` queries (73% of the validation split), the benchmark's scorer runs a GPT-4o relevance judge over every paper you return, grading each against the query's weighted `relevance_criteria`. Understanding the judge is a score lever: it reads each result's `markdown_evidence` when deciding relevance, so evidence quality (title + a passage that speaks to the criteria) directly moves your F1. For each training query, the exact criteria the judge scored against are visible post-hoc in that problem's `gold_criteria.md` diagnostic — read them when diagnosing why a semantic query scored low.
+
+The judge's own LLM spend appears in each problem's `result.json` as `other_cost`. That field is informational only — it is never penalized, never counts toward your batch mean, and is outside your control. Do not optimize for it.
+
+`specific_f1` and `metadata_f1` queries score by exact-match against `corpus_ids` — no judge at all.
+
 ## Iteration-aggregate score
 
 Per-example scoring is continuous F1 in [0, 1]. At the end of each iteration, your batch is combined into a single score: your mean F1 (on a 0–100 scale) minus a cost penalty when your mean batch agent-spend exceeds the threshold. The penalty is expressed in fully-wrong-query units — each ${COST_PER_ERROR} of mean spend over ${COST_THRESHOLD} subtracts one error-equivalent (one query's worth of F1) from your score. Only `model_registry` handle calls are metered — tool calls are free.
