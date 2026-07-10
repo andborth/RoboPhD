@@ -24,6 +24,41 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _best_kept_val_score(experiment_log: List[Dict]) -> float:
+    """Best val_score among kept experiments, 0.0 if none.
+
+    _experiment_log.jsonl is written by the session AI, so val_score is
+    untrusted free-form JSON: sentinel strings, nulls, or booleans must
+    be skipped with a warning, not crash result extraction — a crash
+    here throws away the whole run's results at the finish line.
+    Numeric strings are accepted; everything else is skipped.
+    """
+    scores = []
+    for entry in experiment_log:
+        if not entry.get("kept"):
+            continue
+        raw = entry.get("val_score")
+        if isinstance(raw, bool):
+            coerced = None
+        elif isinstance(raw, (int, float)):
+            coerced = float(raw)
+        elif isinstance(raw, str):
+            try:
+                coerced = float(raw)
+            except ValueError:
+                coerced = None
+        else:
+            coerced = None
+        if coerced is None:
+            if raw is not None:
+                logger.warning(
+                    f"Skipping non-numeric val_score in experiment log: {raw!r}"
+                )
+            continue
+        scores.append(coerced)
+    return max(scores) if scores else 0.0
+
+
 def _assign_ids(examples: List[Dict], prefix: str = "") -> None:
     """Assign string IDs to examples if missing."""
     _ID_FIELDS = ("id", "question_id", "problem_id", "task_id")
@@ -363,12 +398,7 @@ def run_autoresearch(
     if reflection_path.exists():
         shutil.copy2(reflection_path, output_dir / "reflection.md")
 
-    # Best val score
-    best_val_score = 0.0
-    if experiment_log:
-        kept = [e for e in experiment_log if e.get("kept")]
-        if kept:
-            best_val_score = max(e.get("val_score") or 0.0 for e in kept)
+    best_val_score = _best_kept_val_score(experiment_log)
 
     eval_cost = getattr(eval_server, "eval_cost", 0.0)
 
