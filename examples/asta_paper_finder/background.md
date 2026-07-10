@@ -10,7 +10,7 @@ Each example is a literature-search query: a natural-language description of pap
 | `metadata_f1` | author/year/venue filters | `{"corpus_ids":[...]}` | exact-match against `corpus_ids` | 8 / ~30 |
 | `semantic_f1` | broad topical query | `{"known_to_be_good":[...], "known_to_be_bad":[...], "relevance_criteria":[{name, description, weight}, ...]}` | LLM judge over each predicted paper, weighted by `relevance_criteria` | 48 / ~200 |
 
-All three paths produce a real-valued score in [0, 1]; differences in difficulty and per-eval cost are large.
+All three paths produce a real-valued score in [0, 1]; differences in difficulty are large.
 
 The query text is in `state.metadata["raw_query"]`. The full `state.input` wraps it in a longer instruction template; either is fair game.
 
@@ -130,17 +130,11 @@ It must **not** import third-party search backends (Elasticsearch, Pinecone, cus
 
 ## Per-query cost
 
-Only YOUR spend counts against you — the calls your agent makes through `model_registry` handles (`agent_cost_usd`). Tool calls (`paper_search`, `snippet_search`, the rest of the MCP suite) are free.
-
-On `semantic_f1` queries (73% of the validation split), the benchmark's own scorer additionally runs a GPT-4o relevance judge over every paper you return. That judge spend is billed to `other_cost_usd` — **outside your control and never penalized**. It does not appear in your cost accounting, and you cannot reduce your penalty by returning fewer papers. What the judge DOES affect is your *score*: it reads each result's `markdown_evidence` when deciding relevance, so evidence quality is a score lever, not a cost lever.
-
-`specific_f1` and `metadata_f1` queries score by exact-match against `corpus_ids` — no judge at all.
-
-Score-type-aware behavior (different k, different evidence effort per query type) remains a productive surface to mutate — for score reasons, not cost ones.
+Your cost is the LLM calls your agent makes through `model_registry` handles (`agent_cost_usd`). Tool calls (`paper_search`, `snippet_search`, the rest of the MCP suite) are free, in unlimited quantity.
 
 ## Iteration-aggregate score
 
-Per-example scoring is continuous F1 in [0, 1]. At the end of each iteration, your batch is combined into a single score: your mean F1 (on a 0–100 scale) minus a cost penalty when your mean batch agent-spend exceeds the threshold. The penalty is expressed in fully-wrong-query units — each ${COST_PER_ERROR} of mean spend over ${COST_THRESHOLD} subtracts one error-equivalent (one query's worth of F1) from your score. Only `model_registry` handle calls are metered — tool calls and the relevance judge don't count.
+Per-example scoring is continuous F1 in [0, 1]. At the end of each iteration, your batch is combined into a single score: your mean F1 (on a 0–100 scale) minus a cost penalty when your mean batch agent-spend exceeds the threshold. The penalty is expressed in fully-wrong-query units — each ${COST_PER_ERROR} of mean spend over ${COST_THRESHOLD} subtracts one error-equivalent (one query's worth of F1) from your score. Only `model_registry` handle calls are metered — tool calls are free.
 
 ${COST_PENALTY_TABLE}
 
