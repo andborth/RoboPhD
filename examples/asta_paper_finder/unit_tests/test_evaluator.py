@@ -270,3 +270,192 @@ def test_no_bare_error_diagnostics_key():
             f"bare {bad} found in evaluator.py — use \"error.md\""
         )
     assert '"error.md"' in EVALUATOR_SRC
+
+
+# --- _estimate_cost / bundled price map ---------------------------------------
+#
+# Ported from asta_ds1000's unit_tests/test_evaluator.py (ae1e410): the
+# pricing machinery here is a byte-for-byte copy of ds1000's, and the
+# repo's self-contained-examples convention means the ds1000 tests do
+# NOT protect this copy — these duplicates do. If the two copies are
+# ever deliberately diverged, these tests fail loudly on this side,
+# which is the alarm we want (see README "Code work" for the
+# extract-to-shared-module endpoint). Two invariants under pin:
+#
+# 1. Reasoning-token fold: Gemini reports reasoning separately and
+#    excludes it from output_tokens; billed at the output rate. The
+#    strict token-arithmetic guard must fire for the Gemini pattern
+#    only — OpenAI (reasoning inside output) and Anthropic (cache
+#    tokens inflating total) must NOT fold.
+#
+# 2. Bundled-map basis: internal costs are priced from litellm's BUNDLED
+#    snapshot (what `astabench score` bills under
+#    LITELLM_LOCAL_MODEL_COST_MAP=True), NOT the live map. Models absent
+#    from the snapshot fall back to the live map WITH a one-shot warning;
+#    a snapshot that fails to load warns loudly instead of silently
+#    repricing everything on the live map.
+#
+# All tests inject a fixture price map (and stub litellm.cost_per_token
+# for the fallback path) so they are hermetic against the installed
+# litellm's actual map contents.
+
+FIXTURE_PRICES = {
+    # litellm-1.88.1 bundled rates for the v0_0_6 models (per token)
+    "gemini/gemini-3.1-flash-lite": {
+        "input_cost_per_token": 4.5e-07, "output_cost_per_token": 2.7e-06,
+    },
+    "gpt-5.4-mini": {
+        "input_cost_per_token": 7.5e-07, "output_cost_per_token": 4.5e-06,
+    },
+    "claude-haiku-4-5-20251001": {
+        "input_cost_per_token": 1e-06, "output_cost_per_token": 5e-06,
+    },
+    "gpt-5.4-2026-03-05": {
+        "input_cost_per_token": 2.5e-06, "output_cost_per_token": 1.5e-05,
+    },
+}
+
+
+@pytest.fixture()
+def bundled_fixture_map(ev_mod, monkeypatch):
+    """Point the bundled-map cache at FIXTURE_PRICES for one test."""
+    monkeypatch.setattr(ev_mod, "_BUNDLED_PRICE_MAP", dict(FIXTURE_PRICES))
+    return ev_mod
+
+
+def _est(mod, model, **counts):
+    return mod.PaperFinderEvaluator._estimate_cost(model, counts)
+
+
+def test_gemini_reasoning_tokens_are_billed(bundled_fixture_map):
+    """Gemini pattern (input == total - output - reasoning): fold fires."""
+    mod = bundled_fixture_map
+    cost = _est(
+        mod, "google/gemini-3.1-flash-lite",
+        input_tokens=1_000_000, output_tokens=100_000,
+        total_tokens=1_300_000, reasoning_tokens=200_000,
+    )
+    expected = 1_000_000 * 4.5e-07 + (100_000 + 200_000) * 2.7e-06
+    assert cost == pytest.approx(expected)
+
+
+def test_openai_reasoning_not_double_billed(bundled_fixture_map):
+    """OpenAI pattern (reasoning already inside output): fold must NOT fire."""
+    mod = bundled_fixture_map
+    with_r = _est(
+        mod, "gpt-5.4-mini",
+        input_tokens=1000, output_tokens=500, total_tokens=1500,
+        reasoning_tokens=300,
+    )
+    without_r = _est(
+        mod, "gpt-5.4-mini",
+        input_tokens=1000, output_tokens=500, total_tokens=1500,
+        reasoning_tokens=0,
+    )
+    assert with_r == pytest.approx(without_r)
+
+
+def test_anthropic_cache_pattern_not_mistaken_for_reasoning(bundled_fixture_map):
+    """Cache tokens inflate total (input excludes them); no reasoning fold."""
+    mod = bundled_fixture_map
+    cost = _est(
+        mod, "claude-haiku-4-5-20251001",
+        input_tokens=1000, output_tokens=500, total_tokens=2500,
+        reasoning_tokens=0,
+    )
+    expected = 1000 * 1e-06 + 500 * 5e-06
+    assert cost == pytest.approx(expected)
+
+
+def test_bundled_map_wins_over_live_map(bundled_fixture_map, monkeypatch):
+    """When the snapshot has the model, litellm.cost_per_token is never hit."""
+    mod = bundled_fixture_map
+    import litellm
+
+    def _boom(**kwargs):
+        raise AssertionError("live map must not be consulted for bundled models")
+
+    monkeypatch.setattr(litellm, "cost_per_token", _boom)
+    cost = _est(
+        mod, "gpt-5.4-2026-03-05",
+        input_tokens=1000, output_tokens=100, total_tokens=1100,
+        reasoning_tokens=0,
+    )
+    assert cost == pytest.approx(1000 * 2.5e-06 + 100 * 1.5e-05)
+
+
+def test_missing_model_falls_back_to_live_map_with_warning(
+    bundled_fixture_map, monkeypatch, caplog
+):
+    mod = bundled_fixture_map
+    import litellm
+
+    monkeypatch.setattr(
+        litellm, "cost_per_token", lambda **kw: (0.001, 0.002)
+    )
+    mod._live_map_fallback_warned.discard("brand-new-model")
+    with caplog.at_level("WARNING"):
+        cost = _est(
+            mod, "brand-new-model",
+            input_tokens=1000, output_tokens=100, total_tokens=1100,
+            reasoning_tokens=0,
+        )
+    assert cost == pytest.approx(0.003)
+    assert any("NOT on the leaderboard's billing basis" in r.message for r in caplog.records)
+    # One-shot: second call must not warn again
+    with caplog.at_level("WARNING"):
+        caplog.clear()
+        _est(
+            mod, "brand-new-model",
+            input_tokens=1000, output_tokens=100, total_tokens=1100,
+            reasoning_tokens=0,
+        )
+    assert not any("billing basis" in r.message for r in caplog.records)
+
+
+def test_snapshot_load_failure_warns_loudly(ev_mod, monkeypatch, caplog):
+    """A missing/renamed snapshot must not silently reprice on the live map."""
+    monkeypatch.setattr(ev_mod, "_BUNDLED_PRICE_MAP", None)
+
+    import litellm
+    real_file = litellm.__file__
+    monkeypatch.setattr(litellm, "__file__", "/nonexistent/litellm/__init__.py")
+    try:
+        with caplog.at_level("WARNING"):
+            result = ev_mod._bundled_price_map()
+    finally:
+        monkeypatch.setattr(litellm, "__file__", real_file)
+    assert result == {}
+    assert any(
+        "bundled price snapshot" in r.message for r in caplog.records
+    ), "snapshot load failure must warn, not silently drift to the live map"
+
+
+def test_v0_0_6_official_cost_regression(bundled_fixture_map):
+    """Golden regression: the recorded model_usage from asta_ds1000's
+    officially-scored v0_0_6 run must reproduce the official astabench
+    per-problem cost ($0.004280335) on the frozen fixture rates. The
+    fixture is ds1000 provenance, but it pins THIS module's copy of the
+    pricing function (reasoning fold + bundled basis, end to end) —
+    which is byte-identical and must stay on the same billing basis."""
+    mod = bundled_fixture_map
+    usage = {
+        "google/gemini-3.1-flash-lite": dict(
+            input_tokens=1_465_500, output_tokens=163_410,
+            total_tokens=1_862_265, reasoning_tokens=233_355,
+        ),
+        "gpt-5.4-mini": dict(
+            input_tokens=1_171_114, output_tokens=79_480,
+            total_tokens=1_250_594, reasoning_tokens=0,
+        ),
+        "claude-haiku-4-5-20251001": dict(
+            input_tokens=254_413, output_tokens=42_332,
+            total_tokens=296_745, reasoning_tokens=0,
+        ),
+        "gpt-5.4-2026-03-05": dict(
+            input_tokens=141_163, output_tokens=4_439,
+            total_tokens=145_602, reasoning_tokens=0,
+        ),
+    }
+    total = sum(_est(mod, m, **c) for m, c in usage.items())
+    assert total / 900 == pytest.approx(0.004280335, abs=1e-6)

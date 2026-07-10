@@ -147,6 +147,7 @@ On `semantic_f1` queries (73% of validation) the scorer runs a GPT-4o relevance 
 
 ### Code work (deferred)
 
+- [ ] **Extract the pricing machinery to a shared module.** `_estimate_cost` / `_bundled_price_map` here are byte-for-byte copies of `asta_ds1000/evaluator.py`'s (the leaderboard billing basis is a cross-task concept, not task-specific). Both copies carry duplicated test suites (`test_evaluator.py`'s `_estimate_cost` section, ported from ds1000's `ae1e410`) so accidental drift fails loudly, but the right endpoint is one shared implementation — e.g. under `RoboPhD/`, with an import-fallback story for standalone evaluator use. Deferred until the ds1000 campaign is at a quiet point (extraction touches its evaluator).
 - [ ] **Standard-Tools allowlist (AST scan).** The evaluator should reject candidates that import outside `{json, re, asyncio, dataclasses, ..., inspect_ai.*, model_registry}`. Without this, evolution could in principle introduce `import openai` and silently lose cost-accounting fidelity / the Standard Tools badge. ~30 lines of `ast.parse` walking.
 - [ ] **Submission tarball pipeline.** The leaderboard accepts tarballs of `.eval` log files. Each `inspect.eval()` call already writes one to the evaluator's `_log_dir`. A separate "package for submission" path could collect logs from a full test-set run.
 - [ ] **Judge-explanation surfacing.** Only `gold_criteria.md` is exposed to evolution; the LLM judge's per-paper relevance verdicts (which paper was kept/dropped and why on `semantic_f1` queries) aren't surfaced yet.
