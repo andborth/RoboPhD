@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import shutil
 import subprocess
@@ -31,7 +32,11 @@ def _best_kept_val_score(experiment_log: List[Dict]) -> float:
     untrusted free-form JSON: sentinel strings, nulls, or booleans must
     be skipped with a warning, not crash result extraction — a crash
     here throws away the whole run's results at the finish line.
-    Numeric strings are accepted; everything else is skipped.
+    Numeric strings are accepted; everything else is skipped. Non-finite
+    values are skipped too — no domain produces a legitimate inf/nan
+    score, "inf" would report a garbage best, and a NaN poisons max()
+    order-dependently (json.loads accepts bare Infinity/NaN literals, so
+    these arrive via both the string and raw-JSON paths).
     """
     scores = []
     for entry in experiment_log:
@@ -48,6 +53,8 @@ def _best_kept_val_score(experiment_log: List[Dict]) -> float:
             except ValueError:
                 coerced = None
         else:
+            coerced = None
+        if coerced is not None and not math.isfinite(coerced):
             coerced = None
         if coerced is None:
             if raw is not None:
