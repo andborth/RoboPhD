@@ -24,7 +24,7 @@ The scorer reads `state.output.completion` as a JSON string with this shape:
     "query_id": "<state.sample_id>",
     "results": [
       {
-        "paper_id": "212718077",
+        "paper_id": "123456789",
         "markdown_evidence": "Title — first ~400 chars of abstract or key passage."
       },
       ...
@@ -35,7 +35,7 @@ The scorer reads `state.output.completion` as a JSON string with this shape:
 
 Notes on the schema:
 - `paper_id` is a Semantic Scholar corpus_id as a **string** (not int). Sources sometimes return ints — cast.
-- The scorer also accepts `"CorpusId:212718077"` and lowercases/strips it.
+- The scorer also accepts `"CorpusId:123456789"` and lowercases/strips it.
 - `markdown_evidence` is shown to the LLM judge for `semantic_f1` queries; quality of evidence text directly affects the judge's verdict. Include the title and a relevant passage.
 - `results` should be ordered most-relevant-first and may contain up to 250 entries; the scorer auto-truncates per `score_type` (e.g. semantic uses "estimated K", specific uses K=full, litqa2 uses recall@30).
 
@@ -155,22 +155,11 @@ Your agent times out and the query scores 0 if a single query takes more than **
 The scorer (`astabench.evals.paper_finder.task.score_paper_finder`) returns a single float in [0, 1] per sample. The headline benchmark score is the macro mean grouped by `score_type`, weighted equally across the three groups.
 
 Worked example for `specific_f1`:
-- Predicted `corpus_ids` = `["204960716", "13745324"]`, gold = `["204960716"]`
+- Predicted `corpus_ids` = `["123456789", "987654321"]`, gold = `["123456789"]`
 - TP=1, FP=1, FN=0; precision=0.5, recall=1.0, F1=0.667 (after AstaBench's adjustment for K-truncation)
 
 For `semantic_f1`, each predicted paper is judged against each `relevance_criteria` by an LLM, producing a continuous relevance score; the final F1 is computed against the *estimated* total relevant set ("KTypes.ESTIMATED").
 
 ## Diagnostics
 
-Any `print()` output from the solver is captured into `agent_stdout` in the evaluator's diagnostics dict — useful for logging which tool calls were made, what each returned, etc. Prefer concise structured prints (`f"[{state.sample_id}] step=rerank kept={n}"`) over dumping full tool responses.
-
-## Headline benchmark target
-
-| Tier | Reference agent | Score | Cost |
-| --- | --- | --- | --- |
-| Standard | ReAct + claude-opus-4-7 | **0.374** | $3.38 |
-| Standard | ReAct + claude-opus-4-6 | 0.372 | $1.49 |
-| Standard | ReAct + GPT-5 Mini | 0.220 | $0.06 |
-| Custom interface | Asta Paper Finder + gpt-5-mini | 0.433 | $0.35 |
-
-The Standard tier is what we compete on. The reference ReAct agents on this tier have *no PaperFindingBench-specific logic* — they're generic loops with the MCP tools attached. This is the headroom evolution is built to claim.
+Any `print()` output from the agent is captured and included in evaluation diagnostics as `agent_stdout`. Use `print()` to log anything you think would be helpful for you to see when improving the agent in later rounds.
