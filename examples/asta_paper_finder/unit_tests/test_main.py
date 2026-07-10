@@ -140,30 +140,114 @@ def test_max_workers_defaults_none():
     pytest.fail("--max-workers flag not found")
 
 
+def _fresh_run_override_assigns() -> dict[str, ast.expr]:
+    """Value expressions assigned to engine_overrides["<key>"] inside the
+    `if not is_resume:` branch, keyed by subscript key.
+
+    AST-based (not a source-text match) so behavior-preserving rewrites
+    of the value expressions don't break the guard, while a move of an
+    assignment OUT of the fresh-run-only branch — the regression that
+    matters, because it would clobber the checkpoint's value on resume —
+    does break it."""
+    for node in ast.walk(MAIN_TREE):
+        if (
+            isinstance(node, ast.If)
+            and isinstance(node.test, ast.UnaryOp)
+            and isinstance(node.test.op, ast.Not)
+            and isinstance(node.test.operand, ast.Name)
+            and node.test.operand.id == "is_resume"
+        ):
+            assigns = {}
+            for stmt in node.body:
+                if (
+                    isinstance(stmt, ast.Assign)
+                    and len(stmt.targets) == 1
+                    and isinstance(stmt.targets[0], ast.Subscript)
+                    and isinstance(stmt.targets[0].value, ast.Name)
+                    and stmt.targets[0].value.id == "engine_overrides"
+                    and isinstance(stmt.targets[0].slice, ast.Constant)
+                ):
+                    assigns[stmt.targets[0].slice.value] = stmt.value
+            return assigns
+    pytest.fail("no `if not is_resume:` branch found in main.py")
+
+
+def _eval_expr(expr: ast.expr, train_size: int):
+    """Evaluate an assignment's value expression against a fake train
+    pool, so the test pins the RESULT (behavior) rather than the
+    spelling of the arithmetic."""
+    import math
+    code = compile(ast.fix_missing_locations(ast.Expression(body=expr)), "<ast>", "eval")
+    return eval(  # noqa: S307 — evaluating our own parsed source
+        code,
+        {"__builtins__": {"len": len}, "math": math, "train": [None] * train_size},
+    )
+
+
 def test_fresh_run_packs_task_defaults():
     """PFB's task defaults that differ from the framework's must be
-    stamped into engine_overrides on fresh runs: new_agent_test_rounds=0
-    (framework default 1) and examples_per_iteration=ceil(train/5)=14
-    for the 66-sample pool (framework default 20 — too much per-example
-    reuse for a pool this small). Both live under the fresh-run-only
-    branch so --resume inherits the checkpoint instead."""
-    assert 'engine_overrides["new_agent_test_rounds"] = 0' in MAIN_SRC
-    assert 'engine_overrides["examples_per_iteration"] = -(-len(train) // 5)' in MAIN_SRC
-    # ceiling-division sanity for the current pool size
-    assert -(-66 // 5) == 14
+    stamped into engine_overrides on fresh runs ONLY (so --resume
+    inherits the checkpoint): new_agent_test_rounds=0 (framework
+    default 1) and examples_per_iteration=ceil(train/5) (framework
+    default 20 — too much per-example reuse for a 66-sample pool)."""
+    assigns = _fresh_run_override_assigns()
+    assert set(assigns) >= {"new_agent_test_rounds", "examples_per_iteration"}, (
+        f"fresh-run branch packs {sorted(assigns)}; a missing key means the "
+        f"framework default silently applies"
+    )
+    assert _eval_expr(assigns["new_agent_test_rounds"], 66) == 0
+    # ceil(66/5) = 14 for the current pool; ceil(50/5) = 10 pins that the
+    # value tracks the pool size (e.g. a future thermometer holdout)
+    # rather than being a hardcoded constant.
+    assert _eval_expr(assigns["examples_per_iteration"], 66) == 14
+    assert _eval_expr(assigns["examples_per_iteration"], 50) == 10
 
 
 def test_auto_tool_source_hard_errors_without_key():
-    """The silent search fallback is dead: auto resolution must raise
-    SystemExit when ASTA_TOOL_KEY is unset, never warn-and-degrade."""
-    # The old silent auto rule must be gone...
-    assert '"mcp" if os.environ.get("ASTA_TOOL_KEY") else "search"' not in MAIN_SRC
-    # ...replaced by the erroring resolver.
-    assert "def _auto_tool_source" in MAIN_SRC
-    resolver = MAIN_SRC[MAIN_SRC.index("def _auto_tool_source"):]
-    resolver = resolver[:resolver.index("\n\n")]
-    assert "raise SystemExit" in resolver
-    assert "--tool-source search" in resolver
+    """The silent search fallback is dead: the auto resolver must raise
+    SystemExit when ASTA_TOOL_KEY is unset, never warn-and-degrade, and
+    its only non-raising outcome is "mcp". AST-based so a reworded
+    message or reshuffled body doesn't break the guard."""
+    resolver = next(
+        (
+            node for node in ast.walk(MAIN_TREE)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == "_auto_tool_source"
+        ),
+        None,
+    )
+    assert resolver is not None, "_auto_tool_source resolver missing from main.py"
+
+    raises_system_exit = any(
+        isinstance(node, ast.Raise)
+        and isinstance(node.exc, ast.Call)
+        and isinstance(node.exc.func, ast.Name)
+        and node.exc.func.id == "SystemExit"
+        for node in ast.walk(resolver)
+    )
+    assert raises_system_exit, (
+        "auto resolution no longer raises SystemExit — the silent search "
+        "fallback may have crept back in"
+    )
+
+    returned_values = {
+        node.value.value
+        for node in ast.walk(resolver)
+        if isinstance(node, ast.Return) and isinstance(node.value, ast.Constant)
+    }
+    assert returned_values == {"mcp"}, (
+        f"auto resolver returns {returned_values}; any value besides 'mcp' "
+        f"reintroduces a non-explicit path onto the search tier"
+    )
+
+    # The error must name the explicit escape hatch, or the user is left
+    # with a dead end. Message content is inherently textual — check the
+    # resolver's string constants, not the whole file.
+    message_text = " ".join(
+        node.value for node in ast.walk(resolver)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    )
+    assert "--tool-source search" in message_text
 
 
 def test_gepa_and_autoresearch_apply_engine_config():
