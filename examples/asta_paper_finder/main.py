@@ -76,7 +76,13 @@ logger = logging.getLogger(__name__)
 DEFAULT_MAX_WORKERS = 8
 
 DEFAULT_NUM_ITERATIONS = 999
-DEFAULT_EVALUATION_BUDGET = 1500
+# Default evaluation budget (max fresh evaluator calls across all
+# iterations) — the binding limit for a run. Scaled from asta_ds1000's
+# budget by training-pool size: ds1000 runs 750 against a 100-sample
+# pool, and PFB's pool is 66 (~2/3), hence 500. A larger budget mostly
+# re-samples the same 66 queries with diminishing signal and rising
+# overfitting pressure.
+DEFAULT_EVALUATION_BUDGET = 500
 
 # Per-example timeout: must match the value passed to RoboPhDConfig /
 # RoboPhDEvalConfig below. The evaluator derives a slightly-shorter
@@ -555,10 +561,10 @@ def main():
     #
     # examples_per_iteration: ceil(train_pool / 5), i.e. 14 for the
     # 66-sample pool — below RoboPhD's framework default of 20. Each
-    # iteration re-samples from only 66 queries, so at 20/iteration a
-    # 1500-eval budget reuses every example ~23x and concentrates that
-    # reuse fast; capping the per-iteration draw at a fifth of the pool
-    # slows per-example exposure to limit overfitting to the training
+    # iteration re-samples from only 66 queries, so at 20/iteration the
+    # eval budget reuses every example fast and concentrates that reuse;
+    # capping the per-iteration draw at a fifth of the pool slows
+    # per-example exposure to limit overfitting to the training
     # queries. Derived from len(train) rather than hardcoded so a future
     # thermometer holdout (see README) shrinks it automatically.
     # Override via --engine-config '{"examples_per_iteration": N}'.
