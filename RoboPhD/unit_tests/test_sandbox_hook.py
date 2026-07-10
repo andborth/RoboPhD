@@ -11,7 +11,7 @@ property of Claude CLI's settings-resolution behavior, which is
 external. Past wiring bugs (e.g., assuming Claude CLI walks up from
 cwd to find settings) passed all unit tests while the sandbox was
 silently no-op in production. After any change to
-_install_evolution_sandbox / install_iteration_sandbox / the
+install_evolution_sandbox / install_iteration_sandbox / the
 hook-command construction in researcher.py, run an end-to-end smoke
 against the real CLI as documented in the sandbox memory entry.
 """

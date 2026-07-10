@@ -82,7 +82,7 @@ def install_iteration_sandbox(working_dir: Path, experiment_dir: Path) -> None:
     that iteration's working dir.
 
     The experiment-level file at ``<experiment_dir>/.claude/settings.local.json``
-    is the template (written once by ``_install_evolution_sandbox``); this
+    is the template (written once by ``install_evolution_sandbox``); this
     helper just copies it. If the template doesn't exist this is a no-op
     so old experiments resumed from before the sandbox feature still work
     — but we log a warning, since on a *fresh* run a missing template
@@ -94,7 +94,7 @@ def install_iteration_sandbox(working_dir: Path, experiment_dir: Path) -> None:
         logger.warning(
             "[sandbox] template missing at %s — evolution session will run "
             "UNSANDBOXED for this iteration. Either resuming a pre-sandbox "
-            "experiment (expected) or _install_evolution_sandbox wasn't "
+            "experiment (expected) or install_evolution_sandbox wasn't "
             "called for this experiment_dir (bug).",
             src,
         )
@@ -104,7 +104,7 @@ def install_iteration_sandbox(working_dir: Path, experiment_dir: Path) -> None:
     (dst_dir / "settings.local.json").write_text(src.read_text())
 
 
-def _install_evolution_sandbox(
+def install_evolution_sandbox(
     experiment_dir: Path,
     extra_read_paths: Optional[List[str]] = None,
 ) -> None:
@@ -1072,7 +1072,7 @@ class ParallelAgentResearcher:
             self.experiment_dir.mkdir(parents=True, exist_ok=True)
 
             # Sandbox the per-experiment Claude CLI sessions to this dir.
-            _install_evolution_sandbox(
+            install_evolution_sandbox(
                 self.experiment_dir,
                 extra_read_paths=(runtime_config or {}).get("extra_read_paths"),
             )

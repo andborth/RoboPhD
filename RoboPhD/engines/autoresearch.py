@@ -215,11 +215,11 @@ def run_autoresearch(
     # (see the paper's Ethics Statement). The PreToolUse hook confines reads to
     # the workspace and writes to the workspace, fail-closed, and tails
     # <workspace>/sandbox_denials.jsonl into the run log.
-    from RoboPhD.researcher import _install_evolution_sandbox
+    from RoboPhD.researcher import install_evolution_sandbox
     from RoboPhD.config import build_evolution_env
     from utilities.claude_cli import claude_cli_settings
 
-    _install_evolution_sandbox(workspace)
+    install_evolution_sandbox(workspace)
     # Read scope and write scope are both the workspace: the agent edits the
     # candidate files in place there and evaluates via the localhost EvalServer,
     # so it never legitimately needs to read outside the workspace.

@@ -5,7 +5,7 @@ directly with a hand-crafted env. These tests instead exercise the full
 chain that's bitten us in production:
 
   build_evolution_env  →  ROBOPHD_EXPERIMENT_DIR
-  _install_evolution_sandbox  →  <exp>/.claude/settings.local.json
+  install_evolution_sandbox  →  <exp>/.claude/settings.local.json
   install_iteration_sandbox  →  <exp>/<iter>/.claude/settings.local.json
   shell-spawn the command from settings.local.json  →  hook process
 
@@ -34,7 +34,7 @@ from pathlib import Path
 import pytest
 
 from RoboPhD.config import build_evolution_env
-from RoboPhD.researcher import _install_evolution_sandbox, install_iteration_sandbox
+from RoboPhD.researcher import install_evolution_sandbox, install_iteration_sandbox
 
 
 @pytest.fixture
@@ -52,7 +52,7 @@ def wired_experiment(tmp_path, monkeypatch):
     iteration = rel_exp / "evolution_output" / "iteration_001"
     iteration.mkdir(parents=True)
 
-    _install_evolution_sandbox(rel_exp, extra_read_paths=None)
+    install_evolution_sandbox(rel_exp, extra_read_paths=None)
     install_iteration_sandbox(iteration, rel_exp)
 
     return {
