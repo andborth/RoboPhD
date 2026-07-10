@@ -207,6 +207,28 @@ def run_autoresearch(
     )
     eval_server.start()
 
+    # Install the read-scope sandbox (parity with the RoboPhD engine). Without
+    # this the session runs under bypassPermissions with unrestricted
+    # filesystem access, letting it read the source repo, the task dataset, and
+    # the evaluator/simulator source, then reconstruct the evaluator locally and
+    # run unlimited free evaluations that bypass the evaluation budget entirely
+    # (see the paper's Ethics Statement). The PreToolUse hook confines reads to
+    # the workspace and writes to the workspace, fail-closed, and tails
+    # <workspace>/sandbox_denials.jsonl into the run log.
+    from RoboPhD.researcher import _install_evolution_sandbox
+    from RoboPhD.config import build_evolution_env
+    from utilities.claude_cli import claude_cli_settings
+
+    _install_evolution_sandbox(workspace)
+    # Read scope and write scope are both the workspace: the agent edits the
+    # candidate files in place there and evaluates via the localhost EvalServer,
+    # so it never legitimately needs to read outside the workspace.
+    sandbox_env = build_evolution_env(cfg.model, workspace, workspace)
+    # autoCompact + Read(/<repo>/**) deny, matching the RoboPhD evolution
+    # session. The hook above is the robust layer (covers Bash); this closes the
+    # agent's Read tool as defense in depth.
+    session_settings = claude_cli_settings()
+
     # Find Claude CLI
     claude_cli = _find_claude_cli()
     if not claude_cli:
@@ -235,7 +257,7 @@ def run_autoresearch(
         "--output-format", "json",
         "--session-id", session_id,
         "--print", "Read program.md and begin the autoresearch protocol.",
-        "--settings", json.dumps({"autoCompact": True}),
+        "--settings", session_settings,
     ]
 
     try:
@@ -245,11 +267,12 @@ def run_autoresearch(
             call_claude_cli = None
 
         if call_claude_cli:
-            result = call_claude_cli(cmd, cwd=workspace, timeout=cfg.overall_timeout, logger=logger)
+            result = call_claude_cli(cmd, cwd=workspace, timeout=cfg.overall_timeout,
+                                     logger=logger, extra_env=sandbox_env)
         else:
             result = subprocess.run(
                 cmd, cwd=workspace, capture_output=True, text=True,
-                timeout=cfg.overall_timeout,
+                timeout=cfg.overall_timeout, env={**os.environ, **sandbox_env},
             )
     except subprocess.TimeoutExpired:
         logger.warning(f"Claude Code session timed out after {cfg.overall_timeout}s")
@@ -289,14 +312,16 @@ def run_autoresearch(
             "--output-format", "json",
             "--resume", session_id,
             "--print", reflection_prompt,
-            "--settings", json.dumps({"autoCompact": True}),
+            "--settings", session_settings,
         ]
         try:
             if call_claude_cli:
-                refl_result = call_claude_cli(reflection_cmd, cwd=workspace, timeout=300, logger=logger)
+                refl_result = call_claude_cli(reflection_cmd, cwd=workspace, timeout=300,
+                                              logger=logger, extra_env=sandbox_env)
             else:
                 refl_result = subprocess.run(
                     reflection_cmd, cwd=workspace, capture_output=True, text=True, timeout=300,
+                    env={**os.environ, **sandbox_env},
                 )
             try:
                 refl_output = json.loads(refl_result.stdout)
