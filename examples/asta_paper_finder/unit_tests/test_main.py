@@ -344,6 +344,23 @@ def test_doc_output_schema_names_match_astabench():
         )
 
 
+def test_no_macro_mean_claim_in_docs():
+    """The scoring objective is a plain mean over queries — the headline
+    metric is adjusted_f1_micro_avg, built with grouped(mean(),
+    all="samples"). background.md claimed a macro-by-group mean for a
+    month and the iteration-6 evolution session built strategy on it
+    ("each query type is worth ~1/3"). Pin the word out of the
+    agent-facing docs; if per-group weighting ever genuinely returns,
+    this test is the reminder to re-verify against the scorer first."""
+    for doc in ("background.md", "objective.md"):
+        text = (PFB_DIR / doc).read_text().lower()
+        assert "macro" not in text, (
+            f"{doc} mentions 'macro' — the scorer's headline is a plain "
+            f"per-query mean (adjusted_f1_micro_avg); verify against "
+            f"astabench paper_finder/task.py before reintroducing this"
+        )
+
+
 # --- price-table consistency -----------------------------------------------------
 
 
