@@ -102,9 +102,47 @@ def test_agent_summary_has_cache_footnote():
     text = _render(rba)
     summary_section = text.split("## Agent Cost Summary", 1)[1].split("## Cost Insights", 1)[0]
     assert (
-        "Avg/Problem is total cost divided by problems tested. "
-        "Cache does not affect this calculation." in summary_section
+        "Avg/Problem is Eval Cost divided by problems tested" in summary_section
     )
+    assert "Cache does not affect this calculation." in summary_section
+    # No Other column in this fixture, so the exclusion clause is absent.
+    assert "Other is excluded" not in summary_section
+
+
+def test_avg_per_problem_excludes_other_cost():
+    """Avg/Problem must use EVAL cost only — it's the number evolution
+    compares against the cost-penalty threshold, and other_cost (e.g.
+    paper_finder's benchmark judge) is never penalized. Regression test
+    for the iteration-10 paper_finder report where Avg/Problem included
+    judge spend and overstated agent cost ~1.5x against the aggregate
+    explanations."""
+    rba = {
+        "iter1": [
+            dict(_result("iter1", f"p{i}", 0.01), other_cost=0.02)
+            for i in range(10)
+        ],
+    }
+    costs_by_context = {
+        "iter1": {r["context"]: {"eval": 0.01, "other": 0.02} for r in rba["iter1"]},
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        expdir = Path(tmp)
+        (expdir / "iteration_001").mkdir()
+        _FakeResearcher(expdir)._generate_iteration_cost_report(
+            1, rba, costs_by_context, None
+        )
+        text = (expdir / "iteration_001" / "cost_report.md").read_text()
+    summary_section = text.split("## Agent Cost Summary", 1)[1].split("## Cost Insights", 1)[0]
+    iter1_row = [line for line in summary_section.splitlines() if line.startswith("| iter1 ")][0]
+    # eval $0.10, other $0.20, total $0.30 — but Avg/Problem = 0.10/10
+    assert "$0.010" in iter1_row, iter1_row
+    assert "$0.030" not in iter1_row, iter1_row
+    total_row = [line for line in summary_section.splitlines() if "**Total**" in line][0]
+    assert "**$0.010**" in total_row, total_row
+    # Total column still carries eval+other (engineer-facing number).
+    assert "**$0.30**" in iter1_row, iter1_row
+    # Footnote gains the exclusion clause when Other is present.
+    assert "Other is excluded" in summary_section
 
 
 def test_footnote_suppressed_when_no_tests():

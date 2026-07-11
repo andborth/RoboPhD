@@ -3705,7 +3705,14 @@ class ParallelAgentResearcher:
         for agent_id in all_agents:
             at = agent_totals[agent_id]
             agent_total = at['eval'] + at['other']
-            avg_per_problem = (agent_total / n_problems) if n_problems else 0.0
+            # Avg/Problem uses EVAL cost only: it's the number evolution
+            # compares against the cost-penalty threshold, and other_cost
+            # (e.g. a benchmark judge LLM) is outside the agent's control
+            # and never penalized. Including it overstated agent spend
+            # ~1.5x on paper_finder and contradicted the aggregate
+            # explanations. Total keeps eval+other — that's the
+            # engineer-facing out-of-pocket number.
+            avg_per_problem = (at['eval'] / n_problems) if n_problems else 0.0
             row = [agent_id, f"${at['eval']:.2f}"]
             if has_other:
                 row.append(f"${at['other']:.2f}")
@@ -3719,12 +3726,12 @@ class ParallelAgentResearcher:
                 row.extend([f"**${agent_total:.2f}**", f"${avg_per_problem:.3f}"])
             report_lines.append("| " + " | ".join(row) + " |")
 
-        # Total row Avg/Problem: grand_total / num_tests, where
-        # num_tests = n_agents × n_problems. Same unit as per-agent
-        # Avg/Problem ($/single evaluation); the total row is the mean
-        # of the per-agent averages.
+        # Total row Avg/Problem: total_eval / num_tests, where
+        # num_tests = n_agents × n_problems. Same unit and same
+        # eval-only basis as the per-agent Avg/Problem; the total row
+        # is the mean of the per-agent averages.
         grand_total = total_eval + total_other
-        total_avg = (grand_total / num_tests) if num_tests else 0.0
+        total_avg = (total_eval / num_tests) if num_tests else 0.0
         total_row = ["**Total**", f"**${total_eval:.2f}**"]
         if has_other:
             total_row.append(f"**${total_other:.2f}**")
@@ -3745,8 +3752,11 @@ class ParallelAgentResearcher:
         if num_tests > 0:
             report_lines.append("")
             report_lines.append(
-                "*Avg/Problem is total cost divided by problems tested. "
-                "Cache does not affect this calculation.*"
+                "*Avg/Problem is Eval Cost divided by problems tested — "
+                "the same agent-only basis the cost penalty uses"
+                + (" (Other is excluded: it is outside the agent's "
+                   "control and never penalized)" if has_other else "")
+                + ". Cache does not affect this calculation.*"
             )
 
         # ---- Per-model cost breakdown ------------------------------------
