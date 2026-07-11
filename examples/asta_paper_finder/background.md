@@ -1,6 +1,6 @@
 # PaperFindingBench (AstaBench)
 
-Each example is a literature-search query: a natural-language description of papers the user wants ("the BART paper", "papers by David Harel in Nature", "clustering-based attention in Transformers"), and a hidden gold relevance judgment. The agent returns a ranked list of Semantic Scholar `corpus_id`s; the scorer computes adjusted micro-F1 against the gold set, separately per query type, and a macro mean.
+Each example is a literature-search query: a natural-language description of papers the user wants ("the BART paper", "papers by David Harel in Nature", "clustering-based attention in Transformers"), and a hidden gold relevance judgment. The agent returns a ranked list of Semantic Scholar `corpus_id`s; each query gets an F1 score in [0, 1] (standard F1 by exact match for specific/metadata queries, LLM-judged adjusted F1 for semantic — see the table below), and the overall score is the plain mean over queries.
 
 ## Three query types (`state.metadata["score_type"]`)
 
@@ -37,7 +37,7 @@ Notes on the schema:
 - `paper_id` is a Semantic Scholar corpus_id as a **string** (not int). Sources sometimes return ints — cast.
 - The scorer also accepts `"CorpusId:123456789"` and lowercases/strips it.
 - `markdown_evidence` is shown to the LLM judge for `semantic_f1` queries; quality of evidence text directly affects the judge's verdict. Include the title and a relevant passage.
-- `results` should be ordered most-relevant-first and may contain up to 250 entries; the scorer auto-truncates per `score_type` (e.g. semantic uses "estimated K", specific uses K=full, litqa2 uses recall@30).
+- List order: the scorer reads only your first 250 entries; beyond that cap, order semantics differ by query type. On `specific_f1`/`metadata_f1`, **order does not matter** — precision and recall are computed over the whole (capped) list. On `semantic_f1`, **order is half your score** — see "Scoring (per query)".
 
 ## Available tools (`state.tools`)
 
@@ -152,13 +152,20 @@ Your agent times out and the query scores 0 if a single query takes more than **
 
 ## Scoring (per query)
 
-The scorer (`astabench.evals.paper_finder.task.score_paper_finder`) returns a single float in [0, 1] per sample. The headline benchmark score is the macro mean grouped by `score_type`, weighted equally across the three groups.
+The scorer (`astabench.evals.paper_finder.task.score_paper_finder`) returns a single float in [0, 1] per sample. The overall score is the plain mean of those per-query floats.
 
-Worked example for `specific_f1`:
+**`specific_f1` / `metadata_f1`** — standard F1, order-blind: precision = relevant fraction of what you returned, recall = fraction of the gold set you found, computed over your whole list (first 250 entries). Worked example:
 - Predicted `corpus_ids` = `["123456789", "987654321"]`, gold = `["123456789"]`
-- TP=1, FP=1, FN=0; precision=0.5, recall=1.0, F1=0.667 (after AstaBench's adjustment for K-truncation)
+- TP=1, FP=1, FN=0; precision=0.5, recall=1.0, F1=0.667
 
-For `semantic_f1`, each predicted paper is judged against each `relevance_criteria` by an LLM, producing a continuous relevance score; the final F1 is computed against the *estimated* total relevant set ("KTypes.ESTIMATED").
+**`semantic_f1`** — the LLM judge grades each returned paper 0–3 against the query's weighted `relevance_criteria`, and the score is the harmonic mean of TWO terms, so a zero in either zeroes the query:
+
+1. **Rank**: an NDCG over the grade sequence *in your submitted order*, normalized between the worst and best possible orderings of the papers you returned. Best-first ordering → 1.0; relevant papers buried behind irrelevant ones → toward 0.0. Ordering is not a tiebreaker here; a badly ordered list can zero the whole query even when the papers are good.
+2. **Recall at estimated K**: only your first K papers count toward recall, where K is a per-query constant the benchmark ships (its estimate of the total relevant papers in the corpus; also the recall denominator). K is hidden from the agent and varies widely — across training queries the median is ≈30, ranging from 1 to ~200 — so you cannot tune to it; lead with your best and return a generously long list.
+
+Two practical consequences of the rank normalization:
+- Never return a **single paper** or a list the judge will grade **uniformly** (e.g. only your most confident hits, all judged perfect): identical grades make worst ordering equal best ordering, the rank term degenerates to 0, and the query scores 0 regardless of recall. Include your confident papers first, then plausible ones — grade variety in the tail is harmless (extra low-graded papers past K don't reduce recall) and protects the rank term.
+- Order strictly best-first; it is half the score.
 
 ## Diagnostics
 
