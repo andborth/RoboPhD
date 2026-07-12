@@ -28,10 +28,13 @@ from inspect_ai.tool import ToolDef
 # full list of handles and their pricing.
 from model_registry import GPT_5_4_MINI
 
-# Cap visible output, and do NOT set reasoning_effort on OpenAI handles:
-# their max_tokens budget is SHARED between reasoning and visible tokens,
-# so reasoning_effort + a tight cap yields an EMPTY completion with no
-# error. See CLAUDE.md (Domain Background) for the full warning.
+# Cap visible output. reasoning_effort is a legitimate accuracy lever,
+# but NOTE the OpenAI trap: on OpenAI handles max_tokens is SHARED
+# between reasoning and visible tokens, so opting into reasoning_effort
+# with a tight cap yields an EMPTY completion with no error — if you
+# set it, raise max_tokens several-fold to leave room for the visible
+# answer. This seed omits it purely as a cost choice for two trivial
+# calls. See CLAUDE.md (Domain Background) for the full warning.
 _LLM_CONFIG = GenerateConfig(max_tokens=1000)
 
 
