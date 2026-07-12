@@ -71,12 +71,23 @@ def main() -> int:
                 f"{sid} reported zero agent cost — registry-handle usage "
                 f"capture or litellm pricing broken?"
             )
-        if stype == "semantic" and judge_c == 0:
+        # score_type values carry the _f1 suffix ("semantic_f1", ...);
+        # match on prefix so these assertions actually run (an exact
+        # "semantic" comparison silently never fired).
+        #
+        # Judge cost may legitimately be $0 on a semantic sample:
+        # astabench persists every (query, paper) verdict to
+        # detailed_reference.json inside the installed package and
+        # replays it on later evals, so a fully-cached sample makes no
+        # GPT-4o calls. Require judgement EVIDENCE instead: either
+        # fresh judge spend or a nonzero score (cached verdicts).
+        if str(stype).startswith("semantic") and judge_c == 0 and not s:
             failures.append(
-                f"{sid} (semantic) reported zero judge cost — either the "
-                f"agent returned no papers or the judge split is broken"
+                f"{sid} (semantic) has zero judge cost AND zero score — "
+                f"no evidence the judgement path ran (empty submission, "
+                f"or the judge split/scoring chain is broken)"
             )
-        if stype in ("specific", "metadata") and judge_c > 0:
+        if str(stype).startswith(("specific", "metadata")) and judge_c > 0:
             failures.append(
                 f"{sid} ({stype}) billed judge cost ${judge_c:.4f} — "
                 f"deterministic scoring should never invoke the judge"

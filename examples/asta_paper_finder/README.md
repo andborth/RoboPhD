@@ -120,6 +120,7 @@ On `semantic_f1` queries (73% of validation) the scorer runs a GPT-4o relevance 
 
 - Asta MCP rate limit is 10 req/s per endpoint, which comfortably supports the default `--max-workers 8`.
 - 73% of validation samples are `semantic_f1` queries that invoke the scorer's GPT-4o judge per predicted paper. **Judge cost typically dominates agent cost** for short pipelines. It's excluded from the penalty but still real dollars — budget accordingly.
+- **The judge caches verdicts persistently**: astabench appends every (query, paper) judgement to `detailed_reference.json` *inside the installed package* (`astabench/evals/paper_finder/`) and replays it on later evals. Consequences: judge cost per eval shrinks as coverage grows (a fully-cached sample bills $0 with a nonzero score); repeated evals of the same submission are more deterministic than a fresh environment would be; and a pip reinstall/upgrade of astabench silently wipes the cache, restoring full judge cost and re-rolling any verdicts that would land differently. The leaderboard's official rerun judges fresh.
 
 ## Files
 
