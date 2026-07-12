@@ -4,8 +4,8 @@ Demonstrates the calling conventions evolution can mutate:
   - reading the query from state.metadata
   - finding a tool by name in state.tools and awaiting it
   - parsing the MCP tools' ContentText-JSON return shape
-  - calling an LLM through a model_registry handle, with GenerateConfig
-    and an empty-completion guard
+  - calling an LLM through a model_registry handle, with an
+    empty-completion guard
   - writing the JSON output schema the scorer expects
 
 The seed makes two LLM calls on the cheapest OpenAI handle — distill
@@ -19,7 +19,6 @@ per-score-type strategies evolution may want to introduce.
 
 import json
 
-from inspect_ai.model import GenerateConfig
 from inspect_ai.solver import Generate, TaskState, solver
 from inspect_ai.tool import ToolDef
 
@@ -27,15 +26,6 @@ from inspect_ai.tool import ToolDef
 # or mix across calls. See CLAUDE.md (Domain Background) for the
 # full list of handles and their pricing.
 from model_registry import GPT_5_4_MINI
-
-# Cap visible output. reasoning_effort is a legitimate accuracy lever,
-# but NOTE the OpenAI trap: on OpenAI handles max_tokens is SHARED
-# between reasoning and visible tokens, so opting into reasoning_effort
-# with a tight cap yields an EMPTY completion with no error — if you
-# set it, raise max_tokens several-fold to leave room for the visible
-# answer. This seed omits it purely as a cost choice for two trivial
-# calls. See CLAUDE.md (Domain Background) for the full warning.
-_LLM_CONFIG = GenerateConfig(max_tokens=1000)
 
 
 def _get_tool(state: TaskState, name: str):
@@ -73,8 +63,7 @@ def make_solver():
         distill = await GPT_5_4_MINI.generate(
             f"Extract a concise keyword search query (3-8 words, no "
             f"punctuation) for a scientific paper search engine from this "
-            f"request. Reply with the keywords only.\n\nRequest: {query}",
-            config=_LLM_CONFIG,
+            f"request. Reply with the keywords only.\n\nRequest: {query}"
         )
         # Guard every metered call against an empty completion — a silent
         # failure mode worth surfacing in stdout rather than absorbing.
@@ -98,7 +87,7 @@ def make_solver():
                 f"Return the indices of the most relevant candidates, "
                 f"comma-separated. Up to 10 indices."
             )
-            response = await GPT_5_4_MINI.generate(prompt, config=_LLM_CONFIG)
+            response = await GPT_5_4_MINI.generate(prompt)
             rerank_text = (response.completion or "").strip()
             print(f"  rerank completion len={len(rerank_text)}")
             keep_idx = []
