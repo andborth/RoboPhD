@@ -344,6 +344,36 @@ def test_doc_output_schema_names_match_astabench():
         )
 
 
+def test_doc_examples_dont_model_the_openai_token_trap():
+    """background.md's code examples are what evolution copies — the run
+    record shows iter2-iter5 shipped the reasoning_effort + tight
+    max_tokens combination on OpenAI handles straight from the doc's
+    example, silently emptying their most important LLM call for four
+    generations. Pin: in every python code block, any GenerateConfig
+    attached to a GPT_* handle call that sets reasoning_effort must
+    either omit max_tokens or budget generously (>= 8000)."""
+    import re
+    background = (PFB_DIR / "background.md").read_text()
+    assert "COMMON FATAL BUG" in background, (
+        "the token-trap callout was removed from background.md"
+    )
+    for block in re.findall(r"```python\n(.*?)```", background, re.DOTALL):
+        # Associate each GenerateConfig(...) with the nearest preceding
+        # handle call. GenerateConfig args never nest parens, so a
+        # non-greedy match to the first ')' is exact.
+        calls = [(m.start(), m.group(1)) for m in re.finditer(r"await ([A-Z0-9_]+)\.generate\(", block)]
+        for cfg in re.finditer(r"GenerateConfig\(([^)]*)\)", block):
+            handle = next((h for pos, h in reversed(calls) if pos < cfg.start()), None)
+            args = cfg.group(1)
+            if handle and handle.startswith("GPT_") and "reasoning_effort" in args:
+                mt = re.search(r"max_tokens\s*=\s*(\d+)", args)
+                assert mt is None or int(mt.group(1)) >= 8000, (
+                    f"doc example puts reasoning_effort with max_tokens="
+                    f"{mt.group(1)} on OpenAI handle {handle} — the exact "
+                    f"combination that silently emptied iter2-iter5's calls"
+                )
+
+
 def test_no_macro_mean_claim_in_docs():
     """The scoring objective is a plain mean over queries — the headline
     metric is adjusted_f1_micro_avg, built with grouped(mean(),

@@ -116,21 +116,33 @@ The following model handles are available, imported from `model_registry`. Price
 
 Setting `reasoning_effort` to any value in the "available overrides" column adds reasoning tokens above what the default already costs. For handles whose default is `"none"`, picking `"low"` is the cheapest opt-in step but it's still strictly more expensive than omitting `reasoning_effort` entirely. For the Gemini handles whose default is already `"low"`, the only opt-up is `"high"`. To stay at the cheapest path on any handle, omit the `reasoning_effort` field from `GenerateConfig`.
 
-`max_tokens` is a universal output-budget cap accepted on every handle (an integer; no provider rejects or strips it). Pass it via `GenerateConfig(max_tokens=N)`. On Anthropic and Gemini handles, the cap applies to the visible completion only — reasoning tokens (when `reasoning_effort` is set) come on top of it. On OpenAI handles, the cap is shared between reasoning and visible tokens, so set it generously when combined with `reasoning_effort` or you may get an empty completion.
+`max_tokens` is a universal output-budget cap accepted on every handle (an integer; no provider rejects or strips it). Pass it via `GenerateConfig(max_tokens=N)`. On Anthropic and Gemini handles, the cap applies to the visible completion only — reasoning tokens (when `reasoning_effort` is set) come on top of it. On OpenAI handles, the cap is shared between reasoning and visible tokens.
+
+> ⚠️ **COMMON FATAL BUG — `reasoning_effort` + a tight `max_tokens` on an OpenAI handle returns an EMPTY completion.** No error, no truncation marker: reasoning consumes the shared budget and the visible answer is silently blank. This disabled a prior agent's most important LLM call on 100% of queries, and only a `print()` of the completion length exposed it. If you opt into reasoning on an OpenAI handle, raise `max_tokens` several-fold or omit it entirely — and treat an empty completion from **any** metered call as a loud failure (log its length; never let a bare `or`-fallback absorb it). Cost corollary on the Gemini side: those handles default to `reasoning_effort="low"`, so they always bill some reasoning tokens at output rates — expected, but weigh it before adding `"high"`.
 
 ```python
 from inspect_ai.model import GenerateConfig
-from model_registry import GPT_5_4_MINI, CLAUDE_SONNET_4_6
+from model_registry import GPT_5_4, GPT_5_4_MINI, CLAUDE_SONNET_4_6
 
 # Default call (cheapest, no extra reasoning):
 resp = await GPT_5_4_MINI.generate("Your prompt here")
 
-# Opt into reasoning for a hard query and cap the output:
+# Reasoning on an Anthropic/Gemini handle: max_tokens caps the VISIBLE
+# completion only, so a modest cap is safe alongside reasoning.
 resp = await CLAUDE_SONNET_4_6.generate(
     "Your prompt here",
     config=GenerateConfig(reasoning_effort="low", max_tokens=2048),
 )
-text = resp.completion
+
+# Reasoning on an OpenAI handle: max_tokens is SHARED with reasoning —
+# budget several-fold headroom (or omit max_tokens), per the warning above.
+resp = await GPT_5_4.generate(
+    "Your prompt here",
+    config=GenerateConfig(reasoning_effort="low", max_tokens=16000),
+)
+
+text = (resp.completion or "").strip()
+print(f"completion len={len(text)}")  # empty ⇒ investigate, don't silently fall back
 ```
 
 `config` is optional. The two knobs to use are `reasoning_effort` (trades cost for quality on hard queries; see the per-handle table above for default and available values) and `max_tokens` (caps the output budget). All LLM calls must go through one of the handles above — never `get_model()` with a hardcoded string, and **never** a direct `openai` / `anthropic` / `litellm` client import, or you silently underreport cost and risk losing the Standard Tools badge.
