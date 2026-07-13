@@ -152,7 +152,7 @@ This benchmark targets the **Standard Tools** leaderboard tier. The agent may us
 - LLM calls through `model_registry` handles (Inspect-tracked)
 - Standard Python (json, re, asyncio, dataclasses, ...)
 
-It must **not** import third-party search backends (Elasticsearch, Pinecone, custom indices), nor the AI2-internal Mabool client (`paper_finder_ai2i`), nor maintain its own paper cache. The evaluator may reject candidates that import outside an allowlist.
+It must **not** import third-party search backends (Elasticsearch, Pinecone, custom indices), nor the AI2-internal Mabool client (`paper_finder_ai2i`), nor persist retrieval results across queries — every evaluation's papers must come through the tools (within-query in-memory bookkeeping over tool results is normal and fine). The evaluator may reject candidates that import outside an allowlist.
 
 ## Per-query cost
 
