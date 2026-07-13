@@ -14,7 +14,6 @@ Protocol:
 Input JSON shape:
   {"candidate": {"agent.py": "..."},
    "example": {<Sample.model_dump()>},
-   "tool_source": "mcp",
    "apply_cost_penalty": true,
    "min_cost_threshold": 0.10,
    "cost_per_error": 0.02}
@@ -55,7 +54,6 @@ def main() -> int:
         from evaluator import PaperFinderEvaluator
 
         evaluator = PaperFinderEvaluator(
-            tool_source=params.get("tool_source"),
             # We ARE the subprocess — don't recurse.
             subprocess_isolation=False,
             apply_cost_penalty=params["apply_cost_penalty"],

@@ -9,9 +9,8 @@ subtask. Validation = 66 samples (training pool), test = 267 samples (held out).
 Credentials required:
     HF_ACCESS_TOKEN — gated allenai/asta-bench dataset
     ASTA_TOOL_KEY   — Asta MCP corpus tools (the leaderboard's Standard
-                      kit; 10 req/s per endpoint). If unset, the evaluator
-                      falls back to public-Semantic-Scholar search and
-                      logs `tool_source=search` in diagnostics.
+                      kit; 10 req/s per endpoint). Hard-required — the
+                      MCP suite is the task's only retrieval surface.
     OPENAI_API_KEY, ANTHROPIC_API_KEY (or ANTHROPIC_API_KEY_FOR_ROBOPHD),
     GOOGLE_API_KEY  — evolution may pick any of nine solver models across
                       three providers (see model_registry.py). OPENAI is
@@ -102,18 +101,17 @@ DEFAULT_EVALUATION_BUDGET = 600
 EVAL_TIMEOUT = 1800
 
 # Key under task_config in checkpoint.json that holds PaperFinder's
-# task-specific runtime values (cost_threshold / cost_per_error /
-# tool_source). Persisted by the framework every iteration via
+# task-specific runtime values (cost_threshold / cost_per_error).
+# Persisted by the framework every iteration via
 # RoboPhDConfig's task_config_extras, so the values survive any mid-run
 # interruption that leaves a resumable checkpoint.
 PFB_TASK_CONFIG_KEY = "paper_finder_runtime"
 
-# All three knobs resolve through resolve_run_immutable independently,
-# so a fully-missing store needs all of them supplied on the same
-# invocation.
+# Both knobs resolve through resolve_run_immutable independently, so a
+# fully-missing store needs both supplied on the same invocation.
 _ALL_FLAGS_NOTE = (
-    "NOTE: when no values are stored, --cost-threshold, --cost-per-error "
-    "and --tool-source must all be supplied on the same resume "
+    "NOTE: when no values are stored, --cost-threshold and "
+    "--cost-per-error must both be supplied on the same resume "
     "invocation — each is checked independently. "
 )
 
@@ -140,7 +138,7 @@ def _enforce_immutable_on_resume(
 
 def _resume_enforces_task_knobs(engine: str, resume: bool, eval_only: bool) -> bool:
     """Validate --resume usage and report whether the run-immutable task
-    knobs (cost-threshold / cost-per-error / tool-source) must be
+    knobs (cost-threshold / cost-per-error) must be
     enforced on this run.
 
     The cost knobs are training-only — the test evaluator runs with
@@ -248,7 +246,6 @@ def _write_test_results(
     with open(summary_path, "w") as f:
         json.dump({
             "agent": agent_name,
-            "tool_source": evaluator.tool_source,
             "mean_test_score": eval_result.mean_score,
             "total_test_score": eval_result.total_score,
             "total_test_problems": n_problems,
@@ -285,15 +282,6 @@ def parse_args():
                    help="Max fresh evaluator calls across the run (the binding "
                         "limit; ~30 per iteration after cache effects).")
     p.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd")
-
-    p.add_argument("--tool-source", choices=["mcp", "search", "auto"], default=None,
-                   help="Tool kit: 'mcp' (Asta MCP, Standard tier), 'search' "
-                        "(public S2 fallback, explicit dev opt-in), or 'auto' "
-                        "(mcp; hard error if ASTA_TOOL_KEY is unset — never a "
-                        "silent fallback). Resolved to a concrete value at run "
-                        "start and locked for the lifetime of the run "
-                        "(immutable on --resume). Default: auto."
-                        "%(default).0s")
 
     p.add_argument("--cost-threshold", type=float, default=None,
                    help="Mean agent cost across an iteration's batch below "
@@ -374,58 +362,20 @@ def main():
         fmt=_fmt_cost,
     )
 
-    # tool_source: resolve "auto" (or absent) to a CONCRETE value before
-    # persisting, so a resume on a machine without ASTA_TOOL_KEY can't
-    # silently flip a Standard-tier run down to the search fallback.
-    # Auto resolves ONLY to mcp — with no key it's a hard startup error,
-    # never a silent fallback (a warning was tried first and got missed;
-    # run asta_paper_finder_20260710_081139 burned its budget on
-    # unauthenticated-S2 429s). --tool-source search remains the explicit
-    # dev escape hatch.
-    cli_tool_source = args.tool_source if args.tool_source in ("mcp", "search") else None
-
-    def _auto_tool_source() -> str:
-        if os.environ.get("ASTA_TOOL_KEY"):
-            return "mcp"
+    # ASTA_TOOL_KEY is validated by the evaluator's constructor preflight
+    # (hard-required alongside the three provider keys); fail here first
+    # with the same friendly message so a missing key never reaches
+    # dataset loading.
+    if not os.environ.get("ASTA_TOOL_KEY"):
         raise SystemExit(
-            "ASTA_TOOL_KEY is not set. The AstaBench Standard tier requires "
-            "the Asta MCP corpus tools; export ASTA_TOOL_KEY in the shell "
-            "that launches the run. For key-less dev against public "
-            "Semantic Scholar (scores will NOT match the leaderboard), opt "
-            "in explicitly with --tool-source search."
-        )
-
-    if on_resume:
-        resolved_tool_source = _enforce_immutable_on_resume(
-            cli_value=cli_tool_source,
-            stored_value=checkpoint_pfb.get("tool_source"),
-            # Only consulted if the checkpoint predates tool_source
-            # persistence AND no CLI flag was passed — resolve_run_immutable
-            # errors in that case before reading the default, but keep the
-            # auto rule here for coherence.
-            default_value=None,
-            name="tool-source",
-            on_resume=True,
-        )
-    else:
-        # Fresh run: CLI wins, else auto (mcp-or-error). --eval-only: CLI
-        # wins, else the resumed run's stored value (evaluate with the
-        # tier the run was trained on), else auto.
-        resolved_tool_source = (
-            cli_tool_source or checkpoint_pfb.get("tool_source") or _auto_tool_source()
-        )
-    if resolved_tool_source == "search" and not os.environ.get("ASTA_TOOL_KEY"):
-        logger.warning(
-            "tool_source='search' with no ASTA_TOOL_KEY set: requests hit "
-            "Semantic Scholar unauthenticated and will throttle hard under "
-            "parallel workers. Get a free personal S2 API key "
-            "(semanticscholar.org/product/api) and export it as ASTA_TOOL_KEY."
+            "ASTA_TOOL_KEY is not set. The Asta MCP corpus tools are the "
+            "task's only retrieval surface; export ASTA_TOOL_KEY in the "
+            "shell that launches the run (see README 'Credentials')."
         )
 
     resolved_runtime = {
         "cost_threshold": cost_threshold,
         "cost_per_error": cost_per_error,
-        "tool_source": resolved_tool_source,
     }
 
     def _build_cost_penalty_table(threshold: float, cpe: float) -> str:
@@ -480,13 +430,11 @@ def main():
     # point on the Pareto cost-vs-score curve.
     evaluator = PaperFinderEvaluator(
         eval_timeout=EVAL_TIMEOUT,
-        tool_source=resolved_tool_source,
         apply_cost_penalty=True,  # training: penalty fires
         min_cost_threshold=cost_threshold,
         cost_per_error=cost_per_error,
     )
     test_evaluator = evaluator.with_overrides(apply_cost_penalty=False)
-    logger.info(f"Evaluator tool_source={evaluator.tool_source}")
 
     # Resolve --max-workers once, applied to BOTH the training engine
     # config and the test eval config so --eval-only --resume honors the

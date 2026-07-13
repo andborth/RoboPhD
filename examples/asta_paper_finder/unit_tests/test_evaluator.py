@@ -54,7 +54,6 @@ def _bare_evaluator(ev_mod, *, apply_cost_penalty=True,
     ev.apply_cost_penalty = apply_cost_penalty
     ev.min_cost_threshold = min_cost_threshold
     ev.cost_per_error = cost_per_error
-    ev.tool_source = "mcp"
     ev.total_eval_cost = 0.0
     ev.total_judge_cost = 0.0
     ev._cost_lock = threading.Lock()
@@ -131,8 +130,9 @@ def test_constructor_rejects_bad_knobs(ev_mod, monkeypatch, kwargs, match):
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
+    monkeypatch.setenv("ASTA_TOOL_KEY", "test-key")
     with pytest.raises(ValueError, match=match):
-        ev_mod.PaperFinderEvaluator(tool_source="search", **kwargs)
+        ev_mod.PaperFinderEvaluator(**kwargs)
 
 
 def test_constructor_requires_provider_keys(ev_mod, monkeypatch):
@@ -141,46 +141,20 @@ def test_constructor_requires_provider_keys(ev_mod, monkeypatch):
     monkeypatch.delenv("ANTHROPIC_API_KEY_FOR_ROBOPHD", raising=False)
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
-        ev_mod.PaperFinderEvaluator(tool_source="search")
+        ev_mod.PaperFinderEvaluator()
 
 
-def test_auto_tool_source_without_key_raises(ev_mod, monkeypatch):
-    """No silent fallback: tool_source=None (auto) with no ASTA_TOOL_KEY
-    must be a hard startup error, not a warn-and-degrade to the search
-    tier (the asta_paper_finder_20260710_081139 failure mode)."""
+def test_constructor_requires_asta_tool_key(ev_mod, monkeypatch):
+    """ASTA_TOOL_KEY is unconditionally required: the MCP suite is the
+    task's only retrieval surface (the public-S2 search fallback was
+    removed — its sole real-world contribution was the
+    asta_paper_finder_20260710_081139 429 budget-burn)."""
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
     monkeypatch.delenv("ASTA_TOOL_KEY", raising=False)
     with pytest.raises(RuntimeError, match="ASTA_TOOL_KEY"):
         ev_mod.PaperFinderEvaluator()
-
-
-def test_explicit_search_without_key_constructs_with_warning(
-    ev_mod, monkeypatch, caplog
-):
-    """--tool-source search stays available as the explicit dev opt-in
-    even with no key at all — but it must warn about unauthenticated S2."""
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
-    monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
-    monkeypatch.delenv("ASTA_TOOL_KEY", raising=False)
-    with caplog.at_level("WARNING"):
-        ev = ev_mod.PaperFinderEvaluator(tool_source="search")
-    assert ev.tool_source == "search"
-    assert any("unauthenticated" in r.message for r in caplog.records)
-
-
-def test_search_tools_get_retry_wrapper():
-    """Retry parity: astabench's MCP factory wraps its tools in
-    make_retry_wrapper internally; the search fallback ships bare, so
-    _build_tools must apply the same wrapper there (and only there —
-    the mcp branch must not double-wrap)."""
-    idx_search_branch = EVALUATOR_SRC.index('if tool_source == "search":')
-    idx_mcp_branch = EVALUATOR_SRC.index('if tool_source == "mcp":')
-    idx_wrap = EVALUATOR_SRC.index("make_retry_wrapper(td)")
-    assert EVALUATOR_SRC.count("make_retry_wrapper(td)") == 1
-    assert idx_wrap > idx_search_branch > idx_mcp_branch
 
 
 # --- judge-cost split ---------------------------------------------------------

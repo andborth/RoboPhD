@@ -19,7 +19,7 @@ right sample class here because its scoring is deterministic — no
 GPT-4o judge, so the gate is free and non-flaky.
 
 Requires all three provider keys (the evaluator preflights them) plus
-HF_ACCESS_TOKEN and ASTA_TOOL_KEY (or a search-fallback key).
+HF_ACCESS_TOKEN and ASTA_TOOL_KEY.
 """
 
 import json

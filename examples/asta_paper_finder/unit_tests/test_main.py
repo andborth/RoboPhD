@@ -116,7 +116,7 @@ def test_model_flag_removed():
 
 def test_cost_and_tool_knobs_present():
     flags = _argparse_flags()
-    for required in ("--cost-threshold", "--cost-per-error", "--tool-source",
+    for required in ("--cost-threshold", "--cost-per-error",
                      "--max-workers", "--eval-only", "--eval-agent"):
         assert required in flags, f"missing CLI flag: {required}"
 
@@ -203,51 +203,15 @@ def test_fresh_run_packs_task_defaults():
     assert _eval_expr(assigns["examples_per_iteration"], 50) == 10
 
 
-def test_auto_tool_source_hard_errors_without_key():
-    """The silent search fallback is dead: the auto resolver must raise
-    SystemExit when ASTA_TOOL_KEY is unset, never warn-and-degrade, and
-    its only non-raising outcome is "mcp". AST-based so a reworded
-    message or reshuffled body doesn't break the guard."""
-    resolver = next(
-        (
-            node for node in ast.walk(MAIN_TREE)
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-            and node.name == "_auto_tool_source"
-        ),
-        None,
-    )
-    assert resolver is not None, "_auto_tool_source resolver missing from main.py"
-
-    raises_system_exit = any(
-        isinstance(node, ast.Raise)
-        and isinstance(node.exc, ast.Call)
-        and isinstance(node.exc.func, ast.Name)
-        and node.exc.func.id == "SystemExit"
-        for node in ast.walk(resolver)
-    )
-    assert raises_system_exit, (
-        "auto resolution no longer raises SystemExit — the silent search "
-        "fallback may have crept back in"
-    )
-
-    returned_values = {
-        node.value.value
-        for node in ast.walk(resolver)
-        if isinstance(node, ast.Return) and isinstance(node.value, ast.Constant)
-    }
-    assert returned_values == {"mcp"}, (
-        f"auto resolver returns {returned_values}; any value besides 'mcp' "
-        f"reintroduces a non-explicit path onto the search tier"
-    )
-
-    # The error must name the explicit escape hatch, or the user is left
-    # with a dead end. Message content is inherently textual — check the
-    # resolver's string constants, not the whole file.
-    message_text = " ".join(
-        node.value for node in ast.walk(resolver)
-        if isinstance(node, ast.Constant) and isinstance(node.value, str)
-    )
-    assert "--tool-source search" in message_text
+def test_main_requires_asta_tool_key_up_front():
+    """main.py preflights ASTA_TOOL_KEY with a SystemExit before dataset
+    loading (the evaluator's constructor backstops it with the same
+    requirement). The search fallback and --tool-source knob are gone;
+    neither may reappear."""
+    assert 'os.environ.get("ASTA_TOOL_KEY")' in MAIN_SRC
+    assert "raise SystemExit" in MAIN_SRC
+    assert "--tool-source" not in MAIN_SRC
+    assert "tool_source" not in MAIN_SRC
 
 
 def test_gepa_and_autoresearch_apply_engine_config():

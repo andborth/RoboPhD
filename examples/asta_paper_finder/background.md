@@ -95,9 +95,6 @@ def parse_items(raw):
 - `search_papers_by_relevance` takes `keyword=`, `snippet_search` takes `query=` — read before calling.
 - The author/citation tools make `metadata_f1` queries (author/venue/year filters) tractable without keyword-search gymnastics — but note `get_citations`' 1000 cap makes "papers citing <hugely-cited paper>" queries structurally incomplete.
 
-### `tool_source=search` fallback (dev only)
-When the evaluator runs with `tool_source=search` (no `ASTA_TOOL_KEY`), the kit is different: `paper_search(kquery=..., limit=...)` and `snippet_search(query=...)`, both returning plain `list[dict]`. Leaderboard-comparable runs always use the MCP kit above.
-
 ## LLM calls
 
 The following model handles are available, imported from `model_registry`. Prices are the rates this benchmark's scoring bills:

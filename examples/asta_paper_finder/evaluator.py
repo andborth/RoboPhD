@@ -4,9 +4,9 @@ PaperFindingBench evaluator for AstaBench (Standard tools tier).
 Each candidate is an Inspect `@solver` factory exported as `make_solver` in
 agent.py. The evaluator runs the candidate against one PaperFindingBench
 sample at a time via `inspect.eval()` with a 1-sample dataset, attaches the
-Asta MCP corpus tools (or a Semantic Scholar fallback when ASTA_TOOL_KEY is
-absent for dev), and reports the scorer's adjusted-F1 score along with
-cost/usage diagnostics.
+Asta MCP corpus tools (ASTA_TOOL_KEY required — the Standard tier's only
+sanctioned retrieval surface), and reports the scorer's adjusted-F1 score
+along with cost/usage diagnostics.
 
 Cost model: agents call LLMs only through model_registry handles; their
 spend is billed to `agent_cost_usd` and (during training) penalized above
@@ -229,45 +229,17 @@ def load_paper_finder(split: str = "validation") -> list[Sample]:
     return list(ds)
 
 
-def _build_tools(sample_id: str, tool_source: str):
-    """Return the list[Tool] to attach for this sample.
+def _build_tools(sample_id: str):
+    """Return the Asta MCP corpus tools to attach for this sample.
 
-    `tool_source`:
-      - "mcp"    : Asta MCP corpus tools (the leaderboard's Standard kit;
-                   requires ASTA_TOOL_KEY).
-      - "search" : Public-Semantic-Scholar paper_search + snippet_search
-                   factories. Lets us smoke-test without the MCP key, but
-                   scores will not match the leaderboard exactly.
-
-    Retry parity: astabench's MCP factory wraps every tool in
-    make_retry_wrapper (429/529/504 + BrokenResourceError, exponential
-    backoff), so agents on the leaderboard tier never see a transient
-    rate limit. The search factories ship with NO retry — a raw 429
-    propagates into the agent and scores the problem 0 (the
-    asta_paper_finder_20260710_081139 failure mode, where evolution
-    then wasted an iteration evolving its own retry machinery). Wrap
-    the search kit in the SAME astabench wrapper so both tiers absorb
-    transient rate limits identically and score differences reflect
-    agent quality, never the tier.
+    The factory applies the sample's date cutoff (no future-paper leaks)
+    and wraps every tool in astabench's make_retry_wrapper (429/529/504 +
+    BrokenResourceError, exponential backoff), so agents never see a
+    transient rate limit.
     """
     inserted_before = get_inserted_before_per_dataset_type(sample_id)
-    if tool_source == "mcp":
-        from astabench.tools import make_asta_mcp_tools
-        return make_asta_mcp_tools(insertion_date=inserted_before)
-    if tool_source == "search":
-        from astabench.tools.asta_tools import make_retry_wrapper
-        from astabench.tools.search import make_paper_search, make_snippet_search
-        from inspect_ai.tool import ToolDef
-        wrapped = []
-        for t in (
-            make_paper_search(inserted_before=inserted_before),
-            make_snippet_search(inserted_before=inserted_before),
-        ):
-            td = ToolDef(t)
-            td.tool = make_retry_wrapper(td)
-            wrapped.append(td.as_tool())
-        return wrapped
-    raise ValueError(f"unknown tool_source: {tool_source!r}")
+    from astabench.tools import make_asta_mcp_tools
+    return make_asta_mcp_tools(insertion_date=inserted_before)
 
 
 def _import_candidate_solver(agent_code: str) -> Any:
@@ -319,7 +291,6 @@ class PaperFinderEvaluator:
 
     def __init__(
         self,
-        tool_source: str | None = None,
         log_dir: str | None = None,
         subprocess_isolation: bool = True,
         eval_timeout: int = 600,
@@ -348,6 +319,8 @@ class PaperFinderEvaluator:
             missing.append("ANTHROPIC_API_KEY (or ANTHROPIC_API_KEY_FOR_ROBOPHD)")
         if not os.environ.get("GOOGLE_API_KEY"):
             missing.append("GOOGLE_API_KEY")
+        if not os.environ.get("ASTA_TOOL_KEY"):
+            missing.append("ASTA_TOOL_KEY")
         if missing:
             raise RuntimeError(
                 f"Missing required env vars: {', '.join(missing)}. "
@@ -355,10 +328,10 @@ class PaperFinderEvaluator:
                 f"models across three providers (OpenAI, Anthropic, "
                 f"Google); see model_registry.py for the full handle "
                 f"list. OPENAI_API_KEY additionally powers the "
-                f"benchmark's GPT-4o relevance judge. All three provider "
-                f"keys must be set before running, or evolution will "
-                f"fail mid-run when it produces an agent that uses a "
-                f"model with no key configured."
+                f"benchmark's GPT-4o relevance judge, and ASTA_TOOL_KEY "
+                f"is the Asta MCP corpus tools' API key — the Standard "
+                f"tier's only retrieval surface. All must be set in the "
+                f"shell that launches the run."
             )
 
         # Resolve registry handles at construction time (after the env-var
@@ -406,38 +379,6 @@ class PaperFinderEvaluator:
         self.eval_timeout = eval_timeout
         self.subprocess_timeout = max(eval_timeout - 30, 60)
 
-        # tool_source=None means "auto", which resolves ONLY to mcp.
-        # There is deliberately no silent fallback to the search tier: a
-        # warning was tried first and got missed, and the resulting run
-        # (asta_paper_finder_20260710_081139) burned its budget on
-        # unauthenticated-S2 429s. Search mode remains available, but
-        # only as an explicit choice.
-        if tool_source is None:
-            if not os.environ.get("ASTA_TOOL_KEY"):
-                raise RuntimeError(
-                    "ASTA_TOOL_KEY is not set. The AstaBench Standard tier "
-                    "requires the Asta MCP corpus tools; export ASTA_TOOL_KEY "
-                    "in the shell that launches the run. For key-less dev "
-                    "against public Semantic Scholar (scores will NOT match "
-                    "the leaderboard), opt in explicitly with "
-                    "tool_source='search' / --tool-source search."
-                )
-            tool_source = "mcp"
-        self.tool_source = tool_source
-
-        # Explicit search mode with no key at all: the fallback factories
-        # send ASTA_TOOL_KEY as the S2 x-api-key header, so an empty env
-        # var means UNAUTHENTICATED S2 — a shared, very tight rate pool
-        # that 429s under any parallelism even with the retry wrapper.
-        if tool_source == "search" and not os.environ.get("ASTA_TOOL_KEY"):
-            logger.warning(
-                "tool_source='search' with no ASTA_TOOL_KEY set: requests "
-                "hit Semantic Scholar unauthenticated and will throttle "
-                "hard under parallel workers. Get a free personal S2 API "
-                "key (semanticscholar.org/product/api) and export it as "
-                "ASTA_TOOL_KEY."
-            )
-
         # inspect.eval() insists on a log dir; use a per-evaluator temp dir
         # so multiple parallel evaluators don't fight over the same path.
         self._log_dir = log_dir or tempfile.mkdtemp(prefix="paper_finder_eval_")
@@ -460,7 +401,6 @@ class PaperFinderEvaluator:
             "min_cost_threshold": self.min_cost_threshold,
             "cost_per_error": self.cost_per_error,
             "subprocess_isolation": self.subprocess_isolation,
-            "tool_source": self.tool_source,
         }
         base.update(overrides)
         return PaperFinderEvaluator(**base)
@@ -588,7 +528,6 @@ class PaperFinderEvaluator:
             json.dump({
                 "candidate": candidate,
                 "example": example_dict,
-                "tool_source": self.tool_source,
                 "apply_cost_penalty": self.apply_cost_penalty,
                 "min_cost_threshold": self.min_cost_threshold,
                 "cost_per_error": self.cost_per_error,
@@ -731,11 +670,10 @@ class PaperFinderEvaluator:
             }
 
         try:
-            tools = _build_tools(example.id, self.tool_source)
+            tools = _build_tools(example.id)
         except Exception as e:
             return 0.0, {
                 "error.md": f"tool init failed: {type(e).__name__}: {e}",
-                "tool_source": self.tool_source,
                 "eval_wall_clock_seconds": _elapsed_seconds(_t0),
             }
 
@@ -768,7 +706,6 @@ class PaperFinderEvaluator:
         except Exception as e:
             return 0.0, {
                 "error.md": f"inspect.eval crashed: {type(e).__name__}: {e}",
-                "tool_source": self.tool_source,
                 "agent_stdout": captured.getvalue(),
                 "eval_wall_clock_seconds": _elapsed_seconds(_t0),
             }
@@ -787,7 +724,6 @@ class PaperFinderEvaluator:
     ) -> tuple[float, dict]:
         diagnostics: dict[str, Any] = {
             "score_type": example.metadata.get("score_type"),
-            "tool_source": self.tool_source,
             "agent_stdout": agent_stdout,
             "sample_id": str(example.id),
         }

@@ -59,11 +59,7 @@ The leaderboard's Standard tools tier requires the Asta MCP corpus tools, served
 export ASTA_TOOL_KEY="..."
 ```
 
-`ASTA_TOOL_KEY` is **required** unless you pass `--tool-source search` explicitly: with no key and no flag, the run hard-errors at startup. (It used to warn and silently fall back to the public-S2 tier — run `asta_paper_finder_20260710_081139` burned its budget on unauthenticated 429s that way.)
-
-The explicit `search` mode uses the Python-importable `paper_search`/`snippet_search` factories, which send `ASTA_TOOL_KEY` as the Semantic Scholar `x-api-key` header (`astabench/tools/search.py`). For dev without the AI2 key, request a free personal Semantic Scholar API key at https://www.semanticscholar.org/product/api and set it as `ASTA_TOOL_KEY` — with no key at all you're on S2's unauthenticated shared pool and will throttle under any parallelism. Both tool tiers absorb transient 429/5xx identically: the MCP factory has astabench's `make_retry_wrapper` built in, and `_build_tools` applies the same wrapper to the search kit, so agents never see (and never need to evolve handling for) transient rate limits. Scores from the `search` fallback **do not match the leaderboard exactly** (the MCP tool set has different filtering and date semantics) but the structure is the same. The evaluator records `tool_source` ("mcp" or "search") in every diagnostics dict, and the resolved value is locked for the lifetime of a run (immutable on `--resume`).
-
-Troubleshooting: 429 storms against `api.semanticscholar.org/graph/v1/...` in `error.md` files mean the run is on the `search` tier (check `checkpoint.json` → `task_config.paper_finder_runtime.tool_source`), not that the Asta MCP limit was hit.
+`ASTA_TOOL_KEY` is **hard-required** — the MCP suite is the task's only retrieval surface, and both `main.py` and the evaluator's constructor error at startup without it. (There used to be a public-Semantic-Scholar `search` fallback for pre-key development; it was removed once the key existed — the seed and all evolved agents target MCP tool names, the leaderboard's `astabench eval` re-run attaches the MCP kit, and the fallback's only real-world contribution was run `asta_paper_finder_20260710_081139` burning its budget on unauthenticated 429s. If the key is ever lost, revert the removal commit.) The MCP factory wraps every tool in astabench's `make_retry_wrapper`, so agents never see transient 429/5xx.
 
 ## Running
 
@@ -76,9 +72,6 @@ python examples/asta_paper_finder/main.py
 
 # With held-out test-set evaluation after optimization
 python examples/asta_paper_finder/main.py --eval-test-set
-
-# Force the public-S2 fallback even when ASTA_TOOL_KEY is set
-python examples/asta_paper_finder/main.py --tool-source search
 
 # Other engines
 python examples/asta_paper_finder/main.py --engine gepa
@@ -128,7 +121,7 @@ On `semantic_f1` queries (73% of validation) the scorer runs a GPT-4o relevance 
 - `evaluator.py` — `PaperFinderEvaluator`; runs `inspect.eval()` on a 1-sample dataset per evaluation; cost split + iteration aggregator
 - `_eval_worker.py` — subprocess worker (one per evaluation, for inspect.eval parallelism)
 - `model_registry.py` — the nine solver-model handles (not in `file_mapping`)
-- `seeds/baseline/agent.py` — minimal `@solver` factory exported as `make_solver`. Demonstrates a tool call (MCP kit only), a registry-handle LLM call with an empty-completion guard, and the JSON output schema.
+- `seeds/baseline/agent.py` — minimal `@solver` factory exported as `make_solver`. Demonstrates a tool call, a registry-handle LLM call with an empty-completion guard, and the JSON output schema.
 - `_check_evaluator.py` / `_check_seed.py` — credentialed sanity gates: gold-ID leak scan over the evolution-facing artifacts, synthetic-candidate scorer checks, and a 3-sample live seed run with judge-split assertions.
 - `objective.md` — what evolution should optimize (cost placeholders interpolated by main.py)
 - `background.md` — task spec, score types, output schema, tools, model menu, cost-penalty table
