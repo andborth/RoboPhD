@@ -54,35 +54,46 @@ def get_tool(state, name):
     return next(t for t in state.tools if ToolDef(t).name == name)
 ```
 
-**Return shape (all MCP tools):** a `list` of ContentText objects whose `.text` attribute is a JSON string. Parse each item:
+**Return shape (all MCP tools):** a `list` of ContentText objects whose `.text` attribute is a JSON string. Some tools wrap their payload in a `{"data": [...]}` object (see the table), so parse with a flattener:
 
 ```python
-docs = [json.loads(item.text) for item in raw_result]
+def parse_items(raw):
+    docs = []
+    for item in raw or []:
+        doc = json.loads(item.text)
+        docs.extend(doc["data"]) if "data" in doc else docs.append(doc)
+    return docs
 ```
 
 ### The eight tools and their parameters
 
-| Tool | Parameters | Returns (per item) |
+| Tool | Parameters | Returns |
 | --- | --- | --- |
-| `search_papers_by_relevance` | `keyword` (str), `fields` (str, comma-sep), `limit` (int), `venues` (str) | one paper JSON per item: `paperId`, `corpusId` (int), `title`, plus whatever `fields` requests (`abstract`, `authors`, `year`, `venue`, `citationCount`, ...) |
-| `search_paper_by_title` | `title` (str), `fields` (str), `venues` (str) | best title match: `paperId`, `title`, `matchScore` |
-| `snippet_search` | `query` (str), `limit` (int), `venues` (str), `paper_ids` (str, comma-sep `CorpusId:...`) | ONE item whose JSON is `{"data": [{score, paper: {corpusId (str), title, authors, ...}, snippet...}], "retrievalVersion"}` |
+| `search_papers_by_relevance` | `keyword` (str), `fields` (str, comma-sep), `limit` (int, **1–100**), `venues` (str) | one paper JSON per item: `paperId`, `corpusId` (**int**), `title`, plus whatever `fields` requests (`abstract`, `authors`, `year`, `venue`, `citationCount`, ...) |
+| `search_paper_by_title` | `title` (str), `fields` (str), `venues` (str) | ONE item: the single best match (`paperId`, `corpusId`, `title`, `matchScore`, + `fields`). **No match ⇒ the item is `{"data": []}`** — check for `paperId` before use |
+| `snippet_search` | `query` (str), `limit` (int), `venues` (str), `paper_ids` (str, comma-sep, up to 100, `CorpusId:<id>` / `DOI:<doi>` / arXiv etc.) | ONE item: `{"data": [{score, paper: {corpusId (**str**), title, authors, openAccessInfo}, snippet: {text, section, snippetKind, snippetOffset, annotations}}], "retrievalVersion"}` |
 | `get_paper` | `paper_id` (str), `fields` (str) | full metadata for one paper |
 | `get_paper_batch` | `ids` (array), `fields` (str) | metadata for many papers at once |
-| `get_citations` | `paper_id` (str), `fields` (str), `limit` (int) | citing papers |
-| `search_authors_by_name` | `name` (str), `fields` (str), `limit` (int) | author records with `authorId` |
+| `get_citations` | `paper_id` (str), `fields` (str), `limit` (int, max 1000, no offset/paging) | one item per citing paper, **wrapped**: `{"citingPaper": {paperId, corpusId (**str**), title, ...}}` — unwrap before reading |
+| `search_authors_by_name` | `name` (str), `fields` (str), `limit` (int) | author records with `authorId`, `name`, `paperCount` |
 | `get_author_papers` | `author_id` (str), `paper_fields` (str), `limit` (int) | an author's papers |
 
-Sharp edges, verified against the live server:
-- `search_papers_by_relevance` is a **literal keyword search**: a full conversational query ("Could you suggest research that investigates ...?") returns ZERO hits. Distill queries to keyword phrases before searching (`snippet_search` is more tolerant of natural language).
+### Search semantics (verified against the live server)
+
+- **Term matching is lenient, with no query operators.** Extra or missing terms don't zero a result set (adding a gibberish term leaves the top hits unchanged); quoting a phrase does NOT enforce its presence (a quoted nonexistent phrase still returns full results); `-term` does not exclude; `OR` is treated as an ordinary token. Query text steers *ranking* only.
+- **Interrogative/imperative framing returns ZERO hits.** "Could you suggest research that investigates X?" → 0 results, with or without punctuation; the bare noun phrase "X" → full results, even with articles and prepositions intact. Strip the question/request preamble; keyword or noun-phrase queries only. (`snippet_search` is tolerant of full natural-language queries — it's the right tool for sentence-shaped input.)
+- **`limit` must be 1–100 on the search tools** — values outside that range are a loud tool error, not a clamp.
+- `venues=` genuinely filters (comma-separated exact venue names, e.g. `"Nature,NeurIPS"`).
+- **There is no year/date filter parameter.** For year-constrained queries (common in `metadata_f1`), request the `year` field and post-filter yourself.
+- **Same person, multiple author IDs**: `search_authors_by_name("David Harel")` returns several fragmentary identities (one with 399 papers, others with 5–6). Disambiguate by `paperCount` or by checking the papers themselves before trusting `get_author_papers`.
+- The docstring prose on some tools states stale defaults ("fields default is title", "limit default is 50") inherited from the upstream server — **trust the parameter defaults instead** (a rich field set including `corpusId`, limit 20). Also, the docstrings' "available fields" lists omit `corpusId` even though it's valid and essential — when trimming `fields`, always keep `title,abstract,corpusId`.
+- `corpusId` is an **int** in `search_papers_by_relevance` results but a **str** in `snippet_search` and `get_citations` results — cast to str for output.
+- `snippet_search` latency is variable (seconds to minutes on cold queries). Budget for it or scope it with `paper_ids` to a shortlist you already retrieved. Snippets are ~500-word passages from title/abstract/body (`snippet.section` tells you which).
 - `search_papers_by_relevance` takes `keyword=`, `snippet_search` takes `query=` — read before calling.
-- **Request `fields="title,abstract,corpusId"` explicitly** on the search tools; the default omits abstracts, which you need for `markdown_evidence`.
-- `corpusId` is an **int** in `search_papers_by_relevance` results but a **str** inside `snippet_search`'s `paper` objects — cast to str for output.
-- `snippet_search` is much slower than paper search (can take minutes on cold queries). Budget for it or scope it with `paper_ids` to a shortlist you already retrieved.
-- The author/citation tools make `metadata_f1` queries (author/venue/year filters) tractable without keyword-search gymnastics.
+- The author/citation tools make `metadata_f1` queries (author/venue/year filters) tractable without keyword-search gymnastics — but note `get_citations`' 1000 cap makes "papers citing <hugely-cited paper>" queries structurally incomplete.
 
 ### `tool_source=search` fallback (dev only)
-When the evaluator runs with `tool_source=search` (no `ASTA_TOOL_KEY`), the kit is different: `paper_search(kquery=..., limit=...)` and `snippet_search(query=...)`, both returning plain `list[dict]` with `corpus_id`/`corpusId`, `title`, `abstract`. Leaderboard-comparable runs always use the MCP kit above; a robust agent can look for both tool names.
+When the evaluator runs with `tool_source=search` (no `ASTA_TOOL_KEY`), the kit is different: `paper_search(kquery=..., limit=...)` and `snippet_search(query=...)`, both returning plain `list[dict]`. Leaderboard-comparable runs always use the MCP kit above.
 
 ## LLM calls
 
