@@ -4,11 +4,13 @@ Each example is a literature-search query: a natural-language description of pap
 
 ## Three query types (`state.metadata["score_type"]`)
 
-| score_type | meaning | gold form | scoring path | train / held-out test count |
+| score_type | meaning | gold form | scoring path | train count |
 | --- | --- | --- | --- | --- |
-| `specific_f1` | "the X paper" — known target | `{"corpus_ids":[...]}` | exact-match against `corpus_ids` | 10 / ~40 |
-| `metadata_f1` | author/year/venue filters | `{"corpus_ids":[...]}` | exact-match against `corpus_ids` | 8 / ~30 |
-| `semantic_f1` | broad topical query | `{"known_to_be_good":[...], "known_to_be_bad":[...], "relevance_criteria":[{name, description, weight}, ...]}` | LLM judge over each predicted paper, weighted by `relevance_criteria` | 48 / ~200 |
+| `specific_f1` | "the X paper" — known target | `{"corpus_ids":[...]}` | exact-match against `corpus_ids` | 10 |
+| `metadata_f1` | author/year/venue filters | `{"corpus_ids":[...]}` | exact-match against `corpus_ids` | 8 |
+| `semantic_f1` | broad topical query | `{"known_to_be_good":[...], "known_to_be_bad":[...], "relevance_criteria":[{name, description, weight}, ...]}` | LLM judge over each predicted paper, weighted by `relevance_criteria` | 48 |
+
+The held-out test set has a similar query-type mix, so improvements weighted by these proportions generalize.
 
 All three paths produce a real-valued score in [0, 1]; differences in difficulty are large.
 
