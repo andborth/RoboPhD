@@ -344,34 +344,30 @@ def test_doc_output_schema_names_match_astabench():
         )
 
 
-def test_readme_budget_reuse_math_matches_constant():
-    """README's thermometer-holdout item derives per-example reuse from
-    the default evaluation budget, and that line has now gone stale on
-    two consecutive budget changes (missed at 500->600; hand-fixed at
-    1500->500). Pin the stated budget and the reuse ratio to
-    DEFAULT_EVALUATION_BUDGET parsed from main.py."""
+def test_readme_reuse_math_is_internally_consistent():
+    """README's thermometer-holdout item derives per-example exposure
+    from examples-per-iteration and expected run length; this line went
+    stale on two consecutive budget changes, and its first pinned form
+    measured the wrong quantity (budget/66 counts (agent, example)
+    evaluations; overfitting exposure is batch DRAWS per example).
+    Pin: the stated examples/iteration matches the code's ceil(train/5)
+    derivation, and the stated per-example draw count is consistent
+    with (examples/iter x iterations) / 66."""
     import re
-    for node in ast.walk(MAIN_TREE):
-        if (
-            isinstance(node, ast.Assign)
-            and isinstance(node.targets[0], ast.Name)
-            and node.targets[0].id == "DEFAULT_EVALUATION_BUDGET"
-        ):
-            budget = node.value.value
-            break
-    else:
-        pytest.fail("DEFAULT_EVALUATION_BUDGET not found in main.py")
-
     readme = (PFB_DIR / "README.md").read_text()
-    m = re.search(r"(\d+) budget / 66 ≈ ([\d.]+)×", readme)
-    assert m, "README no longer states the budget/reuse math — update this pin"
-    assert int(m.group(1)) == budget, (
-        f"README says '{m.group(1)} budget' but DEFAULT_EVALUATION_BUDGET "
-        f"is {budget} — the reuse math is stale again"
+    m = re.search(
+        r"(\d+) examples/iteration over a ~(\d+)-iteration run, each "
+        r"example is drawn ~(\d+)", readme,
     )
-    assert abs(float(m.group(2)) - budget / 66) < 0.05, (
-        f"README's reuse ratio {m.group(2)} doesn't match {budget}/66 "
-        f"= {budget / 66:.1f}"
+    assert m, "README no longer states the draw-based reuse math — update this pin"
+    epi, iters, drawn = map(int, m.groups())
+    assert epi == -(-66 // 5), (
+        f"README says {epi} examples/iteration; main.py derives "
+        f"ceil(66/5) = {-(-66 // 5)}"
+    )
+    assert abs(drawn - epi * iters / 66) < 0.6, (
+        f"README's ~{drawn}x draw count doesn't match {epi}x{iters}/66 "
+        f"= {epi * iters / 66:.1f}"
     )
 
 

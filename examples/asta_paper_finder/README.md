@@ -160,6 +160,6 @@ On `semantic_f1` queries (73% of validation) the scorer runs a GPT-4o relevance 
 
 ### Design questions to revisit
 
-- [ ] **Held-out thermometer split.** Currently all 66 validation samples feed evolution — 600 budget / 66 ≈ 9.1× per-example reuse. Decide whether to hold out ~16 as a thermometer the evolution AI can't see, or accept the reuse.
+- [ ] **Held-out thermometer split.** Currently all 66 validation samples feed evolution — at 14 examples/iteration over a ~20-iteration run, each example is drawn ~4× (each draw evaluated by up to 3 agents). Decide whether to hold out ~16 as a thermometer the evolution AI can't see, or accept the reuse.
 - [ ] **Score-type stratification in Elo.** The scorer reports means *grouped by* `score_type`; RoboPhD's Elo sees a single float. Options: (a) stratify Elo match sampling by score_type, (b) trust the marginal mean. (b) is the current default; revisit if evolution overfits to semantic queries (the largest group).
 - [ ] **Whether to add `paper_finder` (high-level MCP tool) to the allowlist.** Using it would make our agent an `ai2i_paper_finder` lookalike — defeats the purpose. Lean: exclude.
