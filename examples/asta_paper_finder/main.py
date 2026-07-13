@@ -77,12 +77,12 @@ DEFAULT_MAX_WORKERS = 8
 
 DEFAULT_NUM_ITERATIONS = 999
 # Default evaluation budget (max fresh evaluator calls across all
-# iterations) — the binding limit for a run. Scaled from asta_ds1000's
-# budget by training-pool size: ds1000 runs 750 against a 100-sample
-# pool, and PFB's pool is 66 (~2/3), hence 500. A larger budget mostly
-# re-samples the same 66 queries with diminishing signal and rising
-# overfitting pressure.
-DEFAULT_EVALUATION_BUDGET = 500
+# iterations) — the binding limit for a run. Sized for ~20 iterations:
+# the first completed run burned ~31 fresh evals per iteration (3
+# agents × 14 examples nominal, discounted by the (agent, example)
+# cache), so 600 ≈ 19-20 iterations. Originally 500 (asta_ds1000's 750
+# scaled by the 66/100 training-pool ratio), which yielded 16.
+DEFAULT_EVALUATION_BUDGET = 600
 
 # Per-example timeout: must match the value passed to RoboPhDConfig /
 # RoboPhDEvalConfig below. The evaluator derives a slightly-shorter
@@ -278,8 +278,12 @@ def parse_args():
         description="Evolve PaperFindingBench agents on AstaBench (Standard tools)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    p.add_argument("--num-iterations", type=int, default=DEFAULT_NUM_ITERATIONS)
-    p.add_argument("--evaluation-budget", type=int, default=DEFAULT_EVALUATION_BUDGET)
+    p.add_argument("--num-iterations", type=int, default=DEFAULT_NUM_ITERATIONS,
+                   help="Iteration cap, deliberately loose — runs are bound by "
+                        "--evaluation-budget, not this.")
+    p.add_argument("--evaluation-budget", type=int, default=DEFAULT_EVALUATION_BUDGET,
+                   help="Max fresh evaluator calls across the run (the binding "
+                        "limit; ~30 per iteration after cache effects).")
     p.add_argument("--engine", choices=["robophd", "gepa", "autoresearch"], default="robophd")
 
     p.add_argument("--tool-source", choices=["mcp", "search", "auto"], default=None,
