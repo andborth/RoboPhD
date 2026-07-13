@@ -307,34 +307,6 @@ def test_doc_output_schema_names_match_astabench():
             f"field — background.md's output schema and the seed are stale"
         )
 
-
-def test_readme_reuse_math_is_internally_consistent():
-    """README's thermometer-holdout item derives per-example exposure
-    from examples-per-iteration and expected run length; this line went
-    stale on two consecutive budget changes, and its first pinned form
-    measured the wrong quantity (budget/66 counts (agent, example)
-    evaluations; overfitting exposure is batch DRAWS per example).
-    Pin: the stated examples/iteration matches the code's ceil(train/5)
-    derivation, and the stated per-example draw count is consistent
-    with (examples/iter x iterations) / 66."""
-    import re
-    readme = (PFB_DIR / "README.md").read_text()
-    m = re.search(
-        r"(\d+) examples/iteration over a ~(\d+)-iteration run, each "
-        r"example is drawn ~(\d+)", readme,
-    )
-    assert m, "README no longer states the draw-based reuse math — update this pin"
-    epi, iters, drawn = map(int, m.groups())
-    assert epi == -(-66 // 5), (
-        f"README says {epi} examples/iteration; main.py derives "
-        f"ceil(66/5) = {-(-66 // 5)}"
-    )
-    assert abs(drawn - epi * iters / 66) < 0.6, (
-        f"README's ~{drawn}x draw count doesn't match {epi}x{iters}/66 "
-        f"= {epi * iters / 66:.1f}"
-    )
-
-
 def test_doc_examples_dont_model_the_openai_token_trap():
     """background.md's code examples are what evolution copies — the run
     record shows iter2-iter5 shipped the reasoning_effort + tight

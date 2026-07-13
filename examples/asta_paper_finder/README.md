@@ -153,7 +153,8 @@ On `semantic_f1` queries (73% of validation) the scorer runs a GPT-4o relevance 
 
 ### Design questions to revisit
 
-- [ ] **Held-out thermometer split.** Currently all 66 validation samples feed evolution — at 14 examples/iteration over a ~20-iteration run, each example is drawn ~4× (each draw evaluated by up to 3 agents). Decide whether to hold out ~16 as a thermometer the evolution AI can't see, or accept the reuse. Evidence so far (tight train/test agreement in the first run, and the modest draw count) leans accept.
 - [ ] **Whether to add `paper_finder` (high-level MCP tool) to the allowlist.** Using it would make our agent an `ai2i_paper_finder` lookalike — defeats the purpose. Lean: exclude.
 
 (Resolved: score-type stratification in Elo — the leaderboard headline turned out to be the plain per-query mean, `adjusted_f1_micro_avg`, so the Elo signal already matches it exactly; no stratification tension exists.)
+
+(Resolved: held-out thermometer split — rejected as against the framework philosophy. Validation strategy belongs to the engines, not the task: GEPA/Autoresearch carve their own val split from the pool, and the RoboPhD engine's protections are per-iteration re-sampling, Elo, and the held-out test set. A task-side holdout would second-guess all three. The first run's tight train/test agreement supports leaving the full 66-sample pool with evolution.)
