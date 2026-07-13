@@ -349,9 +349,11 @@ def test_doc_examples_dont_model_the_openai_token_trap():
     record shows iter2-iter5 shipped the reasoning_effort + tight
     max_tokens combination on OpenAI handles straight from the doc's
     example, silently emptying their most important LLM call for four
-    generations. Pin: in every python code block, any GenerateConfig
-    attached to a GPT_* handle call that sets reasoning_effort must
-    either omit max_tokens or budget generously (>= 8000)."""
+    generations. The doc's rule is now blanket: max_tokens is not
+    recommended on OpenAI handles at all (GPT_5_5's model-managed
+    reasoning can trip the shared cap with no opt-in). Pin: no python
+    code block may attach a GenerateConfig with max_tokens to a GPT_*
+    handle call."""
     import re
     background = (PFB_DIR / "background.md").read_text()
     assert "COMMON FATAL BUG" in background, (
@@ -365,12 +367,11 @@ def test_doc_examples_dont_model_the_openai_token_trap():
         for cfg in re.finditer(r"GenerateConfig\(([^)]*)\)", block):
             handle = next((h for pos, h in reversed(calls) if pos < cfg.start()), None)
             args = cfg.group(1)
-            if handle and handle.startswith("GPT_") and "reasoning_effort" in args:
-                mt = re.search(r"max_tokens\s*=\s*(\d+)", args)
-                assert mt is None or int(mt.group(1)) >= 8000, (
-                    f"doc example puts reasoning_effort with max_tokens="
-                    f"{mt.group(1)} on OpenAI handle {handle} — the exact "
-                    f"combination that silently emptied iter2-iter5's calls"
+            if handle and handle.startswith("GPT_") and "max_tokens" in args:
+                pytest.fail(
+                    f"doc example sets max_tokens on OpenAI handle {handle} — "
+                    f"contradicts the doc's own rule (shared reasoning cap; "
+                    f"the iter2-iter5 silent-empty-completion trap)"
                 )
 
 
