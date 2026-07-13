@@ -87,6 +87,15 @@ def main() -> int:
                 f"no evidence the judgement path ran (empty submission, "
                 f"or the judge split/scoring chain is broken)"
             )
+        if str(stype).startswith("semantic") and "submitted 0 papers" not in (
+            d.get("agent_stdout") or ""
+        ):
+            verdicts = d.get("judge_verdicts.md") or ""
+            if not verdicts.strip():
+                failures.append(
+                    f"{sid} (semantic) submitted papers but carries no "
+                    f"judge_verdicts.md diagnostic — verdict surfacing broken"
+                )
         if str(stype).startswith(("specific", "metadata")) and judge_c > 0:
             failures.append(
                 f"{sid} ({stype}) billed judge cost ${judge_c:.4f} — "

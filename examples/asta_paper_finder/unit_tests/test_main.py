@@ -262,7 +262,8 @@ def test_doc_diagnostic_names_match_evaluator():
     so this list can't silently outlive the prose it guards)."""
     background = _background()
     emitted = _evaluator_emitted_keys()
-    for name in ("gold_criteria.md", "agent_stdout", "eval_wall_clock_seconds"):
+    for name in ("gold_criteria.md", "agent_stdout", "eval_wall_clock_seconds",
+                  "judge_verdicts.md"):
         assert name in background, f"{name} no longer mentioned in background.md — prune it here"
         assert name in emitted, (
             f"background.md documents diagnostic {name!r} but evaluator.py "

@@ -45,12 +45,14 @@ from inspect_ai.dataset import MemoryDataset, Sample
 from inspect_ai.solver import use_tools
 
 from astabench.evals.paper_finder.paper_finder_utils import (
+    detailed_reference_path,
     get_inserted_before_per_dataset_type,
 )
 from astabench.evals.paper_finder.relevance import (
     GRADER_MODEL_NAME as _ASTABENCH_GRADER_MODEL_NAME,
 )
 from astabench.evals.paper_finder.task import (
+    normalize_corpus_id,
     pf_final_score_name_per_type,
     score_paper_finder_with_all_name,
 )
@@ -215,6 +217,70 @@ def _elapsed_seconds(t0: float) -> float:
     paths so a future precision tweak changes one place, not four.
     """
     return round(time.monotonic() - t0, 3)
+
+
+def _judge_verdicts_markdown(
+    submitted_ids: list[str], query_id: str, known_good: set[str]
+) -> str | None:
+    """Per-paper judge verdicts for a semantic query, in submitted order.
+
+    Sourced from astabench's persistent judge cache
+    (detailed_reference.json), which `update_references` appends to after
+    every scoring pass — read the FILE directly, not
+    get_normalizer_references(), whose module-global snapshot goes stale
+    the moment this eval writes fresh verdicts. Zero extra LLM calls.
+
+    Verdict per submitted paper:
+      - in the query's known_to_be_good list → pre-seeded Perfect (the
+        scorer never LLM-judges these, so they're absent from the cache)
+      - in the cache → the judge's stored label, verbatim
+      - neither → "(no verdict recorded)" (judge parse failure, or the
+        scorer didn't run)
+
+    Returns None when there's nothing to report (no submissions, or the
+    cache is unreadable and nothing is known-good).
+    """
+    if not submitted_ids:
+        return None
+    try:
+        with open(detailed_reference_path) as f:
+            cache = json.load(f).get(query_id) or {}
+    except (OSError, json.JSONDecodeError):
+        cache = {}
+
+    # The cache stores astabench's internal label strings
+    # ("perfectly_relevant_papers", ...); translate to the human labels.
+    pretty = {
+        "perfectly_relevant_papers": "Perfectly Relevant",
+        "highly_relevant_papers": "Highly Relevant",
+        "somewhat_relevant_papers": "Somewhat Relevant",
+        "not_relevant_papers": "Not Relevant",
+    }
+    perfect_raw = "perfectly_relevant_papers"
+
+    lines = []
+    n_perfect = n_lower = n_unknown = 0
+    for i, pid in enumerate(submitted_ids[:250], 1):  # scorer reads first 250
+        if pid in known_good:
+            verdict = "Perfectly Relevant (known-good)"
+            n_perfect += 1
+        elif pid in cache:
+            raw = str(cache[pid])
+            verdict = pretty.get(raw, raw)
+            if raw == perfect_raw:
+                n_perfect += 1
+            else:
+                n_lower += 1
+        else:
+            verdict = "(no verdict recorded)"
+            n_unknown += 1
+        lines.append(f"{i}. {pid} — {verdict}")
+    n_submitted = len(lines)
+    lines.append(
+        f"\n{n_perfect} Perfect / {n_lower} lower / {n_unknown} no verdict, "
+        f"of {n_submitted} submitted"
+    )
+    return "\n".join(lines)
 
 
 def load_paper_finder(split: str = "validation") -> list[Sample]:
@@ -831,6 +897,36 @@ class PaperFinderEvaluator:
         diagnostics["agent_output"] = (
             getattr(sample_log.output, "completion", "")[:1000] if sample_log.output else ""
         )
+
+        # Judge-verdict surfacing (semantic queries only): which of the
+        # submitted papers the benchmark judge accepted, in submitted
+        # order — lets evolution separate recall misses from judge
+        # rejections and audit its ranking. Best-effort: parse failures
+        # or an unreadable cache just skip the diagnostic.
+        try:
+            if str(example.metadata.get("score_type", "")).startswith("semantic"):
+                completion = (
+                    getattr(sample_log.output, "completion", "") if sample_log.output else ""
+                )
+                payload = json.loads(completion[completion.index("{"):])
+                submitted = [
+                    normalize_corpus_id(str(r.get("paper_id", "")))
+                    for r in (payload.get("output") or {}).get("results") or []
+                ]
+                try:
+                    known_good = {
+                        normalize_corpus_id(str(x))
+                        for x in json.loads(str(example.target)).get("known_to_be_good") or []
+                    }
+                except (json.JSONDecodeError, TypeError, AttributeError):
+                    known_good = set()
+                verdicts = _judge_verdicts_markdown(
+                    [s for s in submitted if s], str(example.id), known_good
+                )
+                if verdicts:
+                    diagnostics["judge_verdicts.md"] = verdicts
+        except Exception:
+            pass
 
         return score_value, diagnostics
 

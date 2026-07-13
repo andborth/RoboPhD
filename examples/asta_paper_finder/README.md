@@ -143,13 +143,13 @@ On `semantic_f1` queries (73% of validation) the scorer runs a GPT-4o relevance 
 - [x] Verified tool documentation in `background.md` from live-server probes: search matching semantics, return shapes, requestable fields, limits, snippet retrieval model
 - [x] Seed reworked to the family criteria (short, MCP-only, empty-completion guards, semantic-list floor; 121 lines); sanity gates in `_check_evaluator.py` / `_check_seed.py`
 - [x] EVAL_TIMEOUT 600s → 1800s (ds1000 parity — wall clock is a runaway backstop, not a criterion); default budget 600 (~20 iterations at observed cache-adjusted burn)
+- [x] Judge-verdict surfacing: `judge_verdicts.md` per semantic problem lists the judge's verdict on every submitted paper in submitted order, sourced from astabench's persistent judgement cache (zero extra LLM calls). The most-requested diagnostic across the first run's reflections — separates recall misses from judge rejections.
 
 ### Code work (deferred)
 
 - [ ] **Extract the pricing machinery to a shared module.** `_estimate_cost` / `_bundled_price_map` here are byte-for-byte copies of `asta_ds1000/evaluator.py`'s (the leaderboard billing basis is a cross-task concept, not task-specific). Both copies carry duplicated test suites (`test_evaluator.py`'s `_estimate_cost` section, ported from ds1000's `ae1e410`) so accidental drift fails loudly, but the right endpoint is one shared implementation — e.g. under `RoboPhD/`, with an import-fallback story for standalone evaluator use. Deferred until the ds1000 campaign is at a quiet point (extraction touches its evaluator).
 - [ ] **Standard-Tools allowlist (AST scan).** The evaluator should reject candidates that import outside `{json, re, asyncio, dataclasses, ..., inspect_ai.*, model_registry}`. Without this, evolution could in principle introduce `import openai` and silently lose cost-accounting fidelity / the Standard Tools badge. ~30 lines of `ast.parse` walking.
 - [ ] **Submission pipeline: port `scripts/asta_ds1000_submit.py`.** Submissions re-run the official `astabench eval` + `astabench score` against staged `agent.py` + `model_registry.py` and tarball *that* run's logs (they do not collect our internal eval logs). Mostly a name swap, no Docker; remember a seed-baseline entry alongside the best agent.
-- [ ] **Judge-explanation surfacing.** Only `gold_criteria.md` is exposed to evolution; the LLM judge's per-paper relevance verdicts (which paper was kept/dropped and why on `semantic_f1` queries) aren't surfaced yet. The most-requested diagnostic across the first run's iteration reflections — sessions could not distinguish recall misses from judge rejections.
 
 ### Design questions to revisit
 

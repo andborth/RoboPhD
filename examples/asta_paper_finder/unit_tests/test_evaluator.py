@@ -224,6 +224,96 @@ def test_judge_ids_match_astabench(ev_mod):
     assert GRADER_MODEL_NAME in ev_mod.JUDGE_MODEL_IDS
 
 
+# --- judge-verdict surfacing ---------------------------------------------------
+
+
+@pytest.fixture()
+def verdict_cache(ev_mod, monkeypatch, tmp_path):
+    """Point the evaluator's cache path at a tmp file for one test."""
+    cache_file = tmp_path / "detailed_reference.json"
+    monkeypatch.setattr(ev_mod, "detailed_reference_path", str(cache_file))
+    return cache_file
+
+
+def test_judge_verdicts_markdown_renders_in_submitted_order(ev_mod, verdict_cache):
+    import json as _json
+    verdict_cache.write_text(_json.dumps({
+        "semantic_9": {
+            "111": "perfectly_relevant_papers",
+            "222": "not_relevant_papers",
+        }
+    }))
+    md = ev_mod._judge_verdicts_markdown(
+        ["222", "333", "111", "444"], "semantic_9", known_good={"333"}
+    )
+    lines = md.splitlines()
+    assert lines[0] == "1. 222 — Not Relevant"
+    assert lines[1] == "2. 333 — Perfectly Relevant (known-good)"
+    assert lines[2] == "3. 111 — Perfectly Relevant"
+    assert lines[3] == "4. 444 — (no verdict recorded)"
+    assert "2 Perfect / 1 lower / 1 no verdict, of 4 submitted" in md
+
+
+def test_judge_verdicts_markdown_handles_missing_cache(ev_mod, verdict_cache):
+    """Missing or corrupt cache: known-good still reported, no exception."""
+    md = ev_mod._judge_verdicts_markdown(["111"], "semantic_9", known_good={"111"})
+    assert "known-good" in md
+    verdict_cache.write_text("{not json")
+    md = ev_mod._judge_verdicts_markdown(["111"], "semantic_9", known_good=set())
+    assert "(no verdict recorded)" in md
+
+
+def test_judge_verdicts_markdown_empty_submission(ev_mod, verdict_cache):
+    assert ev_mod._judge_verdicts_markdown([], "semantic_9", set()) is None
+
+
+def _fake_log_with_submission(model_usage, results):
+    import json as _json
+    log = _fake_log(model_usage)
+    log.samples[0].output = SimpleNamespace(completion=_json.dumps({
+        "output": {"query_id": "q", "results": results}
+    }))
+    return log
+
+
+def test_extract_emits_judge_verdicts_for_semantic(ev_mod, monkeypatch, verdict_cache):
+    import json as _json
+    verdict_cache.write_text(_json.dumps({
+        "semantic_2": {"999": "highly_relevant_papers"}
+    }))
+    monkeypatch.setattr(
+        ev_mod.PaperFinderEvaluator, "_estimate_cost",
+        staticmethod(lambda model_name, counts: 0.0),
+    )
+    ev = _bare_evaluator(ev_mod)
+    log = _fake_log_with_submission(
+        {"openai/gpt-5.4-mini": (100, 10)},
+        [{"paper_id": "CorpusId:999", "markdown_evidence": "x"}],
+    )
+    _, diag = ev._extract_score_and_diagnostics(log, _fake_sample(ev_mod), "")
+    assert "judge_verdicts.md" in diag
+    assert "1. 999 — Highly Relevant" in diag["judge_verdicts.md"]
+
+
+def test_extract_no_verdicts_for_non_semantic(ev_mod, monkeypatch, verdict_cache):
+    from inspect_ai.dataset import Sample
+    monkeypatch.setattr(
+        ev_mod.PaperFinderEvaluator, "_estimate_cost",
+        staticmethod(lambda model_name, counts: 0.0),
+    )
+    ev = _bare_evaluator(ev_mod)
+    log = _fake_log_with_submission(
+        {"openai/gpt-5.4-mini": (100, 10)},
+        [{"paper_id": "999", "markdown_evidence": "x"}],
+    )
+    sample = Sample(
+        id="specific_7", input="q", target='{"corpus_ids": ["1"]}',
+        metadata={"score_type": "specific_f1", "raw_query": "q"},
+    )
+    _, diag = ev._extract_score_and_diagnostics(log, sample, "")
+    assert "judge_verdicts.md" not in diag
+
+
 # --- _head_tail_truncate ------------------------------------------------------
 
 
