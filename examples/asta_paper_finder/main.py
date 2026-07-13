@@ -88,7 +88,18 @@ DEFAULT_EVALUATION_BUDGET = 500
 # RoboPhDEvalConfig below. The evaluator derives a slightly-shorter
 # subprocess_timeout internally (eval_timeout - 30s) so subprocesses get
 # SIGKILLed BEFORE RoboPhD's reaper would leak the thread.
-EVAL_TIMEOUT = 600
+#
+# 30-minute cap, matching asta_ds1000 and for the same reason: wall
+# clock is not a leaderboard criterion, so the timeout is a runaway
+# backstop, never a design constraint. The tool-heavy strategies the
+# docs encourage are legitimately slow — per-paper snippet_search
+# evidence loops run seconds-to-minutes per call, and the 429 retry
+# wrapper can burn ~6 minutes of backoff under sustained throttling —
+# and ds1000's postmortem showed evolution misattributes timeout zeros
+# as reasoning regressions. Raised from 600s (which no eval in the
+# first completed run exceeded, max observed ~227s, but which the
+# newly-documented evidence-gathering patterns could plausibly hit).
+EVAL_TIMEOUT = 1800
 
 # Key under task_config in checkpoint.json that holds PaperFinder's
 # task-specific runtime values (cost_threshold / cost_per_error /
