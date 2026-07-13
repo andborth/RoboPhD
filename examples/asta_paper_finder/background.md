@@ -118,7 +118,7 @@ Setting `reasoning_effort` to any value in the "available overrides" column adds
 
 `max_tokens` is a universal output-budget cap accepted on every handle (an integer; no provider rejects or strips it). Pass it via `GenerateConfig(max_tokens=N)`. On Anthropic and Gemini handles, the cap applies to the visible completion only — reasoning tokens (when `reasoning_effort` is set) come on top of it. On OpenAI handles, the cap is shared between reasoning and visible tokens.
 
-> ⚠️ **COMMON FATAL BUG — `reasoning_effort` + a tight `max_tokens` on an OpenAI handle returns an EMPTY completion.** No error, no truncation marker: reasoning consumes the shared budget and the visible answer is silently blank. This disabled a prior agent's most important LLM call on 100% of queries, and only a `print()` of the completion length exposed it. If you opt into reasoning on an OpenAI handle, raise `max_tokens` several-fold or omit it entirely — and treat an empty completion from **any** metered call as a loud failure (log its length; never let a bare `or`-fallback absorb it). Cost corollary on the Gemini side: those handles default to `reasoning_effort="low"`, so they always bill some reasoning tokens at output rates — expected, but weigh it before adding `"high"`.
+> ⚠️ **COMMON FATAL BUG — `reasoning_effort` + a tight `max_tokens` on an OpenAI handle returns an EMPTY completion.** No error, no truncation marker: reasoning consumes the shared budget and the visible answer is silently blank — **and the reasoning tokens are still billed**, so a tight cap doesn't even save money; you pay for the thinking and receive nothing. This disabled a prior agent's most important LLM call on 100% of queries, and only a `print()` of the completion length exposed it. **When you opt into reasoning on an OpenAI handle, omit `max_tokens`** (control reasoning volume via `reasoning_effort`; shape the visible answer in the prompt) — set a cap only as a catastrophic-runaway bound, and then enormous (25k+). And treat an empty completion from **any** metered call as a loud failure (log its length; never let a bare `or`-fallback absorb it). Cost corollary on the Gemini side: those handles default to `reasoning_effort="low"`, so they always bill some reasoning tokens at output rates — expected, but weigh it before adding `"high"`.
 
 ```python
 from inspect_ai.model import GenerateConfig
@@ -135,10 +135,11 @@ resp = await CLAUDE_SONNET_4_6.generate(
 )
 
 # Reasoning on an OpenAI handle: max_tokens is SHARED with reasoning —
-# budget several-fold headroom (or omit max_tokens), per the warning above.
+# omit it (the common practice; a tight cap still bills the reasoning
+# and returns an empty answer, per the warning above).
 resp = await GPT_5_4.generate(
     "Your prompt here",
-    config=GenerateConfig(reasoning_effort="low", max_tokens=16000),
+    config=GenerateConfig(reasoning_effort="low"),
 )
 
 text = (resp.completion or "").strip()
