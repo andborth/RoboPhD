@@ -344,6 +344,37 @@ def test_doc_output_schema_names_match_astabench():
         )
 
 
+def test_readme_budget_reuse_math_matches_constant():
+    """README's thermometer-holdout item derives per-example reuse from
+    the default evaluation budget, and that line has now gone stale on
+    two consecutive budget changes (missed at 500->600; hand-fixed at
+    1500->500). Pin the stated budget and the reuse ratio to
+    DEFAULT_EVALUATION_BUDGET parsed from main.py."""
+    import re
+    for node in ast.walk(MAIN_TREE):
+        if (
+            isinstance(node, ast.Assign)
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == "DEFAULT_EVALUATION_BUDGET"
+        ):
+            budget = node.value.value
+            break
+    else:
+        pytest.fail("DEFAULT_EVALUATION_BUDGET not found in main.py")
+
+    readme = (PFB_DIR / "README.md").read_text()
+    m = re.search(r"(\d+) budget / 66 ≈ ([\d.]+)×", readme)
+    assert m, "README no longer states the budget/reuse math — update this pin"
+    assert int(m.group(1)) == budget, (
+        f"README says '{m.group(1)} budget' but DEFAULT_EVALUATION_BUDGET "
+        f"is {budget} — the reuse math is stale again"
+    )
+    assert abs(float(m.group(2)) - budget / 66) < 0.05, (
+        f"README's reuse ratio {m.group(2)} doesn't match {budget}/66 "
+        f"= {budget / 66:.1f}"
+    )
+
+
 def test_doc_examples_dont_model_the_openai_token_trap():
     """background.md's code examples are what evolution copies — the run
     record shows iter2-iter5 shipped the reasoning_effort + tight
