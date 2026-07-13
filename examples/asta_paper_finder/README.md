@@ -59,7 +59,7 @@ The leaderboard's Standard tools tier requires the Asta MCP corpus tools, served
 export ASTA_TOOL_KEY="..."
 ```
 
-`ASTA_TOOL_KEY` is **hard-required** — the MCP suite is the task's only retrieval surface, and both `main.py` and the evaluator's constructor error at startup without it. (There used to be a public-Semantic-Scholar `search` fallback for pre-key development; it was removed once the key existed — the seed and all evolved agents target MCP tool names, the leaderboard's `astabench eval` re-run attaches the MCP kit, and the fallback's only real-world contribution was run `asta_paper_finder_20260710_081139` burning its budget on unauthenticated 429s. If the key is ever lost, revert the removal commit.) The MCP factory wraps every tool in astabench's `make_retry_wrapper`, so agents never see transient 429/5xx.
+`ASTA_TOOL_KEY` is **hard-required** — the MCP suite is the task's only retrieval surface, and both `main.py` and the evaluator's constructor error at startup without it. The MCP factory wraps every tool in astabench's `make_retry_wrapper`, so agents never see transient 429/5xx.
 
 ## Running
 
