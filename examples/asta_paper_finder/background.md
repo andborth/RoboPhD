@@ -71,12 +71,14 @@ def parse_items(raw):
 | --- | --- | --- |
 | `search_papers_by_relevance` | `keyword` (str), `fields` (str, comma-sep), `limit` (int, **1–100**), `venues` (str) | one paper JSON per item: `paperId`, `corpusId` (**int**), `title`, plus whatever `fields` requests (`abstract`, `authors`, `year`, `venue`, `citationCount`, ...) |
 | `search_paper_by_title` | `title` (str), `fields` (str), `venues` (str) | ONE item: the single best match (`paperId`, `corpusId`, `title`, `matchScore`, + `fields`). **No match ⇒ the item is `{"data": []}`** — check for `paperId` before use |
-| `snippet_search` | `query` (str), `limit` (int), `venues` (str), `paper_ids` (str, comma-sep, up to 100, `CorpusId:<id>` / `DOI:<doi>` / arXiv etc.) | ONE item: `{"data": [{score, paper: {corpusId (**str**), title, authors, openAccessInfo}, snippet: {text, section, snippetKind, snippetOffset, annotations}}], "retrievalVersion"}` |
+| `snippet_search` | `query` (str), `limit` (int), `venues` (str), `paper_ids` (str, comma-sep, up to 100, `CorpusId:<id>` / `DOI:<doi>` / arXiv etc.) | ALWAYS one wrapper item: `{"data": [...], "retrievalVersion"}`; `limit` sets the length of `data`. Each `data` entry: `{score, paper: {corpusId (**str**), title, authors, openAccessInfo}, snippet: {text, section, snippetKind, snippetOffset, annotations}}` |
 | `get_paper` | `paper_id` (str), `fields` (str) | full metadata for one paper |
 | `get_paper_batch` | `ids` (array), `fields` (str) | metadata for many papers at once |
 | `get_citations` | `paper_id` (str), `fields` (str), `limit` (int, max 1000, no offset/paging) | one item per citing paper, **wrapped**: `{"citingPaper": {paperId, corpusId (**str**), title, ...}}` — unwrap before reading |
 | `search_authors_by_name` | `name` (str), `fields` (str), `limit` (int) | author records with `authorId`, `name`, `paperCount` |
 | `get_author_papers` | `author_id` (str), `paper_fields` (str), `limit` (int) | an author's papers |
+
+**Requestable `fields`** (verified; applies to the paper search/get tools): `abstract`, `authors`, `citations`, `corpusId`, `externalIds`, `fieldsOfStudy`, `isOpenAccess`, `journal`, `publicationDate`, `references`, `tldr`, `url`, `venue`, `year`. `paperId` and `title` are always returned. `tldr` is an auto-generated one-sentence summary of the paper — useful raw material for `markdown_evidence`. `citations`/`references` return nested arrays and can be heavy. An invalid field name raises a tool error (with an unhelpful message), so stick to this list.
 
 ### Search semantics (verified against the live server)
 
