@@ -351,13 +351,13 @@ def test_doc_examples_dont_model_the_openai_token_trap():
     example, silently emptying their most important LLM call for four
     generations. The doc's rule is now blanket: max_tokens is not
     recommended on OpenAI handles at all (GPT_5_5's model-managed
-    reasoning can trip the shared cap with no opt-in). Pin: no python
-    code block may attach a GenerateConfig with max_tokens to a GPT_*
-    handle call."""
+    reasoning can trip the shared cap with no opt-in). Pin: the rule
+    sentence survives, and no python code block may attach a
+    GenerateConfig with max_tokens to a GPT_* handle call."""
     import re
     background = (PFB_DIR / "background.md").read_text()
-    assert "COMMON FATAL BUG" in background, (
-        "the token-trap callout was removed from background.md"
+    assert "not recommended on OpenAI handles" in background, (
+        "the OpenAI max_tokens rule was removed from background.md"
     )
     for block in re.findall(r"```python\n(.*?)```", background, re.DOTALL):
         # Associate each GenerateConfig(...) with the nearest preceding
