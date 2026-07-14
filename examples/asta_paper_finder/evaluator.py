@@ -90,6 +90,56 @@ if _ASTABENCH_GRADER_MODEL_NAME not in JUDGE_MODEL_IDS:
     )
 
 
+def _safe_cache_rmw(path: str, query_id: str, judgements: dict[str, str]) -> None:
+    """Synchronous locked read-merge-write of the judge cache.
+
+    Module-level (not a closure) so the multi-process stress gate
+    (_check_cache_stress.py) can exercise exactly this code, and so the
+    async wrapper can push it off the event loop via asyncio.to_thread.
+    """
+    with open(path + ".lock", "w") as lock_f:
+        fcntl.flock(lock_f, fcntl.LOCK_EX)
+        try:
+            try:
+                text = Path(path).read_text()
+            except OSError:
+                text = ""
+            cache: dict = {}
+            if text:
+                try:
+                    cache = json.loads(text)
+                except json.JSONDecodeError as e:
+                    # Torn tail from a pre-fix writer: everything up
+                    # to e.pos is typically a complete JSON object.
+                    try:
+                        cache = json.loads(text[:e.pos]) if e.pos else {}
+                    except json.JSONDecodeError:
+                        cache = {}
+                    logger.warning(
+                        "judge cache at %s was corrupt (%s); recovered "
+                        "%d queries from the valid prefix", path, e, len(cache),
+                    )
+            if isinstance(cache.get(query_id), dict):
+                cache[query_id].update(judgements)
+            else:
+                cache[query_id] = dict(judgements)
+            fd, tmp_path = tempfile.mkstemp(
+                dir=os.path.dirname(path) or ".", suffix=".tmp"
+            )
+            try:
+                with os.fdopen(fd, "w") as tmp_f:
+                    json.dump(cache, tmp_f)
+                os.replace(tmp_path, path)
+            except BaseException:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+                raise
+        finally:
+            fcntl.flock(lock_f, fcntl.LOCK_UN)
+
+
 def _install_safe_judge_cache() -> None:
     """Replace astabench's `update_references` with a multiprocess-safe
     version, in this process's namespaces only (no astabench file on
@@ -120,49 +170,14 @@ def _install_safe_judge_cache() -> None:
         return
 
     async def _safe_update_references(query_id: str, judgements: dict[str, str]) -> None:
-        # Read the path at call time so tests can monkeypatch it.
-        path = _pf_utils.detailed_reference_path
-        with open(path + ".lock", "w") as lock_f:
-            fcntl.flock(lock_f, fcntl.LOCK_EX)
-            try:
-                try:
-                    text = Path(path).read_text()
-                except OSError:
-                    text = ""
-                cache: dict = {}
-                if text:
-                    try:
-                        cache = json.loads(text)
-                    except json.JSONDecodeError as e:
-                        # Torn tail from a pre-fix writer: everything up
-                        # to e.pos is typically a complete JSON object.
-                        try:
-                            cache = json.loads(text[:e.pos]) if e.pos else {}
-                        except json.JSONDecodeError:
-                            cache = {}
-                        logger.warning(
-                            "judge cache at %s was corrupt (%s); recovered "
-                            "%d queries from the valid prefix", path, e, len(cache),
-                        )
-                if isinstance(cache.get(query_id), dict):
-                    cache[query_id].update(judgements)
-                else:
-                    cache[query_id] = dict(judgements)
-                fd, tmp_path = tempfile.mkstemp(
-                    dir=os.path.dirname(path) or ".", suffix=".tmp"
-                )
-                try:
-                    with os.fdopen(fd, "w") as tmp_f:
-                        json.dump(cache, tmp_f)
-                    os.replace(tmp_path, path)
-                except BaseException:
-                    try:
-                        os.unlink(tmp_path)
-                    except OSError:
-                        pass
-                    raise
-            finally:
-                fcntl.flock(lock_f, fcntl.LOCK_UN)
+        import asyncio
+        # Read the path at call time so tests can monkeypatch it. Push
+        # the blocking flock + file I/O off the event loop so a writer
+        # waiting on the lock doesn't stall in-flight work on this
+        # worker's loop.
+        await asyncio.to_thread(
+            _safe_cache_rmw, _pf_utils.detailed_reference_path, query_id, judgements
+        )
 
     _safe_update_references._robophd_safe_cache = True  # type: ignore[attr-defined]
     _pf_utils.update_references = _safe_update_references

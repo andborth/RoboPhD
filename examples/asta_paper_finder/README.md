@@ -122,7 +122,8 @@ On `semantic_f1` queries (73% of validation) the scorer runs a GPT-4o relevance 
 - `_eval_worker.py` — subprocess worker (one per evaluation, for inspect.eval parallelism)
 - `model_registry.py` — the nine solver-model handles (not in `file_mapping`)
 - `seeds/baseline/agent.py` — minimal `@solver` factory exported as `make_solver`. Demonstrates a tool call, a registry-handle LLM call with an empty-completion guard, and the JSON output schema.
-- `_check_evaluator.py` / `_check_seed.py` — credentialed sanity gates: gold-ID leak scan over the evolution-facing artifacts, synthetic-candidate scorer checks, and a 3-sample live seed run with judge-split assertions.
+- `_check_evaluator.py` / `_check_seed.py` — credentialed sanity gates: judge-cache integrity, gold-ID leak scan over the evolution-facing artifacts, synthetic-candidate scorer checks, and a 3-sample live seed run with judge-split assertions.
+- `_check_cache_stress.py` — key-less multi-process stress gate for the safe judge-cache writer (8 subprocesses × 50 updates; the process-level evidence the thread-based unit test can't provide).
 - `objective.md` — what evolution should optimize (cost placeholders interpolated by main.py)
 - `background.md` — task spec, score types, output schema, tools, model menu, cost-penalty table
 - `unit_tests/` — aggregate math, judge-split soundness, registry invariants, doc-interpolation coverage
