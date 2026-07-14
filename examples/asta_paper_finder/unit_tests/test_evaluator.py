@@ -314,6 +314,86 @@ def test_extract_no_verdicts_for_non_semantic(ev_mod, monkeypatch, verdict_cache
     assert "judge_verdicts.md" not in diag
 
 
+# --- safe judge-cache writer ----------------------------------------------------
+
+
+def _pf_utils(ev_mod):
+    from astabench.evals.paper_finder import paper_finder_utils
+    return paper_finder_utils
+
+
+def test_safe_cache_patch_installed_on_both_bindings(ev_mod):
+    """The from-import binding in eval.py is the one get_llm_relevance
+    actually calls; patching only the origin module would be a no-op."""
+    from astabench.evals.paper_finder import eval as pf_eval
+    from astabench.evals.paper_finder import paper_finder_utils
+    assert getattr(paper_finder_utils.update_references, "_robophd_safe_cache", False)
+    assert getattr(pf_eval.update_references, "_robophd_safe_cache", False)
+
+
+def _run_update(ev_mod, qid, judgements):
+    import asyncio
+    from astabench.evals.paper_finder import paper_finder_utils
+    asyncio.run(paper_finder_utils.update_references(qid, judgements))
+
+
+@pytest.fixture()
+def tmp_cache_path(ev_mod, monkeypatch, tmp_path):
+    from astabench.evals.paper_finder import paper_finder_utils
+    p = tmp_path / "detailed_reference.json"
+    monkeypatch.setattr(paper_finder_utils, "detailed_reference_path", str(p))
+    return p
+
+
+def test_safe_cache_merges_and_stays_valid(ev_mod, tmp_cache_path):
+    import json as _json
+    _run_update(ev_mod, "semantic_1", {"a": "perfectly_relevant_papers"})
+    _run_update(ev_mod, "semantic_1", {"b": "not_relevant_papers"})
+    _run_update(ev_mod, "semantic_2", {"c": "highly_relevant_papers"})
+    data = _json.loads(tmp_cache_path.read_text())
+    assert data["semantic_1"] == {
+        "a": "perfectly_relevant_papers", "b": "not_relevant_papers",
+    }
+    assert data["semantic_2"] == {"c": "highly_relevant_papers"}
+
+
+def test_safe_cache_recovers_valid_prefix(ev_mod, tmp_cache_path):
+    """A pre-fix torn write leaves valid JSON + trailing garbage; the
+    safe writer must recover the prefix instead of dropping the cache
+    (upstream's behavior)."""
+    import json as _json
+    good = _json.dumps({"semantic_9": {"x": "perfectly_relevant_papers"}})
+    tmp_cache_path.write_text(good + '"stale-tail-garbage"}')
+    _run_update(ev_mod, "semantic_10", {"y": "not_relevant_papers"})
+    data = _json.loads(tmp_cache_path.read_text())
+    assert data["semantic_9"] == {"x": "perfectly_relevant_papers"}  # recovered
+    assert data["semantic_10"] == {"y": "not_relevant_papers"}       # merged
+
+
+def test_safe_cache_concurrent_writers_never_corrupt(ev_mod, tmp_cache_path):
+    """8 threads x 20 updates each, every call opening its own lock fd
+    (flock serializes across fds, hence across threads AND processes).
+    The file must parse after the storm and contain all 160 entries."""
+    import json as _json
+    errors = []
+
+    def writer(tid):
+        try:
+            for i in range(20):
+                _run_update(ev_mod, f"q_{tid}_{i}", {"p": "perfectly_relevant_papers"})
+        except Exception as e:  # pragma: no cover
+            errors.append(e)
+
+    threads = [threading.Thread(target=writer, args=(t,)) for t in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert not errors
+    data = _json.loads(tmp_cache_path.read_text())
+    assert len(data) == 160
+
+
 # --- _head_tail_truncate ------------------------------------------------------
 
 

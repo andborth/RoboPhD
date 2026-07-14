@@ -24,6 +24,7 @@ queries all assume an Inspect-driven runtime. Profile first; switch only if
 the loop is the bottleneck.
 """
 
+import fcntl
 import importlib.util
 import io
 import json
@@ -87,6 +88,88 @@ if _ASTABENCH_GRADER_MODEL_NAME not in JUDGE_MODEL_IDS:
         f"agents. Update JUDGE_MODEL_IDS to include the new grader "
         f"(and re-check that no model_registry handle uses that ID)."
     )
+
+
+def _install_safe_judge_cache() -> None:
+    """Replace astabench's `update_references` with a multiprocess-safe
+    version, in this process's namespaces only (no astabench file on
+    disk is touched; official `astabench eval` submissions run stock
+    code in a separate process and never see this).
+
+    Why: upstream does a read-modify-write of the package-global
+    detailed_reference.json guarded only by inspect's PER-PROCESS
+    concurrency() lock, and writes non-atomically. Our evals run in
+    parallel subprocesses, so concurrent writers tore the file, and
+    astabench's init_references (which catches only FileNotFoundError)
+    then raised JSONDecodeError through scorer init — zeroing every
+    affected eval (run asta_paper_finder_20260713_125809, iterations
+    11-14). Fix: cross-process flock over the whole read-merge-write,
+    valid-prefix recovery on a corrupt read (upstream silently drops
+    the entire cache), and atomic tempfile+rename writes so readers
+    can never observe a torn file. All workers are subprocesses on one
+    host, so flock suffices.
+
+    Patches BOTH bindings: the origin in paper_finder_utils and the
+    from-import binding in eval.py that get_llm_relevance actually
+    calls. Idempotent via the marker attribute.
+    """
+    from astabench.evals.paper_finder import eval as _pf_eval
+    from astabench.evals.paper_finder import paper_finder_utils as _pf_utils
+
+    if getattr(_pf_utils.update_references, "_robophd_safe_cache", False):
+        return
+
+    async def _safe_update_references(query_id: str, judgements: dict[str, str]) -> None:
+        # Read the path at call time so tests can monkeypatch it.
+        path = _pf_utils.detailed_reference_path
+        with open(path + ".lock", "w") as lock_f:
+            fcntl.flock(lock_f, fcntl.LOCK_EX)
+            try:
+                try:
+                    text = Path(path).read_text()
+                except OSError:
+                    text = ""
+                cache: dict = {}
+                if text:
+                    try:
+                        cache = json.loads(text)
+                    except json.JSONDecodeError as e:
+                        # Torn tail from a pre-fix writer: everything up
+                        # to e.pos is typically a complete JSON object.
+                        try:
+                            cache = json.loads(text[:e.pos]) if e.pos else {}
+                        except json.JSONDecodeError:
+                            cache = {}
+                        logger.warning(
+                            "judge cache at %s was corrupt (%s); recovered "
+                            "%d queries from the valid prefix", path, e, len(cache),
+                        )
+                if isinstance(cache.get(query_id), dict):
+                    cache[query_id].update(judgements)
+                else:
+                    cache[query_id] = dict(judgements)
+                fd, tmp_path = tempfile.mkstemp(
+                    dir=os.path.dirname(path) or ".", suffix=".tmp"
+                )
+                try:
+                    with os.fdopen(fd, "w") as tmp_f:
+                        json.dump(cache, tmp_f)
+                    os.replace(tmp_path, path)
+                except BaseException:
+                    try:
+                        os.unlink(tmp_path)
+                    except OSError:
+                        pass
+                    raise
+            finally:
+                fcntl.flock(lock_f, fcntl.LOCK_UN)
+
+    _safe_update_references._robophd_safe_cache = True  # type: ignore[attr-defined]
+    _pf_utils.update_references = _safe_update_references
+    _pf_eval.update_references = _safe_update_references
+
+
+_install_safe_judge_cache()
 
 
 def _bundled_price_map() -> dict:

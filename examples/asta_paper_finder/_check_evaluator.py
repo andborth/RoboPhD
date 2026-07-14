@@ -80,6 +80,23 @@ def _check_gold_id_leaks(samples) -> list[str]:
 
 
 def main() -> int:
+    # Judge-cache integrity: a torn detailed_reference.json raises
+    # straight through astabench's scorer init (it catches only
+    # FileNotFoundError) and zeroes every eval. The evaluator's safe
+    # writer prevents new corruption; this catches a bad file arriving
+    # by other means before it poisons a run.
+    from astabench.evals.paper_finder.paper_finder_utils import detailed_reference_path
+    if Path(detailed_reference_path).exists():
+        try:
+            json.loads(Path(detailed_reference_path).read_text())
+            print("judge-cache integrity: OK")
+        except json.JSONDecodeError as e:
+            print(f"FATAL: judge cache is corrupt ({e}):\n  {detailed_reference_path}\n"
+                  f"Delete it (verdicts re-judge fresh) before running.")
+            return 1
+    else:
+        print("judge-cache integrity: no cache file (fresh)")
+
     samples = load_paper_finder("validation")
 
     failures = _check_gold_id_leaks(samples)
