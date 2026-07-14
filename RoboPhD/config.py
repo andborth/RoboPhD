@@ -44,6 +44,15 @@ SUPPORTED_MODELS = {
             'cache_read': 0.50    # $0.50/MTok (cache hits & refreshes)
         }
     },
+    'sonnet-5': {
+        'name': 'claude-sonnet-5',  # plain ID for pricing/display; the 1M [1m] variant lives in CLAUDE_CLI_MODEL_MAP
+        'pricing': {                 # sticker rates; intro pricing ($2 in / $10 out) applies through 2026-08-31 — litellm's bundled registry tracks the live rate for GEPA cost accounting
+            'input': 3.00,       # $3/MTok
+            'output': 15.00,     # $15/MTok
+            'cache_write': 3.75,  # $3.75/MTok
+            'cache_read': 0.30    # $0.30/MTok
+        }
+    },
     'sonnet-4.6': {
         'name': 'claude-sonnet-4-6',
         'pricing': {
@@ -82,6 +91,7 @@ CLAUDE_CLI_MODEL_MAP = {
     'opus-4.8': 'claude-opus-4-8[1m]',
     'opus-4.7': 'claude-opus-4-7',
     'opus-4.6': 'claude-opus-4-6[1m]',
+    'sonnet-5': 'claude-sonnet-5[1m]',  # [1m] = explicit 1M-context request for the evolution CLI session
     'sonnet-4.6': 'claude-sonnet-4-6',
     'sonnet-4.5': 'claude-sonnet-4-5-20250929',
     'haiku-4.5': 'claude-haiku-4-5-20251001',
