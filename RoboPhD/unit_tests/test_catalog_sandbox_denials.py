@@ -314,6 +314,45 @@ def test_tool_results_read_classifies_fp_fixed():
     assert cat == "FP-FIXED"
 
 
+def test_tmp_task_output_spill_read_classifies_fp_fixed():
+    """The CLI's own background-task output spill under
+    <tmp>/claude-<uid>/<slug>/... is a legit readback (auto_scratch_dirs
+    carve-out), so a read the live hook now allows classifies FP-FIXED —
+    the direct analog of the ~/.claude tool-results spill. Both /tmp and
+    the macOS /private/tmp realpath form are covered."""
+    for path in (
+        "/tmp/claude-501/-slug-iteration-020/uuid/tasks/abc.output",
+        "/private/tmp/claude-501/-slug-iteration-020/uuid/tasks/abc.output",
+    ):
+        _, cat = catalog.classify(_rec(
+            scope="read", blocked_path=path, command=f"cat {path}",
+        ), replay=_replay_allows)
+        assert cat == "FP-FIXED", path
+
+
+def test_tmp_task_output_spill_still_denied_is_fp_open():
+    """A /tmp session-spill read the live hook STILL denies (e.g. a
+    cross-session slug) stays visible as FP-OPEN rather than silently
+    passing — the replay backstop, same as the tool-results pattern."""
+    _, cat = catalog.classify(_rec(
+        scope="read",
+        blocked_path="/tmp/claude-501/-other-slug/uuid/tasks/x.output",
+        command="cat /tmp/claude-501/-other-slug/uuid/tasks/x.output",
+    ), replay=_replay_denies_same)
+    assert cat == "FP-OPEN"
+
+
+def test_tmp_write_is_not_task_output_fp_fixed():
+    """The spill carve-out is READ-only — a WRITE to /tmp stays a TP
+    (scratch attempt), not absorbed into the fixed label."""
+    label, _ = catalog.classify(_rec(
+        scope="write",
+        blocked_path="/tmp/claude-501/-slug/uuid/tasks/evil.output",
+        command="echo x > /tmp/claude-501/-slug/uuid/tasks/evil.output",
+    ), replay=_replay_allows)
+    assert "task-output spill" not in label
+
+
 def test_tool_results_write_is_not_fp_fixed():
     """Carve-out is READ-only — a WRITE to the same path stays a TP
     (the read-only intent is enforced and the catalog must reflect

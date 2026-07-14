@@ -279,6 +279,19 @@ INTENT_PATTERNS = [
      lambda r: _scope(r) == "read"
                and ".claude" in _b(r) and "/tool-results/" in _b(r)),
 
+    ("FP: Claude CLI task-output spill readback (/tmp session dir)",
+     "FP",
+     # The CLI spills background-task output (and scratchpad) to
+     # <tmp>/claude-<uid>/<slug(cwd)>/... and the model Reads it back —
+     # the direct analog of the ~/.claude tool-results spill above, carved
+     # out by auto_scratch_dirs (the /tmp sibling of auto_session_dirs).
+     # Intent FP; replay allows a read
+     # under THIS session's own slug (-> FP-FIXED) and still denies a
+     # cross-session slug (-> FP-OPEN, correctly flagged). Matches both
+     # /tmp and its macOS /private/tmp realpath form.
+     lambda r: _scope(r) == "read"
+               and bool(re.match(r"^/(private/)?tmp/claude-\d+/", _b(r)))),
+
     # ---- intent FP: write-scope denials that were old-parser artifacts ----
     # The former hand-rolled Bash front-end (shlex + manual quote/heredoc/
     # arithmetic handling, replaced by tree-sitter-bash) sometimes sank a
