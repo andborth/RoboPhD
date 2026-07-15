@@ -25,6 +25,7 @@ import asyncio
 import json
 import os
 import random
+import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -34,6 +35,48 @@ sys.path.insert(0, str(HERE))
 
 BASELINE_DEFAULT = "openai/gpt-4o-2024-11-20"
 CANDIDATE_DEFAULT = "openai/gpt-5.4-nano"
+
+# Repair-path bookkeeping, so a run reports how much of a candidate's output
+# needed rescuing rather than burying it in per-doc warnings.
+_REPAIR = {"strict_ok": 0, "recovered": 0, "unrecoverable": 0}
+
+
+def _lenient_extract_json(response: str):
+    """Drop-in for astabench's extract_json_from_response that, when strict
+    decoding fails, repairs the near-JSON some models emit — trailing commas
+    and a dangling `,"` before a closing brace — then retries. Strict output
+    is untouched. This isolates *format* non-compliance (which a production
+    grader could eliminate with JSON mode) from genuine judgement differences,
+    so the agreement number reflects the model's verdicts, not its punctuation.
+
+    NB measurement-only: the live scorer uses the strict parser, so recovered
+    docs would be DROPPED in production unless the grader call enforces JSON."""
+    s = response[response.find("{"): response.rfind("}") + 1] if "{" in response else ""
+    if not s:
+        _REPAIR["unrecoverable"] += 1
+        return None
+    try:
+        out = json.loads(s)
+        _REPAIR["strict_ok"] += 1
+        return out
+    except json.JSONDecodeError:
+        pass
+    repaired = re.sub(r",(\s*[}\]])", r"\1", s)          # trailing commas
+    repaired = re.sub(r',\s*"\s*([}\]])', r"\1", repaired)  # dangling ,"  before } ]
+    try:
+        out = json.loads(repaired)
+        _REPAIR["recovered"] += 1
+        return out
+    except json.JSONDecodeError:
+        _REPAIR["unrecoverable"] += 1
+        return None
+
+
+def _install_json_repair() -> None:
+    """Patch the extractor the judge actually calls (relevance.py binds it by
+    from-import, so patch that binding)."""
+    from astabench.evals.paper_finder import relevance as rel
+    rel.extract_json_from_response = _lenient_extract_json
 
 
 def _extract_results_lenient(text: str):
@@ -130,7 +173,14 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--baseline", default=BASELINE_DEFAULT)
     ap.add_argument("--candidate", default=CANDIDATE_DEFAULT)
+    ap.add_argument("--no-repair-json", action="store_true",
+                    help="Disable the near-JSON repair fallback (see the strict "
+                         "parser drop everything it can't decode, as production "
+                         "would).")
     args = ap.parse_args()
+
+    if not args.no_repair_json:
+        _install_json_repair()
 
     from astabench.evals.paper_finder.relevance import bench_rj_2_pf_rj
 
@@ -150,12 +200,21 @@ def main() -> int:
 
     print(f"Judging {len(flat)} docs across {len(by_q)} queries")
     print(f"  baseline : {args.baseline}")
-    print(f"  candidate: {args.candidate}\n")
+    print(f"  candidate: {args.candidate}")
+    print(f"  json repair: {'off' if args.no_repair_json else 'on'}\n")
 
     pairs: list[tuple[str, str]] = []  # (baseline_label, candidate_label)
+    # docs submitted vs verdicts returned per model — a verdict can go missing
+    # from an unrecoverable JSON parse OR a criteria-name mismatch (the model
+    # returned the wrong/renamed criteria). Both mean the paper is dropped.
+    submitted = {args.baseline: 0, args.candidate: 0}
+    returned = {args.baseline: 0, args.candidate: 0}
     for qid, g in by_q.items():
         b = asyncio.run(_judge(args.baseline, g["criteria"], g["docs"]))
         c = asyncio.run(_judge(args.candidate, g["criteria"], g["docs"]))
+        for model, res in ((args.baseline, b), (args.candidate, c)):
+            submitted[model] += len(g["docs"])
+            returned[model] += sum(1 for pid, _ in g["docs"] if pid in res)
         for pid, _ in g["docs"]:
             if pid in b and pid in c:
                 pairs.append((b[pid], c[pid]))
@@ -190,12 +249,26 @@ def main() -> int:
     print(f"both-PERFECT count       : {both_perf}")
     print("\nconfusion (baseline \\ candidate):")
     _print_confusion(pairs)
+
+    print("\njudge output reliability (docs that produced a usable verdict):")
+    for model in (args.baseline, args.candidate):
+        sub, ret = submitted[model], returned[model]
+        drop = (sub - ret) / sub if sub else 0.0
+        print(f"  {model:32} {ret}/{sub} verdicts  ({drop:.1%} dropped)")
+    if not args.no_repair_json:
+        r = _REPAIR
+        print(f"  json repair: {r['strict_ok']} strict, {r['recovered']} recovered, "
+              f"{r['unrecoverable']} unrecoverable")
+        print("  NB drops that remain are criteria-name mismatches, not JSON — "
+              "repair can't fix those. In production the strict parser would ALSO "
+              "drop the 'recovered' docs unless the grader call enforces JSON mode.")
+
     print(
         "\nDecision: switch training to the candidate only if PERFECT/not kappa "
-        "is high (≈0.7+) AND the PERFECT rates are close. Recall/precision both "
-        "hinge on the PERFECT label, so agreement THERE is what protects the "
-        "train→test link — overall label agreement can look fine while the "
-        "scoring-relevant boundary drifts."
+        "is high (≈0.7+) AND the PERFECT rates are close AND its verdict-drop "
+        "rate is low. Recall/precision both hinge on the PERFECT label, so "
+        "agreement THERE is what protects the train→test link; a high drop rate "
+        "separately injects score noise (dropped papers count as not-relevant)."
     )
     return 0
 
