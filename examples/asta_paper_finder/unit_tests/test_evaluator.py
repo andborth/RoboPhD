@@ -228,21 +228,33 @@ def test_judge_ids_match_astabench(ev_mod):
 
 
 @pytest.fixture()
-def verdict_cache(ev_mod, monkeypatch, tmp_path):
-    """Point the evaluator's cache path at a tmp file for one test."""
-    cache_file = tmp_path / "detailed_reference.json"
-    monkeypatch.setattr(ev_mod, "detailed_reference_path", str(cache_file))
-    return cache_file
+def verdict_cache(ev_mod):
+    """Seed the grounded judge's in-process verdict record for one test.
+
+    _judge_verdicts_markdown now reads THIS eval's judgements
+    (grounding.last_judgements()), not the persistent cache file, so tests
+    populate that record. Yields a `seed(judgements, blanked=None)` callable
+    and clears the record before and after."""
+    g = ev_mod.grounding
+    g.reset()
+
+    def _seed(judgements, blanked=None):
+        g._LAST.clear()
+        g._LAST.update(
+            query_id="semantic_9",
+            judgements=dict(judgements),
+            blanked=list(blanked or []),
+        )
+
+    yield _seed
+    g.reset()
 
 
 def test_judge_verdicts_markdown_renders_in_submitted_order(ev_mod, verdict_cache):
-    import json as _json
-    verdict_cache.write_text(_json.dumps({
-        "semantic_9": {
-            "111": "perfectly_relevant_papers",
-            "222": "not_relevant_papers",
-        }
-    }))
+    verdict_cache({
+        "111": "perfectly_relevant_papers",
+        "222": "not_relevant_papers",
+    })
     md = ev_mod._judge_verdicts_markdown(
         ["222", "333", "111", "444"], "semantic_9", known_good={"333"}
     )
@@ -254,13 +266,12 @@ def test_judge_verdicts_markdown_renders_in_submitted_order(ev_mod, verdict_cach
     assert "2 Perfect / 1 lower / 1 no verdict, of 4 submitted" in md
 
 
-def test_judge_verdicts_markdown_handles_missing_cache(ev_mod, verdict_cache):
-    """Missing or corrupt cache: known-good still reported, no exception."""
+def test_judge_verdicts_markdown_handles_no_record(ev_mod, verdict_cache):
+    """No in-process verdicts: known-good still reported; else None."""
     md = ev_mod._judge_verdicts_markdown(["111"], "semantic_9", known_good={"111"})
     assert "known-good" in md
-    verdict_cache.write_text("{not json")
-    md = ev_mod._judge_verdicts_markdown(["111"], "semantic_9", known_good=set())
-    assert "(no verdict recorded)" in md
+    # No judgements and no known-good → nothing to report.
+    assert ev_mod._judge_verdicts_markdown(["111"], "semantic_9", known_good=set()) is None
 
 
 def test_judge_verdicts_markdown_empty_submission(ev_mod, verdict_cache):
@@ -277,10 +288,7 @@ def _fake_log_with_submission(model_usage, results):
 
 
 def test_extract_emits_judge_verdicts_for_semantic(ev_mod, monkeypatch, verdict_cache):
-    import json as _json
-    verdict_cache.write_text(_json.dumps({
-        "semantic_2": {"999": "highly_relevant_papers"}
-    }))
+    verdict_cache({"999": "highly_relevant_papers"})
     monkeypatch.setattr(
         ev_mod.PaperFinderEvaluator, "_estimate_cost",
         staticmethod(lambda model_name, counts: 0.0),
@@ -392,6 +400,61 @@ def test_safe_cache_concurrent_writers_never_corrupt(ev_mod, tmp_cache_path):
     assert not errors
     data = _json.loads(tmp_cache_path.read_text())
     assert len(data) == 160
+
+
+def test_apply_cache_redirect_env(ev_mod, monkeypatch, tmp_path):
+    """$PF_JUDGE_CACHE_PATH redirects both the writer and the reader path and
+    clears the memoized cache, so a per-run / pristine cache is honored."""
+    from astabench.evals.paper_finder import paper_finder_utils, eval as pf_eval
+    # Snapshot via monkeypatch so the global path is restored at teardown
+    # (the redirect sets it directly, not through monkeypatch).
+    monkeypatch.setattr(
+        paper_finder_utils, "detailed_reference_path",
+        paper_finder_utils.detailed_reference_path,
+    )
+    monkeypatch.setattr(pf_eval, "_detailed_reference", pf_eval._detailed_reference)
+    target = tmp_path / "nested" / "run_cache.json"
+    monkeypatch.setenv(ev_mod.CACHE_PATH_ENV, str(target))
+    # seed a stale memo to prove the redirect clears it
+    pf_eval._detailed_reference = {"stale": {}}
+    ev_mod._apply_cache_redirect()
+    assert paper_finder_utils.detailed_reference_path == str(target)
+    assert pf_eval._detailed_reference is None
+    assert target.parent.is_dir()  # created eagerly
+
+
+def test_apply_cache_redirect_noop_without_env(ev_mod, monkeypatch):
+    from astabench.evals.paper_finder import paper_finder_utils
+    monkeypatch.delenv(ev_mod.CACHE_PATH_ENV, raising=False)
+    before = paper_finder_utils.detailed_reference_path
+    ev_mod._apply_cache_redirect()
+    assert paper_finder_utils.detailed_reference_path == before
+
+
+def test_apply_training_grader_override(ev_mod, monkeypatch):
+    """$PF_TRAINING_GRADER_MODEL overrides the grader (for training); the id
+    must be in JUDGE_MODEL_IDS so its spend stays in the judge bucket."""
+    from astabench.evals.paper_finder import relevance
+    monkeypatch.setattr(relevance, "GRADER_MODEL_NAME", relevance.GRADER_MODEL_NAME)
+    monkeypatch.setenv(ev_mod.TRAINING_GRADER_ENV, "openai/gpt-5.4-nano")
+    ev_mod._apply_training_grader()
+    assert relevance.GRADER_MODEL_NAME == "openai/gpt-5.4-nano"
+
+
+def test_apply_training_grader_rejects_unbilled_model(ev_mod, monkeypatch):
+    """A grader not in JUDGE_MODEL_IDS would misbill judge spend to the agent —
+    fail loudly rather than silently."""
+    monkeypatch.setenv(ev_mod.TRAINING_GRADER_ENV, "openai/gpt-5.4-mini")
+    with pytest.raises(RuntimeError, match="JUDGE_MODEL_IDS"):
+        ev_mod._apply_training_grader()
+
+
+def test_apply_training_grader_noop_without_env(ev_mod, monkeypatch):
+    from astabench.evals.paper_finder import relevance
+    monkeypatch.delenv(ev_mod.TRAINING_GRADER_ENV, raising=False)
+    before = relevance.GRADER_MODEL_NAME
+    ev_mod._apply_training_grader()
+    assert relevance.GRADER_MODEL_NAME == before
 
 
 # --- _head_tail_truncate ------------------------------------------------------

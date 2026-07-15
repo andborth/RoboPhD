@@ -87,12 +87,16 @@ def test_nine_id_constants_in_source():
 
 def test_no_registry_id_is_the_judge_model():
     """The soundness condition for the evaluator's exact-match cost
-    split. Checked against BOTH the frozen string and astabench's live
-    GRADER_MODEL_NAME so the guard holds even if evaluator.py's frozen
-    set and astabench drift together."""
+    split. Checked against the evaluator's full JUDGE_MODEL_IDS set (GPT-4o
+    plus the opt-in training grader gpt-5.4-nano) AND astabench's live
+    GRADER_MODEL_NAME, so no agent-selectable handle can ever collide with a
+    judge model — which would misroute its spend to the agent bucket."""
     from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
+    from evaluator import JUDGE_MODEL_IDS
 
-    judge_ids = {"openai/gpt-4o-2024-11-20", GRADER_MODEL_NAME}
+    judge_ids = set(JUDGE_MODEL_IDS) | {GRADER_MODEL_NAME}
+    assert "openai/gpt-4o-2024-11-20" in judge_ids
+    assert "openai/gpt-5.4-nano" in judge_ids  # opt-in training grader
     ids = _registry_ids_from_source()
     offenders = {h: mid for h, mid in ids.items() if mid in judge_ids}
     assert not offenders, (

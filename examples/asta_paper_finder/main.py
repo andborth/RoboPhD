@@ -33,6 +33,8 @@ import json
 import logging
 import os
 import sys
+import tempfile
+import uuid
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -304,6 +306,15 @@ def parse_args():
                         "%(default).0s")  # suppress argparse's auto "(default: None)"
     p.add_argument("--runs-dir", default="../robophd_runs",
                    help="Root directory for experiment output (default: %(default)s)")
+    p.add_argument("--training-judge", type=str, default=None,
+                   help="Override the relevance-judge model for TRAINING only "
+                        "(test/formal evals always use astabench's GPT-4o). "
+                        "Cost lever, e.g. 'openai/gpt-5.4-nano'. Must be in the "
+                        "evaluator's JUDGE_MODEL_IDS. Enable only after the "
+                        "calibration study (_check_judge_calibration.py) shows "
+                        "high GPT-4o agreement — training optimizes against this "
+                        "judge but test scores on GPT-4o."
+                        "%(default).0s")
     p.add_argument("--random-seed", type=int, default=None)
     p.add_argument("--engine-config", type=str, default=None)
     p.add_argument("--meta-evolution-strategy", default=None)
@@ -327,12 +338,55 @@ def main():
     args = parse_args()
 
     from evaluator import (
+        CACHE_PATH_ENV,
         COST_PER_ERROR,
         MIN_COST_THRESHOLD,
         PaperFinderEvaluator,
+        TRAINING_GRADER_ENV,
         _fmt_cost,
         load_paper_finder,
     )
+
+    def _set_training_cache_env() -> str:
+        """Point the judge cache at a per-run file (not astabench's package
+        global), so verdicts never leak across runs. Verdicts are keyed by
+        (query, paper, evidence-hash), so a fresh run legitimately re-judges;
+        cross-run reuse would only reintroduce first-writer contamination.
+        Subprocess workers inherit this env var, so all subprocesses of a run
+        share one cache file and accumulate verdicts within the run. On resume
+        the path is derived from the resumed dir so a resumed run keeps its
+        accumulated verdicts; on a fresh run it is a per-invocation file."""
+        if args.resume:
+            path = str(Path(args.resume) / "judge_cache.json")
+        else:
+            cache_dir = Path(args.runs_dir) / ".judge_cache"
+            path = str(cache_dir / f"train_{uuid.uuid4().hex}.json")
+        os.environ[CACHE_PATH_ENV] = path
+        logger.info(f"Judge cache (per-run): {path}")
+        # Opt-in cheaper training judge (test/formal always use stock GPT-4o).
+        if args.training_judge:
+            os.environ[TRAINING_GRADER_ENV] = args.training_judge
+            logger.info(f"Training relevance judge: {args.training_judge}")
+        else:
+            os.environ.pop(TRAINING_GRADER_ENV, None)
+        return path
+
+    def _set_pristine_cache_env(label: str) -> str:
+        """Point the judge cache at a fresh EMPTY file for a test / formal
+        eval, so every verdict is rendered on the submitting agent's own
+        (grounded) evidence — matching a fresh official environment, never
+        inheriting verdicts another agent wrote for the same paper."""
+        fd, path = tempfile.mkstemp(
+            prefix=f"pf_pristine_{label}_", suffix=".json"
+        )
+        os.close(fd)
+        os.unlink(path)  # start truly empty: init_references treats missing as {}
+        os.environ[CACHE_PATH_ENV] = path
+        # Test / formal evals always score with astabench's stock GPT-4o grader,
+        # never a training override.
+        os.environ.pop(TRAINING_GRADER_ENV, None)
+        logger.info(f"Judge cache (pristine {label}): {path}")
+        return path
 
     # Resolve the run-immutable task knobs. These aren't known to the
     # framework's ConfigManager, so without task_config_extras they'd
@@ -484,6 +538,7 @@ def main():
     if args.eval_only:
         if not args.resume:
             raise SystemExit("--eval-only requires --resume <experiment_dir>")
+        _set_pristine_cache_env("eval_only")
         test_data = [s.model_dump() for s in load_paper_finder("test")]
         logger.info(f"Test set: {len(test_data)} samples")
 
@@ -628,6 +683,9 @@ def main():
         if args.from_iteration:
             cfg.from_iteration = args.from_iteration
 
+    # Training judge cache: per-run file, never the package global.
+    _set_training_cache_env()
+
     result = optimize_anything(
         evaluator=evaluator,
         dataset=dataset,
@@ -647,6 +705,7 @@ def main():
         if not result.completed_normally:
             logger.info("Skipping test-set evaluation -- run ended early due to failure")
         else:
+            _set_pristine_cache_env("test_set")
             test_data = [s.model_dump() for s in load_paper_finder("test")]
             logger.info(f"Test evaluation: {len(test_data)} samples")
             eval_result = eval_candidate(

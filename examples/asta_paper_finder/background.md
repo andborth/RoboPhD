@@ -27,7 +27,7 @@ The scorer reads `state.output.completion` as a JSON string with this shape:
     "results": [
       {
         "paper_id": "123456789",
-        "markdown_evidence": "Title — first ~400 chars of abstract or key passage."
+        "markdown_evidence": "A verbatim passage from retrieved text ... a second verbatim passage."
       },
       ...
     ]
@@ -39,6 +39,7 @@ Notes on the schema:
 - `paper_id` is a Semantic Scholar corpus_id as a **string** (not int). Sources sometimes return ints — cast.
 - The scorer also accepts `"CorpusId:123456789"` and lowercases/strips it.
 - `markdown_evidence` is shown to the LLM judge for `semantic_f1` queries; quality of evidence text directly affects the judge's verdict. Include the title and a relevant passage.
+- **Grounding requirement**: `markdown_evidence` must be up to 3 passages quoted **verbatim** from text you retrieved for that same paper (title/abstract/tldr/snippet returned by the tools), joined by ` ... `. Evidence that is not verbatim-derivable from retrieved corpus text is discarded before the judge sees it, and a paper with discarded evidence is scored Not Relevant. Paraphrased or invented evidence therefore earns nothing.
 - List order: the scorer reads only your first 250 entries; beyond that cap, order semantics differ by query type. On `specific_f1`/`metadata_f1`, **order does not matter** — precision and recall are computed over the whole (capped) list. On `semantic_f1`, **order is half your score** — see "Scoring (per query)".
 
 ## Available tools (`state.tools`)
@@ -157,7 +158,7 @@ Your cost is the LLM calls your agent makes through `model_registry` handles (`a
 
 ## The relevance judge (semantic queries)
 
-On `semantic_f1` queries (73% of the training queries, and the same share of the held-out test set), the benchmark's scorer runs a GPT-4o relevance judge over every paper you return, grading each against the query's weighted `relevance_criteria`. Understanding the judge is a score lever: it reads each result's `markdown_evidence` when deciding relevance, so evidence quality (title + a passage that speaks to the criteria) directly moves your F1. For each training query, the exact criteria the judge scored against are visible post-hoc in that problem's `gold_criteria.md` diagnostic, and `judge_verdicts.md` lists the judge's verdict on every paper you submitted, in your submitted order — together they separate "the right papers were never retrieved" from "retrieved but rejected" and let you audit your ranking.
+On `semantic_f1` queries (73% of the training queries, and the same share of the held-out test set), the benchmark's scorer runs an LLM relevance judge over every paper you return, grading each against the query's weighted `relevance_criteria`. Understanding the judge is a score lever: it reads each result's `markdown_evidence` when deciding relevance, so evidence quality (title + a passage that speaks to the criteria) directly moves your F1. Evidence is grounding-checked first (see the Output schema's grounding requirement): only evidence quoted verbatim from text you retrieved for that paper reaches the judge; anything else is discarded and the paper scored Not Relevant. For each training query, the exact criteria the judge scored against are visible post-hoc in that problem's `gold_criteria.md` diagnostic, `judge_verdicts.md` lists the judge's verdict on every paper you submitted in your submitted order, and `evidence_grounding.md` (present only when something was discarded) names the papers whose evidence failed the grounding check and the offending passage — together they separate "the right papers were never retrieved" from "retrieved but rejected" from "evidence discarded as ungrounded" and let you audit your ranking.
 
 The judge's own LLM spend appears in each problem's `result.json` as `other_cost`. That field is informational only — it is never penalized, never counts toward your batch mean, and is outside your control. Do not optimize for it.
 

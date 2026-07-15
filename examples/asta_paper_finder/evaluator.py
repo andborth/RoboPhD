@@ -46,7 +46,6 @@ from inspect_ai.dataset import MemoryDataset, Sample
 from inspect_ai.solver import use_tools
 
 from astabench.evals.paper_finder.paper_finder_utils import (
-    detailed_reference_path,
     get_inserted_before_per_dataset_type,
 )
 from astabench.evals.paper_finder.relevance import (
@@ -57,6 +56,8 @@ from astabench.evals.paper_finder.task import (
     pf_final_score_name_per_type,
     score_paper_finder_with_all_name,
 )
+
+import _grounding as grounding
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,15 @@ _BUNDLED_PRICE_MAP: dict | None = None
 # bumps its grader, this import fails loudly instead of silently
 # billing judge spend to agents. (b) is enforced by a unit test
 # (unit_tests/test_model_registry.py).
-JUDGE_MODEL_IDS = frozenset({"openai/gpt-4o-2024-11-20"})
+#
+# gpt-5.4-nano is included because training runs may override the grader to
+# it for cost (see _apply_training_grader / $PF_TRAINING_GRADER_MODEL). It is
+# never an agent-selectable model_registry handle, so listing it here only
+# routes its spend to the judge bucket; it does not enable it as a solver.
+JUDGE_MODEL_IDS = frozenset({
+    "openai/gpt-4o-2024-11-20",
+    "openai/gpt-5.4-nano",
+})
 if _ASTABENCH_GRADER_MODEL_NAME not in JUDGE_MODEL_IDS:
     raise RuntimeError(
         f"astabench's paper_finder relevance judge is "
@@ -185,6 +194,80 @@ def _install_safe_judge_cache() -> None:
 
 
 _install_safe_judge_cache()
+# Install AFTER the safe cache writer so the grounded judge's dynamic
+# update_references lookup resolves to the multiprocess-safe version.
+grounding.install_grounded_judge()
+
+
+# Environment variable naming the judge-verdict cache file. When set, the
+# cache is redirected away from astabench's package-global
+# detailed_reference.json to this path. main.py points it at a per-run file
+# for training (so verdicts never leak across runs) and at a fresh empty file
+# for each test / formal eval (so every verdict is rendered on the submitting
+# agent's own evidence — pristine, matching a fresh official environment).
+CACHE_PATH_ENV = "PF_JUDGE_CACHE_PATH"
+
+
+def _apply_cache_redirect() -> None:
+    """Point astabench's judge cache at $PF_JUDGE_CACHE_PATH, if set.
+
+    Runs at import in every process that imports this module — importantly,
+    inside each evaluation subprocess, which inherits the variable from the
+    parent. Both the writer (_safe_cache_rmw) and the reader (init_references)
+    resolve the path through _pf_utils.detailed_reference_path at call time, so
+    reassigning that one attribute redirects both. get_normalizer_references
+    memoizes the loaded cache on first use; we clear the memo so a redirect set
+    before scoring is honored even if something read the cache during import."""
+    path = os.environ.get(CACHE_PATH_ENV)
+    if not path:
+        return
+    from astabench.evals.paper_finder import eval as _pf_eval
+    from astabench.evals.paper_finder import paper_finder_utils as _pf_utils
+    try:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    except OSError:
+        pass
+    _pf_utils.detailed_reference_path = path
+    _pf_eval._normalizer_reference = None
+    _pf_eval._detailed_reference = None
+
+
+_apply_cache_redirect()
+
+
+# Environment variable naming the TRAINING relevance-judge model. When set, the
+# scorer's grader is overridden to this model for cost control; the held-out
+# test / formal path leaves it unset so scoring uses astabench's stock GPT-4o
+# grader. main.py only sets this when the user opts in via --training-judge,
+# and clears it on every test path. Enabling nano is gated on the calibration
+# study (_check_judge_calibration.py) showing high GPT-4o agreement — training
+# optimizes against this judge but test scores on GPT-4o.
+TRAINING_GRADER_ENV = "PF_TRAINING_GRADER_MODEL"
+
+
+def _apply_training_grader() -> None:
+    """Override astabench's relevance grader with $PF_TRAINING_GRADER_MODEL, if
+    set. relevance.GRADER_MODEL_NAME is read at judge time, and the grounded
+    judge calls load_relevance_judgement dynamically, so reassigning the module
+    attribute is enough. Warns if the model isn't priced in the bundled map —
+    an unpriced grader would silently zero the reported judge cost."""
+    model = os.environ.get(TRAINING_GRADER_ENV)
+    if not model:
+        return
+    if model not in JUDGE_MODEL_IDS:
+        raise RuntimeError(
+            f"{TRAINING_GRADER_ENV}={model!r} is not in JUDGE_MODEL_IDS "
+            f"{sorted(JUDGE_MODEL_IDS)}; its spend would be misbilled to the "
+            f"agent. Add it to JUDGE_MODEL_IDS (and confirm it is not a "
+            f"model_registry solver handle) before using it as the grader."
+        )
+    from astabench.evals.paper_finder import relevance as _pf_rel
+    _pf_rel.GRADER_MODEL_NAME = model
+    if _bundled_price_map().get(model.split("/", 1)[-1]) is None:
+        logger.warning(
+            "training grader %s is not in the bundled litellm price map; "
+            "its judge cost may report as $0", model,
+        )
 
 
 def _bundled_price_map() -> dict:
@@ -226,6 +309,11 @@ def _bundled_price_map() -> dict:
                 exc,
             )
     return _BUNDLED_PRICE_MAP
+
+
+# Applied at import (after _bundled_price_map is defined, which its price check
+# needs). No-op unless $PF_TRAINING_GRADER_MODEL is set.
+_apply_training_grader()
 
 
 def _head_tail_truncate(s: str, head: int = 200, tail: int = 1500) -> str:
@@ -275,14 +363,17 @@ def _head_tail_truncate(s: str, head: int = 200, tail: int = 1500) -> str:
 # scores (apply_cost_penalty=False) skip SCORE_SCALE entirely and report
 # mean_raw as a [0, 1] fraction — leaderboard parity.
 SCORE_SCALE = 100.0
-# Free-zone width $0.10: the Standard-tier leaderboard reference (generic
-# ReAct + GPT-5 Mini) bills ~$0.06/query, and competitive paper-finding
-# pipelines are evidence-heavy (query decomposition, snippet extraction,
-# per-candidate filtering). A tighter zone would penalize the most
-# promising evolution direction; $0.10 covers the whole mini/flash tier
-# with margin while still decisively penalizing Opus-tier ReAct
-# ($1.49-$3.38/query on the leaderboard).
-MIN_COST_THRESHOLD = 0.10
+# Free-zone width $0.06: set at the Standard-tier leaderboard reference
+# (generic ReAct + GPT-5 Mini, ~$0.06/query) to target Pareto-dominating the
+# two leaderboard points sitting at $0.06 and $0.063 — an agent that matches
+# their score while staying in this zone wins on the cost axis — and to pull
+# default spend down. Tighter than the earlier $0.10, so evidence-heavy
+# pipelines (query decomposition, snippet extraction, per-candidate filtering)
+# now feel the penalty sooner; the mini/flash tier still fits, and Opus-tier
+# ReAct ($1.49-$3.38/query) remains decisively penalized. Immutable per run
+# (task_config_extras), so in-flight runs keep their stored threshold on
+# resume; only fresh runs pick up this default.
+MIN_COST_THRESHOLD = 0.06
 # Dollars of mean batch spend (over threshold) that equals one
 # fully-wrong query of penalty. PFB scores are continuous F1 (typical
 # per-query 0.2-0.4), so one error-equivalent is a LARGER unit than in a
@@ -322,31 +413,31 @@ def _judge_verdicts_markdown(
 ) -> str | None:
     """Per-paper judge verdicts for a semantic query, in submitted order.
 
-    Sourced from astabench's persistent judge cache
-    (detailed_reference.json), which `update_references` appends to after
-    every scoring pass — read the FILE directly, not
-    get_normalizer_references(), whose module-global snapshot goes stale
-    the moment this eval writes fresh verdicts. Zero extra LLM calls.
+    Sourced from the grounded judge's in-process record of THIS evaluation
+    (grounding.last_judgements()), not the persistent cache file — so the
+    verdicts reflect the judgement rendered on this agent's own (grounded)
+    evidence, never a stale entry another agent wrote for the same paper.
+    Zero extra LLM calls.
 
     Verdict per submitted paper:
       - in the query's known_to_be_good list → pre-seeded Perfect (the
-        scorer never LLM-judges these, so they're absent from the cache)
-      - in the cache → the judge's stored label, verbatim
-      - neither → "(no verdict recorded)" (judge parse failure, or the
-        scorer didn't run)
+        scorer never LLM-judges these)
+      - judged this eval → the judge's label, verbatim
+      - neither → "(no verdict recorded)" (not among the scorer's first 250,
+        or the scorer didn't run)
 
-    Returns None when there's nothing to report (no submissions, or the
-    cache is unreadable and nothing is known-good).
+    Returns None when there's nothing to report (no submissions, or no
+    grounded judgements were produced and nothing is known-good).
     """
     if not submitted_ids:
         return None
-    try:
-        with open(detailed_reference_path) as f:
-            cache = json.load(f).get(query_id) or {}
-    except (OSError, json.JSONDecodeError):
-        cache = {}
+    raw_judgements = grounding.last_judgements()
+    if not raw_judgements and not known_good:
+        return None
+    # Normalize judgement keys to match the normalized submitted_ids.
+    judged = {normalize_corpus_id(str(k)): str(v) for k, v in raw_judgements.items()}
 
-    # The cache stores astabench's internal label strings
+    # The judge stores astabench's internal label strings
     # ("perfectly_relevant_papers", ...); translate to the human labels.
     pretty = {
         "perfectly_relevant_papers": "Perfectly Relevant",
@@ -362,8 +453,8 @@ def _judge_verdicts_markdown(
         if pid in known_good:
             verdict = "Perfectly Relevant (known-good)"
             n_perfect += 1
-        elif pid in cache:
-            raw = str(cache[pid])
+        elif pid in judged:
+            raw = judged[pid]
             verdict = pretty.get(raw, raw)
             if raw == perfect_raw:
                 n_perfect += 1
@@ -381,6 +472,33 @@ def _judge_verdicts_markdown(
     return "\n".join(lines)
 
 
+def _evidence_grounding_markdown() -> str | None:
+    """Feedback on evidence blanked this eval for failing the grounding check.
+
+    Blanked papers were judged Not Relevant without a judge call because their
+    markdown_evidence was not verbatim-derivable from text the agent retrieved
+    for that paper (fabricated, paraphrased, or for a paper never retrieved).
+    Surfacing the failing passage per paper lets the next iteration's evolution
+    fix its evidence construction — quote retrieved text verbatim, joined by
+    ` ... `. Returns None when nothing was blanked (the healthy case)."""
+    blanked = grounding.last_blanked()
+    if not blanked:
+        return None
+    lines = [
+        f"{len(blanked)} paper(s) had evidence discarded (→ Not Relevant, no "
+        f"judge call) because it was not verbatim-derivable from text this "
+        f"agent retrieved for that paper. Quote retrieved corpus text verbatim, "
+        f"joined by ` ... ` (≤3 passages).",
+        "",
+    ]
+    for pid, failing, raw in blanked[:50]:
+        first = (failing[0] if failing else (raw or ""))[:160]
+        lines.append(f"- {pid}: unmatched passage → {first!r}")
+    if len(blanked) > 50:
+        lines.append(f"- … and {len(blanked) - 50} more")
+    return "\n".join(lines)
+
+
 def load_paper_finder(split: str = "validation") -> list[Sample]:
     """Load the PaperFindingBench split as a list of Inspect Samples.
 
@@ -393,17 +511,48 @@ def load_paper_finder(split: str = "validation") -> list[Sample]:
     return list(ds)
 
 
+def _wrap_tools_for_provenance(tools: list) -> list:
+    """Wrap each corpus tool so its result payload is recorded for evidence
+    grounding, then handed back to the agent unchanged.
+
+    This is the only seam we own between the Asta MCP tools and the agent, so
+    it is where we learn what text the agent actually retrieved for each paper.
+    Wrapping via ToolDef round-trips the tool's name/description/parameters
+    (the schema inspect needs), the same mechanism astabench uses to install
+    its retry wrapper. Recording is best-effort and never alters the result.
+    """
+    from inspect_ai.tool import ToolDef
+
+    wrapped = []
+    for t in tools:
+        td = ToolDef(t)
+        orig = td.tool
+
+        def _make(orig_call):
+            async def _recording(*args, **kwargs):
+                result = await orig_call(*args, **kwargs)
+                grounding.record_tool_result(result)
+                return result
+            return _recording
+
+        td.tool = _make(orig)
+        wrapped.append(td.as_tool())
+    return wrapped
+
+
 def _build_tools(sample_id: str):
     """Return the Asta MCP corpus tools to attach for this sample.
 
     The factory applies the sample's date cutoff (no future-paper leaks)
     and wraps every tool in astabench's make_retry_wrapper (429/529/504 +
     BrokenResourceError, exponential backoff), so agents never see a
-    transient rate limit.
+    transient rate limit. We add an outer wrapper that records each result
+    payload for evidence grounding (see _grounding.py).
     """
     inserted_before = get_inserted_before_per_dataset_type(sample_id)
     from astabench.tools import make_asta_mcp_tools
-    return make_asta_mcp_tools(insertion_date=inserted_before)
+    tools = make_asta_mcp_tools(insertion_date=inserted_before)
+    return _wrap_tools_for_provenance(tools)
 
 
 def _import_candidate_solver(agent_code: str) -> Any:
@@ -833,6 +982,11 @@ class PaperFinderEvaluator:
                 "eval_wall_clock_seconds": _elapsed_seconds(_t0),
             }
 
+        # Clear grounding state before this sample retrieves anything. In the
+        # default subprocess path this process is fresh, but the in-process
+        # path (tests, smoke runs) reuses one process across samples.
+        grounding.reset()
+
         try:
             tools = _build_tools(example.id)
         except Exception as e:
@@ -1023,6 +1177,9 @@ class PaperFinderEvaluator:
                 )
                 if verdicts:
                     diagnostics["judge_verdicts.md"] = verdicts
+                grounding_md = _evidence_grounding_markdown()
+                if grounding_md:
+                    diagnostics["evidence_grounding.md"] = grounding_md
         except Exception:
             pass
 
