@@ -49,10 +49,28 @@ _CID_KEYS = ("corpusId", "corpus_id", "paperId", "paper_id", "CorpusId")
 # dash too means an honest `title — abstract` submission is checked as two
 # verbatim passages rather than one cross-field string that would never appear
 # verbatim in any single retrieved payload. Intra-word hyphens ("large-scale")
-# have no surrounding whitespace and are not split.
-_PASSAGE_SPLIT = re.compile(r"\s+(?:\.\.\.|—|–|-)\s+")
+# have no surrounding whitespace and are not split. Covers the ellipsis char
+# and every dash variant so splitting matches regardless of the punctuation the
+# agent used.
+_PASSAGE_SPLIT = re.compile(r"\s+(?:\.\.\.|…|[—–‐−-])\s+")
 
 _MAX_PASSAGES = 3
+
+# Punctuation NFKC does NOT fold — smart quotes and dashes — mapped to their
+# ASCII forms so a passage that differs from retrieved text only in punctuation
+# style still grounds. (The ellipsis char U+2026 already NFKC-decomposes to
+# "...", so it needs no entry here.)
+_PUNCT_FOLD = {
+    "‘": "'", "’": "'", "‛": "'", "′": "'",  # single quotes / prime
+    "“": '"', "”": '"', "‟": '"', "″": '"',  # double quotes
+    "‐": "-", "‑": "-", "‒": "-", "–": "-",   # hyphen / dashes
+    "—": "-", "―": "-", "−": "-",                  # em / horizontal bar / minus
+}
+_PUNCT_RE = re.compile("|".join(re.escape(k) for k in _PUNCT_FOLD))
+
+
+def _fold_punct(s: str) -> str:
+    return _PUNCT_RE.sub(lambda m: _PUNCT_FOLD[m.group()], s)
 
 
 def reset() -> None:
@@ -62,9 +80,10 @@ def reset() -> None:
 
 
 def _norm(s: str) -> str:
-    """NFKC + casefold + whitespace-collapse, so matching ignores unicode
-    presentation, case, and reflow differences without being lax about content."""
-    s = unicodedata.normalize("NFKC", str(s)).casefold()
+    """NFKC + punctuation-fold + casefold + whitespace-collapse, so matching
+    ignores unicode presentation, smart-quote/dash style, case, and reflow
+    differences without being lax about content."""
+    s = _fold_punct(unicodedata.normalize("NFKC", str(s))).casefold()
     return re.sub(r"\s+", " ", s).strip()
 
 
@@ -191,24 +210,33 @@ def record_tool_result(result: Any) -> None:
         pass
 
 
-def check_evidence(corpus_id: str, evidence: str) -> tuple[bool, list[str]]:
-    """Is every passage of `evidence` verbatim-derivable from text retrieved for
-    `corpus_id`? Returns (grounded, failing_passages).
+def scrub_evidence(corpus_id: str, evidence: str) -> tuple[str, list[str]]:
+    """Keep only the passages of `evidence` that are verbatim-derivable from text
+    retrieved for `corpus_id`; drop the rest. Returns (scrubbed, dropped).
 
-    Empty evidence is trivially grounded (nothing claimed). A passage is
-    grounded iff its normalized form is a substring of the normalized
-    concatenation of everything retrieved for that paper — lenient enough for a
-    genuine verbatim quote from any single field, strict enough that invented
-    prose (absent from every retrieved payload) fails."""
-    ev = (evidence or "").strip()
-    if not ev:
-        return True, []
+    A passage is grounded iff its normalized form is a substring of the
+    normalized concatenation of everything retrieved for that paper — lenient
+    enough for a genuine verbatim quote from any single field, strict enough
+    that invented prose (absent from every retrieved payload) fails.
+
+    Partial rather than all-or-nothing: a single ungrounded passage drops only
+    itself, so two good passages beside one bad one are not zeroed. Return
+    values:
+      - empty evidence           → ("", [])            nothing claimed
+      - nothing retrieved         → ("", [all passages]) unverifiable by construction
+      - every passage grounded    → (evidence unchanged, [])
+      - some passages grounded    → (grounded passages joined by ' ... ', [dropped])
+      - no passage grounded       → ("", [all passages])
+    """
+    raw = (evidence or "").strip()
+    if not raw:
+        return "", []
+    passages = [p for p in _PASSAGE_SPLIT.split(raw) if p.strip()] or [raw]
     cid = _norm_cid(corpus_id) or str(corpus_id)
     spans = _PROVENANCE.get(cid)
     if not spans:
-        # Nothing was retrieved for this paper, yet the agent submitted evidence
-        # for it: unverifiable by construction.
-        return False, [ev[:200]]
+        # Nothing was retrieved for this paper, yet the agent submitted evidence.
+        return "", passages
     # sorted(), not just join(set): set iteration order varies across processes
     # (hash randomization), and a passage that straddles a join boundary would
     # otherwise ground on one run and fail on another. A passage within a single
@@ -216,11 +244,20 @@ def check_evidence(corpus_id: str, evidence: str) -> tuple[bool, list[str]]:
     # deterministic. (The real anti-fabrication guarantee is per-span; boundary
     # matches are a lenient bonus for field-concatenated evidence.)
     blob = " ".join(sorted(spans))
-    passages = [p for p in _PASSAGE_SPLIT.split(ev) if p.strip()]
-    if not passages:
-        passages = [ev]
-    failing = [p for p in passages if _norm(p) not in blob]
-    return (not failing), failing[:_MAX_PASSAGES]
+    kept, dropped = [], []
+    for p in passages:
+        (kept if _norm(p) in blob else dropped).append(p)
+    if not dropped:
+        return raw, []                      # fully grounded: exact evidence intact
+    return " ... ".join(kept), dropped      # kept may be empty → "" (fully dropped)
+
+
+def check_evidence(corpus_id: str, evidence: str) -> tuple[bool, list[str]]:
+    """Thin predicate over scrub_evidence: (fully_grounded, dropped_passages).
+    `fully_grounded` is True iff nothing was dropped. Retained for callers/tests
+    that only need the all-or-nothing answer."""
+    _, dropped = scrub_evidence(corpus_id, evidence)
+    return (not dropped), dropped[:_MAX_PASSAGES]
 
 
 def _evidence_hash(scrubbed: str) -> str:
@@ -266,7 +303,9 @@ def install_grounded_judge() -> None:
         _, detailed_reference = _pf_eval.get_normalizer_references()
         qid = output.query_id
         judgements: dict[str, str] = {}
-        blanked: list[tuple[str, list[str], str]] = []
+        # (paper_id, dropped_passages, raw_evidence, kind) where kind is
+        # "partial" (some passages kept) or "full" (all dropped).
+        blanked: list[tuple[str, list[str], str, str]] = []
         to_judge: list[Document] = []
         judge_keys: list[tuple[str, str]] = []  # (paper_id, composite cache key)
 
@@ -278,19 +317,23 @@ def install_grounded_judge() -> None:
                 judgements[pid] = Relevance.PERFECT.value
                 continue
             raw_ev = result.markdown_evidence or ""
-            grounded, failing = check_evidence(pid, raw_ev)
-            if not grounded:
-                # Ungrounded evidence is discarded; an empty document judges to
-                # Not Relevant. Short-circuit to save the judge call entirely.
+            # Keep only grounded passages; the judge sees `scrubbed`, never the
+            # dropped ones.
+            scrubbed, dropped = scrub_evidence(pid, raw_ev)
+            if dropped:
+                kind = "full" if not scrubbed else "partial"
+                blanked.append((pid, dropped, raw_ev, kind))
+            if not scrubbed:
+                # Nothing grounded survived: an empty document judges to Not
+                # Relevant. Short-circuit to save the judge call entirely.
                 judgements[pid] = Relevance.NOT_RELEVANT.value
-                blanked.append((pid, failing, raw_ev))
                 continue
-            ckey = cache_key(pid, raw_ev)
+            ckey = cache_key(pid, scrubbed)
             cached = (detailed_reference.get(qid) or {}).get(ckey) if detailed_reference else None
             if cached is not None:
                 judgements[pid] = cached
             else:
-                to_judge.append(Document(corpus_id=pid, markdown=raw_ev))
+                to_judge.append(Document(corpus_id=pid, markdown=scrubbed))
                 judge_keys.append((pid, ckey))
 
         if to_judge:
@@ -321,6 +364,7 @@ def last_judgements() -> dict[str, str]:
     return dict(_LAST.get("judgements") or {})
 
 
-def last_blanked() -> list[tuple[str, list[str], str]]:
-    """[(paper_id, failing_passages, raw_evidence)] blanked in the most recent call."""
+def last_blanked() -> list[tuple[str, list[str], str, str]]:
+    """[(paper_id, dropped_passages, raw_evidence, kind)] from the most recent
+    call, where kind is "partial" (some passages kept) or "full" (all dropped)."""
     return list(_LAST.get("blanked") or [])

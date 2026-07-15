@@ -133,6 +133,44 @@ def test_unicode_and_whitespace_normalized():
     assert g.check_evidence("7", "café résumé naïve")[0]
 
 
+def test_punctuation_style_normalized():
+    """Smart quotes / dashes differing only in style must still ground."""
+    # retrieved text uses ASCII apostrophe and hyphen
+    g.record_tool_result({"data": [{"corpusId": 8,
+                                    "abstract": "don't over-fit the model"}]})
+    # agent quotes with a curly apostrophe and an en-dash
+    assert g.check_evidence("8", "don’t over–fit the model")[0]
+    # and the reverse direction (retrieved curly, agent ASCII)
+    g.reset()
+    g.record_tool_result({"data": [{"corpusId": 8,
+                                    "abstract": "the “attention” mechanism"}]})
+    assert g.check_evidence("8", 'the "attention" mechanism')[0]
+
+
+# --- partial blanking ------------------------------------------------------
+
+def test_scrub_keeps_grounded_drops_ungrounded():
+    g.record_tool_result({"data": [{"corpusId": 12, "title": "Real Title",
+                                    "abstract": "a real retrieved sentence"}]})
+    # one grounded passage, one fabricated, joined by ' ... '
+    scrubbed, dropped = g.scrub_evidence(
+        "12", "a real retrieved sentence ... an invented claim about nothing")
+    assert scrubbed == "a real retrieved sentence"      # kept the grounded one
+    assert dropped == ["an invented claim about nothing"]
+
+
+def test_scrub_fully_grounded_returns_evidence_unchanged():
+    g.record_tool_result({"data": [{"corpusId": 12, "abstract": "alpha beta gamma"}]})
+    scrubbed, dropped = g.scrub_evidence("12", "alpha beta")
+    assert scrubbed == "alpha beta" and dropped == []
+
+
+def test_scrub_nothing_grounded_returns_empty():
+    g.record_tool_result({"data": [{"corpusId": 12, "abstract": "real text"}]})
+    scrubbed, dropped = g.scrub_evidence("12", "invented one ... invented two")
+    assert scrubbed == "" and len(dropped) == 2
+
+
 # --- cache keying ----------------------------------------------------------
 
 def test_cache_key_evidence_sensitive():
@@ -182,7 +220,39 @@ def test_e2e_ungrounded_blanked_without_judge_call(monkeypatch):
 
     assert judgements["42"] == rel.Relevance.NOT_RELEVANT.value
     assert judge_calls["n"] == 0, "ungrounded evidence must not reach the judge"
-    assert any(pid == "42" for pid, _, _ in g.last_blanked())
+    assert any(b[0] == "42" and b[3] == "full" for b in g.last_blanked())
+
+
+def test_e2e_partial_blanking_judges_scrubbed_evidence(monkeypatch):
+    from astabench.evals.paper_finder import eval as pe
+    from astabench.evals.paper_finder import relevance as rel
+
+    seen_markdown = {}
+
+    async def _fake_judge(docs, criteria):
+        for d in docs:
+            seen_markdown[d.corpus_id] = d.markdown
+        return {d.corpus_id: rel.Relevance.PERFECT.value for d in docs}
+
+    monkeypatch.setattr(rel, "load_relevance_judgement", _fake_judge)
+    monkeypatch.setattr(pe, "get_normalizer_references", lambda: ({}, {}))
+
+    get_llm_relevance = _install_and_get_patched()
+    metric = SimpleNamespace(known_to_be_good=set(), relevance_criteria=[])
+
+    g.reset()
+    g.record_tool_result({"data": [{"corpusId": 42, "abstract": "a grounded phrase"}]})
+    # one grounded passage + one fabricated, joined by ' ... '
+    out = _output([("42", "a grounded phrase ... a fabricated one")])
+    judgements = asyncio.run(get_llm_relevance(out, metric))
+
+    # paper is JUDGED (not zeroed), and the judge saw ONLY the grounded passage
+    assert judgements["42"] == rel.Relevance.PERFECT.value
+    assert seen_markdown["42"] == "a grounded phrase"
+    # recorded as a partial drop, listing the fabricated passage
+    partial = [b for b in g.last_blanked() if b[0] == "42"]
+    assert partial and partial[0][3] == "partial"
+    assert partial[0][1] == ["a fabricated one"]
 
 
 def test_e2e_grounded_judged_and_cached(monkeypatch):

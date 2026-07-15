@@ -473,27 +473,33 @@ def _judge_verdicts_markdown(
 
 
 def _evidence_grounding_markdown() -> str | None:
-    """Feedback on evidence blanked this eval for failing the grounding check.
+    """Feedback on evidence passages discarded this eval for failing the
+    grounding check.
 
-    Blanked papers were judged Not Relevant without a judge call because their
-    markdown_evidence was not verbatim-derivable from text the agent retrieved
-    for that paper (fabricated, paraphrased, or for a paper never retrieved).
-    Surfacing the failing passage per paper lets the next iteration's evolution
-    fix its evidence construction — quote retrieved text verbatim, joined by
-    ` ... `. Returns None when nothing was blanked (the healthy case)."""
+    A passage is discarded when it is not verbatim-derivable from text the agent
+    retrieved for that paper (fabricated, paraphrased, or for a paper never
+    retrieved). Discarding is per-passage: `full` = every passage dropped (the
+    paper is judged Not Relevant with no judge call); `partial` = some passages
+    dropped, the grounded ones still judged. Surfacing the offending passages
+    lets the next iteration's evolution fix its evidence construction — quote
+    retrieved text verbatim, joined by ` ... `. Returns None when nothing was
+    discarded (the healthy case)."""
     blanked = grounding.last_blanked()
     if not blanked:
         return None
+    n_full = sum(1 for b in blanked if b[3] == "full")
+    n_partial = len(blanked) - n_full
     lines = [
-        f"{len(blanked)} paper(s) had evidence discarded (→ Not Relevant, no "
-        f"judge call) because it was not verbatim-derivable from text this "
-        f"agent retrieved for that paper. Quote retrieved corpus text verbatim, "
-        f"joined by ` ... ` (≤3 passages).",
+        f"{len(blanked)} paper(s) had evidence discarded as not verbatim-"
+        f"derivable from retrieved text: {n_full} fully (→ Not Relevant, no "
+        f"judge call), {n_partial} partially (grounded passages kept and judged, "
+        f"ungrounded ones dropped). Quote retrieved corpus text verbatim, joined "
+        f"by ` ... ` (≤3 passages).",
         "",
     ]
-    for pid, failing, raw in blanked[:50]:
-        first = (failing[0] if failing else (raw or ""))[:160]
-        lines.append(f"- {pid}: unmatched passage → {first!r}")
+    for pid, dropped, raw, kind in blanked[:50]:
+        first = (dropped[0] if dropped else (raw or ""))[:160]
+        lines.append(f"- {pid} [{kind}]: dropped passage → {first!r}")
     if len(blanked) > 50:
         lines.append(f"- … and {len(blanked) - 50} more")
     return "\n".join(lines)
