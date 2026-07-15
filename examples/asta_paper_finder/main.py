@@ -274,6 +274,10 @@ def _write_test_results(
 # ---------------------------------------------------------------------------
 
 def parse_args():
+    # Pull the resolved defaults from the evaluator so --help never drifts from
+    # the actual constants (MIN_COST_THRESHOLD / COST_PER_ERROR).
+    from evaluator import COST_PER_ERROR, MIN_COST_THRESHOLD, _fmt_cost
+
     p = argparse.ArgumentParser(
         description="Evolve PaperFindingBench agents on AstaBench (Standard tools)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -289,12 +293,13 @@ def parse_args():
     p.add_argument("--cost-threshold", type=float, default=None,
                    help="Mean agent cost across an iteration's batch below "
                         "this is in the free zone (no penalty). Judge cost "
-                        "never counts. Default $0.10."
+                        f"never counts. Default {_fmt_cost(MIN_COST_THRESHOLD)}."
                         "%(default).0s")
     p.add_argument("--cost-per-error", type=float, default=None,
                    help="Dollars of mean batch spend (over --cost-threshold) "
                         "that equals one fully-wrong query of penalty. "
-                        "Default $0.02. See README 'Cost-penalty math'."
+                        f"Default {_fmt_cost(COST_PER_ERROR)}. See README "
+                        "'Cost-penalty math'."
                         "%(default).0s")
 
     p.add_argument("--max-workers", type=int, default=None,
