@@ -32,6 +32,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import sys
 import tempfile
 import uuid
@@ -306,6 +307,14 @@ def parse_args():
                         "%(default).0s")  # suppress argparse's auto "(default: None)"
     p.add_argument("--runs-dir", default="../robophd_runs",
                    help="Root directory for experiment output (default: %(default)s)")
+    p.add_argument("--no-shared-judge-cache", action="store_true",
+                   help="Isolate the training judge cache per run instead of "
+                        "sharing it across runs. Sharing is sound because "
+                        "verdicts are keyed by (query, paper, evidence-hash) and "
+                        "scoped by judge model, so cross-run reuse only recovers "
+                        "identical judge inputs; use this to force fresh "
+                        "judging (e.g. a clean cost measurement)."
+                        "%(default).0s")
     p.add_argument("--training-judge", type=str, default=None,
                    help="Override the relevance-judge model for TRAINING only "
                         "(test/formal evals always use astabench's GPT-4o). "
@@ -346,30 +355,47 @@ def main():
         _fmt_cost,
         load_paper_finder,
     )
+    # The stock grader in effect when no --training-judge override is set; used
+    # to scope the shared judge cache by judge model.
+    from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME as _STOCK_GRADER
 
     def _set_training_cache_env() -> str:
-        """Point the judge cache at a per-run file (not astabench's package
-        global), so verdicts never leak across runs. Verdicts are keyed by
-        (query, paper, evidence-hash), so a fresh run legitimately re-judges;
-        cross-run reuse would only reintroduce first-writer contamination.
-        Subprocess workers inherit this env var, so all subprocesses of a run
-        share one cache file and accumulate verdicts within the run. On resume
-        the path is derived from the resumed dir so a resumed run keeps its
-        accumulated verdicts; on a fresh run it is a per-invocation file."""
-        if args.resume:
-            path = str(Path(args.resume) / "judge_cache.json")
+        """Point the judge cache at a training cache file, never astabench's
+        package global.
+
+        Verdicts are keyed by (query, paper, evidence-hash), which is a sound
+        judge input, so reuse across runs is legitimate — a verdict is only
+        reused when the identical grounded evidence recurs. So the default is a
+        cache SHARED across runs (recovering cross-run reuse the old bare-pid
+        key gave unsoundly), scoped by judge model: the model is in the filename
+        so a gpt-4o run and a gpt-5.4-mini run can never read each other's
+        verdicts (a verdict is a function of the judge, not just the input).
+
+        --no-shared-judge-cache falls back to per-run isolation: derived from
+        the resumed dir on resume (so a resumed run keeps its verdicts), else a
+        fresh per-invocation file. Subprocess workers inherit the env var, so
+        all workers of a run share one file within the run either way."""
+        judge = args.training_judge or _STOCK_GRADER
+        slug = re.sub(r"[^A-Za-z0-9._-]+", "_", judge)
+        cache_dir = Path(args.runs_dir) / ".judge_cache"
+        if not args.no_shared_judge_cache:
+            path = cache_dir / f"shared_{slug}.json"
+            scope = "shared"
+        elif args.resume:
+            path = Path(args.resume) / f"judge_cache_{slug}.json"
+            scope = "per-run/resume"
         else:
-            cache_dir = Path(args.runs_dir) / ".judge_cache"
-            path = str(cache_dir / f"train_{uuid.uuid4().hex}.json")
-        os.environ[CACHE_PATH_ENV] = path
-        logger.info(f"Judge cache (per-run): {path}")
+            path = cache_dir / f"run_{slug}_{uuid.uuid4().hex}.json"
+            scope = "per-run"
+        os.environ[CACHE_PATH_ENV] = str(path)
+        logger.info(f"Judge cache ({scope}, judge={judge}): {path}")
         # Opt-in cheaper training judge (test/formal always use stock GPT-4o).
         if args.training_judge:
             os.environ[TRAINING_GRADER_ENV] = args.training_judge
             logger.info(f"Training relevance judge: {args.training_judge}")
         else:
             os.environ.pop(TRAINING_GRADER_ENV, None)
-        return path
+        return str(path)
 
     def _set_pristine_cache_env(label: str) -> str:
         """Point the judge cache at a fresh EMPTY file for a test / formal
