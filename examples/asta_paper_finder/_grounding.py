@@ -209,7 +209,13 @@ def check_evidence(corpus_id: str, evidence: str) -> tuple[bool, list[str]]:
         # Nothing was retrieved for this paper, yet the agent submitted evidence
         # for it: unverifiable by construction.
         return False, [ev[:200]]
-    blob = " ".join(spans)
+    # sorted(), not just join(set): set iteration order varies across processes
+    # (hash randomization), and a passage that straddles a join boundary would
+    # otherwise ground on one run and fail on another. A passage within a single
+    # span is unaffected; sorting only makes the rare cross-boundary case
+    # deterministic. (The real anti-fabrication guarantee is per-span; boundary
+    # matches are a lenient bonus for field-concatenated evidence.)
+    blob = " ".join(sorted(spans))
     passages = [p for p in _PASSAGE_SPLIT.split(ev) if p.strip()]
     if not passages:
         passages = [ev]

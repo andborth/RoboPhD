@@ -113,6 +113,19 @@ def test_empty_evidence_is_grounded():
     assert g.check_evidence("1", "   ")[0]
 
 
+def test_cross_boundary_match_is_deterministic():
+    """A passage that straddles two spans must ground on a fixed (sorted) join
+    order, not on nondeterministic set iteration. Spans 'aaa' and 'zzz': under
+    sorted order the blob is 'aaa zzz', so 'aaa zzz' grounds and 'zzz aaa' does
+    not — the same answer every run, regardless of insertion or hash order."""
+    for _ in range(3):
+        g.reset()
+        # record in different insertion orders; outcome must not change
+        g.record_tool_result({"data": [{"corpusId": 9, "title": "zzz", "abstract": "aaa"}]})
+        assert g.check_evidence("9", "aaa zzz")[0] is True
+        assert g.check_evidence("9", "zzz aaa")[0] is False
+
+
 def test_unicode_and_whitespace_normalized():
     g.record_tool_result({"data": [{"corpusId": 7,
                                     "abstract": "café  résumé\nnaïve"}]})
