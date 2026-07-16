@@ -60,7 +60,23 @@ _CID_KEYS = ("corpusId", "corpus_id", "CorpusId", "corpusid")
 # agent used.
 _PASSAGE_SPLIT = re.compile(r"\s+(?:\.\.\.|…|[—–‐−-])\s+")
 
+# A dangling separator an agent left at a passage boundary — e.g. the seed's
+# "Title —" when the abstract is empty, where the trailing " —" has no text
+# after it to trigger a split. The joiner is not retrieved text, so without
+# this the passage fails grounding on the trailing punctuation even though its
+# content is verbatim. Stripping edge whitespace / dashes / dots / ellipsis
+# only shortens the passage, so it can never break a passage that was already
+# grounding — it only rescues one that a boundary artifact would have failed.
+_PASSAGE_EDGE = re.compile(r"^[\s.…—–‐−-]+|[\s.…—–‐−-]+$")
+
 _MAX_PASSAGES = 3
+
+
+def _passages(raw: str) -> list[str]:
+    """Split evidence into passages, stripping any dangling boundary separators
+    and dropping empties."""
+    parts = [_PASSAGE_EDGE.sub("", p) for p in _PASSAGE_SPLIT.split(raw)]
+    return [p for p in parts if p]
 
 # Punctuation NFKC does NOT fold — smart quotes and dashes — mapped to their
 # ASCII forms so a passage that differs from retrieved text only in punctuation
@@ -237,7 +253,9 @@ def scrub_evidence(corpus_id: str, evidence: str) -> tuple[str, list[str]]:
     raw = (evidence or "").strip()
     if not raw:
         return "", []
-    passages = [p for p in _PASSAGE_SPLIT.split(raw) if p.strip()] or [raw]
+    passages = _passages(raw)
+    if not passages:
+        return "", []          # evidence was only separators/punctuation
     cid = _norm_cid(corpus_id) or str(corpus_id)
     spans = _PROVENANCE.get(cid)
     if not spans:

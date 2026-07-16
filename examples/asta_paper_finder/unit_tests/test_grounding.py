@@ -131,6 +131,16 @@ def test_empty_evidence_is_grounded():
     assert g.check_evidence("1", "   ")[0]
 
 
+def test_dangling_separator_stripped():
+    """The seed's 'Title —' (empty abstract → trailing separator) must ground:
+    the joiner isn't retrieved text, but the title is."""
+    g.record_tool_result({"data": [{"corpusId": 5, "title": "A Vector-based Approach"}]})
+    assert g.check_evidence("5", "A Vector-based Approach —")[0]
+    assert g.check_evidence("5", "... A Vector-based Approach ...")[0]
+    # stripping the separator must NOT let fabrication through
+    assert not g.check_evidence("5", "an invented claim —")[0]
+
+
 def test_cross_boundary_match_is_deterministic():
     """A passage that straddles two spans must ground on a fixed (sorted) join
     order, not on nondeterministic set iteration. Spans 'aaa' and 'zzz': under
