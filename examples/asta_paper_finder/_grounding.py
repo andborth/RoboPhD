@@ -40,9 +40,15 @@ _PROVENANCE: dict[str, set[str]] = {}
 # {"query_id": str, "judgements": {pid: verdict}, "blanked": [(pid, [passages], raw)]}
 _LAST: dict[str, Any] = {}
 
-# Keys under which corpus ids appear in Asta MCP tool payloads. Deliberately
-# excludes a bare "id" (that collides with authorId and other entity ids).
-_CID_KEYS = ("corpusId", "corpus_id", "paperId", "paper_id", "CorpusId")
+# Keys under which the numeric CORPUS id appears in Asta MCP tool payloads.
+# Deliberately excludes a bare "id" (collides with authorId etc.) AND S2's
+# "paperId"/"paper_id" — those are HEX HASHES, not corpus ids, so _norm_cid
+# would extract a spurious digit-run from the hash and register a phantom
+# second cid for the paper. That phantom disables the single-cid vacuum branch
+# in _walk, silently dropping every NESTED string field (notably tldr.text)
+# from provenance and wrongly failing evidence that quotes it. corpusId is
+# always present alongside paperId, so nothing is lost by ignoring paperId.
+_CID_KEYS = ("corpusId", "corpus_id", "CorpusId", "corpusid")
 
 # Passage separators: the contract's canonical ` ... ` plus the spaced dashes
 # current agents use to join fields (" — ", " – ", " - "). Splitting on the

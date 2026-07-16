@@ -42,6 +42,24 @@ def test_records_nested_paper_list():
     assert not g.check_evidence("249209614", "Unrelated protein work")[0]
 
 
+def test_records_nested_tldr_despite_hash_paperid():
+    """Regression: S2 payloads carry a hex `paperId` alongside the numeric
+    `corpusId`. paperId must NOT be treated as a corpus id — otherwise a
+    spurious digit-run from the hash registers a phantom second cid, the
+    single-cid vacuum is skipped, and nested fields (tldr.text) are dropped."""
+    g.record_tool_result({"data": [{
+        "paperId": "077c713bccd9d2c7fde68d4cbde06ab0f07a6855",
+        "corpusId": 235187266,
+        "title": "ConSERT",
+        "abstract": "learning high-quality sentence representations",
+        "tldr": {"model": "tldr@v2.0.0",
+                 "text": "ConSERT is presented, a contrastive framework"},
+    }]})
+    # both the direct abstract AND the nested tldr must ground
+    assert g.check_evidence("235187266", "learning high-quality sentence representations")[0]
+    assert g.check_evidence("235187266", "ConSERT is presented, a contrastive framework")[0]
+
+
 def test_records_snippet_sibling_text():
     # snippet_search: the quotable text is a sibling of the paper block, not a child
     g.record_tool_result([
