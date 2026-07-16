@@ -113,9 +113,9 @@ PFB_TASK_CONFIG_KEY = "paper_finder_runtime"
 # Both knobs resolve through resolve_run_immutable independently, so a
 # fully-missing store needs both supplied on the same invocation.
 _ALL_FLAGS_NOTE = (
-    "NOTE: when no values are stored, --cost-threshold and "
-    "--cost-per-error must both be supplied on the same resume "
-    "invocation — each is checked independently. "
+    "NOTE: when no values are stored, --cost-threshold, --cost-per-error "
+    "and --cap-judge-to-estimate/--no-cap-judge-to-estimate must all be "
+    "supplied on the same resume invocation — each is checked independently. "
 )
 
 
@@ -141,12 +141,12 @@ def _enforce_immutable_on_resume(
 
 def _resume_enforces_task_knobs(engine: str, resume: bool, eval_only: bool) -> bool:
     """Validate --resume usage and report whether the run-immutable task
-    knobs (cost-threshold / cost-per-error) must be
-    enforced on this run.
+    knobs must be enforced on this run.
 
-    The cost knobs are training-only — the test evaluator runs with
-    apply_cost_penalty=False, so --eval-only never reads them. Enforcing
-    their stored-value immutability on an eval-only resume would be wrong,
+    These knobs are training-only — the test evaluator runs with
+    apply_cost_penalty=False and uncapped judging, so --eval-only never reads
+    them. Enforcing their stored-value immutability on an eval-only resume
+    would be wrong,
     and impossible for GEPA/Autoresearch, which never persist
     paper_finder_runtime (only RoboPhDConfig carries task_config_extras).
 
@@ -312,13 +312,16 @@ def parse_args():
                         "%(default).0s")  # suppress argparse's auto "(default: None)"
     p.add_argument("--runs-dir", default="../robophd_runs",
                    help="Root directory for experiment output (default: %(default)s)")
-    p.add_argument("--no-cap-judge-to-estimate", action="store_true",
-                   help="Judge ALL submitted papers in training instead of just "
-                        "the top-estimate (recall depth). The cap (on by default) "
-                        "cuts judge cost with no measured score change, since "
-                        "recall reads only the top-estimate and the rank term is "
-                        "unaffected; disable to judge the full submission as "
-                        "test/official does."
+    p.add_argument("--cap-judge-to-estimate", action=argparse.BooleanOptionalAction,
+                   default=None,
+                   help="Judge only the top-estimate (recall depth) submitted "
+                        "papers in training instead of all of them. On by "
+                        "default; cuts judge cost with no measured score change "
+                        "(recall reads only the top-estimate, the rank term is "
+                        "unaffected). Run-immutable like --cost-threshold: locked "
+                        "for the run's lifetime once set, so resume keeps the "
+                        "original setting. --no-cap-judge-to-estimate judges the "
+                        "full submission, as test/official does."
                         "%(default).0s")
     p.add_argument("--no-shared-judge-cache", action="store_true",
                    help="Isolate the training judge cache per run instead of "
@@ -403,8 +406,10 @@ def main():
             scope = "per-run"
         os.environ[CACHE_PATH_ENV] = str(path)
         logger.info(f"Judge cache ({scope}, judge={judge}): {path}")
-        # Top-estimate judging cap (training-only cost saver, on by default).
-        if not args.no_cap_judge_to_estimate:
+        # Top-estimate judging cap (training-only cost saver). Uses the
+        # run-immutable resolved value, so a resume applies the run's original
+        # setting rather than this launch's flag.
+        if cap_judge_to_estimate:
             os.environ[CAP_JUDGE_ENV] = "1"
             logger.info("Judging capped to top-estimate per semantic query")
         else:
@@ -462,6 +467,19 @@ def main():
         on_resume=on_resume,
         fmt=_fmt_cost,
     )
+    # The top-estimate judging cap changes the training scoring basis (how many
+    # papers the rank term sees), so like the cost knobs it must be immutable
+    # across a run — a mid-run flip would make later iterations' Elo
+    # incomparable. Resolved and persisted the same way; resume keeps the
+    # original setting unless a disagreeing flag is passed (a hard error).
+    cap_judge_to_estimate = _enforce_immutable_on_resume(
+        cli_value=args.cap_judge_to_estimate,
+        stored_value=checkpoint_pfb.get("cap_judge_to_estimate"),
+        default_value=True,
+        name="cap-judge-to-estimate",
+        on_resume=on_resume,
+        fmt=str,
+    )
 
     # ASTA_TOOL_KEY is validated by the evaluator's constructor preflight
     # (hard-required alongside the three provider keys); fail here first
@@ -477,6 +495,7 @@ def main():
     resolved_runtime = {
         "cost_threshold": cost_threshold,
         "cost_per_error": cost_per_error,
+        "cap_judge_to_estimate": cap_judge_to_estimate,
     }
 
     def _build_cost_penalty_table(threshold: float, cpe: float) -> str:

@@ -117,8 +117,17 @@ def test_model_flag_removed():
 def test_cost_and_tool_knobs_present():
     flags = _argparse_flags()
     for required in ("--cost-threshold", "--cost-per-error",
+                     "--cap-judge-to-estimate",
                      "--max-workers", "--eval-only", "--eval-agent"):
         assert required in flags, f"missing CLI flag: {required}"
+
+
+def test_cap_judge_is_run_immutable():
+    """The top-estimate cap changes the training scoring basis, so it must be
+    persisted (in resolved_runtime) and resolved through the same immutable
+    machinery as the cost knobs — otherwise a resume could flip it mid-run."""
+    assert '"cap_judge_to_estimate": cap_judge_to_estimate' in MAIN_SRC
+    assert 'name="cap-judge-to-estimate"' in MAIN_SRC
 
 
 def test_max_workers_defaults_none():
