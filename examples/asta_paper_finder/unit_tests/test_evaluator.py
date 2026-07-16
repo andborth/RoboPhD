@@ -238,12 +238,13 @@ def verdict_cache(ev_mod):
     g = ev_mod.grounding
     g.reset()
 
-    def _seed(judgements, blanked=None):
+    def _seed(judgements, blanked=None, cap=None):
         g._LAST.clear()
         g._LAST.update(
             query_id="semantic_9",
             judgements=dict(judgements),
             blanked=list(blanked or []),
+            cap=cap,
         )
 
     yield _seed
@@ -264,6 +265,21 @@ def test_judge_verdicts_markdown_renders_in_submitted_order(ev_mod, verdict_cach
     assert lines[2] == "3. 111 — Perfectly Relevant"
     assert lines[3] == "4. 444 — (no verdict recorded)"
     assert "2 Perfect / 1 lower / 1 no verdict, of 4 submitted" in md
+
+
+def test_judge_verdicts_markdown_labels_beyond_cap(ev_mod, verdict_cache):
+    """Papers past the top-estimate judging cap are labeled as not-judged, not
+    as a judge failure — so evolution doesn't chase 'missing' verdicts."""
+    verdict_cache({"111": "perfectly_relevant_papers"}, cap=2)
+    md = ev_mod._judge_verdicts_markdown(
+        ["111", "222", "333", "444"], "semantic_9", known_good=set()
+    )
+    lines = md.splitlines()
+    assert lines[0] == "1. 111 — Perfectly Relevant"
+    assert lines[1] == "2. 222 — (no verdict recorded)"       # within cap, genuinely unjudged
+    assert lines[2] == "3. 333 — (beyond scored depth — not judged)"
+    assert lines[3] == "4. 444 — (beyond scored depth — not judged)"
+    assert "2 beyond scored depth" in md
 
 
 def test_judge_verdicts_markdown_handles_no_record(ev_mod, verdict_cache):

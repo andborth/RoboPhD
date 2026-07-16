@@ -29,9 +29,18 @@ read ``markdown_evidence``.
 """
 
 import hashlib
+import os
 import re
 import unicodedata
 from typing import Any
+
+# When set, cap TRAINING judging to the top-`estimate` submitted papers per
+# semantic query (the recall-at-estimate depth). Papers past that depth cannot
+# affect adjusted-F1 — recall reads only the top-estimate, and the rank term is
+# empirically unchanged — so judging them is pure cost. main.py sets this for
+# training and clears it for test/pristine (which judges all, matching official
+# scoring). See _grounded_get_llm_relevance.
+CAP_JUDGE_ENV = "PF_JUDGE_TOP_ESTIMATE"
 
 # corpus_id (normalized) -> set of normalized text spans retrieved for it.
 _PROVENANCE: dict[str, set[str]] = {}
@@ -324,8 +333,13 @@ def install_grounded_judge() -> None:
     # the training-judge override, the multiprocess-safe writer. Binding them
     # at install time would silently pin the stock versions.
     async def _grounded_get_llm_relevance(output, metric):
-        _, detailed_reference = _pf_eval.get_normalizer_references()
+        normalizer, detailed_reference = _pf_eval.get_normalizer_references()
         qid = output.query_id
+        # Training cost cap: judge only the top-`estimate` submitted papers.
+        # recall_at_estimate reads exactly this depth and the rank term is
+        # empirically unaffected, so deeper papers are pure judge cost. Off for
+        # test/pristine (env unset) → judge all, matching official scoring.
+        cap = normalizer.get(qid) if os.environ.get(CAP_JUDGE_ENV) else None
         judgements: dict[str, str] = {}
         # (paper_id, dropped_passages, raw_evidence, kind) where kind is
         # "partial" (some passages kept) or "full" (all dropped).
@@ -333,7 +347,11 @@ def install_grounded_judge() -> None:
         to_judge: list[Document] = []
         judge_keys: list[tuple[str, str]] = []  # (paper_id, composite cache key)
 
-        for result in output.results:
+        for idx, result in enumerate(output.results):
+            # Beyond the scored depth: not judged, not grounding-checked. Results
+            # are in submission order, so break.
+            if cap is not None and idx >= cap:
+                break
             pid = result.paper_id
             # Gold papers are Perfect regardless of evidence — the metric never
             # judges them, so grounding is moot.
@@ -375,7 +393,8 @@ def install_grounded_judge() -> None:
                 await _pf_utils.update_references(qid, cache_write)
 
         _LAST.clear()
-        _LAST.update(query_id=qid, judgements=dict(judgements), blanked=blanked)
+        _LAST.update(query_id=qid, judgements=dict(judgements), blanked=blanked,
+                     cap=cap)
         return judgements
 
     _grounded_get_llm_relevance._robophd_grounded = True  # type: ignore[attr-defined]
@@ -392,3 +411,10 @@ def last_blanked() -> list[tuple[str, list[str], str, str]]:
     """[(paper_id, dropped_passages, raw_evidence, kind)] from the most recent
     call, where kind is "partial" (some passages kept) or "full" (all dropped)."""
     return list(_LAST.get("blanked") or [])
+
+
+def last_cap() -> int | None:
+    """The top-estimate judging depth applied in the most recent call, or None
+    if uncapped (test/pristine). Submitted papers past this depth were not judged
+    (they cannot affect the score)."""
+    return _LAST.get("cap")

@@ -283,6 +283,45 @@ def test_e2e_partial_blanking_judges_scrubbed_evidence(monkeypatch):
     assert partial[0][1] == ["a fabricated one"]
 
 
+def test_e2e_top_estimate_cap(monkeypatch):
+    """With the cap env set, only the top-`estimate` submitted papers are judged;
+    deeper ones are skipped entirely. Off (env unset) judges all."""
+    from astabench.evals.paper_finder import eval as pe
+    from astabench.evals.paper_finder import relevance as rel
+
+    judged = []
+
+    async def _fake_judge(docs, criteria):
+        judged.append([d.corpus_id for d in docs])
+        return {d.corpus_id: rel.Relevance.PERFECT.value for d in docs}
+
+    monkeypatch.setattr(rel, "load_relevance_judgement", _fake_judge)
+    # estimate = 2 for this query
+    monkeypatch.setattr(pe, "get_normalizer_references", lambda: ({"semantic_9": 2}, {}))
+    get_llm_relevance = _install_and_get_patched()
+    metric = SimpleNamespace(known_to_be_good=set(), relevance_criteria=[])
+
+    def _seed(n):
+        g.reset()
+        for i in range(n):
+            g.record_tool_result({"data": [{"corpusId": 100 + i, "title": "real text"}]})
+
+    out = _output([(str(100 + i), "real text") for i in range(5)])
+
+    # cap ON → only top-2 judged, deeper papers absent from judgements
+    monkeypatch.setenv(g.CAP_JUDGE_ENV, "1")
+    _seed(5)
+    j = asyncio.run(get_llm_relevance(out, metric))
+    assert len(j) == 2 and g.last_cap() == 2
+    assert "104" not in j  # beyond the cap → not judged
+
+    # cap OFF → all 5 judged
+    monkeypatch.delenv(g.CAP_JUDGE_ENV, raising=False)
+    _seed(5)
+    j = asyncio.run(get_llm_relevance(out, metric))
+    assert len(j) == 5 and g.last_cap() is None
+
+
 def test_e2e_grounded_judged_and_cached(monkeypatch):
     from astabench.evals.paper_finder import eval as pe
     from astabench.evals.paper_finder import relevance as rel

@@ -207,6 +207,10 @@ grounding.install_grounded_judge()
 # agent's own evidence — pristine, matching a fresh official environment).
 CACHE_PATH_ENV = "PF_JUDGE_CACHE_PATH"
 
+# Re-exported for main.py: env var that enables the training-only top-estimate
+# judging cap (defined in _grounding, read by the grounded judge).
+CAP_JUDGE_ENV = grounding.CAP_JUDGE_ENV
+
 
 def _apply_cache_redirect() -> None:
     """Point astabench's judge cache at $PF_JUDGE_CACHE_PATH, if set.
@@ -447,8 +451,14 @@ def _judge_verdicts_markdown(
     }
     perfect_raw = "perfectly_relevant_papers"
 
+    # Training caps judging at the top-`cap` submitted papers (recall depth);
+    # deeper papers are intentionally not judged, so label them as such rather
+    # than as a judge failure — otherwise evolution would chase "missing"
+    # verdicts on papers that cannot affect the score.
+    cap = grounding.last_cap()
+
     lines = []
-    n_perfect = n_lower = n_unknown = 0
+    n_perfect = n_lower = n_unknown = n_beyond = 0
     for i, pid in enumerate(submitted_ids[:250], 1):  # scorer reads first 250
         if pid in known_good:
             verdict = "Perfectly Relevant (known-good)"
@@ -460,14 +470,18 @@ def _judge_verdicts_markdown(
                 n_perfect += 1
             else:
                 n_lower += 1
+        elif cap is not None and i > cap:
+            verdict = "(beyond scored depth — not judged)"
+            n_beyond += 1
         else:
             verdict = "(no verdict recorded)"
             n_unknown += 1
         lines.append(f"{i}. {pid} — {verdict}")
     n_submitted = len(lines)
+    tail = f" / {n_beyond} beyond scored depth" if n_beyond else ""
     lines.append(
-        f"\n{n_perfect} Perfect / {n_lower} lower / {n_unknown} no verdict, "
-        f"of {n_submitted} submitted"
+        f"\n{n_perfect} Perfect / {n_lower} lower / {n_unknown} no verdict"
+        f"{tail}, of {n_submitted} submitted"
     )
     return "\n".join(lines)
 

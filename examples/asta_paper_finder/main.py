@@ -312,6 +312,14 @@ def parse_args():
                         "%(default).0s")  # suppress argparse's auto "(default: None)"
     p.add_argument("--runs-dir", default="../robophd_runs",
                    help="Root directory for experiment output (default: %(default)s)")
+    p.add_argument("--no-cap-judge-to-estimate", action="store_true",
+                   help="Judge ALL submitted papers in training instead of just "
+                        "the top-estimate (recall depth). The cap (on by default) "
+                        "cuts judge cost with no measured score change, since "
+                        "recall reads only the top-estimate and the rank term is "
+                        "unaffected; disable to judge the full submission as "
+                        "test/official does."
+                        "%(default).0s")
     p.add_argument("--no-shared-judge-cache", action="store_true",
                    help="Isolate the training judge cache per run instead of "
                         "sharing it across runs. Sharing is sound because "
@@ -353,6 +361,7 @@ def main():
 
     from evaluator import (
         CACHE_PATH_ENV,
+        CAP_JUDGE_ENV,
         COST_PER_ERROR,
         MIN_COST_THRESHOLD,
         PaperFinderEvaluator,
@@ -394,6 +403,12 @@ def main():
             scope = "per-run"
         os.environ[CACHE_PATH_ENV] = str(path)
         logger.info(f"Judge cache ({scope}, judge={judge}): {path}")
+        # Top-estimate judging cap (training-only cost saver, on by default).
+        if not args.no_cap_judge_to_estimate:
+            os.environ[CAP_JUDGE_ENV] = "1"
+            logger.info("Judging capped to top-estimate per semantic query")
+        else:
+            os.environ.pop(CAP_JUDGE_ENV, None)
         # Opt-in cheaper training judge (test/formal always use stock GPT-4o).
         if args.training_judge:
             os.environ[TRAINING_GRADER_ENV] = args.training_judge
@@ -413,9 +428,10 @@ def main():
         os.close(fd)
         os.unlink(path)  # start truly empty: init_references treats missing as {}
         os.environ[CACHE_PATH_ENV] = path
-        # Test / formal evals always score with astabench's stock GPT-4o grader,
-        # never a training override.
+        # Test / formal evals always score with astabench's stock GPT-4o grader
+        # over ALL submitted papers (no cap), matching official scoring.
         os.environ.pop(TRAINING_GRADER_ENV, None)
+        os.environ.pop(CAP_JUDGE_ENV, None)
         logger.info(f"Judge cache (pristine {label}): {path}")
         return path
 
