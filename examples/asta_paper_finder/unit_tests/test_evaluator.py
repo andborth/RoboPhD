@@ -496,6 +496,59 @@ def test_extract_no_score_calculation_without_metadata_or_explanation(ev_mod, mo
     assert "score_calculation.md" not in diag
 
 
+def test_score_metadata_keys_match_astabench(ev_mod, monkeypatch):
+    """Introspection pin: _score_calculation_markdown reads the scorer's
+    component metrics by key name, and a missing key degrades the
+    diagnostic to absent (best-effort by design). Every other test here
+    fabricates that metadata, so an astabench key rename would keep the
+    suite green while silently dropping the diagnostic — this test runs
+    the REAL calc_standard_f1 / calc_adjusted_f1 and asserts the keys the
+    renderer depends on. Same guard class as the module-load assert on
+    GRADER_MODEL_NAME.
+
+    get_normalizer_references is monkeypatched to a canned reference so
+    the calc functions run pure-Python — no reference load, no network.
+    """
+    from astabench.evals.paper_finder import eval as pf_eval
+    from astabench.evals.paper_finder.datamodel import (
+        ExpectedAgentOutput, SingleResult,
+    )
+    from astabench.evals.paper_finder.relevance import Relevance
+
+    monkeypatch.setattr(
+        pf_eval, "get_normalizer_references",
+        lambda: ({"semantic_1": 4, "specific_1": 1}, {}),
+    )
+
+    sem_output = ExpectedAgentOutput(query_id="semantic_1", results=[
+        SingleResult(paper_id="11", markdown_evidence=""),
+        SingleResult(paper_id="22", markdown_evidence=""),
+    ])
+    sem = pf_eval.calc_adjusted_f1(
+        sem_output, "semantic_1",
+        {"11": Relevance.PERFECT.value, "22": Relevance.NOT_RELEVANT.value},
+        pf_eval.KTypes.ESTIMATED, pf_eval.KValues.AT_ESTIMATE,
+    )
+    assert {"adjusted_f1", "rank", "estimated_recall_at_estimate",
+            "estimated_recall_at_full", "relevant_predictions_at_full"} <= set(sem)
+
+    spec_output = ExpectedAgentOutput(query_id="specific_1", results=[
+        SingleResult(paper_id="11", markdown_evidence=""),
+    ])
+    spec = pf_eval.calc_standard_f1(
+        spec_output, "specific_1", {"11": Relevance.PERFECT.value},
+        pf_eval.KTypes.KNOWN, pf_eval.KValues.AT_FULL,
+    )
+    assert {"standard_f1", "precision", "known_recall_at_full",
+            "relevant_predictions_at_full"} <= set(spec)
+
+    # And the renderer actually produces output from the real metadata.
+    assert ev_mod._score_calculation_markdown(
+        "semantic_f1", sem, [], [], None) is not None
+    assert ev_mod._score_calculation_markdown(
+        "specific_f1", spec, ["11"], ["11"], None) is not None
+
+
 # --- safe judge-cache writer ----------------------------------------------------
 
 
