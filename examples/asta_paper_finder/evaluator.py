@@ -412,6 +412,50 @@ def _elapsed_seconds(t0: float) -> float:
     return round(time.monotonic() - t0, 3)
 
 
+# Stands in for markdown_evidence in submission.json on results beyond the
+# judging cap. Public: _check_judge_calibration.py imports it to skip these
+# entries when re-judging (the text must never be scored as real evidence).
+EVIDENCE_OMITTED_MARKER = "(evidence omitted — beyond scored depth, never judged)"
+
+
+def _submission_json(completion: str, score_type: str, judge_cap: int | None) -> str | None:
+    """The agent's full submitted payload, for the submission.json diagnostic.
+
+    Replaces the old 1000-char agent_output preview, which forced evolution
+    and _check_judge_calibration.py alike to reconstruct submissions from
+    fragments (run 20260716_072622 flagged the truncation in 10 of 22
+    iterations' reflections).
+
+    Content-faithful, with size bounded by structure rather than a byte cap:
+    - a parseable payload is stored pretty-printed, results in submitted
+      order;
+    - on semantic queries judged under a cap, results beyond the scored
+      depth are never judged and affect neither rank nor recall, so their
+      markdown_evidence (the bulk of the bytes) is replaced with
+      EVIDENCE_OMITTED_MARKER — paper_id and position are kept, so
+      "gold was buried at position N" stays diagnosable;
+    - specific/metadata payloads are kept whole (the scorer never reads
+      evidence there, and agents submit "" for it; the ids are the whole
+      object of study);
+    - a completion that json.loads rejects (the scorer's own primary parse)
+      is stored raw — the malformation is the information.
+    """
+    if not completion:
+        return None
+    try:
+        payload = json.loads(completion)
+        results = (payload.get("output") or {}).get("results")
+    except (json.JSONDecodeError, AttributeError, TypeError):
+        return completion
+    if not isinstance(results, list):
+        return completion
+    if judge_cap is not None and str(score_type).startswith("semantic"):
+        for r in results[judge_cap:]:
+            if isinstance(r, dict) and r.get("markdown_evidence"):
+                r["markdown_evidence"] = EVIDENCE_OMITTED_MARKER
+    return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
 def _lookup_k_estimate(query_id: str) -> int | None:
     """The benchmark's per-query estimate of total relevant papers (the
     semantic recall denominator K), read from astabench's normalizer
@@ -1354,9 +1398,6 @@ class PaperFinderEvaluator:
         diagnostics["other_cost_usd"] = judge_cost_usd  # relevance judge (reported, never penalized)
         diagnostics["usage"] = usage_summary
         diagnostics["cost_by_model_usd"] = cost_by_model_usd  # agent models only; plumbed to result.json
-        diagnostics["agent_output"] = (
-            getattr(sample_log.output, "completion", "")[:1000] if sample_log.output else ""
-        )
 
         # Score-calculation surfacing (all query types): the scorer's own
         # component metrics (precision/recall/hits, or rank/recall/K)
@@ -1392,6 +1433,13 @@ class PaperFinderEvaluator:
                 }
             except (json.JSONDecodeError, TypeError, AttributeError):
                 gold_ids, known_good = [], set()
+
+            submission = _submission_json(
+                completion, score_type,
+                grounding.last_cap() if score_type.startswith("semantic") else None,
+            )
+            if submission:
+                diagnostics["submission.json"] = submission
 
             score_meta = (
                 dict(getattr(score_obj, "metadata", None) or {})

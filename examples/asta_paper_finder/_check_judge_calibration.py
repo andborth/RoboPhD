@@ -8,7 +8,8 @@ predicting test performance — so measure agreement BEFORE switching.
 
 Method: reconstruct real judge inputs from a completed run's diagnostics — each
 semantic query's `relevance_criteria` (gold_criteria.md) paired with the
-`markdown_evidence` each agent actually submitted (agent_output). Judge every
+`markdown_evidence` each agent actually submitted (submission.json; archived
+runs fall back to the truncated agent_output head). Judge every
 (criteria, evidence) doc with BOTH models and compare. This is the honest
 comparison: identical inputs, two graders. `load_relevance_judgement` is pure
 (it does not touch the verdict cache), so this script pollutes nothing.
@@ -32,6 +33,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+
+from evaluator import EVIDENCE_OMITTED_MARKER  # noqa: E402
 
 BASELINE_DEFAULT = "openai/gpt-4o-2024-11-20"
 CANDIDATE_DEFAULT = "openai/gpt-5.4-nano"
@@ -147,10 +150,13 @@ def _install_json_repair() -> None:
 
 
 def _extract_results_lenient(text: str):
-    """Extract complete result objects from an agent_output that is truncated
-    to 1000 chars (evaluator persists only the completion's head). Decodes
-    objects from inside the `results` array until the truncation cuts one off,
-    so we recover the top-ranked papers' real (paper_id, markdown_evidence)."""
+    """Extract complete result objects from a submission that full-JSON
+    parsing rejects: archived runs' `agent_output` (truncated to 1000 chars
+    — only the completion's head was persisted) or a raw-text
+    `submission.json` (stored unparsed when the agent's completion was
+    malformed). Decodes objects from inside the `results` array until the
+    damage cuts one off, so we recover the top-ranked papers' real
+    (paper_id, markdown_evidence)."""
     i = text.find('"results"')
     if i < 0:
         return []
@@ -196,8 +202,17 @@ def _load_docs(run_dir: Path):
             criteria = gold.get("relevance_criteria") or []
             if not criteria:
                 continue
-            # agent_output is truncated to 1000 chars, so parse leniently.
-            results = _extract_results_lenient((pdir / "agent_output").read_text())
+            # Prefer the full submission.json (new runs); archived runs
+            # only have the 1000-char agent_output head.
+            src = pdir / "submission.json"
+            if not src.exists():
+                src = pdir / "agent_output"
+            text = src.read_text()
+            try:
+                results = (json.loads(text).get("output") or {}).get("results") or []
+                results = [r for r in results if isinstance(r, dict)]
+            except json.JSONDecodeError:
+                results = _extract_results_lenient(text)
         except OSError:
             continue
         qid = pdir.name
@@ -205,7 +220,9 @@ def _load_docs(run_dir: Path):
         for r in results:
             pid = str(r.get("paper_id", "")).strip()
             ev = (r.get("markdown_evidence") or "").strip()
-            if not pid or not ev:
+            # The omitted-evidence marker (beyond-cap results in
+            # submission.json) is a placeholder, never real evidence.
+            if not pid or not ev or ev == EVIDENCE_OMITTED_MARKER:
                 continue
             key = (qid, pid, ev)
             if key in seen:

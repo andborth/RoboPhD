@@ -549,6 +549,102 @@ def test_score_metadata_keys_match_astabench(ev_mod, monkeypatch):
         "specific_f1", spec, ["11"], ["11"], None) is not None
 
 
+# --- submission.json ------------------------------------------------------------
+
+
+def _submission_payload(n, evidence="some verbatim passage"):
+    import json as _json
+    return _json.dumps({"output": {"query_id": "q", "results": [
+        {"paper_id": str(100 + i), "markdown_evidence": evidence}
+        for i in range(n)
+    ]}})
+
+
+def test_submission_json_semantic_trims_beyond_cap(ev_mod):
+    import json as _json
+    out = ev_mod._submission_json(_submission_payload(4), "semantic_f1", 2)
+    results = _json.loads(out)["output"]["results"]
+    assert [r["paper_id"] for r in results] == ["100", "101", "102", "103"]
+    assert results[0]["markdown_evidence"] == "some verbatim passage"
+    assert results[1]["markdown_evidence"] == "some verbatim passage"
+    assert results[2]["markdown_evidence"] == ev_mod.EVIDENCE_OMITTED_MARKER
+    assert results[3]["markdown_evidence"] == ev_mod.EVIDENCE_OMITTED_MARKER
+    assert out.count("\n") > 4  # pretty-printed, grep-able
+
+
+def test_submission_json_uncapped_and_nonsemantic_kept_whole(ev_mod):
+    import json as _json
+    # No cap (uncapped judging): everything verbatim.
+    out = ev_mod._submission_json(_submission_payload(3), "semantic_f1", None)
+    results = _json.loads(out)["output"]["results"]
+    assert all(r["markdown_evidence"] == "some verbatim passage" for r in results)
+    # specific/metadata: never trimmed, even with a stale cap value.
+    out = ev_mod._submission_json(_submission_payload(3), "specific_f1", 1)
+    results = _json.loads(out)["output"]["results"]
+    assert all(r["markdown_evidence"] == "some verbatim passage" for r in results)
+
+
+def test_submission_json_raw_on_malformed_and_none_on_empty(ev_mod):
+    # The scorer's own primary parse (json.loads) rejects this → stored raw.
+    raw = 'Here are my results: {"output": {"results": []}}'
+    assert ev_mod._submission_json(raw, "semantic_f1", 5) == raw
+    assert ev_mod._submission_json("[1, 2]", "semantic_f1", 5) == "[1, 2]"
+    assert ev_mod._submission_json("", "semantic_f1", 5) is None
+
+
+def test_extract_emits_submission_json_and_no_agent_output(ev_mod, monkeypatch,
+                                                           verdict_cache):
+    verdict_cache({"999": "perfectly_relevant_papers"}, cap=1)
+    monkeypatch.setattr(
+        ev_mod.PaperFinderEvaluator, "_estimate_cost",
+        staticmethod(lambda model_name, counts: 0.0),
+    )
+    ev = _bare_evaluator(ev_mod)
+    log = _fake_log_with_submission(
+        {"openai/gpt-5.4-mini": (100, 10)},
+        [{"paper_id": "999", "markdown_evidence": "kept"},
+         {"paper_id": "888", "markdown_evidence": "dropped"}],
+    )
+    import json as _json
+    _, diag = ev._extract_score_and_diagnostics(log, _fake_sample(ev_mod), "")
+    assert "agent_output" not in diag
+    results = _json.loads(diag["submission.json"])["output"]["results"]
+    assert results[0]["markdown_evidence"] == "kept"       # within cap=1
+    assert results[1]["markdown_evidence"] == ev_mod.EVIDENCE_OMITTED_MARKER
+
+
+def test_calibration_loader_reads_submission_json_and_skips_marker(ev_mod, tmp_path):
+    """_load_docs must prefer submission.json over the legacy agent_output
+    head, and must never treat the omission marker as real evidence to
+    re-judge."""
+    import importlib.util
+    import json as _json
+
+    spec = importlib.util.spec_from_file_location(
+        "_check_judge_calibration", PFB_DIR / "_check_judge_calibration.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    pdir = tmp_path / "iteration_001" / "agent_x" / "problems" / "semantic_9"
+    pdir.mkdir(parents=True)
+    (pdir / "gold_criteria.md").write_text(_json.dumps(
+        {"relevance_criteria": [{"name": "n", "description": "d", "weight": 1.0}]}
+    ))
+    (pdir / "submission.json").write_text(_json.dumps({"output": {"results": [
+        {"paper_id": "1", "markdown_evidence": "real evidence"},
+        {"paper_id": "2", "markdown_evidence": ev_mod.EVIDENCE_OMITTED_MARKER},
+        {"paper_id": "3", "markdown_evidence": ""},
+    ]}}))
+    # A stale legacy file must be ignored when submission.json exists.
+    (pdir / "agent_output").write_text(
+        '{"output": {"results": [{"paper_id": "9", "markdown_evidence": "stale"}]}}'
+    )
+
+    per_query = mod._load_docs(tmp_path)
+    assert per_query["semantic_9"]["docs"] == [("1", "real evidence")]
+
+
 # --- tool-failure legibility ----------------------------------------------------
 
 
