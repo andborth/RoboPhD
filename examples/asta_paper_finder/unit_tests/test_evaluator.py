@@ -160,7 +160,8 @@ def test_constructor_requires_asta_tool_key(ev_mod, monkeypatch):
 # --- judge-cost split ---------------------------------------------------------
 
 
-def _fake_log(model_usage: dict):
+def _fake_log(model_usage: dict, *, score=0.5, score_metadata=None,
+              explanation=None):
     usage_objs = {
         name: SimpleNamespace(
             input_tokens=u[0], output_tokens=u[1],
@@ -170,7 +171,9 @@ def _fake_log(model_usage: dict):
     }
     sample_log = SimpleNamespace(
         error=None,
-        scores={"scorer": SimpleNamespace(value=0.5)},
+        scores={"scorer": SimpleNamespace(
+            value=score, metadata=score_metadata, explanation=explanation,
+        )},
         output=SimpleNamespace(completion="{}"),
     )
     return SimpleNamespace(
@@ -298,9 +301,9 @@ def test_judge_verdicts_markdown_empty_submission(ev_mod, verdict_cache):
     assert ev_mod._judge_verdicts_markdown([], "semantic_9", set()) is None
 
 
-def _fake_log_with_submission(model_usage, results):
+def _fake_log_with_submission(model_usage, results, **score_kwargs):
     import json as _json
-    log = _fake_log(model_usage)
+    log = _fake_log(model_usage, **score_kwargs)
     log.samples[0].output = SimpleNamespace(completion=_json.dumps({
         "output": {"query_id": "q", "results": results}
     }))
@@ -340,6 +343,157 @@ def test_extract_no_verdicts_for_non_semantic(ev_mod, monkeypatch, verdict_cache
     )
     _, diag = ev._extract_score_and_diagnostics(log, sample, "")
     assert "judge_verdicts.md" not in diag
+
+
+# --- score-calculation surfacing -------------------------------------------------
+
+
+def test_score_calc_specific_renders_fractions(ev_mod):
+    meta = {"standard_f1": 0.5, "precision": 1 / 3,
+            "known_recall_at_full": 1.0, "relevant_predictions_at_full": 1}
+    md = ev_mod._score_calculation_markdown(
+        "specific_f1", meta, ["123456789", "111", "222"], ["123456789"], None)
+    assert "submitted: 3 unique paper id(s)" in md
+    assert "gold: 1" in md
+    assert "hits (submitted ∩ gold): 1 → 123456789" in md
+    assert "missed gold ids: (none)" in md
+    assert "precision = hits / #submitted = 1/3 = 0.3333" in md
+    assert "recall    = hits / #gold      = 1/1 = 1.0000" in md
+    assert "score     = harmonic(precision, recall) = 0.5000" in md
+
+
+def test_score_calc_specific_missed_gold_and_fraction_fallback(ev_mod):
+    """Missed gold ids are listed; a fraction that does not reproduce the
+    scorer's float is dropped in favor of the float alone."""
+    meta = {"standard_f1": 0.0, "precision": 0.0,
+            "known_recall_at_full": 0.25,  # inconsistent with 0/2 on purpose
+            "relevant_predictions_at_full": 0}
+    md = ev_mod._score_calculation_markdown(
+        "metadata_f1", meta, ["999"], ["1", "2"], None)
+    assert "missed gold ids: 1, 2" in md
+    assert "precision = hits / #submitted = 0/1 = 0.0000" in md
+    assert "recall    = hits / #gold      = 0.2500" in md  # no fraction shown
+
+
+def test_score_calc_semantic_with_k(ev_mod):
+    meta = {"adjusted_f1": 0.5306, "rank": 0.7312,
+            "estimated_recall_at_estimate": 5 / 12,
+            "estimated_recall_at_full": 7 / 12,
+            "relevant_predictions_at_full": 7}
+    md = ev_mod._score_calculation_markdown("semantic_f1", meta, [], [], 12)
+    assert "rank   = 0.7312" in md
+    assert "recall = 0.4167" in md
+    assert "5 of K=12 estimated relevant" in md
+    assert "score  = harmonic(rank, recall) = 0.5306" in md
+    # 7 Perfect overall but only 5 within top K → the ordering-cost line.
+    assert "2 more Perfect paper(s) ranked below position K" in md
+    assert "judge_verdicts.md" in md  # pointer to the per-paper grades
+
+
+def test_score_calc_semantic_k_derived_or_unknown(ev_mod):
+    # No K passed in: derived from relevant_predictions / recall_at_full.
+    meta = {"adjusted_f1": 0.4, "rank": 0.8,
+            "estimated_recall_at_estimate": 0.5,
+            "estimated_recall_at_full": 0.5,
+            "relevant_predictions_at_full": 6}
+    md = ev_mod._score_calculation_markdown("semantic_f1", meta, [], [], None)
+    assert "K=12" in md
+    assert "below position K" not in md  # all 6 Perfects are within top K
+
+    # Zero hits: K underivable → labeled unknown, no count phrasing.
+    meta = {"adjusted_f1": 0.0, "rank": 0.0,
+            "estimated_recall_at_estimate": 0.0,
+            "estimated_recall_at_full": 0.0,
+            "relevant_predictions_at_full": 0}
+    md = ev_mod._score_calculation_markdown("semantic_f1", meta, [], [], None)
+    assert "K unknown" in md
+
+
+def test_score_calc_missing_components_returns_none(ev_mod):
+    assert ev_mod._score_calculation_markdown(
+        "semantic_f1", {}, [], [], None) is None
+    assert ev_mod._score_calculation_markdown(
+        "specific_f1", {"precision": 1.0}, [], [], None) is None
+
+
+def test_extract_emits_score_calculation_for_specific(ev_mod, monkeypatch):
+    from inspect_ai.dataset import Sample
+    monkeypatch.setattr(
+        ev_mod.PaperFinderEvaluator, "_estimate_cost",
+        staticmethod(lambda model_name, counts: 0.0),
+    )
+    ev = _bare_evaluator(ev_mod)
+    log = _fake_log_with_submission(
+        {"openai/gpt-5.4-mini": (100, 10)},
+        [{"paper_id": "CorpusId:123", "markdown_evidence": ""},
+         {"paper_id": "999", "markdown_evidence": ""}],
+        score=2 / 3,
+        score_metadata={"standard_f1": 2 / 3, "precision": 0.5,
+                        "known_recall_at_full": 1.0,
+                        "relevant_predictions_at_full": 1},
+    )
+    sample = Sample(
+        id="specific_7", input="q", target='{"corpus_ids": ["123"]}',
+        metadata={"score_type": "specific_f1", "raw_query": "q"},
+    )
+    _, diag = ev._extract_score_and_diagnostics(log, sample, "")
+    md = diag["score_calculation.md"]
+    assert "hits (submitted ∩ gold): 1 → 123" in md  # CorpusId: prefix normalized
+    assert "precision = hits / #submitted = 1/2 = 0.5000" in md
+    assert "recall    = hits / #gold      = 1/1 = 1.0000" in md
+    assert "judge_verdicts.md" not in diag
+
+
+def test_extract_emits_score_calculation_for_semantic(ev_mod, monkeypatch,
+                                                      verdict_cache):
+    verdict_cache({"999": "perfectly_relevant_papers"})
+    monkeypatch.setattr(
+        ev_mod.PaperFinderEvaluator, "_estimate_cost",
+        staticmethod(lambda model_name, counts: 0.0),
+    )
+    ev = _bare_evaluator(ev_mod)
+    log = _fake_log_with_submission(
+        {"openai/gpt-5.4-mini": (100, 10)},
+        [{"paper_id": "999", "markdown_evidence": "x"}],
+        score=0.5,
+        score_metadata={"adjusted_f1": 0.5, "rank": 1.0,
+                        "estimated_recall_at_estimate": 1 / 3,
+                        "estimated_recall_at_full": 1 / 3,
+                        "relevant_predictions_at_full": 1},
+    )
+    _, diag = ev._extract_score_and_diagnostics(log, _fake_sample(ev_mod), "")
+    assert "score_calculation.md" in diag
+    assert "judge_verdicts.md" in diag  # both diagnostics coexist
+    assert "K=3" in diag["score_calculation.md"]
+    assert "harmonic(rank, recall) = 0.5000" in diag["score_calculation.md"]
+
+
+def test_extract_surfaces_scorer_explanation_when_no_metadata(ev_mod, monkeypatch):
+    """A scorer-side format rejection (value=0, no component metrics) must
+    not be a silent zero — its explanation is the only record of why."""
+    monkeypatch.setattr(
+        ev_mod.PaperFinderEvaluator, "_estimate_cost",
+        staticmethod(lambda model_name, counts: 0.0),
+    )
+    ev = _bare_evaluator(ev_mod)
+    log = _fake_log(
+        {"openai/gpt-5.4-mini": (100, 10)}, score=0.0,
+        explanation="Agent output has an invalid format: boom",
+    )
+    score, diag = ev._extract_score_and_diagnostics(log, _fake_sample(ev_mod), "")
+    assert score == 0.0
+    assert "invalid format: boom" in diag["score_calculation.md"]
+
+
+def test_extract_no_score_calculation_without_metadata_or_explanation(ev_mod, monkeypatch):
+    monkeypatch.setattr(
+        ev_mod.PaperFinderEvaluator, "_estimate_cost",
+        staticmethod(lambda model_name, counts: 0.0),
+    )
+    ev = _bare_evaluator(ev_mod)
+    log = _fake_log({"openai/gpt-5.4-mini": (100, 10)})
+    _, diag = ev._extract_score_and_diagnostics(log, _fake_sample(ev_mod), "")
+    assert "score_calculation.md" not in diag
 
 
 # --- safe judge-cache writer ----------------------------------------------------

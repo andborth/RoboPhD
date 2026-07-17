@@ -412,6 +412,118 @@ def _elapsed_seconds(t0: float) -> float:
     return round(time.monotonic() - t0, 3)
 
 
+def _lookup_k_estimate(query_id: str) -> int | None:
+    """The benchmark's per-query estimate of total relevant papers (the
+    semantic recall denominator K), read from astabench's normalizer
+    reference ONLY when it is already initialized — the scorer loads it
+    during eval, so it is present whenever component metrics exist. Never
+    calls get_normalizer_references(), which would trigger a fresh
+    reference load just to render a diagnostic."""
+    try:
+        from astabench.evals.paper_finder import eval as pf_eval
+
+        ref = pf_eval._normalizer_reference
+        return ref.get(query_id) if ref else None
+    except Exception:
+        return None
+
+
+def _score_calculation_markdown(
+    score_type: str,
+    score_meta: dict,
+    submitted: list[str],
+    gold_ids: list[str],
+    k_estimate: int | None,
+) -> str | None:
+    """The worked calculation behind this query's F1: the scorer's own
+    component metrics plugged into the formulas documented in
+    background.md "Scoring (per query)".
+
+    Every float comes verbatim from the scorer's Score.metadata (computed
+    by astabench's calc_standard_f1 / calc_adjusted_f1) — nothing is
+    re-derived, so the numbers cannot drift from the real score. Only the
+    matched/missed id lists are derived locally, from the parsed
+    submission and the gold ids, as illustration. Returns None when the
+    expected component keys are absent (scorer didn't run its normal
+    path).
+    """
+    if score_type.startswith("semantic"):
+        rank = score_meta.get("rank")
+        recall = score_meta.get("estimated_recall_at_estimate")
+        f1 = score_meta.get("adjusted_f1")
+        if rank is None or recall is None or f1 is None:
+            return None
+        hits_full = score_meta.get("relevant_predictions_at_full")
+        if k_estimate is None:
+            recall_full = score_meta.get("estimated_recall_at_full") or 0
+            if hits_full and recall_full:
+                k_estimate = round(hits_full / recall_full)
+        n_top_k: int | None = None
+        if k_estimate:
+            n_top_k = round(recall * k_estimate)
+            recall_note = (
+                f"({n_top_k} of K={k_estimate} estimated relevant found in "
+                f"your top K; only grade-3 papers count)"
+            )
+        else:
+            recall_note = "(K unknown; only grade-3 papers count)"
+        lines = [
+            f"rank   = {rank:.4f}   (order quality: lower-bound-corrected "
+            f"nDCG over the judged grades)",
+            f"recall = {recall:.4f}   {recall_note}",
+            f"score  = harmonic(rank, recall) = {f1:.4f}",
+        ]
+        if hits_full is not None and n_top_k is not None and hits_full > n_top_k:
+            lines += [
+                "",
+                f"{int(hits_full) - n_top_k} more Perfect paper(s) ranked "
+                f"below position K earned no recall credit — ordering cost "
+                f"you recall.",
+            ]
+        lines += [
+            "",
+            '(per-paper grades: judge_verdicts.md · formulas: background.md '
+            '"Scoring (per query)")',
+        ]
+        return "\n".join(lines)
+
+    # specific_f1 / metadata_f1: exact-match standard F1.
+    precision = score_meta.get("precision")
+    recall = score_meta.get("known_recall_at_full")
+    f1 = score_meta.get("standard_f1")
+    if precision is None or recall is None or f1 is None:
+        return None
+    hits = score_meta.get("relevant_predictions_at_full")
+    unique_submitted = list(dict.fromkeys(submitted))[:250]
+    n_sub = len(unique_submitted)
+    n_gold = len(gold_ids)
+    gold_set = set(gold_ids)
+    submitted_set = set(unique_submitted)
+    matched = [pid for pid in unique_submitted if pid in gold_set]
+    missed = [g for g in gold_ids if g not in submitted_set]
+
+    def _frac(num, den, value: float) -> str:
+        # Show the hits/N fraction only when it reproduces the scorer's
+        # float — on any mismatch the scorer's own number wins, alone.
+        if num is None or not den or abs(num / den - value) > 1e-6:
+            return f"{value:.4f}"
+        return f"{int(num)}/{den} = {value:.4f}"
+
+    hits_shown = int(hits) if hits is not None else len(matched)
+    lines = [
+        f"submitted: {n_sub} unique paper id(s) (scorer reads first 250) "
+        f"· gold: {n_gold}",
+        f"hits (submitted ∩ gold): {hits_shown}"
+        + (f" → {', '.join(matched)}" if matched else ""),
+        f"missed gold ids: {', '.join(missed) if missed else '(none)'}",
+        "",
+        f"precision = hits / #submitted = {_frac(hits, n_sub, precision)}",
+        f"recall    = hits / #gold      = {_frac(hits, n_gold, recall)}",
+        f"score     = harmonic(precision, recall) = {f1:.4f}",
+    ]
+    return "\n".join(lines)
+
+
 def _judge_verdicts_markdown(
     submitted_ids: list[str], query_id: str, known_good: set[str]
 ) -> str | None:
@@ -1121,10 +1233,12 @@ class PaperFinderEvaluator:
                 f"expected 1. Using first floatable. Names: {list(scores)}"
             )
         score_value = 0.0
+        score_obj = None  # kept for its .metadata / .explanation (score_calculation.md)
         for sc in scores.values():
             v = getattr(sc, "value", 0)
             try:
                 score_value = float(v)
+                score_obj = sc
                 break
             except (TypeError, ValueError):
                 pass
@@ -1187,30 +1301,71 @@ class PaperFinderEvaluator:
             getattr(sample_log.output, "completion", "")[:1000] if sample_log.output else ""
         )
 
-        # Judge-verdict surfacing (semantic queries only): which of the
-        # submitted papers the benchmark judge accepted, in submitted
-        # order — lets evolution separate recall misses from judge
-        # rejections and audit its ranking. Best-effort: parse failures
-        # or an unreadable cache just skip the diagnostic.
+        # Score-calculation surfacing (all query types): the scorer's own
+        # component metrics (precision/recall/hits, or rank/recall/K)
+        # rendered as the background.md formulas with this query's numbers
+        # filled in — so evolution sees WHY the F1 is what it is, not just
+        # the final float. Plus, semantic-only, the per-paper judge
+        # verdicts, which separate recall misses from judge rejections and
+        # let evolution audit its ranking. Best-effort: parse failures or
+        # an unreadable cache just skip the affected diagnostic.
         try:
-            if str(example.metadata.get("score_type", "")).startswith("semantic"):
-                completion = (
-                    getattr(sample_log.output, "completion", "") if sample_log.output else ""
-                )
+            score_type = str(example.metadata.get("score_type", ""))
+            completion = (
+                getattr(sample_log.output, "completion", "") if sample_log.output else ""
+            )
+            try:
                 payload = json.loads(completion[completion.index("{"):])
                 submitted = [
                     normalize_corpus_id(str(r.get("paper_id", "")))
                     for r in (payload.get("output") or {}).get("results") or []
                 ]
-                try:
-                    known_good = {
-                        normalize_corpus_id(str(x))
-                        for x in json.loads(str(example.target)).get("known_to_be_good") or []
-                    }
-                except (json.JSONDecodeError, TypeError, AttributeError):
-                    known_good = set()
+                submitted = [s for s in submitted if s]
+            except (ValueError, TypeError, AttributeError, json.JSONDecodeError):
+                submitted = []
+            try:
+                target = json.loads(str(example.target))
+                gold_ids = [
+                    normalize_corpus_id(str(x))
+                    for x in target.get("corpus_ids") or []
+                ]
+                known_good = {
+                    normalize_corpus_id(str(x))
+                    for x in target.get("known_to_be_good") or []
+                }
+            except (json.JSONDecodeError, TypeError, AttributeError):
+                gold_ids, known_good = [], set()
+
+            score_meta = (
+                dict(getattr(score_obj, "metadata", None) or {})
+                if score_obj is not None else {}
+            )
+            if score_meta:
+                calc = _score_calculation_markdown(
+                    score_type, score_meta, submitted, gold_ids,
+                    _lookup_k_estimate(str(example.id)),
+                )
+                if calc:
+                    diagnostics["score_calculation.md"] = calc
+            else:
+                # No component metrics means the scorer bailed before its
+                # normal path — e.g. "Agent output has an invalid format".
+                # Its explanation is the only record of why the query
+                # scored 0; surface it instead of a silent zero.
+                explanation = (
+                    getattr(score_obj, "explanation", None)
+                    if score_obj is not None else None
+                )
+                if explanation:
+                    diagnostics["score_calculation.md"] = (
+                        f"score = {score_value:g} — the scorer produced no "
+                        f"component metrics. Scorer explanation:\n\n"
+                        f"{_head_tail_truncate(str(explanation))}"
+                    )
+
+            if score_type.startswith("semantic"):
                 verdicts = _judge_verdicts_markdown(
-                    [s for s in submitted if s], str(example.id), known_good
+                    submitted, str(example.id), known_good
                 )
                 if verdicts:
                     diagnostics["judge_verdicts.md"] = verdicts
