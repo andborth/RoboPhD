@@ -427,8 +427,12 @@ def _judge_verdicts_markdown(
       - in the query's known_to_be_good list → pre-seeded Perfect (the
         scorer never LLM-judges these)
       - judged this eval → the judge's label, verbatim
-      - neither → "(no verdict recorded)" (not among the scorer's first 250,
-        or the scorer didn't run)
+      - unjudged while the judge demonstrably ran → "(judge call failed —
+        excluded from scoring)", plus a footer line saying it is judge-side
+        and neutral, so evolution doesn't misread the gap as agent-caused
+        or as a 0
+      - unjudged with no judgements at all (scorer didn't run) →
+        "(no verdict recorded)"
 
     Returns None when there's nothing to report (no submissions, or no
     grounded judgements were produced and nothing is known-good).
@@ -473,6 +477,13 @@ def _judge_verdicts_markdown(
         elif cap is not None and i > cap:
             verdict = "(beyond scored depth — not judged)"
             n_beyond += 1
+        elif judged:
+            # The judge ran (other papers have verdicts) but this one has
+            # none: a judge-side call failure. The scorer excludes the paper
+            # from both the rank sequence and recall — neither credited nor
+            # penalized.
+            verdict = "(judge call failed — excluded from scoring)"
+            n_unknown += 1
         else:
             verdict = "(no verdict recorded)"
             n_unknown += 1
@@ -483,6 +494,12 @@ def _judge_verdicts_markdown(
         f"\n{n_perfect} Perfect / {n_lower} lower / {n_unknown} no verdict"
         f"{tail}, of {n_submitted} submitted"
     )
+    if judged and n_unknown:
+        lines.append(
+            "Judge-call failures are a judge-side error (rare, ~1%), unrelated "
+            "to your submission or evidence: the paper is excluded from both "
+            "the rank sequence and recall — neither credited nor penalized."
+        )
     return "\n".join(lines)
 
 

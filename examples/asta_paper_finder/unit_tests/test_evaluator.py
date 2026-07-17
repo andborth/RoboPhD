@@ -263,8 +263,12 @@ def test_judge_verdicts_markdown_renders_in_submitted_order(ev_mod, verdict_cach
     assert lines[0] == "1. 222 — Not Relevant"
     assert lines[1] == "2. 333 — Perfectly Relevant (known-good)"
     assert lines[2] == "3. 111 — Perfectly Relevant"
-    assert lines[3] == "4. 444 — (no verdict recorded)"
+    # The judge ran (other verdicts exist), so a missing verdict is labeled a
+    # judge-side failure and the footer says it is neutral — evolution must
+    # not read the gap as agent-caused or as a 0.
+    assert lines[3] == "4. 444 — (judge call failed — excluded from scoring)"
     assert "2 Perfect / 1 lower / 1 no verdict, of 4 submitted" in md
+    assert "neither credited nor penalized" in md
 
 
 def test_judge_verdicts_markdown_labels_beyond_cap(ev_mod, verdict_cache):
@@ -276,7 +280,7 @@ def test_judge_verdicts_markdown_labels_beyond_cap(ev_mod, verdict_cache):
     )
     lines = md.splitlines()
     assert lines[0] == "1. 111 — Perfectly Relevant"
-    assert lines[1] == "2. 222 — (no verdict recorded)"       # within cap, genuinely unjudged
+    assert lines[1] == "2. 222 — (judge call failed — excluded from scoring)"  # within cap, judge ran
     assert lines[2] == "3. 333 — (beyond scored depth — not judged)"
     assert lines[3] == "4. 444 — (beyond scored depth — not judged)"
     assert "2 beyond scored depth" in md

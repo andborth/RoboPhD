@@ -176,7 +176,7 @@ Your agent times out and the query scores 0 if a single query takes more than **
 
 ## Scoring (per query)
 
-The scorer (`astabench.evals.paper_finder.task.score_paper_finder`) returns a single float in [0, 1] per sample. The overall score is the plain mean of those per-query floats. The formulas below are the scorer's exact computation (`astabench/evals/paper_finder/eval.py`).
+The scorer returns a single float in [0, 1] per sample; the overall score is the plain mean of those per-query floats. The formulas below are its exact computation.
 
 **`specific_f1` / `metadata_f1`** — every submitted id is graded Perfect iff it is in the gold `corpus_ids` set; order never enters. With `hits` = |submitted ∩ gold|, over your whole list (first 250 entries):
 
@@ -197,10 +197,6 @@ rank     = (DCG(g) − DCG(g sorted ascending))
 recall   = |{i ≤ K : gᵢ = 3}| / K                (first K judged papers, submitted order)
 score    = harmonic(rank, recall)                (0 if either term is 0)
 ```
-
-Boundary facts, also straight from the scorer:
-- Papers in the benchmark's known-good set for the query are graded 3 without a judge call.
-- A paper whose judge call fails outright is excluded from the grade sequence entirely (not scored 0). A paper whose evidence is fully discarded by the grounding check IS graded 0 (see the Output schema's grounding requirement).
 
 ## Diagnostics
 
