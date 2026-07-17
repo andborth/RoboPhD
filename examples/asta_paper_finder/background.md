@@ -38,7 +38,8 @@ The scorer reads `state.output.completion` as a JSON string with this shape:
 Notes on the schema:
 - `paper_id` is a Semantic Scholar corpus_id as a **string** (not int). Sources sometimes return ints — cast.
 - The scorer also accepts `"CorpusId:123456789"` and lowercases/strips it.
-- `markdown_evidence` is shown to the LLM judge for `semantic_f1` queries; quality of evidence text directly affects the judge's verdict. Include the title and a relevant passage.
+- `markdown_evidence` is the *only* text the judge sees for a paper on `semantic_f1` queries: it is handed your evidence plus the criteria and nothing else — not the title, abstract, or corpus record unless your evidence quotes them. It then judges, per criterion, how well that text supports the criterion (see "Scoring (per query)" for how the per-criterion judgments combine into the paper's 0–3 grade). On `specific_f1`/`metadata_f1` the content is never read (scoring is exact-match on `paper_id`).
+- The field is **required on every result, all query types** (`SingleResult.markdown_evidence` is a non-optional string). Omitting the key fails output parsing and scores the whole query 0 — so on the exact-match paths, where the content is ignored, an empty string is valid, e.g. `{"paper_id": "123456789", "markdown_evidence": ""}`, but the key must be present.
 - **Grounding requirement**: `markdown_evidence` must be up to 3 passages quoted **verbatim** from text you retrieved for that same paper (title/abstract/tldr/snippet returned by the tools), joined by ` ... `. Each passage is checked independently: any passage not verbatim-derivable from retrieved corpus text is discarded before the judge sees it, and the judge scores the paper on whatever grounded passages remain. If *every* passage is discarded, the paper is scored Not Relevant with no judge call. Punctuation/case/whitespace differences are tolerated; paraphrased or invented passages are not, and earn nothing.
 - List order: the scorer reads only your first 250 entries; beyond that cap, order semantics differ by query type. On `specific_f1`/`metadata_f1`, **order does not matter** — precision and recall are computed over the whole (capped) list. On `semantic_f1`, **order is half your score** — see "Scoring (per query)".
 
@@ -158,7 +159,7 @@ Your cost is the LLM calls your agent makes through `model_registry` handles (`a
 
 ## The relevance judge (semantic queries)
 
-On `semantic_f1` queries (73% of the training queries, and the same share of the held-out test set), the benchmark's scorer runs an LLM relevance judge over every paper you return, grading each against the query's weighted `relevance_criteria`. Understanding the judge is a score lever: it reads each result's `markdown_evidence` when deciding relevance, so evidence quality (title + a passage that speaks to the criteria) directly moves your F1. Evidence is grounding-checked first (see the Output schema's grounding requirement): only evidence quoted verbatim from text you retrieved for that paper reaches the judge; anything else is discarded and the paper scored Not Relevant. For each training query, the exact criteria the judge scored against are visible post-hoc in that problem's `gold_criteria.md` diagnostic, `judge_verdicts.md` lists the judge's verdict on every paper you submitted in your submitted order, and `evidence_grounding.md` (present only when something was discarded) names the papers whose evidence failed the grounding check and the offending passage — together they separate "the right papers were never retrieved" from "retrieved but rejected" from "evidence discarded as ungrounded" and let you audit your ranking.
+On `semantic_f1` queries (73% of the training queries, and the same share of the held-out test set), the benchmark's scorer runs an LLM relevance judge over every paper you return, grading each against the query's weighted `relevance_criteria`. Understanding the judge is a score lever: it decides relevance from each result's `markdown_evidence` alone, so whether that text demonstrates each criterion directly moves your F1. Evidence is grounding-checked first (see the Output schema's grounding requirement): only evidence quoted verbatim from text you retrieved for that paper reaches the judge; anything else is discarded and the paper scored Not Relevant. For each training query, the exact criteria the judge scored against are visible post-hoc in that problem's `gold_criteria.md` diagnostic, `judge_verdicts.md` lists the judge's verdict on every paper you submitted in your submitted order, and `evidence_grounding.md` (present only when something was discarded) names the papers whose evidence failed the grounding check and the offending passage — together they separate "the right papers were never retrieved" from "retrieved but rejected" from "evidence discarded as ungrounded" and let you audit your ranking.
 
 The judge's own LLM spend appears in each problem's `result.json` as `other_cost`. That field is informational only — it is never penalized, never counts toward your batch mean, and is outside your control. Do not optimize for it.
 
@@ -197,6 +198,15 @@ rank     = (DCG(g) − DCG(g sorted ascending))
 recall   = |{i ≤ K : gᵢ = 3}| / K                (first K judged papers, submitted order)
 score    = harmonic(rank, recall)                (0 if either term is 0)
 ```
+
+Each paper's grade `gᵢ` is itself derived from the judge's per-criterion verdicts. The judge does not read a paper holistically — it rates every criterion `c` (gold weights `w_c` sum to 1) as Not / Somewhat / Perfectly Relevant, i.e. `r_c ∈ {0, 1, 3}` (there is no per-criterion "Highly"), then:
+
+```
+weighted = min(1, Σ_c  w_c · r_c / 3)
+gᵢ       = 0 if weighted ≤ 0.25;  1 if ≤ 0.67;  2 if ≤ 0.99;  else 3
+```
+
+Grade 2 ("Highly Relevant") exists only as this threshold band, never as a judge output. Because grade 3 needs `weighted > 0.99` and each `r_c/3 ≤ 1`, a paper reaches 3 — the only grade that earns recall — essentially only when every weighted criterion is judged Perfectly Relevant; a single unsupported criterion caps it at 2 and earns zero recall. The judge's `relevant_snippet` output does not enter the score.
 
 ## Diagnostics
 
