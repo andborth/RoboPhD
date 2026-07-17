@@ -417,15 +417,21 @@ def parse_args():
                         "cache, i.e. submission-exact fresh judging (e.g. a "
                         "clean cost measurement)."
                         "%(default).0s")
+    # DEPRECATED, deliberately hidden from --help: overrides the relevance-
+    # judge model for TRAINING only (test/formal evals always use astabench's
+    # GPT-4o). It stays wired because the machinery is sound, but it does NOT
+    # work out of the box: astabench's strict parser + pydantic model drop
+    # format-deviant verdicts as Not Relevant, and non-GPT-4o judges deviate
+    # often — a real switch must first ship _check_judge_calibration.py's
+    # shape-normalization (or JSON mode) in the training judge path. Beyond
+    # that, enable only after the calibration script passes its gate ON THE
+    # CURRENT LINEAGE'S regenerated (untruncated) evidence; agreement is
+    # evidence-style-dependent: gpt-5.4-mini passed on an early lineage's
+    # shallow evidence but fails on a mature agent's snippet-rich head papers
+    # (kappa 0.63 vs the 0.7 gate, +24% Perfect-rate inflation; 2026-07-17
+    # study). Value must be in the evaluator's JUDGE_MODEL_IDS.
     p.add_argument("--training-judge", type=str, default=None,
-                   help="Override the relevance-judge model for TRAINING only "
-                        "(test/formal evals always use astabench's GPT-4o). "
-                        "Cost lever, e.g. 'openai/gpt-5.4-nano'. Must be in the "
-                        "evaluator's JUDGE_MODEL_IDS. Enable only after the "
-                        "calibration study (_check_judge_calibration.py) shows "
-                        "high GPT-4o agreement — training optimizes against this "
-                        "judge but test scores on GPT-4o."
-                        "%(default).0s")
+                   help=argparse.SUPPRESS)
     p.add_argument("--random-seed", type=int, default=None)
     p.add_argument("--engine-config", type=str, default=None)
     p.add_argument("--meta-evolution-strategy", default=None)
