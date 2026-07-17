@@ -549,6 +549,109 @@ def test_score_metadata_keys_match_astabench(ev_mod, monkeypatch):
         "specific_f1", spec, ["11"], ["11"], None) is not None
 
 
+# --- tool-failure legibility ----------------------------------------------------
+
+
+def _leaf_429():
+    import httpx
+    req = httpx.Request("GET", "https://asta-tools.allen.ai/mcp/v1")
+    resp = httpx.Response(429, request=req)
+    return httpx.HTTPStatusError("429", request=req, response=resp)
+
+
+def test_tool_failure_summary_names_rate_limit(ev_mod):
+    """The exact leak evolution misread for 20 iterations in run
+    asta_paper_finder_20260716_072622: a TaskGroup ExceptionGroup whose
+    str() hides the 429 leaf."""
+    eg = ExceptionGroup("unhandled errors in a TaskGroup", [_leaf_429()])
+    assert ev_mod._tool_failure_summary(eg) == (
+        "HTTP 429 rate-limited (retry budget exhausted)"
+    )
+
+
+def test_tool_failure_summary_nested_leaves_and_dedup(ev_mod):
+    import anyio
+    import httpx
+    inner = ExceptionGroup("inner", [_leaf_429(), httpx.ReadTimeout("read")])
+    eg = ExceptionGroup("outer", [inner, anyio.BrokenResourceError(), _leaf_429()])
+    s = ev_mod._tool_failure_summary(eg)
+    assert s.count("HTTP 429") == 1  # deduped across the nesting
+    assert "transport timeout (ReadTimeout)" in s
+    assert "connection broken mid-call (BrokenResourceError)" in s
+
+
+def test_tool_failure_summary_generic_leaf_and_bare_exception(ev_mod):
+    eg = ExceptionGroup("outer", [ValueError("boom")])
+    assert ev_mod._tool_failure_summary(eg) == "ValueError: boom"
+    # A bare exception is already legible — never rewritten.
+    assert ev_mod._tool_failure_summary(RuntimeError("plain")) is None
+
+
+async def _tool_that_raises(exc):
+    async def search_papers(query: str) -> str:
+        """Search for papers.
+
+        Args:
+            query: The search query.
+
+        Returns:
+            Search results.
+        """
+        raise exc
+    return search_papers
+
+
+def test_wrapped_tool_reraises_with_named_cause(ev_mod):
+    import asyncio
+    from inspect_ai.tool import ToolDef  # noqa: F401 - ensures importable
+
+    eg = ExceptionGroup("unhandled errors in a TaskGroup", [_leaf_429()])
+    tool = asyncio.run(_tool_that_raises(eg))
+    [wrapped] = ev_mod._wrap_tools_for_provenance([tool])
+    with pytest.raises(RuntimeError, match="HTTP 429 rate-limited"):
+        asyncio.run(wrapped(query="x"))
+
+
+def test_wrapped_tool_propagates_cancellation_group(ev_mod):
+    """A BaseExceptionGroup carrying cancellation is not an Exception and
+    must pass through untouched — rewriting it would break asyncio's
+    cancellation semantics."""
+    import asyncio
+
+    beg = BaseExceptionGroup("cancelled", [asyncio.CancelledError()])
+    tool = asyncio.run(_tool_that_raises(beg))
+    [wrapped] = ev_mod._wrap_tools_for_provenance([tool])
+    with pytest.raises(BaseExceptionGroup) as exc_info:
+        asyncio.run(wrapped(query="x"))
+    assert not isinstance(exc_info.value, RuntimeError)
+
+
+def test_transport_docs_match_astabench_defaults(ev_mod):
+    """background.md's 'Tool-call transport' numbers (connect 5 s, read
+    300 s, 10 retry attempts, ~5 min worst-case backoff) document
+    astabench's actual client/retry defaults — pin both ends so an
+    upstream bump can't silently stale the doc."""
+    import inspect as pyinspect
+    from astabench.tools import asta_tools
+
+    sig = pyinspect.signature(asta_tools.create_server_streamable_http)
+    assert sig.parameters["timeout"].default == 5
+    assert sig.parameters["sse_read_timeout"].default == 300
+
+    sig = pyinspect.signature(asta_tools.make_retry_wrapper)
+    assert sig.parameters["max_retries"].default == 10
+    base = sig.parameters["base_delay"].default
+    mult = sig.parameters["backoff_multiplier"].default
+    cap = sig.parameters["max_delay"].default
+    worst_case_sleep = sum(min(base * mult**i, cap) for i in range(10))
+    assert 240 <= worst_case_sleep <= 360  # the doc's "~5 minutes"
+
+    background = (PFB_DIR / "background.md").read_text()
+    for needle in ("**Connect: 5 s**", "**Response read: 300 s**",
+                   "up to 10 attempts", "10 requests/second"):
+        assert needle in background, f"background.md lost: {needle}"
+
+
 # --- safe judge-cache writer ----------------------------------------------------
 
 

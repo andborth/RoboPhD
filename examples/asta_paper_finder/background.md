@@ -97,6 +97,17 @@ def parse_items(raw):
 - `search_papers_by_relevance` takes `keyword=`, `snippet_search` takes `query=` — read before calling.
 - The author/citation tools make `metadata_f1` queries (author/venue/year filters) tractable without keyword-search gymnastics — but note `get_citations`' 1000 cap makes "papers citing <hugely-cited paper>" queries structurally incomplete.
 
+### Tool-call transport: timeouts, retries, and the rate limit
+
+For information — the layers a corpus tool call passes through, bottom-up. In many cases none of these turn out to be binding constraints; they are documented so slow or failed calls are attributable rather than mysterious.
+
+1. **Connect: 5 s** to establish the HTTP connection to the MCP server.
+2. **Response read: 300 s** — the per-call ceiling. A call whose response takes longer (cold `snippet_search` is the usual case) raises, without retry.
+3. **Automatic retries on transient errors**: HTTP 429/529/504 and broken connections are retried with exponential backoff (up to 10 attempts, ~5 minutes of accumulated waiting worst-case; no overall per-call deadline). The backend enforces a rate limit of **10 requests/second per endpoint**, shared by everything using the key at once — including other concurrently running evaluations — so sustained bursts convert into backoff latency here rather than errors.
+4. **The per-query wall-clock budget** ("Time budget" below) is the only other deadline anywhere in the stack.
+
+A call that still fails raises into your code with the root cause named in the exception message (e.g. `HTTP 429 rate-limited (retry budget exhausted)`, a transport timeout, or a broken connection).
+
 ## LLM calls
 
 The following model handles are available, imported from `model_registry`. Prices are the rates this benchmark's scoring bills:

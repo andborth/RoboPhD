@@ -660,6 +660,50 @@ def load_paper_finder(split: str = "validation") -> list[Sample]:
     return list(ds)
 
 
+def _tool_failure_summary(exc: BaseException) -> str | None:
+    """Root cause of a leaked tool-call failure, or None to re-raise as-is.
+
+    Errors that escape astabench's retry wrapper reach the agent as anyio
+    TaskGroup ExceptionGroups whose str() is "unhandled errors in a
+    TaskGroup (1 sub-exception)" — the actual cause (rate limit with the
+    retry budget exhausted, transport timeout, broken connection) is only
+    in the leaves. Run asta_paper_finder_20260716_072622 showed evolution
+    misreading exactly that string as generic tool flakiness for 20
+    iterations; naming the cause is what lets it respond. Only exception
+    groups are rewritten — a bare exception is already legible.
+    """
+    if not isinstance(exc, BaseExceptionGroup):
+        return None
+    import anyio
+    import httpx
+
+    leaves: list[BaseException] = []
+
+    def _collect(e: BaseException) -> None:
+        if isinstance(e, BaseExceptionGroup):
+            for sub in e.exceptions:
+                _collect(sub)
+        else:
+            leaves.append(e)
+
+    _collect(exc)
+
+    def _label(leaf: BaseException) -> str:
+        if isinstance(leaf, httpx.HTTPStatusError):
+            code = leaf.response.status_code
+            if code == 429:
+                return "HTTP 429 rate-limited (retry budget exhausted)"
+            return f"HTTP {code}"
+        if isinstance(leaf, httpx.TimeoutException):
+            return f"transport timeout ({type(leaf).__name__})"
+        if isinstance(leaf, anyio.BrokenResourceError):
+            return "connection broken mid-call (BrokenResourceError)"
+        msg = str(leaf).strip()
+        return f"{type(leaf).__name__}: {msg[:200]}" if msg else type(leaf).__name__
+
+    return "; ".join(dict.fromkeys(_label(leaf) for leaf in leaves)) or None
+
+
 def _wrap_tools_for_provenance(tools: list) -> list:
     """Wrap each corpus tool so its result payload is recorded for evidence
     grounding, then handed back to the agent unchanged.
@@ -669,6 +713,11 @@ def _wrap_tools_for_provenance(tools: list) -> list:
     Wrapping via ToolDef round-trips the tool's name/description/parameters
     (the schema inspect needs), the same mechanism astabench uses to install
     its retry wrapper. Recording is best-effort and never alters the result.
+
+    Failures that leak through the retry wrapper are re-raised with the root
+    cause named (see _tool_failure_summary). Only Exception is caught:
+    a BaseExceptionGroup carrying cancellation must propagate untouched or
+    asyncio's cancellation semantics break.
     """
     from inspect_ai.tool import ToolDef
 
@@ -679,7 +728,13 @@ def _wrap_tools_for_provenance(tools: list) -> list:
 
         def _make(orig_call):
             async def _recording(*args, **kwargs):
-                result = await orig_call(*args, **kwargs)
+                try:
+                    result = await orig_call(*args, **kwargs)
+                except Exception as e:
+                    summary = _tool_failure_summary(e)
+                    if summary:
+                        raise RuntimeError(f"tool call failed: {summary}") from e
+                    raise
                 grounding.record_tool_result(result)
                 return result
             return _recording
@@ -695,8 +750,10 @@ def _build_tools(sample_id: str):
     The factory applies the sample's date cutoff (no future-paper leaks)
     and wraps every tool in astabench's make_retry_wrapper (429/529/504 +
     BrokenResourceError, exponential backoff), so agents never see a
-    transient rate limit. We add an outer wrapper that records each result
-    payload for evidence grounding (see _grounding.py).
+    TRANSIENT rate limit — sustained overrun still raises once the retry
+    budget is spent. We add an outer wrapper that records each result
+    payload for evidence grounding (see _grounding.py) and re-raises
+    leaked failures with the root cause named (_tool_failure_summary).
     """
     inserted_before = get_inserted_before_per_dataset_type(sample_id)
     from astabench.tools import make_asta_mcp_tools
