@@ -205,14 +205,47 @@ def test_test_cache_env_pristine_uncapped(main_mod, _judge_env, tmp_path):
     assert mode["cap_judge_to_estimate"] is False
 
 
+def _calls_to(name: str) -> list[ast.Call]:
+    return [
+        node for node in ast.walk(MAIN_TREE)
+        if isinstance(node, ast.Call)
+        and (getattr(node.func, "id", None) or getattr(node.func, "attr", None)) == name
+    ]
+
+
 def test_eval_paths_thread_scoring_mode():
-    """Both test call sites must pass the resolved cap into
-    _set_test_cache_env and thread its scoring-mode record into
-    _write_test_results — otherwise recorded scores are ambiguous about
-    the basis (capped/shared vs official) that produced them."""
-    assert MAIN_SRC.count("cap=cap_judge_to_estimate") == 2
-    assert MAIN_SRC.count("shared=not args.no_shared_judge_cache") == 2
-    assert MAIN_SRC.count("scoring_mode=scoring_mode") == 2
+    """Every test call site must pass the resolved cap and the shared-cache
+    choice into _set_test_cache_env and thread a scoring-mode record into
+    _write_test_results — otherwise recorded scores are ambiguous about the
+    basis (capped/shared vs official) that produced them. Per-call-site AST
+    checks, so a future third eval path can't slip in unwired."""
+    setter_calls = _calls_to("_set_test_cache_env")
+    assert len(setter_calls) >= 2, "expected the --eval-only and --eval-test-set call sites"
+    for call in setter_calls:
+        kwargs = {kw.arg: kw.value for kw in call.keywords}
+        cap = kwargs.get("cap")
+        assert isinstance(cap, ast.Name) and cap.id == "cap_judge_to_estimate", (
+            f"line {call.lineno}: _set_test_cache_env must take cap= from the "
+            f"resolved cap_judge_to_estimate knob"
+        )
+        shared = kwargs.get("shared")
+        assert (
+            isinstance(shared, ast.UnaryOp)
+            and isinstance(shared.op, ast.Not)
+            and isinstance(shared.operand, ast.Attribute)
+            and shared.operand.attr == "no_shared_judge_cache"
+        ), (
+            f"line {call.lineno}: _set_test_cache_env must take shared= from "
+            f"`not args.no_shared_judge_cache`"
+        )
+
+    writer_calls = _calls_to("_write_test_results")
+    assert len(writer_calls) >= 2, "expected the --eval-only and --eval-test-set call sites"
+    for call in writer_calls:
+        assert "scoring_mode" in {kw.arg for kw in call.keywords}, (
+            f"line {call.lineno}: _write_test_results call misses scoring_mode= — "
+            f"this test summary would not record its scoring basis"
+        )
 
 
 def test_max_workers_defaults_none():
