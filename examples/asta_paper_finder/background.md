@@ -176,20 +176,31 @@ Your agent times out and the query scores 0 if a single query takes more than **
 
 ## Scoring (per query)
 
-The scorer (`astabench.evals.paper_finder.task.score_paper_finder`) returns a single float in [0, 1] per sample. The overall score is the plain mean of those per-query floats.
+The scorer (`astabench.evals.paper_finder.task.score_paper_finder`) returns a single float in [0, 1] per sample. The overall score is the plain mean of those per-query floats. The formulas below are the scorer's exact computation (`astabench/evals/paper_finder/eval.py`).
 
-**`specific_f1` / `metadata_f1`** — standard F1, order-blind: precision = relevant fraction of what you returned, recall = fraction of the gold set you found, computed over your whole list (first 250 entries). Worked example:
-- Predicted `corpus_ids` = `["123456789", "987654321"]`, gold = `["123456789"]`
-- TP=1, FP=1, FN=0; precision=0.5, recall=1.0, F1=0.667
+**`specific_f1` / `metadata_f1`** — every submitted id is graded Perfect iff it is in the gold `corpus_ids` set; order never enters. With `hits` = |submitted ∩ gold|, over your whole list (first 250 entries):
 
-**`semantic_f1`** — the LLM judge grades each returned paper 0–3 against the query's weighted `relevance_criteria`, and the score is the harmonic mean of TWO terms, so a zero in either zeroes the query:
+```
+precision = hits / #submitted        recall = hits / #gold
+score     = harmonic(precision, recall)          (0 if either is 0)
+```
 
-1. **Rank**: an NDCG over the grade sequence *in your submitted order*, normalized between the worst and best possible orderings of the papers you returned. Best-first ordering → 1.0; relevant papers buried behind irrelevant ones → toward 0.0. Ordering is not a tiebreaker here; a badly ordered list can zero the whole query even when the papers are good.
-2. **Recall at estimated K**: only your first K papers count toward recall, where K is a per-query constant the benchmark ships (its estimate of the total relevant papers in the corpus; also the recall denominator). K varies widely per query and you do not have it at query time, so lead with your best and return a generously long best-first list. **Only papers graded "Perfectly Relevant" (3) count as recall hits** — grades 1–2 contribute ordering variety to the rank term but zero recall, so a paper that satisfies *most* of the criteria is worth nothing on this term. Evidence that nails every criterion is what converts a retrieval into recall.
+Worked example: predicted `corpus_ids` = `["123456789", "987654321"]`, gold = `["123456789"]` → precision 0.5, recall 1.0, F1 0.667.
 
-Two practical consequences of the rank normalization:
-- Never return a **single paper** or a list the judge will grade **uniformly** (e.g. only your most confident hits, all judged perfect): identical grades make worst ordering equal best ordering, the rank term degenerates to 0, and the query scores 0 regardless of recall. Include your confident papers first, then plausible ones — grade variety in the tail is harmless (extra low-graded papers past K don't reduce recall) and protects the rank term.
-- Order strictly best-first; it is half the score.
+**`semantic_f1`** — the LLM judge grades each judged paper 0–3 (0 = Not, 1 = Somewhat, 2 = Highly, 3 = Perfectly Relevant) against the query's weighted `relevance_criteria`. Let `g₁..gₙ` be those grades *in your submitted order*, and K the benchmark's per-query estimate of the total relevant papers in the corpus (K is the recall denominator; it varies widely per query and you do not have it at query time):
+
+```
+DCG(seq) = Σᵢ seq[i] / ln(i + 1)                 (i = 1-based position)
+rank     = (DCG(g) − DCG(g sorted ascending))
+           / (DCG(g sorted descending) − DCG(g sorted ascending))
+           — defined as 0 when the denominator is 0 (all grades equal)
+recall   = |{i ≤ K : gᵢ = 3}| / K                (first K judged papers, submitted order)
+score    = harmonic(rank, recall)                (0 if either term is 0)
+```
+
+Boundary facts, also straight from the scorer:
+- Papers in the benchmark's known-good set for the query are graded 3 without a judge call.
+- A paper whose judge call fails outright is excluded from the grade sequence entirely (not scored 0). A paper whose evidence is fully discarded by the grounding check IS graded 0 (see the Output schema's grounding requirement).
 
 ## Diagnostics
 
