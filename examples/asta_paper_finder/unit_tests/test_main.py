@@ -14,7 +14,9 @@ Source/AST-level guards for the modernization invariants:
     underlying model IDs (menu-vs-billed-reality drift).
 """
 import ast
+import os
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -23,6 +25,19 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 PFB_DIR = REPO_ROOT / "examples" / "asta_paper_finder"
 MAIN_SRC = (PFB_DIR / "main.py").read_text()
 MAIN_TREE = ast.parse(MAIN_SRC)
+
+
+@pytest.fixture(scope="module")
+def main_mod():
+    """Import main.py once per module (pulls in the RoboPhD framework).
+
+    Needed by the _set_test_cache_env behavior tests; the rest of this
+    file stays source/AST-level.
+    """
+    if str(PFB_DIR) not in sys.path:
+        sys.path.insert(0, str(PFB_DIR))
+    import main  # noqa: E402
+    return main
 
 
 # --- eval calls pass config= --------------------------------------------------
@@ -128,6 +143,76 @@ def test_cap_judge_is_run_immutable():
     machinery as the cost knobs — otherwise a resume could flip it mid-run."""
     assert '"cap_judge_to_estimate": cap_judge_to_estimate' in MAIN_SRC
     assert 'name="cap-judge-to-estimate"' in MAIN_SRC
+
+
+# --- test-eval judge env (_set_test_cache_env) -----------------------------------
+#
+# Internal test evals default to a persistent shared verdict cache and the
+# top-estimate judging cap; --no-shared-judge-cache / --no-cap-judge-to-estimate
+# restore submission-exact semantics. These are behavior tests against the
+# module-level helper: the env vars it sets are the ONLY channel to the
+# grounded judge, so a wiring slip silently changes the recorded metric.
+
+
+@pytest.fixture
+def _judge_env(monkeypatch, main_mod):
+    """Pre-register the three judge env vars with monkeypatch so whatever
+    _set_test_cache_env does to them is rolled back at teardown."""
+    from evaluator import CACHE_PATH_ENV, CAP_JUDGE_ENV, TRAINING_GRADER_ENV
+    for var in (CACHE_PATH_ENV, CAP_JUDGE_ENV, TRAINING_GRADER_ENV):
+        monkeypatch.setenv(var, "sentinel")
+    return CACHE_PATH_ENV, CAP_JUDGE_ENV, TRAINING_GRADER_ENV
+
+
+def test_test_cache_env_shared_capped_default(main_mod, _judge_env, tmp_path):
+    cache_env, cap_env, grader_env = _judge_env
+    mode = main_mod._set_test_cache_env(
+        "test_set", runs_dir=str(tmp_path), shared=True, cap=True
+    )
+    from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
+
+    path = Path(os.environ[cache_env])
+    assert path.parent == tmp_path / ".judge_cache"
+    assert path.name == f"shared_test_{main_mod._judge_slug(GRADER_MODEL_NAME)}.json"
+    # Dedicated test file: never training's shared_<slug>.json, so test
+    # verdict provenance stays pure even if the split query-id namespaces
+    # ever stop being disjoint.
+    assert path.name != f"shared_{main_mod._judge_slug(GRADER_MODEL_NAME)}.json"
+    assert os.environ.get(cap_env) == "1"
+    assert grader_env not in os.environ, "test evals must use the stock grader"
+    assert mode == {
+        "judge_model": GRADER_MODEL_NAME,
+        "judge_cache": "shared",
+        "judge_cache_path": str(path),
+        "cap_judge_to_estimate": True,
+    }
+
+
+def test_test_cache_env_pristine_uncapped(main_mod, _judge_env, tmp_path):
+    """--no-shared-judge-cache + --no-cap-judge-to-estimate is the
+    submission-exact combination: fresh empty cache, judge everything."""
+    cache_env, cap_env, grader_env = _judge_env
+    mode = main_mod._set_test_cache_env(
+        "eval_only", runs_dir=str(tmp_path), shared=False, cap=False
+    )
+    path = Path(os.environ[cache_env])
+    assert "pf_pristine_eval_only_" in path.name
+    assert not path.exists(), "pristine cache must start absent (init treats missing as {})"
+    assert tmp_path not in path.parents, "pristine cache must not be a persistent runs-dir file"
+    assert cap_env not in os.environ
+    assert grader_env not in os.environ
+    assert mode["judge_cache"] == "pristine"
+    assert mode["cap_judge_to_estimate"] is False
+
+
+def test_eval_paths_thread_scoring_mode():
+    """Both test call sites must pass the resolved cap into
+    _set_test_cache_env and thread its scoring-mode record into
+    _write_test_results — otherwise recorded scores are ambiguous about
+    the basis (capped/shared vs official) that produced them."""
+    assert MAIN_SRC.count("cap=cap_judge_to_estimate") == 2
+    assert MAIN_SRC.count("shared=not args.no_shared_judge_cache") == 2
+    assert MAIN_SRC.count("scoring_mode=scoring_mode") == 2
 
 
 def test_max_workers_defaults_none():

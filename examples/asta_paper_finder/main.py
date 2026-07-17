@@ -203,12 +203,19 @@ def _write_test_results(
     output_dir: Path,
     agent_name: str,
     summary_filename: str,
+    scoring_mode: dict,
 ):
     """Write a summary JSON plus a sibling .per_problem.json for a test eval.
 
     Costs are split agent-vs-judge: `agent_cost_usd` is the candidate's
     own registry-handle spend; `other_cost_usd` is the benchmark's GPT-4o
     relevance judge (semantic queries only), outside agent control.
+
+    `scoring_mode` (from `_set_test_cache_env`) is merged into the summary
+    so every recorded score names the judge model, cache mode, and cap
+    setting that produced it — capped/shared numbers are a slightly
+    different basis than pristine/uncapped (official) ones. Summaries
+    written before these fields existed are implicitly pristine+uncapped.
     """
     # Head+tail truncation so the tail (where tracebacks carry the real
     # failure line) survives.
@@ -260,6 +267,7 @@ def _write_test_results(
             # aggregator returns mean_raw with no annotation). Populated
             # if a future test mode opts into a non-default aggregator.
             "aggregate_explanation": getattr(eval_result, "aggregate_explanation", ""),
+            **scoring_mode,
         }, f, indent=2)
 
     per_problem_path = summary_path.with_suffix(".per_problem.json")
@@ -267,6 +275,72 @@ def _write_test_results(
         json.dump(per_problem, f, indent=2)
 
     return summary_path, per_problem_path
+
+
+def _judge_slug(judge: str) -> str:
+    """Filesystem-safe judge-model slug used in judge-cache filenames."""
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", judge)
+
+
+def _judge_cache_dir(runs_dir: str) -> Path:
+    """Cross-run judge-cache directory, shared by training and test caches."""
+    return Path(runs_dir) / ".judge_cache"
+
+
+def _set_test_cache_env(label: str, *, runs_dir: str, shared: bool, cap: bool) -> dict:
+    """Configure the judge env for a test / formal eval and return the
+    scoring-mode record for test_results.json.
+
+    Test evals always score with astabench's stock GPT-4o grader — the
+    training-judge override is cleared unconditionally. Two knobs remain:
+
+    - ``shared`` (default; ``--no-shared-judge-cache`` turns it off):
+      persistent verdict cache at ``<runs_dir>/.judge_cache/
+      shared_test_<judge-slug>.json``. Score-comparable to fresh judging
+      because verdicts are keyed by (query, paper, evidence-hash) and the
+      file is scoped by judge model, so a hit only ever replays the stock
+      judge's verdict on identical inputs. The file is dedicated to test
+      evals — never training's ``shared_<slug>.json`` — so its provenance
+      stays pure and a future dataset renumbering of the (currently
+      disjoint) split query-id namespaces cannot leak verdicts across
+      splits. ``shared=False`` uses a fresh EMPTY per-invocation file
+      instead: every verdict rendered anew on the submitting agent's own
+      grounded evidence, matching a fresh official environment exactly.
+
+    - ``cap`` (the run-wide ``--cap-judge-to-estimate``, default on):
+      judge only the top-estimate submitted papers per semantic query.
+      Much cheaper, but a slightly different metric than official
+      uncapped scoring (the rank term sees fewer grades), which is why
+      the mode is recorded alongside the scores.
+    """
+    from evaluator import CACHE_PATH_ENV, CAP_JUDGE_ENV, TRAINING_GRADER_ENV
+    from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
+
+    if shared:
+        path = _judge_cache_dir(runs_dir) / f"shared_test_{_judge_slug(GRADER_MODEL_NAME)}.json"
+        scope = "shared"
+    else:
+        fd, tmp = tempfile.mkstemp(prefix=f"pf_pristine_{label}_", suffix=".json")
+        os.close(fd)
+        os.unlink(tmp)  # start truly empty: init_references treats missing as {}
+        path = Path(tmp)
+        scope = "pristine"
+    os.environ[CACHE_PATH_ENV] = str(path)
+    os.environ.pop(TRAINING_GRADER_ENV, None)
+    if cap:
+        os.environ[CAP_JUDGE_ENV] = "1"
+    else:
+        os.environ.pop(CAP_JUDGE_ENV, None)
+    logger.info(
+        f"Judge cache ({scope} {label}): {path}; "
+        f"judging cap: {'on' if cap else 'off'}"
+    )
+    return {
+        "judge_model": GRADER_MODEL_NAME,
+        "judge_cache": scope,
+        "judge_cache_path": str(path),
+        "cap_judge_to_estimate": cap,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -315,21 +389,33 @@ def parse_args():
     p.add_argument("--cap-judge-to-estimate", action=argparse.BooleanOptionalAction,
                    default=None,
                    help="Judge only the top-estimate (recall depth) submitted "
-                        "papers in training instead of all of them. On by "
-                        "default; cuts judge cost with no measured score change "
-                        "(recall reads only the top-estimate, the rank term is "
-                        "unaffected). Run-immutable like --cost-threshold: locked "
-                        "for the run's lifetime once set, so resume keeps the "
-                        "original setting. --no-cap-judge-to-estimate judges the "
-                        "full submission, as test/official does."
+                        "papers instead of all of them — in training AND in "
+                        "internal test evals (--eval-test-set / --eval-only). "
+                        "On by default; cuts judge cost with no measured score "
+                        "change (recall reads only the top-estimate; the rank "
+                        "term is empirically unaffected, though capped test "
+                        "scores are a slightly different basis than official "
+                        "uncapped scoring — the mode is recorded in "
+                        "test_results.json). For training it is run-immutable "
+                        "like --cost-threshold: locked for the run's lifetime, "
+                        "so resume keeps the original setting; on --eval-only "
+                        "the flag applies at eval time instead. Official "
+                        "astabench submissions are always uncapped. "
+                        "--no-cap-judge-to-estimate judges the full submission, "
+                        "as official does."
                         "%(default).0s")
     p.add_argument("--no-shared-judge-cache", action="store_true",
-                   help="Isolate the training judge cache per run instead of "
-                        "sharing it across runs. Sharing is sound because "
-                        "verdicts are keyed by (query, paper, evidence-hash) and "
-                        "scoped by judge model, so cross-run reuse only recovers "
-                        "identical judge inputs; use this to force fresh "
-                        "judging (e.g. a clean cost measurement)."
+                   help="Isolate the judge verdict cache per run/invocation "
+                        "instead of sharing it across runs. Sharing is sound "
+                        "because verdicts are keyed by (query, paper, "
+                        "evidence-hash) and scoped by judge model, so cross-run "
+                        "reuse only recovers identical judge inputs. Applies to "
+                        "training (shared_<judge>.json) and to internal test "
+                        "evals (shared_test_<judge>.json — a separate file, so "
+                        "test verdicts only ever come from test evals); for "
+                        "test evals this flag forces a pristine per-invocation "
+                        "cache, i.e. submission-exact fresh judging (e.g. a "
+                        "clean cost measurement)."
                         "%(default).0s")
     p.add_argument("--training-judge", type=str, default=None,
                    help="Override the relevance-judge model for TRAINING only "
@@ -393,8 +479,8 @@ def main():
         fresh per-invocation file. Subprocess workers inherit the env var, so
         all workers of a run share one file within the run either way."""
         judge = args.training_judge or _STOCK_GRADER
-        slug = re.sub(r"[^A-Za-z0-9._-]+", "_", judge)
-        cache_dir = Path(args.runs_dir) / ".judge_cache"
+        slug = _judge_slug(judge)
+        cache_dir = _judge_cache_dir(args.runs_dir)
         if not args.no_shared_judge_cache:
             path = cache_dir / f"shared_{slug}.json"
             scope = "shared"
@@ -421,24 +507,6 @@ def main():
         else:
             os.environ.pop(TRAINING_GRADER_ENV, None)
         return str(path)
-
-    def _set_pristine_cache_env(label: str) -> str:
-        """Point the judge cache at a fresh EMPTY file for a test / formal
-        eval, so every verdict is rendered on the submitting agent's own
-        (grounded) evidence — matching a fresh official environment, never
-        inheriting verdicts another agent wrote for the same paper."""
-        fd, path = tempfile.mkstemp(
-            prefix=f"pf_pristine_{label}_", suffix=".json"
-        )
-        os.close(fd)
-        os.unlink(path)  # start truly empty: init_references treats missing as {}
-        os.environ[CACHE_PATH_ENV] = path
-        # Test / formal evals always score with astabench's stock GPT-4o grader
-        # over ALL submitted papers (no cap), matching official scoring.
-        os.environ.pop(TRAINING_GRADER_ENV, None)
-        os.environ.pop(CAP_JUDGE_ENV, None)
-        logger.info(f"Judge cache (pristine {label}): {path}")
-        return path
 
     # Resolve the run-immutable task knobs. These aren't known to the
     # framework's ConfigManager, so without task_config_extras they'd
@@ -604,7 +672,12 @@ def main():
     if args.eval_only:
         if not args.resume:
             raise SystemExit("--eval-only requires --resume <experiment_dir>")
-        _set_pristine_cache_env("eval_only")
+        scoring_mode = _set_test_cache_env(
+            "eval_only",
+            runs_dir=args.runs_dir,
+            shared=not args.no_shared_judge_cache,
+            cap=cap_judge_to_estimate,
+        )
         test_data = [s.model_dump() for s in load_paper_finder("test")]
         logger.info(f"Test set: {len(test_data)} samples")
 
@@ -640,6 +713,7 @@ def main():
             output_dir=Path(args.resume),
             agent_name=args.eval_agent or "best",
             summary_filename=results_filename,
+            scoring_mode=scoring_mode,
         )
         logger.info(f"Test summary:    {summary_path}")
         logger.info(f"Test per-problem: {per_problem_path}")
@@ -771,7 +845,12 @@ def main():
         if not result.completed_normally:
             logger.info("Skipping test-set evaluation -- run ended early due to failure")
         else:
-            _set_pristine_cache_env("test_set")
+            scoring_mode = _set_test_cache_env(
+                "test_set",
+                runs_dir=args.runs_dir,
+                shared=not args.no_shared_judge_cache,
+                cap=cap_judge_to_estimate,
+            )
             test_data = [s.model_dump() for s in load_paper_finder("test")]
             logger.info(f"Test evaluation: {len(test_data)} samples")
             eval_result = eval_candidate(
@@ -787,6 +866,7 @@ def main():
                 output_dir=result.experiment_dir,
                 agent_name="best",
                 summary_filename="test_results.json",
+                scoring_mode=scoring_mode,
             )
             logger.info(f"Test summary:    {summary_path}")
             logger.info(f"Test per-problem: {per_problem_path}")
