@@ -78,7 +78,13 @@ _PASSAGE_SPLIT = re.compile(r"\s+(?:\.\.\.|…|[—–‐−-])\s+")
 # grounding — it only rescues one that a boundary artifact would have failed.
 _PASSAGE_EDGE = re.compile(r"^[\s.…—–‐−-]+|[\s.…—–‐−-]+$")
 
-_MAX_PASSAGES = 3
+# Caps how many DROPPED passages check_evidence reports per paper — a
+# diagnostics-noise bound only. Passage COUNT is deliberately unenforced:
+# the docs advise up to 5, but the task schema doesn't require it, in-band
+# separators inside verbatim text (real ellipses/dashes) make a hard count
+# ambiguous, and the anti-fabrication guarantee is the per-passage verbatim
+# check below, not the count.
+_MAX_DROPPED_REPORTED = 5
 
 
 def _passages(raw: str) -> list[str]:
@@ -290,7 +296,7 @@ def check_evidence(corpus_id: str, evidence: str) -> tuple[bool, list[str]]:
     `fully_grounded` is True iff nothing was dropped. Retained for callers/tests
     that only need the all-or-nothing answer."""
     _, dropped = scrub_evidence(corpus_id, evidence)
-    return (not dropped), dropped[:_MAX_PASSAGES]
+    return (not dropped), dropped[:_MAX_DROPPED_REPORTED]
 
 
 def _evidence_hash(scrubbed: str) -> str:

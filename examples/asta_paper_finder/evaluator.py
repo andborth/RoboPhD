@@ -681,7 +681,7 @@ def _evidence_grounding_markdown() -> str | None:
         f"derivable from retrieved text: {n_full} fully (→ Not Relevant, no "
         f"judge call), {n_partial} partially (grounded passages kept and judged, "
         f"ungrounded ones dropped). Quote retrieved corpus text verbatim, joined "
-        f"by ` ... ` (≤3 passages).",
+        f"by ` ... ` (≤5 passages).",
         "",
     ]
     for pid, dropped, raw, kind in blanked[:50]:
