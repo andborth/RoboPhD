@@ -80,11 +80,11 @@ _PASSAGE_EDGE = re.compile(r"^[\s.…—–‐−-]+|[\s.…—–‐−-]+$")
 
 # Caps how many DROPPED passages check_evidence reports per paper — a
 # diagnostics-noise bound only. Passage COUNT is deliberately unenforced:
-# the docs advise up to 5, but the task schema doesn't require it, in-band
+# the docs advise up to 8, but the task schema doesn't require it, in-band
 # separators inside verbatim text (real ellipses/dashes) make a hard count
 # ambiguous, and the anti-fabrication guarantee is the per-passage verbatim
 # check below, not the count.
-_MAX_DROPPED_REPORTED = 5
+_MAX_DROPPED_REPORTED = 8
 
 
 def _passages(raw: str) -> list[str]:
