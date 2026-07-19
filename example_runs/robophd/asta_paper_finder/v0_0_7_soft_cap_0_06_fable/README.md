@@ -13,12 +13,13 @@ mean-spend free zone ($0.06/query); `_fable` = evolved by Claude Fable 5.
 - `evolution_output/` — `CLAUDE.md` + `iteration_012/` only (the session that produced the winner — ds1000 precedent)
 - `checkpoint.json`, `final_report.md`, `test_results.json`, `test_results.per_problem.json`
 
-**Redistribution note (review before any public push):** the iteration
-problem dirs embed VALIDATION-split gold (`gold_criteria.md`, and
-gold-derived content in `score_calculation.md` / `judge_verdicts.md`)
-from the HF-token-gated PaperFindingBench dataset. Confirm redistribution
-is acceptable — or strip those files — before this directory ships in a
-public repository.
+**Redistribution note (resolved 2026-07-19):** the iteration problem
+dirs embed VALIDATION-split gold (`gold_criteria.md`, and gold-derived
+content in `score_calculation.md` / `judge_verdicts.md`) from the
+HF-token-gated PaperFindingBench dataset. Decision (repo owner): this
+modest exposure of training-split data is acceptable to publish — the
+held-out test split's gold appears nowhere in the snapshot. Not a
+blocker for pushing.
 
 ## Lineage
 
