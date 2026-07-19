@@ -69,7 +69,10 @@ EXAMPLES_DIR = REPO / "examples" / "asta_paper_finder"
 SOURCE_BASE = REPO / "example_runs" / "robophd" / "asta_paper_finder"
 WORKING_BASE = REPO / "submissions" / "asta_paper_finder"
 FULL_LOG_SUBDIR = "logs/full_test"
-TASK_NAME = "paper_finder_test"
+# The astabench CLI --task filter matches the config's task NAME
+# (config/v1.0.0.yml: name PaperFindingBench_test, path
+# astabench/paper_finder_test) — the path does not match.
+TASK_NAME = "PaperFindingBench_test"
 
 # Every model the staged agents call, as litellm bundled-map keys (litellm
 # strips the provider prefix). Checked against the installed litellm before
@@ -416,7 +419,13 @@ def score_submission(working_dir: Path, limit: int | None) -> bool:
         stats = json.loads(stats_path.read_text())["stats"]
         # One task per run; resolve its key instead of hardcoding, so an
         # astabench task-name change fails loudly here rather than KeyError.
-        task_keys = [k for k in stats if "paper_finder" in k] or list(stats)
+        # Match both naming styles ("PaperFindingBench_test" config name,
+        # "paper_finder_test" task path).
+        task_keys = [
+            k for k in stats
+            if "paperfinding" in k.lower().replace("_", "")
+            or "paperfinder" in k.lower().replace("_", "")
+        ] or list(stats)
         cost = stats[task_keys[0]]["cost"]
     except Exception as e:
         print(f"!! could not read cost from {stats_path}: {e}")

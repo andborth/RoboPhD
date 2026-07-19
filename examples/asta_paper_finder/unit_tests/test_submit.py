@@ -142,6 +142,24 @@ def test_stage_copies_seed_file(submit_tree: ast.AST) -> None:
     assert found
 
 
+def test_task_name_matches_astabench_config(submit_mod) -> None:
+    """The CLI's --task filter matches config task NAMES, not task paths —
+    the first smoke run failed with 'Filtered to 0 of 11 tasks' because
+    the script passed the path (paper_finder_test). Pin TASK_NAME against
+    the installed astabench default config's test-split names."""
+    import astabench
+    import yaml
+    cfg_dir = Path(astabench.__file__).parent / "config"
+    cfg_path = max(cfg_dir.glob("v*.yml"))  # the CLI's default config
+    cfg = yaml.safe_load(cfg_path.read_text())
+    test_split = next(s for s in cfg["splits"] if s["name"] == "test")
+    names = {t["name"] for t in test_split["tasks"]}
+    assert submit_mod.TASK_NAME in names, (
+        f"TASK_NAME {submit_mod.TASK_NAME!r} is not a test-split task name "
+        f"in {cfg_path.name}; available: {sorted(names)}"
+    )
+
+
 def test_registry_snapshots_exist(submit_mod) -> None:
     """Every SUBMISSIONS entry must point at a committed snapshot — a
     typo'd name/path would otherwise fail at stage() time."""
