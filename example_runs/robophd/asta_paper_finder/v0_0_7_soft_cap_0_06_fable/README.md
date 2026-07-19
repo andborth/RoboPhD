@@ -6,11 +6,11 @@ patch continues the cross-benchmark submission sequence after DS-1000's
 `v0_0_6_soft_cap_0_003_fable`; `soft_cap_0_06` names the training-time
 mean-spend free zone ($0.06/query); `_fable` = evolved by Claude Fable 5.
 
-## Snapshot layout (ds1000 precedent: a curated run snapshot, ~19MB)
+## Snapshot layout (ds1000 precedent: a curated run snapshot, ~15MB)
 
 - `agents/` — all 21 iteration winners (`agents/iter12_body_conjunction/agent.py` is the submitted one)
 - `iteration_011/`, `iteration_012/` — the winner's breeding data and debut (full per-problem diagnostics incl. `submission.json` / `score_calculation.md` / `judge_verdicts.md`)
-- `evolution_output/` — the Fable-5 evolution reasoning for all iterations
+- `evolution_output/` — `CLAUDE.md` + `iteration_012/` only (the session that produced the winner — ds1000 precedent)
 - `checkpoint.json`, `final_report.md`, `test_results.json`, `test_results.per_problem.json`
 
 **Redistribution note (review before any public push):** the iteration
