@@ -1,0 +1,29 @@
+[semantic_137] score_type=semantic_f1 query='Are language models better at discriminating among previously generated alternatives compared to gen'
+  criteria: ['Generation vs discrimination comparison', 'Language model evidence', 'Relative performance evidence', 'Previously generated alternatives'] weights=[0.5, 0.25, 0.15, 0.1]
+  probes: ['generation versus discrimination performance', 'we evaluate language models', 'discriminative evaluation outperforms generation', 'select from generated candidates']
+  keyword queries: ['language model generation discrimination', 'large language model reranking', 'language model verifier generator', 'response generation versus selection', 'candidate answer selection language models', 'self consistency answer selection', 'language model judging generated responses', 'discriminative decoding language models', 'language model evaluation survey', 'large language model reasoning review'] earliest=False
+  candidate pool: 360 of 1063 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 94])
+  stage1 graded 360/360; predicted-perfect: 14
+  gap-fill queries: ['best of n language models', 'LLM answer reranking verifier', 'process reward model reranking', 'self evaluation generated candidates', 'LLM judge candidate responses']
+  gap-fill added 60 docs; predicted-perfect now 14
+  [tool:expand-ref[270878552]] attempt 1/1 failed: TimeoutError()
+  [tool:expand-ref[253097735]] attempt 1/1 failed: TimeoutError()
+  citation expansion: +150 docs from 10 seeds; predicted-perfect 14 -> 15
+  snippet-enriching 110 of top 110
+  [tool:enrich[269983053]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[267782369]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[274399398]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[264590382]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[278664477]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[266209760]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[267412954]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[263831195]] attempt 1/2 failed: TimeoutError()
+  stage2 judge-sim graded 95/95 (skipped 15 stage1-perfect); newly-perfect: 15
+  rescue round: 32 near-miss papers
+  rescue promoted 3 to predicted-perfect
+  head verify: 1/16 confirmed perfect by GPT_5_4
+  [tool:enrich[272689273]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[273547059]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 125/125 tail entries (uniq=1063)
+  llm-usage: gap:n=1,in~458t,out~46t; plan:n=1,in~583t,out~623t; rescue:n=4,in~6284t,out~100t; sim:n=12,in~18974t,out~300t; t1:n=12,in~27339t,out~1139t; t1exp:n=5,in~11334t,out~486t; t1gap:n=2,in~4326t,out~194t; verify:n=3,in~3632t,out~50t
+  submitted 250 papers

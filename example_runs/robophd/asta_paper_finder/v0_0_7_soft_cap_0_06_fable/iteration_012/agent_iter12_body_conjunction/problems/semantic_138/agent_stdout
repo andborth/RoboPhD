@@ -1,0 +1,35 @@
+[semantic_138] score_type=semantic_f1 query='Has any work been done using large language models (LLMs) to generate blog posts from scientific pap'
+  criteria: ['LLM-based generation from scientific papers', 'Blog post or lay summary output', 'Explicit connection between paper input and blog-style outpu'] weights=[0.5, 0.3, 0.2]
+  probes: ['generate text from scientific papers', 'blog post style summary', 'convert research papers into blog posts']
+  keyword queries: ['scientific paper blog post generation', 'research article blog generation', 'LLM scientific paper lay summary', 'scientific paper popular science generation', 'paper to blog post generation', 'scientific document simplification LLM', 'scientific paper summarization survey', 'scientific text simplification review', 'GPT-4 scientific paper summary generation', 'T5 scientific document generation'] earliest=False
+  candidate pool: 360 of 1109 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 42, 44, 37, 45, 35])
+  stage1 graded 360/360; predicted-perfect: 12
+  gap-fill queries: ['layperson scientific article generation', 'scholarly document popularization LLM', 'paper-to-popular-science generation', 'research paper plain language generation', 'scientific paper audience adaptation']
+  gap-fill added 60 docs; predicted-perfect now 13
+  [expand] references field variant works: 'corpusId,references'
+  [tool:expand-ref[269804670]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  citation expansion: +21 docs from 10 seeds; predicted-perfect 13 -> 14
+  snippet-enriching 100 of top 100
+  [tool:enrich[269239935]] attempt 1/2 failed: TimeoutError()
+  stage2 judge-sim graded 73/73 (skipped 14 stage1-perfect, 13 snippetless-weak); newly-perfect: 10
+  rescue round: 14 near-miss papers
+  [tool:enrich[271866033]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[226283720]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[269239935]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[278001973]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[226283481]] attempt 1/2 failed: TimeoutError()
+  rescue promoted 0 to predicted-perfect
+  head verify: 1/16 confirmed perfect by GPT_5_4
+  [tool:enrich[271490579]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[267412619]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[273374881]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[275336716]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[266162360]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[274092225]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[273190525]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[249192236]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[9097804]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[271446148]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 133/133 tail entries (uniq=1109)
+  llm-usage: gap:n=1,in~359t,out~55t; plan:n=1,in~676t,out~498t; rescue:n=2,in~2466t,out~36t; sim:n=10,in~13263t,out~192t; t1:n=12,in~26127t,out~959t; t1exp:n=1,in~1660t,out~57t; t1gap:n=2,in~4267t,out~164t; verify:n=3,in~3278t,out~41t
+  submitted 250 papers

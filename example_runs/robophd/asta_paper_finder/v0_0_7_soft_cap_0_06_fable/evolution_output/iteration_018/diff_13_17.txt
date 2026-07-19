@@ -1,0 +1,635 @@
+1c1
+< """iter13_grade_view: PaperFindingBench solver, iteration 13.
+---
+> """iter17_recall_stack: PaperFindingBench solver, iteration 17.
+3c3,5
+< Base = iter12_body_conjunction (iteration-12 winner, 45.83).
+---
+> Base = iter13_grade_view (best raw F1 in iterations 13 and 16). This round
+> combines the pieces of iter16_pool_breadth that its own diagnostics proved
+> out with the triage quality it destroyed, plus two exact-match-path fixes.
+5,16c7,19
+< The headline finding this round is a BUG, not a strategy gap. Submitted
+< evidence runs ~4000 chars (title + tldr + abstract(1300) + five 600-char
+< body snippets), but every internal grader — stage-2 judge simulation,
+< the grade-2 rescue round, and the GPT_5_4 head verify — graded
+< `_cut(evidence, SIM_CUT=600)`, i.e. title + tldr + the first ~350 chars
+< of the abstract. NOT ONE fetched body snippet has ever reached an
+< internal grader. The enrichment/rescue/verify loop has been open: it
+< fetches passages to prove weak criteria, then grades a text that
+< excludes them. That is exactly what the telemetry says — semantic_43
+< "rescue promoted 0 to predicted-perfect", "head verify: 0/24 confirmed
+< perfect", predicted-perfect stuck at 0 through every stage while the
+< real judge (reading the full evidence) returned 1 Perfect and 4 Highly.
+---
+> Why iter16 lost (iteration-16 postmortem, attrib16.py): its 2x pool (640)
+> DID fire, but grade-3 papers LOST from its submissions ROSE (44 vs iter13's
+> 33) — the wider field flowed through a triage cheapened three ways at once
+> (title 110->85, body 170->105, chunk 32->48), and with 640 candidates
+> fighting for 250 submission slots the noisier grades decided who got cut.
+> Its stage-2 sim also skipped entirely on queries where cheap stage-1
+> over-predicted perfect (semantic_224: "judge-sim graded 0/0, skipped 63
+> stage1-perfect" -> 21 threes vs iter12's 33). Breadth without triage
+> quality is negative. Kept from iter16 anyway, because they are separable
+> and verified: the compact triage OUTPUT format (local 1..N indices,
+> unspaced digit grades — output bills at 6x input and the digits parse
+> identically), the metadata-path fixes, the longer evidence cuts, and the
+> free SNIP_INIT_LIMIT 100.
+18,27c21,30
+< Scoring context that sets the priorities: the judge reads only the first
+< K submitted papers (median K=52, p25=20 over 46 observed queries), and
+< recall counts ONLY grade-3 papers, so grade 2 ("Highly") earns nothing.
+< Observed grade mass is overwhelmingly 2-and-below in the always-judged
+< top region (semantic_170: 131 Highly vs 49 Perfect; semantic_43 top-16:
+< 4 Highly, 1 Perfect). And because score = harmonic(rank, recall) with
+< rank ~0.55-0.78 but recall ~0.05-0.23, recall is the binding term:
+< doubling recall roughly doubles the score, while a perfect rank adds
+< ~2%. Everything below aims grade-2 -> grade-3 conversions into the top
+< ~35 positions.
+---
+> Scoring context driving the changes (measured on iteration-16 verdicts):
+> the judge grades only the first ~K submitted positions (K 6-114 observed),
+> and virtually every judged grade-3 already sits inside K — ordering is
+> near-exhausted. Recall = (# papers earning grade 3) / K is the binding
+> term, and grade-3 needs EVERY weighted criterion judged Perfect from the
+> submitted evidence alone. The top-K mass is dominated by grade-2 papers
+> (semantic_104: 47 Highly vs 2 Perfect inside K=56), and the union of three
+> agents' grade-3s still covers only ~25-50% of K on most queries — so both
+> retrieval breadth and evidence completeness still have headroom; triage
+> precision decides which retrieved papers make the judged prefix.
+29c32
+< Changes:
+---
+> Changes vs iter13_grade_view:
+31,67c34,68
+<   1. GRADE VIEW (headline). New `_grade_view()` builds the text every
+<      internal grader sees: title(110) + abstract(300) + up to 4
+<      criterion-matched body snippets @180 chars. Snippets are now
+<      visible to sim/rescue/verify, so the enrichment loop finally
+<      closes: a fetched passage that proves a weak criterion can
+<      actually promote the paper, and the ranker's grade estimates stop
+<      being abstract-only.
+<   2. FULL-COVERAGE ENRICHMENT at the top. Positions 0..35 (judged on
+<      every query, K>=6) now get one probe-scoped snippet call per
+<      criterion — ALL criteria, not just the stage-1-weak ones, since
+<      the judge demotes to Highly whenever a qualifier isn't stated in
+<      the text it sees. Positions 36..99 keep the weak-criteria policy.
+<   3. Two probe phrasings per criterion. The planner emits `probe` and
+<      `probe2`; enrichment uses `probe`, the rescue round retries the
+<      same criterion with `probe2` (different query text retrieves
+<      different passages — retrying the failed phrasing retrieves the
+<      same misses).
+<   4. Verify orders, not just boosts. The GPT_5_4 head verify covers the
+<      top 26 (30 on thin pools) and now orders that whole prefix by
+<      (confirmed-perfect, verified weight); previously only confirmed
+<      perfects moved and the rest kept a stage-1 order built from
+<      abstracts. Attacks the Somewhat-mass-at-top shape (semantic_192
+<      top-20: 13 Somewhat, 4 Perfect).
+<   5. Evidence packing: tldr dropped when an abstract and >=3 snippets
+<      exist (it paraphrases the abstract and costs a passage slot of 8),
+<      abstract 1300->1150, snippet room 5->6.
+<   6. Metadata venue filter: `_venue_llm_filter` truncated its input to
+<      `sorted(distinct)[:120]` — an ALPHABETICAL cut. metadata_4 ("Nature
+<      portfolio papers by David Harel", 452 author papers, venue_constraint
+<      only and `venues` empty so the LLM was the sole gate) scored 0.000
+<      across all three agents while iteration-2's crude substring filter
+<      scored 0.500: the N-initial Nature venues sat past the cut. Now
+<      chunked over up to 400 distinct venues, nothing truncated.
+<   7. Cost offsets funding 1-4: POOL_CAP 360->320, EXPAND_CAP 120->100,
+<      POOL_CAP_TOTAL 420->380, and stage-2 sim runs on the top 55 of the
+<      head instead of all 100 (DCG weight at position 90 is a sixth of
+<      position 1 — depth there does not pay).
+---
+>   1. RETRIEVAL DIVERSITY AT FULL TRIAGE QUALITY. Planner emits 14 keyword
+>      queries with demanded CATEGORIES (direct, synonym-community, named
+>      method/system/dataset, task/application, adjacent subfield, survey) —
+>      iter16's own analysis showed iter12's misses were found by siblings
+>      with different PHRASINGS, so the increment buys new angles, not
+>      paraphrases. POOL_CAP 320->400, POOL_MERGE_HEAD 240->300,
+>      SNIP_INIT_LIMIT 50->100 (tool max, free). T1_TITLE/T1_BODY/GRADE_CHUNK
+>      stay at iter13 quality (110/170/32).
+>   2. COMPACT TRIAGE OUTPUT (from iter16): local indices + unspaced grades.
+>      Same parse, ~40% fewer output tokens on t1/sim/rescue/verify.
+>   3. GAP-FILL ROUND REMOVED: five observed firings moved predicted-perfect
+>      by a net +2. Its spend (~$0.005/query) funds the wider pool.
+>   4. Funding trims where DCG says depth does not pay: SIM_DEPTH 55->48,
+>      RESCUE_MAX 22->16, VERIFY_TOP 26->20, VERIFY_TOP_THIN 30->26.
+>      Projected semantic-query cost ~$0.078 (vs $0.083-0.085), i.e. ~$0.058
+>      batch mean at the 73% semantic test mix, inside the free zone even on
+>      a heavier-semantic batch.
+>   5. METADATA PATH = iter16's (its two fixes were root-caused, not
+>      speculative): cites_paper_titles as a LIST with citer-set INTERSECTION
+>      for multi-target citing queries (metadata_26 conjunction never
+>      expressed -> 0); and on hugely-cited citing targets where the
+>      recency-ordered 1000-cap starves gold, citationCount-ranked mention
+>      channels + a widened submission (metadata_25: 0.0099). KEEPS iter13's
+>      chunked _venue_llm_filter (iter16 still had the alphabetical [:120]
+>      truncation that zeroed metadata_4).
+>   6. AMBIGUOUS-SPECIFIC HEDGE WIDENED. "the SPIKE paper" gold was 5
+>      completely unrelated alias-titled works; every agent's tight 5-8 paper
+>      submission scored 0. When the ambiguity gate fires (no author/year
+>      cues, conf<0.65): alias relevance search limit 40->100, shortlist
+>      40->48, alternates 6->8, alias-titled backstop fills to 12, submit cap
+>      8->14. Gold=5 with 4 hits in 12 is F1 0.47 vs the observed 0.
+>   7. Evidence, free: abstract passage 1150->2000 chars, body snippets
+>      600->900 (verbatim substrings; scorer has no length cap), tail sweep
+>      to position 250, SNIPPET_TIMEOUT 75->90 (enrich timeouts were eating
+>      head-paper snippets in iteration 16).
+69,72c70,75
+< Inherited unchanged: planner structure, body-conjunction snippet
+< sourcing, lexical prescreen, citation expansion, tail sweep, band
+< ordering, the specific path (1.000 on every observed specific query),
+< metadata relax ladder, transport wrapper, per-stage telemetry.
+---
+> Inherited unchanged: planner structure with probe/probe2, grade-view
+> internal grading, body-conjunction snippet sourcing, lexical prescreen,
+> citation expansion, band ordering (verified > cheap-perfect > rest), the
+> grade-2 rescue round, the specific path for unambiguous references
+> (1.000 on every observed unambiguous specific), transport wrapper,
+> per-stage llm-usage telemetry.
+90,92c93,94
+< POOL_CAP = 320            # initial semantic pool (after lexical prescreen)
+< POOL_MERGE_HEAD = 240     # pool slots kept in raw source-rank merge order
+< POOL_CAP_TOTAL = 380      # after gap-fill round
+---
+> POOL_CAP = 400            # initial semantic pool (after lexical prescreen)
+> POOL_MERGE_HEAD = 300     # pool slots kept in raw source-rank merge order
+98,102c100,103
+< SIM_DEPTH = 55            # head prefix that gets stage-2 judge simulation
+< RESCUE_MAX = 22           # max papers rescued per query (depth = whole head)
+< SNIP_INIT_LIMIT = 50      # passages per initial snippet_search query
+< SIM_SKIP_W = 0.45         # skip stage-2 sim below this stage-1 weight when snippetless
+< GAP_MIN_PERFECT = 20      # gap-fill triggers below this predicted-perfect count
+---
+> SIM_DEPTH = 48            # head prefix that gets stage-2 judge simulation
+> RESCUE_MAX = 16           # max papers rescued per query (depth = whole head)
+> SNIP_INIT_LIMIT = 100     # passages per initial snippet_search query (tool max; free)
+> SIM_SKIP_W = 0.45         # skip stage-2 sim below this stage-1 weight when snippetless
+104c105
+< VERIFY_TOP = 26           # papers re-graded by GPT_5_4 in the head verify
+---
+> VERIFY_TOP = 20           # papers re-graded by GPT_5_4 in the head verify
+106c107
+< VERIFY_TOP_THIN = 30      # verify depth on thin pools (whole score sits in top-K)
+---
+> VERIFY_TOP_THIN = 26      # verify depth on thin pools (whole score sits in top-K)
+111c112
+< SNIPPET_TIMEOUT = 75      # seconds per scoped snippet call
+---
+> SNIPPET_TIMEOUT = 90      # seconds per scoped snippet call
+113c114
+< TAIL_SWEEP_END = 235      # last submission position eligible for the tail sweep
+---
+> TAIL_SWEEP_END = 250      # last submission position eligible for the tail sweep
+381c382
+<         '  "keyword_queries": ["...", "...", "...", "...", "...", "...", "...", "...", "...", "..."],\n'
+---
+>         '  "keyword_queries": ["...", "...", "...", "...", "...", "...", "...", "...", "...", "...", "...", "...", "...", "..."],\n'
+393,400c394,405
+<         "- keyword_queries: 10 DIVERSE 2-8 word noun-phrase queries covering "
+<         "different phrasings, synonyms, method names, and sub-aspects. Make 2 "
+<         "of them name SPECIFIC well-known methods, systems, or model families "
+<         "that instantiate the request (e.g. for rejection-sampling finetuning: "
+<         "'ReST reinforced self-training', 'reward ranked fine-tuning RAFT'). "
+<         "If the request asks about approaches/solutions/architectures/"
+<         "landscape of a topic, make 2 of them survey-oriented ('<topic> "
+<         "survey', '<topic> review')." + era_note + "\n"
+---
+>         "- keyword_queries: 14 DIVERSE 2-8 word noun-phrase queries. These are "
+>         "NEW ANGLES, not paraphrases — cover these categories: (a) 2-3 direct "
+>         "phrasings of the request, (b) 2-3 synonym/alternate-terminology "
+>         "phrasings a different community would use, (c) 3-4 naming SPECIFIC "
+>         "well-known methods, systems, datasets, or model families that "
+>         "instantiate the request (e.g. for rejection-sampling finetuning: "
+>         "'ReST reinforced self-training', 'reward ranked fine-tuning RAFT'), "
+>         "(d) 1-2 task/application phrasings (the downstream problem papers "
+>         "solve with this), (e) 1-2 adjacent-subfield phrasings likely to "
+>         "co-report the topic. If the request asks about approaches/solutions/"
+>         "architectures/landscape of a topic, make 2 of them survey-oriented "
+>         "('<topic> survey', '<topic> review')." + era_note + "\n"
+459c464
+<         "keyword_queries": kws[:10],
+---
+>         "keyword_queries": kws[:14],
+489c494,500
+<     """Per-criterion 0/1/3 verdicts for each candidate, mirroring the judge's scale."""
+---
+>     """Per-criterion 0/1/3 verdicts for each candidate, mirroring the judge's scale.
+> 
+>     Candidates are numbered LOCALLY (1..N) rather than by their global pool
+>     index, and grades are requested unspaced ("7:313" not "412: 3 1 3").
+>     Triage output is billed at 6x the input rate, so with a 740-candidate
+>     pool those two changes are worth more than any input trim; the digits
+>     are extracted individually, so the compact form parses identically."""
+494c505,506
+<     lines = "\n".join(f"{i}. {t}" for i, t in chunk)
+---
+>     local_to_global = {j + 1: gi for j, (gi, _) in enumerate(chunk)}
+>     lines = "\n".join(f"{j + 1}. {t}" for j, (_, t) in enumerate(chunk))
+499,500c511,515
+<         "For each candidate output exactly one line:  index: g1 g2 ... "
+<         f"(one grade per criterion C1..C{ncrit}, in order)\n"
+---
+>         "For each candidate output exactly one line, in this exact compact "
+>         f"form:  N:{'g' * ncrit}\n"
+>         f"where N is the candidate number and each g is one grade for "
+>         f"criteria C1..C{ncrit} in order, with NO spaces between the grades "
+>         f"(e.g. '7:{'3' * ncrit}').\n"
+511d525
+<     valid = {i for i, _ in chunk}
+514,515c528,529
+<         idx = int(m.group(1))
+<         if idx not in valid:
+---
+>         idx = local_to_global.get(int(m.group(1)))
+>         if idx is None:
+605a620,639
+> 
+> 
+> def _redundant(text: str, already: list[str]) -> bool:
+>     """True if `text` restates something already emitted (either direction).
+> 
+>     snippet_search returns title- and abstract-section passages freely, so
+>     without this a paper can spend several of its only 8 slots re-showing
+>     the judge text it has already read. Containment both ways catches the
+>     common case where one version is the truncated form of the other."""
+>     n = " ".join(_norm(text).split())
+>     if not n:
+>         return True
+>     for prev in already:
+>         p = " ".join(_norm(prev).split())
+>         if not p:
+>             continue
+>         short, long = (n, p) if len(n) <= len(p) else (p, n)
+>         if short in long:
+>             return True
+>     return False
+623c657,659
+<         passages.append(_cut(abstract, 1150))
+---
+>         # the scorer imposes no length limit and _cut returns a verbatim
+>         # substring, so longer passages are free judge-visible information
+>         passages.append(_cut(abstract, 2000))
+625c661,664
+<     snips = _dedup_snips(doc, 600)
+---
+>     snips = []
+>     for sn in _dedup_snips(doc, 900):
+>         if not _redundant(sn, passages) and not _redundant(sn, snips):
+>             snips.append(sn)
+794,836c833,835
+<     # ---- gap-fill round: too few strong candidates -> fresh queries
+<     if n_perfect < GAP_MIN_PERFECT and time.monotonic() - start < SOFT_DEADLINE - 300:
+<         crit_lines = "\n".join(f"- {c['description']}" for c in criteria)
+<         gprompt = (
+<             "A scholarly keyword search found too few papers satisfying ALL of "
+<             "these criteria simultaneously.\n"
+<             f"Request: {query}\n"
+<             f"Criteria:\n{crit_lines}\n"
+<             f"Queries already tried: {plan['keyword_queries']}\n\n"
+<             "Give 5 NEW keyword queries (2-8 word noun phrases, no operators, "
+<             "no repeats) likely to surface papers satisfying ALL criteria at "
+<             "once — try alternate terminology, specific method/system/dataset "
+<             "names, and adjacent subfield phrasings.\n"
+<             'Reply with JSON only: {"keyword_queries": ["...", "...", "...", "...", "..."]}'
+<         )
+<         gobj = _json_block(await _gen(GPT_5_4, gprompt, label="gap")) or {}
+<         gkws = [k.strip() for k in gobj.get("keyword_queries") or [] if isinstance(k, str) and k.strip()][:5]
+<         if gkws:
+<             print(f"  gap-fill queries: {gkws}")
+<             graws = await asyncio.gather(
+<                 *(
+<                     _safe_tool(
+<                         lambda k=k: search(keyword=_ascii(k), fields=PAPER_FIELDS, limit=100),
+<                         f"gap[{k[:30]}]",
+<                         attempts=2,
+<                     )
+<                     for k in gkws
+<                 )
+<             )
+<             new_docs: list[dict] = []
+<             for raw in graws:
+<                 for doc in _parse_items(raw or []):
+<                     cid = _cid(doc)
+<                     if cid and cid not in pool and len(ordered) + len(new_docs) < POOL_CAP_TOTAL:
+<                         pool[cid] = doc
+<                         new_docs.append(doc)
+<             if new_docs:
+<                 await _fill_abstracts(batch, new_docs)
+<                 new_verdicts = await _triage(new_docs, len(ordered), label="t1gap")
+<                 ordered.extend(new_docs)
+<                 verdicts.update(new_verdicts)
+<                 n_perfect = sum(1 for v in verdicts.values() if all(x == 3 for x in v))
+<                 print(f"  gap-fill added {len(new_docs)} docs; predicted-perfect now {n_perfect}")
+---
+>     # (gap-fill round removed: five observed firings changed predicted-perfect
+>     # by a net +2 across all of them — its LLM budget moved into the wider,
+>     # more diverse upfront pool.)
+1328c1327,1331
+<     name_limit = 40 if ambiguous else 20
+---
+>     # ambiguous aliases: the gold set may be SEVERAL unrelated works sharing
+>     # the acronym (observed: "the SPIKE paper" -> 5 unrelated gold papers, all
+>     # missed at limit=40). Pull the tool max — alias-titled works can sit deep
+>     # in relevance order when the alias is also a common word.
+>     name_limit = 100 if ambiguous else 20
+1420c1423
+<         shortlist = (pref + [d for d in cands if _cid(d) not in pref_ids])[:40]
+---
+>         shortlist = (pref + [d for d in cands if _cid(d) not in pref_ids])[:48]
+1442c1445
+<         "alternates, most plausible first (up to 7)."
+---
+>         "alternates, most plausible first (up to 9)."
+1509c1512
+<         n_extra = 6 if ambiguous else (0 if vconf >= 0.75 else (1 if vconf >= 0.4 else 2))
+---
+>         n_extra = 8 if ambiguous else (0 if vconf >= 0.75 else (1 if vconf >= 0.4 else 2))
+1515c1518,1521
+<         if ambiguous and len(results) < 5:
+---
+>         # F1 math favors the wide hedge here: observed ambiguous-alias gold
+>         # sets run ~5 papers, and every tight submission scored 0. With gold 5,
+>         # 4 hits in 12 submitted is F1 0.47; the tight list's 0-of-7 earns 0.
+>         if ambiguous and len(results) < 12:
+1517c1523
+<                 if len(results) >= 5:
+---
+>                 if len(results) >= 12:
+1533c1539
+<         for d in scored[: 5 if ambiguous else 3]:
+---
+>         for d in scored[: 8 if ambiguous else 3]:
+1535c1541
+<     return _submit(state, results[: 8 if ambiguous else 5])
+---
+>     return _submit(state, results[: 14 if ambiguous else 5])
+1826c1832
+<         '  "cites_paper_title": null, // if papers must CITE some specific paper X, the best-known exact title of X\n'
+---
+>         '  "cites_paper_titles": [],  // if papers must CITE specific paper(s), the best-known exact title of EACH, as separate list entries. "citing the T5 paper and the spider paper" -> TWO entries (results must cite BOTH). NEVER join several titles into one string.\n'
+1855c1861,1876
+<     cites_title = _strv(plan.get("cites_paper_title"))
+---
+>     # accept both the list form and the legacy scalar; split a model that
+>     # ignored the instruction and joined several titles with ';' anyway
+>     _ct_raw = plan.get("cites_paper_titles")
+>     if isinstance(_ct_raw, str):
+>         _ct_raw = [_ct_raw]
+>     if not _ct_raw:
+>         _ct_raw = [plan.get("cites_paper_title")] if plan.get("cites_paper_title") else []
+>     cites_titles: list[str] = []
+>     for t in _ct_raw:
+>         if isinstance(t, str):
+>             for part in re.split(r"\s*;\s*", t):
+>                 part = part.strip()
+>                 if part and part not in cites_titles:
+>                     cites_titles.append(part)
+>     cites_titles = cites_titles[:4]
+>     cites_title = cites_titles[0] if cites_titles else None
+1872c1893,1897
+<     if cites_title:
+---
+>     # each entry: {"cid", "title"} for one paper the results must cite. With
+>     # >1 entry the request is a CONJUNCTION ("citing the T5 paper and the
+>     # spider paper") and the answer is the intersection of the citer sets.
+>     cite_targets: list[dict] = []
+>     if cites_titles:
+1874,1875c1899,1907
+<         raw = await _safe_tool(
+<             lambda: title_search(title=cites_title, fields="corpusId,title"), "cite-title", attempts=2
+---
+>         traws = await asyncio.gather(
+>             *(
+>                 _safe_tool(
+>                     lambda t=t: title_search(title=t, fields="corpusId,title"),
+>                     f"cite-title[{t[:30]}]",
+>                     attempts=2,
+>                 )
+>                 for t in cites_titles
+>             )
+1877,1879c1909,1919
+<         target = next((d for d in _parse_items(raw or []) if d.get("paperId") or _cid(d)), None)
+<         if target:
+<             target_title = target.get("title") or cites_title
+---
+>         for t, raw in zip(cites_titles, traws):
+>             tgt = next((d for d in _parse_items(raw or []) if d.get("paperId") or _cid(d)), None)
+>             if not tgt or not _cid(tgt):
+>                 print(f"  cited paper {t!r}: NOT RESOLVED")
+>                 continue
+>             cite_targets.append({"cid": _cid(tgt), "title": tgt.get("title") or t})
+>             if tgt.get("paperId"):
+>                 target_hashes.add(str(tgt["paperId"]))
+>             target_cids.add(_cid(tgt))
+>         if cite_targets:
+>             target_title = cite_targets[0]["title"]
+1881,1885c1921,1924
+<             if target.get("paperId"):
+<                 target_hashes.add(str(target["paperId"]))
+<             if _cid(target):
+<                 target_cids.add(_cid(target))
+<             print(f"  cited paper: {_cid(target)} {target_title!r} short_name={short_name!r}")
+---
+>             print(
+>                 f"  cited papers ({len(cite_targets)}): "
+>                 f"{[(t['cid'], t['title'][:50]) for t in cite_targets]} short_name={short_name!r}"
+>             )
+1913,1914c1952,1956
+<     elif cites_title and target_cids:
+<         # channel A: the (1000-capped, recency-skewed) citations list
+---
+>     elif cite_targets:
+>         # channel A: the citations list of EACH cited target. get_citations is
+>         # the only citation surface that works (references is dead
+>         # server-side), it is hard-capped at 1000 with no paging, and the
+>         # sample it returns is recency-ordered.
+1916,1918c1958,1985
+<         target_id = f"CorpusId:{next(iter(target_cids))}"
+<         raw = await _safe_tool(
+<             lambda: get_cit(paper_id=target_id, fields=META_FIELDS, limit=1000), "citations", attempts=2
+---
+> 
+>         async def _citers_of_target(t: dict) -> list[dict]:
+>             raw = await _safe_tool(
+>                 lambda: get_cit(
+>                     paper_id=f"CorpusId:{t['cid']}", fields=META_FIELDS, limit=1000
+>                 ),
+>                 f"citations[{t['cid']}]",
+>                 attempts=2,
+>             )
+>             out = []
+>             for item in _parse_items(raw or []):
+>                 doc = item.get("citingPaper") if isinstance(item.get("citingPaper"), dict) else item
+>                 if isinstance(doc, dict) and _cid(doc):
+>                     out.append(doc)
+>             return out
+> 
+>         citer_lists = await asyncio.gather(*(_citers_of_target(t) for t in cite_targets))
+>         citer_sets = [{_cid(d) for d in lst} for lst in citer_lists]
+>         cap_hit = any(len(lst) >= 1000 for lst in citer_lists)
+>         by_cid_all: dict[str, dict] = {}
+>         for lst in citer_lists:
+>             for d in lst:
+>                 by_cid_all.setdefault(_cid(d), d)
+>         for cid, d in by_cid_all.items():
+>             d["_cites_count"] = sum(1 for s in citer_sets if cid in s)
+>         print(
+>             f"  channel A (get_citations x{len(cite_targets)}): "
+>             f"{[len(l) for l in citer_lists]} citers, {len(by_cid_all)} unique, cap_hit={cap_hit}"
+1920,1925c1987,2011
+<         for item in _parse_items(raw or []):
+<             doc = item.get("citingPaper") if isinstance(item.get("citingPaper"), dict) else item
+<             if isinstance(doc, dict) and _cid(doc):
+<                 doc["_cites_target"] = True
+<                 candidates.append(doc)
+<         print(f"  channel A (get_citations): {len(candidates)}")
+---
+> 
+>         if len(cite_targets) > 1:
+>             # CONJUNCTION: results must cite every target, so the answer is
+>             # the intersection. Fall back to citing-the-most-targets when the
+>             # intersection is empty (one target may be unresolved or its
+>             # citer list truncated by the 1000-cap).
+>             need = len(cite_targets)
+>             inter = [d for d in by_cid_all.values() if d["_cites_count"] >= need]
+>             while not inter and need > 1:
+>                 need -= 1
+>                 inter = [d for d in by_cid_all.values() if d["_cites_count"] >= need]
+>             # membership in the intersection IS the citation verification —
+>             # mark verified so the (dead-API) reference check can't drop them
+>             for d in inter:
+>                 d["_cites_target"] = True
+>             inter.sort(key=lambda d: (-(d.get("_cites_count") or 0), -(d.get("citationCount") or 0)))
+>             candidates.extend(inter)
+>             print(
+>                 f"  citation intersection: {len(inter)} papers citing >={need} "
+>                 f"of {len(cite_targets)} targets"
+>             )
+>         else:
+>             for d in by_cid_all.values():
+>                 d["_cites_target"] = True
+>                 candidates.append(d)
+1927,1955c2013,2059
+<         # later) — recovers highly-cited citers the 1000-cap can't return
+<         kw_set: list[str] = []
+<         for k in (
+<             short_name,
+<             topic,
+<             f"{short_name} {topic}" if short_name and topic else None,
+<             " ".join(
+<                 w
+<                 for w in re.findall(r"[A-Za-z][\w-]+", target_title or "")
+<                 if _norm(w) not in _STOP
+<             )[:60]
+<             or None,
+<             f"using {short_name}" if short_name else None,
+<         ):
+<             if k and k not in kw_set:
+<                 kw_set.append(k)
+<         kws = kw_set
+<         btasks = []
+<         for k in kws[:5]:
+<             kwargs = {"keyword": _ascii(k), "fields": META_FIELDS, "limit": 100}
+<             if venues:
+<                 kwargs["venues"] = ",".join(venues)
+<             btasks.append(_safe_tool(lambda kwargs=dict(kwargs): rel(**kwargs), f"relB[{k[:25]}]", attempts=2))
+<             if venues:  # unfiltered variant too: server venue names may mismatch
+<                 btasks.append(
+<                     _safe_tool(
+<                         lambda k=k: rel(keyword=_ascii(k), fields=META_FIELDS, limit=100),
+<                         f"relB-nv[{k[:25]}]",
+<                         attempts=2,
+---
+>         # later) — recovers highly-cited citers the 1000-cap can't return.
+>         # Skipped on conjunctions: a mention of the FIRST target says nothing
+>         # about the others, and the intersection is already exact.
+>         if len(cite_targets) == 1:
+>             kw_set: list[str] = []
+>             for k in (
+>                 short_name,
+>                 topic,
+>                 f"{short_name} {topic}" if short_name and topic else None,
+>                 " ".join(
+>                     w
+>                     for w in re.findall(r"[A-Za-z][\w-]+", target_title or "")
+>                     if _norm(w) not in _STOP
+>                 )[:60]
+>                 or None,
+>                 f"using {short_name}" if short_name else None,
+>             ):
+>                 if k and k not in kw_set:
+>                     kw_set.append(k)
+>             # The 1000-cap sample is recency-ordered, so on a heavily-cited
+>             # target it is ENTIRELY the newest tail: metadata_25 submitted 31
+>             # papers, all 2025, against gold that is all 2022-2024. When a
+>             # min_citations filter implies a large established gold set, add
+>             # topical probes that reach the older, well-cited citers the cap
+>             # cannot return.
+>             if min_cit and cap_hit:
+>                 for k in (
+>                     f"{short_name} distillation" if short_name else None,
+>                     f"{short_name} benchmark evaluation" if short_name else None,
+>                     f"{topic} survey" if topic else None,
+>                 ):
+>                     if k and k not in kw_set:
+>                         kw_set.append(k)
+>             kws = kw_set
+>             btasks = []
+>             for k in kws[:8]:
+>                 kwargs = {"keyword": _ascii(k), "fields": META_FIELDS, "limit": 100}
+>                 if venues:
+>                     kwargs["venues"] = ",".join(venues)
+>                 btasks.append(_safe_tool(lambda kwargs=dict(kwargs): rel(**kwargs), f"relB[{k[:25]}]", attempts=2))
+>                 if venues:  # unfiltered variant too: server venue names may mismatch
+>                     btasks.append(
+>                         _safe_tool(
+>                             lambda k=k: rel(keyword=_ascii(k), fields=META_FIELDS, limit=100),
+>                             f"relB-nv[{k[:25]}]",
+>                             attempts=2,
+>                         )
+1957,1971c2061,2074
+<                 )
+<         if short_name:
+<             skwargs = {"query": short_name, "limit": 100}
+<             if venues:
+<                 skwargs["venues"] = ",".join(venues)
+<             btasks.append(_safe_tool(lambda: snippet_tool(**skwargs), "snipC", timeout=200, attempts=2))
+<         braws = await asyncio.gather(*btasks)
+<         n_before = len(candidates)
+<         for raw in braws:
+<             for d in _parse_items(raw or []):
+<                 if isinstance(d, dict) and d.get("paper"):  # snippet entry
+<                     d = dict(d["paper"])
+<                 if isinstance(d, dict) and _cid(d):
+<                     candidates.append(d)
+<         print(f"  channels B/C (mention search): +{len(candidates) - n_before}")
+---
+>             if short_name:
+>                 skwargs = {"query": short_name, "limit": 100}
+>                 if venues:
+>                     skwargs["venues"] = ",".join(venues)
+>                 btasks.append(_safe_tool(lambda: snippet_tool(**skwargs), "snipC", timeout=200, attempts=2))
+>             braws = await asyncio.gather(*btasks)
+>             n_before = len(candidates)
+>             for raw in braws:
+>                 for d in _parse_items(raw or []):
+>                     if isinstance(d, dict) and d.get("paper"):  # snippet entry
+>                         d = dict(d["paper"])
+>                     if isinstance(d, dict) and _cid(d):
+>                         candidates.append(d)
+>             print(f"  channels B/C (mention search): +{len(candidates) - n_before}")
+2215a2319,2331
+>     # When more candidates survive than we can submit, keep the ones most
+>     # likely to be gold: citation-verified first, then well-cited (a
+>     # min_citations request implies gold is made of established papers).
+>     if len(kept) > MAX_SUBMIT:
+>         kept.sort(
+>             key=lambda d: (
+>                 0 if d.get("_cites_target") else 1,
+>                 -(d.get("_cites_count") or 0),
+>                 -(d.get("citationCount") or 0),
+>             )
+>         )
+>         print(f"  {len(kept)} survivors -> submitting the {MAX_SUBMIT} best-supported")
+> 

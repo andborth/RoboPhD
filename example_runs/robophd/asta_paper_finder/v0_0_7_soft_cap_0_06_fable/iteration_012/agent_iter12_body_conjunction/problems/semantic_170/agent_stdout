@@ -1,0 +1,19 @@
+[semantic_170] score_type=semantic_f1 query='What are the central methods for aligning AI systems with human values?'
+  criteria: ['AI alignment methods', 'Human values focus', 'Central or widely recognized approaches'] weights=[0.5, 0.3, 0.2]
+  probes: ['alignment techniques for AI systems', 'aligned with human values', 'major approaches to AI alignment']
+  keyword queries: ['AI alignment methods', 'human value alignment', 'AI alignment survey', 'value alignment review', 'reinforcement learning from human feedback', 'constitutional AI', 'preference learning for alignment', 'inverse reinforcement learning human values', 'AI safety alignment techniques', 'human preferences in language models'] earliest=False
+  candidate pool: 360 of 1077 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 48, 44, 41, 43, 42])
+  stage1 graded 360/360; predicted-perfect: 37
+  [expand] references field variant works: 'corpusId,references'
+  [tool:expand-ref[285581982]] attempt 1/1 failed: TimeoutError()
+  citation expansion: +120 docs from 10 seeds; predicted-perfect 37 -> 51
+  snippet-enriching 100 of top 100
+  [tool:enrich[278911233]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[233296398]] attempt 1/2 failed: TimeoutError()
+  stage2 judge-sim graded 49/49 (skipped 51 stage1-perfect, 0 snippetless-weak); newly-perfect: 19
+  rescue round: 24 near-miss papers
+  rescue promoted 6 to predicted-perfect
+  [tool:enrich[278905208]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 135/135 tail entries (uniq=1077)
+  llm-usage: plan:n=1,in~660t,out~535t; rescue:n=3,in~4427t,out~59t; sim:n=7,in~9419t,out~123t; t1:n=12,in~26398t,out~959t; t1exp:n=4,in~8814t,out~329t
+  submitted 250 papers

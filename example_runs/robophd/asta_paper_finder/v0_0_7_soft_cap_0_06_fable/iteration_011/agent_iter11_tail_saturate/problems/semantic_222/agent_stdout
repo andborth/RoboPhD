@@ -1,0 +1,36 @@
+[semantic_222] score_type=semantic_f1 query='I am looking for research papers on the construction of multimodal foundation models that support bo'
+  criteria: ['Multimodal foundation model with visual and audio inputs', 'Large-scale pretraining construction', 'Uses visual, audio, and audio-visual data'] weights=[0.5, 0.3, 0.2]
+  probes: ['joint audio-visual representation learning', 'pre-trained on large-scale datasets', 'visual, audio, and audio-visual data']
+  keyword queries: ['audio visual foundation model', 'multimodal foundation model audio vision', 'audio visual pretraining model', 'vision audio large scale pretraining', 'audio visual language model', 'multimodal encoder audio video image', 'joint audio visual representation learning', 'audio visual self supervised pretraining', 'audio visual foundation model survey', 'multimodal audio vision review'] earliest=False
+  candidate pool: 360 of 889 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 89])
+  stage1 graded 360/360; predicted-perfect: 4
+  gap-fill queries: ['any to any multimodal pretraining', 'unified image audio video encoder', 'audio visual speech representation pretraining', 'imagebind modality joint embedding', 'audiovisual self supervised foundation model']
+  gap-fill added 60 docs; predicted-perfect now 4
+  [tool:expand-ref[267839145]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[53280782]] attempt 1/1 failed: TimeoutError()
+  [tool:expand-ref[277509882]] attempt 1/1 failed: TimeoutError()
+  [tool:expand-cit[267839145]] attempt 1/1 failed: TimeoutError()
+  [tool:expand-cit[276938156]] attempt 1/1 failed: TimeoutError()
+  citation expansion: +150 docs from 10 seeds; predicted-perfect 4 -> 4
+  snippet-enriching 110 of top 110
+  [tool:enrich[272969327]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[272330216]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[253734821]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[259765944]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[276772967]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[260334248]] attempt 1/2 failed: TimeoutError()
+  stage2 judge-sim graded 106/106 (skipped 4 stage1-perfect); newly-perfect: 3
+  rescue round: 32 near-miss papers
+  rescue promoted 1 to predicted-perfect
+  head verify: 0/24 confirmed perfect by GPT_5_4
+  [tool:enrich[263908905]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[210868003]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[258298334]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[237291550]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[265659318]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[273097985]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[268579755]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[202676837]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 125/125 tail entries (uniq=889)
+  llm-usage: gap:n=1,in~412t,out~57t; plan:n=1,in~594t,out~508t; rescue:n=4,in~6261t,out~84t; sim:n=14,in~20888t,out~275t; t1:n=12,in~26600t,out~959t; t1exp:n=5,in~10958t,out~411t; t1gap:n=2,in~4341t,out~164t; verify:n=4,in~5039t,out~62t
+  submitted 250 papers

@@ -1,0 +1,21 @@
+[semantic_8] score_type=semantic_f1 query='What papers use decoupled workers in distributed RL system?'
+  criteria: ['Distributed reinforcement learning focus', 'Decoupled worker architecture', 'Explicit systems-level use of decoupling'] weights=[0.45, 0.4, 0.15]
+  probes: ['distributed reinforcement learning system', 'actors and learners are decoupled', 'separating acting from learning']
+  keyword queries: ['distributed reinforcement learning decoupled workers', 'decoupled workers distributed RL', 'distributed RL actor learner architecture', 'asynchronous distributed reinforcement learning workers', 'separated acting learning reinforcement learning', 'actor learner decoupling reinforcement learning', 'distributed reinforcement learning system architecture', 'distributed RL replay learner actor', 'distributed reinforcement learning survey', 'distributed RL systems review'] earliest=False
+  candidate pool: 360 of 823 uniques (per-source: [100, 85, 73, 100, 100, 100, 100, 27, 100, 100, 76])
+  stage1 graded 360/360; predicted-perfect: 21
+  [tool:expand-ref[245839856]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[277112157]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[220712135]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[278726703]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  citation expansion: +110 docs from 10 seeds; predicted-perfect 21 -> 24
+  snippet-enriching 110 of top 110
+  stage2 judge-sim graded 86/86 (skipped 24 stage1-perfect); newly-perfect: 14
+  rescue round: 30 near-miss papers
+  rescue promoted 4 to predicted-perfect
+  head verify: 5/16 confirmed perfect by GPT_5_4
+  [tool:enrich[221652044]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[278207911]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 125/125 tail entries (uniq=823)
+  llm-usage: plan:n=1,in~543t,out~525t; rescue:n=4,in~5803t,out~78t; sim:n=11,in~16456t,out~225t; t1:n=12,in~27215t,out~959t; t1exp:n=4,in~8011t,out~301t; verify:n=3,in~3216t,out~40t
+  submitted 250 papers

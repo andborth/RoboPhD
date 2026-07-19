@@ -91,7 +91,8 @@ class Submission(NamedTuple):
     # submissions/asta_paper_finder/. Becomes the .tar.gz basename too.
     name: str
     # agent.py path relative to the example_runs source dir for this
-    # submission (snapshots are flat: <name>/agent.py).
+    # submission. Snapshots are run-shaped (ds1000 precedent): the
+    # winning agent nests under agents/<agent_name>/.
     agent_rel_path: str
     # --model arg for `astabench eval`. `none` for multi-model agents so
     # the recorded eval.model doesn't claim a single primary; per-call
@@ -102,7 +103,7 @@ class Submission(NamedTuple):
 SUBMISSIONS = [
     Submission(
         name="v0_0_7_soft_cap_0_06_fable",
-        agent_rel_path="agent.py",
+        agent_rel_path="agents/iter12_body_conjunction/agent.py",
         model_arg="none",
         # Run robophd-asta_paper_finder-003 (fable-5-evolved), winner
         # iter12_body_conjunction (Elo 1581, 8 test rounds). Internal test

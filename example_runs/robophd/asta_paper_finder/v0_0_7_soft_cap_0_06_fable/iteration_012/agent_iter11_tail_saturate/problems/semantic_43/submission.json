@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_43",
+    "results": [
+      {
+        "paper_id": "32352911",
+        "markdown_evidence": "Adobe-MIT submission to the DSTC 4 Spoken Language Understanding pilot task ... This paper compares different classifiers for spoken language understanding pilot task, which consists of tagging a given utterance with speech acts and semantic slots and concludes that the best system obtains 0.52 F1-score for semantic tagging for both the guide and the tourist. ... The Dialog State Tracking Challenge 4 (DSTC 4) proposes several pilot tasks. In this paper, we focus on the spoken language understanding pilot task, which consists of tagging a given utterance with speech acts and semantic slots. We compare different classifiers: the best system obtains 0.52 and 0.67 F1-scores on the test set for speech act recognition for the tourist and the guide respectively, and 0.52 F1-score for semantic tagging for both the guide and the tourist. ... The Dialog State Tracking Challenge 4 (DSTC 4) proposes several pilot tasks. In this paper, we focus on the spoken language understanding pilot task, which consists of tagging a given utterance with speech acts and semantic slots. We compare different classifiers: the best system obtains 0.52 and 0.67 F1-scores on the test set for speech act recognition for the tourist and the guide respectively, and 0.52 F1-score for semantic tagging for both the guide and the tourist. ... Recognizing the speech acts of the current utterance is one of the two goals of the spoken language understanding pilot task. In the training and development sets, each utterance is annotated with one speech act. One speech act is composed of zero, one or two speech act categories. Each speech act category has in turn zero, one or two speech act attributes. There are 4 speech act categories, and 22 speech act attributes. [6] and [7] give further details on the task. The main approaches for this task are presented in [15,1,17,5,16,19,10,3]. \n\nWe submitted 5 systems. Systems 3 and 5 were the ... Adobe-MIT submission to the DSTC 4 Spoken Language Understanding pilot task"
+      },
+      {
+        "paper_id": "233219405",
+        "markdown_evidence": "Few-shot Intent Classification and Slot Filling with Retrieved Examples ... This paper proposes a span-level retrieval method that learns similar contextualized representations for spans with the same label via a novel batch-softmax objective and uses the labels of the retrieved spans to construct the final structure with the highest aggregated score. ... Few-shot learning arises in important practical scenarios, such as when a natural language understanding system needs to learn new semantic labels for an emerging, resource-scarce domain. In this paper, we explore retrieval-based methods for intent classification and slot filling tasks in few-shot settings. Retrieval-based methods make predictions based on labeled examples in the retrieval index that are similar to the input, and thus can adapt to new domains simply by changing the index without having to retrain the model. However, it is non-trivial to apply such methods on tasks with a complex label space like slot filling. To this end, we propose a span-level retrieval method that learns similar contextualized representations for spans with the same label via a novel batch-softmax objective. At inference time, we use the labels of the retrieved spans to construct the final structure with the highest aggregated score. Our method outperforms previous systems in various few-shot settings on the CLINC and SNIPS benchmarks. ... .89%) on the target domain, it suffers from catastrophic forgetting on the source domain (43.91%). On the other hand, Proto and Retriever can get high accuracy on the target domain (80.44% and 79.20%) while maintaining high performance on the source domain.\n\nWhen we combine data from the source domain, we observe performance gains in all the models under the Fine-tune on tgt domain with src data section. Specifically, we add few-shot source domain examples as contrastive examples for the models to learn better utterance/class representations for Retriever and Proto. Results show that accuracy ... We note that Retriever outperforms the strongest baselines but reaches a low score on the SCW domain. This may be due to the bigger difference between the test (SCW) and the development domain (GW) including the size of the support set and their respective slot names. We also found that from all the correctly predicted slot spans, 96.73% predicted the correct slot names. This shows that the majority of the errors come from querying with invalid spans. We believe that span-based pretraining such as Span-BERT (Joshi et al., 2020) could make our proposed method achieve better results.  Table 4: ... We evaluate our proposed approach on two datasets: CLINC (Larson et al., 2019) for intent classification and SNIPS (Coucke et al., 2018) for slot filling. Note that we use max (Eq. 4) as the reduction function for both tasks since it empirically yields the best results. The effect of reduction functions will be analyzed later in Section 7.1. ... The CLINC intent classification dataset (Larson et al., 2019) contains utterances from 10 intent categories (e.g., \"travel\"), each containing 15 intents (e.g., \"flight_status\", \"book_flight\"). To simulate the few-shot scenario where new domains and intents are introduced, we designate n c categories and n i intents per category as the source domain (with all 100 training examples per intent), and use the remaining 150 − n c × n i intents as the target domain. We experiment with (n c , n i ) = (10, 10), (8, 10), and (5, 15). 3 The target training data contains either 2 or 5 examples per target ... We compare the reduction functions proposed in Section 5.1 and found that max performs the best. Since mean is equivalent to Prototypical Networks, we compared to Proto directly in the experiments. min-max is more intuitive in contrasting with least similar examples within the same class compared to max. However, its performance is worse than max. We speculate the reason to be that we retrieve the example with the maximum score at inference time so that the boundary margin may not be utilized. Table 3 shows the average improvement of our methods over the BERT fine-tune baseline, where all"
+      },
+      {
+        "paper_id": "276973809",
+        "markdown_evidence": "Zero-Shot Cross-Domain Slot Filling with Retrieval Augmented In-Context Learning ... Zero-shot cross-domain slot filling is becoming increasingly important due to its ability to generalize to new domains without the need for annotating domain-specific data, which aligns well with the requirements of industrial deployments. Recent advanced works deal with this task through question answering framework and make remarkable progress. However, they always rely on human efforts to manually construct question templates or prompts for all slot types, which is not only labor consuming, but also experience context inconsistency issue between the manual example and the specific test instance. To alleviate this problem, we introduce a retriever designed to extract reference samples from the training sets, serving as demonstrations to guide the model in generating the target slot entity through in-context learning. Building upon this retriever, we propose a retrieval-augmented generative framework that automatically constructs and tailors prompts to each specific test instance, eliminating the need for manual efforts. Experiment results verify that our approach attains the state-of-the-art."
+      },
+      {
+        "paper_id": "264439645",
+        "markdown_evidence": "Adaptive End-to-End Metric Learning for Zero-Shot Cross-Domain Slot Filling ... A cascade-style joint learning framework coupled with context-aware soft label representations and slot-level contrastive representation learning to mitigate the data and label shift problems effectively and demonstrate the superiority of the proposed approach over a series of competitive baselines. ... Recently slot filling has witnessed great development thanks to deep learning and the availability of large-scale annotated data. However, it poses a critical challenge to handle a novel domain whose samples are never seen during training. The recognition performance might be greatly degraded due to severe domain shifts. Most prior works deal with this problem in a two-pass pipeline manner based on metric learning. In practice, these dominant pipeline models may be limited in computational efficiency and generalization capacity because of non-parallel inference and context-free discrete label embeddings. To this end, we re-examine the typical metric-based methods, and propose a new adaptive end-to-end metric learning scheme for the challenging zero-shot slot filling. Considering simplicity, efficiency and generalizability, we present a cascade-style joint learning framework coupled with context-aware soft label representations and slot-level contrastive representation learning to mitigate the data and label shift problems effectively. Extensive experiments on public benchmarks demonstrate the superiority of the proposed approach over a series of competitive baselines. ... Suppose we have the source domain D S = {(x S i , y S i )} N S i=1 with N S labeled samples from distribution P S , and the (testing) target domain D T = {(y T j )} C j=1 with C slot types from target distribution P T . We define Ω S as the label set of source domain D S , and Ω T as the label set of target domain D T . Ω sh = Ω S ∩ Ω T denotes the common slot label set shared by D S and D T . In the zeroshot scenario, the label sets between different domains may be mismatching, thus Ω sh ⊆ Ω S and P S ̸ = P T . The goal is to learn a robust and generalizable zero-shot slot filling model that ... During training, our overall framework is optimized end-to-end with min-batch. The final training objective is to minimize the sum of the all loss functions: \n\nwhere each part has been defined in the previous subsections. During inference, we have the slot type set of the target domain samples, and the testing slot labels constitute the label sequence, which is then concatenated with the utterance as the model input. The CRF decoder predicts the slot boundaries of the utterance, and the predicted slot type corresponds to the type with the highest-matching score. We take the non-O-labeled ... To evaluate the proposed method, we conduct the experiments on the SNIPS dataset for zero- We show the number of labels in the source and target domains. The unseen rate refers to the proportion of non-overlapped source-target domain labels in the target label set. † denotes the QA-based methods that introduce manually-designed query for each slot label. ‡ denotes the generative method along with prompts for each slot label. \n\nshot settings (Coucke et al., 2018), which contains 39 slot types across seven different domains: AddToPlaylist (ATP), BookRestaurant (BR), GetWeather (GW), PlayMusic ... In particular, we examine our method in the zeroresource NER setting. As presented in Table 2, our method is also adaptable to this scenario, and exceed or match the performance of previous competitive baselines. Meanwhile, the slot-level contrastive learning can yield effective performance improvements. ... Recent line of works have investigated the instance-level contrastive learning by template regularization (Shah et al., 2019;Liu et al., 2020b;He et al., 2020;Wang et al., 2021). As slots with the same types tend to have the semantically similar contexts, inspired by Das et al. (2022), we propose to use the slot-level contrastive learning to facilitate the discriminative slot representations that may contribute to adaptation robustness. 4 ore specifically, we define a supervised contrastive objective by decreasing the similarities between different types of slot entities while increasing the"
+      },
+      {
+        "paper_id": "235421972",
+        "markdown_evidence": "GenSF: Simultaneous Adaptation of Generative Pre-trained Models and Slot Filling ... GENSF (Generative Slot Filling), which leverages a generative pre-trained open-domain dialog model for slot filling, achieves state-of-the-art results on two slot filling datasets with strong gains in few-shot and zero-shot settings. ... In transfer learning, it is imperative to achieve strong alignment between a pre-trained model and a downstream task. Prior work has done this by proposing task-specific pre-training objectives, which sacrifices the inherent scalability of the transfer learning paradigm. We instead achieve strong alignment by simultaneously modifying both the pre-trained model and the formulation of the downstream task, which is more efficient and preserves the scalability of transfer learning. We present GenSF (Generative Slot Filling), which leverages a generative pre-trained open-domain dialog model for slot filling. GenSF (1) adapts the pre-trained model by incorporating inductive biases about the task and (2) adapts the downstream task by reformulating slot filling to better leverage the pre-trained model’s capabilities. GenSF achieves state-of-the-art results on two slot filling datasets with strong gains in few-shot and zero-shot settings. We achieve a 9 F1 score improvement in zero-shot slot filling. This highlights the value of strong alignment between the pre-trained model and the downstream task. ... By incorporating inductive biases into both the task and the model, the approach outlined in this paper does not require task-specific pre-trained models and therefore preserves the inherent generality of the transfer learning paradigm. Furthermore, GENSF attains moderate improvements over ConVEx, especially in the few-shot settings, with a 3 F 1 score improvement in the 1 /16th setting. \n\nThe results on the DSTC8 single-domain datasets is shown in Table 3. Here, we evaluate on both full-data and few-shot (25% of the training data) settings. On average, GENSF achieves strong performance ... It should be noted that the macro-averaged F 1 score used to evaluate the models considers a slot value to be incorrect unless it exactly predicts the ground-truth slot value. In many cases, the GENSF model produces appropriate slot values that differ from the ground-truth, e.g., 'wednesday' instead of 'next wednesday'. It is possible that by incorporating additional inductive biases about the specific formulation of the slot values (e.g., slots should have maximal information) into the inference algorithm, the zero-shot performance can be further increased. GENSF is shown to strongly ... On average, GenSF moderately outperforms ConVEx, with > 2.0 F 1 score improvements in the few-shot settings on RESTAURANT-8K, and both the full data and fewshot settings on two of the DSTC8 datasets. These experiments empirically validate (1) the importance of aligning the pre-trained model and the downstream task by simultaneously incorporating inductive biases into both the task and the model and (2) that through response generation pre-training, dialog models have implicitly learned to detect certain slots, which can be leveraged by effectively adapting the downstream task. ... We use the pre-processing and evaluation scripts provided by the DialoGLUE benchmark (Mehri et al., 2020). We follow the setup of Coope et al. ( 2020) and Henderson and Vulić (2020), wherein a validation set is not used and the experiments are therefore performed with fixed hyperparameters. Throughout all the experiments, the medium version of DialoGPT (Zhang et al., 2020) is used. We use the AdamW optimizer (Loshchilov and Hutter, 2017) with a learning rate of 5e-5. On RESTAURANTS-8K, the models are trained for 10 epochs in the full-data setting, 20 epochs in the few-shot settings and 40 ... Given an utterance u = {w 1 , w 2 , . . . w n }, a set of possible slot keys s = {s 1 , s 2 , . . . s k }, and a list of slots requested by the system r = {r 1 , r 2 , . . . r m } (where r i ∈ s and m ≥ 0), the task of slot filling is to assign a value to a subset of the slot keys. Concretely, for a given slot key s i , the output will either be NULL or a contiguous span of words from the utterance: s i = {w i , . . . w i+j }. \n\nIn response generation, given a dialog context consisting of a sequence of utterances: c = {x 1 , x 2 , . . . x n } wherein each utterance x i is a sequence of words,"
+      },
+      {
+        "paper_id": "255440691",
+        "markdown_evidence": "HIT-SCIR at MMNLU-22: Consistency Regularization for Multilingual Spoken Language Understanding ... This work proposes to use consistency regularization based on a hybrid data augmentation strategy that enforces the predicted distributions for an example and its semantically equivalent augmentation to be consistent. ... Multilingual spoken language understanding (SLU) consists of two sub-tasks, namely intent detection and slot filling. To improve the performance of these two sub-tasks, we propose to use consistency regularization based on a hybrid data augmentation strategy. The consistency regularization enforces the predicted distributions for an example and its semantically equivalent augmentation to be consistent. We conduct experiments on the MASSIVE dataset under both full-dataset and zero-shot settings. Experimental results demonstrate that our proposed method improves the performance on both intent detection and slot filling tasks. Our system ranked 1st in the MMNLU-22 competition under the full-dataset setting. ... We conduct ablation studies on the test dataset of MASSIVE under the two settings. Table 4 shows the results under the full-dataset setting. Ablating subword sampling will degrade the performance by 1.36 points on the exact match accuracy, where the performance drop comes mainly from the slot filling task, indicating the subword sampling augmentation mainly works on slot filling. Ablating consistency regularization will degrade the performance by 2.19 points on the exact match accuracy. The performances on both intent detection and slot filling tasks are decreased. \n\nThe zero-shot setting ... The evaluation in competition is mainly conducted using three metrics: \n\n• Exact Match Accuracy (EMA): The percentage of utterance-level predictions where the intent and all slots are exactly correct. \n\n• Intent Accuracy (Intent Acc): The percentage of predictions in which the intent is correct. \n\n• Slot Micro F1 (Slot F1): The micro-averaged F1 score is calculated over all slots. ... The MASSIVE dataset is composed of realistic, human-created virtual assistant utterance text spanning 51 languages, 60 intents, 55 slot types, and 18 domains (FitzGerald et al., 2022). There are 11,514 training utterances for each language. For the full-dataset setting, all training data can be used. \n\nFor the zero-shot setting, only English training data can be used, yet we can translate them into other languages using commercial translators. There are 2,033, 2,974, and 3,000 utterances for each language in the development, test, and evaluation set, respectively. The average performance in ... Table 2 shows our results on the MASSIVE dataset under the full-set setting. We tried different crosslingual pre-trained language models under the baseline setting. Among them, XLM-Align Base performs the best on the intent detection task, while the mT5 Base Text-to-Text model performs the best on the slot filling task and exact match accuracy. When applying our consistency regularization method, the mT5 Base Text-to- 2.96-point improvement on exact match accuracy with the mT5 Base Text-to-Text model. \n\nTable 3 shows our results on the MASSIVE dataset under the zero-shot setting. For the"
+      },
+      {
+        "paper_id": "259731677",
+        "markdown_evidence": "A Domain-Transfer Meta Task Design Paradigm for Few-Shot Slot Tagging ... This paper introduces a novel domain-transfer meta task design paradigm to tackle few-shot slot tagging and proposes a Task Adaptation Network to effectively transfer the historical information from the basic domain to the target domain. ... Few-shot slot tagging is an important task in dialogue systems and attracts much attention of researchers. Most previous few-shot slot tagging methods utilize meta-learning procedure for training and strive to construct a large number of different meta tasks to simulate the testing situation of insufficient data. However, there is a widespread phenomenon of overlap slot between two domains in slot tagging. Traditional meta tasks ignore this special phenomenon and cannot simulate such realistic few-shot slot tagging scenarios. It violates the basic principle of meta-learning which the meta task is consistent with the real testing task, leading to historical information forgetting problem. In this paper, we introduce a novel domain-transfer meta task design paradigm to tackle this problem. We distribute a basic domain to each target domain based on the coincidence degree of slot labels between these two domains. Unlike classic meta tasks which only rely on small samples of target domain, our meta tasks aim to correctly infer the class of target domain query samples based on both abundant data in basic domain and scarce data in target domain. To accomplish our meta task, we propose a Task Adaptation Network to effectively transfer the historical information from the basic domain to ... Few-Shot Slot Tagging \n\nSlot tagging aims to correctly infer the slot label of each word in sentences, which is generally considered as a sequence labeling problem. Most of previous few-shot slot tagging methods adopt metric-based meta-learning strategy for training and testing (Finn, Abbeel, and Levine 2017). (Hou et al. 2020) introduce the conditional random fields (CRFs) (Sutton and McCallum 2012) into the few-shot slot tagging task and modify two key functions (emission and transition scores) in CRF according to the characteristics of the fewshot scenario. Moreover, (Zhu et al. 2020) ... In this section, we define the few-shot slot tagging task followed by (Hou et al. 2020). We denote the input sentence as \n\nwhere n represents the number of words in this sentence. Furthermore, each domain is defined as \n\n, which contains a series of (x, y) pairs. The few-shot slot tagging task requires the model to be trained on the source domains D S and directly tested on the target domain D T without fine-tuning. Source domains contain a large number of labeled samples while the target domain only includes few labeled data. For the target domain, these few labeled samples form a support ... Task Adaptation Meta Network (TAMN) aims to learn the meta knowledge from the target support set and fuse it with historical information according to different tasks. Historical information is stored in Basic Encoder and the parameters of BE are fixed during TAMN training. We employ a Meta Encoder (ME) to capture the meta knowledge, which is trained across multiple episodes. A Task Adaptation is designed to fuse meta knowledge and historical information. Given a query set sentence x t = (x 1 , x 2 , • • • , x n ) and a K-shot support set S. Each word x i is encoded by Basic Encoder and Meta ... In this section, we conduct a large number of ablation studies to observe the effect of each individual component in our model. We test the performance of our full model and its ablations on SNIPS dataset. As shown in Table 4, the average performance of the model decreases to varying degrees after removing these three modules separately. \n\n\"w/o BSTN\" means that we employ traditional meta task and use POS features to enhance word embeddings. In 1shot and 5-shot settings, the performance decreases by 3.05 and 1.16, respectively. It can be seen that BSTN has the most impact on the performance ... Generalized few-shot learning (GFSL) is an extension of few-shot learning, aiming to correctly classify samples in a joint label space where both existing and novel classes are present. GFSL is a new investigation domain and current works mainly focus on computer vision. (Gidaris and Komodakis 2018) introduce an attention based few-shot classification weight generator and enhance the recognition ability of base and novel classes. (Kukleva, Kuehne, and Schiele 2021) propose a three-stage framework for GFSL, which strikes a balance between preventing base classes, learning novel classes and"
+      },
+      {
+        "paper_id": "237303899",
+        "markdown_evidence": "MCML: A Novel Memory-based Contrastive Meta-Learning Method for Few Shot Slot Tagging ... Experimental results show that the MCML outperforms several state-of-the-art methods on both SNIPS and NER datasets and demonstrates strong scalability with consistent improvement when the number of shots gets greater. ... Meta-learning is widely used for few-shot slot tagging in task of few-shot learning. The performance of existing methods is, however, seriously affected by \\textit{sample forgetting issue}, where the model forgets the historically learned meta-training tasks while solely relying on support sets when adapting to new tasks. To overcome this predicament, we propose the \\textbf{M}emory-based \\textbf{C}ontrastive \\textbf{M}eta-\\textbf{L}earning (aka, MCML) method, including \\textit{learn-from-the-memory} and \\textit{adaption-from-the-memory} modules, which bridge the distribution gap between training episodes and between training and testing respectively. Specifically, the former uses an explicit memory bank to keep track of the label representations of previously trained episodes, with a contrastive constraint between the label representations in the current episode with the historical ones stored in the memory. In addition, the \\emph{adaption-from-memory} mechanism is introduced to learn more accurate and robust representations based on the shift between the same labels embedded in the testing episodes and memory. Experimental results show that the MCML outperforms several state-of-the-art methods on both SNIPS and NER datasets and demonstrates strong scalability with consistent ... Meta-learning is widely used for few-shot slot tagging in task of few-shot learning. The performance of existing methods is, however, seriously affected by \\textit{sample forgetting issue}, where the model forgets the historically learned meta-training tasks while solely relying on support sets when adapting to new tasks. To overcome this predicament, we propose the \\textbf{M}emory-based \\textbf{C}ontrastive \\textbf{M}eta-\\textbf{L}earning (aka, MCML) method, including \\textit{learn-from-the-memory} and \\textit{adaption-from-the-memory} modules, which bridge the distribution gap between ... Table 1 and Table 2 show the results of both 1-shot and 5-shot slot tagging of SNIPS and NER datasets respectively. Our method reaches comparable results with the state-of-the-art and outperforms in 3 out of 7 domains under 1-shot setting, and 6 under 5-shot setting at SNIPS dataset. Specifically, our method achieves about 13% (70.27 → 79.57) and 7% (75.95 → 81.07) improvements in the Cr domain under 1-shot and 5-shot respectively. Besides that, the improvement keeps consistent on the NER dataset while adding additional shots leads to greater improvement. It's obvious that our method ... We denote each sentence x = (x 1 , x 2 , x 3 , ..., x p ) and the corresponding label y = (y 1 , y 2 , y 3 , ..., y p ). Usually, we are provided with lots of labeled data (i.e. (x, y) pairs) of source domains D s , and fewshot (less than 50) labeled data as well as plenty of unlabeled data in the target domain D t under the few shot setting. We split the data as episodes e = (S, Q) in which S = {x j i , y j i } j=1...K i=1...N and Q = {x j , y j } |Q| j=1 respectively. S, as the support set, contains K examples (K-shot) for each of N labels (N-way) while Q contains several unlabeled samples1 ... Slot tagging (Tur and De Mori, 2011), is a key part of natural language understanding, which is usually modeled as a sequence labeling problem with BIO format as shown in Figure 1 (Chen et al., 2019). However, rapid domain transfer and scarce labeled data in the target domain introduce new challenges (Bapna et al., 2017a;Zhang et al., 2020). To this end, significant efforts have been made to develop few-shot techniques (Li Fei-Fei et al., 2006;Snell et al., 2017;Vinyals et al., 2016), which aim to recognize a set of novel classes with only a few labeled samples (i.e, less than 50-shot) by ... We borrow the result from Zhu et al. (2020) as baseline (i.e. L-ProtoNet+CDT+VPB) here since it reaches the best performance out of all baselines. Table 3 shows the ablation study of learning and adaption from memory. Comparing the result between 1-shot, 5-shot, 10-shot, and 20-shot, we find that the learn-from-the-memory (i.e. M) module gets more important as the number of shots increases. We attribute this phenomenon to the more transferable representations due to more labeled data brought by more shots. However, the adaption-from-the-memory cannot keep consistent improvement, we think this"
+      },
+      {
+        "paper_id": "219558508",
+        "markdown_evidence": "Few-shot Slot Tagging with Collapsed Dependency Transfer and Label-enhanced Task-adaptive Projection Network ... A Label-enhanced Task-Adaptive Projection Network (L-TapNet) based on the state-of-the-art few-shot classification model – TapNet is proposed, by leveraging label name semantics in representing labels. ... In this paper, we explore the slot tagging with only a few labeled support sentences (a.k.a. few-shot). Few-shot slot tagging faces a unique challenge compared to the other fewshot classification problems as it calls for modeling the dependencies between labels. But it is hard to apply previously learned label dependencies to an unseen domain, due to the discrepancy of label sets. To tackle this, we introduce a collapsed dependency transfer mechanism into the conditional random field (CRF) to transfer abstract label dependency patterns as transition scores. In the few-shot setting, the emission score of CRF can be calculated as a word’s similarity to the representation of each label. To calculate such similarity, we propose a Label-enhanced Task-Adaptive Projection Network (L-TapNet) based on the state-of-the-art few-shot classification model – TapNet, by leveraging label name semantics in representing labels. Experimental results show that our model significantly outperforms the strongest few-shot learning baseline by 14.64 F1 scores in the one-shot setting. ... Dataset For slot tagging, we exploit the snips dataset (Coucke et al., 2018), because it contains 7 domains with different label sets and is easy to simulate the few-shot situation. The domains are Weather (We), Music (Mu), PlayList (Pl), Book (Bo), Search Screen (Se), Restaurant (Re) and Creative Work (Cr). Information about original datasets is shown in Appendix A. \n\nTo simulate the few-shot situation, we construct the few-shot datasets from original datasets, where each sample is the combination of a query data (x q , y q ) and corresponding K-shot support set S. Table 1 shows the overview ... As shown in Figure 4, the emission scorer independently assigns each word an emission score with regard to each label: \n\nIn few-shot setting, a word's emission score is calculated according to its similarity to representations of each label. To compute such emission, we propose the L-TapNet by improving TapNet (Yoon et al., 2019) with label semantics and prototypes. ... Each support-query-set pair forms one few-shot episode. \n\nAlgorithm 1: Minimum-including Input: # of shot K, domain D, label set LD 1: Initialize support set S = {}, Count j = 0 (∀ j ∈ LD) 2: for in LD do while Count < k do From D \\ S, randomly sample a (x (i) , y (i) ) pair that y (i) includes Add (x (i) , y (i) ) to S Update all Count j (∀ j ∈ LD) \n\n3: for each (x (i) , y (i) ) in S do Remove (x (i) , y (i) ) from S Update all all Count j (∀ j ∈ LD) if any Count j < k then Put (x (i) , y (i) ) back to S Update all Count j (∀ j ∈ LD) \n\nEventually, we get 100 episodes and 100 × 20 samples (1 ... TapNet is the state-of-the-art few-shot image classification model. Previous few-shot models, such as Prototypical Network, average the embeddings of each labels support example as label representations and directly compute word-label similarity in word embedding space. Different from them, TapNet calculates word-label similarity in a projected embedding space, where the words of different labels are well-separated. That allows TapNet to reduce misclassification. To achieve this, Tap-Net leverages a set of per-label reference vectors Φ = [φ 1 ; • • • ; φ N ] as label representations. and"
+      },
+      {
+        "paper_id": "237940082",
+        "markdown_evidence": "An Enhanced Span-based Decomposition Method for Few-Shot Sequence Labeling ... SD decomposes the span matching problem into a series of span-level procedures, mainly including enhanced span representation, class prototype aggregation and span conflicts resolution, which achieves the new state-of-the-art results on two popular FSSL benchmarks, FewNERD and SNIPS. ... Few-Shot Sequence Labeling (FSSL) is a canonical paradigm for the tagging models, e.g., named entity recognition and slot filling, to generalize on an emerging, resource-scarce domain. Recently, the metric-based meta-learning framework has been recognized as a promising approach for FSSL. However, most prior works assign a label to each token based on the token-level similarities, which ignores the integrality of named entities or slots. To this end, in this paper, we propose ESD, an Enhanced Span-based Decomposition method for FSSL. ESD formulates FSSL as a span-level matching problem between test query and supporting instances. Specifically, ESD decomposes the span matching problem into a series of span-level procedures, mainly including enhanced span representation, class prototype aggregation and span conflicts resolution. Extensive experiments show that ESD achieves the new state-of-the-art results on two popular FSSL benchmarks, FewNERD and SNIPS, and is proven to be more robust in the noisy and nested tagging scenarios. ... 10 different runs the same as (Hou et al., 2020).\n\nBaselines For systematic comparisons, we introduce a variety of baselines, including ProtoBERT (Ding et al., 2021;Hou et al., 2020), NNShot (Ding et al., 2021, StructShot (Ding et al., 2021), Trans-ferBERT (Hou et al., 2020), MN+BERT (Hou et al., 2020), L-TapNet+CDT (Hou et al., 2020), Retriever (Yu et al., 2021), ConVEx (Henderson  and Vulić, 2021) and Ma2021 . Please refer to the Appendix A for more details.  Table 2 shows the results on SNIPS. In the 1-shot setting, L-TapNet+CDT is the previous best method. Compared with L-TapNet+CDT, ESD ... During inference, spans outputted by the matching module may have conflicts, we thus propose a refining module that incorporates the SoftNMS into beam search for the conflicts resolution. For the mth span with the left index l m and the right index r m in the query, we obtain its prediction probability distribution p m , label y m = argmax(p m ) and score score m = max(p m ). Figure 3 illustrates a simplified post-processing process. In each step, we first expand all beam states (e.g., states 1-3 and 1-2 in step2 of Figure 3), and then prune new states according to the beam size. ... Datasets We evaluate ESD on FewNERD (Ding et al., 2021) and SNIPS (Coucke et al., 2018). FewNERD designs an annotation schema of 8 coarse-grained (e.g., 'Person') entity types and 66 fine-grained (e.g., 'Person-Artist') entity types, and constructs two tasks. One is FewNERD-INTRA, where all the entities in the training set (source domain), validation set and test set (target domain) belong to different coarse-grained types. The other is FewNERD-INTER, where only the fine-grained entity types are mutually disjoint in different sets. For the sake of sampling diversity, FewNERD adopts the N -way ... L models are trained and evaluated on tasks sampled from the source and target domain, respectively. To ensure the fairness, we use the public sampled data provided by (Ding et al., 2021) for FewNERD 2 and data provided by (Hou et al., 2020) for SNIPS, to train and evaluate our model.\n\nParameter Settings Following previous methods (Hou et al., 2020;Ding et al., 2021), we use uncased BERT-base as our encoder. We use Adam (Kingma and Ba, 2015) as our optimizer. We set the dropout ratio (Srivastava et al., 2014) to 0.1. The maximum span length L is set to 8. For BSNMS, the beam size b is 5. ... Given a task T = (S, q), for the m-th span in q m , we achieve its enhanced representationq m and corresponding prototypical vectors Z m =  Figure 3: A demonstration for Beam Soft-NMS (BSNMS). For clarity, we set the filter threshold δ to 0.6, and suppose the span score is always decayed by the overlapped spans with a constant decayed score −0.1 (Note that the example is simplified for demonstration). BSNMS filters false positive spans (colored in orange) in this demonstration. A more clear step by step demonstration is included in Appendix D.\n\n(z o m , z 1 m , ..., z N m ) through previous"
+      },
+      {
+        "paper_id": "247939641",
+        "markdown_evidence": "Inverse is Better! Fast and Accurate Prompt for Few-shot Slot Tagging ... This work introduces an inverse paradigm for prompting, different from the classic prompts mapping tokens to labels, that reversely predict slot values given slot types and proposes a novel Iterative Prediction Strategy, from which the model learns to refine predictions by considering the relations between different slot types. ... Prompting methods recently achieve impressive success in few-shot learning. These methods modify input samples with prompt sentence pieces, and decode label tokens to map samples to corresponding labels. However, such a paradigm is very inefficient for the task of slot tagging. Since slot tagging samples are multiple consecutive words in a sentence, the prompting methods have to enumerate all n-grams token spans to find all the possible slots, which greatly slows down the prediction. To tackle this, we introduce an inverse paradigm for prompting. Different from the classic prompts mapping tokens to labels, we reversely predict slot values given slot types. Such inverse prompting only requires a one-turn prediction for each slot type and greatly speeds up the prediction. Besides, we propose a novel Iterative Prediction Strategy, from which the model learns to refine predictions by considering the relations between different slot types. We find, somewhat surprisingly, the proposed method not only predicts faster but also significantly improves the effect (improve over 6.1 F1-scores on 10-shot setting) and achieves new state-of-the-art performance. ... We evaluate the performance of the proposed method on two classic few-shot scenarios: (1) Setting with Only In-domain data, where all training data are only a few labeled support data. \n\n(2) Setting with Meta Source Tasks, where some additional data-rich source domains are available for pretraining. \n\nEvaluation To use same evaluation criteria as conventional sequence labeling methods, we need to label tokens reversely and get output in same format. After generation, we first separate outputs into slot values. For each slot value, we label tokens in the source sentence with three principles: ... Slot tagging aims at finding key slots within a sentence, such as time or location entities. Given an input sentence x = (x 1 , x 2 , . . . , x n ) as a sequence of words, a slot tagging model extracts all M slot label-values pairs y = {(l i , s i )} M i=1 in the sentence, where l i is the ith label in the label set L and s k j = {x j , ..., x k } is a word span starting from x j and ending with x k . \n\nIn few-shot settings, model are often evaluated on multiple low-resource domains {D \n\n(1) \n\nL , ...}, which is called target domain (Wang et al., 2020). Each target domain D (j) L only ... Datasets We also evaluate the model ability of transferring from data-rich domains to unseen few-shot domains and conduct experiments on SNIPS (Coucke et al., 2018) dataset. Following the data split provided by Hou et al. (2020), we construct 5-shot SNIPS datasets from the original SNIPS datasets. The few-shot SNIPS dataset consists of 7 domains with different label sets: GetWeather (We), Music (Mu), PlayList (Pl), Rate-Book (Bo), SearchScreenEvent (Se), BookRestaurant (Re), and SearchCreativeWork (Cr). Each domain contains 100 few-shot episodes, and each episode consists of a support set and ... Prompting methods recently achieve impressive success in few-shot learning. These methods modify input samples with prompt sentence pieces, and decode label tokens to map samples to corresponding labels. However, such a paradigm is very inefficient for the task of slot tagging. Since slot tagging samples are multiple consecutive words in a sentence, the prompting methods have to enumerate all n-grams token spans to find all the possible slots, which greatly slows down the prediction. To tackle this, we introduce an inverse paradigm for prompting. Different from the classic prompts mapping ... Table 2 shows the results of the crossdomain few-shot setting, from which we can observe that: \n\n(1) Our proposed method outperforms all the baselines except ConVEx which uses extra Reddit data in the cross-domain 5-shot setting. Despite using less training data, our model still achieves comparable results with Covex, proving its superiority. \n\n(2) We outperform TransferBERT by 42.36 F1 scores which strongly proved that the prompt-based method can transfer more knowledge from the source domain and is more data-efficient than conventional methods. \n\n(3) Our method outperforms metric-based"
+      },
+      {
+        "paper_id": "236980363",
+        "markdown_evidence": "Meta Self-training for Few-shot Neural Sequence Labeling ... A meta self-training framework which leverages very few manually annotated labels for training neural sequence models and achieves 10% improvement over state-of-the-art methods demonstrating its effectiveness for limited training labels regime. ... Neural sequence labeling is widely adopted for many Natural Language Processing (NLP) tasks, such as Named Entity Recognition (NER) and slot tagging for dialog systems and semantic parsing. Recent advances with large-scale pre-trained language models have shown remarkable success in these tasks when fine-tuned on large amounts of task-specific labeled data. However, obtaining such large-scale labeled training data is not only costly, but also may not be feasible in many sensitive user applications due to data access and privacy constraints. This is exacerbated for sequence labeling tasks requiring such annotations at token-level. In this work, we develop techniques to address the label scarcity challenge for neural sequence labeling models. Specifically, we propose a meta self-training framework which leverages very few manually annotated labels for training neural sequence models. While self-training serves as an effective mechanism to learn from large amounts of unlabeled data via iterative knowledge exchange -- meta-learning helps in adaptive sample re-weighting to mitigate error propagation from noisy pseudo-labels. Extensive experiments on six benchmark datasets including two for massive multilingual NER and four slot tagging datasets for task-oriented dialog systems"
+      },
+      {
+        "paper_id": "268246831",
+        "markdown_evidence": "Decomposed Meta-Learning for Few-Shot Sequence Labeling ... Few-shot sequence labeling is a general problem formulation for many natural language understanding tasks in data-scarcity scenarios, which require models to generalize to new types via only a few labeled examples. Recent advances mostly adopt metric-based meta-learning and thus face the challenges of modeling the miscellaneous Other prototype and the inability to generalize to classes with large domain gaps. To overcome these challenges, we propose a decomposed meta-learning framework for few-shot sequence labeling that breaks down the task into few-shot mention detection and few-shot type classification, and sequentially tackles them via meta-learning. Specifically, we employ model-agnostic meta-learning (MAML) to prompt the mention detection model to learn boundary knowledge shared across types. With the detected mention spans, we further leverage the MAML-enhanced span-level prototypical network for few-shot type classification. In this way, the decomposition framework bypasses the requirement of modeling the miscellaneous Other prototype. Meanwhile, the adoption of the MAML algorithm enables us to explore the knowledge contained in support examples more efficiently, so that our model can quickly adapt to new types using only a few labeled examples. Under our framework, we"
+      },
+      {
+        "paper_id": "236477946",
+        "markdown_evidence": "Frustratingly Simple Few-Shot Slot Tagging ... A simple and effective few-shot model for slot tagging, which casts slot tagging into machine reading comprehension (MRC), and tunes a standard BERT-based MRC model with a mixture of source domain and (few-shot) target domain data. ... We propose a simple and effective few-shot model for slot tagging. Recent work shows that it is promising to extend standard few-shot classiﬁcation methods to sequence labeling with CRF-speciﬁc augmentations. Such methods show strengths in encoding slot name semantics and slot dependencies. However, we ﬁnd these strengths can be obtained by a much simpler method, which casts slot tagging into machine reading comprehension (MRC). We ﬁne-tune a standard BERT-based MRC model with a mixture of source domain and (few-shot) target domain data. Such simple method outperforms state-of-the-art methods by a large margin on the SNIPS dataset. ... We propose a simple and effective few-shot model for slot tagging. Recent work shows that it is promising to extend standard few-shot classiﬁcation methods to sequence labeling with CRF-speciﬁc augmentations. Such methods show strengths in encoding slot name semantics and slot dependencies. However, we ﬁnd these strengths can be obtained by a much simpler method, which casts slot tagging into machine reading comprehension (MRC). We ﬁne-tune a standard BERT-based MRC model with a mixture of source domain and (few-shot) target domain data. Such simple method outperforms state-of-the-art methods ... Slot Tagging Intent detection and slot tagging are two key modules in spoken language understanding. Slot tagging is often cast to sequence labeling problem (Zhang and Wang, 2016;Liu and Lane, 2016;Haihong et al., 2019;Qin et al., 2019). This paper adopts MRC formulation and focuses on the few shot learning setup. \n\nFew Shot Learning In NLP, few shot learning methods mostly focus on classification tasks (Sun et al., 2019;Geng et al., 2019), while efforts on sequence labeling like slot tagging are rarely (Luo et al., 2018;Fritzler et al., 2019). Hou et al. (2020) explored few shot slot tagging ... Main Results for 5-Shot Learning Table 2 shows the results for 5-shot learning. Each column indicates the per-domain results, where that domain is used as the target domain while others are used as source domains. In most domains, our model achieves improved results than all baseline, being based on BERT or not. In particular, our method outperforms the previous SOTA, L-TapNet+CDT, by 4.16% on average F1 score. Analysis Figure 1 compares the performance of our model in zero/one/five-shot setup. Since the training of our method is just fine-tuning upon the mixture of source and target domain ... For a few-shot learning task, we have a target domain D 1 = (x i , y i ) with few labeled data, and n resource-rich source domains D 2 ...D n . The task is to discover the optimal hypothesis h from x to y in domain D 1 . To fit our MRC model into N -way k-shot settings, we follow the data construction procedures in Hou et al. (2020), where the support set S = (x i , y i ) is constructed by ensuring every slot in target domain appears approximately k times and each entity only appears once in a sentence. \n\nWe randomly generate 100 above support sets. For each set, we pair it with a query set ... The pre-trained BERTbase uncased model is used for our method, where the batch size is set to 16, with max sequence length of 512. We use Adam optimizer (Kingma and Ba, 2014) with initial learning rate of 1 × 10 −5 during training. We train the model with 30 epochs for each episode of evaluation, and get results according to develop domain."
+      },
+      {
+        "paper_id": "222208769",
+        "markdown_evidence": "Adaptive Self-training for Few-shot Neural Sequence Labeling ... Self-training and meta-learning techniques for few-shot training of neural sequence taggers, namely MetaST are developed that help in adaptive sample re-weighting to mitigate error propagation from noisy pseudo-labels. ... Neural sequence labeling is an important technique employed for many Natural Language Processing (NLP) tasks, such as Named Entity Recognition (NER), slot tagging for dialog systems and semantic parsing. Large-scale pre-trained language models obtain very good performance on these tasks when fine-tuned on large amounts of task-specific labeled data. However, such large-scale labeled datasets are difficult to obtain for several tasks and domains due to the high cost of human annotation as well as privacy and data access constraints for sensitive user applications. This is exacerbated for sequence labeling tasks requiring such annotations at token-level. In this work, we develop techniques to address the label scarcity challenge for neural sequence labeling models. Specifically, we develop self-training and meta-learning techniques for few-shot training of neural sequence taggers, namely MetaST. While self-training serves as an effective mechanism to learn from large amounts of unlabeled data -- meta-learning helps in adaptive sample re-weighting to mitigate error propagation from noisy pseudo-labels. Extensive experiments on six benchmark datasets including two massive multilingual NER datasets and four slot tagging datasets for task-oriented dialog systems demonstrate the ... To further ensure the stability of the loss function in each mini-batch, we normalise the weight w m,n . Finally, we update the student model parameters while accounting for token-level re-weighting as: ... Analysis of pseudo-labeled data re-weighting. To visually explore the adaptive re-weighting mechanism, we illustrate token re-weighting of MetaST on CoNLL03 (EN) dataset with K=10 shot at step 100 in Fig. 2. We include the re-weighting visualisation on SNIPS in Appendix A.1. We observe that the selection mechanism filters out most of the noisy pseudo-labels (colored in blue) even with high teacher confidence as shown in Fig. 2. ... The sampled mini-batches of labeled data {B l s } are used as a validation set for the student model in the next step for re-weighting pseudo-labeled data from the teacher model. Also, note that the labeled data is only used to compute the acquisition function and not used for the explicit training of the student model in this phase. ... Instead of focusing on samples that the model already predicts with high confidence, or the converse where the model frequently makes a mistake -uncertainty sampling provides an alternative strategy for selecting samples that the model is confused about. Such strategies are commonly used for variance reduction in active learning settings (Settles, 2009;Chang et al., 2017a). In this work, we leverage loss decay in the form of stochastic loss of the model in successive iterations as a proxy to obtain the uncertainty in its predictions. This enables the student model to focus more on samples on"
+      },
+      {
+        "paper_id": "259937279",
+        "markdown_evidence": "Unifying Token- and Span-level Supervisions for Few-shot Sequence Labeling ... A consistent greedy inference algorithm that first adjusts the predicted probability and then greedily selects non-overlapping spans with maximum probability is proposed and a Consistent Dual Adaptive Prototypical (CDAP) network for few-shot sequence labeling is proposed. ... Few-shot sequence labeling aims to identify novel classes based on only a few labeled samples. Existing methods solve the data scarcity problem mainly by designing token-level or span-level labeling models based on metric learning. However, these methods are only trained at a single granularity (i.e., either token-level or span-level) and have some weaknesses of the corresponding granularity. In this article, we first unify token- and span-level supervisions and propose a Consistent Dual Adaptive Prototypical (CDAP) network for few-shot sequence labeling. CDAP contains the token- and span-level networks, jointly trained at different granularities. To align the outputs of two networks, we further propose a consistent loss to enable them to learn from each other. During the inference phase, we propose a consistent greedy inference algorithm that first adjusts the predicted probability and then greedily selects non-overlapping spans with maximum probability. Extensive experiments show that our model achieves new state-of-the-art results on three benchmark datasets. All the code and data of this work will be released at https://github.com/zifengcheng/CDAP. ... We conduct experiments on three benchmark datasets: FewNERD [16], SNIPS [9], and Cross. FewNERD and Cross are NER datasets, and SNIPS is a slot tagging dataset. The statistics of the three original datasets are shown in Table 3. The detailed description of the three datasets is as follows: \n\nFewNERD dataset with a hierarchy of 8 coarse-grained entity types and 66 fine-grained entity types, and has two few-shot settings: Intra and Inter. The two settings divide the dataset using coarse-grained and fine-grained entity types, respectively. For Intra setting, all entities in the training set, ... For the FewNERD dataset, we report the micro-F1 over all test episodes following Ding et al. [16]. Specifically, \n\nTable 4. The performance (F1 score with standard deviations) on FewNERD dataset. † denotes that we reproduce the results using the authors' code 4 and do not fine-tune model during meta-testing phase for a fair comparison. We report the average result of 5 runs. where P  denotes the precision calculated on all test episodes and R  denotes the recall calculated on all test episodes. For the SNIPS and Cross dataset, we first calculate micro-F1 for each test episode and then report ... We explore the performance of different hyper-parameters (i.e., the weight of token-level loss  in Eq. ( 18), the weight of consistent loss  in Eq. ( 18), and the degree of penalty in inference algorithms  in Eq. ( 19)) while fixing the other hyper-parameters in Fig. 3 on FewNERD dataset under 5 way 1~2 shot setting to answer RQ5. We first observe the effects of  which is selected from {0.02, 0.05, 0.1, 0.2, 0.3}. From Figure 3(a) and Figure 3(b), we find that the performance is relatively stable under Inter and Intra settings, i.e., the performance fluctuates by 0.6% and 1.5%, respectively. ... Thirdly, we observe the performance on the Cross dataset. Compared with the best baseline L-TapNet+CDT, our model achieves 2.5 and 8.37 average F1 improvement under 1-shot and 5shot settings. Compared to all baseline methods, our method achieves the best or second best performance in all domains. This shows the effectiveness of our model. ... where n is the number of episodes and F1  denotes the F1 of i-th episode."
+      },
+      {
+        "paper_id": "195218732",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221818738",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260476769",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237600076",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232104960",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "239885359",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259859050",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266435681",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250391032",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237491880",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225040547",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235422049",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237571625",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220847213",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273985490",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "189928109",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252351888",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265150541",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259360994",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259257892",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "282470159",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268526282",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227231790",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268691549",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250655852",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237485305",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268878108",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253581283",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209961411",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259341955",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265504828",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "57189228",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258530062",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202541352",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256275034",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256034330",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202577934",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275439085",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256460900",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804152",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268431798",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269430511",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253397643",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277534669",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269603222",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271431066",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249890030",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256461393",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53241609",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52955938",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "238862016",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216080986",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216361556",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281709161",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260380357",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279598145",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277696257",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276453099",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272544473",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272591066",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270655855",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268341617",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804632",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276966250",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267782542",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259924462",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258539981",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257118946",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "238418986",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250390921",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275587931",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269275734",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267412049",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259101149",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279595442",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225166155",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276985210",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273853337",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "652382",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245064754",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254330818",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267717046",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267034991",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264833163",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274422626",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269530383",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252383739",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256461098",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234742634",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276394493",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237363386",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276969549",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259958072",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236459929",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209058570",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273643622",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260921451",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270440624",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259631454",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260376596",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253107409",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232233519",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231632555",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14977753",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277383895",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248571652",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222125139",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249089535",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272595837",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52192029",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231639367",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264128073",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781792",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229102241",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231592518",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804789",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271719892",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247627908",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233860886",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6700987",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268575577",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247793145",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "44156911",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233296868",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52910822",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260905826",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267320563",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231599534",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "201739398",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271900168",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259123262",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263830823",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "134798332",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "195346772",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247625773",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253334430",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221551876",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273320589",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261377208",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276106916",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272146713",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267644436",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "224814194",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247611525",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253875165",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271912045",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229297507",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270560763",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "11439594",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56172443",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "174800809",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232075894",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272091128",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248366496",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248118933",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270688723",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236474278",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220046230",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273265181",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258524649",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256274863",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221970235",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271931325",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225522208",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "9684712",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "55704262",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275872884",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6297134",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "84665618",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248085462",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259301177",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231719121",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258033350",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278768667",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237532321",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13603693",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255703061",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256215053",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261775915",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258833694",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275706415",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252165634",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54486539",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13539250",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "199583663",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262072637",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268253431",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "215934138",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278535121",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222291111",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52135404",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "10077985",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270006469",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276884221",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268475681",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "120624721",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229180874",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209374420",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261220280",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256461151",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278827260",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232134910",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236713790",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257472426",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265051960",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235258815",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277769232",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259391583",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267938333",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236493269",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257757097",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209415002",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260912891",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268703124",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235339889",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270204343",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221761614",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276702733",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268244975",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271563337",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269291505",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271800671",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "44186152",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259604916",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259858876",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278767832",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804032",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268564566",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236478071",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "64208851",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267060903",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271769410",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255636758",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268793397",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

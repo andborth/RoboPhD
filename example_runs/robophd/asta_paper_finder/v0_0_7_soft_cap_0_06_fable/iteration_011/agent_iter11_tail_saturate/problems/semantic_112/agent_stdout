@@ -1,0 +1,25 @@
+[semantic_112] score_type=semantic_f1 query='Could you please provide some references to work on multi-document summarization?'
+  criteria: ['Multi-document summarization focus', 'Scholarly method or evaluation', 'Broadly useful references'] weights=[0.6, 0.25, 0.15]
+  probes: ['multi-document summarization task', 'experimental results on multi-document summarization', 'overview of multi-document summarization']
+  keyword queries: ['multi-document summarization', 'multi document summarization', 'multi-document summary generation', 'multiple document summarization', 'abstractive multi-document summarization', 'extractive multi-document summarization', 'neural multi-document summarization', 'multi-document summarization benchmark', 'multi-document summarization survey', 'multi-document summarization review'] earliest=False
+  candidate pool: 360 of 636 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 75])
+  stage1 graded 360/360; predicted-perfect: 48
+  [tool:expand-ref[228954621]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[258688045]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  citation expansion: +150 docs from 10 seeds; predicted-perfect 48 -> 58
+  snippet-enriching 110 of top 110
+  stage2 judge-sim graded 52/52 (skipped 58 stage1-perfect); newly-perfect: 22
+  rescue round: 29 near-miss papers
+  rescue promoted 2 to predicted-perfect
+  [tool:enrich[261559629]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[155927735]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[220511978]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[271903777]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[10675728]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[226262229]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[230615985]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[17357800]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[246080806]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 125/125 tail entries (uniq=636)
+  llm-usage: plan:n=1,in~548t,out~470t; rescue:n=4,in~5437t,out~72t; sim:n=7,in~9890t,out~129t; t1:n=12,in~25974t,out~959t; t1exp:n=5,in~10764t,out~411t
+  submitted 250 papers

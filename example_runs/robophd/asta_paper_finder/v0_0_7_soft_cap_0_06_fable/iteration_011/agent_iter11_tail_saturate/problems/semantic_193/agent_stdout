@@ -1,0 +1,29 @@
+[semantic_193] score_type=semantic_f1 query='Adaptive query expansion with LLMs, focusing on papers published on or after 2023'
+  criteria: ['Adaptive query expansion', 'Use of large language models', 'Explicit connection between adaptation and LLMs'] weights=[0.5, 0.3, 0.2]
+  probes: ['adaptive query expansion method', 'LLM-based query expansion', 'dynamically rewrites the query']
+  keyword queries: ['adaptive query expansion llm', 'LLM-based query expansion', 'large language model query reformulation', 'dynamic query expansion language models', 'retrieval augmentation query expansion', 'generative query rewriting retrieval', 'conversational search query reformulation llm', 'pseudo relevance feedback llm expansion', 'LLM query expansion survey', 'large language model retrieval review'] earliest=False
+  candidate pool: 360 of 884 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 61])
+  stage1 graded 360/360; predicted-perfect: 31
+  [tool:expand-ref[278358463]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  citation expansion: +61 docs from 10 seeds; predicted-perfect 31 -> 36
+  snippet-enriching 110 of top 110
+  [tool:enrich[278959468]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[278782135]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[272832474]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[259316899]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[260102511]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[2033049]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[236568693]] attempt 1/2 failed: TimeoutError()
+  stage2 judge-sim graded 74/74 (skipped 36 stage1-perfect); newly-perfect: 8
+  rescue round: 16 near-miss papers
+  [tool:enrich[278782135]] attempt 1/2 failed: TimeoutError()
+  rescue promoted 8 to predicted-perfect
+  [tool:enrich[4697923]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[19187290]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[226266905]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[274981904]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[232147859]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[270869706]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 125/125 tail entries (uniq=884)
+  llm-usage: plan:n=1,in~548t,out~487t; rescue:n=2,in~3036t,out~41t; sim:n=10,in~14347t,out~196t; t1:n=12,in~26075t,out~959t; t1exp:n=2,in~4510t,out~167t
+  submitted 250 papers

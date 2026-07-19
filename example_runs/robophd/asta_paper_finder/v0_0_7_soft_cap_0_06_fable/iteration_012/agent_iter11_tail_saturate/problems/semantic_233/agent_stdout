@@ -1,0 +1,37 @@
+[semantic_233] score_type=semantic_f1 query='Find papers on trigger-free document-level event extraction methods that do not use human-annotated '
+  criteria: ['Document-level event extraction focus', 'Trigger-free or triggerless method', 'No human-annotated triggers used'] weights=[0.5, 0.3, 0.2]
+  probes: ['document-level event extraction', 'trigger-free event extraction', 'without annotated triggers']
+  keyword queries: ['trigger-free document-level event extraction', 'triggerless document event extraction', 'document-level event extraction without triggers', 'document event extraction no annotated triggers', 'end-to-end document-level event extraction', 'document-level event argument extraction trigger-free', 'event extraction without human-annotated triggers', 'document-level event extraction latent triggers', 'document-level event extraction survey', 'trigger-free event extraction review'] earliest=False
+  [tool:rel[triggerless document event ext]] attempt 1/2 failed: RuntimeError('tool call failed: HTTP 502')
+  [tool:rel[document event extraction no a]] attempt 1/2 failed: RuntimeError('tool call failed: HTTP 502')
+  [tool:rel[event extraction without human]] attempt 1/2 failed: RuntimeError('tool call failed: HTTP 502')
+  [tool:rel[document-level event extractio]] attempt 1/2 failed: RuntimeError('tool call failed: HTTP 502')
+  [tool:snippet[We study document-level event ]] attempt 1/2 failed: RuntimeError('tool call failed: HTTP 502')
+  [tool:snippet[The model performs document-le]] attempt 1/2 failed: RuntimeError('tool call failed: HTTP 502')
+  [tool:rel[document-level event extractio]] attempt 1/2 failed: RuntimeError('tool call failed: HTTP 502')
+  candidate pool: 360 of 471 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 47])
+  stage1 graded 360/360; predicted-perfect: 2
+  gap-fill queries: ['document level event graph extraction', 'event table filling document level', 'document level template based event extraction', 'rams wikievents triggerless extraction', 'generative document event extraction']
+  gap-fill added 60 docs; predicted-perfect now 4
+  [tool:expand-ref[274130248]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[260386477]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[271115336]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[279866530]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[271116266]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[231728756]] attempt 1/1 failed: TimeoutError()
+  [tool:expand-cit[231728756]] attempt 1/1 failed: TimeoutError()
+  citation expansion: +13 docs from 10 seeds; predicted-perfect 4 -> 4
+  snippet-enriching 110 of top 110
+  [tool:enrich[271908679]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[280394804]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[257366694]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[272586489]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[278115197]] attempt 1/2 failed: TimeoutError()
+  stage2 judge-sim graded 106/106 (skipped 4 stage1-perfect); newly-perfect: 4
+  rescue round: 32 near-miss papers
+  rescue promoted 0 to predicted-perfect
+  head verify: 1/24 confirmed perfect by GPT_5_4
+  [tool:enrich[267703783]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 125/125 tail entries (uniq=471)
+  llm-usage: gap:n=1,in~366t,out~58t; plan:n=1,in~555t,out~477t; rescue:n=4,in~5236t,out~83t; sim:n=14,in~18079t,out~274t; t1:n=12,in~25544t,out~959t; t1exp:n=1,in~1080t,out~35t; t1gap:n=2,in~4374t,out~164t; verify:n=4,in~3847t,out~62t
+  submitted 250 papers

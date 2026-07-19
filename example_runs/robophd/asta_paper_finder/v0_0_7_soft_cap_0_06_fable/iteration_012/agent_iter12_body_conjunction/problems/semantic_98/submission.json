@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_98",
+    "results": [
+      {
+        "paper_id": "248524891",
+        "markdown_evidence": "One Size Does Not Fit All: The Case for Personalised Word Complexity Models ... It is shown that personal models are best when predicting word complexity for individual readers, using a novel active learning framework that allows models to be tailored to individuals and releasing a dataset of complexity annotations and models as a benchmark for further research. ... Complex Word Identification (CWI) aims to detect words within a text that a reader may find difficult to understand. It has been shown that CWI systems can improve text simplification, readability prediction and vocabulary acquisition modelling. However, the difficulty of a word is a highly idiosyncratic notion that depends on a reader's first language, proficiency and reading experience. In this paper, we show that personal models are best when predicting word complexity for individual readers. We use a novel active learning framework that allows models to be tailored to individuals and release a dataset of complexity annotations and models as a benchmark for further research. ... Complex Word Identification (CWI) aims to detect words within a text that a reader may find difficult to understand. It has been shown that CWI systems can improve text simplification, readability prediction and vocabulary acquisition modelling. However, the difficulty of a word is a highly idiosyncratic notion that depends on a reader's first language, proficiency and reading experience. In this paper, we show that personal models are best when predicting word complexity for individual readers. We use a novel active learning framework that allows models to be tailored to individuals and ... We collected annotations via the Prolific platform from 1,255 ESL readers spanning 57 different first languages. 4 Participants were required to fill out a demographic questionnaire which is available to view in our data repository. The questionnaire was informed using guidelines on judging reading ability (Acheson et al., 2008) and included the self-reported English proficiency, native language, hours spent reading per week and highest level of formal education. Demographic statistics are available in Appendix A. ... The best scores for all proficiency groups are achieved using the active learning framework. However, for the native annotations, the difference between the group-based approach and active learning models is small. When considering the group-average baseline we see that both the F-score and Kappa values increase in line with proficiency. This supports the notion that the concept of word complexity stabilises for higher proficiency levels (Krstić et al., 2018;Gooding et al., 2021). As such, aggregate models may work well for highly proficiency audiences and individual models best for lower ... Illiteracy affects at least 773 million people globally. 2 For these individuals, reading information from unfamiliar sources or on unfamiliar topics can be extremely difficult. Furthermore, there are a reported 1.5 billion English-language learners worldwide, spanning all proficiency levels. Statistics such as these illustrate that the comprehension of written text across the world varies substantially. Even those who are deemed functionally literate have differing degrees of text comprehension. There are many characteristics of a written text that impact how difficult it is to read. ... The dataset contains judgements on word complexity using a Likert scale of 1-5, allowing an indication of the annotators' familiarity with the term. The framing of word complexity in a continuous fashion allows for more subjective approaches of CWI to be introduced. However, overall judgements of difficulty in this dataset are still produced by averaging the labels across multiple annotators. Whilst the data gives an insight into complexity as a continuous measure, it does not provide insight into the individual differences across annotators. \n\nClosest to our work, Gooding et al. (2021) make"
+      },
+      {
+        "paper_id": "220497522",
+        "markdown_evidence": "Adaptive Complex Word Identification through False Friend Detection ... A pipeline that, based on the user native language, identifies complex terms by automatically detecting cognates and false friends on the fly is presented, and it is shown that a personalised strategy based on false friend detection identifiescomplex terms that are different from those usually selected with standard approaches based on word frequency. ... Automated complex word identification (CWI) is a crucial task in several applications, from readability assessment to lexical simplification. So far, several works have modeled CWI with the goal of targeting the needs of non-native speakers. However, studies in language acquisition show that different native languages can create positive or negative interferences w.r.t. reading comprehension, favouring or hindering the understanding of a document in a foreign language. Therefore, we propose to modify CWI to address the specific difficulties connected to different native languages. In particular, we present a pipeline that, based on the user native language, identifies complex terms by automatically detecting cognates and false friends on the fly. The selection presented by the CWI module is adaptive in that it changes depending on the native language of the user. We implement and evaluate our approach for four different native languages (French, English, German and Spanish), in a setting where documents are written in Italian and should be read by language learners with low proficiency. We show that a personalised strategy based on false friend detection identifies complex terms that are different from those usually selected with standard approaches based on word frequency."
+      },
+      {
+        "paper_id": "52010001",
+        "markdown_evidence": "Personalized Text Retrieval for Learners of Chinese as a Foreign Language ... A personalized text retrieval algorithm that helps language learners select the most suitable reading material in terms of vocabulary complexity that is effective in identifying simpler texts for low-proficiency learners, and more challenging ones for high-prof proficiency learners is described."
+      },
+      {
+        "paper_id": "52012455",
+        "markdown_evidence": "Personalizing Lexical Simplification ... Experimental results show that even a simple personalized CWI model, based on graded vocabulary lists, can help the lexical simplification system avoid some unnecessary simplifications and produce more readable output."
+      },
+      {
+        "paper_id": "209387721",
+        "markdown_evidence": "Personalized Substitution Ranking for Lexical Simplification ... This work proposes a personalized approach for Substitution Ranking to identify the candidate that is the closest synonym and is non-complex for the user, and shows that this approach enhances the semantic faithfulness of the output, at the cost of a relatively small increase in the number of complex words. ... A lexical simplification (LS) system substitutes difficult words in a text with simpler ones to make it easier for the user to understand. In the typical LS pipeline, the Substitution Ranking step determines the best substitution out of a set of candidates. Most current systems do not consider the user’s vocabulary proficiency, and always aim for the simplest candidate. This approach may overlook less-simple candidates that the user can understand, and that are semantically closer to the original word. We propose a personalized approach for Substitution Ranking to identify the candidate that is the closest synonym and is non-complex for the user. In experiments on learners of English at different proficiency levels, we show that this approach enhances the semantic faithfulness of the output, at the cost of a relatively small increase in the number of complex words. ... CWI classifies each word in an input text as either \"complex\" (i.e., difficult to understand) or \"noncomplex\" (i.e., not difficult to understand) (Paetzold and Specia, 2016c;Yimam et al., 2017). Complex words become target words for substitution in the rest of the pipeline. \n\nMost CWI approaches adopt a generic definition of \"complexity\", without catering to variation in proficiency level among users. Some studies have begun to build personalized CWI models to predict whether a word can or cannot be understood by an individual user (Ehara et al., 2014;Lee and Yeung, 2018). For example, the ... In the second step, the proposed approach uses a personalized CWI model to remove complex words from the ranked list. If all candidates are predicted to be complex, the first-ranked candidate is proposed as the substitution. \n\nGold Personalized CWI (Gold PCWI) This ceiling establishes the maximum performance of the proposed approach, by looking up the actual CWI annotation for each user (Section 5.2). In other words, the system can perfectly predict whether a particular user knows a particular word. ... We used a personalized CWI dataset annotated by 15 learners of English as a foreign language (Ehara et al., 2010). Each learner rated their knowledge of 12,000 English words on a fivepoint scale. Following Ehara et al. (2014), we collapsed these five categories into either \"complex\" (score 1 through 4) or \"non-complex\" (score 5). For analysis purposes, we define the seven more advanced students as \"high-proficiency\", and the remaining students as \"low-proficiency\". \n\nA disadvantage of this dataset is that it does not situate the target words in sentences. As a result, it is not possible to"
+      },
+      {
+        "paper_id": "249212143",
+        "markdown_evidence": "Personalized English Lexical Simplification for Chinese ... Current English lexical simplification (LS) methods adopt one simplification scheme for all users, regardless of individual users' language proficiency. To solve the problem, we propose a personalized English LS method for Chinese based on their English certification. Specifically, our method only simplifies these words that need to be simplified and utilizes both pertained language modeling BERT and Thesaurus to generate the best substitutes. To our knowledge, this is the first work that focuses on personalized English LS for Chinese. Experimental results show that our method obtains the most suitable simplification compared with the baselines."
+      },
+      {
+        "paper_id": "269804514",
+        "markdown_evidence": "LexComSpaL2: A Lexical Complexity Corpus for Spanish as a Foreign Language ... With LexComSpaL2, a novel corpus which can be employed to train personalised word-level difficulty classifiers for learners of Spanish as a foreign/second language (L2), the lack of relevant data for multi-category difficult prediction at word level for L2 learners of other languages than English is addressed. ... We present LexComSpaL2, a novel corpus which can be employed to train personalised word-level difficulty classifiers for learners of Spanish as a foreign/second language (L2). The dataset contains 2,240 in-context target words with the corresponding difficulty judgements of 26 Dutch-speaking students who are learning Spanish as an L2, resulting in a total of 58,240 annotations. The target words are divided over 200 sentences from 4 different domains (economics, health, law, and migration) and have been selected based on their suitability to be included in L2 learning materials. As our annotation scheme, we use a customised version of the 5-point lexical complexity prediction scale (Shardlow et al., 2020), tailored to the vocabulary knowledge continuum (which ranges from no knowledge over receptive mastery to productive mastery; Schmitt, 2019). With LexComSpaL2, we aim to address the lack of relevant data for multi-category difficult prediction at word level for L2 learners of other languages than English."
+      },
+      {
+        "paper_id": "46940396",
+        "markdown_evidence": "The Whole is Greater than the Sum of its Parts: Towards the Effectiveness of Voting Ensemble Classifiers for Complex Word Identification ... An effective system using voting ensemble classifiers to detect contextually complex words for non-native English speakers and falls within 0.026 percent of the best-performing model’s score in the shared task is presented. ... In this paper, we present an effective system using voting ensemble classifiers to detect contextually complex words for non-native English speakers. To make the final decision, we channel a set of eight calibrated classifiers based on lexical, size and vocabulary features and train our model with annotated datasets collected from a mixture of native and non-native speakers. Thereafter, we test our system on three datasets namely News, WikiNews, and Wikipedia and report competitive results with an F1-Score ranging between 0.777 to 0.855 for each of the datasets. Our system outperforms multiple other models and falls within 0.042 to 0.026 percent of the best-performing model’s score in the shared task. ... Complex Word Identification (CWI) is an essential sub-task for Lexical Simplification. Lexical Simplification involves substituting a complicated word in the text with a more straightforward synonym. Figure 1 shows the pipeline for Lexical Simplification systems. It is geared for target population like non-native speakers, second-language learners, young learners, and people with language disabilities (like Aphasia and Alexia), with the aim of allowing them to comprehend the presented text completely. \n\nThe goal of the shared task is as follows: Given a target word (or phrase) and its ... In this paper, we present an effective system using voting ensemble classifiers to detect contextually complex words for non-native English speakers. To make the final decision, we channel a set of eight calibrated classifiers based on lexical, size and vocabulary features and train our model with annotated datasets collected from a mixture of native and non-native speakers. Thereafter, we test our system on three datasets namely News, WikiNews, and Wikipedia and report competitive results with an F1-Score ranging between 0.777 to 0.855 for each of the datasets. Our system outperforms ... These input features are converged to the following eight calibrated classifiers, namely Random  These eight classifiers were chosen because they gave the best results on 10-fold crossvalidation of the training set. We decided upon these classifiers since each of them had an F1-Score of the complex class in excess of 0.70. Table 2 describes the selected and rejected classifiers, along with their Precision, Recall and F1-Score on ten-fold cross-validation of the training data. Since the majority class was the non- complex class, the ZeroR classifier has a Precision, Recall, and F1-Score of 0. ... As it is evident from Tables 2 and 4, we see that individual classifiers do not work as well as ensembling them together, which agrees with the expression \"The whole is greater than the sum of its parts\". Classifier Ensembling would further prove to be an efficacy for contextual documents similarity-based binary classification tasks (Kanojia et al., 2017) which rely heavily on lexical features, as well as it should also potentially crosspollinate to benefit probabilistic touch classification problems (Wani et al., 2017) where spatial and contextual information has been proven to be pivotal. ... For this shared task (Yimam et al., 2018), we used only the English monolingual dataset, which made use of data from a number of sources, such as News articles, WikiNews and Wikipedia articles. Table 3 shows details such as total sentences and the number of unique sentences that we computed across all the three datasets. The Wikipedia dataset consisted of sentences from Wikipedia articles. Likewise, the WIKINEWS dataset and the NEWS dataset contained sentences from news articles. However, the difference between the two is that the articles in the NEWS dataset were written by professional"
+      },
+      {
+        "paper_id": "14776729",
+        "markdown_evidence": "SemEval 2016 Task 11: Complex Word Identification ... The results high-light the effectiveness of Decision Trees and Ensemble methods for the task, but ultimately reveal that word frequencies remain the most reliable predictor of word complexity. ... We report the ﬁndings of the Complex Word Identiﬁcation task of SemEval 2016. To create a dataset, we conduct a user study with 400 non-native English speakers, and ﬁnd that complex words tend to be rarer, less ambiguous and shorter. A total of 42 systems were submitted from 21 distinct teams, and nine baselines were provided. The results high-light the effectiveness of Decision Trees and Ensemble methods for the task, but ultimately reveal that word frequencies remain the most reliable predictor of word complexity. ... In this paper we have described the findings of the Complex Word Identification task of SemEval 2016. The task was framed as a simple, accessible and yet interesting challenge, such that researchers with any background can participate. It attracted a very large number of participants, particularly given that this was its first edition. \n\nTo create the task's dataset, we conducted a user study with 400 non-native English speakers, which resulted in a total of 158,624 individual annotations. By analyzing the data obtained we were able to confirm that, according to non-native speakers of ... The Complex Word Identification task of SemEval 2016 invited participants to create systems that, given a sentence and a target word within it, can predict whether or not a non-native English speaker would be able to understand the meaning of the target word. We chose non-native speakers as a target audience because, unlike second language learners and those with low literacy levels or conditions such as Aphasia and Dyslexia, non-native speakers of English have not yet been explicitly assessed with respect to their simplification needs. In addition, the broad availability of such an audience ... The official G and F-score ranks obtained by each system are reported in the first two columns of Table 4 (G and F). The systems that have achieved the highest G-scores are the ones submitted by the SV000gg team, which combine various Threshold-Based, Lexicon-Based and Machine Learning approaches with minimalistic voting techniques. Similarly, the system from the TALN team, which has the third highest G-score, uses an ensemble method that combines various Decision Tree classifiers. Interestingly, the (HV) All Systems and (HV) No Baselines systems, which combine the submitted systems using the ... To assess the systems' performance, we choose to complement the typical F-score, which is the harmonic mean between Precision and Recall. Even though F-score is arguably the most frequently used evaluation metric to compare the performance of classifiers, we feel that, as far as the relationship between Complex Word Identification and Lexical 1 http://ogden.basic-english.org/words.html \n\nSimplification are concerned, it does not accurately capture the effectiveness of a solution for the task. \n\nTo motivate our decision, we must first outline the characteristics of a great lexical simplifier. ... Along with the submitted systems, we include eleven baselines: \n\n• All Complex: Predicts that all words are complex. \n\n• All Simple: Predicts that all words are simple. \n\n• (TB) Simple Wiki: Threshold-Based approach that exploits the word's language model probabilities from the Simple Wikipedia. \n\n• (TB) Wikipedia: Threshold-Based approach that exploits the word's language model probabilities from Wikipedia. \n\n• (TB) Length: Threshold-Based approach that exploits the word's length. \n\n• (TB) Senses: Threshold-Based approach that exploits the word's number of senses. \n\n• (LB) Ogden:"
+      },
+      {
+        "paper_id": "5243955",
+        "markdown_evidence": "Melbourne at SemEval 2016 Task 11: Classifying Type-level Word Complexity using Random Forests with Corpus and Word List Features ... The rank amongst submitted systems did not reflect the strength of the system, due to submitting a far from optimal weighting between complex and simple, but it is shown that when a more ap- propriate weighting is used, the system ranks amongst the best submitted systems. ... SemEval 2016 task 11 involved determining whether words in a sentence were complex or\nsimple for a cohort of people with English as a second language. Training data consisted\nof 200 annotated sentences, representing the combined judgements of 20 human annota-\ntors, such that if any annotator of the group labelled a word as complex, then it was con-\nsidered to be complex. Testing was based on single annotator judgements. Our system used\na random forest classifier with a variety of features, the most important of which were term\nfrequency statistics garnered from four large corpora, and style lexicons built on two large\ncorpora. Minor features in the final system include the presence or absence of words in\nvarious readability word lists; many other features we tried were not successful. Our rank-\ning amongst submitted systems did not reflect the strength of our system, due to submitting a\nfar from optimal weighting between complex and simple, but we show that when a more ap-\npropriate weighting is used, our system ranks amongst the best submitted systems. ... Most work related to readability measurement (Chall and Dale, 1995) focuses on text-level assessment, but it is clear that being able to determine the difficulty of individual words is important to both that task as well as related ones such as lexical text simplification (Shardlow, 2014). Although some words can be considered conceptually difficult -that is, a level of intellectual sophistication is required to grasp its meaning -for language learners, it is more common for words to be considered difficult (or complex) simply because a reader has had little or no exposure to them. This ... If we put more weight on simple words, we reach the maximum F-score of 0.355 when the ratio is (roughly) 3 to 1 in favor of simple words; this F-score is better than any other reported F-score (the best F-score of a submitted system is 0.353), though we note that teams might have been more focused on optimizing G-score, since it was the primary metric. Accuracy is maximized simply by minimizing the number of COMPLEX guesses, and in fact guessing only SIM-PLE will net an accuracy of 0.953, which is impossible for our system to beat. \n\nTable 1 shows the results of a small feature ab- lation ... Our results using the unweighted model put us among the best teams in the competition, though in fact there are 6 other teams with G-scores within 0.01 of each other, and what we know about the effects of weighting should make us cautious about coming to any strong conclusion about which of these systems (or other systems, for that matter) are better. From our perspective, it is unfortunate for us that the organizers created a situation where the class distribution in the test set was very unclear. \n\nAs it happens, the use of G-score almost exactly counters the effect of the class imbalance"
+      },
+      {
+        "paper_id": "233356271",
+        "markdown_evidence": "Word Complexity is in the Eye of the Beholder ... This paper investigates which aspects contribute to the notion of lexical complexity in various groups of readers, focusing on native and non-native speakers of English, and how the idea of complexity changes depending on the proficiency level of a non- native reader. ... Lexical complexity is a highly subjective notion, yet this factor is often neglected in lexical simplification and readability systems which use a ”one-size-fits-all” approach. In this paper, we investigate which aspects contribute to the notion of lexical complexity in various groups of readers, focusing on native and non-native speakers of English, and how the notion of complexity changes depending on the proficiency level of a non-native reader. To facilitate reproducibility of our approach and foster further research into these aspects, we release a dataset of complex words annotated by readers with different backgrounds. ... Complex word identification (CWI) is the first step in a lexical simplification (LS) pipeline, concerned with identification of words in text that are in need of further simplification (Shardlow, 2013). For instance, in example (1) a CWI system might identify engulfed as a complex word, which would allow an LS system to replace it with a simpler alternative, e.g. flooded, in the next step (Paetzold and Specia, 2016a;Gooding and Kochmar, 2019b): \n\n(1) \n\nWater engulfed Beringia. ↓ Water flooded Beringia. \n\nIt has been shown that accurate CWI can significantly reduce errors in simplification ... Lexical complexity is a highly subjective notion, yet this factor is often neglected in lexical simplification and readability systems which use a ”one-size-fits-all” approach. In this paper, we investigate which aspects contribute to the notion of lexical complexity in various groups of readers, focusing on native and non-native speakers of English, and how the notion of complexity changes depending on the proficiency level of a non-native reader. To facilitate reproducibility of our approach and foster further research into these aspects, we release a dataset of complex words annotated by ... Thus, personalization in LS typically results in specialized simplification tools aimed at certain groups of readers (Carroll et al., 1998;Rello et al., 2013;Evans et al., 2014), with only a few systems addressing adaptation to the readers' needs in a more dynamic way (Bingel et al., 2018;Yimam and Biemann, 2018a,b;Scarton and Specia, 2018). \n\nDespite CWI being one of the key steps in an LS pipeline in need of adaptation to readers' profiles, this is rarely addressed in practice (Lee and Yeung, 2018;Bingel, 2018). For instance, existing and widely used datasets on CWI present a homogeneous ... For instance, we see that the word grounds is found across a wide range of text categories and is rarely considered complex. Whereas words like altimeter and aneroid, which are highly specific to a particular domain, are considered complex in all contexts by both native and non-native readers. The number of categories that a word occurs in is correlated with the word's frequency (0.35). However, when you control for the word frequency, the effect of this correlation is even higher: −0.40 and −0.41 for non-native and native respectively. Therefore, the narrower the scope of application for a ... However, the actual likelihood of exposure will depend on whether an individual is a native or non-native speaker as well as their experience of the language. \n\nFinally, in Figure 7 we group imagability ratings into 3 bins representing high, medium and low scores. We see that for the advanced and intermediate classes most complex annotations fall in the middle range. However, for the beginner class there are still many high imagability words that are deemed as complex. It is worth noting, that the coverage of imagability is limited and therefore results should be considered more cautiously."
+      },
+      {
+        "paper_id": "273798791",
+        "markdown_evidence": "Complex Word Identification for Italian Language: A Dictionary–based Approach ... Assessing word complexity in Italian poses significant challenges, particularly due to the absence of a standardized dataset. This study introduces the first automatic model designed to identify word complexity for native Italian speakers. A dictionary of simple and complex words was constructed, and various configurations of linguistic features were explored to find the best statistical classifier based on Random Forest algorithm. Considering the probabilities of a word to belong to a class, a comparison between the models’ predictions and human assessments derived from a dataset annotated for complexity perception was made. Finally, the degree of accord between the model predictions and the human inter-annotator agreement was analyzed using Spearman correlation. Our findings indicate that a model incorporating both linguistic features and word embeddings performed better than other simpler models, also showing a value of correlation with the human judgements similar to the inter-annotator agreement. This study demonstrates the feasibility of an automatic system for detecting complexity in the Italian language with good performances and comparable effectiveness to humans in this subjective task."
+      },
+      {
+        "paper_id": "6808534",
+        "markdown_evidence": "An Automated Complex Word Identification from Text: A Survey ... This study introduces the CWI process and investigates the performance of twenty systems submitted in the SemEval -2016 for CWI, and identifies that why sv000gg system outperformed with highest G-score as 0.774. ... Complex Word Identification (CWI) is the process of locating difficult words from a given sentence. The aim of automated CWI system is to make nonnative English user understand the meaning of target word in the sentence. CWI systems assist second language learners and dyslexic users through simplification of text. This study introduces the CWI process and investigates the performance of twenty systems submitted in the SemEval -2016 for CWI. The G-score measure which is harmonic mean of accuracy and recall is taken for the performance evaluation of systems. This paper explores twenty CWI systems and identifies that why sv000gg system outperformed with highest G-score as 0.773 and 0.774 for the two respective submissions. Article history Received: 27 May 2017 Accepted:23 June 2017 ... Complex Word Identification (CWI) is the process of locating difficult words from a given sentence. The aim of automated CWI system is to make nonnative English user understand the meaning of target word in the sentence. CWI systems assist second language learners and dyslexic users through simplification of text. This study introduces the CWI process and investigates the performance of twenty systems submitted in the SemEval -2016 for CWI. The G-score measure which is harmonic mean of accuracy and recall is taken for the performance evaluation of systems. This paper explores twenty CWI ... Automated CWI systems are quite useful in assisting aphasic users, non-native English users, second language learners and students as per their simplification needs. The investigation of twenty CWI systems is carried out on the basis of G-score measure of their performances. The SVG000GG system seems to be on the highest position in terms on the G-score. The main reason for the higher performance is due to coverage of wide range of Machine Learning classifiers along with more number of word features considered than other systems. The accuracy of the classification is also validated through ... SemEval is the semantic evaluation series of computational linguistics held in San Diego, California every year. SemEval-2016 has provided a platform for different linguistic tasks to the Linguistics-Computing professionals. One of the tasks was CWI in which total 42 teams across the world participated and 20 teams have submitted their systems for CWI 12 . Following is the summary of systems with their accuracy of findings. The evaluation is carried out in terms of G-score metric which is the Harmonic Mean of accuracy and recall. ... The reason behind the highest G-score of sv000gg system is the ensemble of machine learning classifiers. The system does hard voting of complex word labels predicted through different classifiers. The soft voting in which system classifies the estimates of complexity through maximum argument of traditional hard voting. This makes the system confident to classify the complex words in the given context from the text snippet. \n\nThe other reason for the performance of the system is features used in classification process. This system has used total 69 features which are grouped into four"
+      },
+      {
+        "paper_id": "273549805",
+        "markdown_evidence": "Difficult for Whom? A Study of Japanese Lexical Complexity ... This work verifies that a recent Japanese LCP dataset is representative of its target population by partially replicating the annotation, and shows that native Chinese speakers perceive the complexity differently due to Sino-Japanese vocabulary. ... The tasks of lexical complexity prediction (LCP) and complex word identification (CWI) commonly presuppose that difficult to understand words are shared by the target population. Meanwhile, personalization methods have also been proposed to adapt models to individual needs. We verify that a recent Japanese LCP dataset is representative of its target population by partially replicating the annotation. By another reannotation we show that native Chinese speakers perceive the complexity differently due to Sino-Japanese vocabulary. To explore the possibilities of personalization, we compare competitive baselines trained on the group mean ratings and individual ratings in terms of performance for an individual. We show that the model trained on a group mean performs similarly to an individual model in the CWI task, while achieving good LCP performance for an individual is difficult. We also experiment with adapting a finetuned BERT model, which results only in marginal improvements across all settings. ... The tasks of lexical complexity prediction (LCP) and complex word identification (CWI) commonly presuppose that difficult to understand words are shared by the target population. Meanwhile, personalization methods have also been proposed to adapt models to individual needs. We verify that a recent Japanese LCP dataset is representative of its target population by partially replicating the annotation. By another reannotation we show that native Chinese speakers perceive the complexity differently due to Sino-Japanese vocabulary. To explore the possibilities of personalization, we compare ... Complex word identification (CWI) is a task of identifying difficult to understand words in text. CWI systems can be used as components of lexical simplification and readability assessment systems. Lexical complexity prediction (LCP) extends CWI by predicting complexity of words on a continuous scale (Shardlow et al., 2020). \n\nFor both tasks, it is necessary to specify for whom we are predicting the complexity. Non-native speakers have very different needs from people with dyslexia (Paetzold and Specia, 2016) or children (Oshika et al., 2024). For non-native speakers, their L1 background ... To make text easier to understand using an automated system, it is necessary to identify difficult words, which depends on the text's reader. The automated systems, therefore, need to focus on a specific target population, such as non-native speakers, or be personalized for the reader. The difficulty of words is called \"lexical complexity\" and can be rated on a scale. \n\nThe performance of systems for estimating lexical complexity can be scored using specialized datasets in which complexity is rated by people from the target population. The systems for estimating lexical complexity are usually ... As a baseline for LCP, we fit a linear regression using log-frequency in TUBELEX to the trial data. As shown in Table 4, the model performs well in the Group-Group setting (0.41), on par with the best  2 result for Japanese in the shared task (0.413) obtained using a GPT-4-based model (Enomoto et al., 2024). \n\nIf we, however, train and evaluate the same baseline on individual data, the performance drops drastically (0.13). This may be counter-intuitive, as we are training and evaluating on the data annotated by the same individual, but it shows that that the strong correlation with ... Following the design of MultiLS-Japanese, we use the 30 trial instances for training, and the 570 test instances for evaluation. We only use the datasets original data, not the replication or reannotation, for the experiments. We evaluate models in four settings determined by training and test data, e.g. the \"Group-Individual\" denotes training on group data (mean for LCP or majority class for CWI) and evaluation on individual data. With the exception of the Group-Group setting, where a single model is evaluated on a single test set, we therefore report the results as means and standard"
+      },
+      {
+        "paper_id": "259376813",
+        "markdown_evidence": "CEFR-based Contextual Lexical Complexity Classifier in English and French ... This paper describes a CEFR-based classifier of single-word and multi-word lexical complexity in context from a second language learner perspective in English and in French, developed as an analytical tool for the pedagogical team of the language learning application Mauril. We provide an overview of the required corpora and the way we transformed it into rich contextual representations that allow the disambiguation and accurate labelling in context of polysemous occurrences of a given lexical item. We report evaluation results for all models, including two multi-lingual lexical classifiers evaluated on novel French datasets created for this experiment. Finally, we share the perspective of Mauril’s pedagogical team on the limitations of such systems. ... To evaluate the classifiers we trained on English data, we used 10% of the EVP corpus. This approach to evaluation, despite being methodologically sound, has a tendency to overestimate performance since evaluation and training data have the same distribution. ... We compared the embeddings of the same token in each of the new contexts in Table 6 to the vectors in Table 5 to find the closest meaning in terms of pairwise cosine similarity. The experiment shows that as long as their contexts evoke the same meaning, the embeddings of two occurrences of the same word would remain very similar. ... When evaluated on French data however (cf. \n\n§ 4.2), there seems to be a significant drop in performance, most noticeable in the intermediate classes. The model overestimates the complexity of all classes by predicting the label C for the majority of examples which explains the poor F1 scores of the C class. \n\nThe last model we evaluated, MMEFR4 Contextual, was trained on a combination of English and French labelled data from EVP and FEC1. Despite the shortcomings of the evaluation corpora we produced in French, it could be used for training, especially the FEC1 which has 904 examples"
+      },
+      {
+        "paper_id": "46939269",
+        "markdown_evidence": "Cross-lingual complex word identification with multitask learning ... This work approaches the 2018 Shared Task on Complex Word Identification by leveraging a cross-lingual multitask learning approach, and demonstrates the ability of the system to generalize across languages, including languages for which it has no training data. ... We approach the 2018 Shared Task on Complex Word Identification by leveraging a cross-lingual multitask learning approach. Our method is highly language agnostic, as evidenced by the ability of our system to generalize across languages, including languages for which we have no training data. In the shared task, this is the case for French, for which our system achieves the best performance. We further provide a qualitative and quantitative analysis of which words pose problems for our system. ... Our results for Spanish and German show that, while we did not achieve the best results compared to other participants, our method still performs competitively. Especially for the regression track, while not ranking first, the absolute performance figures place us very close to the winning systems. We see this as a validation of our approach, in particular under the consideration that a gradual assessment of complexity is perhaps more meaningful than a binary one, especially when the definition of the latter makes no distinction between one or all out of 20 annotators judging an item as ... Since our multitask model defines several outputs, but our data is only labeled with a single annotation layer (i.e. for a single language or \"task\"), we need a training strategy that does not require true labels for all tasks. The way this is normally approached is to iteratively optimize for tasks in isolation, e.g. by deciding at random which language we sample a batch of data from at every pass of the forward-backward algorithm we use to train the model. We employ the above strategy and optimize the regression model with a mean absolute error loss function, as well as cross-entropy for ... The different neural and random-forest based model that we train as devised above finally make independent predictions for new examples. For the regression models, we use the median prediction across all systems for a given input to make the final ensemble prediction. For the classifiers, however, we have an additional parameter t that we optimize on a held-out development set. This is a threshold indicating the fraction of classifiers that need to cast a positive vote for us to finally accept an example as complex. All neural and random forest classifiers are weighted equally here, each ... We obtain POS tags from spacy.2 \n\nTarget-sentence similarity Motivated by the conjecture that words or phrases are easier to understand if they display higher semantic similarity with their context, we compute the cosine distances between averaged word embeddings for the target word or phrase and the rest of the containing sentence. To mitigate out-ofvocabulary problems, we use pretrained subword embeddings that we retrieve from the BPEemb project (Heinzerling and Strube, 2017). \n\nThe data provided for the shared task further includes information on how many of the annotators are native and"
+      },
+      {
+        "paper_id": "231983334",
+        "markdown_evidence": "Lexical complexity, writing proficiency and task effects in Spanish Dual Language Immersion ... Using the 2.4-million-word written Spanish subsection of the Corpus of Utah Dual Language Immersion, collected from a large-scale standardized writing assessment of K-12 Spanish second language (L2) students, this study focuses on lexical complexity as operationalized by three measures: lexical diversity, lexical density, and lexical sophistication. The study goes beyond most previous work on lexical complexity by investigating the effect of task type on all three measures of lexical complexity. Patterns in variation are identified across proficiency levels and between task types. Results show that all three measures increase at each proficiency score between Novice High and Advanced, except at Intermediate Mid where scores dip or flatten. Diversity and sophistication are both shown to increase rapidly after this mid-point, indicating that a broad and deep lexical repertoire is a key feature of more advanced proficiency levels. Results for the effect of task indicate that text genre impacts learners’ lexical density, while tasks that are more complex elicit higher lexical sophistication."
+      },
+      {
+        "paper_id": "265652108",
+        "markdown_evidence": "Features of lexical complexity: insights from L1 and L2 speakers ... We discover sizable differences between the lexical complexity assignments of first language (L1) and second language (L2) English speakers. The complexity assignments of 940 shared tokens without context were extracted and compared from three lexical complexity prediction (LCP) datasets: the CompLex dataset, the Word Complexity Lexicon, and the CERF-J wordlist. It was found that word frequency, length, syllable count, familiarity, and prevalence as well as a number of derivations had a greater effect on perceived lexical complexity for L2 English speakers than they did for L1 English speakers. We explain these findings in connection to several theories from applied linguistics and then use these findings to inform a binary classifier that is trained to distinguish between spelling errors made by L1 and L2 English speakers. Our results indicate that several of our findings are generalizable. Differences in perceived lexical complexity are shown to be useful in the automatic identification of problematic words for these differing target populations. This gives support to the development of personalized lexical complexity prediction and text simplification systems. ... Binary Complexity: 1 is 0 in 0 Continuous Complexity: 0.57 is 0.18 in 0.15 1 is complex and 0 is non-complex. Target words are in bold. \n\nto account for differing perceptions of lexical complexity. Studies, such as Zeng et al. (2005), Tack et al. (2016), Lee and Yeung (2018b), and Tack (2021), introduced personalized CWI to account for such variation among differing target populations. Personalized CWI caters for the individual by taking into consideration their specific demographic and by relying on features that correlate with that demographic's assignment of lexical complexity. ... The Personalized LS Dataset was created by Lee and Yeung (2018b) to reflect the individual complexity assignments of 15 Japanese learners of English. These L2 English speakers were tasked with rating the complexity of 12,000 English words. To do so, they used a 5-point likert scale that depicted how well they knew the word. They chose from 5 labels that ranged from (1) \"never seen the word before\", to (5) \"absolutely know the word's meaning\" (Lee and Yeung, 2018b). The dataset classified those words labeled between 1 and 4 as being complex, whereas those labeled 5 were believed to be ... We discover sizable differences between the lexical complexity assignments of first language (L1) and second language (L2) English speakers. The complexity assignments of 940 shared tokens without context were extracted and compared from three lexical complexity prediction (LCP) datasets: the CompLex dataset, the Word Complexity Lexicon, and the CERF-J wordlist. It was found that word frequency, length, syllable count, familiarity, and prevalence as well as a number of derivations had a greater effect on perceived lexical complexity for L2 English speakers than they did for L1 English ... The p-value obtained is lower than 0.05 indicating that the performance of our RF trained on feature set C is statistically significant compared to our RC baseline. \n\nFeature sets B and D surprisingly performed less well than feature set C having produced slightly worse macro f1-scores of 0.562 and 0.559, respectively. We contribute this to feature set C's inclusion of AoA. Feature set B did not include this feature, whereas feature set D included all features which likely convoluted class boundaries. ... As expected, a negative correlation was observed between familiarity and complexity (see Figure 6). However, this was only seen within the WCL dataset and the CERF-J wordlist. For these datasets, an average increase in perceived complexity was found of +0.002 per every −10 decrease in familiarity. The complexity assignments of the CompLex dataset did not demonstrate this trend. Instead, familiarity appeared to have had no affect on complexity assignment, with complex and non-complex words depicting similar or varying degrees of familiarity. For example, the 100 most familiar words found"
+      },
+      {
+        "paper_id": "25667500",
+        "markdown_evidence": "CWIG3G2 - Complex Word Identification Task across Three Text Genres and Two User Groups ... This work collects a new CWI dataset (CWIG3G2) covering three text genres News, WikiNews, and Wikipedia and presents the first study on cross-genre and cross-group CWI, showing measurable influences in native language and genre types."
+      },
+      {
+        "paper_id": "270766757",
+        "markdown_evidence": "ITEC at MLSP 2024: Transferring Predictions of Lexical Difficulty from Non-Native Readers ... The findings revealed that the ground truth primarily captures more lexical access difficulties than word-to-context integration problems, suggesting that the ground truth primarily captures more lexical access difficulties than word-to-context integration problems."
+      },
+      {
+        "paper_id": "2225895",
+        "markdown_evidence": "JU_NLP at SemEval-2016 Task 11: Identifying Complex Words in a Sentence ... Two systems using various lexical and semantic features to identify complex words, one using Naive Bayes and another based on Random Forest Classifiers are developed. ... The complex word identification task refers to the process of identifying difficult words in a sentence from the perspective of readers belonging to a specific target audience. This task has immense importance in the field of lexical simplification. Lexical simplification helps in improving the readability of texts consisting of challenging words. As a participant of the SemEval-2016: Task 11 shared task, we developed two systems using various lexical and semantic features to identify complex words, one using Naive Bayes and another based on Random Forest Classifiers. The Naive Bayes classifier based system achieves the maximum G-score of 76.7% after incorporating rule based post-processing techniques. ... The complex word identification task refers to the process of identifying difficult words in a sentence from the perspective of readers belonging to a specific target audience. This task has immense importance in the field of lexical simplification. Lexical simplification helps in improving the readability of texts consisting of challenging words. As a participant of the SemEval-2016: Task 11 shared task, we developed two systems using various lexical and semantic features to identify complex words, one using Naive Bayes and another based on Random Forest Classifiers. The Naive Bayes ... Extensive research has been performed in the field of lexical simplification (Specia et al., 2012;Rello et al., 2013;Paetzold, 2015). Lexical simplification refers to identifying complex words and replacing them with lexically simple substitutes (Specia et al., 2012). The English lexical simplification task 1 was organized in the year 2012, in which the complex words were provided by the organizers. \n\nThe complex word (CW) identification is the first step towards the lexical simplification task. Understanding words which are not frequently used in any language is very difficult for non-native ... Generally, NEs are understood by the non-native speakers. They are aware of currencies or nationalities, e.g. Dollars or British. We found 54 out of 78 (approximately 70%) NEs are noncomplex in the training data. We used the 7 class model of Stanford NER6 to identify the NEs in the tagged words of the training and test dataset. We used NEs as a feature and for the post-processing as well. ... Participants were provided with training and test datasets by the organizers of CWI task. A subset of words of a sentence are tagged as complex or noncomplex. The training and test datasets comprise of 2,237 and 88,221 instances respectively. The numbers of complex and noncomplex words are 706 and 1531 for the training dataset, whereas the number of complex and noncomplex words are 4,131 and 84,090 in the test dataset. \n\nThe training dataset was collected through a survey, in which 400 annotators were presented with 200 sentences. They were asked to select the words which they did not ... The Stanford Parser3 was used to get the lemma of the tagged words in the training dataset. Further, the lemmas of these words have been used to identify various features. The R (version 3.1.0)4 software is used to collect various statistics and identifying the features which have high correlation with the complex or noncomplex class."
+      },
+      {
+        "paper_id": "195783569",
+        "markdown_evidence": "Complex Word Identification for Swedish ... The method for collecting training data based on second language learning material has shown positive evaluation scores and resulted in a new dataset for Swedish CWI, and the built complex word classifiers have an accuracy at least as good as similar systems for English."
+      },
+      {
+        "paper_id": "46967208",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "196182205",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278963856",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "46941209",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273811840",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270765661",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236460150",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251490963",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236460347",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "118673963",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "212645796",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274158195",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244069625",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269950779",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "146327224",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271162386",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236460188",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273380704",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "46940930",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "51987365",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270705484",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267782982",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274344163",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267897593",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270766071",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275357264",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262055634",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270765652",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264441579",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "46940935",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248779868",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265010912",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252907390",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "18877064",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250391091",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "212725806",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "238413292",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13752894",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220056950",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255246447",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256461047",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14268359",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252848169",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3163331",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "28217923",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222124962",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53279464",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247170866",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236460218",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253251012",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272980552",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258751118",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236460107",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "211226951",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "7104239",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220128088",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236460164",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254460025",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "4708673",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "208130414",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275454589",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236460011",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236460156",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234777813",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233297006",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "198919014",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "240230721",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262005653",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "19849030",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "207941860",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "11350767",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "85541849",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "211227254",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202769543",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "15415678",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "88474201",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276311108",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "148829925",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256461390",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247807747",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "86719817",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53413511",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "151725443",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "46938309",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272540475",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267530848",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "145943921",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216017055",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "51690054",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "240005886",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278803840",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249206982",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235916319",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237678257",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226205656",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2228944",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "174799874",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "155104886",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "150262015",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54576188",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258471004",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258079942",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "149181988",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269343668",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53034855",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "33496276",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229450719",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262157540",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259163299",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227231414",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250118925",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "26886536",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6772589",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255333573",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "149302097",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13177368",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259309318",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260840753",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278547320",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279643180",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245501991",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252367466",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237434795",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "207829998",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252022146",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261242510",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "70330914",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804178",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252163145",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271545936",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275921008",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271772327",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236459930",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269043322",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236459844",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "55716092",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264555748",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236460318",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250164464",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255415873",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271591665",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264832933",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256460862",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256460918",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256460901",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231942311",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236460181",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233231248",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218596311",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269951085",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52034301",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273391888",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258298303",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270257981",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251223873",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265237451",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "150449846",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236818237",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1110823",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6120662",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247427270",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258718987",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "63781248",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281165866",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269724466",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216438758",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271042810",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256345445",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54085502",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "214797532",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804686",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269951056",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "46937503",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280011933",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235265858",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276617516",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "12058938",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253018845",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273999213",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273950494",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "228954287",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267897555",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275357456",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220484125",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259560735",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259145355",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280976923",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271865541",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "150559024",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "64070449",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "214802487",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272881718",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260316138",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266452085",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231985456",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236603447",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "69679069",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265213409",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270171114",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276292466",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56346684",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277658222",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280392381",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236374231",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270878282",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265928745",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270766060",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "63416637",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "214391944",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52929223",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267169377",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267637074",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13181460",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277262183",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276287775",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "70120995",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "206167106",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "17754145",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272018109",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "109792",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269237222",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269899875",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277510403",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229349348",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275348048",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216579489",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "30948083",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247565301",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

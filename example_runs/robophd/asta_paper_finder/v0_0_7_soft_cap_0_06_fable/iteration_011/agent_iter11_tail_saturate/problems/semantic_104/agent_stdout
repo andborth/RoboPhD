@@ -1,0 +1,40 @@
+[semantic_104] score_type=semantic_f1 query='What are the common model architectures for retrieval-augmented language models?\n'
+  criteria: ['Retrieval-augmented language models', 'Model architecture description', 'Common or representative architectures'] weights=[0.5, 0.3, 0.2]
+  probes: ['retrieval augmented language model', 'model architecture consists of', 'we consider several retrieval architectures']
+  keyword queries: ['retrieval augmented language model architecture', 'retrieval augmented generation architecture', 'retrieval augmented transformer architecture', 'retriever reader language model', 'nearest neighbor language model', 'external memory language model', 'retrieval enhanced language model review', 'retrieval augmented language model survey', 'RAG model architecture', 'knowledge grounded language model architecture'] earliest=False
+  candidate pool: 360 of 881 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 91])
+  stage1 graded 360/360; predicted-perfect: 8
+  gap-fill queries: ['open book language model', 'fusion in decoder architecture', 'retrieval based neural language generation', 'differentiable neural database language model', 'memory augmented transformer survey']
+  gap-fill added 60 docs; predicted-perfect now 8
+  [tool:expand-ref[250262273]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[279003035]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[274896142]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[276783611]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  citation expansion: +104 docs from 10 seeds; predicted-perfect 8 -> 11
+  snippet-enriching 110 of top 110
+  [tool:enrich[250262273]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[263605677]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[278895865]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[258107796]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[258832991]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[269982120]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[265456926]] attempt 1/2 failed: TimeoutError()
+  stage2 judge-sim graded 99/99 (skipped 11 stage1-perfect); newly-perfect: 15
+  rescue round: 32 near-miss papers
+  [tool:enrich[276421942]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[276776231]] attempt 1/2 failed: TimeoutError()
+  rescue promoted 2 to predicted-perfect
+  head verify: 4/16 confirmed perfect by GPT_5_4
+  [tool:enrich[256288570]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[276783867]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[277043297]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[276185331]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[281710786]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[278310878]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[274981785]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[234777903]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[276079848]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[271720290]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 125/125 tail entries (uniq=881)
+  llm-usage: gap:n=1,in~374t,out~54t; plan:n=1,in~548t,out~514t; rescue:n=4,in~6393t,out~82t; sim:n=13,in~19993t,out~262t; t1:n=12,in~26917t,out~959t; t1exp:n=4,in~7921t,out~285t; t1gap:n=2,in~4178t,out~164t; verify:n=3,in~3510t,out~41t
+  submitted 250 papers

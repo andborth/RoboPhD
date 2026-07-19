@@ -1,0 +1,38 @@
+[semantic_170] score_type=semantic_f1 query='What are the central methods for aligning AI systems with human values?'
+  criteria: ['AI alignment methods', 'Central or widely recognized approaches', 'Explicit human-values connection', 'Methodological breadth or comparison'] weights=[0.5, 0.25, 0.15, 0.1]
+  probes: ['align AI systems with human values', 'core approaches to AI alignment', 'learn human preferences and values', 'taxonomy of alignment methods']
+  keyword queries: ['AI alignment methods', 'human value alignment', 'AI safety alignment approaches', 'value alignment methods', 'preference learning alignment', 'reinforcement learning from human feedback', 'inverse reinforcement learning human values', 'constitutional AI alignment', 'AI alignment survey', 'value alignment review'] earliest=False
+  candidate pool: 360 of 957 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 79])
+  stage1 graded 360/360; predicted-perfect: 1
+  gap-fill queries: ['value learning AI survey', 'AI alignment taxonomy human values', 'reward modeling preference learning overview', 'human centered AI alignment survey', 'intent alignment AI methods review']
+  gap-fill added 60 docs; predicted-perfect now 1
+  [tool:expand-ref[276968774]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[278996221]] attempt 1/1 failed: TimeoutError()
+  [tool:expand-ref[272310040]] attempt 1/1 failed: TimeoutError()
+  [tool:expand-ref[261493811]] attempt 1/1 failed: TimeoutError()
+  citation expansion: +150 docs from 10 seeds; predicted-perfect 1 -> 3
+  snippet-enriching 110 of top 110
+  [tool:enrich[248118878]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[272310040]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[276968774]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[267616998]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[267412261]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[278995893]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[267657539]] attempt 1/2 failed: TimeoutError()
+  stage2 judge-sim graded 107/107 (skipped 3 stage1-perfect); newly-perfect: 5
+  rescue round: 32 near-miss papers
+  [tool:enrich[278996221]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[272310040]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[264306078]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[276968774]] attempt 1/2 failed: TimeoutError()
+  rescue promoted 1 to predicted-perfect
+  head verify: 1/24 confirmed perfect by GPT_5_4
+  [tool:enrich[275932464]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[260775522]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[265609942]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[273886010]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[273233831]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[278035209]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 125/125 tail entries (uniq=957)
+  llm-usage: gap:n=1,in~350t,out~52t; plan:n=1,in~546t,out~511t; rescue:n=4,in~6348t,out~100t; sim:n=14,in~21619t,out~341t; t1:n=12,in~26659t,out~1139t; t1exp:n=5,in~10817t,out~486t; t1gap:n=2,in~4539t,out~194t; verify:n=4,in~5066t,out~74t
+  submitted 250 papers

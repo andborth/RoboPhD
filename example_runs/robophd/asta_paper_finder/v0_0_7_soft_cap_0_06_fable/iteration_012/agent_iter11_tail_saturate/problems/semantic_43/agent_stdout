@@ -1,0 +1,32 @@
+[semantic_43] score_type=semantic_f1 query='Could you direct me to research that evaluates few-shot slot tagging model performance by averaging '
+  criteria: ['Few-shot slot tagging evaluation', 'Micro-F1 metric', 'Averaging across test episodes'] weights=[0.5, 0.25, 0.25]
+  probes: ['few-shot slot tagging performance', 'micro-F1 score', 'averaged across test episodes']
+  keyword queries: ['few-shot slot tagging', 'few-shot slot filling', 'episodic slot tagging', 'slot tagging micro-F1', 'micro-F1 test episodes', 'few-shot semantic slot tagging', 'few-shot sequence labeling slots', 'few-shot spoken language understanding slots', 'slot filling episode average', 'few-shot slot tagging review'] earliest=False
+  candidate pool: 360 of 798 uniques (per-source: [100, 100, 100, 100, 100, 80, 100, 100, 100, 37, 67])
+  stage1 graded 360/360; predicted-perfect: 0
+  gap-fill queries: ['few shot slu slot micro f1', 'episode averaged slot filling f1', 'snips nlu few shot slot tagging', 'few shot named slot tagging episodes', 'prototypical slot filling micro f1']
+  gap-fill added 60 docs; predicted-perfect now 0
+  [tool:expand-ref[276973809]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[268246831]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[247939641]] attempt 1/1 failed: TimeoutError()
+  [tool:expand-ref[259731677]] attempt 1/1 failed: TimeoutError()
+  citation expansion: +150 docs from 10 seeds; predicted-perfect 0 -> 0
+  snippet-enriching 110 of top 110
+  [tool:enrich[259731677]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[237600076]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[232104960]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[227231790]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[275587931]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[259859050]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[259360994]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[225040547]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[256275034]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[275439085]] attempt 1/2 failed: TimeoutError()
+  stage2 judge-sim graded 110/110 (skipped 0 stage1-perfect); newly-perfect: 0
+  rescue round: 5 near-miss papers
+  rescue promoted 0 to predicted-perfect
+  head verify: 0/24 confirmed perfect by GPT_5_4
+  [tool:enrich[232075894]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 125/125 tail entries (uniq=798)
+  llm-usage: gap:n=1,in~316t,out~48t; plan:n=1,in~565t,out~407t; rescue:n=1,in~1073t,out~12t; sim:n=14,in~21053t,out~288t; t1:n=12,in~26157t,out~959t; t1exp:n=5,in~10431t,out~411t; t1gap:n=2,in~4387t,out~164t; verify:n=4,in~4850t,out~59t
+  submitted 250 papers

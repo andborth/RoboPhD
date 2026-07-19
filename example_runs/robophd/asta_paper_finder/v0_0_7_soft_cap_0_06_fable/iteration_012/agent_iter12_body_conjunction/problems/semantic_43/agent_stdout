@@ -1,0 +1,27 @@
+[semantic_43] score_type=semantic_f1 query='Could you direct me to research that evaluates few-shot slot tagging model performance by averaging '
+  criteria: ['Few-shot slot tagging evaluation', 'Micro-F1 as the performance metric', 'Averaging across test episodes'] weights=[0.5, 0.25, 0.25]
+  probes: ['few-shot slot tagging', 'micro-F1 score', 'averaged across test episodes']
+  keyword queries: ['few-shot slot tagging micro-F1', 'few-shot slot filling test episodes', 'episodic slot tagging micro-F1', 'few-shot spoken language understanding slot filling', 'slot tagging averaged across episodes', 'few-shot sequence labeling slot filling', 'ProtoNet slot tagging', 'TapNet slot filling', 'few-shot slot tagging survey', 'few-shot spoken language understanding review'] earliest=False
+  candidate pool: 360 of 715 uniques (per-source: [82, 100, 2, 100, 15, 100, 100, 100, 28, 100, 37, 47, 36, 47, 47])
+  stage1 graded 360/360; predicted-perfect: 0
+  gap-fill queries: ['few shot semantic slot labeling episodes', 'SNIPS NER slot filling episodic evaluation', 'episode averaged F1 slot filling support set', 'MetaDialog slot tagging micro F1', 'cross domain few shot sequence labeling slots']
+  gap-fill added 60 docs; predicted-perfect now 0
+  [expand] references field variant works: 'corpusId,references'
+  [tool:expand-ref[259257892]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[258542571]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[267204406]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[267086298]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  citation expansion: +120 docs from 10 seeds; predicted-perfect 0 -> 0
+  snippet-enriching 100 of top 100
+  stage2 judge-sim graded 94/94 (skipped 0 stage1-perfect, 6 snippetless-weak); newly-perfect: 0
+  rescue round: 19 near-miss papers
+  rescue promoted 0 to predicted-perfect
+  head verify: 0/24 confirmed perfect by GPT_5_4
+  [tool:enrich[269804789]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[275416437]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[276981851]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[258564352]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[231650950]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 135/135 tail entries (uniq=715)
+  llm-usage: gap:n=1,in~351t,out~59t; plan:n=1,in~679t,out~480t; rescue:n=3,in~3659t,out~49t; sim:n=12,in~16982t,out~246t; t1:n=12,in~26273t,out~959t; t1exp:n=4,in~8400t,out~329t; t1gap:n=2,in~4386t,out~164t; verify:n=4,in~4638t,out~62t
+  submitted 250 papers

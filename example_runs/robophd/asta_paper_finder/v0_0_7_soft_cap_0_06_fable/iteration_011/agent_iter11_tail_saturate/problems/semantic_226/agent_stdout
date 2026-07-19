@@ -1,0 +1,20 @@
+[semantic_226] score_type=semantic_f1 query='Show me research on the long video description. Here, long videos are defined as those with a durati'
+  criteria: ['Long video description task', 'Natural-language descriptive output', 'Explicit long-duration focus'] weights=[0.55, 0.3, 0.15]
+  probes: ['long video description', 'generate textual descriptions', 'videos of several minutes']
+  keyword queries: ['long video description', 'long video captioning', 'multi-minute video captioning', 'long-form video description', 'dense video captioning long videos', 'movie description generation', 'instructional video captioning', 'video paragraph captioning', 'long video captioning survey', 'video description review'] earliest=False
+  candidate pool: 360 of 799 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 72])
+  stage1 graded 360/360; predicted-perfect: 37
+  [tool:expand-ref[274706855]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[52293732]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[269804473]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  citation expansion: +108 docs from 10 seeds; predicted-perfect 37 -> 43
+  snippet-enriching 110 of top 110
+  stage2 judge-sim graded 67/67 (skipped 43 stage1-perfect); newly-perfect: 5
+  rescue round: 32 near-miss papers
+  rescue promoted 6 to predicted-perfect
+  [tool:enrich[59132243]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[277320434]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[247676803]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 125/125 tail entries (uniq=799)
+  llm-usage: plan:n=1,in~561t,out~481t; rescue:n=4,in~5726t,out~85t; sim:n=9,in~12399t,out~178t; t1:n=12,in~25347t,out~959t; t1exp:n=4,in~8051t,out~296t
+  submitted 250 papers

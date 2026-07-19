@@ -1,0 +1,22 @@
+[semantic_7] score_type=semantic_f1 query='What is the performance of large language models in text summarization under reference-based and ref'
+  criteria: ['Large language models for text summarization', 'Human evaluation of summaries', 'Reference-based evaluation', 'Reference-free evaluation'] weights=[0.5, 0.2, 0.15, 0.15]
+  probes: ['large language models for summarization', 'human evaluation of summaries', 'reference-based human evaluation', 'reference-free human evaluation']
+  keyword queries: ['large language models text summarization', 'LLM summarization human evaluation', 'reference-based summary evaluation', 'reference-free summary evaluation', 'human evaluation summarization LLMs', 'foundation models summarization evaluation', 'GPT summarization human judgments', 'summary quality human assessment', 'text summarization evaluation survey', 'LLM summarization review'] earliest=False
+  candidate pool: 360 of 882 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 61])
+  stage1 graded 360/360; predicted-perfect: 1
+  gap-fill queries: ['instruction tuned summarization human evaluation', 'summarization with llms likert pairwise references', 'xsum gpt 4 summary faithfulness human study', 'chatgpt cnn dailymail reference free evaluation', 'abstractive summarization foundation models annotation protocol']
+  gap-fill added 60 docs; predicted-perfect now 1
+  [tool:expand-ref[273852333]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[256416014]] attempt 1/1 failed: TimeoutError()
+  [tool:expand-ref[272368407]] attempt 1/1 failed: TimeoutError()
+  citation expansion: +150 docs from 10 seeds; predicted-perfect 1 -> 1
+  snippet-enriching 110 of top 110
+  stage2 judge-sim graded 109/109 (skipped 1 stage1-perfect); newly-perfect: 0
+  rescue round: 32 near-miss papers
+  rescue promoted 1 to predicted-perfect
+  head verify: 0/24 confirmed perfect by GPT_5_4
+  [tool:enrich[264451598]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[259202800]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 125/125 tail entries (uniq=882)
+  llm-usage: gap:n=1,in~397t,out~73t; plan:n=1,in~561t,out~555t; rescue:n=4,in~6366t,out~99t; sim:n=14,in~21405t,out~339t; t1:n=12,in~26987t,out~1139t; t1exp:n=5,in~11343t,out~486t; t1gap:n=2,in~4565t,out~194t; verify:n=4,in~5208t,out~75t
+  submitted 250 papers

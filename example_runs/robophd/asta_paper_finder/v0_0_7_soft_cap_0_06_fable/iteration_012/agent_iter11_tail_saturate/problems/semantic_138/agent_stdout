@@ -1,0 +1,28 @@
+[semantic_138] score_type=semantic_f1 query='Has any work been done using large language models (LLMs) to generate blog posts from scientific pap'
+  criteria: ['LLM-based generation', 'Scientific paper to blog post transformation', 'Results or evaluation'] weights=[0.45, 0.35, 0.2]
+  probes: ['large language model generates', 'generate blog posts from scientific papers', 'human evaluation of generated summaries']
+  keyword queries: ['scientific paper blog post generation', 'LLM scientific paper summarization blog', 'research paper to blog post', 'scientific article lay summary generation', 'scientific paper news article generation', 'scholarly article audience adapted summarization', 'paper-to-blog text generation', 'large language model science communication', 'scientific summarization survey', 'lay summary generation review'] earliest=False
+  candidate pool: 360 of 1004 uniques (per-source: [100, 92, 100, 100, 100, 100, 100, 100, 100, 100, 67])
+  stage1 graded 360/360; predicted-perfect: 0
+  gap-fill queries: ['plain language adaptation scientific articles', 'consumer health article generation from abstracts', 'research article press release generation', 'scientific paper public dissemination summarization', 'evidence to news text generation']
+  gap-fill added 60 docs; predicted-perfect now 0
+  [tool:expand-ref[269804670]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[282421743]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-meta] attempt 1/2 failed: ToolError('Paper 5bd91191e7d82c3ec99c9d9c5e9cb9e00320c92d is newer than the date cutoff of 2025-06-01 and is not allowed to be requested')
+  [tool:expand-meta] attempt 2/2 failed: ToolError('Paper 5bd91191e7d82c3ec99c9d9c5e9cb9e00320c92d is newer than the date cutoff of 2025-06-01 and is not allowed to be requested')
+  snippet-enriching 110 of top 110
+  stage2 judge-sim graded 110/110 (skipped 0 stage1-perfect); newly-perfect: 14
+  rescue round: 32 near-miss papers
+  rescue promoted 7 to predicted-perfect
+  head verify: 6/24 confirmed perfect by GPT_5_4
+  [tool:enrich[6934881]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[227230299]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[253098413]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[249903812]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[20769031]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[18377218]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[12184983]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[268900546]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 125/125 tail entries (uniq=1004)
+  llm-usage: gap:n=1,in~361t,out~63t; plan:n=1,in~562t,out~454t; rescue:n=4,in~6068t,out~85t; sim:n=14,in~21233t,out~291t; t1:n=12,in~26068t,out~959t; t1gap:n=2,in~4415t,out~164t; verify:n=4,in~5013t,out~61t
+  submitted 250 papers

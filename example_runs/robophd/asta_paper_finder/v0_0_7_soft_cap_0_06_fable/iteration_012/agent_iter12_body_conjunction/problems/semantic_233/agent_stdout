@@ -1,0 +1,34 @@
+[semantic_233] score_type=semantic_f1 query='Find papers on trigger-free document-level event extraction methods that do not use human-annotated '
+  criteria: ['Trigger-free event extraction', 'Document-level event extraction focus', 'No human-annotated triggers'] weights=[0.5, 0.3, 0.2]
+  probes: ['without trigger annotations', 'document-level event extraction', 'no human-annotated triggers']
+  keyword queries: ['trigger-free document-level event extraction', 'document-level event extraction without triggers', 'trigger-agnostic document event extraction', 'document-level event argument extraction trigger-free', 'event extraction without trigger annotations', 'document event record extraction trigger-free', 'document-level event extraction survey', 'trigger-free event extraction review', 'DE-PPN document-level event extraction', 'PTPCG document-level event extraction'] earliest=False
+  candidate pool: 360 of 502 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 39, 45, 33, 37, 25])
+  stage1 graded 360/360; predicted-perfect: 7
+  gap-fill queries: ['document event extraction without trigger annotation', 'trigger induced document event extraction', 'DEE benchmark trigger free', 'event table filling trigger free', 'document level event role filler extraction']
+  gap-fill added 60 docs; predicted-perfect now 7
+  [tool:expand-ref[271116266]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [tool:expand-ref[271116266]] attempt 1/1 failed: RuntimeError("tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable")
+  [expand] references unavailable under all field variants; citers-only
+  citation expansion: +76 docs from 10 seeds; predicted-perfect 7 -> 7
+  snippet-enriching 100 of top 100
+  stage2 judge-sim graded 93/93 (skipped 7 stage1-perfect, 0 snippetless-weak); newly-perfect: 3
+  rescue round: 24 near-miss papers
+  [tool:enrich[271980137]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[252648205]] attempt 1/2 failed: TimeoutError()
+  rescue promoted 0 to predicted-perfect
+  head verify: 3/24 confirmed perfect by GPT_5_4
+  [tool:enrich[17785922]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[258718175]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[252564217]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[271496297]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[250390839]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[264439234]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[272079941]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[256385289]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[222211087]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[210937993]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[208031598]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[249010869]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 128/128 tail entries (uniq=502)
+  llm-usage: gap:n=1,in~394t,out~58t; plan:n=1,in~670t,out~557t; rescue:n=3,in~4242t,out~63t; sim:n=12,in~16529t,out~244t; t1:n=12,in~25667t,out~959t; t1exp:n=3,in~5505t,out~208t; t1gap:n=2,in~4460t,out~164t; verify:n=4,in~4144t,out~60t
+  submitted 250 papers

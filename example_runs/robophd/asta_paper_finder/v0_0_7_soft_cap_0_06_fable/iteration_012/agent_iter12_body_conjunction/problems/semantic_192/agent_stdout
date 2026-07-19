@@ -1,0 +1,21 @@
+[semantic_192] score_type=semantic_f1 query='What are some datasets for task-oriented grasping?'
+  criteria: ['Dataset contribution for task-oriented grasping', 'Explicit link between grasps and task semantics', 'Dataset details and usability'] weights=[0.5, 0.3, 0.2]
+  probes: ['task-oriented grasping dataset', 'grasps conditioned on task', 'object grasp task annotations']
+  keyword queries: ['task-oriented grasping dataset', 'task oriented grasp dataset', 'task-specific grasping dataset', 'functional grasp dataset', 'affordance grasping dataset', 'manipulation task grasp dataset', 'task-oriented grasping survey', 'robot grasping dataset review', 'Cornell grasping dataset', 'GraspNet dataset'] earliest=False
+  candidate pool: 360 of 813 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 33, 43, 48, 38, 30])
+  stage1 graded 360/360; predicted-perfect: 5
+  gap-fill queries: ['affordance keypoint grasp dataset', 'functional object grasp benchmark', 'handover grasp affordance dataset', 'tool use grasp demonstration dataset', 'semantic grasping manipulation dataset']
+  gap-fill added 60 docs; predicted-perfect now 5
+  [expand] references field variant works: 'corpusId,references'
+  [tool:expand-ref[272832444]] attempt 1/1 failed: TimeoutError()
+  citation expansion: +120 docs from 10 seeds; predicted-perfect 5 -> 9
+  snippet-enriching 100 of top 100
+  stage2 judge-sim graded 91/91 (skipped 9 stage1-perfect, 0 snippetless-weak); newly-perfect: 8
+  rescue round: 24 near-miss papers
+  rescue promoted 2 to predicted-perfect
+  head verify: 0/24 confirmed perfect by GPT_5_4
+  [tool:enrich[270371713]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[255090519]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 129/129 tail entries (uniq=813)
+  llm-usage: gap:n=1,in~344t,out~52t; plan:n=1,in~655t,out~530t; rescue:n=3,in~4577t,out~61t; sim:n=12,in~17359t,out~238t; t1:n=12,in~26556t,out~959t; t1exp:n=4,in~8196t,out~329t; t1gap:n=2,in~4356t,out~164t; verify:n=4,in~4896t,out~61t
+  submitted 250 papers

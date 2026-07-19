@@ -1,0 +1,37 @@
+[semantic_192] score_type=semantic_f1 query='What are some datasets for task-oriented grasping?'
+  criteria: ['Task-oriented grasping dataset focus', 'Explicit grasp-task relationship', 'Dataset characteristics and annotations'] weights=[0.55, 0.25, 0.2]
+  probes: ['task-oriented grasping dataset', 'grasps for a given task', 'annotated with task labels']
+  keyword queries: ['task-oriented grasping dataset', 'task oriented grasp dataset', 'task-driven grasping dataset', 'functional grasp dataset', 'affordance grasping dataset', 'manipulation task grasp dataset', 'grasp affordance dataset', 'robot grasping benchmark tasks', 'task-oriented grasping survey', 'task-oriented grasping review'] earliest=False
+  [tool:rel[affordance grasping dataset]] attempt 1/2 failed: RuntimeError('tool call failed: HTTP 502')
+  [tool:rel[manipulation task grasp datase]] attempt 1/2 failed: RuntimeError('tool call failed: HTTP 502')
+  [tool:rel[task-driven grasping dataset]] attempt 1/2 failed: RuntimeError('tool call failed: HTTP 502')
+  [tool:rel[task oriented grasp dataset]] attempt 1/2 failed: RuntimeError('tool call failed: HTTP 502')
+  [tool:rel[task-oriented grasping survey]] attempt 1/2 failed: RuntimeError('tool call failed: HTTP 502')
+  [tool:snippet[This paper introduces a datase]] attempt 1/2 failed: RuntimeError('tool call failed: HTTP 502')
+  candidate pool: 360 of 693 uniques (per-source: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 76])
+  stage1 graded 360/360; predicted-perfect: 4
+  gap-fill queries: ['semantic grasping affordance dataset', 'functional grasp affordance benchmark', 'grasp demonstration household tasks dataset', 'tool use grasp dataset', 'part affordance manipulation grasp dataset']
+  gap-fill added 60 docs; predicted-perfect now 4
+  citation expansion: +150 docs from 10 seeds; predicted-perfect 4 -> 5
+  snippet-enriching 110 of top 110
+  [tool:enrich[268662915]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[259248987]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[227054138]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[248798899]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[267028693]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[247330957]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[269762030]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[270371713]] attempt 1/2 failed: TimeoutError()
+  stage2 judge-sim graded 105/105 (skipped 5 stage1-perfect); newly-perfect: 14
+  rescue round: 32 near-miss papers
+  [tool:enrich[257921472]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[276995180]] attempt 1/2 failed: TimeoutError()
+  [tool:enrich[46968412]] attempt 1/2 failed: TimeoutError()
+  rescue promoted 1 to predicted-perfect
+  head verify: 2/24 confirmed perfect by GPT_5_4
+  [tool:enrich[267028003]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[266551340]] attempt 1/1 failed: TimeoutError()
+  [tool:enrich[274638630]] attempt 1/1 failed: TimeoutError()
+  tail sweep: enriched 125/125 tail entries (uniq=693)
+  llm-usage: gap:n=1,in~350t,out~54t; plan:n=1,in~541t,out~494t; rescue:n=4,in~6257t,out~83t; sim:n=14,in~20092t,out~275t; t1:n=12,in~26606t,out~959t; t1exp:n=5,in~10880t,out~411t; t1gap:n=2,in~4412t,out~164t; verify:n=4,in~4957t,out~61t
+  submitted 250 papers

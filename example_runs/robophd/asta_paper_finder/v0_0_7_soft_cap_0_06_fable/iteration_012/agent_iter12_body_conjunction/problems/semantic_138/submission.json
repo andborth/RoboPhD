@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_138",
+    "results": [
+      {
+        "paper_id": "270559834",
+        "markdown_evidence": "Papers-to-Posts: Supporting Detailed Long-Document Summarization with an Interactive LLM-Powered Source Outline ... Compressing long and technical documents (e.g.,>10 pages) into shorter-form articles (e.g.,<2 pages) is critical for communicating information to different audiences, for example, blog posts of scientific research paper or legal briefs of dense court proceedings. While large language models (LLMs) are powerful tools for condensing large amounts of text, current interfaces to these models lack support for understanding and controlling what content is included in a detailed summarizing article. Such capability is especially important for detail- and technical-oriented domains, in which tactical selection and coherent synthesis of key details is critical for effective communication to the target audience. For this, we present interactive reverse source outlines, a novel mechanism for controllable long-form summarization featuring outline bullet points with automatic point selections that the user can iteratively adjust to obtain an article with the desired content coverage. We implement this mechanism in Papers-to-Posts, a new LLM-powered system for authoring research-paper blog posts. Through a within-subjects lab study (n=20) and a between-subjects deployment study (n=37 blog posts, 26 participants), we compare Papers-to-Posts to a strong baseline tool that provides an ... Compressing long and technical documents (e.g.,>10 pages) into shorter-form articles (e.g.,<2 pages) is critical for communicating information to different audiences, for example, blog posts of scientific research paper or legal briefs of dense court proceedings. While large language models (LLMs) are powerful tools for condensing large amounts of text, current interfaces to these models lack support for understanding and controlling what content is included in a detailed summarizing article. Such capability is especially important for detail- and technical-oriented domains, in which tactical ... Condensing long and technical documents into shorter forms for different audiences is crucial for many applications, from blog posts about scientific papers to legal briefs about court proceedings. In science, communicating scientific ideas from research papers to broader audiences increases awareness and impact [8,25]. Scientists often seek different ways to publicize their work, such as through tweets or blog posts [19,23,32,45]; indeed, tweeting about research papers has been shown to raise their citation count [35]. While some tools have been created to help author short-form derivatives ... We conducted a within-subjects lab study to determine if and how Papers-to-Posts may support researchers in writing blog posts about their research papers. \n\n4.1.1 Hypotheses. We hypothesized that, compared to a baseline consisting of an LLM draft and the ability to prompt the LLM, Papers-to-Posts would provide participants a better experience and outcome. Our individual hypotheses were as follows: \n\n• H1: Papers-to-Posts leads to higher satisfaction with the output blog post than the baseline. • H2: Papers-to-Posts leads to higher satisfaction with the tool than the baseline. • H3: ... In the realm of academic research, distilling the essence of long, multitopic documents into concise summaries is a formidable challenge. This task becomes even more daunting when considering the diverse backgrounds of readers who may seek to understand these documents. Traditional summarization techniques, both extractive and abstractive, often fall short in addressing the nuances of such complex texts. Recognizing this gap, our research introduces ConceptEVA, a novel system designed to revolutionize the way we approach the summarization of academic papers. ConceptEVA leverages the latest ... We used a public tool for converting scientific PDFs to HTML3 to extract the paper text from the paper PDF. For the lab study, we then manually adjusted the parsed HTML so that the section headers were correct, no section or subsection was completely missing, and only the main paper text was included (i.e., no appendix, references, or footnotes). We also manually retrieved the tables and figures from the parsing. For the deployment study, the text parsing was automatic to better align with a real-world setting, and there was no table or figure retrieval. ... Scientists can engage with broader communities through various channels, including press releases, magazines, journals, and tweets [1,20]. This work focuses on scientific blog posts, which offer increased recognition and transparency of one's work, editorial freedom, and public engagement [5,24,52]. There are several forms of scientific blog posts, such as academic commentary, free commentary, and mediation of research to laypersons [36]. Here, we focus on blog posts with the primary goal of communicating information from a research paper to people unfamiliar with the paper's specific"
+      },
+      {
+        "paper_id": "277366488",
+        "markdown_evidence": "376 Using a large language model to create lay summaries of clinical study descriptions ... An LLM can be used to generate lay language summaries that are readable at a lower grade level while maintaining semantic similarity and can be used to improve the drafting of summaries for recruitment, thereby improving accessibility to potential participants. ... Objectives/Goals: We assessed the feasibility of using a large language model (LLM) to create lay language descriptions of study protocols for recruitment, which has the potential to improve accessibility and transparency of clinical studies and enable participants to make informed decisions. Methods/Study Population: All studies from a clinical research recruitment platform were included, which features human-written lay descriptions and titles for study recruitment. Corresponding protocol summaries in the IRB system were extracted and translated into lay language using a LLM (gpt-35-turbo-0613). A subset was used to develop prompt variations through an iterative process. Prompt strategies evaluated include chain-of-thought and few-shot prompting techniques. LLM-generated and human-written descriptions were compared for readability using Flesch–Kincaid and Simple Measure of Gobbledygook (SMOG) reading grade levels and information completeness using Word Movers’ Distance (WMD). Results/Anticipated Results: A total of 55 study descriptions were included – 10 were used to develop prompts and 45 were used for evaluation. The final LLM instructions included multistep prompts. The LLM was first instructed to produce a two- to three-sentence long description without using scientific ... Objectives/Goals: We assessed the feasibility of using a large language model (LLM) to create lay language descriptions of study protocols for recruitment, which has the potential to improve accessibility and transparency of clinical studies and enable participants to make informed decisions. Methods/Study Population: All studies from a clinical research recruitment platform were included, which features human-written lay descriptions and titles for study recruitment. Corresponding protocol summaries in the IRB system were extracted and translated into lay language using a LLM ... 376 Using a large language model to create lay summaries of clinical study descriptions"
+      },
+      {
+        "paper_id": "271212429",
+        "markdown_evidence": "LLM-Collaboration on Automatic Science Journalism for the General Audience ... A framework that integrates three LLMs mimicking the real-world writing-reading-feedback-revision workflow, with one LLM acting as the journalist, a smaller LLM as the general public reader, and the third LLM as an editor is proposed. ... Science journalism reports current scientific discoveries to non-specialists, aiming to enable public comprehension of the state of the art. However, this task can be challenging as the audience often lacks specific knowledge about the presented research. To address this challenge, we propose a framework that integrates three LLMs mimicking the real-world writing-reading-feedback-revision workflow, with one LLM acting as the journalist, a smaller LLM as the general public reader, and the third LLM as an editor. The journalist's writing is iteratively refined by feedback from the reader and suggestions from the editor. Our experiments demonstrate that by leveraging the collaboration of two 7B and one 1.8B open-source LLMs, we can generate articles that are more accessible than those generated by existing methods, including advanced models such as GPT-4. ... Automatic Science Journalism.ASJ has gained increasing interest in recent years.Dangovski et al. (2021) created a parallel corpus and provided a sequence-to-sequence method to generate news summaries from scientific articles.However, this dataset is not available to the public because of the licensing restriction.Goldsack et al. (2022) released two corpora, primarily focused on the biomedical and life science domains.Similarly, they employed a standard sequence-to-sequence model for such tasks.Cardenas et al. (2023) constructed a dataset in various scientific fields and integrated the ... Reader Editor real world, a journalist typically receives revision suggestions from a professional editor; to make it accessible to the general public, the journalist could pass their article to friends without domain expertise on the topic to get feedback for revision.Therefore, we design our framework to simulate such real-world scenarios, in which three LLMs collaborate to go through a four-step iterative process, which includes writing, reading, feedback, and revision, to generate highly accessible popular science articles.The questions for our framework are then (1) how the reader gives ... Science journalism creates journalistic content that covers a wide range of scientific research, enhancing the public's understanding of science (Göpfert, 2008;Allan, 2011;Angler, 2017).However, with rapid advances in various disciplines, science journalism struggles to keep pace with the exponential growth of knowledge.In response, automatic science journalism (ASJ) has been proposed to expedite the filtering, learning, and communication of scientific knowledge (Dangovski et al., 2021).\n\nThe essence of ASJ lies in elucidating complex technical content for readers, thereby facilitating their ... Science journalism reports current scientific discoveries to non-specialists, aiming to enable public comprehension of the state of the art. However, this task can be challenging as the audience often lacks specific knowledge about the presented research. To address this challenge, we propose a framework that integrates three LLMs mimicking the real-world writing-reading-feedback-revision workflow, with one LLM acting as the journalist, a smaller LLM as the general public reader, and the third LLM as an editor. The journalist's writing is iteratively refined by feedback from the reader and ... LLM-Collaboration on Automatic Science Journalism for the General Audience"
+      },
+      {
+        "paper_id": "257921827",
+        "markdown_evidence": "SimCSum: Joint Learning of Simplification and Cross-lingual Summarization for Cross-lingual Science Journalism ... SimCSum demonstrates statistically significant improvements over the state-of-the-art on two non-synthetic cross-lingual scientific datasets and an in-depth investigation into the linguistic properties of generated summaries and an error analysis. ... Cross-lingual science journalism is a recently introduced task that generates popular science summaries of scientific articles different from the source language for non-expert readers. A popular science summary must contain salient content of the input document while focusing on coherence and comprehensibility. Meanwhile, generating a cross-lingual summary from the scientific texts in a local language for the targeted audience is challenging. Existing research on cross-lingual science journalism investigates the task with a pipeline model to combine text simplification and cross-lingual summarization. We extend the research in cross-lingual science journalism by introducing a novel, multi-task learning architecture that combines the aforementioned NLP tasks. Our approach is to jointly train the two high-level NLP tasks in SimCSum for generating cross-lingual popular science summaries. We investigate the performance of SimCSum against the pipeline model and several other strong baselines with several evaluation metrics and human evaluation. Overall, SimCSum demonstrates statistically significant improvements over the state-of-the-art on two non-synthetic cross-lingual scientific datasets. Furthermore, we conduct an in-depth investigation into the linguistic properties of ... Cross-lingual science journalism is a recently introduced task that generates popular science summaries of scientific articles different from the source language for non-expert readers. A popular science summary must contain salient content of the input document while focusing on coherence and comprehensibility. Meanwhile, generating a cross-lingual summary from the scientific texts in a local language for the targeted audience is challenging. Existing research on cross-lingual science journalism investigates the task with a pipeline model to combine text simplification and cross-lingual ... 1 Introduction A real-world example of cross-lingual science journalism is Spektrum der Wissenschaft1 . It is the German version of Scientific American and an acclaimed bridge between local readers and the latest scientific research in Germany. Spektrum's journalists read English scientific articles and summarize them into popular science stories in German that are comprehensible by local non-expert readers. Spektrum der Wissenschaft approached us to automate the process of their journalist's work. We define cross-lingual science journalism as the fu-sion of two high-level NLP tasks: text ... This section focuses on science journalism models. Zaman et al. (2020) develop an extension of PGN (See et al., 2017) by modifying the loss function, so the model is trained for joint simplification and summarization. It is not a MTL model but a summarization model with an added loss for simplification. Moreover, the model is trained on a customized dataset that contains simplified summaries from the Eureka Alert science news website. Dangovski et al. (2021) introduce science journalism as a downstream task of abstractive summarization and story generation. They apply BERTbased models with a ... In this paper, we explore the task of cross-lingual science journalism. We propose a novel multi-task model, SIMCSUM, that combines two high-level NLP tasks, simplification and cross-lingual summarization. SIMCSUM jointly trains for reducing linguistic complexity and cross-lingual abstractive summarization. We also introduce a pipeline-based strong baseline for cross-lingual science journalism. Our empirical investigation shows the significantly superior performance of SIMCSUM over the SOTA baselines on two non-synthetic cross-lingual scientific datasets, also indicated by human evaluation."
+      },
+      {
+        "paper_id": "268691679",
+        "markdown_evidence": "SciNews: From Scholarly Complexities to Public Narratives – a Dataset for Scientific News Report Generation ... A new corpus comprising a parallel compilation of academic publications and their corresponding scientific news reports across nine disciplines is presented, highlighting the divergences in readability and brevity between scientific news narratives and academic manuscripts. ... Scientific news reports serve as a bridge, adeptly translating complex research articles into reports that resonate with the broader public. The automated generation of such narratives enhances the accessibility of scholarly insights. In this paper, we present a new corpus to facilitate this paradigm development. Our corpus comprises a parallel compilation of academic publications and their corresponding scientific news reports across nine disciplines. To demonstrate the utility and reliability of our dataset, we conduct an extensive analysis, highlighting the divergences in readability and brevity between scientific news narratives and academic manuscripts. We benchmark our dataset employing state-of-the-art text generation models. The evaluation process involves both automatic and human evaluation, which lays the groundwork for future explorations into the automated generation of scientific news reports. The dataset and code related to this work are available at https://dongqi.me/projects/SciNews. ... Our dataset leverages academic articles as source inputs, aligned with human-authored scientific news reports as target outputs. Additionally, we conduct extensive evaluations with state-of-the-art (SOTA) Natural Language Generation (NLG) models on SciNews, supplemented with assessments from human evaluators to analyze different perspectives of model outputs. Our findings suggest that the current leading models still struggle with hallucination and factual error problems. Furthermore, compared to human abilities in style-adaptive writing, SOTA NLG models exhibit an inferior capacity for ... In tasks of news-related generation, some investigations have been conducted into the automated generation of general news articles (Sigita et al., 2013;Nesterenko, 2016;Mosallanezhad et al., 2020;Horvitz et al., 2020;Shu et al., 2021), headlines (Gusev, 2019;Bukhtiyarov and Gusev, 2020;Liu et al., 2020;Ao et al., 2021;Panthaplackel et al., 2022;Cai et al., 2023), comments (Yang   1 SciNews can only be used for academic purposes. \n\net al., 2019), and summaries (Nallapati et al., 2016). Similarly, science-related generation efforts have focused on producing academic summaries (Cohan et al., ... Thus, this paper proposes (i) a new task, Automated Scientific News Report Generation (SNG), and (ii) a novel dataset, SciNews, designed for this task. \n\nSimilarities and Differences with Text Summarization and Text Simplification: Text summarization emphasizes the reduction of textual volume whilst preserving main information, without altering linguistic complexity (Liu et al., 2023b;Pu et al., 2023;Hosking et al., 2023;Cho et al., 2022;Goyal et al., 2022;Pu et al., 2022;Lai et al., 2022;See et al., 2017), while text simplification focuses on employing simplified lexicon and syntax to ... Scientific news reports serve as a bridge, adeptly translating complex research articles into reports that resonate with the broader public. The automated generation of such narratives enhances the accessibility of scholarly insights. In this paper, we present a new corpus to facilitate this paradigm development. Our corpus comprises a parallel compilation of academic publications and their corresponding scientific news reports across nine disciplines. To demonstrate the utility and reliability of our dataset, we conduct an extensive analysis, highlighting the divergences in readability and"
+      },
+      {
+        "paper_id": "259370807",
+        "markdown_evidence": "Cross-lingual Science Journalism: Select, Simplify and Rewrite Summaries for Non-expert Readers ... This work proposes to combine the three components of SSR to produce cross-lingual simplified science summaries for non-expert readers and shows that SSR significantly outperforms the baselines for the CSJ task and can serve as a strong baseline for future work. ... Automating Cross-lingual Science Journalism (CSJ) aims to generate popular science summaries from English scientific texts for non-expert readers in their local language. We introduce CSJ as a downstream task of text simplification and cross-lingual scientific summarization to facilitate science journalists’ work. We analyze the performance of possible existing solutions as baselines for the CSJ task. Based on these findings, we propose to combine the three components - SELECT, SIMPLIFY and REWRITE (SSR) to produce cross-lingual simplified science summaries for non-expert readers. Our empirical evaluation on the Wikipedia dataset shows that SSR significantly outperforms the baselines for the CSJ task and can serve as a strong baseline for future work. We also perform an ablation study investigating the impact of individual components of SSR. Further, we analyze the performance of SSR on a high-quality, real-world CSJ dataset with human evaluation and in-depth analysis, demonstrating the superior performance of SSR for CSJ. ... Automating Cross-lingual Science Journalism (CSJ) aims to generate popular science summaries from English scientific texts for non-expert readers in their local language. We introduce CSJ as a downstream task of text simplification and cross-lingual scientific summarization to facilitate science journalists’ work. We analyze the performance of possible existing solutions as baselines for the CSJ task. Based on these findings, we propose to combine the three components - SELECT, SIMPLIFY and REWRITE (SSR) to produce cross-lingual simplified science summaries for non-expert readers. Our ... We propose to study Cross-lingual Science Journalism (CSJ) as a downstream task of text simplification and cross-lingual scientific summarization. \n\nAutomating CSJ aims to produce popular crosslingual summaries of English scientific texts for non-expert readers. We develop a pipeline comprising the three components -SELECT, SIMPLIFY and REWRITE (SSR) as a benchmark for CSJ. Our empirical evaluation shows that SSR outperforms all baselines by wide margins on WIKIPEDIA and achieves good performance on SPEKTRUM. We further explore the ablated models with component replacements, demonstrating the ... 1. We introduce Cross-lingual Science Journalism (CSJ) as a downstream task of crosslingual scientific summarization and text simplification targeting non-expert readers. \n\n2. To solve CSJ, we develop a pipeline comprising the three components -SELECT, SIM-PLIFY and REWRITE (SSR) for producing popular German summaries from English scientific texts. \n\n3. We empirically evaluate the performance of SSR against several existing CLS models on the WIKIPEDIA dataset with various evaluation metrics. We also analyze ablated SSR models to examine the significance of each ... The architecture of SSR3 consists of three components, SELECT, SIMPLIFY and REWRITE. Figure 1 illustrates SSR's information flow among the components. SELECT accepts English source text as input and selects the most salient sentences of the given text from different sections. SIMPLIFY receives these selected sentences as its input and generates a linguistically simplified version of the given input in English. Then these selected and simplified sentences are passed to REWRITE at the encoder as an input, and the target summary of the source text is given at the decoder as a reference. Finally,"
+      },
+      {
+        "paper_id": "259376907",
+        "markdown_evidence": "MDC at BioLaySumm Task 1: Evaluating GPT Models for Biomedical Lay Summarization ... An evaluation of autoregressive language models, both general and specialized for the biomedical domain, to generate lay summaries from biomedical research article abstracts demonstrates that a GPT-3.5 model combined with a straightforward few-shot prompt producesLay summaries that achieve significantly relevance and factuality compared to those generated by a fine-tuned BioGPT model. ... This paper presents our approach to the BioLaySumm Task 1 shared task, held at the BioNLP 2023 Workshop. The effective communication of scientific knowledge to the general public is often limited by the technical language used in research, making it difficult for non-experts to comprehend. To address this issue, lay summaries can be used to explain research findings to non-experts in an accessible form. We conduct an evaluation of autoregressive language models, both general and specialized for the biomedical domain, to generate lay summaries from biomedical research article abstracts. Our findings demonstrate that a GPT-3.5 model combined with a straightforward few-shot prompt produces lay summaries that achieve significantly relevance and factuality compared to those generated by a fine-tuned BioGPT model. However, the summaries generated by the BioGPT model exhibit better readability. Notably, our submission for the shared task achieved 1st place in the competition. ... This paper presents an evaluation of generalpurpose and biomedical domain-specific autoregressive language models for generating lay summaries from the abstracts of scientific articles for the BioLaySumm shared task at BioNLP 2023. Our findings demonstrate that the biomedical domainspecific model, BioGPT, outperforms generalpurpose GPT-2 models when fine-tuned for lay summary generation. We also explored the effectiveness of zero and few-shot prompting for generating lay summaries using OpenAI's GPT-3.5 models. While the zero-shot performance of these models is worse than the fine-tuned ... This paper presents our approach to the BioLaySumm Task 1 shared task, held at the BioNLP 2023 Workshop. The effective communication of scientific knowledge to the general public is often limited by the technical language used in research, making it difficult for non-experts to comprehend. To address this issue, lay summaries can be used to explain research findings to non-experts in an accessible form. We conduct an evaluation of autoregressive language models, both general and specialized for the biomedical domain, to generate lay summaries from biomedical research article abstracts. Our ... The authors demonstrate that BioGPT can significantly outperform GPT-2 on biomedical NLU tasks; however, there is currently no evaluation on biomedical natural language generation (NLG) tasks. Therefore, the objective of this work is to evaluate the ability of general-purpose and domainspecific GPT models to generate lay summaries of biomedical research articles as part of the BioLay-Summ challenge (Goldsack et al., 2023). \n\nThis approach raises an issue. The attention mechanism used in many GPT-style models has quadratic memory scaling with the length of a sequence, which limits the maximum ... Effective communication of scientific ideas is essential for sharing research findings with the general public. While scientific publications serve as an important tool for scientists to share their work, they are primarily intended for other researchers. The use of technical language and the required background knowledge makes these articles difficult for the general public to comprehend, limiting accessibility and research impact (Kuehne and Olden, 2015). The goal of lay summarization is to generate a concise summary of technical texts without using technical language so it can be"
+      },
+      {
+        "paper_id": "269983201",
+        "markdown_evidence": "RAG-RLRC-LaySum at BioLaySumm: Integrating Retrieval-Augmented Generation and Readability Control for Layman Summarization of Biomedical Texts ... This paper introduces the RAG-RLRC-LaySum framework, designed to make complex biomedical research accessible to laymen through advanced Natural Language Processing (NLP) techniques, and demonstrates that the methods surpass Plain Gemini model. ... This paper introduces the RAG-RLRC-LaySum framework, designed to make complex biomedical research accessible to laymen through advanced Natural Language Processing (NLP) techniques. Our innovative Retrieval Augmentation Generation (RAG) solution, enhanced by a reranking method, utilizes multiple knowledge sources to ensure the precision and pertinence of lay summaries. Additionally, our Reinforcement Learning for Readability Control (RLRC) strategy improves readability, making scientific content comprehensible to non-specialists. Evaluations using the publicly accessible PLOS and eLife datasets show that our methods surpass Plain Gemini model, demonstrating a 20% increase in readability scores, a 15% improvement in ROUGE-2 relevance scores, and a 10% enhancement in factual accuracy. The RAG-RLRC-LaySum framework effectively democratizes scientific knowledge, enhancing public engagement with biomedical discoveries. ... Biomedical research encompasses crucial discoveries, ranging from everyday health concerns to significant disease outbreaks.Such studies are essential not only for scientists and doctors but also for journalists and the general public.However, the specialized and complex language typical in these studies often renders the content incomprehensible to those without a scientific background Thoppilan et al. (2022).To address this issue, the development of automated lay summaries have become increasingly important Goldsack et al. (2023b,a).This initiative aims to summarize the detailed aspects of ... Our RAG framework enhances keyword-based retrieval by using an initial lay summary generated by the model as a query.In the inference stage, it retrieves relevant descriptions from Wikipedia Ponzetto and Strube (2007) by the Pyserini Lin et al. (2021) index.However, retrieving relevant information from a large number of articles remains a challenge because the first generated summaries cannot work as effective queries.We initially use the ground truth as a query but switch to the first generated layman summary during inference for passage retrieval.However, there's a risk that the top-k ... First, we employ a Retrieval-Augmented Generation (RAG) solution that processes entire papers despite limited input capacity.Second, we improve summary quality by optimizing readability using relevant background information.The framework is illustrated in Figure 2. ... The RAG-RLRC-LaySum framework effectively simplifies complex biomedical texts, enhancing readability and factual accuracy for lay audiences.It surpasses traditional models, offering new insights into the pivotal role of knowledge retrieval and readability optimization in scientific summarization.Future work will expand the framework's knowledge sources and refine how knowledge is utilized, potentially broadening its application across various scientific fields.This will further explore the integration of domain-specific knowledge to improve the precision and relevance of summaries."
+      },
+      {
+        "paper_id": "224704618",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264591405",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271769491",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53247871",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804670",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275931878",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269921201",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235349058",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271769383",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271769620",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278472760",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274789047",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259376485",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271769663",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259355836",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271769508",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273878647",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "18692900",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276301446",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277742151",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271866033",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253397732",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269502069",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229363446",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226283720",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276813240",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273468839",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269239935",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274281034",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278001973",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226283481",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271866191",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278768786",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "282072046",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264441397",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251471747",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275342881",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271772287",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270740833",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271866173",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273376541",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264439143",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244090421",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "240109718",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56010545",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278165337",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273375407",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278033490",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269449672",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275795792",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202888901",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "27505905",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276412259",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259377033",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226283944",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264441720",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272146191",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "19121530",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259376695",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253827897",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "230109529",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270306725",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3533693",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "7365397",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244333265",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "35182029",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "23011969",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5971503",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "30647566",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5397267",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2885060",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "31458011",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "113964129",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "240204292",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276674586",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3591956",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13988482",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225979747",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56472087",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247068151",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225276318",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252111039",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13119094",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6934881",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269950712",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272342160",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "151610272",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278461106",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220730262",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52004857",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268264640",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277510223",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252819462",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271859627",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482363",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278328107",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257237455",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275758467",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268793887",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269757203",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270380179",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270514625",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270712502",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271490579",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273901336",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267412619",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245827796",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273374881",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275336716",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269296168",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273323438",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273986249",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261697425",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249282538",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268041757",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781732",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274788497",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236460044",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254853631",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274446281",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268046597",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277013879",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482830",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273482078",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252746867",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271769741",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279415733",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272316453",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277741248",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277003459",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266162360",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266899693",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265220960",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274092225",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259145194",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245218732",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257668085",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258148838",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "67717608",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "228889686",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268403309",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271357094",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260366135",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804818",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258841120",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278165350",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "198985936",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "159040684",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905137",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54840840",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247518906",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266383621",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "63054955",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271028145",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266164028",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6666771",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259929482",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271133759",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268047039",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276419903",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261563201",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265068233",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268032620",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "158487916",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234474370",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257790069",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275331833",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258215499",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237299035",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "121327597",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "15224637",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216548602",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268476896",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273786517",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276408421",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "59889590",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235769944",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "46565962",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277767474",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260200259",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276287775",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270020446",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273190525",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249192236",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "9097804",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271446148",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "153011516",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227054371",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269293969",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280651036",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "18311338",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6000615",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265066945",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234424693",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220844520",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278310363",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218926339",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272968629",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273098122",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234271067",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259548034",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257665594",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "208039253",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263829433",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265511588",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268580729",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220047513",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259075344",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237798984",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "195789948",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249869253",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "157704603",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268900546",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260946992",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218593817",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271933845",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272881449",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272689548",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "768687",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267782758",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "49875932",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266883646",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56387321",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258865977",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267220058",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "182789195",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265050994",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258942133",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273377091",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220732583",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270560243",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268857142",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251142351",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259778928",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "42109195",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274180027",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5623240",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16510388",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "143318958",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258126841",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "62930877",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263005537",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

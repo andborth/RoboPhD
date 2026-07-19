@@ -1,0 +1,1 @@
+Find papers on trigger-free document-level event extraction methods that do not use human-annotated triggers.
