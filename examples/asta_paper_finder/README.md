@@ -4,6 +4,20 @@ Evolves Inspect-AI `@solver` agents on AstaBench's PaperFindingBench task (Liter
 
 Reference points (Standard-tools tier, the one we compete on): generic ReAct spans 0.220 @ $0.06/query (GPT-5 Mini) to 0.374 @ $3.38/query (Opus). Ai2's custom-interface Asta Paper Finder sits outside the tier at 0.397 @ $0.06 — the gap between generic ReAct and that system is the "PaperFinder-specific structure" evolution is trying to discover.
 
+## Leaderboard submissions
+
+Snapshots live in `example_runs/robophd/asta_paper_finder/<name>/`; the pipeline is `scripts/asta_paper_finder_submit.py` (official `astabench eval` + `score` + tarball for manual HF-form upload — see the script docstring for cost/prereqs). Patch numbers continue the cross-benchmark sequence shared with DS-1000.
+
+| Submission | Agent (run) | Internal test | Official |
+| --- | --- | --- | --- |
+| `v0_0_7_soft_cap_0_06_fable` | `iter12_body_conjunction` (`robophd-asta_paper_finder-003`, fable-5-evolved) | 0.3724 @ $0.0556/query | pending |
+
+```bash
+pip install litellm==1.88.1
+python scripts/asta_paper_finder_submit.py --only v0_0_7_soft_cap_0_06_fable --limit 3   # smoke (~$3)
+python scripts/asta_paper_finder_submit.py --only v0_0_7_soft_cap_0_06_fable            # full (~$220-270, 2-4h)
+```
+
 ## Setup
 
 ```bash
@@ -150,7 +164,7 @@ On `semantic_f1` queries (73% of validation) the scorer runs a GPT-4o relevance 
 
 - [ ] **Extract the pricing machinery to a shared module.** `_estimate_cost` / `_bundled_price_map` here are byte-for-byte copies of `asta_ds1000/evaluator.py`'s (the leaderboard billing basis is a cross-task concept, not task-specific). Both copies carry duplicated test suites (`test_evaluator.py`'s `_estimate_cost` section, ported from ds1000's `ae1e410`) so accidental drift fails loudly, but the right endpoint is one shared implementation — e.g. under `RoboPhD/`, with an import-fallback story for standalone evaluator use. Deferred until the ds1000 campaign is at a quiet point (extraction touches its evaluator).
 - [ ] **Standard-Tools allowlist (AST scan).** The evaluator should reject candidates that import outside `{json, re, asyncio, dataclasses, ..., inspect_ai.*, model_registry}`. Without this, evolution could in principle introduce `import openai` and silently lose cost-accounting fidelity / the Standard Tools badge. ~30 lines of `ast.parse` walking.
-- [ ] **Submission pipeline: port `scripts/asta_ds1000_submit.py`.** Submissions re-run the official `astabench eval` + `astabench score` against staged `agent.py` + `model_registry.py` and tarball *that* run's logs (they do not collect our internal eval logs). Mostly a name swap, no Docker; remember a seed-baseline entry alongside the best agent.
+- [x] **Submission pipeline: `scripts/asta_paper_finder_submit.py`** (ported from `asta_ds1000_submit.py`, 2026-07-19). Stages `agent.py` (resilience wrapper) + `agent_inner.py` + `seed_agent.py` + `model_registry.py`, re-runs official `astabench eval paper_finder_test` + `astabench score`, and tarballs *that* run's logs. Deltas from ds1000: no Docker, `ASTA_TOOL_KEY`/`HF_ACCESS_TOKEN` preflights, a litellm bundled-map pricing preflight over `AGENT_MODELS`, an uncapped-judging cost projection, `--limit N` smoke runs (log-isolated, never tarred), and a schema-valid empty submission as the wrapper's last resort (an empty string would route through the scorer's LLM re-parse). No seed-baseline entry: ASTA didn't post ds1000's seed on the leaderboard. Tests: `unit_tests/test_submit.py`. See "Leaderboard submissions" above.
 
 ### Design questions to revisit
 
