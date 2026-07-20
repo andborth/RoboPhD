@@ -133,7 +133,7 @@ Two judge models are available; **stock `openai/gpt-4o-2024-11-20` is the defaul
 | gpt-5.4-nano (2026-07-20) | κ ~0.52, severe deflation (credited 51% of GPT-4o's Perfects) | FAIL |
 | **gpt-5.6-luna** (2026-07-20) | **κ 0.755**, Perfect rates 31.3% vs 32.7% (matched), 2/300 format repairs | **PASS** |
 
-`openai/gpt-5.6-luna` is therefore offered as the sole alternate. Why it exists: judging is the campaign's biggest cost line ($137.68 of the v0_0_7 campaign's $368 went to training judging, another $88.38 to the internal test eval), and luna prices at $1.00/$6.00 per M vs GPT-4o's $2.50/$10.00 — roughly half the judge bill at matched verdict fidelity. Agreement is evidence-style-dependent, so re-run `_check_judge_calibration.py` before trusting the gate on a materially different lineage.
+`openai/gpt-5.6-luna` is therefore offered as the sole alternate. Why it exists: judging is the campaign's biggest cost line (the v0_0_7 campaign's training API spend was ~$164 — solver models $26.55 + judge $137.68, i.e. judging was ~84% of it — and the internal test eval added another $88.38 of judging; evolution-model usage is excluded here since it bills against a Claude Max plan, not API dollars), and luna prices at $1.00/$6.00 per M vs GPT-4o's $2.50/$10.00 — roughly half the judge bill at matched verdict fidelity. Agreement is evidence-style-dependent, so re-run `_check_judge_calibration.py` before trusting the gate on a materially different lineage.
 
 Mechanics and invariants:
 
