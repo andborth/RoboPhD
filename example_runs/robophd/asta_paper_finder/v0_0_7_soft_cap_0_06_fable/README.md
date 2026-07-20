@@ -64,7 +64,7 @@ ladder, and a defensive transport wrapper. Models: `GPT_5_4_MINI`
 | Tools tier | Standard (Asta MCP corpus tools provided by the task) |
 | Models (solver, from logs) | gpt-5.4-mini (grading cascade), gpt-5.4-2026-03-05 (planner/verify) |
 | URL (form) | https://github.com/andborth/RoboPhD |
-| Leaderboard | [AstaBench leaderboard](https://huggingface.co/spaces/allenai/asta-bench-leaderboard) |
+| Leaderboard | [AstaBench PaperFindingBench leaderboard](https://allenai-asta-bench-leaderboard.hf.space/literature-understanding#h-paperfindingbench-leaderboard) |
 
 Agent description as submitted on the form:
 
@@ -79,8 +79,10 @@ Agent description as submitted on the form:
 > against the query's relevance criteria in a staged cascade with
 > citation expansion, near-miss rescue, and a GPT-5.4 verification pass,
 > and submits a best-first ranked list with evidence quoted verbatim
-> from retrieved text. Same RoboPhD code base as our DS-1000
-> submissions; this is its first literature-search task.
+> from retrieved text. Evolution was presented with the same menu of
+> nine LLMs from Anthropic, OpenAI, and Gemini that we used in our
+> DS-1000 submissions; it settled on just two. Same RoboPhD code base
+> as DS-1000; this is its first literature-search task.
 
 ## Official result (2026-07-20)
 
