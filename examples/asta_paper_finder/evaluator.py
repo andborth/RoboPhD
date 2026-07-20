@@ -80,14 +80,36 @@ _BUNDLED_PRICE_MAP: dict | None = None
 # billing judge spend to agents. (b) is enforced by a unit test
 # (unit_tests/test_model_registry.py).
 #
-# gpt-5.4-nano is included because training runs may override the grader to
-# it for cost (see _apply_training_grader / $PF_TRAINING_GRADER_MODEL). It is
-# never an agent-selectable model_registry handle, so listing it here only
-# routes its spend to the judge bucket; it does not enable it as a solver.
+# gpt-5.6-luna is included because training runs (and opt-in internal test
+# evals) may override the grader to it for cost (see _apply_training_grader /
+# $PF_TRAINING_GRADER_MODEL). It is the ONLY approved alternate judge: it
+# passed the calibration gate on 2026-07-20 (PERFECT/not kappa 0.755 vs the
+# 0.7 bar, Perfect rates 31.3% vs GPT-4o's 32.7%, 2/300 format repairs).
+# gpt-5.4-nano was removed the same day: it FAILED calibration (kappa ~0.52,
+# severe Perfect-deflation — credited only 51% of GPT-4o's Perfects) and was
+# never used in any recorded run. Neither judge is an agent-selectable
+# model_registry handle, so listing here only routes spend to the judge
+# bucket; it does not enable them as solvers.
 JUDGE_MODEL_IDS = frozenset({
     "openai/gpt-4o-2024-11-20",
-    "openai/gpt-5.4-nano",
+    "openai/gpt-5.6-luna",
 })
+
+# Judge-only price entries for models newer than the pinned litellm 1.88.1
+# (which must not move — it is the leaderboard's billing basis for AGENT
+# models). Judge spend is internal accounting (other_cost_usd, never
+# penalized, never leaderboard-exposed), so a local table is sound here in a
+# way it would not be for solver pricing. Rates from OpenAI's pricing page,
+# 2026-07-20. cached_input applies to input_tokens_cache_read (measured
+# essentially unused by the astabench judge prompt — 0.007% on the v0_0_7
+# official run — but priced correctly if it ever engages).
+JUDGE_PRICE_OVERRIDES = {
+    "gpt-5.6-luna": {
+        "input_cost_per_token": 1.00e-6,
+        "cached_input_cost_per_token": 0.10e-6,
+        "output_cost_per_token": 6.00e-6,
+    },
+}
 if _ASTABENCH_GRADER_MODEL_NAME not in JUDGE_MODEL_IDS:
     raise RuntimeError(
         f"astabench's paper_finder relevance judge is "
@@ -253,8 +275,18 @@ def _apply_training_grader() -> None:
     """Override astabench's relevance grader with $PF_TRAINING_GRADER_MODEL, if
     set. relevance.GRADER_MODEL_NAME is read at judge time, and the grounded
     judge calls load_relevance_judgement dynamically, so reassigning the module
-    attribute is enough. Warns if the model isn't priced in the bundled map —
-    an unpriced grader would silently zero the reported judge cost."""
+    attribute is enough.
+
+    When the override is active, the lenient judge-output normalizer
+    (_judge_normalize.install) is patched in as well: alternate judges emit
+    rare near-JSON that astabench's strict parser would silently drop as
+    Not Relevant (luna: 2/300 in calibration). Stock GPT-4o paths — the
+    training default, non-overridden test evals, official submissions —
+    are never patched, preserving strict-parser parity with astabench.
+
+    Warns if the model isn't priced in the bundled map AND has no
+    JUDGE_PRICE_OVERRIDES entry — an unpriced grader would silently zero
+    the reported judge cost."""
     model = os.environ.get(TRAINING_GRADER_ENV)
     if not model:
         return
@@ -267,10 +299,14 @@ def _apply_training_grader() -> None:
         )
     from astabench.evals.paper_finder import relevance as _pf_rel
     _pf_rel.GRADER_MODEL_NAME = model
-    if _bundled_price_map().get(model.split("/", 1)[-1]) is None:
+    import _judge_normalize
+    _judge_normalize.install()
+    bare = model.split("/", 1)[-1]
+    if _bundled_price_map().get(bare) is None and bare not in JUDGE_PRICE_OVERRIDES:
         logger.warning(
-            "training grader %s is not in the bundled litellm price map; "
-            "its judge cost may report as $0", model,
+            "training grader %s is not in the bundled litellm price map and "
+            "has no JUDGE_PRICE_OVERRIDES entry; its judge cost may report "
+            "as $0", model,
         )
 
 
@@ -1234,8 +1270,11 @@ class PaperFinderEvaluator:
 
         # Clear grounding state before this sample retrieves anything. In the
         # default subprocess path this process is fresh, but the in-process
-        # path (tests, smoke runs) reuses one process across samples.
+        # path (tests, smoke runs) reuses one process across samples. Judge
+        # format-repair counters reset alongside for the same reason.
         grounding.reset()
+        import _judge_normalize
+        _judge_normalize.reset()
 
         try:
             tools = _build_tools(example.id)
@@ -1371,6 +1410,15 @@ class PaperFinderEvaluator:
                         # thinking spend. Persisted into usage_summary so
                         # recorded runs retain the full accounting.
                         "reasoning_tokens": getattr(u, "reasoning_tokens", None) or 0,
+                        # Prompt-cache splits (subset of input_tokens).
+                        # Informational for most models; priced at the
+                        # cached rate for JUDGE_PRICE_OVERRIDES entries.
+                        # Measured near-zero for the astabench judge
+                        # prompt (varying doc text precedes any stable
+                        # prefix), but recorded so caching can never be
+                        # silently overbilled.
+                        "input_tokens_cache_read": getattr(u, "input_tokens_cache_read", None) or 0,
+                        "input_tokens_cache_write": getattr(u, "input_tokens_cache_write", None) or 0,
                     }
                     usage_summary[model_name] = counts
                     model_cost = self._estimate_cost(model_name, counts)
@@ -1440,6 +1488,15 @@ class PaperFinderEvaluator:
             )
             if submission:
                 diagnostics["submission.json"] = submission
+
+            # Judge format-repair counts (nonzero only when the alternate
+            # training judge + lenient normalizer are active). Surfaced so
+            # drift in the judge's format discipline is visible instead of
+            # silently repaired.
+            import _judge_normalize
+            repairs = _judge_normalize.last_repairs()
+            if repairs.get("recovered") or repairs.get("shape_fixed") or repairs.get("unrecoverable"):
+                diagnostics["judge_format_repairs"] = repairs
 
             score_meta = (
                 dict(getattr(score_obj, "metadata", None) or {})
@@ -1549,6 +1606,23 @@ class PaperFinderEvaluator:
             if model_name.startswith("google/")
             else model_name
         )
+        # Judge-only override table (models newer than the pinned litellm;
+        # see JUDGE_PRICE_OVERRIDES). Cache-aware: cache-read tokens bill
+        # at the cached rate, the remainder at the full input rate. Checked
+        # before the bundled map so the pinned-litellm gap can't zero a
+        # judge's cost; agent models are never in this table, so the
+        # leaderboard billing basis is untouched.
+        override = JUDGE_PRICE_OVERRIDES.get(litellm_name.split("/", 1)[-1])
+        if override:
+            cache_read = counts.get("input_tokens_cache_read", 0) or 0
+            cache_read = min(cache_read, input_tokens)
+            return (
+                (input_tokens - cache_read) * override["input_cost_per_token"]
+                + cache_read * override.get(
+                    "cached_input_cost_per_token", override["input_cost_per_token"]
+                )
+                + completion_tokens * override["output_cost_per_token"]
+            )
         try:
             bundled = _bundled_price_map()
             entry = bundled.get(litellm_name) or bundled.get(

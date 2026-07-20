@@ -166,11 +166,12 @@ def _judge_env(monkeypatch, main_mod):
 
 def test_test_cache_env_shared_capped_default(main_mod, _judge_env, tmp_path):
     cache_env, cap_env, grader_env = _judge_env
-    mode = main_mod._set_test_cache_env(
-        "test_set", runs_dir=str(tmp_path), shared=True, cap=True
-    )
     from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
 
+    mode = main_mod._set_test_cache_env(
+        "test_set", runs_dir=str(tmp_path), shared=True, cap=True,
+        judge=GRADER_MODEL_NAME, stock=GRADER_MODEL_NAME,
+    )
     path = Path(os.environ[cache_env])
     assert path.parent == tmp_path / ".judge_cache"
     assert path.name == f"shared_test_{main_mod._judge_slug(GRADER_MODEL_NAME)}.json"
@@ -192,8 +193,11 @@ def test_test_cache_env_pristine_uncapped(main_mod, _judge_env, tmp_path):
     """--no-shared-judge-cache + --no-cap-judge-to-estimate is the
     submission-exact combination: fresh empty cache, judge everything."""
     cache_env, cap_env, grader_env = _judge_env
+    from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
+
     mode = main_mod._set_test_cache_env(
-        "eval_only", runs_dir=str(tmp_path), shared=False, cap=False
+        "eval_only", runs_dir=str(tmp_path), shared=False, cap=False,
+        judge=GRADER_MODEL_NAME, stock=GRADER_MODEL_NAME,
     )
     path = Path(os.environ[cache_env])
     assert "pf_pristine_eval_only_" in path.name
@@ -203,6 +207,57 @@ def test_test_cache_env_pristine_uncapped(main_mod, _judge_env, tmp_path):
     assert grader_env not in os.environ
     assert mode["judge_cache"] == "pristine"
     assert mode["cap_judge_to_estimate"] is False
+
+
+def test_test_cache_env_nonstock_judge(main_mod, _judge_env, tmp_path):
+    """A non-stock test judge (luna) must: set the override env (the
+    evaluator then installs the lenient normalizer), scope the cache by
+    the alternate judge's slug (verdicts from different judges never
+    mix), and mark the record as official-incomparable."""
+    cache_env, cap_env, grader_env = _judge_env
+    from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
+
+    luna = "openai/gpt-5.6-luna"
+    mode = main_mod._set_test_cache_env(
+        "eval_only", runs_dir=str(tmp_path), shared=True, cap=True,
+        judge=luna, stock=GRADER_MODEL_NAME,
+    )
+    path = Path(os.environ[cache_env])
+    assert path.name == f"shared_test_{main_mod._judge_slug(luna)}.json"
+    assert os.environ.get(grader_env) == luna
+    assert mode["judge_model"] == luna
+    assert "NOT comparable" in mode["judge_note"]
+
+
+def test_test_results_filename_judge_suffix(main_mod):
+    """Stock evals keep the historical filenames; a non-stock judge gets a
+    .judge_<model> suffix so its (official-incomparable) scores can never
+    collide with a stock GPT-4o eval of the same agent."""
+    stock = "openai/gpt-4o-2024-11-20"
+    luna = "openai/gpt-5.6-luna"
+    f = main_mod._test_results_filename
+    assert f(None, stock, stock) == "test_results.json"
+    assert f("iter5_x", stock, stock) == "test_results_iter5_x.json"
+    assert f(None, luna, stock) == "test_results.judge_gpt-5.6-luna.json"
+    assert f("iter5_x", luna, stock) == "test_results_iter5_x.judge_gpt-5.6-luna.json"
+    # The per-problem sibling derives via with_suffix(".per_problem.json")
+    # in _write_test_results — the judge suffix must survive that.
+    p = Path(f(None, luna, stock)).with_suffix(".per_problem.json")
+    assert p.name == "test_results.judge_gpt-5.6-luna.per_problem.json"
+
+
+def test_training_judge_choices_pinned(main_mod):
+    """The CLI's two allowed judges: element 0 must be astabench's stock
+    grader (the default basis), and every choice must be in the
+    evaluator's JUDGE_MODEL_IDS (else its spend would misbill to the
+    agent and _apply_training_grader would reject it at run time)."""
+    from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
+    from evaluator import JUDGE_MODEL_IDS
+
+    choices = main_mod.TRAINING_JUDGE_CHOICES
+    assert choices[0] == GRADER_MODEL_NAME
+    assert set(choices) <= JUDGE_MODEL_IDS
+    assert "openai/gpt-5.6-luna" in choices
 
 
 def _calls_to(name: str) -> list[ast.Call]:

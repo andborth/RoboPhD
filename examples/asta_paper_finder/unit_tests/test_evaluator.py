@@ -858,29 +858,61 @@ def test_apply_cache_redirect_noop_without_env(ev_mod, monkeypatch):
 
 
 def test_apply_training_grader_override(ev_mod, monkeypatch):
-    """$PF_TRAINING_GRADER_MODEL overrides the grader (for training); the id
-    must be in JUDGE_MODEL_IDS so its spend stays in the judge bucket."""
+    """$PF_TRAINING_GRADER_MODEL overrides the grader; the id must be in
+    JUDGE_MODEL_IDS so its spend stays in the judge bucket. The lenient
+    output normalizer must be installed alongside — alternate judges emit
+    rare near-JSON that astabench's strict parser would otherwise drop as
+    Not Relevant."""
+    import _judge_normalize
     from astabench.evals.paper_finder import relevance
     monkeypatch.setattr(relevance, "GRADER_MODEL_NAME", relevance.GRADER_MODEL_NAME)
-    monkeypatch.setenv(ev_mod.TRAINING_GRADER_ENV, "openai/gpt-5.4-nano")
+    monkeypatch.setattr(
+        relevance, "extract_json_from_response", relevance.extract_json_from_response
+    )
+    monkeypatch.setenv(ev_mod.TRAINING_GRADER_ENV, "openai/gpt-5.6-luna")
     ev_mod._apply_training_grader()
-    assert relevance.GRADER_MODEL_NAME == "openai/gpt-5.4-nano"
+    assert relevance.GRADER_MODEL_NAME == "openai/gpt-5.6-luna"
+    assert relevance.extract_json_from_response is _judge_normalize._lenient_extract_json
 
 
 def test_apply_training_grader_rejects_unbilled_model(ev_mod, monkeypatch):
     """A grader not in JUDGE_MODEL_IDS would misbill judge spend to the agent —
-    fail loudly rather than silently."""
-    monkeypatch.setenv(ev_mod.TRAINING_GRADER_ENV, "openai/gpt-5.4-mini")
-    with pytest.raises(RuntimeError, match="JUDGE_MODEL_IDS"):
-        ev_mod._apply_training_grader()
+    fail loudly rather than silently. gpt-5.4-nano is deliberately in this
+    class now: it FAILED the 2026-07-20 calibration (kappa ~0.52, severe
+    Perfect-deflation) and was removed from JUDGE_MODEL_IDS."""
+    for bad in ("openai/gpt-5.4-mini", "openai/gpt-5.4-nano"):
+        monkeypatch.setenv(ev_mod.TRAINING_GRADER_ENV, bad)
+        with pytest.raises(RuntimeError, match="JUDGE_MODEL_IDS"):
+            ev_mod._apply_training_grader()
 
 
 def test_apply_training_grader_noop_without_env(ev_mod, monkeypatch):
+    """Stock path: no grader override AND no normalizer patch — official
+    parity requires astabench's strict parser untouched."""
     from astabench.evals.paper_finder import relevance
     monkeypatch.delenv(ev_mod.TRAINING_GRADER_ENV, raising=False)
-    before = relevance.GRADER_MODEL_NAME
+    before_grader = relevance.GRADER_MODEL_NAME
+    before_extract = relevance.extract_json_from_response
     ev_mod._apply_training_grader()
-    assert relevance.GRADER_MODEL_NAME == before
+    assert relevance.GRADER_MODEL_NAME == before_grader
+    assert relevance.extract_json_from_response is before_extract
+
+
+def test_judge_price_override_prices_luna(ev_mod):
+    """litellm 1.88.1 (pinned — the leaderboard billing basis) predates
+    gpt-5.6-luna; JUDGE_PRICE_OVERRIDES must price it so judge cost never
+    silently reports $0. Cache-read tokens bill at the cached rate."""
+    cost = ev_mod.PaperFinderEvaluator._estimate_cost(
+        "openai/gpt-5.6-luna",
+        {"input_tokens": 1_000_000, "output_tokens": 100_000, "total_tokens": 1_100_000},
+    )
+    assert cost == pytest.approx(1.00 + 0.60)  # $1/M in + $6/M out
+    cost = ev_mod.PaperFinderEvaluator._estimate_cost(
+        "openai/gpt-5.6-luna",
+        {"input_tokens": 1_000_000, "output_tokens": 100_000,
+         "total_tokens": 1_100_000, "input_tokens_cache_read": 500_000},
+    )
+    assert cost == pytest.approx(0.5 * 1.00 + 0.5 * 0.10 + 0.60)
 
 
 # --- _head_tail_truncate ------------------------------------------------------

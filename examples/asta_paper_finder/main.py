@@ -277,9 +277,36 @@ def _write_test_results(
     return summary_path, per_problem_path
 
 
+# The two judges a run may use. Stock GPT-4o is the default, astabench's
+# hardcoded official judge, and the only basis comparable to leaderboard
+# scores. gpt-5.6-luna is the sole approved alternate: it passed the
+# calibration gate on 2026-07-20 (kappa 0.755, matched Perfect rates —
+# see README "Training judge"). A unit test pins element 0 to astabench's
+# GRADER_MODEL_NAME and both elements to evaluator.JUDGE_MODEL_IDS.
+TRAINING_JUDGE_CHOICES = [
+    "openai/gpt-4o-2024-11-20",
+    "openai/gpt-5.6-luna",
+]
+
+
 def _judge_slug(judge: str) -> str:
     """Filesystem-safe judge-model slug used in judge-cache filenames."""
     return re.sub(r"[^A-Za-z0-9._-]+", "_", judge)
+
+
+def _test_results_filename(eval_agent: str | None, judge: str, stock: str) -> str:
+    """Result-file basename for a test eval.
+
+    Stock-judge evals keep the historical names (test_results.json /
+    test_results_<agent>.json) so past runs and tooling are unaffected.
+    A non-stock judge gets a `.judge_<model>` suffix so its scores — a
+    different, official-incomparable basis — can never collide with (or
+    be mistaken for) a stock GPT-4o evaluation of the same agent, and a
+    stock re-eval can be added alongside later."""
+    base = f"test_results_{eval_agent}" if eval_agent else "test_results"
+    if judge != stock:
+        base += f".judge_{_judge_slug(judge.split('/', 1)[-1])}"
+    return base + ".json"
 
 
 def _judge_cache_dir(runs_dir: str) -> Path:
@@ -287,12 +314,24 @@ def _judge_cache_dir(runs_dir: str) -> Path:
     return Path(runs_dir) / ".judge_cache"
 
 
-def _set_test_cache_env(label: str, *, runs_dir: str, shared: bool, cap: bool) -> dict:
+def _set_test_cache_env(
+    label: str, *, runs_dir: str, shared: bool, cap: bool, judge: str, stock: str
+) -> dict:
     """Configure the judge env for a test / formal eval and return the
     scoring-mode record for test_results.json.
 
-    Test evals always score with astabench's stock GPT-4o grader — the
-    training-judge override is cleared unconditionally. Two knobs remain:
+    ``judge`` is the effective grader (``--training-judge`` or the stock
+    GPT-4o id in ``stock``). Stock evals clear the override env and are
+    the ONLY basis comparable to official astabench scores; a non-stock
+    judge (opt-in, e.g. the calibrated gpt-5.6-luna) sets the override —
+    the evaluator then also installs the lenient output normalizer — and
+    is for A/B comparisons and lineage triage, recorded as such in the
+    returned scoring-mode dict and in the suffixed result filename
+    (_test_results_filename). The verdict cache is judge-scoped either
+    way, so verdicts from different judges can never mix. Official
+    submissions are untouched by all of this (stock astabench code).
+
+    The other two knobs:
 
     - ``shared`` (default; ``--no-shared-judge-cache`` turns it off):
       persistent verdict cache at ``<runs_dir>/.judge_cache/
@@ -314,10 +353,10 @@ def _set_test_cache_env(label: str, *, runs_dir: str, shared: bool, cap: bool) -
       the mode is recorded alongside the scores.
     """
     from evaluator import CACHE_PATH_ENV, CAP_JUDGE_ENV, TRAINING_GRADER_ENV
-    from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
 
+    is_stock = judge == stock
     if shared:
-        path = _judge_cache_dir(runs_dir) / f"shared_test_{_judge_slug(GRADER_MODEL_NAME)}.json"
+        path = _judge_cache_dir(runs_dir) / f"shared_test_{_judge_slug(judge)}.json"
         scope = "shared"
     else:
         fd, tmp = tempfile.mkstemp(prefix=f"pf_pristine_{label}_", suffix=".json")
@@ -326,17 +365,29 @@ def _set_test_cache_env(label: str, *, runs_dir: str, shared: bool, cap: bool) -
         path = Path(tmp)
         scope = "pristine"
     os.environ[CACHE_PATH_ENV] = str(path)
-    os.environ.pop(TRAINING_GRADER_ENV, None)
+    if is_stock:
+        os.environ.pop(TRAINING_GRADER_ENV, None)
+    else:
+        os.environ[TRAINING_GRADER_ENV] = judge
     if cap:
         os.environ[CAP_JUDGE_ENV] = "1"
     else:
         os.environ.pop(CAP_JUDGE_ENV, None)
     logger.info(
-        f"Judge cache ({scope} {label}): {path}; "
+        f"Judge cache ({scope} {label}): {path}; judge: {judge}"
+        f"{'' if is_stock else ' (NON-STOCK — not official-comparable)'}; "
         f"judging cap: {'on' if cap else 'off'}"
     )
+    record_extra = {} if is_stock else {
+        "judge_note": (
+            "non-stock judge: scores are NOT comparable to official "
+            "astabench results (stock GPT-4o); for A/B comparison and "
+            "lineage triage only"
+        ),
+    }
     return {
-        "judge_model": GRADER_MODEL_NAME,
+        **record_extra,
+        "judge_model": judge,
         "judge_cache": scope,
         "judge_cache_path": str(path),
         "cap_judge_to_estimate": cap,
@@ -417,21 +468,31 @@ def parse_args():
                         "cache, i.e. submission-exact fresh judging (e.g. a "
                         "clean cost measurement)."
                         "%(default).0s")
-    # DEPRECATED, deliberately hidden from --help: overrides the relevance-
-    # judge model for TRAINING only (test/formal evals always use astabench's
-    # GPT-4o). It stays wired because the machinery is sound, but it does NOT
-    # work out of the box: astabench's strict parser + pydantic model drop
-    # format-deviant verdicts as Not Relevant, and non-GPT-4o judges deviate
-    # often — a real switch must first ship _check_judge_calibration.py's
-    # shape-normalization (or JSON mode) in the training judge path. Beyond
-    # that, enable only after the calibration script passes its gate ON THE
-    # CURRENT LINEAGE'S regenerated (untruncated) evidence; agreement is
-    # evidence-style-dependent: gpt-5.4-mini passed on an early lineage's
-    # shallow evidence but fails on a mature agent's snippet-rich head papers
-    # (kappa 0.63 vs the 0.7 gate, +24% Perfect-rate inflation; 2026-07-17
-    # study). Value must be in the evaluator's JUDGE_MODEL_IDS.
+    # Judge-model option. History: agreement with GPT-4o is evidence-style-
+    # dependent and must be re-measured per lineage with
+    # _check_judge_calibration.py (n=150, untruncated evidence).
+    #   gpt-5.4-mini (2026-07-17): FAIL — kappa 0.63 vs the 0.7 gate, +24%
+    #     Perfect-rate inflation on mature snippet-rich evidence.
+    #   gpt-5.4-nano (2026-07-20): FAIL — kappa ~0.52, severe deflation
+    #     (credited 51% of GPT-4o's Perfects).
+    #   gpt-5.6-luna (2026-07-20): PASS — kappa 0.755, Perfect rates 31.3%
+    #     vs 32.7%, 2/300 format repairs. First approved alternate.
+    # The strict-parser blocker is now shipped: the evaluator installs
+    # _judge_normalize's lenient extractor whenever a non-stock judge is
+    # active (stock paths stay strict for official parity). Choices are
+    # pinned to evaluator.JUDGE_MODEL_IDS by a unit test.
     p.add_argument("--training-judge", type=str, default=None,
-                   help=argparse.SUPPRESS)
+                   choices=TRAINING_JUDGE_CHOICES,
+                   help="Relevance-judge model for training AND (if passed "
+                        "with --eval-test-set/--eval-only) internal test "
+                        "evals. Default: stock GPT-4o — the official judge "
+                        "and the only basis comparable to leaderboard "
+                        "scores. gpt-5.6-luna passed the calibration gate "
+                        "(kappa 0.755, 2026-07-20; ~2x cheaper — see README "
+                        "'Training judge'). Non-stock test results are "
+                        "written to judge-suffixed files. Official "
+                        "submissions always use stock GPT-4o regardless. "
+                        "Each judge has its own verdict-cache namespace.")
     p.add_argument("--random-seed", type=int, default=None)
     p.add_argument("--engine-config", type=str, default=None)
     p.add_argument("--meta-evolution-strategy", default=None)
@@ -683,6 +744,8 @@ def main():
             runs_dir=args.runs_dir,
             shared=not args.no_shared_judge_cache,
             cap=cap_judge_to_estimate,
+            judge=args.training_judge or _STOCK_GRADER,
+            stock=_STOCK_GRADER,
         )
         test_data = [s.model_dump() for s in load_paper_finder("test")]
         logger.info(f"Test set: {len(test_data)} samples")
@@ -710,8 +773,8 @@ def main():
             )
 
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
-        results_filename = (
-            f"test_results_{args.eval_agent}.json" if args.eval_agent else "test_results.json"
+        results_filename = _test_results_filename(
+            args.eval_agent, args.training_judge or _STOCK_GRADER, _STOCK_GRADER
         )
         summary_path, per_problem_path = _write_test_results(
             eval_result=eval_result,
@@ -856,6 +919,8 @@ def main():
                 runs_dir=args.runs_dir,
                 shared=not args.no_shared_judge_cache,
                 cap=cap_judge_to_estimate,
+                judge=args.training_judge or _STOCK_GRADER,
+                stock=_STOCK_GRADER,
             )
             test_data = [s.model_dump() for s in load_paper_finder("test")]
             logger.info(f"Test evaluation: {len(test_data)} samples")
@@ -871,7 +936,9 @@ def main():
                 evaluator=test_evaluator,
                 output_dir=result.experiment_dir,
                 agent_name="best",
-                summary_filename="test_results.json",
+                summary_filename=_test_results_filename(
+                    None, args.training_judge or _STOCK_GRADER, _STOCK_GRADER
+                ),
                 scoring_mode=scoring_mode,
             )
             logger.info(f"Test summary:    {summary_path}")

@@ -123,6 +123,26 @@ The training evaluator applies the formula above. The test evaluator (derived vi
 
 On `semantic_f1` queries (73% of validation) the scorer runs a GPT-4o relevance judge over every returned paper, inside the same `inspect.eval` — so its token usage lands in the same log as the agent's. The evaluator splits by exact model ID: judge usage → `other_cost_usd` (reported, never penalized — the agent doesn't control it); everything else → `agent_cost_usd` (the penalized bucket). The split is sound because the registry's model IDs never include the judge's, and agents can't mint arbitrary model IDs (the registry is the only sanctioned LLM surface). A module-load assert cross-checks astabench's `GRADER_MODEL_NAME` so an upstream judge bump fails loudly instead of silently misattributing cost.
 
+### Training judge (`--training-judge`)
+
+Two judge models are available; **stock `openai/gpt-4o-2024-11-20` is the default** (astabench's hardcoded official judge, and the only scoring basis comparable to leaderboard results):
+
+| Candidate | Calibration vs GPT-4o (n=150, untruncated v0_0_7-lineage evidence) | Verdict |
+| --- | --- | --- |
+| gpt-5.4-mini (2026-07-17) | κ 0.63 (< 0.7 gate), **+24% Perfect-rate inflation** | FAIL |
+| gpt-5.4-nano (2026-07-20) | κ ~0.52, severe deflation (credited 51% of GPT-4o's Perfects) | FAIL |
+| **gpt-5.6-luna** (2026-07-20) | **κ 0.755**, Perfect rates 31.3% vs 32.7% (matched), 2/300 format repairs | **PASS** |
+
+`openai/gpt-5.6-luna` is therefore offered as the sole alternate. Why it exists: judging is the campaign's biggest cost line ($137.68 of the v0_0_7 campaign's $368 went to training judging, another $88.38 to the internal test eval), and luna prices at $1.00/$6.00 per M vs GPT-4o's $2.50/$10.00 — roughly half the judge bill at matched verdict fidelity. Agreement is evidence-style-dependent, so re-run `_check_judge_calibration.py` before trusting the gate on a materially different lineage.
+
+Mechanics and invariants:
+
+- Applies to **training**, and (when passed alongside `--eval-test-set`/`--eval-only`) to **internal test evals**. Non-stock test results are written to judge-suffixed files (`test_results.judge_gpt-5.6-luna.json`) with a `judge_note` field — they can never collide with, or be mistaken for, a stock GPT-4o evaluation of the same agent. **Official submissions always use stock GPT-4o** (stock astabench code in the submit pipeline).
+- With a non-stock judge active, the evaluator installs a lenient output normalizer (`_judge_normalize.py`, shared with the calibration script): astabench's strict parser drops format-deviant verdicts as Not Relevant, and alternate judges deviate rarely but nonzero. Stock paths keep the strict parser untouched. Repair counts surface per-problem as `judge_format_repairs`.
+- Verdict caches are judge-scoped (`shared_<judge>.json` / `shared_test_<judge>.json`), so verdicts from different judges never mix; the first luna campaign pays cold-cache judging.
+- Judge pricing for models newer than the pinned litellm 1.88.1 comes from `evaluator.JUDGE_PRICE_OVERRIDES` (internal accounting only — agent-model pricing stays on the leaderboard's bundled-map basis, untouched).
+- **Default-flip status: pending.** GPT-4o remains the default until a luna-judged campaign is compared against the 0717 GPT-4o-judged baseline (train→internal-test correlation and final test score) — the calibration gate measures verdict agreement, not the training dynamics under a different judge.
+
 ## Cost notes
 
 - Asta MCP rate limit is 10 req/s per endpoint, shared across all workers. The seed's few sequential calls per query sit well under it at `--max-workers 8`, but evolved agents routinely fan out (run `20260716_072622`'s winner: up to 16 concurrent snippet calls per query), and sustained collective overrun surfaces as retry-backoff latency, leaked tool errors, and agent-side timeouts rather than 429s. The limit and the transport timeouts are documented to agents in background.md ("Tool-call transport"), so evolving a self-throttle is the intended fix; leaked errors name their root cause (`evaluator._tool_failure_summary`) to make that signal legible.
