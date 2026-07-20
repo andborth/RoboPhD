@@ -76,8 +76,10 @@ Agent description as submitted on the form:
 > conjunctions that live in paper body text where keyword search cannot
 > see them — alongside keyword and alias queries, each feeding a
 > round-robin candidate pool. GPT-5.4-mini then grades candidates
-> against the query's relevance criteria in a staged cascade with
-> citation expansion, near-miss rescue, and a GPT-5.4 verification pass,
+> against relevance criteria the planner infers from the query (the
+> benchmark's gold criteria are hidden at execution time) in a staged
+> cascade with citation expansion, near-miss rescue, and a GPT-5.4
+> verification pass,
 > and submits a best-first ranked list with evidence quoted verbatim
 > from retrieved text. Evolution was presented with the same menu of
 > nine LLMs from Anthropic, OpenAI, and Gemini that we used in our
