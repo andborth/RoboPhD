@@ -708,6 +708,59 @@ def _strip_line_continuations(command: str) -> str:
     return command.replace("\\\n", "")
 
 
+def _elide_heredocs(command: str) -> str:
+    """Remove heredoc operators AND bodies, preserving the rest of each
+    start line (other redirects, pipes, args).
+
+    tree-sitter-bash cannot parse some heredoc + redirect + pipe
+    combinations — ``cmd <<EOF ... EOF 2>&1 | tail`` errors even though
+    ``<<EOF | tail`` and ``<<EOF 2>&1`` each parse alone. This is a
+    FALLBACK, used only when the primary parse fails and a heredoc is
+    present (see evaluate_bash): a heredoc body is opaque stdin we never
+    scope-check, so eliding the whole heredoc lets tree-sitter parse the
+    surrounding command. A same-line write target (``<<EOF > out``) is
+    preserved and still scope-checked — only the ``<<DELIM`` operator and
+    the body lines are dropped. This is deliberately NOT the old
+    strip_heredoc_bodies (which kept ``<<DELIM`` and would leave an
+    unterminated heredoc tree-sitter also rejects); it removes the
+    operator too.
+
+    Heredoc bodies are opaque here exactly as they are on the primary
+    path (the walk skips ``heredoc_body`` nodes), so this introduces no
+    new blind spot — an unquoted-heredoc body that bash would expand was
+    already out of scope-checking by design.
+    """
+    out: list = []
+    pos = 0
+    while pos < len(command):
+        m = HEREDOC_START_RE.search(command, pos)
+        if not m:
+            out.append(command[pos:])
+            break
+        delim = m.group(1) or m.group(2) or m.group(3)
+        # Keep the start line with the `<<DELIM` operator excised, so any
+        # same-line redirect/pipe/arg survives.
+        out.append(command[pos:m.start()])
+        nl = command.find("\n", m.end())
+        if nl < 0:
+            # No newline after the heredoc start -> no body. Keep the rest
+            # of the line (operator already dropped) and finish.
+            out.append(command[m.end():])
+            break
+        out.append(command[m.end():nl + 1])  # rest of start line + newline
+        # Drop the body up to and including the closing delimiter line.
+        end_pattern = re.compile(rf"^[ \t]*{re.escape(delim)}\s*$",
+                                 re.MULTILINE)
+        em = end_pattern.search(command, nl + 1)
+        if not em:
+            # Unterminated body (e.g. a truncated-as-logged command):
+            # drop everything after the start line.
+            break
+        line_end = command.find("\n", em.end())
+        pos = em.end() if line_end < 0 else line_end + 1
+    return "".join(out)
+
+
 def _ts_word(node) -> str:
     """Reconstruct the shell-word string a value node contributes to
     path classification.
@@ -1207,6 +1260,17 @@ def evaluate_bash(
 
     command = _strip_line_continuations(command)
     root = _TS_PARSER.parse(command.encode()).root_node
+    if root.has_error and "<<" in command:
+        # tree-sitter-bash rejects some heredoc + redirect + pipe combos
+        # (e.g. `cmd <<EOF ... EOF 2>&1 | tail`), a grammar limitation.
+        # The heredoc body is opaque stdin we never scope-check, so retry
+        # with heredocs elided (operator + body removed, other redirects/
+        # pipe preserved). If the elided form parses clean, walk it; else
+        # fall through to fail-closed. Narrow fallback — the happy path is
+        # untouched (this only runs after a real parse error with a `<<`).
+        reparsed = _TS_PARSER.parse(_elide_heredocs(command).encode()).root_node
+        if not reparsed.has_error:
+            root = reparsed
     if root.has_error:
         # Unbalanced quotes / a construct the grammar rejects — fail
         # closed, same direction as the old shlex-ValueError branch.

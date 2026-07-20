@@ -38,6 +38,7 @@ from utilities.sandbox_hook import (  # noqa: E402
     replay_denial_record,
     set_scope_context,
     append_denial_record,
+    _elide_heredocs,
 )
 
 
@@ -1582,6 +1583,78 @@ def test_bash_heredoc_dash_form_strips_body(experiment_layout):
         layout["experiment_dir"],
     )
     assert res["decision"] is None, res
+
+
+# ---------------------------------------------------------------------
+# Heredoc + redirect + pipe: tree-sitter-bash can't parse a heredoc
+# combined with a second redirect AND a pipe (`<<EOF ... EOF 2>&1 | tail`,
+# though each piece parses alone). Without the on-error heredoc-elision
+# fallback this valid, common idiom fail-closes as a parse error — 14 of
+# 28 parse-fails across the run corpus were this shape. These pin that the
+# fallback lets it classify normally while still scope-checking the
+# same-line redirect target. Fixtures mirror corpus idioms
+# (asta_ds1000_20260710_212943 / _20260711_170620,
+# asta_paper_finder_20260717_170858); heredoc bodies trimmed (opaque to
+# the scope check).
+# ---------------------------------------------------------------------
+
+# The exact shell structure observed failing in the corpus, bodies trimmed.
+_HEREDOC_PIPE_CMDS = [
+    "/opt/anaconda3/envs/x/bin/python - <<'EOF' 2>&1 | tail -12\n"
+    "import re\nsrc = open('smoke_test.py').read()\nexec(compile(src,'v','exec'))\nEOF",
+    "/opt/anaconda3/envs/x/bin/python - <<'EOF' 2>&1 | tail -5\nprint(1)\nEOF",
+    "python3 - <<'PY' | head -3\nprint('ok')\nPY",
+]
+
+
+@pytest.mark.parametrize("cmd", _HEREDOC_PIPE_CMDS)
+def test_bash_heredoc_redirect_pipe_not_parse_denied(cmd, experiment_layout):
+    """Regression: the heredoc+redirect+pipe idiom must classify normally
+    (here: allow — the only paths are the exempt interpreter and relative
+    in-cwd files) instead of fail-closing as a parse error."""
+    layout = experiment_layout
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] is None, (cmd, res)
+
+
+def test_bash_heredoc_pipe_write_target_still_denied(experiment_layout):
+    """Safety: eliding the heredoc must PRESERVE the same-line redirect
+    target — a heredoc writing to an out-of-scope file, in the combo that
+    triggers the fallback, must still deny (write), not slip through."""
+    layout = experiment_layout
+    target = layout["agents_dir"] / "stolen.py"  # read scope, NOT write
+    cmd = f"cat <<'EOF' > {target} 2>&1 | tail -1\nprint('overwrite')\nEOF"
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside write scope" in res["reason"]
+
+
+def test_bash_heredoc_pipe_out_of_scope_read_arg_still_denied(experiment_layout):
+    """Safety: a real out-of-scope READ operand outside the heredoc body
+    (an arg to the command) survives elision and still denies."""
+    layout = experiment_layout
+    cmd = (f"cat {layout['sibling_agent']} <<'EOF' 2>&1 | tail -1\n"
+           "print(1)\nEOF")
+    res = run_hook(make_envelope("Bash", {"command": cmd}, layout["cwd"]),
+                   layout["experiment_dir"])
+    assert res["decision"] == "deny"
+    assert "outside read scope" in res["reason"]
+
+
+def test_elide_heredocs_unit():
+    """_elide_heredocs drops the `<<DELIM` operator AND body while keeping
+    the rest of the start line (other redirects/pipe/args)."""
+    # operator + body gone; the 2>&1|tail redirect+pipe survives
+    out = _elide_heredocs("python - <<'EOF' 2>&1 | tail -12\nb1\nb2\nEOF")
+    assert "<<" not in out and "b1" not in out and "EOF" not in out
+    assert "2>&1 | tail -12" in out
+    # a same-line write target is preserved (so it stays scope-checked)
+    assert _elide_heredocs("cat <<'EOF' > out.py\nx\nEOF") == "cat  > out.py\n"
+    # unterminated body (e.g. a truncated-as-logged command): body dropped,
+    # start line (with its write target) kept
+    assert "> /tmp/x.py" in _elide_heredocs("cat > /tmp/x.py <<'EOF'\nnoterm")
 
 
 def test_bash_process_substitution_with_out_of_scope_path_denies(experiment_layout):
