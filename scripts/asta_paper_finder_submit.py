@@ -417,14 +417,16 @@ def eval_submission(s: Submission, working_dir: Path, limit: int | None) -> bool
         "--log-dir", str(log_dir),
         "--display", "plain",
         # Concurrency: no Docker tier for this task, so no --max-sandboxes.
-        # --max-samples 4 keeps aggregate Asta MCP tool traffic under the
+        # --max-samples 6 keeps aggregate Asta MCP tool traffic under the
         # 10 req/s per-endpoint server-side rate limit (the agent fans out
-        # snippet searches within a query). 40 connections: agents' grading
+        # snippet searches within a query; it evolved and was internally
+        # tested at 8-wide against this endpoint, so 6 is inside its
+        # native habitat). 40 connections: agents' grading
         # calls and the scorer's per-paper GPT-4o judge fan-out share ONE
         # pool — at 20, agents queued behind judge bursts and samples
         # stretched from ~12 min (smoke, no scoring overlap) to ~25 min,
         # into the wrapper ceiling.
-        "--max-samples", "4",
+        "--max-samples", "6",
         "--max-connections", "40",
     ]
     if limit is not None:
