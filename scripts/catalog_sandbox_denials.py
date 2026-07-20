@@ -41,7 +41,13 @@ not asserted by a pattern, so they can't drift from the code):
                     denies it — policy loosened; possible scope regression
     FP-FIXED        false positive that no longer recurs at HEAD
     FP-OPEN         false positive that still recurs at HEAD
-    LIMITATION      fail-closed by design (e.g. shlex parse-fail)
+    PARSE-FIXED     a parse-fail the live hook now parses AND allows — the
+                    fail-closed deny was a false positive, since fixed
+                    (also replay-verified, like FP-FIXED)
+    LIMITATION      fail-closed because the live hook STILL can't parse it
+                    (replay-verified: a parse-fail that now parses is not
+                    LIMITATION — it becomes PARSE-FIXED, or TP if it now
+                    denies on a real scope)
     HISTORICAL      produced by retired hook branches; no longer reachable
     ERROR           hook internal error
     UNKNOWN         unclassified — add a pattern below
@@ -479,6 +485,39 @@ def _match_static(rec: dict):
     return None, None
 
 
+def _classify_parse_limitation(rec: dict, static_label: str, replay):
+    """Replay a parse-fail (LIMITATION) record through the live hook.
+
+    "LIMITATION" means fail-closed because we couldn't parse — but that is
+    not permanent: the live hook may now parse the command (e.g. via the
+    heredoc-elision fallback). Replaying keeps the category honest, the
+    same way FP-FIXED is observed rather than asserted:
+
+        replay now-allows            -> PARSE-FIXED (the parse-deny was an
+                                        FP, now fixed)
+        replay still parse-denies    -> LIMITATION  (genuinely unparseable
+                                        at HEAD; blocked path is empty)
+        replay now denies on a scope -> TP          (never an FP — the
+                                        command is a real scope violation
+                                        previously mis-attributed to a
+                                        parse failure; blocked is a path)
+
+    No replay available (or a replay error) -> stays LIMITATION, the
+    conservative direction (same as the --no-replay FP mapping).
+    """
+    if replay is None:
+        return static_label, "LIMITATION"
+    try:
+        still_denies, blocked_now = replay(rec)
+    except Exception:
+        return static_label, "LIMITATION"
+    if not still_denies:
+        return "PARSE-FIXED: parse-deny now parses and allows", "PARSE-FIXED"
+    if not blocked_now:
+        return static_label, "LIMITATION"  # still a parse-deny at HEAD
+    return "TP: parse-deny now resolves to a real scope deny", "TP"
+
+
 def classify(rec: dict, replay=None) -> tuple:
     """Return (label, category) for a denial record.
 
@@ -491,13 +530,18 @@ def classify(rec: dict, replay=None) -> tuple:
     classifier still works without filesystem access (used by unit tests
     and the --no-replay path).
 
-    Static (non-replayable) records — parse/error/historical — bypass
-    replay entirely.
+    ERROR / HISTORICAL records bypass replay (no live decision to
+    observe). A parse LIMITATION IS replay-verified — the live hook may
+    now parse a command it once fail-closed on — see
+    _classify_parse_limitation.
     """
-    # Static categories first: these have no live decision to observe.
+    # ERROR / HISTORICAL are static — no live decision to observe. A parse
+    # LIMITATION is NOT static: replay it (the live hook may now parse it).
     label, cat = _match_static(rec)
-    if label is not None:
+    if label is not None and cat != "LIMITATION":
         return label, cat
+    if cat == "LIMITATION":
+        return _classify_parse_limitation(rec, label, replay)
 
     label, intent = _match_intent(rec)
     if label is None:
@@ -644,8 +688,8 @@ def render_text(files, all_runs, totals_by_cat, totals_by_label,
         print(f"{path_label:70} {n:>3}  {parts}")
 
     print("\n=== CATEGORY TOTALS ===")
-    for cat in ("TP", "TP-NOW-ALLOWED", "FP-FIXED", "FP-OPEN", "LIMITATION",
-                "HISTORICAL", "ERROR", "UNKNOWN"):
+    for cat in ("TP", "TP-NOW-ALLOWED", "FP-FIXED", "FP-OPEN", "PARSE-FIXED",
+                "LIMITATION", "HISTORICAL", "ERROR", "UNKNOWN"):
         n = totals_by_cat.get(cat, 0)
         if n:
             print(f"  {cat:14} {n}")

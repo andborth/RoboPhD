@@ -470,11 +470,46 @@ def test_arithmetic_pattern_requires_dollar_paren():
     assert cat not in ("FP-FIXED", "FP-OPEN"), (label, cat)
 
 
-def test_parse_fail_classifies_limitation():
+def test_parse_fail_no_replay_classifies_limitation():
+    """Without a live policy to replay against, a parse-fail stays
+    LIMITATION (conservative — we can't observe whether it's since been
+    fixed)."""
     _, cat = catalog.classify(_rec(
         scope="parse", reason="shlex.split failed", command="...",
     ))
     assert cat == "LIMITATION"
+
+
+def test_parse_fail_now_parses_classifies_parse_fixed():
+    """A parse-fail the live hook now parses AND allows is a fixed FP —
+    PARSE-FIXED, observed by replay (not frozen as LIMITATION). This is
+    the heredoc-elision case: the fail-closed deny is gone at HEAD."""
+    _, cat = catalog.classify(_rec(
+        scope="parse", blocked_path="", command="python - <<'EOF'\nx\nEOF",
+    ), replay=_replay_allows)
+    assert cat == "PARSE-FIXED"
+
+
+def test_parse_fail_still_unparseable_stays_limitation():
+    """A parse-fail the live hook STILL can't parse (replay denies with an
+    empty blocked path — a parse deny) stays LIMITATION."""
+    # _replay_denies_same echoes the record's blocked_path, which is ""
+    # for a parse record -> (True, "") -> still a parse deny.
+    _, cat = catalog.classify(_rec(
+        scope="parse", blocked_path="", command="cat 'unterminated",
+    ), replay=_replay_denies_same)
+    assert cat == "LIMITATION"
+
+
+def test_parse_fail_now_denies_on_real_scope_classifies_tp():
+    """A parse-fail that now PARSES but denies on a real scope (replay
+    returns a non-empty blocked path) was never a false positive — it's a
+    correct deny (TP) previously mis-attributed to a parse failure."""
+    _, cat = catalog.classify(_rec(
+        scope="parse", blocked_path="",
+        command="cat <<'EOF' > /etc/x 2>&1 | tail\ny\nEOF",
+    ), replay=_replay_denies_other)
+    assert cat == "TP"
 
 
 def test_internal_error_classifies_error():
@@ -555,11 +590,15 @@ def test_replay_exception_falls_back_to_conservative_mapping():
 
 
 def test_static_records_bypass_replay():
-    """parse/error/historical records have no live decision to observe —
-    they keep their static category even when a (bogus) replay is given."""
+    """ERROR / HISTORICAL records have no live decision to observe — they
+    keep their static category even when a (bogus) replay is given. (A
+    parse LIMITATION is NOT static — it IS replayed now; see the
+    PARSE-FIXED tests above.)"""
     def _wrong(rec):
         return (False, None)  # would say 'allowed' if consulted
+    _, cat = catalog.classify(_rec(error="boom", tool="Bash"), replay=_wrong)
+    assert cat == "ERROR"
     _, cat = catalog.classify(_rec(
-        scope="parse", reason="shlex.split failed", command="...",
+        scope="subprocess_bypass", blocked_path="", command="x",
     ), replay=_wrong)
-    assert cat == "LIMITATION"
+    assert cat == "HISTORICAL"
