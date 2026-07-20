@@ -13,14 +13,24 @@ deliberately-close-but-different non-matches case so the predicate's
 *intent* (not its literal regex) is what's fenced.
 """
 
+import shutil
 import sys
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(REPO_ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import catalog_sandbox_denials as catalog  # noqa: E402
+
+# The MALFORMED split shells out to `bash -n`; guard the tests that need
+# bash to actually REJECT a command (a valid-bash / bash-absent path maps
+# to LIMITATION, so those don't need the guard).
+_needs_bash = pytest.mark.skipif(
+    shutil.which("bash") is None, reason="bash not available for `bash -n`"
+)
 
 
 def _rec(**kw):
@@ -470,14 +480,24 @@ def test_arithmetic_pattern_requires_dollar_paren():
     assert cat not in ("FP-FIXED", "FP-OPEN"), (label, cat)
 
 
-def test_parse_fail_no_replay_classifies_limitation():
-    """Without a live policy to replay against, a parse-fail stays
-    LIMITATION (conservative — we can't observe whether it's since been
-    fixed)."""
+def test_parse_fail_no_replay_valid_bash_classifies_limitation():
+    """Without a live policy to replay against, a parse-fail whose command
+    is valid bash stays LIMITATION (a genuine tree-sitter gap; we can't
+    observe whether it's since been fixed, the conservative direction)."""
     _, cat = catalog.classify(_rec(
-        scope="parse", reason="shlex.split failed", command="...",
+        scope="parse", reason="shlex.split failed", command="echo hi",
     ))
     assert cat == "LIMITATION"
+
+
+def test_bash_syntax_ok_unit():
+    """_bash_syntax_ok mirrors `bash -n`: True for valid, False for
+    malformed (or None if bash is absent)."""
+    ok = catalog._bash_syntax_ok("echo hi")
+    if ok is None:
+        pytest.skip("bash not available")
+    assert ok is True
+    assert catalog._bash_syntax_ok("cat 'unterminated") is False
 
 
 def test_parse_fail_now_parses_classifies_parse_fixed():
@@ -490,15 +510,37 @@ def test_parse_fail_now_parses_classifies_parse_fixed():
     assert cat == "PARSE-FIXED"
 
 
-def test_parse_fail_still_unparseable_stays_limitation():
+def test_parse_fail_valid_bash_still_unparseable_stays_limitation():
     """A parse-fail the live hook STILL can't parse (replay denies with an
-    empty blocked path — a parse deny) stays LIMITATION."""
-    # _replay_denies_same echoes the record's blocked_path, which is ""
-    # for a parse record -> (True, "") -> still a parse deny.
+    empty blocked path) whose command IS valid bash is a genuine
+    tree-sitter LIMITATION."""
+    # _replay_denies_same echoes the record's blocked_path ("" for a parse
+    # record) -> (True, "") -> still a parse deny; bash accepts `echo hi`.
+    _, cat = catalog.classify(_rec(
+        scope="parse", blocked_path="", command="echo hi",
+    ), replay=_replay_denies_same)
+    assert cat == "LIMITATION"
+
+
+@_needs_bash
+def test_parse_fail_malformed_command_classifies_malformed():
+    """A still-unparseable parse-fail whose command bash ALSO rejects is
+    MALFORMED — the agent's own quoting bug, a correct deny, not a
+    tree-sitter gap."""
     _, cat = catalog.classify(_rec(
         scope="parse", blocked_path="", command="cat 'unterminated",
     ), replay=_replay_denies_same)
-    assert cat == "LIMITATION"
+    assert cat == "MALFORMED"
+
+
+@_needs_bash
+def test_parse_fail_malformed_command_no_replay_classifies_malformed():
+    """The bash-validity split is a property of the command, so it applies
+    even with no replay (a malformed command is malformed regardless)."""
+    _, cat = catalog.classify(_rec(
+        scope="parse", reason="shlex.split failed", command="cat 'unterminated",
+    ))
+    assert cat == "MALFORMED"
 
 
 def test_parse_fail_now_denies_on_real_scope_classifies_tp():

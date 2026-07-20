@@ -44,10 +44,12 @@ not asserted by a pattern, so they can't drift from the code):
     PARSE-FIXED     a parse-fail the live hook now parses AND allows — the
                     fail-closed deny was a false positive, since fixed
                     (also replay-verified, like FP-FIXED)
-    LIMITATION      fail-closed because the live hook STILL can't parse it
-                    (replay-verified: a parse-fail that now parses is not
-                    LIMITATION — it becomes PARSE-FIXED, or TP if it now
-                    denies on a real scope)
+    LIMITATION      VALID bash (bash -n accepts) the live hook still can't
+                    parse — a genuine tree-sitter gap worth watching
+    MALFORMED       the command is not valid bash (bash -n rejects it too —
+                    an unbalanced quote, a `#` comment eating a following
+                    command, etc.); the fail-closed deny is CORRECT, the
+                    agent's own quoting bug, not a tree-sitter shortcoming
     HISTORICAL      produced by retired hook branches; no longer reachable
     ERROR           hook internal error
     UNKNOWN         unclassified — add a pattern below
@@ -84,6 +86,7 @@ import glob
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -447,7 +450,11 @@ INTENT_PATTERNS = [
 # Static patterns: non-replayable records (no live decision to observe).
 # (label, category, predicate) — category is final, never replay-adjusted.
 STATIC_PATTERNS = [
-    ("LIMITATION: shlex parse fail (fail-closed)",
+    # Label describes the REFINED category (see _classify_parse_limitation):
+    # a parse-fail that reaches "LIMITATION" is valid bash the live hook
+    # still can't parse. The predicate also matches the legacy
+    # reason="shlex.split failed" records (pre-tree-sitter front-end).
+    ("LIMITATION: valid bash the live hook can't parse (tree-sitter gap)",
      "LIMITATION",
      lambda r: _scope(r) == "parse" or r.get("reason") == "shlex.split failed"),
 
@@ -485,37 +492,71 @@ def _match_static(rec: dict):
     return None, None
 
 
+def _bash_syntax_ok(command: str):
+    """Whether ``command`` is syntactically valid bash, via ``bash -n``.
+
+    ``bash -n`` PARSES but never executes — command substitutions and the
+    like are only parsed, not run — so it is side-effect-free on arbitrary
+    logged input (verified: a ``$(touch ...)`` under ``-n`` creates
+    nothing). Returns True/False, or None if bash isn't available (callers
+    treat None as the conservative LIMITATION, never MALFORMED).
+
+    Used to split a still-unparseable parse-fail: a command bash ALSO
+    rejects is MALFORMED (the agent's own quoting bug — the deny is
+    correct), while valid bash the live hook still can't parse is a genuine
+    tree-sitter LIMITATION.
+    """
+    if not command:
+        return None
+    try:
+        proc = subprocess.run(
+            ["bash", "--noprofile", "--norc", "-n"],
+            input=command, text=True, capture_output=True, timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return proc.returncode == 0
+
+
 def _classify_parse_limitation(rec: dict, static_label: str, replay):
-    """Replay a parse-fail (LIMITATION) record through the live hook.
+    """Classify a parse-fail (LIMITATION) record.
 
-    "LIMITATION" means fail-closed because we couldn't parse — but that is
-    not permanent: the live hook may now parse the command (e.g. via the
-    heredoc-elision fallback). Replaying keeps the category honest, the
-    same way FP-FIXED is observed rather than asserted:
+    A parse-fail is "fail-closed because we couldn't parse" — but that is
+    neither permanent nor necessarily our fault. Two verifications keep the
+    category honest, observed rather than asserted:
 
+    1. REPLAY through the live hook (parallel to FP-FIXED):
         replay now-allows            -> PARSE-FIXED (the parse-deny was an
                                         FP, now fixed)
-        replay still parse-denies    -> LIMITATION  (genuinely unparseable
-                                        at HEAD; blocked path is empty)
-        replay now denies on a scope -> TP          (never an FP — the
-                                        command is a real scope violation
-                                        previously mis-attributed to a
-                                        parse failure; blocked is a path)
+        replay now denies on a scope -> TP          (never an FP — a real
+                                        scope violation previously mis-
+                                        attributed to a parse failure)
+        replay still parse-denies    -> fall through to (2)
 
-    No replay available (or a replay error) -> stays LIMITATION, the
-    conservative direction (same as the --no-replay FP mapping).
+    2. For a still-unparseable command, `bash -n` splits fault:
+        bash rejects it too          -> MALFORMED   (the agent's quoting
+                                        bug; the deny is CORRECT)
+        bash accepts it              -> LIMITATION  (valid bash tree-sitter
+                                        still can't parse — a genuine gap)
+
+    No replay (or a replay error) skips (1) and goes straight to (2), the
+    conservative path — bash-validity is a property of the command, knowable
+    without replay.
     """
-    if replay is None:
-        return static_label, "LIMITATION"
-    try:
-        still_denies, blocked_now = replay(rec)
-    except Exception:
-        return static_label, "LIMITATION"
-    if not still_denies:
-        return "PARSE-FIXED: parse-deny now parses and allows", "PARSE-FIXED"
-    if not blocked_now:
-        return static_label, "LIMITATION"  # still a parse-deny at HEAD
-    return "TP: parse-deny now resolves to a real scope deny", "TP"
+    if replay is not None:
+        try:
+            still_denies, blocked_now = replay(rec)
+            if not still_denies:
+                return "PARSE-FIXED: parse-deny now parses and allows", "PARSE-FIXED"
+            if blocked_now:
+                return "TP: parse-deny now resolves to a real scope deny", "TP"
+            # else: still a parse-deny at HEAD -> fall through to the split.
+        except Exception:
+            pass  # unreplayable -> fall through to the bash-validity split
+    if _bash_syntax_ok(rec.get("command") or "") is False:
+        return ("MALFORMED: not valid bash (bash -n rejects); deny is correct",
+                "MALFORMED")
+    return static_label, "LIMITATION"
 
 
 def classify(rec: dict, replay=None) -> tuple:
@@ -689,7 +730,7 @@ def render_text(files, all_runs, totals_by_cat, totals_by_label,
 
     print("\n=== CATEGORY TOTALS ===")
     for cat in ("TP", "TP-NOW-ALLOWED", "FP-FIXED", "FP-OPEN", "PARSE-FIXED",
-                "LIMITATION", "HISTORICAL", "ERROR", "UNKNOWN"):
+                "LIMITATION", "MALFORMED", "HISTORICAL", "ERROR", "UNKNOWN"):
         n = totals_by_cat.get(cat, 0)
         if n:
             print(f"  {cat:14} {n}")
