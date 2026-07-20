@@ -55,6 +55,33 @@ ladder, and a defensive transport wrapper. Models: `GPT_5_4_MINI`
 - Would Pareto-dominate the leaderboard's ReAct GPT-5 Mini point
   (0.220 @ $0.060)
 
+## Submission form metadata
+
+| Field | Value |
+| --- | --- |
+| Agent name (form) | RoboPhD |
+| Openness | Open source & closed weights |
+| Tools tier | Standard (Asta MCP corpus tools provided by the task) |
+| Models (solver, from logs) | gpt-5.4-mini (grading cascade), gpt-5.4-2026-03-05 (planner/verify) |
+| URL (form) | https://github.com/andborth/RoboPhD |
+| Leaderboard | [AstaBench leaderboard](https://huggingface.co/spaces/allenai/asta-bench-leaderboard) |
+
+Agent description as submitted on the form:
+
+> Evolved by RoboPhD with Claude Fable 5 as the evolution (but not a
+> solver) model, under a $0.06/query soft training cost cap on solver
+> spend. The evolved agent is a body-conjunction retrieval pipeline: a
+> GPT-5.4 planner rewrites each query into snippet-search probes phrased
+> as method-section statements of the query's implied claim — reaching
+> conjunctions that live in paper body text where keyword search cannot
+> see them — alongside keyword and alias queries, each feeding a
+> round-robin candidate pool. GPT-5.4-mini then grades candidates
+> against the query's relevance criteria in a staged cascade with
+> citation expansion, near-miss rescue, and a GPT-5.4 verification pass,
+> and submits a best-first ranked list with evidence quoted verbatim
+> from retrieved text. Same RoboPhD code base as our DS-1000
+> submissions; this is its first literature-search task.
+
 ## Official result (2026-07-20)
 
 **adjusted_f1_micro_avg = 0.3749** (stderr 0.0183) @ **$0.0533/query**
