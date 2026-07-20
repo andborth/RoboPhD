@@ -10,7 +10,7 @@ Snapshots live in `example_runs/robophd/asta_paper_finder/<name>/`; the pipeline
 
 | Submission | Agent (run) | Internal test | Official |
 | --- | --- | --- | --- |
-| `v0_0_7_soft_cap_0_06_fable` | `iter12_body_conjunction` (`robophd-asta_paper_finder-003`, fable-5-evolved) | 0.3724 @ $0.0556/query | pending |
+| `v0_0_7_soft_cap_0_06_fable` | `iter12_body_conjunction` (`robophd-asta_paper_finder-003`, fable-5-evolved) | 0.3724 @ $0.0556/query | **0.3749 @ $0.0533/query** |
 
 ```bash
 pip install litellm==1.88.1

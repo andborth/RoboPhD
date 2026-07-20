@@ -53,7 +53,19 @@ ladder, and a defensive transport wrapper. Models: `GPT_5_4_MINI`
 - Judge spend (informational, never penalized): $88.38 with
   `cap_judge_to_estimate=true` + `shared_test_openai_gpt-4o-2024-11-20.json`
 - Would Pareto-dominate the leaderboard's ReAct GPT-5 Mini point
-  (0.220 @ $0.060) — **official numbers pending**
+  (0.220 @ $0.060)
+
+## Official result (2026-07-20)
+
+**adjusted_f1_micro_avg = 0.3749** (stderr 0.0183) @ **$0.0533/query**
+(litellm 1.88.1 bundled pricing). Per-type: semantic 0.3227, specific
+0.7308, metadata 0.2778 — every mean within noise of its internal
+counterpart, so the capped-vs-uncapped judging-basis risk resolved as a
+non-issue. Dominates ReAct GPT-5 Mini (0.220 @ $0.06); matches ReAct
+Opus (0.374) at 1.6% of its cost ($3.38/query). Run took ~19h wall at
+`--max-samples 6` after two false starts whose wrapper ceilings (1500s,
+then 2100s) sat inside the agent's evolved pacing under official-harness
+contention — the final ceiling is 3000s (see script history).
 
 ## Official-result risks (assessed pre-submission)
 
@@ -86,6 +98,6 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 
 ## Submission status
 
-- [ ] Official eval run
+- [x] Official eval run (2026-07-20: 0.3749 @ $0.0533/query)
 - [ ] Tarball uploaded
-- [ ] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
+- [x] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
