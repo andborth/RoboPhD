@@ -77,7 +77,7 @@ ladder, and a defensive transport wrapper. Models: `GPT_5_4_MINI`
 ```bash
 pip install litellm==1.88.1   # submission-scoring price map
 python scripts/asta_paper_finder_submit.py --only v0_0_7_soft_cap_0_06_fable --limit 3   # smoke (~$3)
-python scripts/asta_paper_finder_submit.py --only v0_0_7_soft_cap_0_06_fable            # full (~$220-270, 2-4h)
+python scripts/asta_paper_finder_submit.py --only v0_0_7_soft_cap_0_06_fable            # full (~$200-270, 12-18h)
 ```
 
 Then upload `submissions/asta_paper_finder/v0_0_7_soft_cap_0_06_fable.tar.gz`

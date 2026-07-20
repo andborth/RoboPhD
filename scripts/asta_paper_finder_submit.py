@@ -30,7 +30,9 @@ The script does NOT submit. After a full run, one .tar.gz per selected
 submission is ready for manual upload via the HF Spaces leaderboard form.
 
 Cost / time (full test split, 267 queries, sequential):
-    v0_0_7_soft_cap_0_06_fable   ~$220-270   2-4 hr
+    v0_0_7_soft_cap_0_06_fable   ~$200-270   12-18 hr
+        (~12 min/semantic query at --max-samples 4; wall clock is unscored
+        officially, so duration buys evidence quality, not points)
         agent  ≈ $15  (internal test measured $14.83)
         judge  ≈ $205-245 — official judging is FRESH and UNCAPPED:
         ~194 semantic queries × ~250 submitted papers ≈ 48.5K GPT-4o
@@ -289,8 +291,14 @@ from agent_inner import make_solver as _inner_make_solver
 from seed_agent import make_solver as _seed_make_solver
 
 
-PRIMARY_TIMEOUT_S = 1500  # 25 min — bounds hung primaries
-SEED_TIMEOUT_S = 1500     # same — applied independently to the fallback tier
+PRIMARY_TIMEOUT_S = 2100  # 35 min — must clear the agent's OWN pacing
+# (SOFT_DEADLINE=1300 / TAIL_DEADLINE=1550 in agent_inner), which was
+# evolved against training's 1800s external cap. A tighter wrapper
+# guillotines the agent INSIDE its planned budget: at 1500s the first
+# official attempt seed-fell-back on 5 of 9 samples (0.57->0.06 on
+# semantic_5). Wall clock is unscored officially; the ceiling exists
+# only to bound true hangs.
+SEED_TIMEOUT_S = 1500     # fallback tier, applied independently
 
 
 def _empty_submission(state: TaskState) -> str:
@@ -411,11 +419,13 @@ def eval_submission(s: Submission, working_dir: Path, limit: int | None) -> bool
         # Concurrency: no Docker tier for this task, so no --max-sandboxes.
         # --max-samples 4 keeps aggregate Asta MCP tool traffic under the
         # 10 req/s per-endpoint server-side rate limit (the agent fans out
-        # snippet searches within a query); 20 connections covers 4
-        # samples' LLM calls plus the scorer's per-paper GPT-4o judge
-        # fan-out with headroom.
+        # snippet searches within a query). 40 connections: agents' grading
+        # calls and the scorer's per-paper GPT-4o judge fan-out share ONE
+        # pool — at 20, agents queued behind judge bursts and samples
+        # stretched from ~12 min (smoke, no scoring overlap) to ~25 min,
+        # into the wrapper ceiling.
         "--max-samples", "4",
-        "--max-connections", "20",
+        "--max-connections", "40",
     ]
     if limit is not None:
         # Forwarded to `inspect eval-set` via agenteval's

@@ -15,7 +15,7 @@ Snapshots live in `example_runs/robophd/asta_paper_finder/<name>/`; the pipeline
 ```bash
 pip install litellm==1.88.1
 python scripts/asta_paper_finder_submit.py --only v0_0_7_soft_cap_0_06_fable --limit 3   # smoke (~$3)
-python scripts/asta_paper_finder_submit.py --only v0_0_7_soft_cap_0_06_fable            # full (~$220-270, 2-4h)
+python scripts/asta_paper_finder_submit.py --only v0_0_7_soft_cap_0_06_fable            # full (~$200-270, 12-18h)
 ```
 
 ## Setup
