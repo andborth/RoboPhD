@@ -197,6 +197,28 @@ def test_agent_models_cover_snapshot_imports(submit_mod) -> None:
             )
 
 
+def test_interrupted_log_resumes_instead_of_skipping(submit_mod, monkeypatch, tmp_path) -> None:
+    """An interrupted run leaves a cancelled/errored .eval containing only
+    the finished samples. Skipping on mere file existence would score+tar
+    that PARTIAL log as a submission; only status=='success' may skip,
+    anything else must re-run (inspect eval-set reuses completed samples)."""
+    s = submit_mod.SUBMISSIONS[0]
+    calls: list = []
+    monkeypatch.setattr(submit_mod, "run",
+                        lambda cmd, *, cwd, extra_env=None: (calls.append(cmd), 0)[1])
+
+    # Cancelled log → re-run; post-run status still not success → False.
+    monkeypatch.setattr(submit_mod, "_log_status", lambda d: ("cancelled", 42))
+    assert submit_mod.eval_submission(s, tmp_path, None) is False
+    assert calls, "cancelled log must trigger a re-run, not a skip"
+
+    # Successful log → skip without running anything.
+    calls.clear()
+    monkeypatch.setattr(submit_mod, "_log_status", lambda d: ("success", 267))
+    assert submit_mod.eval_submission(s, tmp_path, None) is True
+    assert not calls, "successful log must skip the eval"
+
+
 def test_smoke_runs_are_log_isolated_and_untarred(submit_mod, submit_tree) -> None:
     """--limit runs must log outside logs/full_test (else a partial run
     trips the full run's idempotency skip) and must never be tarred

@@ -358,16 +358,39 @@ def log_subdir(limit: int | None) -> str:
     return FULL_LOG_SUBDIR if limit is None else f"logs/smoke_limit_{limit}"
 
 
-def already_evaluated(working_dir: Path, limit: int | None) -> bool:
-    log_dir = working_dir / log_subdir(limit)
-    return log_dir.exists() and any(log_dir.glob("*.eval"))
+def _log_status(log_dir: Path) -> tuple[str | None, int]:
+    """(status, completed_samples) of the newest .eval in log_dir, read
+    header-only. (None, 0) when no log exists.
+
+    Status matters: an interrupted run leaves a log with status
+    "cancelled"/"error" that contains only the samples that finished.
+    Treating any *.eval as done would skip the eval on re-run and then
+    score+tar a PARTIAL log as a submission. Instead, only "success"
+    skips; anything else re-runs `astabench eval` with the same log dir,
+    which flows into `inspect eval-set`'s retry path — completed samples
+    are reused (dataset unshuffled + stable query ids), so a resume
+    re-runs only what didn't finish.
+    """
+    logs = sorted(log_dir.glob("*.eval")) if log_dir.exists() else []
+    if not logs:
+        return None, 0
+    from inspect_ai.log import read_eval_log
+
+    log = read_eval_log(str(logs[-1]), header_only=True)
+    completed = getattr(getattr(log, "results", None), "completed_samples", 0) or 0
+    return log.status, completed
 
 
 def eval_submission(s: Submission, working_dir: Path, limit: int | None) -> bool:
-    if already_evaluated(working_dir, limit):
-        print(f"[skip eval] {s.name}: existing .eval found in "
-              f"{working_dir / log_subdir(limit)}")
+    status, completed = _log_status(working_dir / log_subdir(limit))
+    if status == "success":
+        print(f"[skip eval] {s.name}: successful .eval "
+              f"({completed} samples) in {working_dir / log_subdir(limit)}")
         return True
+    if status is not None:
+        print(f"[resume] {s.name}: previous eval status={status!r} with "
+              f"{completed} completed sample(s) — re-running; inspect "
+              f"eval-set reuses completed samples and runs the rest")
     log_dir = working_dir / log_subdir(limit)
     log_dir.mkdir(parents=True, exist_ok=True)
     # LITELLM_LOCAL_MODEL_COST_MAP is required by `astabench score`;
@@ -399,7 +422,16 @@ def eval_submission(s: Submission, working_dir: Path, limit: int | None) -> bool
         # ignore_unknown_options Click context.
         cmd += ["--limit", str(limit)]
     rc = run(cmd, cwd=working_dir, extra_env=extra_env)
-    return rc == 0
+    if rc != 0:
+        return False
+    # Belt-and-suspenders: a zero exit with a non-success log (cancelled
+    # mid-write, partial eval-set) must not flow into score+tar.
+    status, completed = _log_status(log_dir)
+    if status != "success":
+        print(f"!! eval exited 0 but log status={status!r} "
+              f"({completed} samples) — not treating as success")
+        return False
+    return True
 
 
 def score_submission(working_dir: Path, limit: int | None) -> bool:
