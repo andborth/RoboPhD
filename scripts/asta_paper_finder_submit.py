@@ -291,13 +291,15 @@ from agent_inner import make_solver as _inner_make_solver
 from seed_agent import make_solver as _seed_make_solver
 
 
-PRIMARY_TIMEOUT_S = 2100  # 35 min — must clear the agent's OWN pacing
+PRIMARY_TIMEOUT_S = 3000  # 50 min — must clear the agent's OWN pacing
 # (SOFT_DEADLINE=1300 / TAIL_DEADLINE=1550 in agent_inner), which was
 # evolved against training's 1800s external cap. A tighter wrapper
 # guillotines the agent INSIDE its planned budget: at 1500s the first
 # official attempt seed-fell-back on 5 of 9 samples (0.57->0.06 on
-# semantic_5). Wall clock is unscored officially; the ceiling exists
-# only to bound true hangs.
+# semantic_5); at 2100 the second attempt watched semantic_25 finish 48s
+# short of the line as MCP latency stretched solves to ~30 min. Wall
+# clock is unscored officially; the ceiling exists only to bound true
+# hangs, so generosity costs nothing.
 SEED_TIMEOUT_S = 1500     # fallback tier, applied independently
 
 
