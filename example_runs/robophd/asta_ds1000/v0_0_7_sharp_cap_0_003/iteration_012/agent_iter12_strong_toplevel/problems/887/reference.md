@@ -1,0 +1,5 @@
+```python
+from sklearn import preprocessing
+
+centered_scaled_data = preprocessing.scale(data)
+```

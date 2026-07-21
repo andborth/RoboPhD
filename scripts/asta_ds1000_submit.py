@@ -174,6 +174,21 @@ SUBMISSIONS = [
         # 0.7322 @ $0.00294 (98% of cap); targets ReAct/GPT-5-Mini
         # (0.710 @ $0.003 true cost) on the official frontier.
     ),
+    Submission(
+        name="v0_0_7_sharp_cap_0_003",
+        agent_rel_path="agents/iter12_strong_toplevel/agent.py",
+        model_arg="none",
+        # Run robophd-asta_ds1000-044 (opus-4.8-evolved). Sharp-penalty
+        # follow-up to v0_0_6: cost_threshold=0.003, cost_per_error=0.0003
+        # (3.33x sharper -- v0_0_6's optimizer rationally bought through
+        # the milder penalty). Single gpt-5.4 one-shot + deterministic
+        # extraction fixes, gpt-5.4-mini fallback -- both OpenAI, cleanly
+        # priced in the bundled map. Internal 900-test 0.7333 @ $0.00168
+        # measured entirely on the post-fix billing basis (first such
+        # submission: official cost should replicate, unlike v0_0_6's
+        # +46%); internally Pareto-dominates ReAct/GPT-5-Mini
+        # (0.710 @ $0.003 true cost).
+    ),
 ]
 
 

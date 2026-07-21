@@ -1,0 +1,5 @@
+```python
+df.plot()
+plt.xlabel("X")
+plt.ylabel("Y")
+```

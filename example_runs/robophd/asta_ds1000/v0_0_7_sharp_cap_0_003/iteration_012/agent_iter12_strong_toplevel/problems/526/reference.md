@@ -1,0 +1,3 @@
+```python
+plt.plot(x, y, "+", mew=7, ms=20)
+```

@@ -1,0 +1,3 @@
+```python
+inversed = scaler.inverse_transform(scaled)
+```
