@@ -2147,20 +2147,17 @@ class ParallelAgentResearcher:
                     'examples': len(contexts)
                 })
 
-                # Fresh-only (unique-example) counters for the reports'
-                # Quick Summary means. Paired counters so runs resumed
-                # from pre-change checkpoints average over the observed
-                # window instead of diluting by uncounted history.
-                fresh_n = metadata.get('fresh_count', total_questions)
-                if fresh_n > 0 and metadata.get('fresh_average_score') is not None:
-                    perf['fresh_aggregate_weighted'] = (
-                        perf.get('fresh_aggregate_weighted', 0.0)
-                        + metadata['fresh_average_score'] * fresh_n
+                # Cost counters for the reports' Quick Summary Mean Cost —
+                # batch basis (cached results at their replayed costs),
+                # matching mean_score's basis and the console line. Paired
+                # counters so runs resumed from pre-change checkpoints
+                # average over the observed window only.
+                if batch_eval_cost > 0:
+                    perf['eval_cost_sum'] = (
+                        perf.get('eval_cost_sum', 0.0) + batch_eval_cost
                     )
-                    perf['fresh_questions'] = perf.get('fresh_questions', 0) + fresh_n
-                    perf['fresh_eval_cost_sum'] = (
-                        perf.get('fresh_eval_cost_sum', 0.0)
-                        + metadata.get('eval_cost', 0.0)
+                    perf['eval_cost_questions'] = (
+                        perf.get('eval_cost_questions', 0) + total_questions
                     )
 
                 # Track zero score cases
