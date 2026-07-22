@@ -11,6 +11,7 @@ Also importable:
 import gzip
 import json
 import os
+import re
 import sys
 from collections import Counter
 from datetime import datetime, timezone
@@ -48,23 +49,110 @@ def _format_tokens(n):
     return f"{n:,}"
 
 
-def _tool_one_liner(name, inp):
+# Session-flow label budgets. Labels feed Round-2 / meta-evolution prompts,
+# so they stay bounded — but normalization below strips the run-root path
+# noise first, so the budget is spent on command payload, not prefixes.
+BASH_LABEL_MAX = 200
+BASH_LABEL_TAIL = 40
+EDIT_SNIPPET_MAX = 40
+
+# Absolute interpreter paths (e.g. /opt/anaconda3/envs/x/bin/python) carry no
+# information the reader needs; collapse to the bare program name.
+_INTERP_RE = re.compile(r"\S+/bin/(python[0-9.]*|pip[0-9.]*)\b")
+
+
+def _derive_run_root(output_path):
+    """Infer the experiment/run root from where the summary is written.
+
+    Summaries land in <run>/evolution_output/iteration_NNN/ (or the
+    meta_evolution_output twin), so the component before that marker is the
+    run root. Returns None when the layout doesn't match — normalization is
+    then skipped, never wrong.
+    """
+    parts = Path(output_path).resolve().parts
+    for marker in ('evolution_output', 'meta_evolution_output'):
+        if marker in parts:
+            idx = parts.index(marker)
+            if idx > 0:
+                return str(Path(*parts[:idx]))
+    return None
+
+
+def _shorten_path(path, run_root):
+    """Rewrite an absolute path under run_root as $RUN/..."""
+    if run_root and isinstance(path, str) and path.startswith(run_root):
+        rest = path[len(run_root):].lstrip('/')
+        return f"$RUN/{rest}" if rest else "$RUN"
+    return path
+
+
+def _normalize_command(cmd, run_root):
+    """Strip noise from a command before truncation: run-root prefixes
+    become $RUN, absolute interpreter paths become bare program names."""
+    if run_root:
+        cmd = cmd.replace(run_root, '$RUN')
+    return _INTERP_RE.sub(lambda m: m.group(1), cmd)
+
+
+def _truncate_head_tail(text, limit, tail):
+    """Keep the head and tail of an over-limit label — command tails carry
+    filenames and pipe targets, usually the part worth keeping."""
+    if len(text) <= limit:
+        return text
+    head = limit - tail - 3
+    return text[:head] + " … " + text[-tail:]
+
+
+def _clip(line, limit):
+    line = line.strip()
+    if len(line) > limit:
+        line = line[:limit - 1] + "…"
+    return line
+
+
+def _edit_signature(old, new, limit):
+    """Pick the first differing line pair from an edit's old/new strings —
+    identical leading lines (shared context) would make every signature in
+    a block of edits look the same."""
+    old_lines = [l for l in old.strip().split('\n')]
+    new_lines = [l for l in new.strip().split('\n')]
+    for o, n in zip(old_lines, new_lines):
+        if o != n:
+            return _clip(o, limit), _clip(n, limit)
+    # One side is a prefix of the other (pure insertion/deletion) or equal
+    o = old_lines[len(new_lines)] if len(old_lines) > len(new_lines) else old_lines[0]
+    n = new_lines[len(old_lines)] if len(new_lines) > len(old_lines) else new_lines[0]
+    return _clip(o, limit), _clip(n, limit)
+
+
+def _tool_one_liner(name, inp, run_root=None):
     """Produce a one-line summary for a tool call."""
     if name == 'Read':
-        return f"→ Read {inp.get('file_path', '?')}"
+        label = f"→ Read {_shorten_path(inp.get('file_path', '?'), run_root)}"
+        offset = inp.get('offset')
+        limit = inp.get('limit')
+        if offset or limit:
+            start = offset or 1
+            span = f"lines {start}–{start + limit - 1}" if limit else f"from line {start}"
+            label += f" ({span})"
+        return label
     if name == 'Write':
-        return f"→ Write {inp.get('file_path', '?')}"
+        return f"→ Write {_shorten_path(inp.get('file_path', '?'), run_root)}"
     if name == 'Edit':
-        return f"→ Edit {inp.get('file_path', '?')}"
+        label = f"→ Edit {_shorten_path(inp.get('file_path', '?'), run_root)}"
+        old = inp.get('old_string')
+        new = inp.get('new_string')
+        if old is not None and new is not None:
+            o, n = _edit_signature(old, new, EDIT_SNIPPET_MAX)
+            label += f': "{o}" → "{n}"'
+        return label
     if name == 'Bash':
-        cmd = inp.get('command', '?')
         desc = inp.get('description', '')
         if desc:
             label = desc
         else:
-            label = cmd
-        if len(label) > 120:
-            label = label[:117] + "..."
+            label = _normalize_command(inp.get('command', '?'), run_root)
+        label = _truncate_head_tail(label, BASH_LABEL_MAX, BASH_LABEL_TAIL)
         return f"→ Bash: {label}"
     if name == 'Glob':
         return f"→ Glob {inp.get('pattern', '?')}"
@@ -72,7 +160,7 @@ def _tool_one_liner(name, inp):
         pattern = inp.get('pattern', '?')
         path = inp.get('path', '')
         if path:
-            return f'→ Grep "{pattern}" in {path}'
+            return f'→ Grep "{pattern}" in {_shorten_path(path, run_root)}'
         return f'→ Grep "{pattern}"'
     if name == 'Task':
         desc = inp.get('description', '?')
@@ -125,7 +213,7 @@ def _read_jsonl(path):
     return messages
 
 
-def summarize_transcript(transcript_path, output_path=None):
+def summarize_transcript(transcript_path, output_path=None, run_root=None):
     """
     Read a session transcript and write a session_summary.md.
 
@@ -133,6 +221,10 @@ def summarize_transcript(transcript_path, output_path=None):
         transcript_path: Path to .jsonl or .jsonl.gz file
         output_path: Where to write the summary. Defaults to
                      session_summary.md in the same directory.
+        run_root: Experiment/run root used to abbreviate paths as $RUN in
+                  the summary. Defaults to deriving it from output_path's
+                  evolution_output / meta_evolution_output component; when
+                  neither is given nor derivable, paths are left untouched.
 
     Returns:
         Path to the written summary file.
@@ -143,6 +235,7 @@ def summarize_transcript(transcript_path, output_path=None):
     else:
         output_path = Path(output_path)
 
+    run_root = str(run_root) if run_root else _derive_run_root(output_path)
     messages = _read_jsonl(transcript_path)
 
     # --- First pass: collect stats ---
@@ -241,21 +334,25 @@ def summarize_transcript(transcript_path, output_path=None):
                          sorted(display_tools.items(), key=lambda x: -x[1])]
             lines.append(f"- **Tools**: {', '.join(tool_strs)}")
 
+    # Legend for the $RUN shorthand used throughout the sections below
+    if run_root:
+        lines.append(f"- **$RUN**: {run_root}")
+
     # Files sections
     if files_read:
         lines.append("\n## Files Read")
         for fp in files_read:
-            lines.append(f"- {fp}")
+            lines.append(f"- {_shorten_path(fp, run_root)}")
 
     if files_written or files_edited:
         lines.append("\n## Files Written")
         seen = set()
         for fp in files_written:
-            lines.append(f"- {fp}")
+            lines.append(f"- {_shorten_path(fp, run_root)}")
             seen.add(fp)
         for fp in files_edited:
             if fp not in seen:
-                lines.append(f"- {fp} (edited)")
+                lines.append(f"- {_shorten_path(fp, run_root)} (edited)")
 
     # --- Second pass: session flow ---
     lines.append("\n## Session Flow\n")
@@ -295,7 +392,8 @@ def summarize_transcript(transcript_path, output_path=None):
                     lines.append(f"{ts_prefix}{text}\n")
 
                 elif block.get('type') == 'tool_use':
-                    one_liner = _tool_one_liner(block['name'], block.get('input', {}))
+                    one_liner = _tool_one_liner(block['name'], block.get('input', {}),
+                                                run_root=run_root)
                     if one_liner is not None:
                         lines.append(f"  {one_liner}\n")
 
