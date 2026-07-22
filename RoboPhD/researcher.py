@@ -420,6 +420,61 @@ class StuckProcessReaper:
                 continue
 
 
+def build_prior_evolution_section(experiment_dir: Path, iteration: int) -> str:
+    """Evolution-prompt section pointing at prior sessions' recorded analysis.
+
+    Scans ``evolution_output/`` for iterations earlier than ``iteration`` and
+    points only at artifacts that actually exist on disk — reasoning.md and
+    evolution_reflection.md (session summaries and the prompts themselves are
+    noise to a future session). Returns "" when nothing qualifies, which is
+    exactly the first evolution round's case: no prior section, no special
+    iteration arithmetic.
+    """
+    artifacts = (
+        ("reasoning.md", "that session's analysis and plan"),
+        ("evolution_reflection.md", "its advice for future sessions"),
+    )
+    base = Path(experiment_dir) / "evolution_output"
+    if not base.is_dir():
+        return ""
+    prior = []  # (iteration_number, [(filename, description), ...])
+    for entry in sorted(base.iterdir()):
+        if not entry.is_dir():
+            continue
+        m = re.fullmatch(r"iteration_(\d+)", entry.name)
+        if not m or int(m.group(1)) >= iteration:
+            continue
+        present = [(name, desc) for name, desc in artifacts if (entry / name).is_file()]
+        if present:
+            prior.append((int(m.group(1)), present))
+    if not prior:
+        return ""
+    prior.sort()
+    latest_num, latest_files = prior[-1]
+    lines = ["## Prior Evolution Sessions\n"]
+    lines.append(
+        f"The evolution session that created iteration {latest_num}'s agent "
+        "recorded its thinking:\n"
+    )
+    for name, desc in latest_files:
+        lines.append(f"- `evolution_output/iteration_{latest_num:03d}/{name}` — {desc}")
+    earlier = [num for num, _ in prior[:-1]]
+    if earlier:
+        which = (
+            f"iteration {earlier[0]}" if len(earlier) == 1
+            else f"iterations {earlier[0]}–{earlier[-1]}"
+        )
+        lines.append(
+            f"\nEarlier sessions ({which}) left the same artifacts under their "
+            "own `evolution_output/iteration_NNN/` directories."
+        )
+    lines.append(
+        "\nThese prior session analyses are available to you. "
+        "Feel free to form your own opinions."
+    )
+    return "\n".join(lines)
+
+
 class ParallelAgentEvolver:
     """Manages agent evolution using Claude."""
 
@@ -704,7 +759,7 @@ class ParallelAgentEvolver:
         lines = []
 
         # Add performance rankings and agent pool (can be disabled to reduce Elo-leader fixation)
-        include_rankings = self.config.get("include_evolution_rankings", True)
+        include_rankings = self.config.get("include_evolution_rankings", False)
         if include_rankings:
             lines.append("## Performance Rankings Across All Iterations\n")
             ranking_table = self._generate_ranking_table(test_history, performance_records, for_evolution=True)
@@ -719,6 +774,13 @@ class ParallelAgentEvolver:
         lines.append("\n## Experiment Directory Structure\n")
         structure = self._get_experiment_structure(iteration - 1)
         lines.append(structure)
+
+        # Point at prior sessions' reasoning/reflection (existence-checked;
+        # empty on the first evolution round)
+        if self.config.get("include_prior_evolution", False):
+            prior_section = build_prior_evolution_section(self.experiment_dir, iteration)
+            if prior_section:
+                lines.append("\n" + prior_section)
 
         # Add agent pool summary
         if include_rankings:
