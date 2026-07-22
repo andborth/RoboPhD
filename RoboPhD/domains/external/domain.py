@@ -29,6 +29,60 @@ from RoboPhD.eval_utils import EvalRateLimitError, is_rate_limit_error, PeakRSSS
 
 logger = logging.getLogger(__name__)
 
+# Non-string diagnostics the framework consumes (into result.json's fixed
+# schema or cost tracking). A container-valued diagnostic OUTSIDE this set
+# is not persisted anywhere — result.json won't carry it and only string
+# values become per-problem files — so emitting one is almost always an
+# evaluator bug. Demonstrated failure: asta_paper_finder's
+# judge_format_repairs dict silently never reached disk until it was
+# re-emitted as a string (2026-07-22).
+CONSUMED_NONSTRING_DIAGNOSTICS = frozenset({
+    "score",
+    "raw_score",
+    "cost_usd",
+    "agent_cost_usd",
+    "other_cost_usd",
+    "cost_by_model_usd",
+    "usage",
+    "eval_wall_clock_seconds",
+})
+
+# Once-per-process warning dedup for dropped diagnostics (parallel evals
+# would otherwise repeat the same warning hundreds of times per run).
+_dropped_diagnostics_warned: set = set()
+
+
+def write_diagnostic_files(diagnostics: Dict, problem_dir) -> None:
+    """Persist string diagnostics as per-problem files; warn loudly when a
+    container-valued diagnostic would be silently dropped.
+
+    String values are written to `problem_dir / key` (evaluators put the
+    extension in the key, e.g. `judge_verdicts.md`), non-clobbering.
+    Container values (dict/list) are consumed only for the keys in
+    CONSUMED_NONSTRING_DIAGNOSTICS; anything else vanishes, so it gets a
+    once-per-process warning naming the fix (emit a string) instead of
+    disappearing silently."""
+    for key, val in diagnostics.items():
+        if not isinstance(val, str) or not val:
+            if (
+                isinstance(val, (dict, list))
+                and val
+                and key not in CONSUMED_NONSTRING_DIAGNOSTICS
+                and key not in _dropped_diagnostics_warned
+            ):
+                _dropped_diagnostics_warned.add(key)
+                logger.warning(
+                    "diagnostic %r is %s-valued and will NOT be persisted: "
+                    "result.json has a fixed schema and only string "
+                    "diagnostics become per-problem files. Emit it as a "
+                    "string (e.g. key %r) if it should reach disk.",
+                    key, type(val).__name__, f"{key}.md",
+                )
+            continue
+        out_path = problem_dir / key
+        if not out_path.exists():
+            out_path.write_text(val)
+
 
 def _default_aggregate(per_example_results: List[Dict]) -> Tuple[float, str]:
     """Default iteration aggregator: simple mean of per-example scores.
@@ -381,16 +435,8 @@ class ExternalEvaluatorDomain(DomainInterface):
                         json.dump(result_entry, f, indent=2)
 
                 # Write diagnostics as readable files for evolution.
-                # String values → {key}.md (or {key} if it already has an
-                # extension), skipping keys already on disk.
                 if diagnostics:
-                    for key, val in diagnostics.items():
-                        if not isinstance(val, str) or not val:
-                            continue
-                        fname = key
-                        out_path = problem_dir / fname
-                        if not out_path.exists():
-                            out_path.write_text(val)
+                    write_diagnostic_files(diagnostics, problem_dir)
 
                 return result_entry
 
