@@ -545,7 +545,9 @@ def main():
         the resumed dir on resume (so a resumed run keeps its verdicts), else a
         fresh per-invocation file. Subprocess workers inherit the env var, so
         all workers of a run share one file within the run either way."""
-        judge = args.training_judge or _STOCK_GRADER
+        # Resolved run-immutable value (persisted in paper_finder_runtime),
+        # NOT the raw CLI flag — a resume restores the run's original judge.
+        judge = training_judge
         slug = _judge_slug(judge)
         cache_dir = _judge_cache_dir(args.runs_dir)
         if not args.no_shared_judge_cache:
@@ -567,10 +569,13 @@ def main():
             logger.info("Judging capped to top-estimate per semantic query")
         else:
             os.environ.pop(CAP_JUDGE_ENV, None)
-        # Opt-in cheaper training judge (test/formal always use stock GPT-4o).
-        if args.training_judge:
-            os.environ[TRAINING_GRADER_ENV] = args.training_judge
-            logger.info(f"Training relevance judge: {args.training_judge}")
+        # Opt-in cheaper training judge. Compared against the stock id, not
+        # flag truthiness: an EXPLICIT --training-judge gpt-4o must behave
+        # exactly like the default — no override env, no lenient normalizer
+        # (strict-parser parity with official scoring).
+        if judge != _STOCK_GRADER:
+            os.environ[TRAINING_GRADER_ENV] = judge
+            logger.info(f"Training relevance judge: {judge}")
         else:
             os.environ.pop(TRAINING_GRADER_ENV, None)
         return str(path)
@@ -615,6 +620,23 @@ def main():
         on_resume=on_resume,
         fmt=str,
     )
+    # The training judge changes the training scoring basis (whose verdicts
+    # Elo is computed on) AND the verdict-cache namespace, so it is
+    # run-immutable like the knobs above — a flagless --resume silently
+    # flipping a luna-trained campaign back to stock GPT-4o would
+    # contaminate every later iteration's Elo. Stored as the resolved
+    # model id (never None). Legacy checkpoints lack the key: resuming one
+    # requires stating the judge explicitly once (a one-time bootstrap,
+    # locked thereafter) — deliberately never a silent default, because a
+    # pre-persistence run may have trained under either judge.
+    training_judge = _enforce_immutable_on_resume(
+        cli_value=args.training_judge,
+        stored_value=checkpoint_pfb.get("training_judge"),
+        default_value=_STOCK_GRADER,
+        name="training-judge",
+        on_resume=on_resume,
+        fmt=str,
+    )
 
     # ASTA_TOOL_KEY is validated by the evaluator's constructor preflight
     # (hard-required alongside the three provider keys); fail here first
@@ -631,6 +653,7 @@ def main():
         "cost_threshold": cost_threshold,
         "cost_per_error": cost_per_error,
         "cap_judge_to_estimate": cap_judge_to_estimate,
+        "training_judge": training_judge,
     }
 
     def _build_cost_penalty_table(threshold: float, cpe: float) -> str:

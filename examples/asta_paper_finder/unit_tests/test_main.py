@@ -246,6 +246,52 @@ def test_test_results_filename_judge_suffix(main_mod):
     assert p.name == "test_results.judge_gpt-5.6-luna.per_problem.json"
 
 
+def test_training_judge_is_run_immutable_and_persisted():
+    """--training-judge must ride paper_finder_runtime like the cost knobs:
+    resolved via _enforce_immutable_on_resume (so a flagless --resume of a
+    luna-trained run hard-errors instead of silently flipping the judge —
+    and the cache namespace — back to stock mid-campaign), packed into
+    resolved_runtime for checkpoint persistence, and consumed by
+    _set_training_cache_env as the RESOLVED value, not the raw CLI flag."""
+    # 1. Resolved through the immutability resolver with the stored key.
+    resolver_calls = [
+        node for node in ast.walk(MAIN_TREE)
+        if isinstance(node, ast.Call)
+        and getattr(node.func, "id", None) == "_enforce_immutable_on_resume"
+        and any(
+            kw.arg == "name" and getattr(kw.value, "value", None) == "training-judge"
+            for kw in node.keywords
+        )
+    ]
+    assert resolver_calls, "training-judge must go through _enforce_immutable_on_resume"
+    stored = next(
+        ast.unparse(kw.value) for kw in resolver_calls[0].keywords
+        if kw.arg == "stored_value"
+    )
+    assert "training_judge" in stored and "checkpoint_pfb" in stored
+
+    # 2. Packed into resolved_runtime (→ task_config_extras → checkpoint).
+    packs = [
+        node for node in ast.walk(MAIN_TREE)
+        if isinstance(node, ast.Assign)
+        and any(getattr(t, "id", None) == "resolved_runtime" for t in node.targets)
+    ]
+    assert packs and any(
+        getattr(k, "value", None) == "training_judge" for k in packs[0].value.keys
+    )
+
+    # 3. The training cache env fn reads the resolved variable, not args.
+    cache_fn = next(
+        n for n in ast.walk(MAIN_TREE)
+        if isinstance(n, ast.FunctionDef) and n.name == "_set_training_cache_env"
+    )
+    src = ast.unparse(cache_fn)
+    assert "args.training_judge" not in src, (
+        "_set_training_cache_env must consume the resolved run-immutable "
+        "value so resumes restore the run's original judge"
+    )
+
+
 def test_training_judge_choices_pinned(main_mod):
     """The CLI's two allowed judges: element 0 must be astabench's stock
     grader (the default basis), and every choice must be in the
