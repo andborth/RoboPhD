@@ -420,6 +420,16 @@ class StuckProcessReaper:
                 continue
 
 
+def format_mean_cost_suffix(batch_eval_cost: float, total_questions: int) -> str:
+    """Console-line suffix showing mean agent cost per example over the
+    whole evaluated batch — cached results included at their replayed
+    costs, because that batch mean is what a cost-penalty aggregator
+    judges. Empty for zero-cost domains or empty batches."""
+    if batch_eval_cost <= 0 or total_questions <= 0:
+        return ""
+    return f" ${batch_eval_cost / total_questions:.3f}/ex"
+
+
 def build_prior_evolution_section(experiment_dir: Path, iteration: int) -> str:
     """Evolution-prompt section pointing at prior sessions' recorded analysis.
 
@@ -2087,6 +2097,12 @@ class ParallelAgentResearcher:
                 average_score = eval_result.average_score
                 score_sum = eval_result.score_sum
                 total_questions = eval_result.total
+                # Whole-batch agent cost, cached results included at their
+                # replayed costs (deliberately unlike metadata['eval_cost'],
+                # which is fresh-only for budget tracking).
+                batch_eval_cost = sum(
+                    r.get('eval_cost', 0.0) for r in eval_result.results
+                )
 
                 # Get contexts tested successfully from metadata
                 metadata = eval_result.metadata or {}
@@ -2131,6 +2147,22 @@ class ParallelAgentResearcher:
                     'examples': len(contexts)
                 })
 
+                # Fresh-only (unique-example) counters for the reports'
+                # Quick Summary means. Paired counters so runs resumed
+                # from pre-change checkpoints average over the observed
+                # window instead of diluting by uncounted history.
+                fresh_n = metadata.get('fresh_count', total_questions)
+                if fresh_n > 0 and metadata.get('fresh_average_score') is not None:
+                    perf['fresh_aggregate_weighted'] = (
+                        perf.get('fresh_aggregate_weighted', 0.0)
+                        + metadata['fresh_average_score'] * fresh_n
+                    )
+                    perf['fresh_questions'] = perf.get('fresh_questions', 0) + fresh_n
+                    perf['fresh_eval_cost_sum'] = (
+                        perf.get('fresh_eval_cost_sum', 0.0)
+                        + metadata.get('eval_cost', 0.0)
+                    )
+
                 # Track zero score cases
                 if average_score == 0 and total_questions > 0:
                     self.zero_accuracy_cases.append((agent_id, iteration, total_questions))
@@ -2159,7 +2191,8 @@ class ParallelAgentResearcher:
 
                 cached_count = metadata.get('cached_count', 0)
                 cache_suffix = f" [cached {cached_count}/{total_questions}]" if cached_count else ""
-                print(f"\n{agent_id}: {average_score:.3f} ({score_sum:.1f}/{total_questions}){cache_suffix}")
+                cost_suffix = format_mean_cost_suffix(batch_eval_cost, total_questions)
+                print(f"\n{agent_id}: {average_score:.3f} ({score_sum:.1f}/{total_questions}){cache_suffix}{cost_suffix}")
 
             except EvalRateLimitError as e:
                 print(f"\n❌ RATE LIMIT EXCEEDED - Aborting research run")

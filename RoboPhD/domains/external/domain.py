@@ -550,6 +550,16 @@ class ExternalEvaluatorDomain(DomainInterface):
         aggregator = getattr(self._evaluator_fn, "aggregate", None) or _default_aggregate
         average_score, aggregate_explanation = aggregator(results)
 
+        # Aggregate over the fresh subset only — the cumulative per-agent
+        # mean the reports show is over unique examples (the (agent,
+        # example) cache guarantees fresh evals are exactly the unique
+        # ones). Re-running the task aggregator keeps its canonical scale
+        # and cost-penalty semantics; a raw score mean would not match.
+        fresh_average_score = None
+        if fresh_count > 0:
+            fresh_results = [r for r in results if not r.get("cached")]
+            fresh_average_score, _ = aggregator(fresh_results)
+
         # Aggregate evaluation costs from fresh results. `other_cost` is the
         # optional evaluator-side-overhead bucket (e.g., DiscoveryBench's
         # judge-LLM spend); it's tracked separately so it doesn't appear in
@@ -588,6 +598,7 @@ class ExternalEvaluatorDomain(DomainInterface):
                 "eval_cost": total_eval_cost,
                 "other_cost": total_other_cost,
                 "aggregate_explanation": aggregate_explanation,
+                "fresh_average_score": fresh_average_score,
             },
         )
 

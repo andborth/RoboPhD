@@ -20,6 +20,29 @@ if TYPE_CHECKING:
     from .researcher import ParallelAgentResearcher
 
 
+def _mean_score_cell(perf: dict) -> str:
+    """Quick Summary Mean Score: aggregator-scale mean over unique
+    (fresh-evaluated) examples. Falls back to the legacy batch-basis
+    mean_score for records that predate the fresh counters (resumed
+    runs), so those rows stay informative rather than blank."""
+    fresh_q = perf.get('fresh_questions', 0)
+    if fresh_q > 0:
+        return f"{perf.get('fresh_aggregate_weighted', 0.0) / fresh_q:.3f}"
+    if 'mean_score' in perf:
+        return f"{perf['mean_score']:.3f}"
+    return "-"
+
+
+def _mean_cost_cell(perf: dict) -> str:
+    """Quick Summary Mean Cost: mean agent cost per unique example.
+    "-" for zero-cost domains and records without fresh counters."""
+    fresh_q = perf.get('fresh_questions', 0)
+    cost_sum = perf.get('fresh_eval_cost_sum', 0.0)
+    if fresh_q > 0 and cost_sum > 0:
+        return f"${cost_sum / fresh_q:.3f}"
+    return "-"
+
+
 def format_non_binary_scores(non_binary: dict) -> list:
     """Render non-binary scores (not 0.0 or 1.0) as report lines, grouped by agent."""
     if not non_binary:
@@ -1127,15 +1150,17 @@ class ReportGenerator:
                              key=lambda a: self.researcher.performance_records[a]['elo'],
                              reverse=True)
 
-        # Simple summary table
+        # Simple summary table. Mean Score / Mean Cost are over unique
+        # (fresh-evaluated) examples — see _mean_score_cell/_mean_cost_cell.
         report_lines.append("### Quick Summary\n")
-        report_lines.append("| Agent | Elo | Mean Score | Tests |")
-        report_lines.append("|-------|-----|------------|-------|")
+        report_lines.append("| Agent | Elo | Mean Score | Mean Cost | Tests |")
+        report_lines.append("|-------|-----|------------|-----------|-------|")
 
         for agent_id in sorted_agents:
             perf = self.researcher.performance_records[agent_id]
             report_lines.append(f"| {agent_id} | {perf['elo']:.0f} | "
-                              f"{perf['mean_score']:.3f} | {perf['test_count']} |")
+                              f"{_mean_score_cell(perf)} | {_mean_cost_cell(perf)} | "
+                              f"{perf['test_count']} |")
 
         # Iteration progression table
         report_lines.append("\n### Iteration Progression\n")
