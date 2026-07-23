@@ -20,16 +20,26 @@ This is the first submission whose internal costs were measured **entirely on th
 
 ## Leaderboard score
 
-**To be submitted as `RoboPhD`.** Official `astabench score` run: **pending**.
+**To be submitted as `RoboPhD`.** Official `astabench score` run completed 2026-07-23 (third attempt; see "Official-run incidents" below):
 
 | | Official (`astabench score`) | Internal dev eval |
 |---|---|---|
-| Accuracy (DS-1000 test, 900 samples) | pending | 0.7333 (660/900) |
-| Per-problem cost | pending | $0.001677 (post-fix leaderboard billing basis) |
-| Wrapper fallbacks | pending | 0 / 900 |
+| Accuracy (DS-1000 test, 900 samples) | **0.7367** (663/900, stderr 0.0147) | 0.7333 (660/900) |
+| Per-problem cost | **$0.001671** (± 0.000026) | $0.001677 |
+| Wrapper fallbacks | 0 / 900 (6 samples used the agent's internal gpt-5.4-mini on-error fallback; 4 scored correct) | 0 / 900 |
 | Submission name | `v0_0_7_sharp_cap_0_003` / form: `RoboPhD` | — |
-| Pareto target | ReAct/GPT-5-Mini (0.710 @ $0.003 true cost): internally **strictly dominated** (+2.3pp at 44% lower cost). Also edges v0_0_6 (0.7322 @ $0.00428 official) on both axes. Our unsubmitted 043 point (0.772 @ $0.00342) is not dominated — the pair are adjacent frontier slots. | — |
+| Pareto outcome | ReAct/GPT-5-Mini (0.710 @ $0.003 true cost) is **strictly dominated officially**: +2.7pp accuracy at 44% lower cost. Also beats v0_0_6 (0.7322 @ $0.00428 official) on both axes. Our unsubmitted 043 point (0.772 @ $0.00342 internal) is not dominated — adjacent frontier slots. | — |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | — |
+
+**Parity verdict — the accounting fixes hold end-to-end.** This was the first submission whose internal costs were measured entirely on the leaderboard billing basis (post `dde6356`/`b74f8e7`), and the official numbers replicated both axes: accuracy +3 problems (well inside stderr), cost within 0.4% ($0.001671 vs $0.001677). Contrast v0_0_6: internal $0.00294 → official $0.00428 (+46%).
+
+## Official-run incidents (attempts 1–2, archived in the working dir)
+
+- **Attempt 1** (2026-07-21): OrbStack VM (16 GB cap) OOM-crashed under the 6-sandbox load ~1 h in; 547 samples preserved in `logs/archive_attempt1_oom_20260721/`.
+- **Attempt 2** (2026-07-22): completed 900/900 but scored 0.607 — the sandbox images had been built in the two minutes before attempt 1's crash, and the VM died before page cache flushed: matplotlib 3.10.0's `__init__.py`/`pyplot.py` were committed as zero-byte files, so the scorer's own `generate_test_case` crashed on 117 matplotlib problems. Diagnosed via per-sample join against the internal eval (cost parity exact; non-matplotlib flips balanced 25 vs 28). Archived in `logs/archive_attempt2_corrupt_image_20260722/`.
+- **Attempt 3** (2026-07-22→23, this result): fresh images on a 32 GB VM; clean 900/900.
+
+**Run-over-run variance (four evals of the same agent, per-sample join on the common non-matplotlib subset, n=757):** aggregate accuracy is tightly stable — internal 0.7173, attempt 2 0.7213, attempt 3 0.7186 (0.4pp spread) — while per-problem outcomes churn: ~7–8% pairwise disagreement, 84/757 problems (11%) flip in at least one pair, canceling almost perfectly in aggregate. The reported stderr (±1.5pp) is dominated by problem sampling, not run stochasticity; the +2.7pp margin over ReAct/GPT-5-Mini is ~5× the observed run-over-run spread.
 
 ## Submission metadata
 
