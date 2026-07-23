@@ -250,6 +250,34 @@ def _write_test_results(
             "error": _trunc(err),
         })
 
+    # Persist per-problem diagnostics the way training iterations do
+    # (submission.json / judge_verdicts.md / score_calculation.md /
+    # gold_criteria.md / ...): training problem dirs made post-hoc judge
+    # studies possible; test evals used to silently discard the same data,
+    # which forced judge A/Bs to RE-RUN the agent (rerun variance + agent
+    # spend) instead of re-judging stored submissions. Dir name derives
+    # from the summary filename so judge-suffixed evals get their own tree
+    # (test_problems.judge_<model>/), mirroring the results-file suffix.
+    problems_dir = output_dir / summary_filename[:-len(".json")].replace(
+        "test_results", "test_problems", 1
+    )
+    for diag_row, diag in zip(per_problem, diagnostics_list):
+        diag = diag or {}
+        qid = diag_row["sample_id"]
+        if not qid:
+            continue
+        pdir = problems_dir / str(qid)
+        pdir.mkdir(parents=True, exist_ok=True)
+        for key, value in diag.items():
+            if isinstance(value, str) and value:
+                # Training convention: key IS the filename (keys carry
+                # their own extensions where it matters). Non-clobber.
+                target = pdir / key
+                if not target.exists():
+                    target.write_text(value)
+        with open(pdir / "result.json", "w") as f:
+            json.dump(diag_row, f, indent=2)
+
     summary_path = output_dir / summary_filename
     n_problems = eval_result.num_examples
     mean_agent_cost = (total_agent_cost / n_problems) if n_problems else 0.0

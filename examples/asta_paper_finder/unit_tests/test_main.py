@@ -246,6 +246,47 @@ def test_test_results_filename_judge_suffix(main_mod):
     assert p.name == "test_results.judge_gpt-5.6-luna.per_problem.json"
 
 
+def test_write_test_results_persists_problem_diagnostics(main_mod, tmp_path):
+    """Test evals must persist per-problem diagnostics (submission.json,
+    judge_verdicts.md, ...) like training iterations do — discarding them
+    forced judge A/B studies to re-run the agent instead of re-judging
+    stored submissions. Judge-suffixed evals get their own problems tree."""
+    from types import SimpleNamespace
+    eval_result = SimpleNamespace(
+        per_example_diagnostics=[{
+            "sample_id": "semantic_9",
+            "score_type": "semantic_f1",
+            "submission.json": '{"output": {"results": []}}',
+            "judge_verdicts.md": "1. 123 — Perfectly Relevant",
+            "agent_cost_usd": 0.05,
+            "other_cost_usd": 0.10,
+            "usage": {"m": {"input_tokens": 1}},  # non-str: must be skipped
+        }],
+        per_example_scores=[0.5],
+        num_examples=1,
+        mean_score=0.5,
+        total_score=0.5,
+        aggregate_explanation="",
+    )
+    fake_evaluator = SimpleNamespace(total_eval_cost=0.05)
+    main_mod._write_test_results(
+        eval_result, fake_evaluator, tmp_path, "best",
+        "test_results.judge_gpt-5.6-luna.json", scoring_mode={},
+    )
+    pdir = tmp_path / "test_problems.judge_gpt-5.6-luna" / "semantic_9"
+    assert (pdir / "submission.json").read_text() == '{"output": {"results": []}}'
+    assert "Perfectly Relevant" in (pdir / "judge_verdicts.md").read_text()
+    assert not (pdir / "usage").exists()
+    row = __import__("json").loads((pdir / "result.json").read_text())
+    assert row["score"] == 0.5 and row["sample_id"] == "semantic_9"
+    # Stock evals land in the unsuffixed tree.
+    main_mod._write_test_results(
+        eval_result, fake_evaluator, tmp_path, "best",
+        "test_results.json", scoring_mode={},
+    )
+    assert (tmp_path / "test_problems" / "semantic_9" / "submission.json").exists()
+
+
 def test_training_judge_is_run_immutable_and_persisted():
     """--training-judge must ride paper_finder_runtime like the cost knobs:
     resolved via _enforce_immutable_on_resume (so a flagless --resume of a
