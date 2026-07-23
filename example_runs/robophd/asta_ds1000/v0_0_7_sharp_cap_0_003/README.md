@@ -52,6 +52,10 @@ This is the first submission whose internal costs were measured **entirely on th
 | URL (form) | https://github.com/andborth/RoboPhD |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) |
 
+**Agent description (as submitted on the form):**
+
+> 302-line agent evolved by RoboPhD from the 46-line baseline seed, with Claude Opus 4.8 as the evolution (but not solver) model, trained under an ultra-low cost budget: a $0.003/problem soft cap with a sharp overage penalty. Under that constraint, evolution converged on radical simplicity — it measured verification, self-consistency, and ensemble machinery as net-negative on DS-1000 (wrong answers execute cleanly, so crash-checking catches nothing) and discarded them all. The evolved agent makes a single gpt-5.4 call under a compact ~480-token instruction prompt (gpt-5.4-mini as on-error fallback; fired on 6/900 samples), then applies three deterministic, format-only repair passes — HTML-entity unescaping, function-body re-indentation read from the prompt's marker, and target-variable assignment for bare expressions — each of which can fix or no-op but never alter the model's chosen answer. Mean cost: ~$0.0017/problem.
+
 Key stats (not required by the AstaBench form; recorded for our own tracking):
 
 | Stat | Value |
