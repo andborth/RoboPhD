@@ -2,7 +2,7 @@
 
 Measurements from running PaperFindingBench evaluations at scale (several
 full training campaigns + official test evals, astabench 0.5.4, July 2026).
-Three findings, each independently actionable. Contact: RoboPhD project
+Four findings, each independently actionable. Contact: RoboPhD project
 (https://github.com/andborth/RoboPhD; submissions "RoboPhD" on the
 leaderboard).
 
@@ -54,7 +54,26 @@ dict repr**, constructed `document` first. Consequences:
   GPT-4o's $1.25/M cached-input rate: roughly 30–40% off every submitter's
   judging bill, more for evidence-rich agents.
 
-## 3. Judge verdicts are sensitive to prompt payload order (robustness finding)
+## 3. Most of the judge bill is prose the metric never reads
+
+Per-verdict token profile (measured, gpt-5.6-luna on rich submission
+evidence; GPT-4o proportions similar): ~1,400 input tokens vs ~535 output
+tokens. At output:input price ratios of 4-6x, the judge's OUTPUT is
+40-69% of total judging cost — and it consists almost entirely of the
+mandated per-criterion `relevant_snippet` and the `relevance_summary`,
+neither of which the scorer reads (only the relevance labels enter the
+metric). Making those fields optional or tightly word-capped would cut
+every submitter's judging bill roughly in half with no change to what
+the metric consumes — though the prose may act as chain-of-thought for
+the labels, so the change should be calibrated and version-bumped like
+any judge-prompt change.
+
+(For completeness: we also measured the submitter-side alternative of
+truncating evidence text — it trades badly. Halving evidence chars cut
+input only 29% (prompt overhead is fixed) while destroying 21% of
+Perfectly-Relevant verdicts, the only recall-earning grade.)
+
+## 4. Judge verdicts are sensitive to prompt payload order (robustness finding)
 
 While testing the reorder we found it is **not metric-neutral**: judging
 the same 113 (criteria, evidence) docs with the same model under the two
