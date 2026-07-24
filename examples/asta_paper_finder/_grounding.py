@@ -42,6 +42,20 @@ from typing import Any
 # scoring). See _grounded_get_llm_relevance.
 CAP_JUDGE_ENV = "PF_JUDGE_TOP_ESTIMATE"
 
+# Per-paper evidence character cap (training-shaping knob, 2026-07-24).
+# When set to a positive int, each paper's markdown_evidence is truncated
+# to this many characters BEFORE grounding/judging. Rationale: agents
+# have zero cost incentive toward evidence brevity (judge cost is
+# invisible to their reward), and the -005 lineage wrote uniformly
+# bloated evidence (mean 3,391 chars/paper) that tripled official
+# judging bills. Enforced in TRAINING only (main.py sets it there and
+# clears it for test evals) so evolution adapts by selecting/densifying;
+# the evolved short-evidence behavior then travels into official
+# submissions where no cap exists. Truncation-before-grounding is sound:
+# a truncated substring of retrieved text still grounds. Verdict caches
+# need no extra namespacing — keys hash the post-truncation text.
+EVIDENCE_CAP_ENV = "PF_EVIDENCE_CHAR_CAP"
+
 # corpus_id (normalized) -> set of normalized text spans retrieved for it.
 _PROVENANCE: dict[str, set[str]] = {}
 
@@ -346,10 +360,17 @@ def install_grounded_judge() -> None:
         # empirically unaffected, so deeper papers are pure judge cost. Off for
         # test/pristine (env unset) → judge all, matching official scoring.
         cap = normalizer.get(qid) if os.environ.get(CAP_JUDGE_ENV) else None
+        try:
+            ev_cap = int(os.environ.get(EVIDENCE_CAP_ENV) or 0)
+        except ValueError:
+            ev_cap = 0
         judgements: dict[str, str] = {}
         # (paper_id, dropped_passages, raw_evidence, kind) where kind is
         # "partial" (some passages kept) or "full" (all dropped).
         blanked: list[tuple[str, list[str], str, str]] = []
+        # (paper_id, original_len, capped_len) for evidence clipped by
+        # EVIDENCE_CAP_ENV — surfaced to evolution as evidence_truncation.md.
+        truncated: list[tuple[str, int, int]] = []
         to_judge: list[Document] = []
         judge_keys: list[tuple[str, str]] = []  # (paper_id, composite cache key)
 
@@ -365,6 +386,12 @@ def install_grounded_judge() -> None:
                 judgements[pid] = Relevance.PERFECT.value
                 continue
             raw_ev = result.markdown_evidence or ""
+            # Evidence char cap (training-only): truncate BEFORE grounding —
+            # a truncated substring of retrieved text still grounds, and the
+            # judge/cache operate on the capped text.
+            if ev_cap > 0 and len(raw_ev) > ev_cap:
+                truncated.append((pid, len(raw_ev), ev_cap))
+                raw_ev = raw_ev[:ev_cap]
             # Keep only grounded passages; the judge sees `scrubbed`, never the
             # dropped ones.
             scrubbed, dropped = scrub_evidence(pid, raw_ev)
@@ -400,7 +427,7 @@ def install_grounded_judge() -> None:
 
         _LAST.clear()
         _LAST.update(query_id=qid, judgements=dict(judgements), blanked=blanked,
-                     cap=cap)
+                     cap=cap, truncated=truncated)
         return judgements
 
     _grounded_get_llm_relevance._robophd_grounded = True  # type: ignore[attr-defined]
@@ -417,6 +444,13 @@ def last_blanked() -> list[tuple[str, list[str], str, str]]:
     """[(paper_id, dropped_passages, raw_evidence, kind)] from the most recent
     call, where kind is "partial" (some passages kept) or "full" (all dropped)."""
     return list(_LAST.get("blanked") or [])
+
+
+def last_truncations() -> list[tuple[str, int, int]]:
+    """[(paper_id, original_len, capped_len)] for evidence clipped by the
+    per-paper char cap (EVIDENCE_CAP_ENV) in the most recent call. Empty
+    when the cap is off or nothing exceeded it."""
+    return list(_LAST.get("truncated") or [])
 
 
 def last_cap() -> int | None:

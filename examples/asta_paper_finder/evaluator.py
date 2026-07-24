@@ -238,6 +238,7 @@ CACHE_PATH_ENV = "PF_JUDGE_CACHE_PATH"
 # Re-exported for main.py: env var that enables the training-only top-estimate
 # judging cap (defined in _grounding, read by the grounded judge).
 CAP_JUDGE_ENV = grounding.CAP_JUDGE_ENV
+EVIDENCE_CAP_ENV = grounding.EVIDENCE_CAP_ENV
 
 
 def _apply_cache_redirect() -> None:
@@ -754,6 +755,36 @@ def _evidence_grounding_markdown() -> str | None:
         lines.append(f"- {pid} [{kind}]: dropped passage → {first!r}")
     if len(blanked) > 50:
         lines.append(f"- … and {len(blanked) - 50} more")
+    return "\n".join(lines)
+
+
+def _evidence_truncation_markdown() -> str | None:
+    """Feedback on evidence clipped by the per-paper char cap
+    (PF_EVIDENCE_CHAR_CAP, training-only).
+
+    The cap is ENFORCED, not advisory: characters beyond it never reach
+    the grounding check or the judge, so criteria support that lives past
+    the cap earns nothing. Surfacing which papers were clipped (and by
+    how much) is what lets evolution adapt — select and densify the
+    strongest passages within the cap instead of concatenating
+    everything. Returns None when nothing was clipped (cap off, or all
+    evidence compliant — the target end-state)."""
+    truncated = grounding.last_truncations()
+    if not truncated:
+        return None
+    cap = truncated[0][2]
+    total_cut = sum(orig - capped for _, orig, capped in truncated)
+    lines = [
+        f"{len(truncated)} paper(s) had evidence truncated at the enforced "
+        f"{cap}-character cap ({total_cut:,} chars discarded unseen — the "
+        f"judge and grounding check never read past the cap). Fit your "
+        f"strongest per-criterion passages within the cap.",
+        "",
+    ]
+    for pid, orig, capped in truncated[:50]:
+        lines.append(f"- {pid}: {orig:,} → {capped:,} chars")
+    if len(truncated) > 50:
+        lines.append(f"- … and {len(truncated) - 50} more")
     return "\n".join(lines)
 
 
@@ -1573,6 +1604,9 @@ class PaperFinderEvaluator:
                 grounding_md = _evidence_grounding_markdown()
                 if grounding_md:
                     diagnostics["evidence_grounding.md"] = grounding_md
+                truncation_md = _evidence_truncation_markdown()
+                if truncation_md:
+                    diagnostics["evidence_truncation.md"] = truncation_md
         except Exception:
             pass
 

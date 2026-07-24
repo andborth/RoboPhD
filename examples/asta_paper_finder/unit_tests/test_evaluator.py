@@ -965,6 +965,19 @@ def test_apply_training_grader_no_prose_profile(ev_mod, monkeypatch):
         ev_mod._apply_training_grader()
 
 
+def test_evidence_truncation_markdown(ev_mod, verdict_cache):
+    """evidence_truncation.md renders clipped papers + total, and is absent
+    when nothing was clipped (cap off or all evidence compliant)."""
+    g = ev_mod.grounding
+    g._LAST.update(truncated=[("111", 3391, 2500), ("222", 2600, 2500)])
+    md = ev_mod._evidence_truncation_markdown()
+    assert "2 paper(s)" in md and "2500-character cap" in md
+    assert "111: 3,391 → 2,500" in md and "222: 2,600 → 2,500" in md
+    assert f"{(3391-2500)+(2600-2500):,} chars discarded" in md
+    g.reset()
+    assert ev_mod._evidence_truncation_markdown() is None
+
+
 def test_judge_price_override_prices_luna(ev_mod):
     """litellm 1.88.1 (pinned — the leaderboard billing basis) predates
     gpt-5.6-luna; JUDGE_PRICE_OVERRIDES must price it so judge cost never

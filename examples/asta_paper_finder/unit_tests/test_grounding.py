@@ -403,3 +403,26 @@ def test_wrap_tools_records_and_preserves_interface():
     res = asyncio.run(wrapped[0]("anything"))
     assert res["data"][0]["corpusId"] == 314159  # unchanged
     assert g.check_evidence("314159", "grounded via the real wrapper")[0]
+
+
+# --- evidence char cap (PF_EVIDENCE_CHAR_CAP) -------------------------------------
+
+
+def test_evidence_cap_records_and_reader(monkeypatch):
+    """The cap machinery is exercised end-to-end by evaluator/main tests;
+    here pin the record/reset contract and that a truncated substring of
+    retrieved text still grounds (the property that makes clip-before-
+    ground sound)."""
+    g.reset()
+    g.record_tool_result('{"corpusId": 42, "abstract": "alpha beta gamma delta epsilon"}')
+    ok_full, _ = g.check_evidence("42", "alpha beta gamma delta")
+    ok_clip, _ = g.check_evidence("42", "alpha beta gamma delta"[:10])  # mid-word clip
+    assert ok_full and ok_clip, "a truncated substring must still ground"
+    # last_truncations reflects the _LAST record and reset() clears it.
+    g._LAST.update(truncated=[("42", 3391, 2500)])
+    assert g.last_truncations() == [("42", 3391, 2500)]
+    copy = g.last_truncations()
+    copy.append("mutated")
+    assert g.last_truncations() == [("42", 3391, 2500)]  # reader returns a copy
+    g.reset()
+    assert g.last_truncations() == []

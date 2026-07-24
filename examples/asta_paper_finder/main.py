@@ -103,6 +103,15 @@ DEFAULT_EVALUATION_BUDGET = 600
 # newly-documented evidence-gathering patterns could plausibly hit).
 EVAL_TIMEOUT = 1800
 
+# Default per-paper evidence char cap (training-only enforcement; 0 = off).
+# 2500 = round number near the -40%-arbitrary point on the -005 lineage
+# (mean 3,391 chars/paper; cap clips 66% of papers, -36.3% of total chars
+# if imposed arbitrarily; evolved agents selecting to fit are expected to
+# land ~-50%). Sits above the v0_0_7 lineage's ~2,000-char evidence scale,
+# which scored 0.32 semantic — the cap does not force agents below a
+# scale that has already worked.
+DEFAULT_EVIDENCE_CHAR_CAP = 2500
+
 # Key under task_config in checkpoint.json that holds PaperFinder's
 # task-specific runtime values (cost_threshold / cost_per_error).
 # Persisted by the framework every iteration via
@@ -403,7 +412,8 @@ def _set_test_cache_env(
       the mode is recorded alongside the scores.
     """
     from evaluator import (
-        CACHE_PATH_ENV, CAP_JUDGE_ENV, TRAINING_GRADER_ENV, TRAINING_GRADER_PROMPT_ENV,
+        CACHE_PATH_ENV, CAP_JUDGE_ENV, EVIDENCE_CAP_ENV,
+        TRAINING_GRADER_ENV, TRAINING_GRADER_PROMPT_ENV,
     )
 
     is_stock = judge == stock and judge_prompt == "stock"
@@ -419,6 +429,9 @@ def _set_test_cache_env(
         path = Path(tmp)
         scope = "pristine"
     os.environ[CACHE_PATH_ENV] = str(path)
+    # Test evals measure the agent as-is: no evidence cap (official runs
+    # have none; a capped-trained agent's short evidence travels by itself).
+    os.environ.pop(EVIDENCE_CAP_ENV, None)
     if is_stock:
         os.environ.pop(TRAINING_GRADER_ENV, None)
         os.environ.pop(TRAINING_GRADER_PROMPT_ENV, None)
@@ -563,6 +576,15 @@ def parse_args():
                         "inflation) — requires --training-judge "
                         "openai/gpt-5.6-luna. Run-immutable; own verdict-"
                         "cache namespace (_noprose) and test-result suffix.")
+    p.add_argument("--evidence-char-cap", type=int, default=None,
+                   help="Per-paper markdown_evidence character cap, ENFORCED "
+                        "during training only (truncated before grounding/"
+                        "judging; test evals and official runs are uncapped — "
+                        "the evolved short-evidence behavior is what "
+                        "transfers). Default 2500 (~-36%% arbitrary on the "
+                        "-005 lineage; evolved target ~-50%%). 0 disables. "
+                        "Run-immutable; clipping surfaces per-problem as "
+                        "evidence_truncation.md.")
     p.add_argument("--random-seed", type=int, default=None)
     p.add_argument("--engine-config", type=str, default=None)
     p.add_argument("--meta-evolution-strategy", default=None)
@@ -589,6 +611,7 @@ def main():
         CACHE_PATH_ENV,
         CAP_JUDGE_ENV,
         COST_PER_ERROR,
+        EVIDENCE_CAP_ENV,
         MIN_COST_THRESHOLD,
         PaperFinderEvaluator,
         TRAINING_GRADER_ENV,
@@ -653,6 +676,12 @@ def main():
         else:
             os.environ.pop(TRAINING_GRADER_ENV, None)
             os.environ.pop(TRAINING_GRADER_PROMPT_ENV, None)
+        # Evidence char cap: training-only shaping of what the judge sees.
+        if evidence_char_cap > 0:
+            os.environ[EVIDENCE_CAP_ENV] = str(evidence_char_cap)
+            logger.info(f"Evidence char cap: {evidence_char_cap} (per paper, enforced)")
+        else:
+            os.environ.pop(EVIDENCE_CAP_ENV, None)
         return str(path)
 
     # Resolve the run-immutable task knobs. These aren't known to the
@@ -749,12 +778,31 @@ def main():
             "2026-07-23 study; see README 'Training judge')."
         )
 
+    # Evidence char cap: shapes what the judge sees during training, hence
+    # part of the training scoring basis -> run-immutable. Legacy
+    # checkpoints predate the knob and ran uncapped, so a present-but-
+    # keyless store safely resolves to 0 (off) — same reasoning as
+    # judge_prompt's legacy default.
+    evidence_char_cap = _enforce_immutable_on_resume(
+        cli_value=args.evidence_char_cap,
+        stored_value=(
+            checkpoint_pfb.get("evidence_char_cap", 0) if checkpoint_pfb else None
+        ),
+        default_value=DEFAULT_EVIDENCE_CHAR_CAP,
+        name="evidence-char-cap",
+        on_resume=on_resume,
+        fmt=str,
+    )
+    if evidence_char_cap < 0:
+        raise SystemExit("--evidence-char-cap must be >= 0 (0 disables)")
+
     resolved_runtime = {
         "cost_threshold": cost_threshold,
         "cost_per_error": cost_per_error,
         "cap_judge_to_estimate": cap_judge_to_estimate,
         "training_judge": training_judge,
         "judge_prompt": judge_prompt,
+        "evidence_char_cap": evidence_char_cap,
     }
 
     def _build_cost_penalty_table(threshold: float, cpe: float) -> str:
@@ -797,6 +845,15 @@ def main():
             # Floored & buffer-aware so the doc never over-promises the
             # wall-clock the agent actually gets.
             .replace("${EVAL_TIMEOUT_MIN}", str((EVAL_TIMEOUT - 30) // 60))
+            # Enforced-cap contract line (empty when the cap is off, so the
+            # docs never describe an unenforced constraint).
+            .replace("${EVIDENCE_CAP_NOTE}", (
+                f" Evidence beyond {evidence_char_cap} characters per paper "
+                f"is truncated before the grounding check and the judge — "
+                f"text past the cap earns nothing (clipped papers are "
+                f"listed per-problem in `evidence_truncation.md`)."
+                if evidence_char_cap > 0 else ""
+            ))
         )
 
     objective = _interpolate((HERE / "objective.md").read_text().strip())

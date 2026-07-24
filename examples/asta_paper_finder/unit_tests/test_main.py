@@ -66,6 +66,7 @@ EXPECTED_PLACEHOLDERS = {
     "${COST_THRESHOLD}",
     "${COST_PER_ERROR}",
     "${EVAL_TIMEOUT_MIN}",
+    "${EVIDENCE_CAP_NOTE}",
 }
 
 
@@ -286,6 +287,41 @@ def test_write_test_results_persists_problem_diagnostics(main_mod, tmp_path):
         "test_results.json", scoring_mode={},
     )
     assert (tmp_path / "test_problems" / "semantic_9" / "submission.json").exists()
+
+
+def test_evidence_cap_is_run_immutable_and_training_only():
+    """--evidence-char-cap shapes what the judge sees during training →
+    run-immutable like the other basis knobs; test evals must clear the
+    env (official runs have no cap — the evolved behavior transfers)."""
+    resolver = [
+        node for node in ast.walk(MAIN_TREE)
+        if isinstance(node, ast.Call)
+        and getattr(node.func, "id", None) == "_enforce_immutable_on_resume"
+        and any(kw.arg == "name" and getattr(kw.value, "value", None) == "evidence-char-cap"
+                for kw in node.keywords)
+    ]
+    assert resolver, "evidence-char-cap must go through _enforce_immutable_on_resume"
+    packs = [
+        node for node in ast.walk(MAIN_TREE)
+        if isinstance(node, ast.Assign)
+        and any(getattr(t, "id", None) == "resolved_runtime" for t in node.targets)
+    ]
+    assert any(getattr(k, "value", None) == "evidence_char_cap" for k in packs[0].value.keys)
+    assert "DEFAULT_EVIDENCE_CHAR_CAP = 2500" in MAIN_SRC
+
+
+def test_test_cache_env_clears_evidence_cap(main_mod, _judge_env, tmp_path, monkeypatch):
+    from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
+    from evaluator import EVIDENCE_CAP_ENV
+    monkeypatch.setenv(EVIDENCE_CAP_ENV, "2500")
+    main_mod._set_test_cache_env(
+        "test_set", runs_dir=str(tmp_path), shared=True, cap=True,
+        judge=GRADER_MODEL_NAME, stock=GRADER_MODEL_NAME,
+    )
+    import os as _os
+    assert EVIDENCE_CAP_ENV not in _os.environ, (
+        "test evals must be uncapped — they measure the agent as-is"
+    )
 
 
 def test_judge_prompt_basis_slug_and_filenames(main_mod):
