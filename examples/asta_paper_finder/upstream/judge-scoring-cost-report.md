@@ -62,11 +62,29 @@ tokens. At output:input price ratios of 4-6x, the judge's OUTPUT is
 40-69% of total judging cost — and it consists almost entirely of the
 mandated per-criterion `relevant_snippet` and the `relevance_summary`,
 neither of which the scorer reads (only the relevance labels enter the
-metric). Making those fields optional or tightly word-capped would cut
-every submitter's judging bill roughly in half with no change to what
-the metric consumes — though the prose may act as chain-of-thought for
-the labels, so the change should be calibrated and version-bumped like
-any judge-prompt change.
+metric). We measured whether the prose is load-bearing, per judge model
+(3-arm design: stock prompt twice for a same-prompt noise floor, plus a
+labels-only prompt, 148 identical docs each):
+
+- **gpt-4o-2024-11-20: the prose IS load-bearing.** Labels-only judging
+  inflated Perfectly-Relevant verdicts +18.5% (54 -> 64), far beyond the
+  rerun noise floor (54 -> 54). Do not drop the fields for the current
+  judge without recalibrating the metric.
+- **gpt-5.6-luna: it is not.** Labels-only stayed at the rerun noise
+  floor on every measure (agreement 0.811 vs floor 0.838; Perfect drift
+  +9% vs the floor's own +6%), while cutting output tokens 65% —
+  $0.0022/verdict all-in, ~5.7x cheaper than the current stock judge on
+  evidence-rich submissions.
+- Incidentally measured: gpt-4o is the noisier judge — on identical
+  inputs it churns 22% of its own Perfect verdicts between reruns (luna:
+  9%), and luna matches gpt-4o's Perfect set (0.82) better than gpt-4o
+  reruns match themselves (0.778). Aggregate scores are stabler than
+  per-verdict agreement suggests, but per-paper verdicts carry
+  substantial judge noise.
+
+Net recommendation: the affordable path is not trimming the current
+judge's output (metric-shifting) but a calibrated modern judge with a
+labels-only prompt — with any such change version-bumped.
 
 (For completeness: we also measured the submitter-side alternative of
 truncating evidence text — it trades badly. Halving evidence chars cut
