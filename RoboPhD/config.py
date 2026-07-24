@@ -17,6 +17,15 @@ SUPPORTED_MODELS = {
             'cache_read': 1.00     # $1/MTok (cache hits & refreshes)
         }
     },
+    'opus-5': {
+        'name': 'claude-opus-5',  # plain ID for pricing/display; the 1M [1m] variant lives in CLAUDE_CLI_MODEL_MAP
+        'pricing': {              # same rates as opus-4.8
+            'input': 5.00,       # $5/MTok (base input)
+            'output': 25.00,     # $25/MTok
+            'cache_write': 6.25,  # $6.25/MTok (5m cache writes)
+            'cache_read': 0.50    # $0.50/MTok (cache hits & refreshes)
+        }
+    },
     'opus-4.8': {
         'name': 'claude-opus-4-8',  # plain ID for pricing/display; the 1M [1m] variant lives in CLAUDE_CLI_MODEL_MAP
         'pricing': {                 # official opus-4.8 rates (same as 4.7). Evolution-CLI cost comes from total_cost_usd; GEPA may register these with litellm (runner_utils._ensure_litellm_pricing)
@@ -88,6 +97,7 @@ SUPPORTED_MODELS = {
 # preferred so cache keys stay stable when aliases roll forward.
 CLAUDE_CLI_MODEL_MAP = {
     'fable-5': 'claude-fable-5[1m]',    # [1m] = explicit 1M-context request for the evolution CLI session
+    'opus-5': 'claude-opus-5[1m]',      # [1m] = explicit 1M-context request for the evolution CLI session
     'opus-4.8': 'claude-opus-4-8[1m]',
     'opus-4.7': 'claude-opus-4-7',
     'opus-4.6': 'claude-opus-4-6[1m]',
@@ -186,6 +196,33 @@ def resolve_model_name(model: str) -> str:
     return model
 
 
+# Name fragments that mark a model identifier as Claude-family. Used only by
+# validate_model_alias to tell a mistyped/retired Claude handle apart from a
+# legitimately-arbitrary LM Studio name (e.g. 'qwen/qwen3-coder-30b').
+_CLAUDE_FAMILY_PREFIXES = ("claude", "opus", "sonnet", "haiku", "fable", "mythos")
+
+
+def validate_model_alias(model: str) -> None:
+    """Raise if a Claude-family model name isn't a registered alias.
+
+    Unregistered names fall through to the LM Studio endpoint by design
+    (see get_lmstudio_env), which silently misroutes a typo'd or retired
+    Claude handle to localhost:1234 instead of failing. Non-Claude names
+    pass through untouched.
+    """
+    if model in CLAUDE_CLI_MODEL_MAP or model in SUPPORTED_MODELS:
+        return
+    if not model.lower().startswith(_CLAUDE_FAMILY_PREFIXES):
+        return
+    raise ValueError(
+        f"Unknown Claude model alias: {model!r}\n"
+        f"Registered aliases: {sorted(CLAUDE_CLI_MODEL_MAP)}\n"
+        f"Retired aliases are removed rather than re-pointed, so an old handle "
+        f"fails here instead of silently running on a different model. Non-Claude "
+        f"names route to LM Studio and are not checked."
+    )
+
+
 def get_lmstudio_env(model: str, base_url: str = LMSTUDIO_DEFAULT_BASE_URL) -> Optional[Dict[str, str]]:
     """Return env overrides for LM Studio models, or None for Anthropic models.
 
@@ -216,7 +253,10 @@ def build_evolution_env(
 ) -> Dict[str, str]:
     """Build the env dict for an evolution Claude CLI invocation.
 
-    Combines three concerns historically tangled at every call site:
+    Combines concerns historically tangled at every call site:
+      * Alias validation (see validate_model_alias) — this is the choke
+        point every CLI engine funnels through, so a bad Claude handle
+        cannot reach the LM Studio fallback from any of them.
       * LM Studio routing for non-Anthropic models (None for Anthropic).
       * Sandbox env var ROBOPHD_EXPERIMENT_DIR (must be ABSOLUTE — the
         sandbox hook resolves it against its own cwd, which is the
@@ -234,6 +274,7 @@ def build_evolution_env(
     site doesn't reach the other two (e.g., commits f75228e + aa548a4,
     each of which had to patch three identical blocks).
     """
+    validate_model_alias(model)
     env: Dict[str, str] = get_lmstudio_env(model) or {}
     if experiment_dir is not None:
         env["ROBOPHD_EXPERIMENT_DIR"] = str(Path(experiment_dir).resolve())

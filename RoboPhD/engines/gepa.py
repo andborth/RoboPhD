@@ -32,7 +32,7 @@ def run_gepa(
 ) -> OptimizeResult:
     """Run GEPA optimization and return an OptimizeResult."""
     from RoboPhD.api import OptimizeResult
-    from RoboPhD.config import API_KEY_ENV_VAR
+    from RoboPhD.config import API_KEY_ENV_VAR, validate_model_alias
     from RoboPhD.runner_utils import to_litellm_model, CostTrackingLM
     from RoboPhD.candidate_utils import materialize_candidate
 
@@ -82,6 +82,7 @@ def run_gepa(
     gepa_config = _GEPAConfig(engine=engine_cfg)
 
     # Reflection model
+    validate_model_alias(cfg.reflection_model)
     litellm_model = to_litellm_model(cfg.reflection_model)
     reflection_lm = CostTrackingLM(
         litellm_model,

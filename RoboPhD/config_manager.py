@@ -14,6 +14,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from RoboPhD.config import validate_model_alias
+
 
 
 # Parameters that cannot change after iteration 1 (affect cache identity, data loading, etc.)
@@ -72,7 +74,7 @@ class ConfigManager:
             "agents_per_iteration": 3,
 
             # Models
-            "evolution_model": "opus-4.8",
+            "evolution_model": "opus-5",
 
             # Evolution parameters (NO LONGER SPECIAL!)
             "evolution_strategy": "use_your_judgment",
@@ -81,7 +83,7 @@ class ConfigManager:
             "meta_evolution_strategy": None,       # Which meta-evolution strategy to use (None = off)
             "meta_evolution_first_iteration": 4,   # First iteration at which meta-evolution fires
             "meta_evolution_cadence": 3,           # Iterations between meta-evolution firings
-            "meta_evolution_model": "opus-4.8",    # Model for meta-evolution
+            "meta_evolution_model": "opus-5",      # Model for meta-evolution
             "meta_evolution_domain": None,         # Override domain name for meta-evo prompts (e.g., "codegen" when domain="external")
             "dollar_budget": None,         # Total budget in dollars (default: no limit)
             "evaluation_budget": None,             # Max fresh evaluations across all iterations (default: no limit)
@@ -787,6 +789,16 @@ class ConfigManager:
                 f"{context} contains unknown parameters: {sorted(unknown_params)}\n"
                 f"Valid parameters are: {sorted(defaults.keys())}"
             )
+
+        # Catch a bad model handle here rather than at the first evolution call,
+        # which is an iteration's worth of evaluation later. build_evolution_env
+        # re-checks as the choke point for engines that bypass ConfigManager.
+        for key in ("evolution_model", "meta_evolution_model"):
+            if config.get(key) is not None:
+                try:
+                    validate_model_alias(config[key])
+                except ValueError as e:
+                    raise ValueError(f"{context} sets an invalid {key}.\n{e}") from e
 
     def _validate_immutable_params(self,
                                    iteration: int,

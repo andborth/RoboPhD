@@ -48,14 +48,14 @@ class RoboPhDConfig:
 
     # Evolution
     evolution_strategy: str = "use_your_judgment"
-    evolution_model: str = "opus-4.8"
+    evolution_model: str = "opus-5"
     evolution_timeout: int = 3600
     """Seconds per evolution session (Claude Code CLI subprocess)."""
 
     # Meta-evolution
     meta_evolution_strategy: Optional[str] = None
     """Meta-evolution strategy name (e.g. ``train_a_winner``); ``None`` disables meta-evolution."""
-    meta_evolution_model: str = "opus-4.8"
+    meta_evolution_model: str = "opus-5"
     """Model for meta-evolution sessions (Claude Code CLI subprocess)."""
     meta_evolution_first_iteration: int = 4
     """First iteration at which meta-evolution fires."""
@@ -216,7 +216,7 @@ class GEPAConfig:
     val_size: int = 100
     """Validation set size. Paper results showed 100 outperforms 200."""
 
-    reflection_model: str = "opus-4.8"
+    reflection_model: str = "opus-5"
     """Model for GEPA reflection (mutation proposals)."""
 
     max_workers: Optional[int] = None
@@ -266,7 +266,7 @@ class AutoresearchConfig:
     val_size: int = 100
     """Validation set size. Paper results showed 100 outperforms 200."""
 
-    model: str = "opus-4.8"
+    model: str = "opus-5"
     """Claude Code model for the autonomous session."""
 
     max_workers: Optional[int] = None
