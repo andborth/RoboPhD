@@ -102,7 +102,13 @@ JUDGE_MODEL_IDS = frozenset({
 # way it would not be for solver pricing. Rates from OpenAI's pricing page,
 # 2026-07-20. cached_input applies to input_tokens_cache_read (measured
 # essentially unused by the astabench judge prompt — 0.007% on the v0_0_7
-# official run — but priced correctly if it ever engages).
+# official run — but priced correctly if it ever engages). KNOWN GAP:
+# the gpt-5.6 family also BILLS cache writes at 1.25x input (older
+# models write free); we don't price writes because Inspect's pinned
+# OpenAI provider predates the cache_write_tokens usage field (observed
+# always 0 alongside nonzero reads). At the ~1% caching activity the
+# judge prompt structure allows, the under-billing is <<1% of judge
+# cost — revisit only if caching ever becomes material.
 JUDGE_PRICE_OVERRIDES = {
     "gpt-5.6-luna": {
         "input_cost_per_token": 1.00e-6,
