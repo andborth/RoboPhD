@@ -145,3 +145,48 @@ def install() -> None:
     replaced. Idempotent."""
     from astabench.evals.paper_finder import relevance as rel
     rel.extract_json_from_response = _lenient_extract_json
+
+
+def install_prompt_reorder() -> None:
+    """EXPERIMENTAL — measured and NOT adopted (2026-07-23); kept as the
+    reproducible artifact behind upstream/judge-scoring-cost-report.md.
+
+    Reorders the judge-prompt payload so the stable part leads — intended
+    to enable OpenAI prompt caching across a query's per-paper judge
+    calls. Measurement killed it on both axes: cache reads only improved
+    1.0% -> 1.8% (astabench fires a query's judge calls concurrently, so
+    no request finishes early enough to write the prefix cache for its
+    siblings — a warm-first-call serialization would also be needed), and
+    the reorder is NOT metric-neutral (same 113 docs, same judge: 76.1%
+    exact agreement, Perfect count 35 -> 42). Do not wire into
+    _apply_training_grader without a fresh calibration pass.
+
+    Astabench's judge prompt embeds the RelevanceJudgementInput dict repr
+    with `document` constructed FIRST: the per-paper text starts diverging
+    right after ~450 tokens of shared instructions, under OpenAI's
+    1024-token cache-eligibility floor — measured 0.007% cache hits across
+    46.2M judge input tokens on the v0_0_7 official run. Building the dict
+    criteria-first makes [instructions + criteria] the shared prefix for
+    all ~250 calls of a query. Content is identical; only dict-repr key
+    order changes. Alternate-judge (training/internal) paths only — stock
+    evals stay byte-identical to official scoring. Verdict stability under
+    the reorder is gated by the same calibration discipline as the judge
+    switch itself."""
+    from astabench.evals.paper_finder import relevance as rel
+
+    def _format_criteria_first(documents, criteria_to_use):
+        import json as _json
+        formatted_criteria = _json.dumps(
+            [{"name": r.name, "description": r.description} for r in criteria_to_use],
+            indent=2,
+        )
+        return [
+            rel.RelevanceJudgementInput(
+                criteria=formatted_criteria,
+                doc_id=doc.corpus_id,
+                document=doc.markdown,
+            )
+            for doc in documents
+        ]
+
+    rel._format_documents_for_relevance_judgement = _format_criteria_first
