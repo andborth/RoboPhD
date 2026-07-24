@@ -324,6 +324,35 @@ def test_test_cache_env_clears_evidence_cap(main_mod, _judge_env, tmp_path, monk
     )
 
 
+def test_training_cache_env_names_resolve():
+    """_set_training_cache_env is a closure inside main() executed only at
+    real launch time — a name it references but main() never imports is a
+    NameError that unit tests of the module-level helpers can't catch
+    (this exact bug shipped: TRAINING_GRADER_PROMPT_ENV was used but not
+    imported, crashing the first full-stack launch). Statically verify
+    every evaluator env-constant the closure loads is imported in main()."""
+    main_fn = next(n for n in ast.walk(MAIN_TREE)
+                   if isinstance(n, ast.FunctionDef) and n.name == "main")
+    imported = {
+        alias.asname or alias.name
+        for node in ast.walk(main_fn)
+        if isinstance(node, ast.ImportFrom) and node.module == "evaluator"
+        for alias in node.names
+    }
+    cache_fn = next(n for n in ast.walk(main_fn)
+                    if isinstance(n, ast.FunctionDef) and n.name == "_set_training_cache_env")
+    used = {
+        node.id for node in ast.walk(cache_fn)
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        and (node.id.endswith("_ENV"))
+    }
+    missing = used - imported
+    assert not missing, (
+        f"_set_training_cache_env references env constants main() never "
+        f"imports (NameError at launch): {sorted(missing)}"
+    )
+
+
 def test_judge_prompt_basis_slug_and_filenames(main_mod):
     stock = "openai/gpt-4o-2024-11-20"
     luna = "openai/gpt-5.6-luna"

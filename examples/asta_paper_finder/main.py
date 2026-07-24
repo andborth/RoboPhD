@@ -615,6 +615,7 @@ def main():
         MIN_COST_THRESHOLD,
         PaperFinderEvaluator,
         TRAINING_GRADER_ENV,
+        TRAINING_GRADER_PROMPT_ENV,
         _fmt_cost,
         load_paper_finder,
     )
