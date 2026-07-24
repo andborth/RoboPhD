@@ -106,3 +106,28 @@ def test_calibration_script_uses_shared_module():
     assert "from _judge_normalize import" in src
     assert "def _lenient_extract_json" not in src
     assert "def _normalize_judgement_shape" not in src
+
+
+def test_no_prose_template_and_install(jn, monkeypatch):
+    """The labels-only template must drop the prose mandates (the fields
+    the scorer never reads) while keeping the judging instructions; the
+    shape normalizer backfills the pydantic-required fields, so a
+    labels-only response parses into a valid judgement."""
+    t = jn.NO_PROSE_JUDGE_TEMPLATE
+    assert "relevant_snippet" not in t and "relevance_summary" not in t
+    assert "Perfectly Relevant" in t and "{criteria}" in t
+    from astabench.evals.paper_finder import relevance
+    monkeypatch.setattr(
+        relevance,
+        "relevance_criteria_judgement_prompt_with_relevant_snippets_after",
+        relevance.relevance_criteria_judgement_prompt_with_relevant_snippets_after,
+    )
+    jn.install_no_prose_prompt()
+    assert (relevance.relevance_criteria_judgement_prompt_with_relevant_snippets_after
+            is jn.NO_PROSE_JUDGE_TEMPLATE)
+    # A labels-only response survives the full extract+shape pipeline.
+    out = jn._lenient_extract_json('{"criteria": {"C1": {"relevance": "Perfectly Relevant"}}}')
+    assert out["criteria"]["C1"]["relevant_snippet"] is None
+    assert out["relevance_summary"] is None
+    from astabench.evals.paper_finder.relevance import RelevanceJudgementOutput
+    RelevanceJudgementOutput(**out)  # pydantic accepts the normalized shape

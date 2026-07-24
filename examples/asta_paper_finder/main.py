@@ -317,12 +317,30 @@ TRAINING_JUDGE_CHOICES = [
 ]
 
 
+# Judge-prompt profiles. "no-prose" drops the snippet/summary output the
+# scorer never reads — validated at the rerun-noise floor for luna,
+# REJECTED for gpt-4o (+18.5% Perfect inflation), hence luna-only (see
+# README "Training judge"). A profile is part of the verdict BASIS: it
+# gets its own cache namespace and test-result filename suffix.
+JUDGE_PROMPT_CHOICES = ["stock", "no-prose"]
+
+
 def _judge_slug(judge: str) -> str:
     """Filesystem-safe judge-model slug used in judge-cache filenames."""
     return re.sub(r"[^A-Za-z0-9._-]+", "_", judge)
 
 
-def _test_results_filename(eval_agent: str | None, judge: str, stock: str) -> str:
+def _judge_basis_slug(judge: str, judge_prompt: str) -> str:
+    """Cache-namespace slug for the full judge BASIS (model + prompt
+    profile). A prompt variant produces different verdicts, so its cache
+    file must never be shared with the stock-prompt basis."""
+    slug = _judge_slug(judge)
+    return slug if judge_prompt == "stock" else f"{slug}_noprose"
+
+
+def _test_results_filename(
+    eval_agent: str | None, judge: str, stock: str, judge_prompt: str = "stock"
+) -> str:
     """Result-file basename for a test eval.
 
     Stock-judge evals keep the historical names (test_results.json /
@@ -332,8 +350,11 @@ def _test_results_filename(eval_agent: str | None, judge: str, stock: str) -> st
     be mistaken for) a stock GPT-4o evaluation of the same agent, and a
     stock re-eval can be added alongside later."""
     base = f"test_results_{eval_agent}" if eval_agent else "test_results"
-    if judge != stock:
-        base += f".judge_{_judge_slug(judge.split('/', 1)[-1])}"
+    if judge != stock or judge_prompt != "stock":
+        model_part = _judge_slug(judge.split("/", 1)[-1])
+        if judge_prompt != "stock":
+            model_part += "-noprose"
+        base += f".judge_{model_part}"
     return base + ".json"
 
 
@@ -343,7 +364,8 @@ def _judge_cache_dir(runs_dir: str) -> Path:
 
 
 def _set_test_cache_env(
-    label: str, *, runs_dir: str, shared: bool, cap: bool, judge: str, stock: str
+    label: str, *, runs_dir: str, shared: bool, cap: bool, judge: str, stock: str,
+    judge_prompt: str = "stock",
 ) -> dict:
     """Configure the judge env for a test / formal eval and return the
     scoring-mode record for test_results.json.
@@ -380,11 +402,15 @@ def _set_test_cache_env(
       uncapped scoring (the rank term sees fewer grades), which is why
       the mode is recorded alongside the scores.
     """
-    from evaluator import CACHE_PATH_ENV, CAP_JUDGE_ENV, TRAINING_GRADER_ENV
+    from evaluator import (
+        CACHE_PATH_ENV, CAP_JUDGE_ENV, TRAINING_GRADER_ENV, TRAINING_GRADER_PROMPT_ENV,
+    )
 
-    is_stock = judge == stock
+    is_stock = judge == stock and judge_prompt == "stock"
     if shared:
-        path = _judge_cache_dir(runs_dir) / f"shared_test_{_judge_slug(judge)}.json"
+        path = _judge_cache_dir(runs_dir) / (
+            f"shared_test_{_judge_basis_slug(judge, judge_prompt)}.json"
+        )
         scope = "shared"
     else:
         fd, tmp = tempfile.mkstemp(prefix=f"pf_pristine_{label}_", suffix=".json")
@@ -395,8 +421,13 @@ def _set_test_cache_env(
     os.environ[CACHE_PATH_ENV] = str(path)
     if is_stock:
         os.environ.pop(TRAINING_GRADER_ENV, None)
+        os.environ.pop(TRAINING_GRADER_PROMPT_ENV, None)
     else:
         os.environ[TRAINING_GRADER_ENV] = judge
+        if judge_prompt != "stock":
+            os.environ[TRAINING_GRADER_PROMPT_ENV] = judge_prompt
+        else:
+            os.environ.pop(TRAINING_GRADER_PROMPT_ENV, None)
     if cap:
         os.environ[CAP_JUDGE_ENV] = "1"
     else:
@@ -416,6 +447,7 @@ def _set_test_cache_env(
     return {
         **record_extra,
         "judge_model": judge,
+        "judge_prompt": judge_prompt,
         "judge_cache": scope,
         "judge_cache_path": str(path),
         "cap_judge_to_estimate": cap,
@@ -521,6 +553,16 @@ def parse_args():
                         "written to judge-suffixed files. Official "
                         "submissions always use stock GPT-4o regardless. "
                         "Each judge has its own verdict-cache namespace.")
+    p.add_argument("--judge-prompt", type=str, default=None,
+                   choices=JUDGE_PROMPT_CHOICES,
+                   help="Judge-prompt profile for the ALTERNATE judge only. "
+                        "'no-prose' drops the snippet/summary output the "
+                        "scorer never reads: validated at the rerun-noise "
+                        "floor for gpt-5.6-luna (output -65%%, ~2x cheaper "
+                        "judging), REJECTED for gpt-4o (+18.5%% Perfect "
+                        "inflation) — requires --training-judge "
+                        "openai/gpt-5.6-luna. Run-immutable; own verdict-"
+                        "cache namespace (_noprose) and test-result suffix.")
     p.add_argument("--random-seed", type=int, default=None)
     p.add_argument("--engine-config", type=str, default=None)
     p.add_argument("--meta-evolution-strategy", default=None)
@@ -576,7 +618,7 @@ def main():
         # Resolved run-immutable value (persisted in paper_finder_runtime),
         # NOT the raw CLI flag — a resume restores the run's original judge.
         judge = training_judge
-        slug = _judge_slug(judge)
+        slug = _judge_basis_slug(judge, judge_prompt)
         cache_dir = _judge_cache_dir(args.runs_dir)
         if not args.no_shared_judge_cache:
             path = cache_dir / f"shared_{slug}.json"
@@ -603,9 +645,14 @@ def main():
         # (strict-parser parity with official scoring).
         if judge != _STOCK_GRADER:
             os.environ[TRAINING_GRADER_ENV] = judge
-            logger.info(f"Training relevance judge: {judge}")
+            if judge_prompt != "stock":
+                os.environ[TRAINING_GRADER_PROMPT_ENV] = judge_prompt
+            else:
+                os.environ.pop(TRAINING_GRADER_PROMPT_ENV, None)
+            logger.info(f"Training relevance judge: {judge} (prompt: {judge_prompt})")
         else:
             os.environ.pop(TRAINING_GRADER_ENV, None)
+            os.environ.pop(TRAINING_GRADER_PROMPT_ENV, None)
         return str(path)
 
     # Resolve the run-immutable task knobs. These aren't known to the
@@ -677,11 +724,37 @@ def main():
             "shell that launches the run (see README 'Credentials')."
         )
 
+    # Judge-prompt profile: part of the verdict basis, so run-immutable
+    # like the judge itself. Legacy checkpoints predate the knob and ALL
+    # ran the stock prompt (the feature didn't exist), so a present-but-
+    # keyless store safely resolves to "stock" — unlike training_judge,
+    # where either value was possible pre-persistence and missing is a
+    # hard error.
+    judge_prompt = _enforce_immutable_on_resume(
+        cli_value=args.judge_prompt,
+        stored_value=(
+            checkpoint_pfb.get("judge_prompt", "stock") if checkpoint_pfb else None
+        ),
+        default_value="stock",
+        name="judge-prompt",
+        on_resume=on_resume,
+        fmt=str,
+    )
+    if judge_prompt != "stock" and (training_judge or _STOCK_GRADER) == _STOCK_GRADER:
+        raise SystemExit(
+            "--judge-prompt no-prose requires the alternate judge "
+            "(--training-judge openai/gpt-5.6-luna). The stock GPT-4o basis "
+            "must stay byte-identical to official scoring — and gpt-4o "
+            "FAILED the no-prose calibration (+18.5% Perfect inflation, "
+            "2026-07-23 study; see README 'Training judge')."
+        )
+
     resolved_runtime = {
         "cost_threshold": cost_threshold,
         "cost_per_error": cost_per_error,
         "cap_judge_to_estimate": cap_judge_to_estimate,
         "training_judge": training_judge,
+        "judge_prompt": judge_prompt,
     }
 
     def _build_cost_penalty_table(threshold: float, cpe: float) -> str:
@@ -797,6 +870,7 @@ def main():
             cap=cap_judge_to_estimate,
             judge=args.training_judge or _STOCK_GRADER,
             stock=_STOCK_GRADER,
+            judge_prompt=args.judge_prompt or "stock",
         )
         test_data = [s.model_dump() for s in load_paper_finder("test")]
         logger.info(f"Test set: {len(test_data)} samples")
@@ -825,7 +899,8 @@ def main():
 
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
         results_filename = _test_results_filename(
-            args.eval_agent, args.training_judge or _STOCK_GRADER, _STOCK_GRADER
+            args.eval_agent, args.training_judge or _STOCK_GRADER, _STOCK_GRADER,
+            judge_prompt=args.judge_prompt or "stock",
         )
         summary_path, per_problem_path = _write_test_results(
             eval_result=eval_result,
@@ -972,6 +1047,7 @@ def main():
                 cap=cap_judge_to_estimate,
                 judge=args.training_judge or _STOCK_GRADER,
                 stock=_STOCK_GRADER,
+                judge_prompt=args.judge_prompt or "stock",
             )
             test_data = [s.model_dump() for s in load_paper_finder("test")]
             logger.info(f"Test evaluation: {len(test_data)} samples")
@@ -988,7 +1064,8 @@ def main():
                 output_dir=result.experiment_dir,
                 agent_name="best",
                 summary_filename=_test_results_filename(
-                    None, args.training_judge or _STOCK_GRADER, _STOCK_GRADER
+                    None, args.training_judge or _STOCK_GRADER, _STOCK_GRADER,
+                    judge_prompt=args.judge_prompt or "stock",
                 ),
                 scoring_mode=scoring_mode,
             )

@@ -147,6 +147,49 @@ def install() -> None:
     rel.extract_json_from_response = _lenient_extract_json
 
 
+# Labels-only judge prompt: identical judging instructions, but drops the
+# mandated per-criterion `relevant_snippet` and the `relevance_summary` —
+# prose the scorer never reads (only the relevance labels enter the
+# metric). Validated for gpt-5.6-luna on 2026-07-23 (3-arm study, 148
+# stored docs, same-prompt rerun as noise floor): labels-only sat AT the
+# floor on every measure (agreement 0.811 vs floor 0.838; Perfect drift
+# +9% vs the floor's own +6%) while cutting output tokens 65% —
+# $0.0022/verdict, ~5.7x cheaper than the stock GPT-4o basis. UNSAFE for
+# gpt-4o (+18.5% Perfect inflation vs a stable 54->54 floor: the
+# snippet-writing is chain-of-thought for the older model) — enforcement
+# lives in main.py (--judge-prompt no-prose requires the luna judge) and
+# in _apply_training_grader (refuses a prompt profile without a judge
+# override). The shape normalizer backfills the pydantic-required
+# snippet/summary fields as nulls, so astabench's parsing is untouched.
+NO_PROSE_JUDGE_TEMPLATE = """
+Judge how relevant the following paper is to each of the provided criteria. For each criterion, consider its entire description when making your judgement.
+
+For each criterion, provide one output:
+- `relevance` (str): one of "Perfectly Relevant", "Somewhat Relevant", "Not Relevant".
+
+Output a JSON:
+- top-level key `criteria`. Under it, for every criterion name (exactly as given in the provided criteria), there should be an object containing one field: `relevance`.
+
+Criteria:
+```
+{criteria}
+```"""
+
+
+def install_no_prose_prompt() -> None:
+    """Patch the judge prompt template to the labels-only variant.
+
+    relevance.py reads the template as a module global at call time, so
+    reassigning the attribute is enough. Idempotent. Callers must pair
+    this with a judge-basis-distinct verdict-cache namespace (a prompt
+    variant is a different verdict basis; verdicts from different prompts
+    must never share a cache file)."""
+    from astabench.evals.paper_finder import relevance as rel
+    rel.relevance_criteria_judgement_prompt_with_relevant_snippets_after = (
+        NO_PROSE_JUDGE_TEMPLATE
+    )
+
+
 def install_prompt_reorder() -> None:
     """EXPERIMENTAL — measured and NOT adopted (2026-07-23); kept as the
     reproducible artifact behind upstream/judge-scoring-cost-report.md.

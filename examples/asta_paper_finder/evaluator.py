@@ -275,6 +275,13 @@ _apply_cache_redirect()
 # study (_check_judge_calibration.py) showing high GPT-4o agreement — training
 # optimizes against this judge but test scores on GPT-4o.
 TRAINING_GRADER_ENV = "PF_TRAINING_GRADER_MODEL"
+# Judge-prompt profile for the alternate judge: "no-prose" drops the
+# snippet/summary prose the scorer never reads (validated for luna only —
+# see _judge_normalize.NO_PROSE_JUDGE_TEMPLATE). Only honored alongside
+# TRAINING_GRADER_ENV; a profile without a judge override is a hard error
+# (the stock GPT-4o basis must stay byte-identical to official scoring,
+# and 4o failed the no-prose calibration outright).
+TRAINING_GRADER_PROMPT_ENV = "PF_TRAINING_GRADER_PROMPT"
 
 
 def _apply_training_grader() -> None:
@@ -294,7 +301,16 @@ def _apply_training_grader() -> None:
     JUDGE_PRICE_OVERRIDES entry — an unpriced grader would silently zero
     the reported judge cost."""
     model = os.environ.get(TRAINING_GRADER_ENV)
+    prompt_profile = os.environ.get(TRAINING_GRADER_PROMPT_ENV)
     if not model:
+        if prompt_profile:
+            raise RuntimeError(
+                f"{TRAINING_GRADER_PROMPT_ENV}={prompt_profile!r} is set without "
+                f"{TRAINING_GRADER_ENV}. A judge-prompt profile only applies to "
+                f"the alternate training judge — the stock GPT-4o basis must "
+                f"stay byte-identical to official scoring (and gpt-4o failed "
+                f"the no-prose calibration: +18.5% Perfect inflation)."
+            )
         return
     if model not in JUDGE_MODEL_IDS:
         raise RuntimeError(
@@ -307,6 +323,13 @@ def _apply_training_grader() -> None:
     _pf_rel.GRADER_MODEL_NAME = model
     import _judge_normalize
     _judge_normalize.install()
+    if prompt_profile:
+        if prompt_profile != "no-prose":
+            raise RuntimeError(
+                f"unknown {TRAINING_GRADER_PROMPT_ENV}={prompt_profile!r} "
+                f"(supported: 'no-prose')"
+            )
+        _judge_normalize.install_no_prose_prompt()
     bare = model.split("/", 1)[-1]
     if _bundled_price_map().get(bare) is None and bare not in JUDGE_PRICE_OVERRIDES:
         logger.warning(

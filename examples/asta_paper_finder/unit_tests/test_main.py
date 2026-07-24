@@ -183,6 +183,7 @@ def test_test_cache_env_shared_capped_default(main_mod, _judge_env, tmp_path):
     assert grader_env not in os.environ, "test evals must use the stock grader"
     assert mode == {
         "judge_model": GRADER_MODEL_NAME,
+        "judge_prompt": "stock",
         "judge_cache": "shared",
         "judge_cache_path": str(path),
         "cap_judge_to_estimate": True,
@@ -285,6 +286,54 @@ def test_write_test_results_persists_problem_diagnostics(main_mod, tmp_path):
         "test_results.json", scoring_mode={},
     )
     assert (tmp_path / "test_problems" / "semantic_9" / "submission.json").exists()
+
+
+def test_judge_prompt_basis_slug_and_filenames(main_mod):
+    stock = "openai/gpt-4o-2024-11-20"
+    luna = "openai/gpt-5.6-luna"
+    assert main_mod._judge_basis_slug(luna, "stock") == main_mod._judge_slug(luna)
+    assert main_mod._judge_basis_slug(luna, "no-prose").endswith("_noprose")
+    f = main_mod._test_results_filename
+    assert f(None, luna, stock, judge_prompt="no-prose") == \
+        "test_results.judge_gpt-5.6-luna-noprose.json"
+    assert f(None, luna, stock, judge_prompt="stock") == \
+        "test_results.judge_gpt-5.6-luna.json"
+    assert f(None, stock, stock) == "test_results.json"
+
+
+def test_test_cache_env_no_prose_basis(main_mod, _judge_env, tmp_path):
+    """luna + no-prose is a distinct verdict basis: its own cache file,
+    both env vars set, and the profile recorded in scoring_mode."""
+    cache_env, cap_env, grader_env = _judge_env
+    import os as _os
+    from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
+    from evaluator import TRAINING_GRADER_PROMPT_ENV
+    luna = "openai/gpt-5.6-luna"
+    mode = main_mod._set_test_cache_env(
+        "eval_only", runs_dir=str(tmp_path), shared=True, cap=True,
+        judge=luna, stock=GRADER_MODEL_NAME, judge_prompt="no-prose",
+    )
+    path = Path(_os.environ[cache_env])
+    assert path.name == f"shared_test_{main_mod._judge_slug(luna)}_noprose.json"
+    assert _os.environ.get(grader_env) == luna
+    assert _os.environ.get(TRAINING_GRADER_PROMPT_ENV) == "no-prose"
+    assert mode["judge_prompt"] == "no-prose"
+    assert "NOT comparable" in mode["judge_note"]
+
+
+def test_judge_prompt_choices_and_runtime_packing():
+    """--judge-prompt is choice-limited and rides paper_finder_runtime."""
+    import ast as _ast
+    packs = [
+        node for node in _ast.walk(MAIN_TREE)
+        if isinstance(node, _ast.Assign)
+        and any(getattr(t, "id", None) == "resolved_runtime" for t in node.targets)
+    ]
+    keys = {getattr(k, "value", None) for k in packs[0].value.keys}
+    assert "judge_prompt" in keys
+    src = MAIN_SRC
+    assert 'choices=JUDGE_PROMPT_CHOICES' in src
+    assert '--judge-prompt no-prose requires the alternate judge' in src
 
 
 def test_training_judge_is_run_immutable_and_persisted():

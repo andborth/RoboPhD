@@ -931,6 +931,40 @@ def test_extract_emits_judge_repairs_as_string_diagnostic(ev_mod, monkeypatch,
     assert "1 recovered" in md and "5 judge responses" in md
 
 
+def test_apply_training_grader_no_prose_profile(ev_mod, monkeypatch):
+    """PF_TRAINING_GRADER_PROMPT=no-prose swaps the judge template — but
+    only alongside the judge override; alone it must hard-error (the
+    stock GPT-4o basis stays byte-identical to official scoring, and 4o
+    failed the no-prose calibration)."""
+    import _judge_normalize
+    from astabench.evals.paper_finder import relevance
+    monkeypatch.setattr(relevance, "GRADER_MODEL_NAME", relevance.GRADER_MODEL_NAME)
+    monkeypatch.setattr(
+        relevance, "extract_json_from_response", relevance.extract_json_from_response
+    )
+    monkeypatch.setattr(
+        relevance,
+        "relevance_criteria_judgement_prompt_with_relevant_snippets_after",
+        relevance.relevance_criteria_judgement_prompt_with_relevant_snippets_after,
+    )
+    monkeypatch.setenv(ev_mod.TRAINING_GRADER_ENV, "openai/gpt-5.6-luna")
+    monkeypatch.setenv(ev_mod.TRAINING_GRADER_PROMPT_ENV, "no-prose")
+    ev_mod._apply_training_grader()
+    assert (relevance.relevance_criteria_judgement_prompt_with_relevant_snippets_after
+            is _judge_normalize.NO_PROSE_JUDGE_TEMPLATE)
+
+    # Profile without judge override: refuse.
+    monkeypatch.delenv(ev_mod.TRAINING_GRADER_ENV)
+    with pytest.raises(RuntimeError, match="without"):
+        ev_mod._apply_training_grader()
+
+    # Unknown profile: refuse.
+    monkeypatch.setenv(ev_mod.TRAINING_GRADER_ENV, "openai/gpt-5.6-luna")
+    monkeypatch.setenv(ev_mod.TRAINING_GRADER_PROMPT_ENV, "verbose")
+    with pytest.raises(RuntimeError, match="unknown"):
+        ev_mod._apply_training_grader()
+
+
 def test_judge_price_override_prices_luna(ev_mod):
     """litellm 1.88.1 (pinned — the leaderboard billing basis) predates
     gpt-5.6-luna; JUDGE_PRICE_OVERRIDES must price it so judge cost never
