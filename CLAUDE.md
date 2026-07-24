@@ -226,6 +226,7 @@ python examples/cant_be_late/main.py --engine-config '{
 
 ## Development Tips
 
+- **Unit Tests**: `pytest` covers RoboPhD core only. Run `bash scripts/run_tests.sh` for the full sweep — the example suites need one process each (see `pytest.ini` for why), so a bare `pytest` will not catch a regression in `examples/`.
 - **Quick Test**: `python examples/cant_be_late/main.py --num-iterations 2 --evaluation-budget 60`
 - **Check Progress**: Review `checkpoint.json` and `final_report.md` in the experiment dir
 - **Debug Evaluation**: Check `iteration_XXX/agent_YYY/problems/` in the experiment dir

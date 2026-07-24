@@ -77,6 +77,17 @@ def test_valid_and_lmstudio_names_pass(model):
     validate_model_alias(model)
 
 
+def test_error_message_lists_the_valid_aliases():
+    """A bare 'what did I mistype' error is useless mid-run — the message
+    has to carry the menu."""
+    with pytest.raises(ValueError) as excinfo:
+        validate_model_alias("opus")
+    message = str(excinfo.value)
+    assert "opus" in message
+    for alias in ("opus-5", "haiku-4.5"):
+        assert alias in message
+
+
 def test_build_evolution_env_rejects_bad_alias(tmp_path):
     """The choke point every CLI engine funnels through."""
     with pytest.raises(ValueError, match="Unknown Claude model alias"):
