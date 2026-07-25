@@ -1,0 +1,823 @@
+{
+  "output": {
+    "query_id": "semantic_7",
+    "results": [
+      {
+        "paper_id": "277621121",
+        "markdown_evidence": "Text summarization is crucial for mitigating information overload across domains like journalism, medicine, and business. This research evaluates summarization performance across 17 large language models (OpenAI, Google, Anthropic, open-source) using a novel multi-dimensional framework. We assessed models on seven diverse datasets (BigPatent, BillSum, CNN/DailyMail, PubMed, SAMSum, WikiHow, XSum) at three output lengths (50, 100, 150 tokens) using metrics for factual consistency, semantic similarity, lexical overlap, and human-like quality, while also considering efficiency factors. Our findings reveal significant performance differences, with specific models excelling in factual accuracy (deepseek-v3), human-like quality (claude-3-5-sonnet), and processing efficiency/cost-effectiveness (gemini-1.5-flash, gemini-2.0-flash). Performance varies dramatically by dataset, with models struggling on technical domains but performing well on conversational content. We identified a critical tension between factual consistency (best at 50 tokens) and perceived quality (best at 150 tokens). Our analysis provides evidence-based recommendations for different use cases, from high-stakes applicati ... The exponential growth of digital text has made automated text summarization increasingly vital across domains: journalism, academia, business intelligence, healthcare, and so on. Text summarization systems condense information in source documents while preserving key information, enabling the user to understand essential content without the need to read all source documents. Although recent progress in large language models (LLMs) have shown significant improvement in their  ... Traditional summarization systems relied on statistical features and rule-based methods to ex-tract important sentences from source documents. These extractive methods, while effective for basic summarization, often produced disjointed outputs lacking coherence and contextual flow Shi et al. [2021]. The advent of neural networks, particularly sequence-to-sequence models with attention mechanisms, marked a significant shift toward abstractive summarization capabilities. \n\nWith ... This research evaluates summarization performance across 17 large language models (OpenAI, Google, Anthropic, Anthropic, open-source) using a novel multi-dimensional framework, identifying a critical tension between factual c"
+      },
+      {
+        "paper_id": "258947532",
+        "markdown_evidence": "Summarization quality evaluation is a non-trivial task in text summarization. Contemporary methods can be mainly categorized into two scenarios: (1) reference-based: evaluating with human-labeled reference summary; (2) reference-free: evaluating the summary consistency of the document. Recent studies mainly focus on one of these scenarios and explore training neural models built on PLMs to align with human criteria. However, the models from different scenarios are optimized individually, which may result in sub-optimal performance since they neglect the shared knowledge across different scenarios. Besides, designing individual models for each scenario caused inconvenience to the user. Inspired by this, we propose Unified Multi-scenario Summarization Evaluation Model (UMSE). More specifically, we propose a perturbed prefix tuning method to share cross-scenario knowledge between scenarios and use a self-supervised training paradigm to optimize the model without extra human labeling. Our UMSE is the first unified summarization evaluation framework engaged with the ability to be used in three evaluation scenarios. Experimental results across three typical scenarios on the benchmark dat ... Quantitatively evaluating the quality of generated summary is a non-trivial task that can measure the performance of the summarization system (Lin, 2004;Ng and Abrecht, 2015;Zhang et al., 2020;Scialom et al., 2021), and can also be used as a reward model to give an additional training signal for the summarization model (Wu and Hu, 2018;Narayan et al., 2018;Scialom et al., 2019;Gao et al., 2019aGao et al., , 2020a)). The dominant evaluation methods are traditional word-overlap ... This work proposes a perturbed prefix tuning method to share cross-scenario knowledge between scenarios and use a self-supervised training paradigm to optimize the model without extra human labeling and is the first unified summarization evaluation framework engaged with the ability to be used in three evaluation scenarios."
+      },
+      {
+        "paper_id": "274532164",
+        "markdown_evidence": "Summarization quality evaluation is a non-trivial task in text summarization. Contemporary methods can be mainly categorized into two scenarios: (1) reference-based: evaluating with human-labeled reference summary; (2) reference-free: evaluating the summary consistency of the document. Recent studies mainly focus on one of these scenarios and explore training neural models to align with human criteria and finally give a numeric score. However, the models from different scenarios are optimized individually, which may result in sub-optimal performance since they neglect the shared knowledge across different scenarios. Besides, designing individual models for each scenario caused inconvenience to the user. Moreover, only providing the numeric quality evaluation score for users cannot help users to improve the summarization model, since they do not know why the score is low. Inspired by this, we propose Unified Multi-scenario Summarization Evaluator (UMSE) and Multi-Agent Summarization Evaluation Explainer (MASEE). More specifically, we propose a perturbed prefix tuning method to share cross-scenario knowledge between scenarios and use a self-supervised training paradigm to optimize th"
+      },
+      {
+        "paper_id": "279075702",
+        "markdown_evidence": "Evaluation frameworks for text summarization have evolved in terms of both domain coverage and metrics. However, existing benchmarks still lack domain-specific assessment criteria, remain predominantly English-centric, and face challenges with human annotation due to the complexity of reasoning. To address these, we introduce MSumBench, which provides a multi-dimensional, multi-domain evaluation of summarization in English and Chinese. It also incorporates specialized assessment criteria for each domain and leverages a multi-agent debate system to enhance annotation quality. By evaluating eight modern summarization models, we discover distinct performance patterns across domains and languages. We further examine large language models as summary evaluators, analyzing the correlation between their evaluation and summarization capabilities, and uncovering systematic bias in their assessment of self-generated summaries. Our benchmark dataset is publicly available at https://github.com/DISL-Lab/MSumBench. ... By evaluating eight modern summarization models, MSumBench finds distinct performance patterns across domains and languages and examines large language models as summary evaluators, analyzing the correlation between their evaluation and summarization capabilities and uncovering systematic bias in their assessment of self-generated summaries."
+      },
+      {
+        "paper_id": "268064053",
+        "markdown_evidence": "With the continuous advancement in unsupervised learning methodologies, text generation has become increasingly pervasive. However, the evaluation of the quality of the generated text remains challenging. Human annotations are expensive and often show high levels of disagreement, in particular for certain tasks characterized by inherent subjectivity, such as translation and summarization.Consequently, the demand for automated metrics that can reliably assess the quality of such generative systems and their outputs has grown more pronounced than ever. In 2023, Eval4NLP organized a shared task dedicated to the automatic evaluation of outputs from two specific categories of generative systems: machine translation and summarization. This evaluation was achieved through the utilization of prompts with Large Language Models. Participating in the summarization evaluation track, we propose an approach that involves prompting LLMs to evaluate six different latent dimensions of summarization quality. In contrast to many previous approaches to summarization assessments, which emphasize lexical overlap with reference text, this method surfaces the importance of correct syntax in summarization  ... These metrics include, but are not limited to, ROUGE (Recall-Oriented Understudy for Gisting Evaluation), BLEU (Bilingual Evaluation Understudy), METEOR, BertScore, and MoverScore, among others. The majority of the metrics employed for the evaluation of generated summaries share a com-mon requisite; namely, the availability of reference summaries. Although reference-based evaluation methods can offer valuable insights into the performance of summarization systems, they come w ... METEOR (Metric for Evaluation of Translation with Explicit ORdering) is a text summarization metric that evaluates the quality of machinegenerated summaries by considering a variety of linguistic aspects, including unigram matching, stemming, synonyms, and word order. It provides a comprehensive measure of overall summary quality and can account for different ways of expressing the same information, making it a robust evaluation metric for text summarization (Banerjee and Lav ... Reference-Free Summarization Evaluation with Large Language Models ... This work proposes an approach that involves prompting LLMs to evaluate six different latent dimensions of summarization quality, and results in the secon"
+      },
+      {
+        "paper_id": "270869494",
+        "markdown_evidence": "Evaluating text summarization has been a challenging task in natural language processing (NLP). Automatic metrics which heavily rely on reference summaries are not suitable in many situations, while human evaluation is time-consuming and labor-intensive. To bridge this gap, this paper proposes a novel method based on large language models (LLMs) for evaluating text summarization. We also conducts a comparative study on eight automatic metrics, human evaluation, and our proposed LLM-based method. Seven different types of state-of-the-art (SOTA) summarization models were evaluated. We perform extensive experiments and analysis on datasets with patent documents. Our results show that LLMs evaluation aligns closely with human evaluation, while widely-used automatic metrics such as ROUGE-2, BERTScore, and SummaC do not and also lack consistency. Based on the empirical comparison, we propose a LLM-powered framework for automatically evaluating and improving text summarization, which is beneficial and could attract wide attention among the community. ... Summarization systems can be evaluated with or without a reference summary.Reference-based evaluation uses reference summaries to identify what content from the input document is important and then evaluates a generated summary based on how similar it is to the reference.On the other hand, reference-free evaluation directly or indirectly defines a model to capture important information in the document and uses that to evaluate the content of the candidate summary.The recent s ... Text summarization is the process of producing a concise and coherent summary while preserving key information and meaning of the source text (Allahyari et al., 2017).This technique is widely used in various fields; for example, it is commonly used to summarize scientific, medical, and legal documents, as it enables users to quickly grasp key points of lengthy texts and efficiently access relevant information.\n\nThere are two major approaches to automatic text summarization: e ... A novel method based on large language models (LLMs) for evaluating text summarization shows that LLMs evaluation aligns closely with human evaluation, while widely-used automatic metrics such as ROUGE-2, BERTScore, and SummaC do not and also lack consistency."
+      },
+      {
+        "paper_id": "265212661",
+        "markdown_evidence": "While large language models (LLMs) can already achieve strong performance on standard generic summarization benchmarks, their performance on more complex summarization task settings is less studied. Therefore, we benchmark LLMs on instruction controllable text summarization, where the model input consists of both a source article and a natural language requirement for desired summary characteristics. To this end, we curate an evaluation-only dataset for this task setting and conduct human evaluations of five LLM-based systems to assess their instruction-following capabilities in controllable summarization. We then benchmark LLM-based automatic evaluation for this task with 4 different evaluation protocols and 11 LLMs, resulting in 40 evaluation methods. Our study reveals that instruction controllable text summarization remains a challenging task for LLMs, since (1) all LLMs evaluated still make factual and other types of errors in their summaries; (2) no LLM-based evaluation methods can achieve a strong alignment with human annotators when judging the quality of candidate summaries; (3) different LLMs show large performance gaps in summary generation and evaluation capabilities. We ... This study benchmarked LLMs on instruction controllable text summarization, where the model input consists of both a source article and a natural language requirement for desired summary characteristics, and reveals that instruction controllable text summarization remains a challenging task for LLMs."
+      },
+      {
+        "paper_id": "256416014",
+        "markdown_evidence": "Large language models (LLMs) have shown promise for automatic summarization but the reasons behind their successes are poorly understood. By conducting a human evaluation on ten LLMs across different pretraining methods, prompts, and model scales, we make two important observations. First, we find instruction tuning, not model size, is the key to the LLM’s zero-shot summarization capability. Second, existing studies have been limited by low-quality references, leading to underestimates of human performance and lower few-shot and finetuning performance. To better evaluate LLMs, we perform human evaluation over high-quality summaries we collect from freelance writers. Despite major stylistic differences such as the amount of paraphrasing, we find that LLM summaries are judged to be on par with human written summaries. ... Large language models (LLMs) have shown promising results in zero-/few-shot tasks across a wide range of domains (Chowdhery et al., 2022;Bai et al., 2022;Brown et al., 2020;Zhang et al., 2022) and raised significant interest for their potential for automatic summarization (Goyal et al., 2022;Liu et al., 2022a). However, the design decisions contributing to its success on summarization remain poorly understood, and while prior work has shown that LLMs outperform prior state of ... In this work, we conducted a comprehensive human evaluation of ten LLMs, across the two most popular news summarization benchmarks. Through our experiments, we find that the stateof-the-art LLM performs on par with summaries written by freelance writers, with instruction tuning being the key factor for success. Beyond these findings, our work highlights the crucial role of good reference summaries in both summarization model development and evaluation. Unless the reference qu ... It is found instruction tuning, not model size, is the key to the LLM’s zero-shot summarization capability and summaries are judged to be on par with human written summaries."
+      },
+      {
+        "paper_id": "263909080",
+        "markdown_evidence": "Despite recent advances, evaluating how well large language models (LLMs) follow user instructions remains an open problem. While evaluation methods of language models have seen a rise in prompt-based approaches, limited work on the correctness of these methods has been conducted. In this work, we perform a meta-evaluation of a variety of metrics to quantify how accurately they measure the instruction-following abilities of LLMs. Our investigation is performed on grounded query-based summarization by collecting a new short-form, real-world dataset riSum, containing 300 document-instruction pairs with 3 answers each. All 900 answers are rated by 3 human annotators. Using riSum, we analyze the agreement between evaluation methods and human judgment. Finally, we propose new LLM-based reference-free evaluation methods that improve upon established baselines and perform on par with costly reference-based metrics that require high-quality summaries. ... A meta-evaluation of a variety of metrics to quantify how accurately they measure the instruction-following abilities of LLMs and proposes new LLM-based reference-free evaluation methods that improve upon established baselines and perform on par with costly reference-based metrics that require high-quality summaries."
+      },
+      {
+        "paper_id": "277244552",
+        "markdown_evidence": "Studies on evaluation metrics and LLM-as-a-Judge models for automatic text summarization have largely been focused on English, limiting our understanding of their effectiveness in other languages. Through our new dataset BASSE (BAsque and Spanish Summarization Evaluation), we address this situation by collecting human judgments on 2,040 abstractive summaries in Basque and Spanish, generated either manually or by five LLMs with four different prompts. For each summary, annotators evaluated five criteria on a 5-point Likert scale: coherence, consistency, fluency, relevance, and 5W1H. We use these data to reevaluate traditional automatic metrics used for evaluating summaries, as well as several LLM-as-a-Judge models that show strong performance on this task in English. Our results show that currently proprietary judge LLMs have the highest correlation with human judgments, followed by criteria-specific automatic metrics, while open-sourced judge LLMs perform poorly. We release BASSE and our code publicly, along with the first large-scale Basque summarization dataset containing 22,525 news articles with their subheads. ... Automatic text summarization seeks to create a concise and fluent text that captures the main ideas from one or more documents (Giarelis, Mastrokostas, and Karacapilidis 2023). This task has been studied in depth in Natural Language Processing (NLP) (Dang 2006;Dang and Owczarzak 2008) and plays an important role in mitigating excess information in an age of increasing information glut (Navas-Martin, Albornos-Muñoz, and Escandell-García 2012). \n\nReference-free metrics have als ... The new dataset BASSE (BAsque and Spanish Summarization Evaluation), collecting human judgments on 2,040 abstractive summaries in Basque and Spanish, shows that currently proprietary judge LLMs have the highest correlation with human judgments, followed by criteria-specific automatic metrics, while open-sourced judge LLMs perform poorly."
+      },
+      {
+        "paper_id": "273350617",
+        "markdown_evidence": "Automatic metrics are used as proxies to evaluate abstractive summarization systems when human annotations are too expensive. To be useful, these metrics should be fine-grained, show a high correlation with human annotations, and ideally be independant of reference quality; however, most standard evaluation metrics for summarization are reference-based, and existing reference-free metrics correlates poorly with relevance, especially on summaries of longer documents. In this paper, we introduce a reference-free metric that correlates well with human evaluated relevance, while being very cheap to compute. We show that this metric can also be used along reference-based metrics to improve their robustness in low quality reference settings. ... Metrics designed to evaluate summaries without reference are useful when no gold reference are available, or when the property they intend to capture does not need a reference to be conveniently estimated. \n\nGRUEN (Zhu and Bhat, 2020) aims at estimating the linguistic quality of a given summary by taking into account the grammaticality, nonredundancy, focus, structure and coherence of a summary. ESTIME (Vasilyev and Bohannon, 2021a) is evaluating the inconsistencies between t ... This paper introduces a reference-free metric that correlates well with human evaluated relevance, while being very cheap to compute, and shows that this metric can also be used along reference-based metrics to improve their robustness in low quality reference settings."
+      },
+      {
+        "paper_id": "254877339",
+        "markdown_evidence": "Automated summary quality assessment falls into two categories: reference-based and reference-free. Reference-based metrics, historically deemed more accurate due to the additional information provided by human-written references, are limited by their reliance on human input. In this paper, we hypothesize that the comparison methodologies used by some reference-based metrics to evaluate a system summary against its corresponding reference can be effectively adapted to assess it against its source document, thereby transforming these metrics into reference-free ones. Experimental results support this hypothesis. After being repurposed reference-freely, the zero-shot BERTScore using the pretrained DeBERTa-large-MNLI model of<0.5B parameters consistently outperforms its original reference-based version across various aspects on the SummEval and Newsroom datasets. It also excels in comparison to most existing reference-free metrics and closely competes with zero-shot summary evaluators based on GPT-3.5. ... Summarization is an important natural language generation (NLG) task. A problem that goes hand in hand with it is summary evaluation, which quantifies the quality of a summarizer or a system summary it generates. The traditional approach to automated † summary quality assessment is reference-based, such as ROUGE (Lin, 2004), BERTScore (Zhang* et al., 2020) and Mover-Score (Zhao et al., 2019), which assesses a system summary against one or a plurality of humanwritten reference ... After being repurposed reference-freely, the zero-shot BERTScore using the pretrained DeBERTa-large-MNLI model of<0.5B parameters consistently outperforms its original reference-based version across various aspects on the SummEval and Newsroom datasets."
+      },
+      {
+        "paper_id": "262044218",
+        "markdown_evidence": "How well can large language models (LLMs) generate summaries? We develop new datasets and conduct human evaluation experiments to evaluate the zero-shot generation capability of LLMs across five distinct summarization tasks. Our findings indicate a clear preference among human evaluators for LLM-generated summaries over human-written summaries and summaries generated by fine-tuned models. Specifically, LLM-generated summaries exhibit better factual consistency and fewer instances of extrinsic hallucinations. Due to the satisfactory performance of LLMs in summarization tasks (even surpassing the benchmark of reference summaries), we believe that most conventional works in the field of text summarization are no longer necessary in the era of LLMs. However, we recognize that there are still some directions worth exploring, such as the creation of novel datasets with higher quality and more reliable evaluation methods. ... Text summarization, a natural language generation (NLG) task, aims to compress extensive source materials into brief summaries, including diverse content such as news articles, source codes, and cross-lingual text. Traditional methods used finetuning techniques on specific datasets (Lewis et al., 2019;Raffel et al., 2020;Zhang et al., 2020;Wang et al., 2021;Xue et al., 2021;Wang et al., 2022), but the emergence of large language models (LLMs) (Chung et al., 2022;Zhang et al., ... Apart from pairwise comparisons of the performance of different systems, we also introduce human preference score to indicate the relative quality of a system in each task. It equals to the overall winning rate of the system in comparisons with any other systems, based on annotators' judgements. As shown in Figure 4, the human preference scores for the large models exceed 50%, indicating a strong preference for their summaries and highlighting the capability of LLMs in text s ... Most conventional works in the field of text summarization are no longer necessary in the era of LLMs, but there are still some directions worth exploring, such as the creation of novel datasets with higher quality and more reliable evaluation methods."
+      },
+      {
+        "paper_id": "270869629",
+        "markdown_evidence": "Automated evaluation is crucial for streamlining text summarization benchmarking and model development, given the costly and time-consuming nature of human evaluation. Traditional methods like ROUGE do not correlate well with human judgment, while recently proposed LLM-based metrics provide only summary-level assessment using Likert-scale scores. This limits deeper model analysis, e.g., we can only assign one hallucination score at the summary level, while at the sentence level, we can count sentences containing hallucinations. To remedy those limitations, we propose FineSurE, a fine-grained evaluator specifically tailored for the summarization task using large language models (LLMs). It also employs completeness and conciseness criteria, in addition to faithfulness, enabling multi-dimensional assessment. We compare various open-source and proprietary LLMs as backbones for FineSurE. In addition, we conduct extensive benchmarking of FineSurE against SOTA methods including NLI-, QA-, and LLM-based methods, showing improved performance especially on the completeness and conciseness dimensions. The code is available at https://github.com/DISL-Lab/FineSurE-ACL24. ... This work proposes FineSurE, a fine-grained evaluator specifically tailored for the summarization task using large language models (LLMs), which employs completeness and conciseness criteria, in addition to faithfulness, enabling multi-dimensional assessment."
+      },
+      {
+        "paper_id": "257767249",
+        "markdown_evidence": "Text summarization has a wide range of applications in many scenarios. The evaluation of the quality of the generated text is a complex problem. A big challenge to language evaluation is that there is a clear divergence between existing metrics and human evaluation. A document summary's quality can be assessed by human annotators on various criteria, both objective ones like grammar and correctness, and subjective ones like informativeness, succinctness, and appeal. Most of the automatic evaluation methods like BLUE/ROUGE may be not able to adequately capture the above dimensions. In this paper, we propose a new evaluation framework based on LLMs, which provides a comprehensive evaluation framework by comparing generated text and reference text from both objective and subjective aspects. First, we propose to model objective and subjective dimensions of generated text based on roleplayers prompting mechanism. Furthermore, we introduce a context-based prompting mechanism that is able to generate dynamic roleplayer profiles based on input context. Finally, we design a multi-roleplayer prompting technology based on batch prompting and integrate multiple outputs into the final evaluatio ... A new evaluation framework based on LLMs is proposed, which provides a comprehensive evaluation framework by comparing generated text and reference text from both objective and subjective aspects and introduces a context-based prompting mechanism that is able to generate dynamic roleplayer profiles based on input context."
+      },
+      {
+        "paper_id": "276095186",
+        "markdown_evidence": "The increasing demand for efficient summarization tools in resource-constrained environments highlights the need for effective solutions. While large language models (LLMs) deliver superior summarization quality, their high computational resource requirements limit practical use applications. In contrast, small language models (SLMs) present a more accessible alternative, capable of real-time summarization on edge devices. However, their summarization capabilities and comparative performance against LLMs remain underexplored. This paper addresses this gap by presenting a comprehensive evaluation of 19 SLMs for news summarization across 2,000 news samples, focusing on relevance, coherence, factual consistency, and summary length. Our findings reveal significant variations in SLM performance, with top-performing models such as Phi3-Mini and Llama3.2-3B-Ins achieving results comparable to those of 70B LLMs while generating more concise summaries. Notably, SLMs are better suited for simple prompts, as overly complex prompts may lead to a decline in summary quality. Additionally, our analysis indicates that instruction tuning does not consistently enhance the news summarization capabili ... Text summarization is the process of compressing a large volume of text into a shorter version while retaining its main ideas and essential information. Traditional text summarization models usually take a single news article as input and output a summary. However, SLMs require both a prompt and an article to generate a summary. \n\nThe evaluation methods of text summarization can be categorized into three categories, as shown in Figure 2: human evaluation, reference-based eval ... As the reference-based method offers higher efficiency, better reproducibility, and lower cost compared to human and LLM evaluation (Fabbri et al., 2021;Zhang et al., 2024b), we use the reference-based method for large-scale SLM evaluation. However, some existing research (Tejaswin et al., 2021;Fabbri et al., 2021) indicates that the poor quality of heuristic reference summaries in current datasets weakens their correlation with human preferences. Moreover, Zhang et al. (2024 ... This paper presents a comprehensive evaluation of 19 SLMs for news summarization across 2,000 news samples, focusing on relevance, coherence, factual consistency, and summary length, and indicates that instruction tuning does"
+      },
+      {
+        "paper_id": "269145318",
+        "markdown_evidence": "Technological advances, especially in NLP and LLM, hold great promise for improving and streamlining the summarization of radiological findings, thus providing valuable assistance to radiologists in their work."
+      },
+      {
+        "paper_id": "252532176",
+        "markdown_evidence": "The recent success of prompting large language models like GPT-3 has led to a paradigm shift in NLP research. In this paper, we study its impact on text summarization, focusing on the classic benchmark domain of news summarization. First, we investigate how GPT-3 compares against fine-tuned models trained on large summarization datasets. We show that not only do humans overwhelmingly prefer GPT-3 summaries, prompted using only a task description, but these also do not suffer from common dataset-specific issues such as poor factuality. Next, we study what this means for evaluation, particularly the role of gold standard test sets. Our experiments show that both reference-based and reference-free automatic metrics cannot reliably evaluate GPT-3 summaries. Finally, we evaluate models on a setting beyond generic summarization, specifically keyword-based summarization, and show how dominant fine-tuning approaches compare to prompting. To support further research, we release: (a) a corpus of 10K generated summaries from fine-tuned and prompt-based models across 4 standard summarization benchmarks, (b) 1K human preference judgments comparing different systems for generic- and keyword-base ... Here, we study if the gold summaries of the standard datasets are useful for evaluation, especially when evaluating prompt-based summaries that are not trained to emulate the gold. We benchmark Table 5: Performance of different summarization systems, as scored by automatic reference-free evaluation metrics from the summarization literature. Similar to reference-based metrics, these also generally fail to produce the same system rankings as human preferences reliably across da ... It is shown that not only do humans overwhelmingly prefer GPT-3 summaries, prompted using only a task description, but these also do not suffer from common dataset-specific issues such as poor factuality."
+      },
+      {
+        "paper_id": "258841145",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265266756",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256901227",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280225624",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276128865",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258841126",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272694127",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275788797",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267061303",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250390709",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257804696",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268091174",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258865347",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277349374",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261881796",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276724620",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253098066",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268553676",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222134049",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273852333",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265220860",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278788996",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270737769",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257913780",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274822175",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268063532",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258865506",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272879886",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271144532",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270560949",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274234051",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278540580",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268240804",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277960442",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268691941",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278782834",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277993977",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256662562",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263334142",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276095187",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280584717",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276235883",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268875997",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277468547",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272593165",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277667217",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804365",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237266834",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259982788",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261030842",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271854977",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275515969",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272832029",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272548002",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275932196",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16181964",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "60552692",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257952492",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278327596",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276249976",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278165167",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278740654",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271244810",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270562193",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271972784",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "282716748",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272369159",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262089204",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275133835",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278336747",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253734918",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280168336",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271700290",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268417336",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272910795",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276987062",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267760350",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272587135",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253761434",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248300077",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273969536",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274065725",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279267830",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272987711",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271769445",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218974369",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260366238",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278714627",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237353254",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274829616",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279217912",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265158165",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254854169",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272463905",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276313154",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259360619",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276099404",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482768",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277627977",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265506605",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277510365",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260777059",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273403768",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277780456",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16997649",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267044707",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "17322932",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268248920",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279417048",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269983392",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278805935",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235659000",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274419678",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235658519",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260704279",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274655841",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "282935998",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274437466",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248525217",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269625593",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271870166",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275993773",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260202854",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275336716",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276578591",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267334945",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273502839",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278795330",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247476180",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272968709",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226283958",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274610611",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267335111",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277780359",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271870566",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279453893",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "24465182",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272565392",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274423260",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275471755",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254293618",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272987106",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259705358",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278124175",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6603678",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263776341",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268253234",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272915853",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269588132",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276079600",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16657813",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259064225",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274712367",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274964986",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278164704",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273350851",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "201070902",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277134711",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277959071",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278904455",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "207757849",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276894873",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269947217",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273502692",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264146201",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271769421",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278266208",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273655513",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "211146546",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273190590",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275932342",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "212593502",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268522140",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270766741",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253107389",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259951557",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273986249",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "196100160",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264426756",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271933865",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "243906827",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269614320",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266999878",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276116359",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278165707",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267751370",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

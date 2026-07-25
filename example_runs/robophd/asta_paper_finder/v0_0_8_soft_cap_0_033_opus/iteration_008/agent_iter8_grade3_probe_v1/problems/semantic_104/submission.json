@@ -1,0 +1,823 @@
+{
+  "output": {
+    "query_id": "semantic_104",
+    "results": [
+      {
+        "paper_id": "260900354",
+        "markdown_evidence": "In this paper, we investigate the in-context learning ability of retrieval-augmented encoder-decoder language models. We first conduct a comprehensive analysis of existing models and identify their limitations in in-context learning, primarily due to a mismatch between pretraining and inference, as well as a restricted context length. To address these issues, we propose RAVEN, a model that combines retrieval-augmented masked language modeling and prefix language modeling. We further introduce Fusion-in-Context Learning to enhance the few-shot performance by enabling the model to leverage more in-context examples without requiring additional training. Through extensive experiments, we demonstrate that our simple yet effective design significantly improves performance, achieving results comparable to the most advanced language models in certain scenarios, despite having substantially fewer parameters. Our work underscores the potential of retrieval-augmented encoder-decoder language models for in-context learning and encourages further research in this direction. ... AVEN, a model that combines retrieval-augmented masked language modeling and prefix language modeling, is proposed that significantly improves performance, achieving results comparable to the most advanced language models in certain scenarios, despite having substantially fewer parameters. ... Retrieval-augmented language models are a class of language models designed to enhance their performance by incorporating external knowledge. These models typically employ an information retrieval mechanism to access relevant information from a large corpus, which is then integrated into the model's prediction process. Retrieval-augmented LMs can be based on both encoder-decoder (Izacard et al., 2023;Lewis et al., 2020) and decoderonly (Khandelwal et al., 2020;Borgeaud et al., 2022;Shi et al., 2022) architectures. For decoder-only LMs, the computational cost typically increases quadratically with the input length, as well as with the number o"
+      },
+      {
+        "paper_id": "251371732",
+        "markdown_evidence": "Large language models have shown impressive few-shot results on a wide range of tasks. However, when knowledge is key for such results, as is the case for tasks such as question answering and fact checking, massive parameter counts to store knowledge seem to be needed. Retrieval augmented models are known to excel at knowledge intensive tasks without the need for as many parameters, but it is unclear whether they work in few-shot settings. In this work we present Atlas, a carefully designed and pre-trained retrieval augmented language model able to learn knowledge intensive tasks with very few training examples. We perform evaluations on a wide range of tasks, including MMLU, KILT and NaturalQuestions, and study the impact of the content of the document index, showing that it can easily be updated. Notably, Atlas reaches over 42% accuracy on Natural Questions using only 64 examples, outperforming a 540B parameters model by 3% despite having 50x fewer parameters. ... This work presents Atlas, a carefully designed and pre-trained retrieval augmented language model able to learn knowledge intensive tasks with very few training examples, and studies the impact of the content of the document index, showing that it can easily be updated. ... Figure 1: We introduce Atlas, a retrieval-augmented language model that exhibits strong few-shot performance on knowledge tasks, and uses retrieval during both pre-training and fine-tuning. \n\ndemonstrate compelling few-shot learning capabilities. In this work we address this gap, and present Atlas, a retrieval-augmented language model capable of strong few-shot learning, despite having lower parameter counts than other powerful recent few-shot learners. \n\nAtlas retrieves relevant documents based on the current context by using a general-purpose dense retriever using a dual-encoder architecture, based on the Contriever (Izacard et al., 2022). "
+      },
+      {
+        "paper_id": "272330251",
+        "markdown_evidence": "In dense retrieval, deep encoders provide embeddings for both inputs and targets, and the softmax function is used to parameterize a distribution over a large number of candidate targets (e.g., textual passages for information retrieval). Significant challenges arise in training such encoders in the increasingly prevalent scenario of (1) a large number of targets, (2) a computationally expensive target encoder model, (3) cached target embeddings that are out-of-date due to ongoing training of target encoder parameters. This paper presents a simple and highly scalable response to these challenges by training a small parametric corrector network that adjusts stale cached target embeddings, enabling an accurate softmax approximation and thereby sampling of up-to-date high scoring\"hard negatives.\"We theoretically investigate the generalization properties of our proposed target corrector, relating the complexity of the network, staleness of cached representations, and the amount of training data. We present experimental results on large benchmark dense retrieval datasets as well as on QA with retrieval augmented language models. Our approach matches state-of-the-art results even when no target embedding updates are made during training beyond an initial cache from the unsupervised pre-trained model, providing a 4-80x reduction in re-embedding computational cost. ... The approach matches state-of-the-art results even when no target embedding updates are made during training beyond an initial cache from the unsupervised pre-trained model, providing a 4-80x reduction in re-embedding computational cost. ... Retrieval augmented language models (RLMs) typically consist of two major architectural components, a retriever model (e.g., a dual-encoder) and a generative language model or reader model (Guu et al., 2020;Izacard & Grave, 2021;Izacard et al., 2022). The input to a retrieval augmented language model is a natural language text sequence, x. This input text will be encoded using a dual-encoder retrieval model, f (x). Retrieval will be performed over a corpus of targets, Y, returning k targets relevant to x, denoted S x (Y). The reader model takes as input the retrieved targets, S x (Y), and the text x, and generates text. \n\nConcretely, in our e"
+      },
+      {
+        "paper_id": "271270644",
+        "markdown_evidence": "Large language models (LLMs) have achieved strong empirical performance in various fields, benefiting from their huge amount of parameters that store knowledge. However, LLMs still suffer from several key issues, such as hallucination problems, knowledge update issues, and lacking domain-specific expertise. The appearance of retrieval-augmented generation (RAG), which leverages an external knowledge base to augment LLMs, mitigates these limitations. This paper presents a systematic review of RAG techniques for natural language processing (NLP), with a focus on retrievers and retrieval fusions. We introduce a novel taxonomy of retrieval fusions, such as query-based, logits-based, latent, and parametric fusion, and provide structured comparisons across accessibility, efficiency, and use cases. The paper further examines RAG applications across diverse NLP tasks, discusses evaluation methodologies and benchmark limitations, and analyzes training paradigms with and without knowledge base updates. Finally, we explore industrial deployment considerations and identify emerging challenges and future directions, including security, efficiency, and graph-based retrieval. ... A novel taxonomy of retrieval fusions is introduced, such as query-based, logits-based, latent, and parametric fusion, and structured comparisons across accessibility, efficiency, and use cases are provided. ... Language modeling is the task that requires the prediction of the probability distribution of the next word or character given a sequence of words or characters, which is also named the next-token prediction task. Language modeling has become the fundamental task for pre-training large language models, which can measure the models' generation capability using the perplexity metric. The formal definition is as follows: given such a sequence of tokens  1 , . . . ,   called Prefix, the language modeling task aims to model its probability via next-token prediction, \n\nwhere the conditional probabilities  (  | 1 , . . . ,   −1 ) are modeled by a pa"
+      },
+      {
+        "paper_id": "268510197",
+        "markdown_evidence": "Pretraining Large Language Models (LLMs) on large corpora of textual data is now a standard paradigm. When using these LLMs for many downstream applications, it is common to additionally bake in new knowledge (e.g., time-critical news, or private domain knowledge) into the pretrained model either through RAG-based-prompting, or fine-tuning. However, the optimal methodology for the model to gain such new knowledge remains an open question. In this paper, we present Retrieval Augmented FineTuning (RAFT), a training recipe that improves the model's ability to answer questions in a\"open-book\"in-domain settings. In RAFT, given a question, and a set of retrieved documents, we train the model to ignore those documents that don't help in answering the question, which we call, distractor documents. RAFT accomplishes this by citing verbatim the right sequence from the relevant document that would help answer the question. This coupled with RAFT's chain-of-thought-style response helps improve the model's ability to reason. In domain-specific RAG, RAFT consistently improves the model's performance across PubMed, HotpotQA, and Gorilla datasets, presenting a post-training recipe to improve pre-trained LLMs to in-domain RAG. RAFT's code and demo are open-sourced at github.com/ShishirPatil/gorilla. ... Retrieval Augmented FineTuning (RAFT), a training recipe that improves the model's ability to answer questions in a\"open-book\" in-domain settings, and a post-training recipe to improve pre-trained LLMs to in-domain RAG. ... Retrieval-Augmented Language Models Retrieval-Augmented Language Models (RALMs) enhance LLMs by integrating a retrieval module that sources relevant information from external knowledge bases, significantly improving performance across various NLP tasks, including language modeling (Guu et al., 2020;Borgeaud et al., 2022;Khandelwal et al., 2019;Shi et al., 2023d;Lin et al., 2023b;Shi et al., 2023c;Asai et al., 2023;Xu et al., 2023;Wang et al., 2023) and open-domain question answering (Izacard et al., 2023;Lewis et al., 2020).For instance, Atlas (Izacard et al., 2023) fine-tunes T5 models with the retriever, treating documents as latent variabl"
+      },
+      {
+        "paper_id": "271769496",
+        "markdown_evidence": "This survey analyses how external knowledge can be integrated into language models in the context of retrieval-augmentation.The main goal of this work is to give an overview of: (1) Which external knowledge can be augmented? (2) Given a knowledge source, how to retrieve from it and then integrate the retrieved knowledge? To achieve this, we define and give a mathematical formulation of retrieval-augmented knowledge integration (RAKI). We discuss retrieval and integration techniques separately in detail, for each of the following knowledge formats: knowledge graph, tabular and natural language. ... Collecting papers for this survey using search engines (e.g. Google Scholar and dblp) is very challenging, mainly because: (1) It is infeasible to enumerate all possible search words to approach every potential paper of our interest. For example, we include knowledge augmentation/integration/enhancement in the search word list (See Appendix A.1 for complete list of search words), as well as their variants with suffix changes (e.g. knowledge augment/-ed). These words would still leave out a paper using knowledge augmenting or we fuse knowledge. (2) Each search engine has its own drawbacks (Appendix A.1 presents a detailed comparison of our emp ... Retrieval-Augmented Knowledge Integration into Language Models: A Survey ... In the following, we briefly introduce retrievalaugmented generation (RAG) and then define and formulate retrieval-augmented knowledge integration (RAKI). Retrieval-augmented generation is first proposed by Lewis et al. (2020), where world knowledge is retrieved from a vector index constructed over Wikipedia articles and then sent to a seq2seq (Sutskever et al., 2014) model for generation. More formally, given an input-output pair (x, y) from a generation task, retrieval-augmented generation aims to generate the target output y conditioned on the input x and an accessible document set Z for reference (Lewis et al., 2020;Yu, 2022). Retrieval-a"
+      },
+      {
+        "paper_id": "254823295",
+        "markdown_evidence": "Fusion-in-Decoder (FiD) is a powerful retrieval-augmented language model that sets the state-of-the-art on many knowledge-intensive NLP tasks. However, the architecture used for FiD was chosen by making minimal modifications to a standard T5 model, which our analysis shows to be highly suboptimal for a retrieval-augmented model. In particular, FiD allocates the bulk of FLOPs to the encoder, while the majority of inference time results from memory bandwidth constraints in the decoder. We propose two simple changes to the FiD architecture to alleviate memory bandwidth constraints, and speed up inference by 7x. This allows us to use a much larger decoder at modest cost. We denote FiD with the above modifications as FiDO, and show that it strongly improves performance over existing FiD models for a wide range of inference budgets. For example, FiDO-Large-XXL performs faster inference than FiD-Base and achieves better performance than FiD-Large. ... Two simple changes to the FiD architecture are proposed to alleviate memory bandwidth constraints, and speed up inference by 7x, which allows us to use a much larger decoder at modest cost and strongly improves performance over existing FiD models for a wide range of inference budgets. ... Model NQ TQA WQ REALM (Guu et al., 2020) 40.4 -40.7 RAG (Lewis et al., 2020) 44.5 56.8 45.2 RETRO (Borgeaud et al., 2022) 45.5 --T5-XXL (Roberts et al., 2020) 35.2 51.9 42.8 ATLAS (Izacard et al., 2022) 60.4 79.8 -FiD-L (Izacard and Grave, 2021)    Varying input and target length Our main results use a middle-of-the-road setting for FiD applications with a medium number of retrievals and a relatively short output, reflecting common knowledge-intensive tasks. However, it is interesting to ask how FiDO components affect speed for other settings. Figure 6 shows time per sample as a function of retrieved passages and length of the target output f"
+      },
+      {
+        "paper_id": "269740933",
+        "markdown_evidence": "As one of the most advanced techniques in AI, Retrieval-Augmented Generation (RAG) can offer reliable and up-to-date external knowledge, providing huge convenience for numerous tasks. Particularly in the era of AI-Generated Content (AIGC), the powerful capacity of retrieval in providing additional knowledge enables RAG to assist existing generative AI in producing high-quality outputs. Recently, Large Language Models (LLMs) have demonstrated revolutionary abilities in language understanding and generation, while still facing inherent limitations such as hallucinations and out-of-date internal knowledge. Given the powerful abilities of RAG in providing the latest and helpful auxiliary information, Retrieval-Augmented Large Language Models (RA-LLMs) have emerged to harness external and authoritative knowledge bases, rather than solely relying on the model's internal knowledge, to augment the quality of the generated content of LLMs. In this survey, we comprehensively review existing research studies in RA-LLMs, covering three primary technical perspectives: Furthermore, to deliver deeper insights, we discuss current limitations and several promising directions for future research. Updated information about this survey can be found at: https://advanced-recommender-systems.github.io/RAG-Meets-LLMs/ ... This survey comprehensively review existing research studies in RA-LLMs, covering three primary technical perspectives and discusses current limitations and several promising directions for future research. ... Retrieval-augmented generation (RAG), a cutting-edge AI technique, has achieved remarkable success across various applications, including recommendation, molecule generation, protein representation, and software engineering, owing to the potent capabilities of retrieval in providing supplementary information to enhance generation performance.Recently, increasing efforts have been made to alleviate the limitations of large language models (LLMs), such as hallucination and out-of-date internal knowledge, by leveraging retrieval to provide the latest auxiliary information and teaching LLMs to harness the retrieved external knowledge.With the rap"
+      },
+      {
+        "paper_id": "269457256",
+        "markdown_evidence": "Large Language Models (LLMs) have catalyzed significant advancements in Natural Language Processing (NLP), yet they encounter challenges such as hallucination and the need for domain-specific knowledge. To mitigate these, recent methodologies have integrated information retrieved from external resources with LLMs, substantially enhancing their performance across NLP tasks. This survey paper addresses the absence of a comprehensive overview on Retrieval-Augmented Language Models (RALMs), both Retrieval-Augmented Generation (RAG) and Retrieval-Augmented Understanding (RAU), providing an in-depth examination of their paradigm, evolution, taxonomy, and applications. The paper discusses the essential components of RALMs, including Retrievers, Language Models, and Augmentations, and how their interactions lead to diverse model structures and applications. RALMs demonstrate utility in a spectrum of tasks, from translation and dialogue systems to knowledge-intensive applications. The survey includes several evaluation methods of RALMs, emphasizing the importance of robustness, accuracy, and relevance in their assessment. It also acknowledges the limitations of RALMs, particularly in retrieval quality and computational efficiency, offering directions for future research. In conclusion, this survey aims to offer a structured insight into RALMs, their potential, and the avenues for their  ... This survey paper addresses the absence of a comprehensive overview on Retrieval-Augmented Language Models, both Retrieval-Augmented Generation (RAG) and Retrieval-Augmented Understanding (RAU), providing an in-depth examination of their paradigm, evolution, taxonomy, and applications. ... Transformer (Vaswani et al., 2017) is an \"encoderdecoder\" architecture, which consists of encoders and decoders superimposed on multi-head selfattention modules. Among them, the input sequence is divided into two parts, the source sequence and the destination sequence. The former is input to the encoder and the latter is input to the decoder, and both sequences need to embed representation and add position information. The Transformer architecture enables parallel computation and the processing of entire text sequences simultaneously, resulting in a significant increase in model training and inference speed. Raffel et al. (2020) introduces a "
+      },
+      {
+        "paper_id": "263605677",
+        "markdown_evidence": "Retrieval augmentation addresses many critical problems in large language models such as hallucination, staleness, and privacy leaks. However, running retrieval-augmented language models (LMs) is slow and difficult to scale due to processing large amounts of retrieved text. We introduce binary token representations (BTR), which use 1-bit vectors to precompute every token in passages, significantly reducing computation during inference. Despite the potential loss of accuracy, our new calibration techniques and training objectives restore performance. Combined with offline and runtime compression, this only requires 127GB of disk space for encoding 3 billion tokens in Wikipedia. Our experiments show that on five knowledge-intensive NLP tasks, BTR accelerates state-of-the-art inference by up to 4x and reduces storage by over 100x while maintaining over 95% task performance. ... BTR is introduced, which use 1-bit vectors to precompute every token in passages, significantly reducing computation during inference, and accelerates state-of-the-art inference by up to 4x and reduces storage by over 100x while maintaining over 95% task performance. ... We first describe the architecture of retrieval-augmented language models and then related efficiency techniques designed for them. Next, we summarize relevant methods to improve model efficiency, including quantization and binary representations. \n\nRetrieval-Augmented Language Models. Retrieval-augmented language models have shown strong performance in many tasks, including language modeling (Borgeaud et al., 2022;Min et al., 2023), open-domain question answering, and fact checking (Izacard et al., 2022b;Lewis et al., 2020;Guu et al., 2020;Shi et al., 2023). \n\nAs shown in Figure 1, a retrieval-augmented language model works by first using a "
+      },
+      {
+        "paper_id": "277043297",
+        "markdown_evidence": "Retrieval-Augmented Generation (RAG) has gained significant attention in recent years for its potential to enhance natural language understanding and generation by combining large-scale retrieval systems with generative models. RAG leverages external knowledge sources, such as documents, databases, or structured data, to improve model performance and generate more accurate and contextually relevant outputs. This survey aims to provide a comprehensive overview of RAG by examining its fundamental components, including retrieval mechanisms, generation processes, and the integration between the two. We discuss the key characteristics of RAG, such as its ability to augment generative models with dynamic external knowledge, and the challenges associated with aligning retrieved information with generative objectives. We also present a taxonomy that categorizes RAG methods, ranging from basic retrieval-augmented approaches to more advanced models incorporating multimodal data and reasoning capabilities. Additionally, we review the evaluation benchmarks and datasets commonly used to assess RAG systems, along with a detailed exploration of its applications in fields such as question answering, summarization, and information retrieval. Finally, we highlight emerging research directions and opportunities for improving RAG systems, such as enhanced retrieval efficiency, model interpretabili ... The prospects for RAG in addressing real-world challenges and its potential to drive further advancements in natural language processing are outlined, including enhanced retrieval efficiency, model interpretability, and domain-specific adaptations. ... Retrieval-Augmented Generation (RAG) [127] has emerged as a key approach that integrates information retrieval with generative models to enhance natural language processing tasks. By leveraging external knowledge sources, RAG systems can generate more accurate and contextually relevant outputs, addressing complex challenges in areas like question answering [119], summarization [85], and open-domain dialogue. In recent years, a variety of RAG methods have been proposed, ranging from basic retrieval-augmented models to more advanced architectures incorporating multi-hop [190] reasoning and memory-augmented techniques [67]. These developments ha"
+      },
+      {
+        "paper_id": "273962778",
+        "markdown_evidence": "Retrieval-augmented generation (RAG) has shown impressive capability in providing reliable answer predictions and addressing hallucination problems. A typical RAG implementation uses powerful retrieval models to extract external information and large language models (LLMs) to generate answers. In contrast, recent LLM-based retrieval has gained attention for its substantial improvements in information retrieval (IR) due to the LLMs' semantic understanding capability. However, directly applying LLM to RAG systems presents challenges. This may cause feature locality problems as massive parametric knowledge can hinder effective usage of global information across the corpus; for example, an LLM-based retriever often inputs document summaries instead of full documents. Moreover, various pre-trained tasks in LLMs introduce variance, further weakening performance as a retriever. To address these issues, we propose a novel two-stage fine-tuning architecture called Invar-RAG. In the retrieval stage, an LLM-based retriever is constructed by integrating LoRA-based representation learning to tackle feature locality issues. To enhance retrieval performance, we develop two patterns (invariant and variant patterns) and an invariance loss to reduce LLM variance. In the generation stage, a refined fine-tuning method is employed to improve LLM accuracy in generating answers based on retrieved inf ... A novel two-stage fine-tuning architecture called Invar-RAG is proposed, which significantly outperforms existing baselines across three open-domain question answering (ODQA) datasets and develops two patterns and an invariance loss to reduce LLM variance. ... In this section, we analyze the efficacy of the two-stage fine-tuning in the Invar-RAG architecture, including the retrieval stage (LLM-aligned Retrieval with Invariance Loss) and the generation stage. We design three variants: (1)w/o representation learning: this variant uses the coarse text representation mapped by small language model (MiniLM-v26 ) to calculate the relevance score and adopt the same generation fine-tuning method in Sec. • With the representation learning method, LLM-based retrieval contributes to improving the retrieval and corresponding generation performance. • Invariance loss significantly boosts our designed Invar-RAG "
+      },
+      {
+        "paper_id": "269187839",
+        "markdown_evidence": "Retrieval-augmented language models pose a promising alternative to standard language modeling. During pretraining, these models search in a corpus of documents for contextually relevant information that could aid the language modeling objective. We introduce an ‘ideal retrieval’ methodology to study these models in a fully controllable setting. We conduct an extensive evaluation to examine how retrieval augmentation affects the behavior of the underlying language model. Among other things, we observe that these models: (i) save substantially less world knowledge in their weights, (ii) are better at understanding local context and inter-word dependencies, but (iii) are worse at comprehending global context. ... An extensive evaluation is conducted to examine how retrieval augmentation affects the behavior of the underlying language model, observing that these models save substantially less world knowledge in their weights and are better at understanding local context and inter-word dependencies, but are worse at comprehending global context. ... Retrieval-augmented language models combine the strengths of self-supervised pretraining with information retrieval techniques to allow for information extraction from a nonparametric memory.During pretraining, the prediction of masked tokens is conditioned not only on the immediate context but also on information found to be contextually relevant by a similarity search over a knowledge database.These models are typically proven effective in knowledge-intensive tasks, such as answering open-domain questions (Guu et al., 2020;Lewis et al., 2022;Izacard et al., 2023).\n\nHowever, little emphasis has been put into understanding what this type of t ... We introduced a novel theoretical framework for studying the properties of retrieval-augmented language models.Specifically, through this paper, we were able to show that using retrieval during pretraining leads models to learn less world knowledge while gaining better syntactic knowledge; this separation is especially pronounced for larger models.However, this improvement comes at the cost of performance in general language understanding and in resolving long-range context dependency.Due to the model relying on the retrieved spans, the global context resolution seems to be delegated to the retrieval module.We also performed an ablation on th"
+      },
+      {
+        "paper_id": "256389797",
+        "markdown_evidence": "We introduce REPLUG, a retrieval-augmented language modeling framework that treats the language model (LM) as a black box and augments it with a tuneable retrieval model. Unlike prior retrieval-augmented LMs that train language models with special cross-attention mechanisms to encode the retrieved text, REPLUG simply prepends retrieved documents to the input for the frozen black-box LM. This simple design can be easily applied to any existing language models. Furthermore, we show that the LM can be used to supervise the retrieval model, which can then find documents that help the LM make better predictions. Our experiments demonstrate that REPLUG with the tuned retriever significantly improves the performance of GPT-3 (175B) on language modeling by 6.3%, as well as the performance of Codex on five-shot MMLU by 5.1%. Code is publicly released at github.com/swj0419/REPLUG. ... REPLUG is introduced, a retrieval-augmented language modeling framework that treats the language model (LM) as a black box and augments it with a tuneable retrieval model, and can be easily applied to any existing language models. ... Retrieval-augmented Models Augmenting language models with relevant information retrieved from various knowledge stores has shown to be effective in improving performance on various NLP tasks, including language modeling (Min et al., 2022;Borgeaud et al., 2022;Khandelwal et al., 2020) and open-domain question answering (Lewis et al., 2020;Izacard et al., 2022b;Hu et al., 2022). Specifically, using the input as query, (1) a retriever first retrieves a set of documents (i.e., sequences of tokens) from a corpus and then (2) a language model incorporates the retrieved documents as additional information to make a final prediction. This style of r"
+      },
+      {
+        "paper_id": "254854344",
+        "markdown_evidence": "Augmenting pretrained language models with retrievers to select the supporting documents has shown promise in effectively solving common NLP problems, including language modeling and question answering, in an interpretable way. In this paper, we first study the strengths and weaknesses of different retriever-augmented language models (REALM, $k$NN-LM, FiD coupled with DPR, and ATLAS and Flan-T5 coupled with Contriever) in reasoning over the retrieved statements in different tasks. We show how the retrieve-then-read models' limitations in reasoning are rooted both in the retriever module as well as the language model. Our experimental results demonstrate that the similarity metric used by the retrievers is generally insufficient for reasoning tasks. Additionally, we show that the language models in retriever-augmented models do not take the complicated relations between the statements into account, which leads to poor reasoning performance even when using the larger models. Moreover, we analyze the reasoning performance of large language models using multihop retrieval but we only observe minor improvements. Overall, this shows great room for further research in this area. ... The strengths and weaknesses of different retriever-augmented language models (REALM, $k$NN-LM, FiD coupled with DPR, and ATLAS and Flan-T5 coupled with Contriever) in reasoning over the retrieved statements in different tasks are studied. ... Although retriever-augmented language models have shown promising results in many language modeling or question answering tasks (Guu et al., 2020;Khandelwal et al., 2020;Izacard and Grave, 2021;Chung et al., 2022;Izacard et al., 2022b), our analysis suggests that these models still have some limitations in reasoning. These shortcomings are rooted in two distinct parts of their design: the retriever and the language model. On one hand, the knowledge retriever is not trained to retrieve the required statements for completing the task when reasoning. Instead, it selects the most similar documents based on a similarity metric between each candida"
+      },
+      {
+        "paper_id": "263605962",
+        "markdown_evidence": "Retrieval-augmented language models (RALMs) improve performance by accessing long-tail and up-to-date knowledge from external data stores, but are challenging to build. Existing approaches require either expensive retrieval-specific modifications to LM pre-training or use post-hoc integration of the data store that leads to suboptimal performance. We introduce Retrieval-Augmented Dual Instruction Tuning (RA-DIT), a lightweight fine-tuning methodology that provides a third option by retrofitting any LLM with retrieval capabilities. Our approach operates in two distinct fine-tuning steps: (1) one updates a pre-trained LM to better use retrieved information, while (2) the other updates the retriever to return more relevant results, as preferred by the LM. By fine-tuning over tasks that require both knowledge utilization and contextual awareness, we demonstrate that each stage yields significant performance improvements, and using both leads to additional gains. Our best model, RA-DIT 65B, achieves state-of-the-art performance across a range of knowledge-intensive zero- and few-shot learning benchmarks, significantly outperforming existing in-context RALM approaches by up to +8.9% in 0-shot setting and +1.4% in 5-shot setting on average. ... The introduction of Retrieval-Augmented Dual Instruction Tuning (RA-DIT), a lightweight fine-tuning methodology that provides a third option by retrofitting any LLM with retrieval capabilities, and demonstrates that each stage yields significant performance improvements, and using both leads to additional gains. ... Language Model We focus on retrieval-augmenting pre-trained auto-regressive language models (Brown et al., 2020). In particular, we use LLAMA (Touvron et al., 2023a), a family of opensourced language models pre-trained on trillions of tokens. (Lhoest et al., 2021), with the exception of those marked with ‡ , which are taken from Iyer et al. (2022). Retriever We adopt a dual-encoder based retriever architecture, since it can be easily fine-tuned and is efficient at the inference stage (Lewis et al., 2020;Izacard et al., 2022b;Shi et al., 2023b). Given a corpus C and a query q, the document encoder maps each text chunk c ∈ C to an embedding E d"
+      },
+      {
+        "paper_id": "259243694",
+        "markdown_evidence": "Abstract Retrieval-augmented language models (LMs) have received much attention recently. However, typically the retriever is not trained jointly as a native component of the LM, but added post-hoc to an already-pretrained LM, which limits the ability of the LM and the retriever to adapt to one another. In this work, we propose the Retrieval-Pretrained Transformer (RPT), an architecture and training procedure for jointly training a retrieval-augmented LM from scratch and applying it to the task of modeling long texts. Given a recently generated text chunk in a long document, the LM computes query representations, which are then used to retrieve earlier chunks in the document, located potentially tens of thousands of tokens before. Information from retrieved chunks is fused into the LM representations to predict the next target chunk. We train the retriever component with a semantic objective, where the goal is to retrieve chunks that increase the probability of the next chunk, according to a reference LM. We evaluate RPT on four long-range language modeling tasks, spanning books, code, and mathematical writing, and demonstrate that RPT improves retrieval quality and subsequently perplexity across the board compared to strong baselines. ... The Retrieval-Pretrained Transformer is evaluated on four long-range language modeling tasks, spanning books, code, and mathematical writing, and it is demonstrated that RPT improves retrieval quality and subsequently perplexity across the board compared to strong baselines. ... In this work, we present the Retrieval-Pretrained Transformer (RPT), a retrieval-augmented LM where the retriever is trained as a native component of the LM to retrieve semantically relevant chunks for future text prediction. We evaluate RPT on four long-range language modeling tasks, including books, code, and mathematical writing. We demonstrate that by seamlessly integrating the retriever into the architecture and training process, RPT benefits from the fusion of retrieved context, improving over strong retrieval-augmented baselines. While this work focuses on retrieval from long texts, we argue our empirical findings show that adapting ou"
+      },
+      {
+        "paper_id": "233240939",
+        "markdown_evidence": "Despite showing increasingly human-like conversational abilities, state-of-the-art dialogue models often suffer from factual incorrectness and hallucination of knowledge (Roller et al., 2020). In this work we explore the use of neural-retrieval-in-the-loop architectures - recently shown to be effective in open-domain QA (Lewis et al., 2020b; Izacard and Grave, 2020) - for knowledge-grounded dialogue, a task that is arguably more challenging as it requires querying based on complex multi-turn dialogue context and generating conversationally coherent responses. We study various types of architectures with multiple components - retrievers, rankers, and encoder-decoders - with the goal of maximizing knowledgeability while retaining conversational ability. We demonstrate that our best models obtain state-of-the-art performance on two knowledge-grounded conversational tasks. The models exhibit open-domain conversational capabilities, generalize effectively to scenarios not within the training data, and, as verified by human evaluations, substantially reduce the well-known problem of knowledge hallucination in state-of-the-art chatbots. ... The use of neural-retrieval-in-the-loop architectures - recently shown to be effective in open-domain QA - is explored for knowledge-grounded dialogue, a task that is arguably more challenging as it requires querying based on complex multi-turn dialogue context and generating conversationally coherent responses. ... In this work, we study the various components of retrieval-augmented neural architectures for dialogue -retrievers, rankers and encoder-decodersand propose several new variants, while analyzing which methods work well and in which situations they do so. In particular, we improve downstream performance by employing Poly-encoder Transformers (Humeau et al., 2020) for finer-grained context-candidate scoring of documents, by proposing an iterative retrieval scheme where the retrieval improves through repetition, by employing endto-end-trained retrievers in the Fusion-in-Decoder (Izacard and Grave, 2020) technique, and by building a dialogue turn-"
+      },
+      {
+        "paper_id": "259064264",
+        "markdown_evidence": "We present a reality check on large language models and inspect the promise of retrieval augmented language models in comparison. Such language models are semi-parametric, where models integrate model parameters and knowledge from external data sources to make their predictions, as opposed to the parametric nature of vanilla large language models. We give initial experimental findings that semi-parametric architectures can be enhanced with views, a query analyzer/planner, and provenance to make a significantly more powerful system for question answering in terms of accuracy and efficiency, and potentially for other NLP tasks ... Initial experimental findings that semi-parametric architectures can be enhanced with views, a query analyzer/planner, and provenance to make a significantly more powerful system for question answering in terms of accuracy and efficiency, and potentially for other NLP tasks are given."
+      },
+      {
+        "paper_id": "268032128",
+        "markdown_evidence": "Extending large language models (LLMs) to process longer inputs is crucial for a wide range of applications. However, the substantial computational cost of transformers and limited generalization of positional encoding restrict the size of their context window. We introduce Context Expansion with Parallel Encoding (CEPE), a framework that can be applied to any existing decoder-only LLMs to extend their context window. CEPE employs a small encoder to process long inputs chunk by chunk, enabling the frozen decoder to utilize additional contexts via cross-attention. CEPE is efficient, generalizable, and versatile: trained with 8K-token documents, it extends the context window of LLAMA-2 to 128K tokens, offering 10x the throughput with only 1/6 of the memory. CEPE yields strong performance on language modeling and in-context learning. CEPE also excels in retrieval-augmented applications, while existing long-context models degenerate with retrieved contexts. We further introduce a CEPE variant that can extend the context window of instruction-tuned models using only unlabeled data, and showcase its effectiveness on LLAMA-2-CHAT, leading to a strong instruction-following model that can leverage very long contexts on downstream tasks. ... This work introduces Context Expansion with Parallel Encoding (CEPE), a framework that can be applied to any existing decoder-only LLMs to extend their context window, and introduces a CEPE variant that can extend the context window of instruction-tuned models using only unlabeled data. ... Augmenting LMs with retrieval has been useful in many applications, such as open-domain question answering.Recently, combining LMs with retrieval systems for more generalized purposes has been explored: Guu et al. ( 2020 2024) use logits interpolation from separate forward passes to incorporate retrieval information.\n\nOur architecture is similar to Atlas (Izacard et al., 2022b), RETRO, and RETRO-Fitting (Borgeaud et al., 2022) , but they use retrieval-augmented data for pre-training, which can be expensive to acquire at a large scale.CEPE only requires fine-tuning on long document data, which are much more efficient to obtain; CEPE is also ap"
+      },
+      {
+        "paper_id": "270878612",
+        "markdown_evidence": "Large language models (LLMs) typically utilize the top-k contexts from a retriever in retrieval-augmented generation (RAG). In this work, we propose a novel instruction fine-tuning framework RankRAG, which instruction-tunes a single LLM for the dual purpose of context ranking and answer generation in RAG. In particular, the instruction-tuned LLMs work surprisingly well by adding a small fraction of ranking data into the training blend, and outperform existing expert ranking models, including the same LLM exclusively fine-tuned on a large amount of ranking data. For generation, we compare our model with many strong baselines, including GPT-4-0613, GPT-4-turbo-2024-0409, and ChatQA-1.5, an open-sourced model with the state-of-the-art performance on RAG benchmarks. Specifically, our Llama3-RankRAG significantly outperforms Llama3-ChatQA-1.5 and GPT-4 models on nine knowledge-intensive benchmarks. In addition, it also performs comparably to GPT-4 on five RAG benchmarks in the biomedical domain without instruction fine-tuning on biomedical data, demonstrating its superb capability for generalization to new domains. ... This work proposes a novel instruction fine-tuning framework RankRAG, which instruction-tunes a single LLM for the dual purpose of context ranking and answer generation in RAG, and performs comparably to GPT-4 on five RAG benchmarks without instruction fine-tuning on biomedical data. ... In retrieval-augmented generation, a collection of documents or contexts (e.g.Wikipedia) is given, providing the grounded knowledge.Given a question q, the retriever R (e.g., a parameterized embedding model) first retrieves top-k contexts C = {c 1 , • • • , c k } that are most relevant to the question.Subsequently, the language model produces the final answer where the answer can either be a short phrase or a long sentence, depending on the type of the target task.Our focus is on autoregressive language models (OpenAI, 2022(OpenAI, , 2023;;Meta-AI, 2024), which is the most common architectures for LLMs."
+      },
+      {
+        "paper_id": "264935459",
+        "markdown_evidence": "Large Language Models (LLMs) make natural interfaces to factual knowledge, but their usefulness is limited by their tendency to deliver inconsistent answers to semantically equivalent questions. For example, a model might predict both\"Anne Redpath passed away in Edinburgh.\"and\"Anne Redpath's life ended in London.\"In this work, we identify potential causes of inconsistency and evaluate the effectiveness of two mitigation strategies: up-scaling and augmenting the LM with a retrieval corpus. Our results on the LLaMA and Atlas models show that both strategies reduce inconsistency while retrieval augmentation is considerably more efficient. We further consider and disentangle the consistency contributions of different components of Atlas. For all LMs evaluated we find that syntactical form and other evaluation task artifacts impact consistency. Taken together, our results provide a better understanding of the factors affecting the factual consistency of language models. ... This work identifies potential causes of inconsistency and evaluates the effectiveness of two mitigation strategies: up-scaling and augmenting the LM with a retrieval corpus, showing that both strategies reduce inconsistency while retrieval augmentation is considerably more efficient. ... We expect retrieval-augmented LMs to generally be more consistent than standard LMs. Given a consistent retrieval component, the prediction of a retrieval-augmented model is conditioned on something bound to be more consistent than the query alone. Retrieval augmentation from e.g. Wikipedia has been successful for several fact-intensive question answering tasks (Izacard et al., 2023;Lewis et al., 2020) and reduced hallucination (Shuster et al., 2021;Thoppilan et al., 2022). \n\nAtlas is a retrieval-augmented LM optimized for few-shot knowledge-intensive tasks. It was developed by Izacard et al. (2023) and retrieves passages from Wikipedia and a"
+      },
+      {
+        "paper_id": "252846580",
+        "markdown_evidence": "Language models can be augmented with a context retriever to incorporate knowledge from large external databases. By leveraging retrieved context, the neural network does not have to memorize the massive amount of world knowledge within its internal parameters, leading to better parameter efficiency, interpretability and modularity. In this paper we examined a simple yet effective architecture for incorporating external context into language models based on decoupled Encoder Decoder architecture. We showed that such a simple architecture achieves competitive results on auto-regressive language modeling and open domain question answering tasks. We also analyzed the behavior of the proposed model which performs grounded context transfer. Finally we discussed the computational implications of such retrieval augmented models. ... It is shown that such a simple architecture for incorporating external context into language models based on decoupled Encoder Decoder architecture achieves competitive results on auto-regressive language modeling and open domain question answering tasks. ... In auto-regressive language model evaluation, due to the fact that text are crawled from web sources, there can be a non-trivial overlap of tokens between the training and validation splits. In such cases, tokens are often \"copy-pasted\" from retrieved context into targets without changing. Such copying leads to near-zero perplexity on targets and has a big effect on final bits-per-byte measurement. Following the discussion on dataset leakage of Retro [4], we filtered any example whose targets and context sequences have more than 8 common consecutive tokens (correspond to 12.5% filtering of Retro). We found 14.87% of the validation chunks are "
+      },
+      {
+        "paper_id": "268248911",
+        "markdown_evidence": "Parametric language models (LMs), which are trained on vast amounts of web data, exhibit remarkable flexibility and capability. However, they still face practical challenges such as hallucinations, difficulty in adapting to new data distributions, and a lack of verifiability. In this position paper, we advocate for retrieval-augmented LMs to replace parametric LMs as the next generation of LMs. By incorporating large-scale datastores during inference, retrieval-augmented LMs can be more reliable, adaptable, and attributable. Despite their potential, retrieval-augmented LMs have yet to be widely adopted due to several obstacles: specifically, current retrieval-augmented LMs struggle to leverage helpful text beyond knowledge-intensive tasks such as question answering, have limited interaction between retrieval and LM components, and lack the infrastructure for scaling. To address these, we propose a roadmap for developing general-purpose retrieval-augmented LMs. This involves a reconsideration of datastores and retrievers, the exploration of pipelines with improved retriever-LM interaction, and significant investment in infrastructure for efficient training and inference. ... This position paper proposes a roadmap for developing general-purpose retrieval-augmented LMs, which involves a reconsideration of datastores and retrievers, the exploration of pipelines with improved retriever-LM interaction, and significant investment in infrastructure for efficient training and inference. ... Another important axis is how the retrieved information. Essentially, retrieval-augmented LMs' architectures can be classified into the following three groups: 1) input augmentation, 2) intermediate fusion, and ) output interpolation. \n\nInput augmentation. Input augmentation simply augments the original input x with retrieved results z in the input space of the LM θ and runs a standard LM inference. As in the pioneering work by Chen et al. (2017), input augmentation enables flexible plug-ins of different models for retrieval and LM components. For instance, ATLAS (Izacard et al., 2023) and REALM pre-trains LMs jointly with the retriever, whil"
+      },
+      {
+        "paper_id": "273532207",
+        "markdown_evidence": "While ongoing advancements in Large Language Models have demonstrated remarkable success across various NLP tasks, Retrieval Augmented Generation Model stands out to be highly effective on downstream applications like Question Answering. Recently, RAG-end2end model further optimized the architecture and achieved notable performance improvements on domain adaptation. However, the effectiveness of these RAG-based architectures remains relatively unexplored when fine-tuned on specialized domains such as customer service for building a reliable conversational AI system. Furthermore, a critical challenge persists in reducing the occurrence of hallucinations while maintaining high domain-specific accuracy. In this paper, we investigated the performance of diverse RAG and RAG-like architectures through domain adaptation and evaluated their ability to generate accurate and relevant response grounded in the contextual knowledge base. To facilitate the evaluation of the models, we constructed a novel dataset HotelConvQA, sourced from wide range of hotel-related conversations and fine-tuned all the models on our domain specific dataset. We also addressed a critical research gap on determining the impact of domain adaptation on reducing hallucinations across different RAG architectures, an aspect that was not properly measured in prior work. Our evaluation shows positive results in all met ... Investigation of the performance of diverse RAG and RAG-like architectures through domain adaptation and their ability to generate accurate and relevant response grounded in the contextual knowledge base indicates that domain adaptation not only enhances the models' performance on QA tasks but also significantly reduces hallucinations across all ev"
+      },
+      {
+        "paper_id": "252735056",
+        "markdown_evidence": "Retrieval Augment Generation (RAG) is a recent advancement in Open-Domain Question Answering (ODQA). RAG has only been trained and explored with a Wikipedia-based external knowledge base and is not optimized for use in other specialized domains such as healthcare and news. In this paper, we evaluate the impact of joint training of the retriever and generator components of RAG for the task of domain adaptation in ODQA. We propose RAG-end2end, an extension to RAG that can adapt to a domain-specific knowledge base by updating all components of the external knowledge base during training. In addition, we introduce an auxiliary training signal to inject more domain-specific knowledge. This auxiliary signal forces RAG-end2end to reconstruct a given sentence by accessing the relevant information from the external knowledge base. Our novel contribution is that, unlike RAG, RAG-end2end does joint training of the retriever and generator for the end QA task and domain adaptation. We evaluate our approach with datasets from three domains: COVID-19, News, and Conversations, and achieve significant performance improvements compared to the original RAG model. Our work has been open-sourced through the HuggingFace Transformers library, attesting to our work’s credibility and technical consistency. ... This paper proposes RAG-end2end, an extension to RAG that can adapt to a domain- specific knowledge base by updating all components of the external knowledge base during training and introduces an auxiliary training signal to inject more domain-specific knowledge. ... Open Domain Question Answering (ODQA) (Lee et al., 2019;Lewis et al., 2020c) is an important task in natural language understanding. ODQA methods generally feature a two-stage pipeline: a retriever that selects passages relevant to a given question and a reader that generates the answers from selected passages. Conventionally, these two components are trained separately using ground truth context passages relevant to question-answer (QA) pairs. However, for many real-world scenarios, it is hard to find explicitly annotated contextquestion-answer triplets (Lee et al., 2019;Lewis et al., 2020b;Guu et al., 2020). \n\nRecently, Retrieval Augmented "
+      },
+      {
+        "paper_id": "268856826",
+        "markdown_evidence": "Open-domain Question Answering (OpenQA) aims at answering factual questions with an external large-scale knowledge corpus. However, real-world knowledge is not static; it updates and evolves continually. Such a dynamic characteristic of knowledge poses a vital challenge for these models, as the trained models need to constantly adapt to the latest information to make sure that the answers remain accurate. In addition, it is still unclear how well an OpenQA model can transfer to completely new knowledge domains. In this paper, we investigate the generalization performance of a retrieval-augmented QA model in two specific scenarios: 1) adapting to updated versions of the same knowledge corpus; 2) switching to completely different knowledge domains. We observe that the generalization challenges of OpenQA models stem from the reader's over-reliance on memorizing the knowledge from the external corpus, which hinders the model from generalizing to a new knowledge corpus. We introduce Corpus-Invariant Tuning (CIT), a simple but effective training strategy, to mitigate the knowledge over-memorization by controlling the likelihood of retrieved contexts during training. Extensive experimental results on multiple OpenQA benchmarks show that CIT achieves significantly better generalizability without compromising the model's performance in its original corpus and domain. ... Corpus-Invariant Tuning (CIT) is introduced, a simple but effective training strategy, to mitigate the knowledge over-memorization by controlling the likelihood of retrieved contexts during training. ... To solve this problem, we propose Corpus-Invariant Tuning (CIT), a straightforward but effective method to temper the reader's tendency to over-memorize the contents of externally retrieved documents, thereby improving the model's generalization abilities for downstream tasks like OpenQA.As depicted in Figure 1, the core idea of CIT is to control the reader's memorization (likelihood) of the corpus to be \"invariant\" by introducing an additional loss term that ensures the reader's likelihood of the retrieved documents does not increase during training.Specifically, for each training QA pair (x, y) and its retrieved document set C, the loss ter"
+      },
+      {
+        "paper_id": "267750831",
+        "markdown_evidence": "Retrieval-augmented generation have become central in natural language processing due to their efficacy in generating factual content. While traditional methods employ single-time retrieval, more recent approaches have shifted towards multi-time retrieval for multi-hop reasoning tasks. However, these strategies are bound by predefined reasoning steps, potentially leading to inaccuracies in response generation. This paper introduces MetaRAG, an approach that combines the retrieval-augmented generation process with metacognition. Drawing from cognitive psychology, metacognition allows an entity to self-reflect and critically evaluate its cognitive processes. By integrating this, MetaRAG enables the model to monitor, evaluate, and plan its response strategies, enhancing its introspective reasoning abilities. Through a three-step metacognitive regulation pipeline, the model can identify inadequacies in initial cognitive responses and fixes them. Empirical evaluations show that MetaRAG significantly outperforms existing methods. ... MetaRAG is introduced, an approach that combines the retrieval-augmented generation process with metacognition and can identify inadequacies in initial cognitive responses and fixes them, and significantly outperforms existing methods. ... The development of retrieval-augmented language models has been a central theme in recent research endeavors. Their aim is to harmoniously marry the static knowledge encapsulated within the language model to the dynamic wealth of information on the web. The development of these models can be bifurcated into two primary phases: single-time retrieval and multi-time retrieval. \n\nSingle-time Retrieval. Initial endeavors in retrieval-augmented language models predominantly embraced the single-time retrieval strategy [6,9,20,40]. In this framework, a single-time extraction of knowledge was performed in response to the user's initial query. Various "
+      },
+      {
+        "paper_id": "277113376",
+        "markdown_evidence": "Knowledge graphs have emerged to be promising datastore candidates for context augmentation during Retrieval Augmented Generation (RAG). As a result, techniques in graph representation learning have been simultaneously explored alongside principal neural information retrieval approaches, such as two-phased retrieval, also known as re-ranking. While Graph Neural Networks (GNNs) have been proposed to demonstrate proficiency in graph learning for re-ranking, there are ongoing limitations in modeling and evaluating input graph structures for training and evaluation for passage and document ranking tasks. In this survey, we review emerging GNN-based ranking model architectures along with their corresponding graph representation construction methodologies. We conclude by providing recommendations on future research based on community-wide challenges and opportunities. ... This survey reviews emerging GNN-based ranking model architectures along with their corresponding graph representation construction methodologies and provides recommendations on future research based on community-wide challenges and opportunities. ... Retrieval Augmented Generation (RAG) is an established research area that combines pretrained parametric and nonparametric memory for downstream language generation [Lewis et al., 2020]. Recently, there has been an emergence of using Knowledge Graphs as the external non-parametric datastore, in which structural information is queried to capture relational knowledge [Dong et al., 2024b]. Graph-RAG approaches typically follow a two-phased retrieval procedure, also known as re-ranking [Peng et al., 2024]. Twophased retrieval approaches consist of a primary retrieval method in which given a search query, an initial set of probable responses is fe"
+      },
+      {
+        "paper_id": "272310589",
+        "markdown_evidence": "Recent advancements in Large Language Models (LLMs) have yielded remarkable success across diverse fields. However, handling long contexts remains a significant challenge for LLMs due to the quadratic time and space complexity of attention mechanisms and the growing memory consumption of the key-value cache during generation. This work introduces MemLong: Memory-Augmented Retrieval for Long Text Generation, a method designed to enhance the capabilities of long-context language modeling by utilizing an external retriever for historical information retrieval. MemLong combines a non-differentiable ``ret-mem'' module with a partially trainable decoder-only language model and introduces a fine-grained, controllable retrieval attention mechanism that leverages semantic-level relevant chunks. Comprehensive evaluations on multiple long-context language modeling benchmarks demonstrate that MemLong consistently outperforms other state-of-the-art LLMs. More importantly, MemLong can extend the context length on a single 3090 GPU from 4k up to 80k. Our code is available at https://github.com/Bui1dMySea/MemLong ... This work introduces MemLong: Memory-Augmented Retrieval for Long Text Generation, a method designed to enhance the capabilities of long-context language modeling by utilizing an external retriever for historical information retrieval. ... Much effort has been made to enhance Retrieval-Augmented Language Modeling (Lewis et al., 2020;Izacard and Grave, 2020;Ram et al., 2023;Yu et al., 2022;Asai et al., 2023). While some approaches use external retrievers, non-parametric information fusion often falls short compared to parametric methods within the model. We concentrate on integrating retrieval concepts directly into the model. REALM (Guu et al., 2020) suggests that relying solely on internal model knowledge is inefficient and advocates for the model to learn to retrieve and comprehend. kNN-LM (Khandelwal et al., 2019) enhances language modeling by blending the LLM's next-word pr"
+      },
+      {
+        "paper_id": "237592700",
+        "markdown_evidence": "While large pre-trained language models accumulate a lot of knowledge in their parameters, it has been demonstrated that augmenting it with non-parametric retrieval-based memory has a number of benefits ranging from improved accuracy to data efficiency for knowledge-focused tasks such as question answering. In this work, we apply retrieval-based modeling ideas to the challenging complex task of multi-domain task-oriented semantic parsing for conversational assistants. Our technique, RetroNLU, extends a sequence-to-sequence model architecture with a retrieval component, which is used to retrieve existing similar samples and present them as an additional context to the model. In particular, we analyze two settings, where we augment an input with (a) retrieved nearest neighbor utterances (utterance-nn), and (b) ground-truth semantic parses of nearest neighbor utterances (semparse-nn). Our technique outperforms the baseline method by 1.5% absolute macro-F1, especially at the low resource setting, matching the baseline model accuracy with only 40% of the complete data.Furthermore, we analyse the quality, model sensitivity, and performance of the nearest neighbor retrieval component’s for semantic parses of varied utterance complexity. ... The technique, RetroNLU, extends a sequence-to-sequence model architecture with a retrieval component, which is used to retrieve existing similar samples and present them as an additional context to the model to outperform the baseline method by 1.5% absolute macro-F1."
+      },
+      {
+        "paper_id": "256231037",
+        "markdown_evidence": "Retrieval-augmented language models such as Fusion-in-Decoder are powerful, setting the state of the art on a variety of knowledge-intensive tasks. However, they are also expensive, due to the need to encode a large number of retrieved passages. Some work avoids this cost by pre-encoding a text corpus into a memory and retrieving dense representations directly. However, pre-encoding memory incurs a severe quality penalty as the memory representations are not conditioned on the current input. We propose LUMEN, a hybrid between these two extremes, pre-computing the majority of the retrieval representation and completing the encoding on the fly using a live encoder that is conditioned on the question and fine-tuned for the task. We show that LUMEN significantly outperforms pure memory on multiple question-answering tasks while being much cheaper than FiD, and outperforms both for any given compute budget. Moreover, the advantage of LUMEN over FiD increases with model size. ... This work proposes LUMEN, a hybrid between these two extremes, pre-computing the majority of the retrieval representation and completing the encoding on the fly using a live encoder that is conditioned on the question and fine-tuned for the task. ... Retrieval-augmented language models such as Fusion-in-Decoder (Izacard & Grave, 2021) achieve strong performance on knowledge intensive tasks, often outperforming much larger models (Izacard et al., 2022). They retrieve related text passages and process the passages along with the input to extract relevant context information. However, encoding retrieved passages can be computationally expensive. Recent work has found that with an optimized decoder (Shazeer, 2019;de Jong et al., 2022a;Pope et al., 2022) encoding retrieved passages makes up the bulk of total cost  for finetuning and inference. \n\nAn increasingly common approach to reduce this e"
+      },
+      {
+        "paper_id": "265212816",
+        "markdown_evidence": "Retrieval-augmented language model (RALM) represents a significant advancement in mitigating factual hallucination by leveraging external knowledge sources. However, the reliability of the retrieved information is not always guaranteed, and the retrieval of irrelevant data can mislead the response generation. Moreover, standard RALMs frequently neglect their intrinsic knowledge due to the interference from retrieved information. In instances where the retrieved information is irrelevant, RALMs should ideally utilize their intrinsic knowledge or, in the absence of both intrinsic and retrieved knowledge, opt to respond with “unknown” to avoid hallucination. In this paper, we introduces Chain-of-Note (CoN), a novel approach to improve robustness of RALMs in facing noisy, irrelevant documents and in handling unknown scenarios. The core idea of CoN is to generate sequential reading notes for each retrieved document, enabling a thorough evaluation of their relevance to the given question and integrating this information to formulate the final answer. Our experimental results show that GPT-4, when equipped with CoN, outperforms the Chain-of-Thought approach. Besides, we utilized GPT-4 to create 10K CoN data, subsequently trained on smaller models like OPT and LLaMa-2. Our experiments across four open-domain QA benchmarks show that fine-tuned RALMs equipped with CoN significantly outpe ... Chain-of-Note (CoN) is introduced, a novel approach to improve robustness of RALMs in facing noisy, irrelevant documents and in handling unknown scenarios and experiments show that fine-tuned RALMs equipped with CoN significantly outperform standard fine-tuned RALMs. ... Retrieval-Augmented Language Models (RALMs) represent a significant advancement in natural language processing, combining the power of large language models with the specificity and detail provided by external knowledge sources (Guu et al., 2020;Lewis et al., 2020;Izacard et al., 2022). These models first leverage a retriever to scan a vast evidence corpus, such as Wikipedia, to identify a set of documents pertinent to the user's query. Following this, a reader component is employed to meticulously analyze these documents and formulate a response. This two-pronged approach ensures both relevance and depth in the generated answers. Recent foll"
+      },
+      {
+        "paper_id": "276580417",
+        "markdown_evidence": "Retrieval augmented Question Answering (QA) helps QA models overcome knowledge gaps by incorporating retrieved evidence, typically a set of passages, alongside the question at test time. Previous studies show that this approach improves QA performance and reduces hallucinations, without, however, assessing whether the retrieved passages are indeed useful at answering correctly. In this work, we propose to quantify the uncertainty of a QA model via estimating the utility of the passages it is provided with. We train a lightweight neural model to predict passage utility for a target QA model and show that while simple information theoretic metrics can predict answer correctness up to a certain extent, our approach efficiently approximates or outperforms more expensive sampling-based methods. Code and data are available at https://github.com/lauhaide/ragu. ... This work trains a lightweight neural model to predict passage utility for a target QA model and shows that while simple information theoretic metrics can predict answer correctness up to a certain extent, this approach efficiently approximates or outperforms more expensive sampling-based methods. ... Retrieval augmented Question Answering (QA) allows QA models to overcome knowledge gaps at test time through access to evidence in the form of retrieved passages (Lewis et al., 2020;Guu et al., 2020;Izacard et al., 2024). Recent work leverages external retrievers (Chen et al., 2017;Izacard & Grave, 2021) and the language understanding and generation capabilities of Large Language Models (LLMs; Brown et al. 2020;Ouyang et al. 2024) to predict answers based on questions and retrieved passages which are provided as input context. In Figure 1, we show an example of a question (Who sings Does He Love Me with Reba?), retrieved passages, and predict"
+      },
+      {
+        "paper_id": "274982275",
+        "markdown_evidence": "The integration of retrieval-augmented techniques with LLMs has shown promise in improving performance across various domains. However, their utility in tasks requiring advanced reasoning, such as generating and evaluating mathematical statements and proofs, remains underexplored. This study explores the use of Lean, a programming language for writing mathematical proofs, to populate the knowledge corpus used by RAG systems. We hope for this to lay the foundation to exploring different methods of using RAGs to improve the performance of LLMs in advanced logical reasoning tasks. ... This study explores the use of Lean, a programming language for writing mathematical proofs, to populate the knowledge corpus used by RAG systems to improve the performance of LLMs in advanced logical reasoning tasks. ... RAG is a sophisticated framework designed to enhance language models by coupling them with external retrieval systems, addressing limitations inherent in static, solely parameter-based language models. RAG integrates a dual-component architecture where a retriever dynamically searches a structured external corpus for relevant information based on the input query, and a generator LLM uses the retrieved content as context to generate accurate and contextually enriched responses [Gao et al., 2023, Mialon et al., 2023]. This setup mitigates common issues such as hallucinations and factual inaccuracies in language models by grounding generated tex"
+      },
+      {
+        "paper_id": "263835270",
+        "markdown_evidence": "Pretraining auto-regressive large language models~(LLMs) with retrieval demonstrates better perplexity and factual accuracy by leveraging external databases. However, the size of existing pretrained retrieval-augmented LLM is still limited (e.g., Retro has 7.5B parameters), which limits the effectiveness of instruction tuning and zero-shot generalization. In this work, we introduce Retro 48B, the largest LLM pretrained with retrieval. Specifically, we continue to pretrain a 43B GPT model on additional 100 billion tokens using the Retro augmentation method by retrieving from 1.2 trillion tokens. Notably, the obtained foundation model, Retro 48B, largely outperforms the counterpart GPT 43B trained on 1.2T tokens in terms of perplexity with only 2.58% additional GPU hours, demonstrating the significant scaling potential of the method. After instruction tuning on Retro, InstructRetro demonstrates significant improvement over the instruction tuned GPT on a wide range of zero-shot tasks. Specifically, the average improvement of InstructRetro is 7% over its GPT counterpart across 8 short-form QA and reading comprehension tasks, 10% over GPT across 4 challenging long-form QA tasks, and 16% over GPT across 3 summarization tasks. Surprisingly, we find that one can ablate the encoder from InstructRetro architecture and directly use its decoder backbone, while achieving comparable results. ... This work continues to pretrain a 43B GPT model on additional 100 billion tokens using the Retro augmentation method by retrieving from 1.2 trillion tokens, and finds that one can ablate the encoder from InstructRetro architecture and directly use its decoder backbone, while achieving comparable results. ... Retro (Borgeaud et al., 2022) is an auto-regressive language model pretrained with retrieval augmentation. While Retro shares the backbone of GPT models, Retro differs from GPT by incorporating an additional Retro encoder. The Retro encoder is adept at encoding features of retrieved neighbors from external knowledge bases. Furthermore, Retro adds chunk-wise cross-attention layers within its decoder transformer architecture to integrate retrieved information from the Retro encoder effectively. This design paradigm also makes Retro different from the encoder-decoder architecture (e.g., T5 (Raffel et al., 2020) and Atlas (Izacard et al., 2022a))"
+      },
+      {
+        "paper_id": "275906944",
+        "markdown_evidence": "This paper introduces an approach for training o1-like RAG models that retrieve and reason over relevant information step by step before generating the final answer. Conventional RAG methods usually perform a single retrieval step before the generation process, which limits their effectiveness in addressing complex queries due to imperfect retrieval results. In contrast, our proposed method, CoRAG (Chain-of-Retrieval Augmented Generation), allows the model to dynamically reformulate the query based on the evolving state. To train CoRAG effectively, we utilize rejection sampling to automatically generate intermediate retrieval chains, thereby augmenting existing RAG datasets that only provide the correct final answer. At test time, we propose various decoding strategies to scale the model's test-time compute by controlling the length and number of sampled retrieval chains. Experimental results across multiple benchmarks validate the efficacy of CoRAG, particularly in multi-hop question answering tasks, where we observe more than 10 points improvement in EM score compared to strong baselines. On the KILT benchmark, CoRAG establishes a new state-of-the-art performance across a diverse range of knowledge-intensive tasks. Furthermore, we offer comprehensive analyses to understand the scaling behavior of CoRAG, laying the groundwork for future research aimed at developing factual and ... To train CoRAG effectively, the proposed method utilizes rejection sampling to automatically generate intermediate retrieval chains, thereby augmenting existing RAG datasets that only provide the correct final answer. ... Retrieval-augmented generation (RAG) [20] is one of the core techniques in enterprise applications, necessitating the integration of large foundation models with proprietary data sources to produce responses that are both grounded and factual. Conventionally, foundation models are trained on large-scale datasets comprising trillions of tokens and remain frozen post-deployment. Nonetheless, these models frequently struggle to memorize long-tail factual knowledge or may hallucinate false claims, resulting in unreliable responses in real-world scenarios. RAG mitigates this challenge by augmenting the generation process with retrieved information"
+      },
+      {
+        "paper_id": "270379921",
+        "markdown_evidence": "Large Language Models (LLMs) have immense potential to transform the telecommunications industry. They could help professionals understand complex standards, generate code, and accelerate development. However, traditional LLMs struggle with the precision and source verification essential for telecom work. To address this, specialized LLM-based solutions tailored to telecommunication standards are needed. This Editorial Note showcases how Retrieval-Augmented Generation (RAG) can offer a way to create precise, factual answers. In particular, we show how to build a Telecommunication Standards Assistant that provides accurate, detailed, and verifiable responses. We show a usage example of this framework using 3GPP Release 16 and Release 18 specification documents. We believe that the application of RAG can bring significant value to the telecommunications field. ... This Editorial Note showcases how Retrieval-Augmented Generation (RAG) can offer a way to create precise, factual answers and shows how to build a Telecommunication Standards Assistant that provides accurate, detailed, and verifiable responses. ... LLMs have demonstrated the ability to retain factual information within their parameters and excel in achieving stateof-the-art performance when fine-tuned for natural language processing tasks.However, the acquired world knowledge is implicitly encoded within the parameters of the underlying neural network, which poses a challenge in discerning what knowledge is stored in the network and where.Consequently, LLMs have serious limitations to i) access and precisely manipulate knowledge; ii) add new information or include updates to the current knowledge.Thus, task-specific architectures can outperform language models in knowledge-intensive tas"
+      },
+      {
+        "paper_id": "276249398",
+        "markdown_evidence": "This paper introduces a novel approach to efficiently feeding knowledge to language models (LLMs) during prediction by integrating retrieval and generation processes within a unified framework. While the Retrieval-Augmented Generation (RAG) model addresses gaps in LLMs' training data and knowledge limits, it is hindered by token limit restrictions and dependency on the retrieval system's accuracy. Our proposed architecture incorporates in-context vectors (ICV) to overcome these challenges. ICV recasts in-context learning by using latent embeddings of LLMs to create a vector that captures essential task information. This vector is then used to shift the latent states of the LLM, enhancing the generation process without adding demonstration examples to the prompt. ICV directly integrates information into the model, enabling it to process this information more effectively. Our extensive experimental evaluation demonstrates that ICV outperforms standard in-context learning and fine-tuning across question-answering, information retrieval, and other tasks. This approach mitigates the limitations of current RAG models and offers a more robust solution for handling extensive and diverse datasets. Despite leveraging a fraction of the parameters, our ICV-enhanced model achieves competitive performance against models like LLaMA-3, Gemma, and Phi-3, significantly reducing computational cos ... Despite leveraging a fraction of the parameters, the ICV-enhanced model achieves competitive performance against models like LLaMA-3, Gemma, and Phi-3, significantly reducing computational costs and memory requirements."
+      },
+      {
+        "paper_id": "275358357",
+        "markdown_evidence": "This study develops a question-answering system based on Retrieval-Augmented Generation (RAG) using Chinese Wikipedia and Lawbank as retrieval sources. Using TTQA and TMMLU+ as evaluation datasets, the system employs BGE-M3 for dense vector retrieval to obtain highly relevant search results and BGE-reranker to reorder these results based on query relevance. The most pertinent retrieval outcomes serve as reference knowledge for a Large Language Model (LLM), enhancing its ability to answer questions and establishing a knowledge retrieval system grounded in generative AI. The system's effectiveness is assessed through a two-stage evaluation: automatic and assisted performance evaluations. The automatic evaluation calculates accuracy by comparing the model's auto-generated labels with ground truth answers, measuring performance under standardized conditions without human intervention. The assisted performance evaluation involves 20 finance-related multiple-choice questions answered by 20 participants without financial backgrounds. Initially, participants answer independently. Later, they receive system-generated reference information to assist in answering, examining whether the system improves accuracy when assistance is provided. The main contributions of this research are: (1) Enhanced LLM Capability: By integrating BGE-M3 and BGE-reranker, the system retrieves and reorders high ... This study develops a question-answering system based on Retrieval-Augmented Generation using Chinese Wikipedia and Lawbank as retrieval sources and employs BGE-M3 for dense vector retrieval to obtain highly relevant search results and BGE-reranker to reorder these results based on query relevance. ... Retrieval-Augmented Generation (RAG) [4] overcomes the limitations of Large Language Models (LLMs), which rely on static, pre-trained datasets that can become outdated and lack domain-specific information. This restricts LLMs' ability to generate accurate and up-to-date responses. RAG integrates Information Retrieval (IR) systems with LLMs, enabling them to query external knowledge sources and access real-time, domain-relevant data. In a typical RAG framework, a retriever processes user queries and retrieves relevant documents based on semantic similarity. These documents are then combined with the original query and passed to the LLM to gene"
+      },
+      {
+        "paper_id": "276742664",
+        "markdown_evidence": "The advent of Large Language Models (LLMs) has revolutionized natural language processing. However, these models face challenges in retrieving precise information from vast datasets. Retrieval-Augmented Generation (RAG) was developed to combining LLMs with external information retrieval systems to enhance the accuracy and context of responses. Despite improvements, RAG still struggles with comprehensive retrieval in high-volume, low-information-density databases and lacks relational awareness, leading to fragmented answers. To address this, this paper introduces the Pseudo-Knowledge Graph (PKG) framework, designed to overcome these limitations by integrating Meta-path Retrieval, In-graph Text and Vector Retrieval into LLMs. By preserving natural language text and leveraging various retrieval techniques, the PKG offers a richer knowledge representation and improves accuracy in information retrieval. Extensive evaluations using Open Compass and MultiHop-RAG benchmarks demonstrate the framework's effectiveness in managing large volumes of data and complex relationships. ... The Pseudo-Knowledge Graph (PKG) framework is introduced, designed to overcome limitations by integrating Meta-path Retrieval, In-graph Text and Vector Retrieval into LLMs and offers a richer knowledge representation and improves accuracy in information retrieval. ... Processing. After retrieving information using the aforementioned methods, the next step involves integrating and reranking the data to identify the most relevant information for the query. This post-processing phase is critical for ensuring the accuracy, coherence, and comprehensiveness of the final output. \n\nThe integration process begins by merging results from the three retrieval methods: Regular Expression Retrieval, Vector Retrieval, and Meta-path Retrieval. Each method contributes unique strengths: Regular Expression Retrieval provides precise patternbased matches, Vector Retrieval enhances semantic similarity by identifying contextual"
+      },
+      {
+        "paper_id": "256662717",
+        "markdown_evidence": "In this paper we improve the zero-shot generalization ability of language models via Mixture-Of-Memory Augmentation (MoMA), a mechanism that retrieves augmentation documents from multiple information corpora (\"external memories\"), with the option to\"plug in\"new memory at inference time. We develop a joint learning mechanism that trains the augmentation component with latent labels derived from the end retrieval task, paired with hard negatives from the memory mixture. We instantiate the model in a zero-shot dense retrieval setting by augmenting a strong T5-based retriever with MoMA. Our model, MoMA, obtains strong zero-shot retrieval accuracy on the eighteen tasks included in the standard BEIR benchmark. It outperforms systems that seek generalization from increased model parameters and computation steps. Our analysis further illustrates the necessity of augmenting with mixture-of-memory for robust generalization, the benefits of augmentation learning, and how MoMA utilizes the plug-in memory at inference time without changing its parameters. We plan to open source our code. ... The key idea of (document-based) retrieval augmented language models is to enrich the representation g(q) with additional contextual input for the model, i.e., augmentation documents d a retrieved from an external memory M. Instead of using a single document corpus, MoMA uses multiple corpora to provide richer and more diverse external resources for augmentation. For example, M can be composed by the source corpus C s , a general encyclopedia, a domain specific knowledge graph, etc. Then we can retrieve the augmentation documents D a : \n\nThis augmentation component uses another dense retriever f a (), which also adopts the Sentence-T5 archite"
+      },
+      {
+        "paper_id": "268031947",
+        "markdown_evidence": "Standard language models generate text by selecting tokens from a fixed, finite, and standalone vocabulary. We introduce a novel method that selects context-aware phrases from a collection of supporting documents. One of the most significant challenges for this paradigm shift is determining the training oracles, because a string of text can be segmented in various ways and each segment can be retrieved from numerous possible documents. To address this, we propose to initialize the training oracles using linguistic heuristics and, more importantly, bootstrap the oracles through iterative self-reinforcement. Extensive experiments show that our model not only outperforms standard language models on a variety of knowledge-intensive tasks but also demonstrates improved generation quality in open-ended text generation. For instance, compared to the standard language model counterpart, our model raises the accuracy from 23.47% to 36.27% on OpenbookQA, and improves the MAUVE score from 42.61% to 81.58% in open-ended text generation. Remarkably, our model also achieves the best performance and the lowest latency among several retrieval-augmented baselines. In conclusion, we assert that retrieval is more accurate generation and hope that our work will encourage further research on this new paradigm shift. ... A novel method that selects context-aware phrases from a collection of supporting documents is introduced that achieves the best performance and the lowest latency among several retrieval-augmented baselines and asserts that retrieval is more accurate generation. ... We compare the proposed method with standard LM in the zero-shot setting, also drawing the following state-of-the-art retrieval-augmented methods as baselines: \n\nBase LM is the standard token-level language model using the Transformer (Vaswani et al., 2017) architecture. We fine-tune the pre-trained GPT-25 (Radford et al., 2019). \n\nkNN-LM (Khandelwal et al., 2020) is a retrieval-augmented LM that interpolates the next-token distribution of the base LM with a k-nearest neighbors (kNN) model. \n\nRETRO (Borgeaud et al., 2022) 6 is a retrieval-augmented LM incorporated with a pre-trained document retriever, a document encoder and a cross-attention"
+      },
+      {
+        "paper_id": "259203489",
+        "markdown_evidence": "Memory-augmentation is a powerful approach for efficiently incorporating external information into language models, but leads to reduced performance relative to retrieving text. Recent work introduced LUMEN, a memory-retrieval hybrid that partially pre-computes memory and updates memory representations on the fly with a smaller live encoder. We propose GLIMMER, which improves on this approach through 1) exploiting free access to the powerful memory representations by applying a shallow reranker on top of memory to drastically improve retrieval quality at low cost, and 2) incorporating multi-task training to learn a general and higher quality memory and live encoder. GLIMMER achieves strong gains in performance at faster speeds compared to LUMEN and FiD on the KILT benchmark of knowledge-intensive tasks. ... GLIMMER is proposed, which improves on LUMEN through exploiting free access to the powerful memory representations by applying a shallow reranker on top of memory to drastically improve retrieval quality at low cost and incorporating multi-task training to learn a general and higher quality memory and live encoder. ... Retrieval augmentation (Izacard and Grave, 2021;Borgeaud et al., 2022;Lewis et al., 2020;Khandelwal et al., 2020;Guu et al., 2020) is a powerful technique to improve language model performance by augmenting the input with additional context. Our work is focused on improving the quality-compute trade-off for retrieval-augmented language models. It does so by unifying three lines of research: lateinteraction memory, late-interaction reranking, and learning to retrieve. Our approach uses the architecture skeleton from Fusion-in-Decoder (Izacard and Grave, 2021), one of the most common retrieval augmented models. We employ multi-task training on "
+      },
+      {
+        "paper_id": "259076190",
+        "markdown_evidence": "The Contrastive Language-Image Pretraining (CLIP) model has been widely used in various downstream vision tasks. The few-shot learning paradigm has been widely adopted to augment its capacity for these tasks. However, current paradigms may struggle with fine-grained classification, such as satellite image recognition, due to widening domain gaps. To address this limitation, we propose retrieval-enhanced visual prompt learning (RePrompt), which introduces retrieval mechanisms to cache and reuse the knowledge of downstream tasks. RePrompt constructs a retrieval database from either training examples or external data if available, and uses a retrieval mechanism to enhance multiple stages of a simple prompt learning baseline, thus narrowing the domain gap. During inference, our enhanced model can reference similar samples brought by retrieval to make more accurate predictions. A detailed analysis reveals that retrieval helps to improve the distribution of late features, thus, improving generalization for downstream tasks. RePrompt attains state-of-the-art performance on a wide range of vision datasets, including 11 image datasets, 3 video datasets, 1 multi-view dataset, and 4 domain generalization benchmarks. ... Retrieval-augmented models have gained significant attention in the fields of Natural Language Processing (NLP) and Computer Vision (CV). Numerous studies have augmented large language models with external memory through retrievalenhancement mechanism [17]- [19], [25]- [27]. The integration of knowledge into a language model involves retrieving relevant samples from external memory, thereby enabling the model to generate more informed predictions based on these samples. Typically, the external memory comprises a collection of text paragraphs or a structured knowledge base. \n\nThe BERT-kNN model [26] combines the outputs of a trained BERT model"
+      },
+      {
+        "paper_id": "276116214",
+        "markdown_evidence": "Embedding-based retrieval models have made significant strides in retrieval-augmented generation (RAG) techniques for text and multimodal large language models (LLMs) applications. However, when it comes to speech larage language models (SLLMs), these methods are limited to a two-stage process, where automatic speech recognition (ASR) is combined with text-based retrieval. This sequential architecture suffers from high latency and error propagation. To address these limitations, we propose a unified embedding framework that eliminates the need for intermediate text representations. Specifically, the framework includes separate speech and text encoders, followed by a shared scaling layer that maps both modalities into a common embedding space. Our model reduces pipeline latency by 50\\% while achieving higher retrieval accuracy compared to traditional two-stage methods. We also provide a theoretical analysis of the challenges inherent in end-to-end speech retrieval and introduce architectural principles for effective speech-to-document matching. Extensive experiments demonstrate the robustness of our approach across diverse acoustic conditions and speaker variations, paving the way for a new paradigm in multimodal SLLMs retrieval systems. ... A unified embedding framework is proposed that eliminates the need for intermediate text representations in speech larage language models and reduces pipeline latency by 50\\% while achieving higher retrieval accuracy compared to traditional two-stage methods."
+      },
+      {
+        "paper_id": "265050994",
+        "markdown_evidence": "Despite the dramatic progress in Large Language Model (LLM) development, LLMs often provide seemingly plausible but not factual information, often referred to as hallucinations. Retrieval-augmented LLMs provide a non-parametric approach to solve these issues by retrieving relevant information from external data sources and augment the training process. These models help to trace evidence from an externally provided knowledge base allowing the model predictions to be better interpreted and verified. In this work, we critically evaluate these models in their ability to perform in scientific document reasoning tasks. To this end, we tuned multiple such model variants with science-focused instructions and evaluated them on a scientific document reasoning benchmark for the usefulness of the retrieved document passages. Our findings suggest that models justify predictions in science tasks with fabricated evidence and leveraging scientific corpus as pretraining data does not alleviate the risk of evidence fabrication. ... This work tuned multiple model variants with science-focused instructions and evaluated them on a scientific document reasoning benchmark for the usefulness of the retrieved document passages to suggest that models justify predictions in science tasks with fabricated evidence and leveraging scientific corpus as pretraining data does not alleviate t ... Previous research on Retrieval Augmented LLMs focused on solving three major research questions: i) what to retrieve (e.g., chunks, tokens), ii) how to retrieve (e.g., input, intermediary and output layers), and iii) when to retrieve (e.g., once, every n≥1 tokens). A majority of proposed models such as REALM [3], DPR [8], RAG [9], and ATLAS [6] retrieve text chunks and concatenate them in the input layer of the language model. For example, ATLAS combines autoregressive text generation with retrieval-based language model pre-training based on the encoder-decoder architecture and fine-tuned on open-domain QA. \n\nIn this research, we aim to impro"
+      },
+      {
+        "paper_id": "269605025",
+        "markdown_evidence": "Retrieval-augmented large language models (LLMs) leverage relevant content retrieved by information retrieval systems to generate correct responses, aiming to alleviate the hallucination problem. However, existing retriever-responder methods typically append relevant documents to the prompt of LLMs to perform text generation tasks without considering the interaction of fine-grained structural semantics between the retrieved documents and the LLMs. This issue is particularly important for accurate response generation as LLMs tend to\"lose in the middle\"when dealing with input prompts augmented with lengthy documents. In this work, we propose a new pipeline named\"Reinforced Retriever-Reorder-Responder\"(R$^4$) to learn document orderings for retrieval-augmented LLMs, thereby further enhancing their generation abilities while the large numbers of parameters of LLMs remain frozen. The reordering learning process is divided into two steps according to the quality of the generated responses: document order adjustment and document representation enhancement. Specifically, document order adjustment aims to organize retrieved document orderings into beginning, middle, and end positions based on graph attention learning, which maximizes the reinforced reward of response quality. Document representation enhancement further refines the representations of retrieved documents for responses of  ... This work proposes a new pipeline named \"Reinforced Retriever-Reorder-Responder\" to learn document orderings for retrieval-augmented LLMs, thereby further enhancing their generation abilities while the large numbers of parameters of LLMs remain frozen. ... Large Language Models. The rapid advancement of LLMs is precipitating a revolutionary transformation in NLP. In recent years, significant advancements in LLMs such as GPT-3 [3], ChatGPT [30] and GPT-4 [1] have yielded groundbreaking performance in various NLP tasks. Concurrently, there has been a surge in the development of open-source LLMs based on LLAMA [40] and other foundational models such as Alpaca [39], which can be fine-tuned for specific applications. These models have achieved breakthroughs across a spectrum of tasks and some have been integrated as commercial products in everyday workflows [50,42]. Retrieval-augmented Models. Augme"
+      },
+      {
+        "paper_id": "252735160",
+        "markdown_evidence": "While language Models store a massive amount of world knowledge implicitly in their parameters, even very large models often fail to encode information about rare entities and events, while incurring huge computational costs. Recently, retrieval-augmented models, such as REALM, RAG, and RETRO, have incorporated world knowledge into language generation by leveraging an external non-parametric index and have demonstrated impressive performance with constrained model sizes. However, these methods are restricted to retrieving only textual knowledge, neglecting the ubiquitous amount of knowledge in other modalities like images – much of which contains information not covered by any text. To address this limitation, we propose the first Multimodal Retrieval-Augmented Transformer (MuRAG), which accesses an external non-parametric multimodal memory to augment language generation. MuRAG is pre-trained with a mixture of large-scale image-text and text-only corpora using a joint contrastive and generative loss. We perform experiments on two different datasets that require retrieving and reasoning over both images and text to answer a given query: WebQA, and MultimodalQA. Our results show that MuRAG achieves state-of-the-art accuracy, outperforming existing models by 10-20% absolute on both datasets and under both distractor and full-wiki settings. ... The first Multimodal Retrieval-Augmented Transformer (MuRAG) is proposed, which accesses an external non-parametric multimodal memory to augment language generation and achieves state-of-the-art accuracy. ... Pre-trained language models like GPT-3 (Brown et al., 2020), PaLM (Chowdhery et al., 2022), etc have been shown to capture a massive amount of world knowledge implicitly in their parameters. However, using such large models incurs an extremely high computation cost. As an alternative to a singular monolithic transformer, retrievalaugmented architectures like KNN-LM (Khandelwal et al., 2019), REALM (Guu et al., 2020), Figure 1: Visual information-seeking queries: These queries are unanswerable with text-only retrieval and require retrieving and reasoning over images.\n\nRAG (Lewis et al., 2020), FiD (Izacard and Grave, 2021), and RETRO (Borgeaud"
+      },
+      {
+        "paper_id": "276421468",
+        "markdown_evidence": "Neural scaling laws have revolutionized the design and optimization of large-scale AI models by revealing predictable relationships between model size, dataset volume, and computational resources. Early research established power-law relationships in model performance, leading to compute-optimal scaling strategies. However, recent studies highlighted their limitations across architectures, modalities, and deployment contexts. Sparse models, mixture-of-experts, retrieval-augmented learning, and multimodal models often deviate from traditional scaling patterns. Moreover, scaling behaviors vary across domains such as vision, reinforcement learning, and fine-tuning, underscoring the need for more nuanced approaches. In this survey, we synthesize insights from over 50 studies, examining the theoretical foundations, empirical findings, and practical implications of scaling laws. We also explore key challenges, including data efficiency, inference scaling, and architecture-specific constraints, advocating for adaptive scaling strategies tailored to real-world applications. We suggest that while scaling laws provide a useful guide, they do not always generalize across all architectures and training strategies. ... It is suggested that while scaling laws provide a useful guide, they do not always generalize across all architectures and training strategies, advocating for adaptive scaling strategies tailored to real-world applications. ... Increasing datastore size in retrievalaugmented models consistently improves performance under the same compute budget, without evident saturation. \n\nRetrieval-augmented language models, knowledge-intensive tasks, computeefficient architectures."
+      },
+      {
+        "paper_id": "264935057",
+        "markdown_evidence": "Large language models (LLMs) have demonstrated impressive language understanding and generation capabilities, enabling them to answer a wide range of questions across various domains. However, these models are not flawless and often produce responses that contain errors or misinformation. These inaccuracies, commonly referred to as hallucinations, render LLMs unreliable and even unusable in many scenarios. In this paper, our focus is on mitigating the issue of hallucination in LLMs, particularly in the context of question-answering. Instead of attempting to answer all questions, we explore a refusal mechanism that instructs LLMs to refuse to answer challenging questions in order to avoid errors. We then propose a simple yet effective solution called Learn to Refuse (L2R), which incorporates the refusal mechanism to enable LLMs to recognize and refuse to answer questions that they find difficult to address. To achieve this, we utilize a structured knowledge base to represent all the LLM’s understanding of the world, enabling it to provide traceable gold knowledge. This knowledge base is separate from the LLM and initially empty. It can be filled with validated knowledge and progressively expanded. When an LLM encounters questions outside its domain, the system recognizes its knowledge scope and determines whether it can answer the question independently. Additionally, we introdu ... This paper proposes a simple yet effective solution called Learn to Refuse (L2R), which incorporates the refusal mechanism to enable LLMs to recognize and refuse to answer questions that they find difficult to address. ... Retrieval augmented generation is a text generation paradigm that combine deep learning technology and traditional retrieval technology (Li et al., 2022;Lewis et al., 2020). Retrieval augmented generation can be applied on language models to enhance their knowledge and make their response more accurately. RAG (Lewis et al., 2021) and REALM (Guu et al., 2020) are proposed in the similar way to incorporate retrieval result into the training of language models. They both train the retriever and language model together by modelling documents as latent variable, and minimizing the objective with gradient descent. The related kNN-LM model (Khandelw"
+      },
+      {
+        "paper_id": "266176291",
+        "markdown_evidence": "Retrieval-augmented generation models augment knowledge encoded in a language model by providing additional relevant external knowledge (context) during generation. Although it has been shown that the quantity and quality of context impact the performance of retrieval-augmented generation models during inference, limited research explores how these characteristics affect model training. This paper explores how context quantity and quality during model training affect the performance of Fusion-in-Decoder (FiD), the state-of-the-art retrieval-augmented generation model, in extractive open-domain question answering tasks. Experimental results suggest that FiD models overfit to context quality during training and show suboptimal performance when evaluated on different context quality. Through the experimental results, we also reveal FiD models trained with different context quality have different cross-attention distribution patterns. Specifically, as context quality during training increases, FiD models tend to attend more uniformly to each passage in context. Finally, based on these observations, we propose a method to mitigate overfitting to specific context quality by introducing bias to the cross-attention distribution, which we demonstrate to be effective in improving the performance of FiD models on different context quality. ... This paper explores how context quantity and quality during model training affect the performance of Fusion-in-Decoder (FiD), the state-of-the-art retrieval-augmented generation model, in extractive open-domain question answering tasks and proposes a method to mitigate overfitting to specific context quality by introducing bias to the cross-attenti ... Recently, large-scale pre-trained language models have achieved impressive performance in the field of Natural Language Generation, which includes tasks that require real-world knowledge, e.g., closed-book question answering and common sense reasoning (Brown et al., 2020). However, these models are still prone to generate factually incorrect outputs known as hallucinations (Ji et al., 2023), particularly when dealing with rare entities (Mallen et al., 2023). Also, they cannot handle new information that arises after their training phase (Kasai et al., 2022). \n\nIn order to address these challenges, retrievalaugmented generation models have bee"
+      },
+      {
+        "paper_id": "231717977",
+        "markdown_evidence": "Abstract We present a language model that combines a large parametric neural network (i.e., a transformer) with a non-parametric episodic memory component in an integrated architecture. Our model uses extended short-term context by caching local hidden states—similar to transformer-XL—and global long-term memory by retrieving a set of nearest neighbor tokens at each timestep. We design a gating function to adaptively combine multiple information sources to make a prediction. This mechanism allows the model to use either local context, short-term memory, or long-term memory (or any combination of them) on an ad hoc basis depending on the context. Experiments on word-based and character-based language modeling datasets demonstrate the efficacy of our proposed method compared to strong baselines. ... A language model that combines a large parametric neural network with a non-parametric episodic memory component in an integrated architecture is presented and a gating function to adaptively combine multiple information sources to make a prediction is designed. ... This class of models temporarily stores M past hidden states (typically, in the order of thousands), so it is a working-memory model as opposed to long-term memory. In addi- tion, they also rely on interpolating probabilities of a backbone language model and a cache component (similar to kNN-LN when the cache size is unbounded). \n\nOther retrieval augmented methods. An early version of a neural language model that includes a retrieval component is presented in Guu et al. (2018). They follow a retrieve-then-edit approach to generate a sentence, which requires approximating an expectation over an edit prior. \n\nOutside language modeling, there ar"
+      },
+      {
+        "paper_id": "268032392",
+        "markdown_evidence": "In the rapidly changing world of smart technology, searching for documents has become more challenging due to the rise of advanced language models. These models sometimes face difficulties, like providing inaccurate information, commonly known as\"hallucination.\"This research focuses on addressing this issue through Retrieval-Augmented Generation (RAG), a technique that guides models to give accurate responses based on real facts. To overcome scalability issues, the study explores connecting user queries with sophisticated language models such as BERT and Orca2, using an innovative query optimization process. The study unfolds in three scenarios: first, without RAG, second, without additional assistance, and finally, with extra help. Choosing the compact yet efficient Orca2 7B model demonstrates a smart use of computing resources. The empirical results indicate a significant improvement in the initial language model's performance under RAG, particularly when assisted with prompts augmenters. Consistency in document retrieval across different encodings highlights the effectiveness of using language model-generated queries. The introduction of UMAP for BERT further simplifies document retrieval while maintaining strong results. ... The empirical results indicate a significant improvement in the initial language model's performance under RAG, particularly when assisted with prompts augmenters, which highlights the effectiveness of using language model-generated queries. ... Natural Language Processing (NLP) has witnessed significant advancements with the emergence of LLMs. Despite their prowess in downstream tasks, these models face challenges in accessing and manipulating knowledge, leading to suboptimal performance on knowledgeintensive tasks. A groundbreaking approach to address these limitations is Retrieval-Augmented Generation (RAG). In Lewis et al.'s seminal work (2020) [2], the authors introduce RAG models that combine pre-trained parametric and non-parametric memory for language generation. By leveraging a pre-trained seq2seq model as parametric memory and a dense vector index of Wikipedia as non-parame"
+      },
+      {
+        "paper_id": "271334005",
+        "markdown_evidence": "When reading long-form text, human cognition is complex and structurized. While large language models (LLMs) process input contexts through a causal and sequential perspective, this approach can potentially limit their ability to handle intricate and complex inputs effectively. To enhance LLM's cognition capability, this paper presents a novel concept of context structurization. Specifically, we transform the plain, unordered contextual sentences into well-ordered and hierarchically structurized elements. By doing so, LLMs can better grasp intricate and extended contexts through precise attention and information-seeking along the organized structures. Extensive evaluations are conducted across various model architectures and sizes (including a series of auto-regressive LLMs as well as BERT-like masking models) on a diverse set of NLP tasks (e.g., context-based question-answering, exhaustive hallucination evaluation, and passage-level dense retrieval). Empirical results show consistent and significant performance gains afforded by a single-round structurization. In particular, we boost the open-sourced LLaMA2-70B model to achieve comparable performance against GPT-3.5-Turbo as the hallucination evaluator. Besides, we show the feasibility of distilling advanced LLMs' language processing abilities to a smaller yet effective StruXGPT-7B to execute structurization, addressing the pr ... A novel concept of context structurization is presented, which transforms the plain, unordered contextual sentences into well-ordered and hierarchically structurized elements so that large language models can better grasp intricate and extended contexts through precise attention and information-seeking along the organized structures. ... Retrieval-augmented generation (RAG) has been empirically validated to significantly bolster LLM's domain knowledge [29,62], where precise document retrieval plays a vital role. We now investigate how structurization can facilitate dense retrieval for BERT-like masking language models. \n\nDataset setup. BEIR dataset [52] is a popular benchmark for evaluating dense retrievers' zeroshot effectiveness [39,33], where retrievers are trained on MS MARCO's passage-retrieval training split [44] while directly tested on the BEIR benchmark without finetuning. We focus on our evaluation of the 5 subsets from BEIR i.e., NFCorpus, FiQA, ArguAna, SciDocs, a"
+      },
+      {
+        "paper_id": "258887561",
+        "markdown_evidence": "Augmenting language models with a retrieval mechanism has been shown to significantly improve their performance while keeping the number of parameters low. Retrieval-augmented models commonly rely on a semantic retrieval mechanism based on the similarity between dense representations of the query chunk and potential neighbors. In this paper, we study the state-of-the-art Retro model and observe that its performance gain is better explained by surface-level similarities, such as token overlap. Inspired by this, we replace the semantic retrieval in Retro with a surface-level method based on BM25, obtaining a significant reduction in perplexity. As full BM25 retrieval can be computationally costly for large datasets, we also apply it in a re-ranking scenario, gaining part of the perplexity reduction with minimal computational overhead. ... This paper replaces the semantic retrieval in Retro with a surface-level method based on BM25, obtaining a significant reduction in perplexity and applies it in a re-ranking scenario, gaining part of the perplexity reduction with minimal computational overhead. ... The introduction of the Transformer architecture (Vaswani et al., 2017) has led to a performance boost in language modeling (see, e.g., Brown et al. 2020), but also to a steep increase of computational cost, as the number of parameters and data points is constantly growing. In reaction to this development, there has recently been a surge in work on retrieval-augmented language models (Izacard and Grave, 2021a;Li et al., 2022), which shows that enabling models to retrieve context from large corpora results in lower perplexity and better accuracy in downstream tasks such as question answering, while at the same time using considerably fewer par"
+      },
+      {
+        "paper_id": "268063656",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266738521",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261048776",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268876110",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274982188",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258967643",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277621440",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276647235",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "230435546",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277452696",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277620935",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "4317422",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259309129",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274437524",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271924141",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266999855",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247349199",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "62556542",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2173147",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "199613226",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267411953",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254685683",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "17488682",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "211076098",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258801278",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265295180",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251581837",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271909583",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278316846",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271064724",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237578965",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "240354734",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267086744",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265579215",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271270159",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "207863725",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252222165",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275342954",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1675833",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254877762",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261030382",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248780501",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277955764",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236171290",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271309966",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273901565",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253117147",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220603172",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277780863",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265864989",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255186555",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273351197",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53156661",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2877845",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269009872",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257233129",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274788882",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252587308",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245447863",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278596123",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219761768",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271891920",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256697605",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273478659",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273163268",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274365328",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274776459",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270766077",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263835408",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256459451",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244954723",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263310573",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277043934",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246979308",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781481",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54435194",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275787961",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271769611",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248377629",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259991140",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275778017",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "7079619",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276580132",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258341330",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "64938783",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273025928",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53084909",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270688607",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275860234",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266999646",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222132914",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6034300",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272658959",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273350575",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235441213",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235279783",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260923755",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "12982389",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246848976",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218595733",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250451123",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258041275",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268008120",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273025691",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273502432",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271974586",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249020439",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276580244",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "208291181",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259095742",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261884440",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272826987",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272367442",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "24553",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253247543",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246823964",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258685793",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202699739",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273798073",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277321687",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "81980294",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251931544",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271064283",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "215791689",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262044959",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268358880",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222140874",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269635411",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236477720",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "199405247",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277272240",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "240150070",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277994112",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226283493",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "243847840",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259949923",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276235650",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "213704197",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277596234",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253447134",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266551612",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270391935",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270764405",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259376465",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "213222470",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277857075",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266902716",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253107178",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

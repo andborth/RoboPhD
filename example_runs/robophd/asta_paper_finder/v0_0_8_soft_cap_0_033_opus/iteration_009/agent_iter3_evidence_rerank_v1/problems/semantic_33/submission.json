@@ -1,0 +1,399 @@
+{
+  "output": {
+    "query_id": "semantic_33",
+    "results": [
+      {
+        "paper_id": "273662048",
+        "markdown_evidence": "The Unigram mixture model has become a standard tool for analyzing and performing unsupervised classification on text corpora composed of short documents, such as abstracts, emails, social media posts, and web news. From a Bayesian perspective, inference is often performed using the Dirichlet distribution as a prior over the term vocabulary. In this paper, we discuss an alternative to the Dirichlet distribution: the Beta-Liouville distribution. This distribution, which has only one additional parameter for the same vocabulary size, offers a more flexible correlation structure than the Dirichlet. Furthermore, we explore variational inference for the corresponding hierarchical Bayesian model.  ... Extending this concept, we assume the existence of G distinct topics within a corpus, with each document's thematic content associated with one specific topic. Since document-topic assignments are unknown, unsupervised classification can be formulated by assuming a generative model-a mixture of Unigrams-where G Multinomial distributions represent the different topics (Nigam et al, 2000). In this context, Bayesian estimation is often employed, with Dirichlet distributions acting as priors for the Multinomial probabilities. This hierarchical model structure is both intuitive and advantageous, as it addresses a notable limitation of the Multinomial distribution: low counts can result in unrelia ... This paper presents a variant of the Multinomial mixture model tailored to the unsupervised classification of short text data. While the Multinomial probability vector is traditionally assigned a Dirichlet prior distribution, this work explores an alternative formulation based on the Beta-Liouville distribution, which offers a more flexible correlation structure than the Dirichlet. We examine the theoretical properties of the Beta-Liouville distribution, with particular focus on its conjugacy with the Multinomial likelihood. This property enables the derivation of update equations for a CAVI (Coordinate Ascent Variational Inference) algorithm, facilitating approximate posterior inference of the model parameters. In addition, we introduce a stochastic variant of the CAVI algorithm to enhance scalability. The paper concludes with empirical examples demonstrating effective strategies for selecting the Beta-Liouville hyperparameters."
+      },
+      {
+        "paper_id": "234741794",
+        "markdown_evidence": "During training we randomly select document stream samples of sizes varying between R = 1 and S = 16, which we regard as hyperparameters of the model. To select a sample from the stream a 1 , a 2 , . . . , a L we first choose its length M = R + x (S − R) where x ∼ Beta (3, 1) and take the sample a i , a i+1 , . . . , a i+M −1 where 1 ≤ i ≤ L − M + 1 is chosen uniformly at random. Selecting M according to Beta (3, 1) provides an expected sample size closer to S than to R, a tradeoff that allows the model to quickly learn features of a document stream by exposing it to larger samples most of the time, while still maintaining the flexibility to handle samples of varying sizes. Indeed, the latte ... We consider the task of linking social media accounts that belong to the same author in an automated fashion on the basis of the content and meta-data of the corresponding document streams. We focus on learning an embedding that maps variable-sized samples of user activity–ranging from single posts to entire months of activity–to a vector space, where samples by the same author map to nearby points. Our approach does not require human-annotated data for training purposes, which allows us to leverage large amounts of social media content. The proposed model outperforms several competitive baselines under a novel evaluation framework modeled after established recognition benchmarks in other domains. Our method achieves high linking accuracy, even with small samples from accounts not seen at training time, a prerequisite for practical applications of the proposed linking framework. ... This work focuses on learning an embedding that maps variable-sized samples of user activity to a vector space, where samples by the same author map to nearby points, and achieves high linking accuracy."
+      },
+      {
+        "paper_id": "236486146",
+        "markdown_evidence": "It has been long known that sparsity is an effective inductive bias for learning efficient representation of data in vectors with fixed dimensionality, and it has been explored in many areas of representation learning. Of particular interest to this work is the investigation of the sparsity within the VAE framework which has been explored a lot in the image domain, but has been lacking even a basic level of exploration in NLP. Additionally, NLP is also lagging behind in terms of learning sparse representations of large units of text e.g., sentences. We use the VAEs that induce sparse latent representations of large units of text to address the aforementioned shortcomings. First, we move in t ... This work measures the success of unsupervised state-of-the-art (SOTA) and other strong VAE-based sparsification baselines for text and proposes a hierarchical sparse VAE model to address the stability issue of SOTA and looks at the implications of sparsity on text classification across 3 datasets."
+      },
+      {
+        "paper_id": "260682258",
+        "markdown_evidence": "Data Sampling In the initial stage of unsupervised pre-training, data sources often differ significantly in terms of the number of training instances. \n\nTo address this imbalance, we employ a multinomial distribution to sample data batches from different data sources, taking into account their respective sizes. Suppose the whole pre-training dataset D consists of m different subsets {D 1 , . . . , D m } and denote the size of each subset as n i = |D i |, at each training iteration, the probability of sampling data from the i-th subset D i can be represented by: \n\nwhere we set α = 0.5 in this work. Furthermore, to prevent the model from solely learning taskspecific shortcuts for discriminatio ... We present GTE, a general-purpose text embedding model trained with multi-stage contrastive learning. In line with recent advancements in unifying various NLP tasks into a single format, we train a unified text embedding model by employing contrastive learning over a diverse mixture of datasets from multiple sources. By significantly increasing the number of training data during both unsupervised pre-training and supervised fine-tuning stages, we achieve substantial performance gains over existing embedding models. Notably, even with a relatively modest parameter count of 110M, GTE$_\\text{base}$ outperforms the black-box embedding API provided by OpenAI and even surpasses 10x larger text embedding models on the massive text embedding benchmark. Furthermore, without additional fine-tuning on each programming language individually, our model outperforms previous best code retrievers of similar size by treating code as text. In summary, our model achieves impressive results by effectively harnessing multi-stage contrastive learning, offering a powerful and efficient text embedding model with broad applicability across various NLP and code-related tasks. ... GTE, a general-purpose text embedding model trained with multi-stage contrastive learning, is presented, offering a powerful and efficient textembedding model with broad applicability across various NLP and code-related tasks."
+      },
+      {
+        "paper_id": "273654899",
+        "markdown_evidence": "Contrastive learning for NLP. The success of MoCo [25] and SimCLR [9] in the field of Computer Vision through contrastive learning has prompted research efforts to explore its potential in the area of Natural Language Processing (NLP), resulting in the development of various strategies to enhance text encoding capabilities via contrastive learning. IS-BERT [78] employs the DIM [26] framework to learn text representations. The ArcCon loss [80] is proposed to further enhance the model's semantic discriminating ability. MixCSE [79] introduces an unsupervised method for text representation learning, which incorporates a mixed negative sample strategy to boost the model's ability to discriminate  ... Current techniques for detecting AI-generated text are largely confined to manual feature crafting and supervised binary classification paradigms. These methodologies typically lead to performance bottlenecks and unsatisfactory generalizability. Consequently, these methods are often inapplicable for out-of-distribution (OOD) data and newly emerged large language models (LLMs). In this paper, we revisit the task of AI-generated text detection. We argue that the key to accomplishing this task lies in distinguishing writing styles of different authors, rather than simply classifying the text into human-written or AI-generated text. To this end, we propose DeTeCtive, a multi-task auxiliary, multi-level contrastive learning framework. DeTeCtive is designed to facilitate the learning of distinct writing styles, combined with a dense information retrieval pipeline for AI-generated text detection. Our method is compatible with a range of text encoders. Extensive experiments demonstrate that our method enhances the ability of various text encoders in detecting AI-generated text across multiple benchmarks and achieves state-of-the-art results. Notably, in OOD zero-shot evaluation, our method outperforms existing approaches by a large margin. Moreover, we find our method boasts a Training-Free Incremental Adaptation (TFIA) capability towards OOD data, further enhancing its efficacy in OOD ... It is argued that the key to accomplishing this task lies in distinguishing writing styles of different authors, rather than simply classifying the text into human-written or AI-generated text, and proposed DeTeCtive, a multi-task auxiliary, multi-level contrastive learning framework."
+      },
+      {
+        "paper_id": "271600511",
+        "markdown_evidence": "We here demonstrate that our proposed method successfully performs unsupervised learning of data-dependent distribution kernel across different modalities. The experimental setup is divided into two phases: unsupervised pre-training and downstream regression classification using the learned kernel. \n\nFor each dataset, we select a hold-out validation subset with balanced classes, while the remainder of the dataset is utilized for unsupervised pre-training. We use mini-batch ADAM [22] with a static learning rate of 0.0005. We report mini-batch based (instead of epoch based) training dynamics as our tasks do not require cycling over the entire dataset to converge to the optimal loss value. All  ... Empirical data can often be considered as samples from a set of probability distributions. Kernel methods have emerged as a natural approach for learning to classify these distributions. Although numerous kernels between distributions have been proposed, applying kernel methods to distribution regression tasks remains challenging, primarily because selecting a suitable kernel is not straightforward. Surprisingly, the question of learning a data-dependent distribution kernel has received little attention. In this paper, we propose a novel objective for the unsupervised learning of data-dependent distribution kernel, based on the principle of entropy maximization in the space of probability measure embeddings. We examine the theoretical properties of the latent embedding space induced by our objective, demonstrating that its geometric structure is well-suited for solving downstream discriminative tasks. Finally, we demonstrate the performance of the learned kernel across different modalities. ... This paper proposes a novel objective for the unsupervised learning of data-dependent distribution kernel, based on the principle of entropy maximization in the space of probability measure embeddings, and examines the theoretical properties of the latent embedding space induced by the objective."
+      },
+      {
+        "paper_id": "253892344",
+        "markdown_evidence": "Our proposed framework, PPrior, builds upon several mature components from natural language processing (NLP) literature. We provide a brief overview of those in the following. \n\nUnsupervised Representation Learning and Pre-trained Language Models. Unsupervised (or self-supervised) latent representation learning [48] and pre-trained language models have contributed greatly to recent NLP success [10], [35], [36], [50], including facilitating zero-shot learning [47], [49]. The unsupervised learning technique enabled the development of more robust NLP systems due to the abundance of textual data. We need to optimize the proposed framework using unsupervised representation learning techniques to  ... Mobile app stores produce a tremendous amount of data in the form of user reviews, which is a huge source of user requirements and sentiments; such reviews allow app developers to proactively address issues in their apps. However, only a small number of reviews capture common issues and sentiments which creates a need for automatically identifying prominent reviews. Unfortunately, most existing work in text ranking and popularity prediction focuses on social contexts where other signals are available, which renders such works ineffective in the context of app reviews. In this work, we propose a new framework, PPrior, that enables proactive prioritization of app issues through identifying prominent reviews (ones predicted to receive a large number of votes in a given time window). Predicting highly-voted reviews is challenging given that, unlike social posts, social network features of users are not available. Moreover, there is an issue of class imbalance, since a large number of user reviews receive little to no votes. PPrior employs a pre-trained T5 model and works in three phases. Phase one adapts the pre-trained T5 model to the user reviews data in a self-supervised fashion. In phase two, we leverage contrastive training to learn a generic and task-independent representation of user reviews. Phase three uses radius neighbors classifier t o m ake t he final predictions. This ... This work proposes a new framework, PPrior, that enables proactive prioritization of app issues through identifying prominent reviews (ones predicted to receive a large number of votes in a given time window) and demonstrates the effectiveness of the proposed framework when compared agains"
+      },
+      {
+        "paper_id": "235386502",
+        "markdown_evidence": "Unsupervised Learning using Autoencoders. Similar to word embeddings, distributed representations for sentences can also be learned in an unsupervised fashion. by optimizing some auxiliary objectives, such as the reconstruction loss of an autoencoder [134]. The result of such unsupervised learning are sentence encoders, which can map sentences with similar semantic and syntactic properties to similar fixed-size vector representations. The Transformer-based PLMs described in Section 2.7 are also unsupervised models that can be used as sentence encoders. This section discusses unsupervised models based on auto-encoders and its variants. \n\nKiros et al. [135] proposed the Skip-Thought model for  ... Deep learning--based models have surpassed classical machine learning--based approaches in various text classification tasks, including sentiment analysis, news categorization, question answering, and natural language inference. In this article, we provide a comprehensive review of more than 150 deep learning--based models for text classification developed in recent years, and we discuss their technical contributions, similarities, and strengths. We also provide a summary of more than 40 popular datasets widely used for text classification. Finally, we provide a quantitative analysis of the performance of different deep learning models on popular benchmarks, and we discuss future research directions. ... A comprehensive review of more than 150 deep learning--based models for text classification developed in recent years is provided, and their technical contributions, similarities, and strengths are discussed."
+      },
+      {
+        "paper_id": "233289620",
+        "markdown_evidence": "Self-supervised text representations have a large body of literature. Here, due to space constraints, we provide a highly condensed summary of the most related work. Even prior to the emergence of large pretrained LMs (PLMs), most representation models followed the distributional hypothesis (Harris, 1954) and exploited the co-occurrence statistics of words/phrases/sentences in large corpora (Mikolov et al., 2013a,b;Pennington et al., 2014;Kiros et al., 2015;Hill et al., 2016;Logeswaran and Lee, 2018). Recently, DeCLUTR (Giorgi et al., 2021) follows the distributional hypothesis and formulates sentence embedding training as a contrastive learning task where span pairs sampled from the same do ... Previous work has indicated that pretrained Masked Language Models (MLMs) are not effective as universal lexical and sentence encoders off-the-shelf, i.e., without further task-specific fine-tuning on NLI, sentence similarity, or paraphrasing tasks using annotated task data. In this work, we demonstrate that it is possible to turn MLMs into effective lexical and sentence encoders even without any additional data, relying simply on self-supervision. We propose an extremely simple, fast, and effective contrastive learning technique, termed Mirror-BERT, which converts MLMs (e.g., BERT and RoBERTa) into such encoders in 20-30 seconds with no access to additional external knowledge. Mirror-BERT relies on identical and slightly modified string pairs as positive (i.e., synonymous) fine-tuning examples, and aims to maximise their similarity during “identity fine-tuning”. We report huge gains over off-the-shelf MLMs with Mirror-BERT both in lexical-level and in sentence-level tasks, across different domains and different languages. Notably, in sentence similarity (STS) and question-answer entailment (QNLI) tasks, our self-supervised Mirror-BERT model even matches the performance of the Sentence-BERT models from prior work which rely on annotated task data. Finally, we delve deeper into the inner workings of MLMs, and suggest some evidence on why this simple Mirror-BERT fine-tuning appro ... This work demonstrates that it is possible to turn MLMs into effective lexical and sentence encoders even without any additional data, relying simply on self-supervision, and proposes an extremely simple, fast, and effective contrastive learning technique, termed Mirror-BERT."
+      },
+      {
+        "paper_id": "237406390",
+        "markdown_evidence": "LDA uses a Bayesian approach to learn these distributions, which allows it to compute the probability that a text belongs to a given topic. We implemented this with Gensim version 4.0.0, an open-source library for unsupervised topic modeling (Rehurek and Sojka, 2010). Parameters of LDA were set as suggested in previous studies to obtain optimal performance on short texts. The hyperparameters of LDA were set to α = 0.05 and β = 0.01. We set the number of iterations to 1,000 and number of topics to 25. Thus, the output vector of each response had a dimension of 25. This produced a vector of probabilities for each participant's survey response, where the elements are probability scores of that  ... COVID-19 has presented an unprecedented challenge to human welfare. Indeed, we have witnessed people experiencing a rise of depression, acute stress disorder, and worsening levels of subclinical psychological distress. Finding ways to support individuals' mental health has been particularly difficult during this pandemic. An opportunity for intervention to protect individuals' health & well-being is to identify the existing sources of consolation and hope that have helped people persevere through the early days of the pandemic. In this paper, we identified positive aspects, or “silver linings,” that people experienced during the COVID-19 crisis using computational natural language processing methods and qualitative thematic content analysis. These silver linings revealed sources of strength that included finding a sense of community, closeness, gratitude, and a belief that the pandemic may spur positive social change. People's abilities to engage in benefit-finding and leverage protective factors can be bolstered and reinforced by public health policy to improve society's resilience to the distress of this pandemic and potential future health crises. ... Positive aspects, or “silver linings,” that people experienced during the COVID-19 crisis are identified using computational natural language processing methods and qualitative thematic content analysis."
+      },
+      {
+        "paper_id": "214667397",
+        "markdown_evidence": "In this paper, we present a new representation for short text documents, called bag of biterms (BoB) and a framework for Modeling Bag of Biterms (BBM). \n\nThe extensive experiments demonstrate many advantages of BoB over the traditional bag of words (BoW) representation, making BoB more suitable for short texts. In particular, BoB helps to reduce the negative effects of shortness and reinforce the context of the documents. These properties enable BoB to work well with unsupervised topic models such as LDA, HDP and supervised classification methods such as SVM for text classification. However, BoB has limitations on time and memory due to the size of the biterm vocabulary. The proposed BBM tec ... Analyzing texts from social media encounters many challenges due to their unique characteristics of shortness, massiveness, and dynamic. Short texts do not provide enough context information, causing the failure of the traditional statistical models. Furthermore, many applications often face with massive and dynamic short texts, causing various computational challenges to the current batch learning algorithms. This paper presents a novel framework, namely bag of biterms modeling (BBM), for modeling massive, dynamic, and short text collections. BBM comprises of two main ingredients: (1) the concept of bag of biterms (BoB) for representing documents, and (2) a simple way to help statistical models to include BoB. Our framework can be easily deployed for a large class of probabilistic models, and we demonstrate its usefulness with two well-known models: latent Dirichlet allocation (LDA) and hierarchical Dirichlet process (HDP). By exploiting both terms (words) and biterms (pairs of words), the major advantages of BBM are: (1) it enhances the length of the documents and makes the context more coherent by emphasizing the word connotation and co-occurrence via bag of biterms, and (2) it inherits inference and learning algorithms from the primitive to make it straightforward to design online and streaming algorithms for short texts. Extensive experiments suggest that BBM outperforms s ... A novel framework, namely bag of biterms modeling (BBM), for modeling massive, dynamic, and short text collections and inherits inference and learning algorithms from the primitive to make it straightforward to design online and streaming algorithms for short texts."
+      },
+      {
+        "paper_id": "249840771",
+        "markdown_evidence": "are forced to produce discriminative representations by the contrastive loss, thus alleviate the contradictions during prediction.\n\nAnother challenge in few-shot text classification is that the models are prone to overfit the source classes based on the biased distribution formed by a few training examples Dopierre, Gravier, and Logerais 2021). The authors of  propose to tackle the overfitting problem in few-shot image classification by training with additional instances generated from calibrated distributions. In few-shot text classification, PRO-TAUGMENT (Dopierre, Gravier, and Logerais 2021) introduce an unsupervised cross-entropy loss with unlabeled instances to prevent the model from ov ... Few-shot text classification has recently been promoted by the meta-learning paradigm which aims to identify target classes with knowledge transferred from source classes with sets of small tasks named episodes. Despite their success, existing works building their meta-learner based on Prototypical Networks are unsatisfactory in learning discriminative text representations between similar classes, which may lead to contradictions during label prediction. In addition, the task-level and instance-level overfitting problems in few-shot text classification caused by a few training examples are not sufficiently tackled. In this work, we propose a contrastive learning framework named ContrastNet to tackle both discriminative representation and overfitting problems in few-shot text classification. ContrastNet learns to pull closer text representations belonging to the same class and push away text representations belonging to different classes, while simultaneously introducing unsupervised contrastive regularization at both task-level and instance-level to prevent overfitting. Experiments on 8 few-shot text classification datasets show that ContrastNet outperforms the current state-of-the-art models. ... This work proposes a contrastive learning framework named ContrastNet to tackle both discriminative representation and overfitting problems in few-shot text classification, and shows that ContrastNet outperforms the current state-of-the-art models."
+      },
+      {
+        "paper_id": "2407601",
+        "markdown_evidence": "Text classification and clustering play an important role in many applications, e.g, document retrieval, web search, spam filtering. At the heart of these applications is machine learning algorithms such as logistic regression or Kmeans. These algorithms typically require the text input to be represented as a fixed-length vector. Perhaps the most common fixed-length vector representation for texts is the bag-of-words or bag-of-n-grams (Harris, 1954) due to its simplicity, efficiency and often surprising accuracy. \n\nHowever, the bag-of-words (BOW) has many disadvan- tages. The word order is lost, and thus different sentences can have exactly the same representation, as long as the same words  ... Many machine learning algorithms require the input to be represented as a fixed-length feature vector. When it comes to texts, one of the most common fixed-length features is bag-of-words. Despite their popularity, bag-of-words features have two major weaknesses: they lose the ordering of the words and they also ignore semantics of the words. For example, \"powerful,\" \"strong\" and \"Paris\" are equally distant. In this paper, we propose Paragraph Vector, an unsupervised algorithm that learns fixed-length feature representations from variable-length pieces of texts, such as sentences, paragraphs, and documents. Our algorithm represents each document by a dense vector which is trained to predict words in the document. Its construction gives our algorithm the potential to overcome the weaknesses of bag-of-words models. Empirical results show that Paragraph Vectors outperforms bag-of-words models as well as other techniques for text representations. Finally, we achieve new state-of-the-art results on several text classification and sentiment analysis tasks. ... Paragraph Vector is an unsupervised algorithm that learns fixed-length feature representations from variable-length pieces of texts, such as sentences, paragraphs, and documents, and its construction gives the algorithm the potential to overcome the weaknesses of bag-of-words models."
+      },
+      {
+        "paper_id": "216560900",
+        "markdown_evidence": "Probabilistic topic models are powerful methods to uncover hidden thematic structures in text by projecting each document into a low dimensional space spanned by a set of topics, each of which is a distribution over words. Topic models such as latent Dirichlet allocation (Blei et al., 2003, LDA) and its extensions discover these topics from text, which allows for effective exploration, analysis, and summarization of the otherwise unstructured corpora (Blei, 2012;Blei, 2014). \n\nIn addition to exploratory data analysis, a typical goal of topic models is prediction. Given a set of unannotated training data, unsupervised topic models try to learn good topics that can generalize to unseen text. S ... Markov chain Monte Carlo (MCMC) approximates the posterior distribution of latent variable models by generating many samples and averaging over them. In practice, however, it is often more convenient to cut corners, using only a single sample or following a suboptimal averaging strategy. We systematically study different strategies for averaging MCMC samples and show empirically that averaging properly leads to significant improvements in prediction. ... This work systematically study different strategies for averaging MCMC samples and shows empirically that averaging properly leads to significant improvements in prediction."
+      },
+      {
+        "paper_id": "1873417",
+        "markdown_evidence": "This study investigates the use of unsupervised word embeddings and sequence features for sample representation in an active learning framework built to extract clinical concepts from clinical free text. The objective is to further reduce the manual annotation effort while achieving higher effectiveness compared to a set of baseline features. Unsupervised features are derived from skip-gram word embeddings and a sequence representation approach. The comparative performance of unsupervised features and baseline hand-crafted features in an active learning framework are investigated using a wide range of selection criteria including least confidence, information diversity, information density a"
+      },
+      {
+        "paper_id": "263243146",
+        "markdown_evidence": "In this paper, we propose USS-Graph representation method for inductive text classification. By constructing a bidirectionally weighted heterogeneous graph structure which deeply integrates unsupervised semantics and syntax, USS-Graph can realize the intra-fusion of graph-based global information and unsupervised contextualized information. Furthermore, we propose a series of optimization measures to improve the knowledge integration of USS-Graph. Therefore, the semantic and syntactic knowledge implicit in unsupervised pre-trained models is sufficiently induced, and the global interaction of graph neural networks is knowledgeably oriented. Experiments demonstrate the SOTA performance of our  ... Graph-based neural networks and unsupervised pre-trained models are both cutting-edge text representation methods, given their outstanding ability to capture global information and contextualized information, respectively. However, both representation methods meet obstacles to further performance improvements. On one hand, graph-based neural networks lack knowledge orientation to guide textual interpretation during global information interaction. On the other hand, unsupervised pre-trained models imply rich semantic and syntactic knowledge which lacks sufficient induction and expression. Therefore, how to effectively integrate graph-based global information and unsupervised contextualized semantic and syntactic information to achieve better text representation is an important issue pending for solution. In this paper, we propose a representation method that deeply integrates Unsupervised Semantics and Syntax into heterogeneous Graphs (USS-Graph) for inductive text classification. By constructing a heterogeneous graph whose edges and nodes are totally generated by knowledge from unsupervised pre-trained models, USS-Graph can harmonize the two perspectives of information under a bidirectionally weighted graph structure and thereby realizing the intra-fusion of graph-based global information and unsupervised contextualized semantic and syntactic information. Based on USS-Graph, we ... This paper proposes a representation method that deeply integrates Unsupervised Semantics and Syntax into heterogeneous Graphs (USS-Graph) for inductive text classification and proposes a series of optimization measures to further improve the knowledge integration and representation perfor"
+      },
+      {
+        "paper_id": "277381077",
+        "markdown_evidence": "LDA is a machine learning algorithm that uses a three-layer probabilistic structure to identify the topics and distribution of documents 28 . It is an unsupervised technique commonly used in information retrieval 29 . The R package \"lda\" was used to carry out an LDA analysis of the publications included in the study. The corpus for LDA was created using author keywords, titles, and abstracts of the publications. \n\n1. Preprocessing: Before applying LDA, several preprocessing steps were performed on the text corpus to ensure high-quality input data. First, all text was converted to lowercase to standardize the data. Next, word tokenization was performed after removing special characters and no ... With the rising demand for liver transplantation (LT), research on acute rejection (AR) has become increasingly diverse, yet no consensus has been reached. This study presents a bibliometric and latent Dirichlet allocation (LDA) topic modeling analysis of AR research in LT, encompassing 1399 articles. The United States, Zhejiang University, and the University of California, San Francisco emerged as leading contributors, while Levitsky J and Uemoto SJ were key researchers. The most influential journals included the American Journal of Transplantation, Journal of Hepatology, and Transplantation. The analysis reveals a transition from traditional histological assessments to molecular diagnostics, genetic and epigenetic profiling, and noninvasive biomarkers such as donor-derived cell-free DNA (dd-cfDNA) and microRNAs. Advances in immune checkpoint inhibitors (ICIs), cell-based therapies (Tregs, mesenchymal stem cells (MSCs)), AI-guided immunosuppression, and nanoparticle-mediated drug delivery systems reflect a growing emphasis on precision medicine. In addition, recent exploration of microbiome-based therapies and regenerative medicine, including MSCs and their extracellular vesicles, offers promising new avenues for reducing long-term immunosuppressive drug dependency and enhancing graft survival. These developments not only improve early AR detection and personalized treatment b ... A bibliometric and latent Dirichlet allocation (LDA) topic modeling analysis of AR research in LT reveals a transition from traditional histological assessments to molecular diagnostics, genetic and epigenetic profiling, and noninvasive biomarkers such as donor-derived cell-free DNA (dd-cf"
+      },
+      {
+        "paper_id": "53957026",
+        "markdown_evidence": "We present a framework for building unsupervised representations of entities and their compositions, where each entity is viewed as a probability distribution rather than a vector embedding. In particular, this distribution is supported over the contexts which co-occur with the entity and are embedded in a suitable low-dimensional space. This enables us to consider representation learning from the perspective of Optimal Transport and take advantage of its tools such as Wasserstein distance and barycenters. We elaborate how the method can be applied for obtaining unsupervised representations of text and illustrate the performance (quantitatively as well as qualitatively) on tasks such as meas ... This work presents a framework for building unsupervised representations of entities and their compositions, where each entity is viewed as a probability distribution rather than a vector embedding, and demonstrates the performance on tasks such as measuring sentence similarity, word entailment and similarity."
+      },
+      {
+        "paper_id": "273877511",
+        "markdown_evidence": "Here, we present the results of experiments where we (1) distinguish 50 pairs of texts composed by different authors and all (55) permutations of pairs of texts written by the same author in our corpus, and (2) apply our hypothesistesting method on all resulting classifications to determine whether it is based on predominantly sequentially correlated literary properties or not. We perform these experiments in four configurations, where in all cases, we split the texts into units of varying length ( §4.4): \n\n• Unsupervised Classification of Traditionally-Embedded Texts: We apply the 2-means algorithm ( §4.5.1) to classify texts embedded according to either word n-grams or character k-mers of  ... An intriguing observation arises from the results, highlighting the remarkable true positive rates achieved by unsupervised methods, particularly notable in traditionally-embedded texts. This finding holds significance as unsupervised approaches, such as the k-means algorithm, operate without explicit optimization for authorship attribution tasks. Despite this, they exhibit robust performance in identifying texts by the same author, suggesting that these methods capture intrinsic textual similarities effectively. This success underscores the potential of unsupervised techniques in authorship attribution tasks, especially in scenarios where text representations are not specifically tailored f ... ABSTRACT We introduce a data-centric hypothesis-testing framework to quantify the influence of sequentially correlated literary properties – such as thematic continuity – on textual classification tasks. Our method models label sequences as stochastic processes and uses an empirical autocovariance matrix to generate surrogate labelings that preserve sequential dependencies. This enables statistical testing to determine whether classification outcomes are primarily driven by thematic structure or by non-sequential features like authorial style. Applying this framework to a diverse corpus of English prose, we compare traditional (word n-grams and character k-mers) and neural (contrastively trained) embeddings in both supervised and unsupervised settings. Crucially, our method identifies when classifications are confounded by sequentially correlated similarity, showing that supervised and neural models are more prone to false positives – mistaking shared themes or cross-genre di"
+      },
+      {
+        "paper_id": "16052179",
+        "markdown_evidence": "close. Also following McCallum and Nigam (1998) we performed a 4:1 random split into training and test data. The reported results were obtained by training classification models on the training data and evaluating on the unseen test data.\n\nWe compared four models of token frequency. Each model is conditional on the document length n (but assumes that the parameters of the distribution do not depend on document length), and is derived from the binomial distribution\n\nwhich we view as a one-parameter conditional model, our first model: x represents the token counts (0 ≤ x ≤ n); and n is the length of the document measured as the total number of token counts, including out-of-vocabulary items. T ... It is well known that occurrence counts of words in documents are often modeled poorly by standard distributions like the binomial or Poisson. Observed counts vary more than simple models predict, prompting the use of overdispersed models like Gamma-Poisson or Beta-binomial mixtures as robust alternatives. Another deficiency of standard models is due to the fact that most words never occur in a given document, resulting in large amounts of zero counts. We propose using zero-inflated models for dealing with this, and evaluate competing models on a Naive Bayes text classification task. Simple zero-inflated models can account for practically relevant variation, and can be easier to work with than overdispersed models. ... This work proposes using zero-inflated models for dealing with occurrence counts of words in documents, and evaluates competing models on a Naive Bayes text classification task."
+      },
+      {
+        "paper_id": "233263714",
+        "markdown_evidence": "Dirichlet prior β is a prior on the word-distribution of topics (of a document/service description), and generally, it is a corpus-level (symmetric value) parameter. It represents the sparsity of a document or service descriptions in terms of word distribution (i.e., a lower value β represents each document in a corpus includes a few words, not all the words available in the corpus or corresponding vocabulary). Like α, the optimal value or range of values of β is necessary to appropriately represent the sparsity (word-wise/feature-wise) of a document. For this experiment, we used α = .25 for all the datasets, T = 4 for DS1, T = 19 for DS2, T = 10 for DS3 and T = 4 for DS4, and varied β from  ... Service search in IoT’s large-scale, heterogeneous and multi-domain services space is a challenging task. It can take the time that may not be acceptable for many IoT applications and requires resources that may not be available in many IoT devices. A categorisation of these services into their application domains can reduce the search space and offer an efficient and scalable service search. Recently, in many fields, such as short text messages and categorisation of IoT service specifications, generative probabilistic models, like Topic modelling, are being used. Generally, IoT service descriptions are short and sparse. Existing work on IoT services categorisation is based on Latent Dirichlet Allocation (LDA), but it does not perform well in short and sparse texts. Also, IoT services categorisation has few specific issues, which are not well addressed by existing short texts-specific topic modelling approaches. In this paper, we identify these issues and quantitatively and qualitatively evaluate how well a set of selected short texts-specific topic modelling approaches perform as IoT service categorisers against these issues. The results show that these approaches do not perform well in a corpus of noisy APIs descriptions and heterogeneous service descriptions. Also, they do not support domain identification of services, which is essential in domain-based service search. We co ... It is concluded that integrating an appropriate and comprehensive knowledge base (i.e., domain ontology) could minimise noise and address IoT’s APIs and service descriptions’ heterogeneity and identify the domains of those APIs and services."
+      },
+      {
+        "paper_id": "273323794",
+        "markdown_evidence": "Therefore, we come to the conclusion that variables q 0 , r 0 , and v 2 remain nearly constant with a sufficiently large semantic pool, thus exerting marginal impact to the right side of Eqn. 8. \n\nA.5 Analysis of a condition in Eq.( 9) \n\nBy adjusting its shape parameters, α and β, the Beta distribution can flexibly simulate a range of distinct probability distribution profiles. This flexibility is particularly useful in statistical modeling and analysis where the behavior of probabilities needs to be accurately described. Assuming that p out i follows a Beta distribution, we know that \n\nIf q 2 − 2v 2 ≥ 0 does not hold, it means that \n\nwhich is equivalent to \n\nand α < min{0.5, β} < 1 is a nec ... A straightforward pipeline for zero-shot out-of-distribution (OOD) detection involves selecting potential OOD labels from an extensive semantic pool and then leveraging a pre-trained vision-language model to perform classification on both in-distribution (ID) and OOD labels. In this paper, we theorize that enhancing performance requires expanding the semantic pool, while increasing the expected probability of selected OOD labels being activated by OOD samples, and ensuring low mutual dependence among the activations of these OOD labels. A natural expansion manner is to adopt a larger lexicon; however, the inevitable introduction of numerous synonyms and uncommon words fails to meet the above requirements, indicating that viable expansion manners move beyond merely selecting words from a lexicon. Since OOD detection aims to correctly classify input images into ID/OOD class groups, we can\"make up\"OOD label candidates which are not standard class names but beneficial for the process. Observing that the original semantic pool is comprised of unmodified specific class names, we correspondingly construct a conjugated semantic pool (CSP) consisting of modified superclass names, each serving as a cluster center for samples sharing similar properties across different categories. Consistent with our established theory, expanding OOD label candidates with the CSP satisfies the requirement ... It is theorized that enhancing performance requires expanding the semantic pool, while increasing the expected probability of selected OOD labels being activated by OOD samples, and ensuring low mutual dependence among the activations of these OOD labels."
+      },
+      {
+        "paper_id": "274328561",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231972010",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246634534",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267636581",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265506786",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "4871425",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277741105",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53384564",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "37864875",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274859492",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253384678",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218889354",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "195767214",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274149862",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275959469",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273901285",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251223901",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "488",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263135624",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "119265428",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262583807",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1225426",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276258933",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6996464",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13243633",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271768937",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255174038",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258236342",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266177158",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256676853",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219720965",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56319153",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265432244",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255074733",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258557002",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276558158",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1427",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235187338",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "8462383",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "228626920",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53081529",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231715114",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258887457",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264490580",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265212912",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "155099437",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3212834",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "24509218",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260481767",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14552449",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "15106300",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261440070",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246016220",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246543331",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255394016",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269761957",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244140448",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "11113728",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273811735",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13246898",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "215745794",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52198143",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "21384115",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "61280968",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "199577424",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "204402438",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220633071",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2328808",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277349809",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13970782",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246822516",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252781061",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273338691",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "73729419",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268680833",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259075369",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

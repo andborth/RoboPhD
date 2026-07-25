@@ -1,0 +1,1 @@
+Lenient judge-output normalizer activity this eval (alternate training judge): 0 recovered, 23 shape-fixed, 0 unrecoverable (dropped -> scored Not Relevant, same as stock), of 46 judge responses parsed.

@@ -130,5 +130,5 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 ## Submission status
 
 - [x] Official eval run (2026-07-20: 0.3749 @ $0.0533/query)
-- [ ] Tarball uploaded
+- [x] Tarball uploaded — submitted to ASTA, under official review
 - [x] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`

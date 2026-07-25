@@ -1,0 +1,823 @@
+{
+  "output": {
+    "query_id": "semantic_70",
+    "results": [
+      {
+        "paper_id": "233241179",
+        "markdown_evidence": "Conversational search is a relatively young area of research that aims at automating an information-seeking dialogue. In this article, we help to position it with respect to other research areas within conversational artificial intelligence (AI) by analysing the structural properties of an information-seeking dialogue. To this end, we perform a large-scale dialogue analysis of more than 150K transcripts from 16 publicly available dialogue datasets. These datasets were collected to inform different dialogue-based tasks including conversational search. We extract different patterns of mixed initiative from these dialogue transcripts and use them to compare dialogues of different types. Moreover, we contrast the patterns found in information-seeking dialogues that are being used for research purposes with the patterns found in virtual reference interviews that were conducted by professional librarians. The insights we provide (1) establish close relations between conversational search and other conversational AI tasks and (2) uncover limitations of existing conversational datasets to inform future data collection tasks. ... A large-scale dialogue analysis of more than 150K transcripts from 16 publicly available dialogue datasets is performed to establish close relations between conversational search and other conversational AI tasks and uncover limitations of existing conversational datasets to inform future data collection tasks. ... Research in conversational AI spans across multiple disciplines, including natural language processing, information retrieval, machine learning and dialogue systems. Its main goal is the development of intelligent conversational systems, which find application across a wide range of domains, such as customer support, education, e-commerce, health, entertainment etc. Several subtasks have been proposed in the context of conversational AI. A recent survey of state-of-art systems in conversational AI groups them according to three main tasks: question answering, task-oriented dialogues, and social chatbots [18]; see Figure 1. \n\nConversational se"
+      },
+      {
+        "paper_id": "269605533",
+        "markdown_evidence": "The future of conversational agents will provide users with personalized information responses. However, a significant challenge in developing models is the lack of large-scale dialogue datasets that span multiple sessions and reflect real-world user preferences. Previous approaches rely on experts in a wizard-of-oz setup that is difficult to scale, particularly for personalized tasks. Our method, LAPS, addresses this by using large language models (LLMs) to guide a single human worker in generating personalized dialogues. This method has proven to speed up the creation process and improve quality. LAPS can collect large-scale, human-written, multi-session, and multi-domain conversations, including extracting user preferences. When compared to existing datasets, LAPS-produced conversations are as natural and diverse as expert-created ones, which stays in contrast with fully synthetic methods. The collected dataset is suited to train preference extraction and personalized response generation. Our results show that responses generated explicitly using extracted preferences better match user's actual preferences, highlighting the value of using extracted preferences over simple dialogue history. Overall, LAPS introduces a new method to leverage LLMs to create realistic personalized conversational data more efficiently and effectively than previous methods. ... The results show that responses generated explicitly using extracted preferences better match user's actual preferences, highlighting the value of using extracted preferences over simple dialogue history. ... Problem-driven conversational systems, especially those for search and recommendation, benefit from personalization.Shifting from traditional approaches such as collaborative filtering, recent personalization focuses on more interactive approaches, such as preference elicitation [11,27,28,32,45,53,65].These elicited preferences can be stored as a knowledge graph [3] through entity linking [23,24,55] or in text format [1], and later used for personalization.Storing user preferences in a (semi-)structured format enables conversational agents to better satisfy users' information needs and can be also useful to mitigate bias [19].Following this l ... This section presents the results of the proposed methods for dialogue collection ( §5.1) and personal recommendation ( §5.2)"
+      },
+      {
+        "paper_id": "214713838",
+        "markdown_evidence": "The Conversational Assistance Track (CAsT) is a new track for TREC 2019 to facilitate Conversational Information Seeking (CIS) research and to create a large-scale reusable test collection for conversational search systems. The document corpus is 38,426,252 passages from the TREC Complex Answer Retrieval (CAR) and Microsoft MAchine Reading COmprehension (MARCO) datasets. Eighty information seeking dialogues (30 train, 50 test) are an average of 9 to 10 questions long. Relevance assessments are provided for 30 training topics and 20 test topics. This year 21 groups submitted a total of 65 runs using varying methods for conversational query understanding and ranking. Methods include traditional retrieval based methods, feature based learning-to-rank, neural models, and knowledge enhanced methods. A common theme through the runs is the use of BERT-based neural reranking methods. Leading methods also employed document expansion, conversational query expansion, and generative language models for conversational query rewriting (GPT-2). The results show a gap between automatic systems and those using the manually resolved utterances, with a 35% relative improvement of manual rewrites over the best automatic system. ... The importance of conversation and conversational models for complex information seeking tasks is well-established within information retrieval, initially to understand user behavior during interactive search [4,8] and later to improve search accuracy during search sessions [1]. The rapid adoption of a new generation of conversational assistants such as Alexa, Siri, Cortana, Bixby, and Google Assistant increase the scope and importance of conversational approaches to information seeking and also introduce a broad range of new research problems [2]. \n\nThe TREC Conversational Assistance Track (CAsT) is a new initiative to facilitate Conversatio"
+      },
+      {
+        "paper_id": "209140607",
+        "markdown_evidence": "Conversational search is an approach to information retrieval (IR), where users engage in a dialogue with an agent in order to satisfy their information needs. Previous conceptual work described properties and actions a good agent should exhibit. Unlike them, we present a novel conceptual model defined in terms of conversational goals, which enables us to reason about current research practices in conversational search. Based on the literature, we elicit how existing tasks and test collections from the fields of IR, natural language processing (NLP) and dialogue systems (DS) fit into this model. We describe a set of characteristics that an ideal conversational search dataset should have. Lastly, we introduce MANtIS (the code and dataset are available at this https URL), a large-scale dataset containing multi-domain and grounded information seeking dialogues that fulfill all of our dataset desiderata. We provide baseline results for the conversation response ranking and user intent prediction tasks."
+      },
+      {
+        "paper_id": "265128513",
+        "markdown_evidence": "A peculiarity of conversational search systems is that they involve mixed-initiatives such as system-generated query clarifying questions. Evaluating those systems at a large scale on the end task of IR is very challenging, requiring adequate datasets containing such interactions. However, current datasets only focus on either traditional ad-hoc IR tasks or query clarification tasks, the latter being usually seen as a reformulation task from the initial query. The only two datasets known to us that contain both document relevance judgments and the associated clarification interactions are Qulac and ClariQ. Both are based on the TREC Web Track 2009-12 collection, but cover a very limited number of topics (237 topics), far from being enough for training and testing conversational IR models. To fill the gap, we propose a methodology to automatically build large-scale conversational IR datasets from ad-hoc IR datasets in order to facilitate explorations on conversational IR. Our methodology is based on two processes: 1) generating query clarification interactions through query clarification and answer generators, and 2) augmenting ad-hoc IR datasets with simulated interactions. In this paper, we focus on MsMarco and augment it with query clarification and answer simulations. We perform a thorough evaluation showing the quality and the relevance of the generated interactions for eac ... This paper shows the feasibility and utility of augmenting ad-hoc IR datasets for conversational IR with query clarification and answer simulations for MsMarco. ... There is a critical need for adequate datasets with mixed-initiative interactions for conversational IR, but creating such a dataset is very costly.In this paper, we proposed a method to augment ad-hoc IR datasets by simulating a simple form of mixed-initiative interactions between a user and a conversational IR system.This method generates automatically clarifying questions and answers from a large open-domain IR dataset, making it possible to experiment conversational IR approaches at a large-scale.The proposed approach is generic and can be applied to any existing ad-hoc IR dataset.In the experiments, we augmented the MsMarco dataset and e ... Augmenting Ad-Hoc IR Dataset for Interactive Conversational Search"
+      },
+      {
+        "paper_id": "268513097",
+        "markdown_evidence": "Conversational search provides a more convenient interface for users to search by allowing multi-turn interaction with the search engine. However, the effectiveness of the conversational dense retrieval methods is limited by the scarcity of training data required for their fine-tuning. Thus, generating more training conversational sessions with relevant labels could potentially improve search performance. Based on the promising capabilities of large language models (LLMs) on text generation, we propose ConvSDG, a simple yet effective framework to explore the feasibility of boosting conversational search by using LLM for session data generation. Within this framework, we design dialogue/session-level and query-level data generation with unsupervised and semi-supervised learning, according to the availability of relevance judgments. The generated data are used to fine-tune the conversational dense retriever. Extensive experiments on four widely used datasets demonstrate the effectiveness and broad applicability of our ConvSDG framework compared with several strong baselines. ... This work proposes ConvSDG, a simple yet effective framework to explore the feasibility of boosting conversational search by using LLM for session data generation with unsupervised and semi-supervised learning, according to the availability of relevance judgments. ... NDCG@3 R@100 0   intent.However, compared to dialogue-level ConvSDG without relevance judgment, ConvSDG with query-level augmentation is not more effective, even though it leverages human relevance judgments.This result suggests that there is still room for further improvement in system performance by fully harnessing the existing relevance annotations and enhancing the diversity of the conversational sessions.It is also worth noting that the compared methods do not perform well on the more challenging CAsT-21 dataset.This discrepancy could be attributed to the fact that these methods depend on human-rewritten queries, and our generated augme"
+      },
+      {
+        "paper_id": "261464603",
+        "markdown_evidence": "Conversational search provides a natural interface for information retrieval (IR). Recent approaches have demonstrated promising results in applying dense retrieval to conversational IR. However, training dense retrievers requires large amounts of in-domain paired data. This hinders the development of conversational dense retrievers, as abundant in-domain conversations are expensive to collect. In this paper, we propose Converser, a framework for training conversational dense retrievers with at most 6 examples of in-domain dialogues. Specifically, we utilize the in-context learning capability of large language models to generate conversational queries given a passage in the retrieval corpus. Experimental results on conversational retrieval benchmarks OR-QuAC and TREC CAsT 19 show that the proposed Converser achieves comparable performance to fully-supervised models, demonstrating the effectiveness of our proposed framework in few-shot conversational dense retrieval. All source code and generated datasets are available: https://github.com/MiuLab/CONVERSER ... The proposed Converser, a framework for training conversational dense retrievers with at most 6 examples of in-domain dialogues, utilizes the in-context learning capability of large language models to generate conversational queries given a passage in the retrieval corpus. ... We explore the impact of the generated data size on the performance, where we conduct a series of experiments, systematically varying the number of generated turns used for training presented in Figure 2. It clearly illustrates that as the number of turns increases, the system's performance improves significantly. This finding highlights the crucial role of conversational data in enhancing the effectiveness of our model."
+      },
+      {
+        "paper_id": "57189121",
+        "markdown_evidence": "Understanding the structure of interaction processes helps us to improve information-seeking dialogue systems. Analyzing an interaction process boils down to discovering patterns in sequences of alternating utterances exchanged between a user and an agent. Process mining techniques have been successfully applied to analyze structured event logs, discovering the underlying process models or evaluating whether the observed behavior is in conformance with the known process. In this paper, we apply process mining techniques to discover patterns in conversational transcripts and extract a new model of information-seeking dialogues, QRFA, for Query, Request, Feedback, Answer. Our results are grounded in an empirical evaluation across multiple conversational datasets from different domains, which was never attempted before. We show that the QRFA model better reflects conversation flows observed in real information-seeking conversations than models proposed previously. Moreover, QRFA allows us to identify malfunctioning in dialogue system transcripts as deviations from the expected conversation flow described by the model via conformance analysis. ... The QRFA model better reflects conversation flows observed in real information-seeking conversations than models proposed previously and allows us to identify malfunctioning in dialogue system transcripts as deviations from the expected conversation flow described by the model via conformance analysis. ... Interest in information-seeking dialogue systems is growing rapidly, in information retrieval, language technology, and machine learning. There is, however, a lack of theoretical understanding of the functionality such systems should provide [24]. Different information-seeking models of dialogue systems use different terminology as well as different modeling conventions, and conversational datasets are annotated using different annotation schemes [see, e.g., 23,30]. These discrepancies hinder direct comparisons and aggregation of the results. Moreover, the evaluation of conversational datasets has largely been conducted based on manual effort"
+      },
+      {
+        "paper_id": "270870800",
+        "markdown_evidence": "Conversational search systems enable information retrieval via natural language interactions, with the goal of maximizing users’ information gain over multiple dialogue turns. The increasing prevalence of conversational interfaces adopting this search paradigm challenges traditional information retrieval approaches, stressing the importance of better understanding the engineering process of developing these systems. We undertook a systematic literature review to investigate the links between theoretical studies and technical implementations of conversational search systems. Our review identifies real-world application scenarios, system architectures, and functional components. We consolidate our results by presenting a layered architecture framework and explaining the core functions of conversational search systems. Furthermore, we reflect on our findings in light of the rapid progress in large language models, discussing their capabilities, limitations, and directions for future research. ... A systematic literature review of the links between theoretical studies and technical implementations of conversational search systems identifies real-world application scenarios, system architectures, and functional components and presents a layered architecture framework and explains the core functions of conversational search systems. ... In the related research literature on systems for conversational information-seeking, three categories are usually distinguished: search, recommendation, and question-answering (QA) (Zamani et al., 2023).As the name suggests, CSSs actively involve users in the search process.Through multi-turn dialogues, users enter queries, locate information, examine results, or refine their search goals.In contrast to search systems, recommender systems usually rely on data about user preferences and past interaction histories to help with decision-making by providing personalized recommendations.QA systems have been an active area of research for many dec"
+      },
+      {
+        "paper_id": "269110099",
+        "markdown_evidence": "A large-scale dialogue analysis of more than 150K transcripts from 16 publicly available dialogue datasets is performed to establish close relations between conversational search and other conversational AI tasks and uncover limitations of existing conversational datasets to inform future data collection tasks."
+      },
+      {
+        "paper_id": "283913056",
+        "markdown_evidence": "A large-scale dialogue analysis of more than 150K transcripts from 16 publicly available dialogue datasets is performed to establish close relations between conversational search and other conversational AI tasks and uncover limitations of existing conversational datasets to inform future data collection tasks."
+      },
+      {
+        "paper_id": "271116978",
+        "markdown_evidence": "Continued improvement of conversational assistants in knowledge-rich domains like E-Commerce requires large volumes of realistic high-quality conversation data to power increasingly sophisticated large language model chatbots, dialogue managers, response rankers, and recommenders. The problem is exacerbated for multi-modal interactions in realistic conversational product search and recommendation. Here, an artificial sales agent must interact intelligently with a customer using both textual and visual information and incorporate results from external search systems, such as a product catalog. Yet, it remains an open question how to best crowd-source large-scale, naturalistic multi-modal dialogue and action data, required to train such an artificial agent. We describe our crowd-sourced task where one worker (the Buyer) plays the role of the customer, and another (the Seller) plays the role of the sales agent. We identify subtle interactions between one worker’s environment and their partner’s behavior mediated by workers’ word choice. We find that limiting information presented to the Buyer, both in their backstory and by the Seller, improves conversation quality. We also show how conversations are improved through minimal automated Seller “coaching”. While typed and spoken messages are slightly different, the differences are not as large as frequently assumed. We plan to releas ... It is found that limiting information presented to the Buyer, both in their backstory and by the Seller, improves conversation quality, and the platform code and the resulting dialogues are to release to advance research on conversational search agents. ... Recently, a number of shared tasks and challenges have pushed researchers to develop more intelligent chat bots capable of in-depth conversations on numerous topics, not just small talk. Resulting conversations have been evaluated both by crowd workers and live users as part of the Alexa Prize Conversational AI challenge (Venkatesh et al., 2018). Some public datasets have been made available as a by-product of the challenge. (Dinan et al., 2018) introduced a valuable resource for crowdsourcing conversations in a \"Wizard of Oz\" interface, used to collect restaurant reservation dialogs (CamRest676 dataset) (Wen et al., 2017); the Frame corpus i"
+      },
+      {
+        "paper_id": "236034497",
+        "markdown_evidence": "Despite recent improvements in open-domain dialogue models, state of the art models are trained and evaluated on short conversations with little context. In contrast, the long-term conversation setting has hardly been studied. In this work we collect and release a human-human dataset consisting of multiple chat sessions whereby the speaking partners learn about each other’s interests and discuss the things they have learnt from past sessions. We show how existing models trained on existing datasets perform poorly in this long-term conversation setting in both automatic and human evaluations, and we study long-context models that can perform much better. In particular, we find retrieval-augmented methods and methods with an ability to summarize and recall previous conversations outperform the standard encoder-decoder architectures currently considered state of the art. ... We give crowdworkers access to all previous dia-  logues between the two conversational roles (for the role they are playing, and their partner's role). However, as the conversation gets longer, this becomes infeasible to read and digest within a limited amount of time. Instead, between each session, including after session 1, we run a separate crowdworker task in which conversations are summarized into important points. We then show these summaries as the primary reference for subsequent session dialogues, which are much shorter than the full dialogues themselves. As these summaries were collected in order to store the important points perti ... A popular technique for employing a Transformer encoder with a large context, only some of which is relevant, is to use retrieval augmentation. In this method, a retrieval system is used to find and select part of the context to be included in the final encoding which is attended to by the decoder. \n\nRAG The RAG (Retrieval-Augmented Generation) approach (Lewis et al., 2020b) utilizes a neural-retriever-in-the-loop which is itself a Transformer to do this. Documents or passages to be retrieved are stored in an approximate nearestneighbor FAISS index (Johnson et al., 2019), and a DPR (Dense Passage Retrieval) (Karpukhin et al., 2020) Transforme"
+      },
+      {
+        "paper_id": "258309333",
+        "markdown_evidence": "Conversational systems can be particularly effective in supporting complex information seeking scenarios with evolving information needs. Finding the right products on an e-commerce platform is one such scenario, where a conversational agent would need to be able to provide search capabilities over the item catalog, understand and make recommendations based on the user's preferences, and answer a range of questions related to items and their usage. Yet, existing conversational datasets do not fully support the idea of mixing different conversational goals (i.e., search, recommendation, and question answering) and instead focus on a single goal. To address this, we introduce MG-ShopDial: a dataset of conversations mixing different goals in the domain of e-commerce. Specifically, we make the following contributions. First, we develop a coached human-human data collection protocol where each dialogue participant is given a set of instructions, instead of a specific script or answers to choose from. Second, we implement a data collection tool to facilitate the collection of multi-goal conversations via a web chat interface, using the above protocol. Third, we create the MG-ShopDial collection, which contains 64 high-quality dialogues with a total of 2,196 utterances for e-commerce scenarios of varying complexity. The dataset is additionally annotated with both intents and goals on  ... MG-ShopDial is introduced: a dataset of conversations mixing different goals in the domain of e-commerce, which contains 64 high-quality dialogues with a total of 2,196 utterances and is additionally annotated with both intents and goals on the utterance level. ... There are various ways to collect conversational data. One approach is to get logs from an existing system, as was done, for example, for the Carnegie Mellon Communicator Corpus [7]. Another way is to perform user studies focusing on a task, typically using a crowdsourcing platform to recruit participants as in [8,12,48]. There are different ways to set up the crowdsourcing task, for example, Zhou et al. [48] ask crowd workers to edit utterances proposed by a neural model, while Hayati et al. [19] pair crowd workers to discuss about movies. The Wizard-of-Oz (WoZ) methodology is a popular approach to collect human-human dialogues. In this sett"
+      },
+      {
+        "paper_id": "264350082",
+        "markdown_evidence": "Conversational information retrieval has garnered considerable attention in recent years. A major challenge in conversational search is formulating the most effective query during the dialogue between the searcher and the conversational agent. Unlike traditional information retrieval systems that assume users can independently create queries, conversational settings allow agents to assist users in query formulation. This alleviates the burden on users by leveraging the multi-turn nature of the conversation to aid them in reaching their information goals. Conversational context plays a vital role in the query process. In this work, we focus on understanding and leveraging conversational context from two dimensions: conversational history and knowledge history. The goal is to identify and model the relevant portions from the search dialogue and the knowledge history and to use this within the search process to improve the overall performance of conversational information retrieval systems. ... The goal is to identify and model the relevant portions from the search dialogue and the knowledge history and to use this within the search process to improve the overall performance of conversational information retrieval systems. ... The methodology for this project will focus on the examination of conversational search dialogues to study the role of context related to conversational history and the topical knowledge of the user. We will next examine methods for identifying the key context features from the history at each step in the search conversation and attempt to automate the construction of the optimal query. To understand how a user's existing domain knowledge and developing knowledge throughout the conversation affect the effectiveness of an IR system, we will conduct user studies. These studies will be designed to give us insights into different user behaviours "
+      },
+      {
+        "paper_id": "274596695",
+        "markdown_evidence": "Conversational Information Retrieval (CIR) has attracted growing research interest in recent years, particularly since the emergence of conversational agents that leverage generative AI methods. Within the information retrieval community, a substantial body of research has emerged, particularly centred around initiatives such as the TREC CAsT and iKAT tracks. These tracks have been instrumental in providing datasets that facilitate research in CIR and enable a comparative analysis of various approaches to conversational search. Most of the existing efforts within these tracks have concentrated on the interactive dialogue between the searcher and the CIR system. The task has generally overlooked the potential contribution of User modelling for effective CIR. Recognizing the importance of this dimension, the goal of the workshop is to create a collaborative framework for investigating user modelling and its evaluation in the context of CIR. We invite participants to share their insights and proposals regarding User modelling in CIR, particularly in relation to algorithm design, system personalization, and the methods through which these models can be simulated and assessed. By fostering dialogue and collaboration among researchers and practitioners, we aim to deepen our understanding of how effective User modelling might enhance conversational search experiences and lead to more  ... The goal of the workshop is to create a collaborative framework for investigating user modelling and its evaluation in the context of CIR and deepen the understanding of how effective User modelling might enhance conversational search experiences and lead to more refined and user-centred retrieval systems. ... A Conversational Information Retrieval (CIR) system enables the entire information access interaction process to be carried out as a conversation between a User and a Search agent. Thus, a CIR system should be able to model the interactive search process to support understanding the user's query, interacting with the user to get a better understanding of the user's information need, improving the search results, and extracting and presenting search results/answers in a simple and clear way. The process driven by the conversational interface of the CIR system is highly interactive, and thus not suitable for the classic evaluation style as appl"
+      },
+      {
+        "paper_id": "237262776",
+        "markdown_evidence": "Conversational Information Retrieval (CIR) is an emerging field of Information Retrieval (IR) at the intersection of interactive IR and dialogue systems for open domain information needs. In order to optimize these interactions and enhance the user experience, it is necessary to improve IR models by taking into account sequential heterogeneous user-system interactions. Reinforcement learning has emerged as a paradigm particularly suited to optimize sequential decision making in many domains and has recently appeared in IR. However, training these systems by reinforcement learning on users is not feasible. One solution is to train IR systems on user simulations that model the behavior of real users. Our contribution is twofold: 1)reviewing the literature on user modeling and user simulation for information access, and 2) discussing the different research perspectives for user simulations in the context of CIR ... reviewing the literature on user modeling and user simulation for information access, and discussing the different research perspectives for user simulations in the context of CIR. ... Conversational information retrieval (CIR) is a wellestablished research field in the Information Retrieval (IR) community [1]. It is at the intersection of many application domains (interactive IR, conversational systems, question answering) but differs in many aspects. 1) Unlike interactive IR [2] that is also interested in user feedback, CIR's objective is to find the relevant information in a more natural way (i.e., interactions in natural language). 2) It is also different from task-oriented conversation systems [3] which are guided in a particular application area (i.e., travel booking). A CIR system is a specific application case of ta"
+      },
+      {
+        "paper_id": "247627671",
+        "markdown_evidence": "Language models (LMs) have recently been shown to generate more factual responses by employing modularity (Zhou et al., 2021) in combination with retrieval (Adolphs et al., 2021). We extend the recent approach of Adolphs et al. (2021) to include internet search as a module. Our SeeKeR (Search engine->Knowledge->Response) method thus applies a single LM to three modular tasks in succession: search, generating knowledge, and generating a final response. We show that, when using SeeKeR as a dialogue model, it outperforms the state-of-the-art model BlenderBot 2 (Chen et al., 2021) on open-domain knowledge-grounded conversations for the same number of parameters, in terms of consistency, knowledge and per-turn engagingness. SeeKeR applied to topical prompt completions as a standard language model outperforms GPT2 (Radford et al., 2019) and GPT3 (Brown et al., 2020) in terms of factuality and topicality, despite GPT3 being a vastly larger model. Our code and models are made publicly available. ... It is shown that, when using SeeKeR as a dialogue model, it outperforms the state-of-the-art model BlenderBot 2 on open-domain knowledge-grounded conversations for the same number of parameters, in terms of consistency, knowledge and per-turn engagingness. ... Task Setting We perform a human evaluation using crowdworkers in the same setting as Komeili et al. (2022). The crowdworker is asked to play a role from the Wizard of Internet dataset, and to have a natural conversation. Each conversation consists of 15 messages (7 from the human, 8 from the bot). We collect 100 dialogues -roughly 800 annotations -per model. \n\nEvaluation For each turn of their conversation, we ask the crowdworker to mark their partner's responses for conversational attributes, in particular whether they are: (i) consistent, (ii) knowledgeable (iii) factually correct; and (iv) engaging (all of which are yes/no binary questions"
+      },
+      {
+        "paper_id": "261682055",
+        "markdown_evidence": "Advancements in conversational systems have revolutionized information access, surpassing the limitations of single queries. However, developing dialogue systems requires a large amount of training data, which is a challenge in low-resource domains and languages. Traditional data collection methods like crowd-sourcing are labor-intensive and time-consuming, making them ineffective in this context. Data augmentation (DA) is an affective approach to alleviate the data scarcity problem in conversational systems. This tutorial provides a comprehensive and up-to-date overview of DA approaches in the context of conversational systems. It highlights recent advances in conversation augmentation, open domain and task-oriented conversation generation, and different paradigms of evaluating these models. We also discuss current challenges and future directions in order to help researchers and practitioners to further advance the field in this area. ... This tutorial provides a comprehensive and up-to-date overview of DA approaches in the context of conversational systems, and highlights recent advances in conversation augmentation, open domain and task-oriented conversation generation, and different paradigms of evaluating these models. ... We delve into the specific challenges that must be addressed when undertaking the task of creating new dialogue data. To provide a comprehensive package for dialogue data creation, we also present an overview of evaluation methods and available datasets that can be utilized to assess the quality and performance of the generated dialogue data. By covering these aspects, our tutorial offers a holistic understanding of the methods, challenges, and evaluation procedures associated with the dialogue data creation. \n\nPrevious tutorials. Our tutorial builds upon two key concepts: conversational systems and DA. Tutorials that discuss these concepts i"
+      },
+      {
+        "paper_id": "257079766",
+        "markdown_evidence": "Conversational agents, or commonly known as dialogue systems, have gained escalating popularity in recent years. Their widespread applications support conversational interactions with users and accomplishing various tasks as personal assistants. However, one key weakness in existing conversational agents is that they only learn to passively answer user queries via training on pre-collected and manually-labeled data. Such passiveness makes the interaction modeling and system-building process relatively easier, but it largely hinders the possibility of being human-like hence lowering the user engagement level. In this tutorial, we introduce and discuss methods to equip conversational agents with the ability to interact with end users in a more proactive way. This three-hour tutorial is divided into three parts and includes two interactive exercises. It reviews and presents recent advancements on the topic, focusing on automatically expanding ontology space, actively driving conversation by asking questions or strategically shifting topics, and retrospectively conducting response quality control. ... This tutorial introduces and discusses methods to equip conversational agents with the ability to interact with end users in a more proactive way, and reviews and presents recent advancements on the topic, focusing on automatically expanding ontology space. ... We observe a steadily increasing interest in conversational agents in recent IR, AI, and NLP conferences. For instance, there is a Conversational Assistant Track in TREC 2019 to 2022 [8], and the primer IR conference, SIGIR, has recognized 'Dialogue and Interactive systems' to be one of its major research topics. Our tutorial focuses on building next-generation conversational agents that can interact with end users proactively and contribute more to the shared ongoing conversation. With the wide use of customer service conversational agents, task completion conversational agents, and virtual personal assistants etc. in our daily life, there h"
+      },
+      {
+        "paper_id": "246063428",
+        "markdown_evidence": "We present LaMDA: Language Models for Dialog Applications. LaMDA is a family of Transformer-based neural language models specialized for dialog, which have up to 137B parameters and are pre-trained on 1.56T words of public dialog data and web text. While model scaling alone can improve quality, it shows less improvements on safety and factual grounding. We demonstrate that fine-tuning with annotated data and enabling the model to consult external knowledge sources can lead to significant improvements towards the two key challenges of safety and factual grounding. The first challenge, safety, involves ensuring that the model's responses are consistent with a set of human values, such as preventing harmful suggestions and unfair bias. We quantify safety using a metric based on an illustrative set of human values, and we find that filtering candidate responses using a LaMDA classifier fine-tuned with a small amount of crowdworker-annotated data offers a promising approach to improving model safety. The second challenge, factual grounding, involves enabling the model to consult external knowledge sources, such as an information retrieval system, a language translator, and a calculator. We quantify factuality using a groundedness metric, and we find that our approach enables the model to generate responses grounded in known sources, rather than responses that merely sound plausible. ... It is demonstrated that fine-tuning with annotated data and enabling the model to consult external knowledge sources can lead to significant improvements towards the two key challenges of safety and factual grounding. ... We engaged with a vendor supplier of U.S. based crowd workers. As with the conversation collection task, special attention was paid to pursue a representative set of voices in the data we collected. The resulting demographic mix of the crowdworkers is described in Appendix A.3. In future, work we will focus on investigating the transferability of the results beyond the U.S. as well. \n\nConsent, general instructions and demographic survey: Participants were provided with the same information described above in the conversation collection task (with the modification that the task was not conversation generation). \n\nTask design pilots: Several ta"
+      },
+      {
+        "paper_id": "257913129",
+        "markdown_evidence": "Building a natural language dataset requires caution since word semantics is vulnerable to subtle text change or the definition of the annotated concept. Such a tendency can be seen in generative tasks like question-answering and dialogue generation and also in tasks that create a categorization-based corpus, like topic classification or sentiment analysis. Open-domain conversations involve two or more crowdworkers freely conversing about any topic, and collecting such data is particularly difficult for two reasons: 1) the dataset should be ``crafted\"rather than ``obtained\"due to privacy concerns, and 2) paid creation of such dialogues may differ from how crowdworkers behave in real-world settings. In this study, we tackle these issues when creating a large-scale open-domain persona dialogue corpus, where persona implies that the conversation is performed by several actors with a fixed persona and user-side workers from an unspecified crowd. ... This study tackles issues when creating a large-scale open-domain persona dialogue corpus, where persona implies that the conversation is performed by several actors with a fixed persona and user-side workers from an unspecified crowd. ... Dialogue has long been a topic of interest, and its construction schemes have changed a lot as well. Early approaches excerpted scripts from real conversation with minimal cleansing, while recent approaches build dialogue dataset from scratch and add some relevant tags on it. \n\nSwitchboard Switchboard (Godfrey, Holliman, and Mc-Daniel 1992) is an early multi-speaker corpus of conversational speech and text, made up of telephone conversations on pre-specified topics. It includes 2,500 conversations by 500 speakers from around the United States, collected automatically over T1 lines at Texas Instruments. Also, words for each recording are time-"
+      },
+      {
+        "paper_id": "251371589",
+        "markdown_evidence": "We present BlenderBot 3, a 175B parameter dialogue model capable of open-domain conversation with access to the internet and a long-term memory, and having been trained on a large number of user defined tasks. We release both the model weights and code, and have also deployed the model on a public web page to interact with organic users. This technical report describes how the model was built (architecture, model and training scheme), and details of its deployment, including safety mechanisms. Human evaluations show its superiority to existing open-domain dialogue agents, including its predecessors (Roller et al., 2021; Komeili et al., 2022). Finally, we detail our plan for continual learning using the data collected from deployment, which will also be publicly released. The goal of this research program is thus to enable the community to study ever-improving responsible agents that learn through interaction. ... The goal of this research program is to enable the community to study ever-improving responsible agents that learn through interaction and release both the model weights and code, and the plan for continual learning using the data collected from deployment, which will also be publicly released. ... Open-domain short conversations We perform a human evaluation using crowdworkers in the same setting as Komeili et al. (2022). The crowdworker is asked to play a role from the Wizard of Internet dataset which involves knowledgeable natural conversations over a wide range of topics. Each conversation consists of 15 messages (7 from the human, 8 from the bot). We collect 100 dialogues -roughly 800 annotations -per model. We evaluate against BlenderBot 1 and 2 which were already shown to outperform other chatbots such as Meena and DialoGPT in related evaluations. In addition we compare to the recent SeeKeR language model (Shuster et al., 2022). "
+      },
+      {
+        "paper_id": "219707158",
+        "markdown_evidence": "Automated generation of conversational dialogue using modern neural architectures has made notable advances. However, these models are known to have a drawback of often producing uninteresting, predictable responses; this is known as the diversity problem. We introduce a new strategy to address this problem, called Diversity-Informed Data Collection. Unlike prior approaches, which modify model architectures to solve the problem, this method uses dynamically computed corpus-level statistics to determine which conversational participants to collect data from. Diversity-Informed Data Collection produces significantly more diverse data than baseline data collection methods, and better results on two downstream tasks: emotion classification and dialogue generation. This method is generalizable and can be used with other corpus-level metrics. ... This work introduces a new strategy to address the diversity problem of conversational dialogue, called Diversity-Informed Data Collection, which uses dynamically computed corpus-level statistics to determine which conversational participants to collect data from. ... Data collection approaches to incentivize diverse crowdworker output have also been studied. For instance, in EmpatheticDialogues (Rashkin et al., 2019) crowdworkers are conditioned to generate a response and an emotion (such as \"afraid\" or \"proud\") associated with it. If workers do not generate text with certain emotions, they are prompted to select only from the underused labels. This is an example of trying to get better class coverage, but does not compare crowdworker output to the entire corpus of collected responses.\n\nPast work has also examined how the particular crowdworking task affects the diversity of crowdworker output. Kang et al ... More Diverse Dialogue Datasets via Diversity-Informed Data Collection"
+      },
+      {
+        "paper_id": "218673642",
+        "markdown_evidence": "Dagstuhl Seminar 19461 \"Conversational Search\" was held on 10-15 November 2019. 44~researchers in Information Retrieval and Web Search, Natural Language Processing, Human Computer Interaction, and Dialogue Systems were invited to share the latest development in the area of Conversational Search and discuss its research agenda and future directions. A 5-day program of the seminar consisted of six introductory and background sessions, three visionary talk sessions, one industry talk session, and seven working groups and reporting sessions. The seminar also had three social events during the program. This report provides the executive summary, overview of invited talks, and findings from the seven working groups which cover the definition, evaluation, modelling, explanation, scenarios, applications, and prototype of Conversational Search. The ideas and findings presented in this report should serve as one of the main sources for diverse research programs on Conversational Search. ... The executive summary, overview of invited talks, and findings from the seven working groups which cover the definition, evaluation, modelling, explanation, scenarios, applications, and prototype of Conversational Search are provided. ... Conversational search is a newly emerging research area that aims to provide access to digitally stored information by means of a conversational user interface, that is, a dialoguebased interaction inspired and informed by human communication processes [5,15,18]. The major goal of a conversational search system is to effectively retrieve relevant answers to a wide range of questions expressed in natural language, with rich user-system dialogue as a crucial component for understanding the question and refining the answers [1]. The respective dialogue comprises of a sequence of exchanges between one or more users and a conversational search sys"
+      },
+      {
+        "paper_id": "269005688",
+        "markdown_evidence": "Conversational search aims to retrieve passages containing essential information to answer queries in a multi-turn conversation. In conversational search, reformulating context-dependent conversational queries into stand-alone forms is imperative to effectively utilize off-the-shelf retrievers. Previous methodologies for conversational query reformulation frequently depend on human-annotated rewrites.However, these manually crafted queries often result in sub-optimal retrieval performance and require high collection costs.To address these challenges, we propose **Iter**ative **C**onversational **Q**uery **R**eformulation (**IterCQR**), a methodology that conducts query reformulation without relying on human rewrites. IterCQR iteratively trains the conversational query reformulation (CQR) model by directly leveraging information retrieval (IR) signals as a reward.Our IterCQR training guides the CQR model such that generated queries contain necessary information from the previous dialogue context.Our proposed method shows state-of-the-art performance on two widely-used datasets, demonstrating its effectiveness on both sparse and dense retrievers. Moreover, IterCQR exhibits superior performance in challenging settings such as generalization on unseen datasets and low-resource scenarios. ... The authors' proposed IterCQR method shows state-of-the-art performance on two widely-used datasets, demonstrating its effectiveness on both sparse and dense retrievers and exhibits superior performance in challenging settings such as generalization on unseen datasets and low-resource scenarios."
+      },
+      {
+        "paper_id": "269982301",
+        "markdown_evidence": "Recent advancements in conversational systems have significantly enhanced human-machine interactions across various domains. However, training these systems is challenging due to the scarcity of specialized dialogue data. Traditionally, conversational datasets were created through crowdsourcing, but this method has proven costly, limited in scale, and labor-intensive. As a solution, the development of synthetic dialogue data has emerged, utilizing techniques to augment existing datasets or convert textual resources into conversational formats, providing a more efficient and scalable approach to dataset creation. In this survey, we offer a systematic and comprehensive review of multi-turn conversational data generation, focusing on three types of dialogue systems: open domain, task-oriented, and information-seeking. We categorize the existing research based on key components like seed data creation, utterance generation, and quality filtering methods, and introduce a general framework that outlines the main principles of conversation data generation systems. Additionally, we examine the evaluation metrics and methods for assessing synthetic conversational data, address current challenges in the field, and explore potential directions for future research. Our goal is to accelerate progress for researchers and practitioners by presenting an overview of state-of-the-art methods and ... This survey offers a systematic and comprehensive review of multi-turn conversational data generation, focusing on three types of dialogue systems: open domain, task-oriented, and information-seeking, and introduces a general framework that outlines the main principles of conversation data generation systems."
+      },
+      {
+        "paper_id": "265221292",
+        "markdown_evidence": "The proposed IterCQR method shows state-of-the-art performance on two datasets, demonstrating its effectiveness on both sparse and dense retrievers and exhibits robustness in domain-shift, low-resource, and topic-shift scenarios."
+      },
+      {
+        "paper_id": "236034557",
+        "markdown_evidence": "The largest store of continually updating knowledge on our planet can be accessed via internet search. In this work we study giving access to this information to conversational agents. Large language models, even though they store an impressive amount of knowledge within their weights, are known to hallucinate facts when generating dialogue (Shuster et al., 2021); moreover, those facts are frozen in time at the point of model training. In contrast, we propose an approach that learns to generate an internet search query based on the context, and then conditions on the search results to finally generate a response, a method that can employ up-to-the-minute relevant information. We train and evaluate such models on a newly collected dataset of human-human conversations whereby one of the speakers is given access to internet search during knowledgedriven discussions in order to ground their responses. We find that search-query based access of the internet in conversation provides superior performance compared to existing approaches that either use no augmentation or FAISS-based retrieval (Lewis et al., 2020b). ... An approach that learns to generate an internet search query based on the context, and then conditions on the search results to finally generate a response, a method that can employ up-to-the-minute relevant information. ... We perform a human evaluation using crowdworkers. The conversations begin with a random apprentice persona from the WizInt validation set being selected and shown, and the crowdworker is asked to play that role. We ask the crowdworkers to have a natural conversation, where they will also evaluate their partner's responses for conversational attributes, in particular knowledgeability, factual (in)correctness, engagingness and consistency. A screenshot can be found in Figure 10 which details further the definitions of those attributes. On each turn of the conversation the crowdworker is asked to check all attribute boxes that apply to the last "
+      },
+      {
+        "paper_id": "207853069",
+        "markdown_evidence": "We introduce dodecaDialogue: a set of 12 tasks that measures if a conversational agent can communicate engagingly with personality and empathy, ask questions, answer questions by utilizing knowledge resources, discuss topics and situations, and perceive and converse about images. By multi-tasking on such a broad large-scale set of data, we hope to both move towards and measure progress in producing a single unified agent that can perceive, reason and converse with humans in an open-domain setting. We show that such multi-tasking improves over a BERT pre-trained baseline, largely due to multi-tasking with very large dialogue datasets in a similar domain, and that the multi-tasking in general provides gains to both text and image-based tasks using several metrics in both the fine-tune and task transfer settings. We obtain state-of-the-art results on many of the tasks, providing a strong baseline for this challenge. ... D dodecaDialogue is introduced, a set of 12 tasks that measures if a conversational agent can communicate engagingly with personality and empathy, and that the multi-tasking in general provides gains to both text and image-based tasks using several metrics in both the fine-tune and task transfer settings. ... ConvAI2 is a dataset used at the NeurIPS 2018 competition of the same name, and is based on PersonaChat (Zhang et al., 2018;Dinan et al., 2020). The training data involves paired crowdworkers having a conversation where they get to know each other, in which each is given a role to play based on sentences describing their persona, which were also separately crowdsourced (while they cannot see their partner's persona). It thus involves asking and answering questions, responding in kind, and getting to know the other speaker and engaging them in friendly conversation -useful skills for an open-domain conversational agent. \n\nDailyDialog Li et al."
+      },
+      {
+        "paper_id": "210839137",
+        "markdown_evidence": "This paper discusses the potential for creating academic resources (tools, data, and evaluation approaches) to support research in conversational search, by focusing on realistic information needs and conversational interactions. Specifically, we propose to develop and operate a prototype conversational search system for scholarly activities. This Scholarly Conversational Assistant would serve as a useful tool, a means to create datasets, and a platform for running evaluation challenges by groups across the community. This article results from discussions of a working group at Dagstuhl Seminar 19461 on Conversational Search. ... This paper proposes to develop and operate a prototype conversational search system for scholarly activities, which would serve as a useful tool, a means to create datasets, and a platform for running evaluation challenges by groups across the community. ... Conversational search is a newly emerging research area that aims to provide access to digitally stored information by means of a conversational user interface, that is, a dialogue-based interaction inspired and informed by human communication processes [5,15,18]. The major goal of a conversational search system is to effectively retrieve relevant answers to a wide range of questions expressed in natural language, with rich user-system dialogue as a crucial component for understanding the question and refining the answers [1]. The respective dialogue comprises of a sequence of exchanges between one or more users and a conversational search sy"
+      },
+      {
+        "paper_id": "269047443",
+        "markdown_evidence": "Research on chatbots aimed at facilitating more natural and engaging conversations is actively underway. With the growing recognition of the significance of personas in this context, persona-based conversational research is gaining prominence. Despite the abundance of publicly available chit-chat datasets, persona-based chat datasets remain scarce, primarily due to the higher associated costs. Consequently, we propose a methodology for transforming extensive chit-chat datasets into persona-based chat datasets. Simultaneously, we propose a model adept at effectively incorporating personas into responses, even with a constrained number of parameters. This model can discern the most relevant information from persona memory without resorting to a retrieval model. Furthermore, it makes decisions regarding whether to reference the memory, thereby enhancing the interpretability of the model’s judgments. Our CC2PC framework demonstrates superior performance in both automatic and LLM evaluations when compared to high-cost persona-based chat dataset. Additionally, experimental results on the proposed model indicate the improved persona-based response capabilities. ... This work proposes a model adept at effectively incorporating personas into responses, even with a constrained number of parameters, and demonstrates superior performance in both automatic and LLM evaluations when compared to high-cost persona-based chat dataset. ... In the field of persona-based dialogue systems, PERSONA-CHAT [3] is the initial persona-based dialogue dataset constructed by crowdworkers. They collected data by assigning random personas to paired workers, who were then instructed to engage in dialogue based on these personas. Inspired by this approach, the DuLeMon dataset [6] was built with the additional process of labeling grounded personas. The Knowledge Behind Persona (KBP) dataset [13] is a dataset for personalized knowledge-grounded dialogues. It uses a portion of the DuLeMon dataset as a seed and matches persona and knowledge using Chinese knowledge bases. Then, human annotators cre"
+      },
+      {
+        "paper_id": "235294326",
+        "markdown_evidence": "Emotional support is a crucial ability for many conversation scenarios, including social interactions, mental health support, and customer service chats. Following reasonable procedures and using various support skills can help to effectively provide support. However, due to the lack of a well-designed task and corpora of effective emotional support conversations, research on building emotional support into dialog systems remains lacking. In this paper, we define the Emotional Support Conversation (ESC) task and propose an ESC Framework, which is grounded on the Helping Skills Theory. We construct an Emotion Support Conversation dataset (ESConv) with rich annotation (especially support strategy) in a help-seeker and supporter mode. To ensure a corpus of high-quality conversations that provide examples of effective emotional support, we take extensive effort to design training tutorials for supporters and several mechanisms for quality control during data collection. Finally, we evaluate state-of-the-art dialog models with respect to the ability to provide emotional support. Our results show the importance of support strategies in providing effective emotional support and the utility of ESConv in training more emotional support systems. ... The Emotional Support Conversation task is defined and an ESC Framework is proposed, which is grounded on the Helping Skills Theory, to show the importance of support strategies in providing effective emotional support and the utility of ESConv in training more emotional support systems. ... To facilitate the research of emotional support skills in dialog systems, we introduce an Emotional Support Conversation Dataset, ESConv, which is collected in a help-seeker and supporter mode with crowdworkers. As high-quality conversation examples are needed for this complex task, we took tremendous effort to try to ensure the effectiveness of ES in conversations. Our efforts included the following major aspects: (1) Because providing conversational support is a skill that must be trained for supporters to be effective (Burleson, 2003), we design a tutorial with the ESC Framework and train crowdworkers to be supporters. Only those who pass "
+      },
+      {
+        "paper_id": "214774912",
+        "markdown_evidence": "Recommender systems are software applications that help users to find items of interest in situations of information overload. Current research often assumes a one-shot interaction paradigm, where the users’ preferences are estimated based on past observed behavior and where the presentation of a ranked list of suggestions is the main, one-directional form of user interaction. Conversational recommender systems (CRS) take a different approach and support a richer set of interactions. These interactions can, for example, help to improve the preference elicitation process or allow the user to ask questions about the recommendations and to give feedback. The interest in CRS has significantly increased in the past few years. This development is mainly due to the significant progress in the area of natural language processing, the emergence of new voice-controlled home assistants, and the increased use of chatbot technology. With this article, we provide a detailed survey of existing approaches to conversational recommendation. We categorize these approaches in various dimensions, e.g., in terms of the supported user intents or the knowledge they use in the background. Moreover, we discuss technological approaches, review how CRS are evaluated, and finally identify a number of gaps that deserve more research in the future. ... A detailed survey of existing approaches to conversational recommendation is provided, categorizing these approaches in various dimensions, e.g., in terms of the supported user intents or the knowledge they use in the background. ... Building an effective CRS requires to understand the conversational needs of the users, e.g., how they prefer to provide their preferences, which intents they might have, and so on. One way to better understand these needs is to log and analyze interactions between users and a prototypical system. These logs then serve as a basis for further research. Crowdworkers from Amazon Mechanical Turk (AMT) were used to collect over 10,000 dialogues centered around the theme of providing movie recommendations [75]. A paired mechanism was used where one person acts as a recommendation seeker and the other as a recommender."
+      },
+      {
+        "paper_id": "267751469",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274567621",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273500303",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269605197",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263605829",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235792306",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278245855",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255547950",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266374868",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273501728",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218487043",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269604819",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276742030",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271939435",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268733712",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247518668",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245906443",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276813494",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "211067428",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260887838",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274131792",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276884650",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254854296",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249017778",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258298648",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "67855999",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "44096230",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216562425",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248118878",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267626871",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268264691",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "197410309",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269283000",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269282614",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252780701",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275544808",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277451735",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216338173",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249461543",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266933322",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278207013",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257654771",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256871089",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "243865654",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216914409",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269803915",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276187980",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52292999",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271534146",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269757510",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276449952",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269746809",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252626285",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260315953",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "146029992",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275352759",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268077001",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266164185",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221857400",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233987096",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264405653",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "23150529",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274308991",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273969546",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256627323",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "211483324",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482468",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263310830",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277435099",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275342782",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279899759",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255478462",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267938303",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269362892",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202627023",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261908732",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275018918",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273638468",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252365172",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245125522",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "238208102",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274927982",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "224706438",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263830371",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209325108",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259370822",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273840118",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261701703",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270750138",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271217987",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268630383",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273346221",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233423567",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235097625",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273502558",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222178094",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259502021",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250340235",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253396450",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "211481074",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "17472584",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260164926",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272986847",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248013753",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252306941",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276161567",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251402726",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275708576",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275084348",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262053831",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52897360",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276408332",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267627516",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220729672",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218973686",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265659354",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "11462536",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279697064",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235313293",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220730071",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "9076802",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257641991",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237099299",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257078716",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231632458",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268723544",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255749339",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226262299",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256846547",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253384454",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249287695",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258841545",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221703773",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "213542942",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278352357",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266902624",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269972325",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259138703",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258378355",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275077644",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "17883589",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270983250",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209445099",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270169974",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "26397172",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218502712",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "212676492",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268554201",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "104292718",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248709058",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "51868439",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1592947",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13823999",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265344361",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276741380",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "8379583",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269762739",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278383330",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "49639594",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249364288",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233181474",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "239459714",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232106175",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245986359",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "195825478",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272653658",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233365039",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "24831380",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250340228",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277381316",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

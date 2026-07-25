@@ -10,12 +10,16 @@ Snapshots live in `example_runs/robophd/asta_paper_finder/<name>/`; the pipeline
 
 | Submission | Agent (run) | Internal test | Official |
 | --- | --- | --- | --- |
-| `v0_0_7_soft_cap_0_06_fable` | `iter12_body_conjunction` (`robophd-asta_paper_finder-003`, fable-5-evolved) | 0.3724 @ $0.0556/query | **0.3749 @ $0.0533/query** |
+| `v0_0_7_soft_cap_0_06_fable` | `iter12_body_conjunction` (`robophd-asta_paper_finder-003`, fable-5-evolved) | 0.3724 @ $0.0556/query | **0.3749 @ $0.0533/query** (under review) |
+| `v0_0_8_soft_cap_0_033_opus` | `iter9_rerank_rich_v1` (`robophd-asta_paper_finder-006`, opus-4.8-evolved) | 0.2754 @ $0.006/query | pending |
+
+The two are distinct Pareto points, not successive attempts: v0_0_7 buys score, v0_0_8 buys price. v0_0_8's $0.033 training cost gate was set just above the board's cheapest competitive entry (Smolagents Coder GPT-5 Mini, 0.172 @ $0.03) to secure the cost half of a dominance claim by construction; evolution came in 5× under it at $0.006, dominating that entry and Llama 4 Scout 17B (0.070 @ $0.013) both.
 
 ```bash
 pip install litellm==1.88.1
-python scripts/asta_paper_finder_submit.py --only v0_0_7_soft_cap_0_06_fable --limit 3   # smoke (~$3)
-python scripts/asta_paper_finder_submit.py --only v0_0_7_soft_cap_0_06_fable            # full (~$200-270, 12-18h)
+# Push the commit before the full run — astabench stamps the SHA into eval_spec.revision.
+python scripts/asta_paper_finder_submit.py --only v0_0_8_soft_cap_0_033_opus --limit 3   # smoke (~$3)
+python scripts/asta_paper_finder_submit.py --only v0_0_8_soft_cap_0_033_opus            # full (~$140-175, 12-19h)
 ```
 
 ## Setup

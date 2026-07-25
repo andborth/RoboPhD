@@ -1,0 +1,823 @@
+{
+  "output": {
+    "query_id": "semantic_229",
+    "results": [
+      {
+        "paper_id": "272593336",
+        "markdown_evidence": "We propose a scaling law hypothesis for multimodal models processing text, audio, images, and video within a shared token and embedding space. Our framework predicts model performance based on modality-specific compression and tokenization efficiency, extending established scaling laws from text-based decoder models to mixed-modality systems. We explore whether leveraging more training data in multiple modalities can reduce the size of the multimodal model, enabling efficient deployment on resource-constrained devices. ... This work proposes a scaling law hypothesis for multimodal models processing text, audio, images, and video within a shared token and embedding space and explores whether leveraging more training data in multiple modalities can reduce the size of the multimodal model, enabling efficient deployment on resource-constrained devices. ... The compression and tokenization efficiency of each modality is a key determinant of overall model performance. For each modality i, the relationship between the raw input size T i , the compression factor C i , and the number of tokens generated N i can be expressed as: \n\nwhere C i represents the efficiency with which continuous data is compressed into tokens, and N i is the number of tokens produced after compression. \n\nIn text-based models, tokenization efficiency is relatively stable due to the consistency of algorithms like Byte Pair Encoding (BPE). This consistency allows scaling laws to focus primarily on the number of text tokens N te ... Text is tokenized using methods like Byte Pair Encoding (BPE) [10], which offers relatively stable compression efficiency. Audio data is typically handled through spectrogram-based methods [11], while images and video, which are more redundant and higher-dimensional, require convolutional neural networks (CNNs), vision transformers [12,13], and spatio-temporal transformers [14,15,16] for tokenization. These tokenized inputs are unified in a shared token and embedding space, enabling multimodal models to process them together. \n\nThe motivation for our work stems from the need to extend scaling laws, previously established for text-based models"
+      },
+      {
+        "paper_id": "225094178",
+        "markdown_evidence": "We identify empirical scaling laws for the cross-entropy loss in four domains: generative image modeling, video modeling, multimodal image$\\leftrightarrow$text models, and mathematical problem solving. In all cases autoregressive Transformers smoothly improve in performance as model size and compute budgets increase, following a power-law plus constant scaling law. The optimal model size also depends on the compute budget through a power-law, with exponents that are nearly universal across all data domains. \nThe cross-entropy loss has an information theoretic interpretation as $S($True$) + D_{\\mathrm{KL}}($True$||$Model$)$, and the empirical scaling laws suggest a prediction for both the true data distribution's entropy and the KL divergence between the true and model distributions. With this interpretation, billion-parameter Transformers are nearly perfect models of the YFCC100M image distribution downsampled to an $8\\times 8$ resolution, and we can forecast the model size needed to achieve any given reducible loss (ie $D_{\\mathrm{KL}}$) in nats/image for other resolutions. \nWe find a number of additional scaling laws in specific domains: (a) we identify a scaling relation for the mutual information between captions and images in multimodal models, and show how to answer the question \"Is a picture worth a thousand words?\"; (b) in the case of mathematical problem solving, we id ... The case that scaling laws have important implications for neural network performance, including on downstream tasks is strengthened, as empirical scaling laws for the cross-entropy loss are identified. ... These trends are closely tied to the scaling exponents α x : smaller exponents imply slower improvement with increasing scale, meaning that the data can only be compressed further with much larger models. \n\nThe scaling of loss with compute makes it possible to estimate the optimal model size for a given compute budget. We find that just as in [KMH + 20] this relation is very nearly a pure power-law N opt (C) ∝ C β . Surprisingly, the exponent β ∼ 0.7 is very similar for all domains, as shown in figure 2. This has important implications for the scaling of dataset size with model size for compute-optimal training, suggesting that D ∝ N 0.4 if w"
+      },
+      {
+        "paper_id": "277667587",
+        "markdown_evidence": "Building general-purpose models that can effectively perceive the world through multimodal signals has been a long-standing goal. Current approaches involve integrating separately pre-trained components, such as connecting vision encoders to LLMs and continuing multimodal training. While such approaches exhibit remarkable sample efficiency, it remains an open question whether such late-fusion architectures are inherently superior. In this work, we revisit the architectural design of native multimodal models (NMMs)-those trained from the ground up on all modali-ties-and conduct an extensive scaling laws study, spanning 457 trained models with different architectures and training mixtures. Our investigation reveals no inherent advantage to late-fusion architectures over early-fusion ones, which do not rely on image encoders or tokenizers. On the contrary, early-fusion exhibits stronger performance at lower parameter counts, is more efficient to train, and is easier to deploy. Motivated by the strong performance of the early-fusion architectures, we show that incorporating Mixture of Experts (MoEs) allows models to learn modality-specific weights, significantly benefiting performance. ... This investigation reveals no inherent advantage to late-fusion architectures over early-fusion ones, which do not rely on image encoders or tokenizers, and shows that incorporating Mixture of Experts (MoEs) allows models to learn modality-specific weights, significantly benefiting performance. ... When analyzing by data type, we find that interleaved data benefits more from larger models (a = 0.532) compared to image-caption data (a = 0.520), whereas the opposite trend holds for training tokens. \n\nWe conduct a similar study on late-fusion models in Figure 2 (right) and observe comparable scaling behaviors. In particular, the loss scaling exponent (c = −0.0494) is nearly identical to that of early fusion (c = −0.0492). This trend is evident in Figure 3, where early fusion outperforms late fusion at smaller model scales, while both architectures converge to similar performance at larger model sizes. We also observe similar trends when va"
+      },
+      {
+        "paper_id": "274280605",
+        "markdown_evidence": "Achieving optimal performance of video diffusion transformers within given data and compute budget is crucial due to their high training costs. This necessitates precisely determining the optimal model size and training hyperparameters before large-scale training. While scaling laws are employed in language models to predict performance, their existence and accurate derivation in visual generation models remain underexplored. In this paper, we systematically analyze scaling laws for video diffusion transformers and confirm their presence. Moreover, we discover that, unlike language models, video diffusion models are more sensitive to learning rate and batch size—two hyperparameters often not precisely modeled. To address this, we propose a new scaling law that predicts optimal hyperparameters for any model size and compute budget. Under these optimal settings, we achieve comparable performance and reduce inference costs by 40.1% compared to conventional scaling methods, within a compute budget of 1e10 TFlops. Furthermore, we establish a more generalized and precise relationship among validation loss, any model size, and compute budget. This enables performance prediction for non-optimal model sizes, which may also be appealed under practical inference cost constraints, achieving a better trade-off. ... A new scaling law is proposed that predicts optimal hyperparameters for any model size and compute budget and achieves comparable performance and reduce inference costs by 40.1% compared to conventional scaling methods, within a compute budget of 1e10 TFlops. ... Text-to-Video Generation Models. Text-to-Video (T2V) generation has evolved from early GAN-based and VAEbased methods to modern architectures like diffusion models, DiT-based frameworks, and auto-regressive models. \n\nEarly GAN approaches [11,46,54,56,65] struggled with temporal coherence, causing frame inconsistencies. Video diffusion models (VDMs) adapted text-to-image diffusion techniques to enhance frame continuity. DiT-based architectures [14,37,39,43] introduced spatio-temporal attention mechanisms, improving the capture of complex video dynamics and frame coherence [4,10,16,18]. Autoregressive models [27,32,36,55,59,60] use token-based "
+      },
+      {
+        "paper_id": "274514554",
+        "markdown_evidence": "Recent advancements in video generation have significantly impacted daily life for both individuals and industries. However, the leading video generation models remain closed-source, resulting in a notable performance gap between industry capabilities and those available to the public. In this report, we introduce HunyuanVideo, an innovative open-source video foundation model that demonstrates performance in video generation comparable to, or even surpassing, that of leading closed-source models. HunyuanVideo encompasses a comprehensive framework that integrates several key elements, including data curation, advanced architectural design, progressive model scaling and training, and an efficient infrastructure tailored for large-scale model training and inference. As a result, we successfully trained a video generative model with over 13 billion parameters, making it the largest among all open-source models. We conducted extensive experiments and implemented a series of targeted designs to ensure high visual quality, motion dynamics, text-video alignment, and advanced filming techniques. According to evaluations by professionals, HunyuanVideo outperforms previous state-of-the-art models, including Runway Gen-3, Luma 1.6, and three top-performing Chinese video generative models. By releasing the code for the foundation model and its applications, we aim to bridge the gap between  ... HunyuanVideo is introduced, an innovative open-source video foundation model that demonstrates performance in video generation comparable to, or even surpassing, that of leading closed-source models. ... Just like the above-mentioned text-to-video model, our video-to-audio generation model also adopts a flow-matching-based diffusion transformer (DiT) as its architectural backbone. The detailed design of the model is depicted in Figure 18, illustrating a transition from a triple-stream structure to a single-stream DiT framework. \n\nThe model operates within a latent space encoded by a variational autoencoder (VAE) trained on mel-spectrograms. Specifically, the audio waveform is first converted into a 2D mel-spectrogram representation. This spectrogram is subsequently encoded into a latent space using a pretrained VAE. \n\nFor feature extraction, "
+      },
+      {
+        "paper_id": "263829902",
+        "markdown_evidence": "Foundational multimodal models pre-trained on large scale image-text pairs or video-text pairs or both have shown strong generalization abilities on downstream tasks. However unlike image-text models, pretraining video-text models is always not feasible due to the difficulty in collecting large-scale clean and aligned data, and exponential computational costs involved in the pretraining phase. Therefore, the pertinent question to ask is: Can image-text models be adapted to video tasks and is there any benefit to using these models over pretraining directly on videos? In this work, we focus on this question by proposing a detailed study on the generalization abilities of image-text models when evaluated on video understanding tasks in a zero-shot setting. We investigate 9 foundational image-text models on a diverse set of video tasks that include video action recognition (video AR), video retrieval (video RT), video question answering (video QA), video multiple choice (video MC) and video captioning (video CP). Our experiments show that image-text models exhibit impressive performance on video AR, video RT and video MC. Furthermore, they perform moderately on video captioning and poorly on video QA. These findings shed a light on the benefits of adapting foundational image-text models to an array of video tasks while avoiding the costly pretraining step. ... This work proposes a detailed study on the generalization abilities of image-text models when evaluated on video understanding tasks in a zero-shot setting and investigates 9 foundational image- Text models on a diverse set of video tasks that include video action recognition, video retrieval, video question answering, and video captioning. ... We analyze the effect of the size of the pre-training data on the zero-shot performance of image-text models on the various video tasks. We compare image-text models like ALIP and SLIP pretrained   image-text pairs. On video AR and video MC as summarized in the Tables 3 and 4 respectively, we observe models trained with 400M data consistently significantly outperform the models trained with 15M data across all three evaluation datasets. These models also slightly outperform OpenCLIP trained on 400% more training data. On the task of video retrieval, we note that larger pre-training data does have more impact on the zero-shot performance gains"
+      },
+      {
+        "paper_id": "254636568",
+        "markdown_evidence": "Scaling up neural networks has led to remarkable performance across a wide range of tasks. Moreover, performance often follows reliable scaling laws as a function of training set size, model size, and compute, which offers valuable guidance as large-scale experiments are becoming increasingly expensive. However, previous work on scaling laws has primarily used private data & models or focused on uni-modal language or vision learning. To address these limitations, we investigate scaling laws for contrastive language-image pre-training (CLIP) with the public LAION dataset and the open-source OpenCLIP repository. Our large-scale experiments involve models trained on up to two billion image-text pairs and identify power law scaling for multiple downstream tasks including zero-shot classification, retrieval, linear probing, and end-to-end fine-tuning. We find that the training distribution plays a key role in scaling laws as the OpenAI and OpenCLIP models exhibit different scaling behavior despite identical model architectures and similar training recipes. We open-source our evaluation workflow and all models, including the largest public CLIP models, to ensure reproducibility and make scaling laws research more accessible. Source code and instructions to reproduce this study is available at https://github.eom/LAION-AI/sealing-laws-openelip. ... This work investigates scaling laws for contrastive language-image pre-training (CLIP) with the public LAION dataset and the open-source OpenCLIP repository and finds that the training distribution plays a key role in scaling laws as the OpenAI and OpenClIP models exhibit different scaling behavior. ... Large pre-trained models now achieve state-of-the-art performance on a wide range of tasks. In particular, large models have led to substantial advances in speech [56], language [17,57,8,28], vision [38,82], and multi-modal language-vision settings [55,33,54,59,62]. A key ingredient in these breakthroughs has been self-or weakly-supervised learning, which enabled the use of Internetharvested training sets and reduced the need for explicit human annotation of training data. In addition, recent pre-trained models relied on increasing the compute, model, and data scale by orders of magnitude. \n\nWhen varying model size, compute amount, and data q"
+      },
+      {
+        "paper_id": "270702885",
+        "markdown_evidence": "Foundation model development attracts a rapidly expanding body of contributors, scientists, and applications. To help shape responsible development practices, we introduce the Foundation Model Development Cheatsheet: a growing collection of 250+ tools and resources spanning text, vision, and speech modalities. We draw on a large body of prior work to survey resources (e.g. software, documentation, frameworks, guides, and practical tools) that support informed data selection, processing, and understanding, precise and limitation-aware artifact documentation, efficient model training, advance awareness of the environmental impact from training, careful model evaluation of capabilities, risks, and claims, as well as responsible model release, licensing and deployment practices. We hope this curated collection of resources helps guide more responsible development. The process of curating this list, enabled us to review the AI development ecosystem, revealing what tools are critically missing, misused, or over-used in existing practices. We find that (i) tools for data sourcing, model evaluation, and monitoring are critically under-serving ethical and real-world needs, (ii) evaluations for model safety, capabilities, and environmental impact all lack reproducibility and transparency, (iii) text and particularly English-centric analyses continue to dominate over multilingual and mult ... The Foundation Model Development Cheatsheet is introduced: a growing collection of 250+ tools and resources spanning text, vision, and speech modalities that support informed data selection, processing, and understanding. ... Scaling laws research has focused predominantly on text (Kaplan et al., 2020;Hoffmann et al., 2022;Muennighoff et al., 2023b;Gadre et al., 2024b), with limited work for multi-modal foundation models (Aghajanyan et al., 2023). As developers increasingly pursue image, video, and speech models (both in input and output), such as Sora (Brooks et al., 2024), Stable Video Diffusion (Blattmann et al., 2023), Claude 3 (Anthropic, 2024b), and Whisper (Radford et al., 2023), the efficient scaling laws are currently under-investigated. Secondly, while scaling law research investigates fundamental questions, it can be presented in unapproachable, complex"
+      },
+      {
+        "paper_id": "260441709",
+        "markdown_evidence": "Vision language pre-training aims to learn alignments between vision and language from a large amount of data. Most existing methods only learn image-text alignments. Some others utilize pre-trained object detectors to leverage vision language alignments at the object level. In this paper, we propose to learn multi-grained vision language alignments by a unified pre-training framework that learns multi-grained aligning and multi-grained localization simultaneously. Based on it, we present X<inline-formula><tex-math notation=\"LaTeX\">$^{2}$</tex-math><alternatives><mml:math><mml:msup><mml:mrow/><mml:mn>2</mml:mn></mml:msup></mml:math><inline-graphic xlink:href=\"zeng-ieq3-3339661.gif\"/></alternatives></inline-formula>-VLM, an all-in-one model with a flexible modular architecture, in which we further unify image-text pre-training and video-text pre-training in one model. X<inline-formula><tex-math notation=\"LaTeX\">$^{2}$</tex-math><alternatives><mml:math><mml:msup><mml:mrow/><mml:mn>2</mml:mn></mml:msup></mml:math><inline-graphic xlink:href=\"zeng-ieq4-3339661.gif\"/></alternatives></inline-formula>-VLM is able to learn unlimited visual concepts associated with diverse text descriptions. Experiment results show that X<inline-formula><tex-math notation=\"LaTeX\">$^{2}$</tex-math><alternatives><mml:math><mml:msup><mml:mrow/><mml:mn>2</mml:mn></mml:msup></mml:math><inline-graphic xlink:hr ... X-VLM is presented, an all-in-one model with a flexible modular architecture, in which it is shown that the modular design of X-VLM outperforms state-of-the-art multilingual multi-modal pre-trained models without any multilingual pre-training. ... Architecture: X 2 -VLM consists of vision, text, and multi-modal fusion modules. All modules are based on Transformer [18]. The fusion module takes text features as input and fuses the vision features with the text features through cross-attention at each layer, where the text features work as the queries and the vision features work as the keys and values. In pre-training, the three modules work as encoders, while the text and fusion modules can also be adapted for generation tasks if applying leftto-right self-attention as shown in our experiments for image caption generation. Figure 3 illustrates the architecture of X 2 -VLM and the way we"
+      },
+      {
+        "paper_id": "246035820",
+        "markdown_evidence": "We introduce CM3, a family of causally masked generative models trained over a large corpus of structured multi-modal documents that can contain both text and image tokens. Our new causally masked approach generates tokens left to right while also masking out a small number of long token spans that are generated at the end of the string, instead of their original positions. The casual masking object provides a type of hybrid of the more common causal and masked language models, by enabling full generative modeling while also providing bidirectional context when generating the masked spans. We train causally masked language-image models on large-scale web and Wikipedia articles, where each document contains all of the text, hypertext markup, hyperlinks, and image tokens (from a VQVAE-GAN), provided in the order they appear in the original HTML source (before masking). The resulting CM3 models can generate rich structured, multi-modal outputs while conditioning on arbitrary masked document contexts, and thereby implicitly learn a wide range of text, image, and cross modal tasks. They can be prompted to recover, in a zero-shot fashion, the functionality of models such as DALL-E, GENRE, and HTLM. We set the new state-of-the-art in zero-shot summarization, entity linking, and entity disambiguation while maintaining competitive performance in the fine-tuning setting. We can generate  ... CM3, a family of causally masked generative models trained over a large corpus of structured multi-modal documents that can contain both text and image tokens, is introduced and set the new state-of-the-art in zero-shot summarization, entity linking, and entity disambiguation while maintaining competitive performance in the fine-tuning setting. ... CM3: A Causal Masked Multimodal Model of the Internet"
+      },
+      {
+        "paper_id": "277349845",
+        "markdown_evidence": "Multimodal generative models that can understand and generate across multiple modalities are dominated by autoregressive (AR) approaches, which process tokens sequentially from left to right, or top to bottom. These models jointly handle images, text, video, and audio for various tasks such as image captioning, question answering, and image generation. In this work, we explore discrete diffusion models as a unified generative formulation in the joint text and image domain, building upon their recent success in text generation. Discrete diffusion models offer several advantages over AR models, including improved control over quality versus diversity of generated samples, the ability to perform joint multimodal inpainting (across both text and image domains), and greater controllability in generation through guidance. Leveraging these benefits, we present the first Unified Multimodal Discrete Diffusion (UniDisc) model which is capable of jointly understanding and generating text and images for a variety of downstream tasks. We compare UniDisc to multimodal AR models, performing a scaling analysis and demonstrating that UniDisc outperforms them in terms of both performance and inference-time compute, enhanced controllability, editability, inpainting, and flexible trade-off between inference time and generation quality. Code and additional visualizations are available at https://un ... This work compares UniDisc to multimodal AR models, performing a scaling analysis and demonstrating that UniDisc outperforms them in terms of both performance and inference-time compute, enhanced controllability, editability, inpainting, and flexible trade-off between inference time and generation quality."
+      },
+      {
+        "paper_id": "260887737",
+        "markdown_evidence": "This paper introduces ModelScopeT2V, a text-to-video synthesis model that evolves from a text-to-image synthesis model (i.e., Stable Diffusion). ModelScopeT2V incorporates spatio-temporal blocks to ensure consistent frame generation and smooth movement transitions. The model could adapt to varying frame numbers during training and inference, rendering it suitable for both image-text and video-text datasets. ModelScopeT2V brings together three components (i.e., VQGAN, a text encoder, and a denoising UNet), totally comprising 1.7 billion parameters, in which 0.5 billion parameters are dedicated to temporal capabilities. The model demonstrates superior performance over state-of-the-art methods across three evaluation metrics. The code and an online demo are available at \\url{https://modelscope.cn/models/damo/text-to-video-synthesis/summary}. ... The ModelScopeT2V incorporates spatio-temporal blocks to ensure consistent frame generation and smooth movement transitions and demonstrates superior performance over state-of-the-art methods across three evaluation metrics. ... Artificial intelligence has expanded the boundaries of content generation in diverse modalities following simple and intuitive instructions. This encompasses textual content [40,5,56], visual content [39,24,48,44,27,71,16,38,51,59] and auditory content [4,32,31]. In the realm of visual content generation, research efforts have been put into image generation [39,24,48,44] and editing [27], leveraging diffusion models [53]. \n\nWhile video generation [52,20,67] continues to pose challenges. A primary hurdle lies in the training difficulty, which often leads to generated videos exhibiting sub-optimal fidelity and motion discontinuity. This present ... ModelScopeT2V is designed to be trained on large-scale video-text paired datasets, such as Web-Vid [2], which is domain-aligned with video generation. Nonetheless, the scale of such datasets is orders of magnitude smaller compared to image-text paired datasets, such as LAION [50]. Despite initializing the spatial part of ModelScopeT2V with Stable Diffusion [46], training solely on videotext paired datasets can hinder semantic diversity and lead to catastrophic forgetting of image-domain expertise during training [34,11,30,12]. To overcome this limitation and leverage the strengths of both datasets, we propose a multi-frame training approach. "
+      },
+      {
+        "paper_id": "244527510",
+        "markdown_evidence": "In recent years, we have witnessed significant performance boost in the image captioning task based on vision-language pre-training (VLP). Scale is believed to be an important factor for this advance. However, most existing work only focuses on pre-training transformers with moderate sizes (e.g., 12 or 24 layers) on roughly 4 million images. In this paper, we present LEMON O, a LargE-scale iMage captiONer, and provide the first empirical study on the scaling behavior of VLP for image captioning. We use the state-of-the-art Vin VL model as our reference model, which consists of an image feature extractor and a transformer model, and scale the transformer both up and down, with model sizes ranging from 13 to 675 million parameters. In terms of data, we conduct experiments with up to 200 million imagetext pairs which are automatically collected from web based on the alt attribute of the image (dubbed as ALT200M11The dataset is released at https://github.com/xiaoweihu/ALT200M). Extensive analysis helps to characterize the performance trend as the model size and the pre-training data size increase. We also compare different training recipes, especially for training on large-scale noisy data. As a result, LEMON achieves new state of the arts on several major image captioning benchmarks, including COCO Caption, nocaps, and Conceptual Captions. We also show LEMON can generate captions  ... LEMON O, a LargE-scale iMage captiONer, is presented, and the first empirical study on the scaling behavior of VLP for image captioning is provided, and it is shown LEMON can generate captions with long-tail vi-sual concepts when used in a zero-shot manner. ... Scaling Law. With the success of large-scale pre-trained models in both the language and vision domains, there has been a surging research interest in discovering the empirical scaling law of these models. [21] presented that the language model performance scales as power-law across many orders of magnitude with dataset size, model size, and computation used in training. [13] further studied the scaling of autoregressive generative modeling. Aside from the model size, [46] showed that the model shape also matters for efficient transfer from upstream pre-training to downstream finetuning. In the vision domain, [55] scaled a series of vision tr"
+      },
+      {
+        "paper_id": "265312551",
+        "markdown_evidence": "We present Stable Video Diffusion - a latent video diffusion model for high-resolution, state-of-the-art text-to-video and image-to-video generation. Recently, latent diffusion models trained for 2D image synthesis have been turned into generative video models by inserting temporal layers and finetuning them on small, high-quality video datasets. However, training methods in the literature vary widely, and the field has yet to agree on a unified strategy for curating video data. In this paper, we identify and evaluate three different stages for successful training of video LDMs: text-to-image pretraining, video pretraining, and high-quality video finetuning. Furthermore, we demonstrate the necessity of a well-curated pretraining dataset for generating high-quality videos and present a systematic curation process to train a strong base model, including captioning and filtering strategies. We then explore the impact of finetuning our base model on high-quality data and train a text-to-video model that is competitive with closed-source video generation. We also show that our base model provides a powerful motion representation for downstream tasks such as image-to-video generation and adaptability to camera motion-specific LoRA modules. Finally, we demonstrate that our model provides a strong multi-view 3D-prior and can serve as a base to finetune a multi-view diffusion model that ... This paper identifies and evaluates three different stages for successful training of video LDMs: text-to-image Pretraining, video pretraining, and high-quality video finetuning, and shows that the necessity of a well-curated pretraining dataset for generating high- quality videos and a systematic curation process to train a strong base model."
+      },
+      {
+        "paper_id": "260334248",
+        "markdown_evidence": "Large Language Models (LLMs) have made the ambitious quest for generalist agents significantly far from being a fantasy. A key hurdle for building such general models is the diversity and heterogeneity of tasks and modalities. A promising solution is unification, allowing the support of a myriad of tasks and modalities within one unified framework. While few large models (e.g., Flamingo (Alayrac et al., 2022), trained on massive datasets, can support more than two modalities, current small to mid-scale unified models are still limited to 2 modalities, usually image-text or video-text. The question that we ask is: is it possible to build efficiently a unified model that can support all modalities? To answer this, we propose UnIVAL, a step further towards this ambitious goal. Without relying on fancy datasets sizes or models with billions of parameters, the ~ 0.25B parameter UnIVAL model goes beyond two modalities and unifies text, images, video, and audio into a single model. Our model is efficiently pretrained on many tasks, based on task balancing and multimodal curriculum learning. UnIVAL shows competitive performance to existing state-of-the-art approaches, across image and video-text tasks. The feature representations learned from image and video-text modalities, allows the model to achieve competitive performance when finetuned on audio-text tasks, despite not being pretra ... The proposed UnIVAL model is efficiently pretrained on many tasks, based on task balancing and multimodal curriculum learning, and unifies text, images, video, and audio into a single model, allowing for out-of-distribution generalization. ... Contrastive based approaches (Radford et al., 2021;Jia et al., 2021) try to learn shared and aligned latent space by training on hundred of millions of data. More data efficient approaches (Shukor et al., 2022;Li et al., 2021a;2022b;Dou et al., 2021;Singh et al., 2022), have relied on additional multimodal interaction modules and variety of training objectives such as image-text matching, masked language modeling and image-text contrastive (Chen et al., 2020c;Kim et al., 2021;Lu et al., 2019;Zhang et al., 2021). In the video-language community, similar approaches have been mildly adapted to model the interaction between language and frames se"
+      },
+      {
+        "paper_id": "276929004",
+        "markdown_evidence": "The increasing prevalence of synthetic data in training loops has raised concerns about model collapse, where generative models degrade when trained on their own outputs. While prior work focuses on this self-consuming process, we study an underexplored yet prevalent phenomenon: co-evolving generative models that shape each other's training through iterative feedback. This is common in multimodal AI ecosystems, such as social media platforms, where text models generate captions that guide image models, and the resulting images influence the future adaptation of the text model. We take a first step by analyzing such a system, modeling the text model as a multinomial distribution and the image model as a conditional multi-dimensional Gaussian distribution. Our analysis uncovers three key results. First, when one model remains fixed, the other collapses: a frozen image model causes the text model to lose diversity, while a frozen text model leads to an exponential contraction of image diversity, though fidelity remains bounded. Second, in fully interactive systems, mutual reinforcement accelerates collapse, with image contraction amplifying text homogenization and vice versa, leading to a Matthew effect where dominant texts sustain higher image diversity while rarer texts collapse faster. Third, we analyze stabilization strategies implicitly introduced by real-world external influ ... Co-evolving generative models that shape each other's training through iterative feedback are studied, common in multimodal AI ecosystems, where text models generate captions that guide image models, and the resulting images influence the future adaptation of the text model. ... In this paper, we analyzed a co-evolving text-image system and provided insights into their mutual influence. Our analysis shows that (i) when one model is frozen, the other collapses (with text diversity decaying monotonically and image covariance contracting exponentially); (ii) mutual feedback accelerates collapse via both a general acceleration effect and a Matthew effect that reinforces dominant texts; and (iii) external interventions such as corpus injections for text and user-content injections for images can stabilize the system, preserving both diversity and fidelity. These theoretical findings highlight the importance of continual e"
+      },
+      {
+        "paper_id": "273403795",
+        "markdown_evidence": "Video Multimodal Large Language Models (MLLMs) have shown remarkable capability of understanding the video semantics on various downstream tasks. Despite the advancements, there is still a lack of systematic research on visual context representation, which refers to the scheme to select frames from a video and further select the tokens from a frame. In this paper, we explore the design space for visual context representation, and aim to improve the performance of video MLLMs by finding more effective representation schemes. Firstly, we formulate the task of visual context representation as a constrained optimization problem, and model the language modeling loss as a function of the number of frames and the number of embeddings (or tokens) per frame, given the maximum visual context window size. Then, we explore the scaling effects in frame selection and token selection respectively, and fit the corresponding function curve by conducting extensive empirical experiments. We examine the effectiveness of typical selection strategies and present empirical findings to determine the two factors. Furthermore, we study the joint effect of frame selection and token selection, and derive the optimal formula for determining the two factors. We demonstrate that the derived optimal settings show alignment with the best-performed results of empirical experiments. Our code and model are availa ... This paper forms the task of visual context representation as a constrained optimization problem, and model the language modeling loss as a function of the number of frames and the number of embeddings per frame, given the maximum visual context window size. ... Scaling Law. In the field of LLMs, many existing works have demonstrated that scaling the size of model parameters and training data can consistently improve the model capacity (Radford et al., 2019;Brown, 2020;Touvron et al., 2023). As a result, it is necessary to build a quantitative relationship between these scaling factors and the final performance, which is called the scaling law. Two representative scaling laws for LLM are proposed by Kaplan et al. (2020) andHoffmann et al. (2022), where the former one models the relationship between the loss and model size, dataset size, and the amount of computation budget independently, and the foll"
+      },
+      {
+        "paper_id": "275606590",
+        "markdown_evidence": "We introduce PaSa, an advanced Paper Search agent powered by large language models. PaSa can autonomously make a series of decisions, including invoking search tools, reading papers, and selecting relevant references, to ultimately obtain comprehensive and accurate results for complex scholar queries. We optimize PaSa using reinforcement learning with a synthetic dataset, AutoScholarQuery, which includes 35k fine-grained academic queries and corresponding papers sourced from top-tier AI conference publications. Additionally, we develop RealScholarQuery, a benchmark collecting real-world academic queries to assess PaSa performance in more realistic scenarios. Despite being trained on synthetic data, PaSa significantly outperforms existing baselines on RealScholarQuery, including Google, Google Scholar, Google with GPT-4o for paraphrased queries, ChatGPT (search-enabled GPT-4o), GPT-o1, and PaSa-GPT-4o (PaSa implemented by prompting GPT-4o). Notably, PaSa-7B surpasses the best Google-based baseline, Google with GPT-4o, by 37.78% in recall@20 and 39.90% in recall@50, and exceeds PaSa-GPT-4o by 30.36% in recall and 4.25% in precision. Model, datasets, and code are available at https://github.com/bytedance/pasa. ... As illustrated in Figure 1, the PaSa system consists of two LLM agents: Crawler and Selector. The crawler reads the user's query, generates multiple search queries, and retrieves relevant papers. The retrieved papers are added to a paper queue. The Crawler further processes each paper in the paper queue to identify key citations worth exploring further, appending any newly relevant papers to the paper queue. The selector conducts a thorough review of each paper in the paper queue to assess whether it fulfills the user's query requirements. \n\nIs there any works that analyze the scaling law of the multimodal models, such as video-text, image-te"
+      },
+      {
+        "paper_id": "276259070",
+        "markdown_evidence": "Scaling laws are typically fit using a family of models with a narrow range of frozen hyperparameter choices. In this work we study scaling laws using multiple architectural shapes and hyperparameter choices, highlighting their impact on resulting prescriptions. As a primary artifact of our research, we release the Gemstones: an open-source scaling law dataset, consisting of over 4000 checkpoints from transformers with up to 2 billion parameters and diverse architectural shapes; including ablations over learning rate and cooldown. Our checkpoints enable more complex studies of scaling, such as analyzing the relationship between width and depth. By examining our model suite, we find that the prescriptions of scaling laws can be highly sensitive to the experimental design process and the specific model checkpoints used during fitting. ... The Gemstones: an open-source scaling law dataset, consisting of over 4000 checkpoints from transformers with up to 2 billion parameters and diverse architectural shapes, is released, to enable more complex studies of scaling. ... Beyond modeling just training loss-the canonical prediction target for scaling laws-there are multiple works analyzing whether scaling laws can be used to predict performance on downstream tasks. Ruan et al. [2024] show that scaling laws can be predictive of benchmark performance. Caballero et al. [2023] observe that traditional scaling laws cannot capture complex behaviors like non-monotonic trends nor inflection points. They propose broken scaling laws-a piecewise or smoothly broken power law-that better predicts performance of both upstream and downstream tasks. \n\nFinetuning and Data-constrained Regimes Further analyses using scaling laws "
+      },
+      {
+        "paper_id": "274859327",
+        "markdown_evidence": "The scaling law has been validated in various domains, such as natural language processing (NLP) and massive computer vision tasks; however, its application to motion generation remains largely unexplored. In this paper, we introduce a scalable motion generation framework that includes the motion tokenizer Motion FSQ-VAE and a text-prefix autoregressive transformer. Through comprehensive experiments, we observe the scaling behavior of this system. For the first time, we confirm the existence of scaling laws within the context of motion generation. Specifically, our results demonstrate that the normalized test loss of our prefix autoregressive models adheres to a logarithmic law in relation to compute budgets. Furthermore, we also confirm the power law between Non-Vocabulary Parameters, Vocabulary Parameters, and Data Tokens with respect to compute budgets respectively. Leveraging the scaling law, we predict the optimal transformer size, vocabulary size, and data requirements for a compute budget of 1e18. The test loss of the system, when trained with the optimal model size, vocabulary size, and required data, aligns precisely with the predicted test loss, thereby validating the scaling law. Project page: https://shunlinlu.github.io/ScaMo/ ... A scalable motion generation framework that includes the motion tokenizer Motion FSQ-VAE and a text-prefix autoregressive transformer is introduced and the existence of scaling laws within the context of motion generation is confirmed for the first time. ... Scaling law gives the precise prediction of test loss, optimal model size, and data requirements given a specific compute budget in FLOPs. This capability enables researchers to conduct relatively small-scale experiments and accurately forecast the performance on larger scales, thereby conserving research time and compute resources. In recent years, the scaling law has been extensively studied, particularly in the field of natural language processing (NLP), where many large language models (LLMs) [4,8,27,51] have empirically validated their scaling properties. \n\nBuilding on these prior successes, recent research has extended scaling laws to t"
+      },
+      {
+        "paper_id": "273404213",
+        "markdown_evidence": "Scaling up autoregressive models in vision has not proven as beneficial as in large language models. In this work, we investigate this scaling problem in the context of text-to-image generation, focusing on two critical factors: whether models use discrete or continuous tokens, and whether tokens are generated in a random or fixed raster order using BERT- or GPT-like transformer architectures. Our empirical results show that, while all models scale effectively in terms of validation loss, their evaluation performance -- measured by FID, GenEval score, and visual quality -- follows different trends. Models based on continuous tokens achieve significantly better visual quality than those using discrete tokens. Furthermore, the generation order and attention mechanisms significantly affect the GenEval score: random-order models achieve notably better GenEval scores compared to raster-order models. Inspired by these findings, we train Fluid, a random-order autoregressive model on continuous tokens. Fluid 10.5B model achieves a new state-of-the-art zero-shot FID of 6.16 on MS-COCO 30K, and 0.69 overall score on the GenEval benchmark. We hope our findings and results will encourage future efforts to further bridge the scaling gap between vision and language models. ... This work investigates this scaling problem in the context of text-to-image generation, focusing on two critical factors: whether models use discrete or continuous tokens, and whether tokens are generated in a random or fixed raster order using BERT- or GPT-like transformer architectures. ... Kaplan et al. (2020) empirically observed that, for language model, the validation loss scales as a power-law with model size, dataset size, and the amount of compute used for training. Hoffmann et al. (2022) discovered that contemporary LLMs are under-trained, and that for compute-optimal training, the model size and the number of training tokens should be scaled equally. Under the same compute budget while using 4x more more data, their 70B Chinchilla outperforms much larger models, such as the 530B Megatron-Turing NLG (Smith et al., 2022). Wei et al. (2022) found that larger models have emergent abilities that are not present in smaller mo"
+      },
+      {
+        "paper_id": "265506421",
+        "markdown_evidence": "Recent breakthroughs in text-to-4D generation rely on pre-trained text-to-image and text-to-video models to generate dynamic 3D scenes. However, current text-to-4D methods face a three-way tradeoff between the quality of scene appearance, 3D structure, and motion. For example, text-to-image models and their 3D-aware variants are trained on internet-scale image datasets and can be used to produce scenes with realistic appearance and 3D structure—but no motion. Text-to-video models are trained on relatively smaller video datasets and can produce scenes with motion, but poorer appearance and 3D structure. While these models have complementary strengths, they also have opposing weaknesses, making it difficult to combine them in a way that alleviates this three-way tradeoff. Here, we introduce hybrid score distillation sampling, an alternating optimization procedure that blends supervision signals from multiple pre-trained diffusion models and incorporates benefits of each for high-fidelity text-to-4D generation. Using hybrid SDS, we demonstrate synthesis of 4D scenes with compelling appearance, 3D structure, and motion. ... This work introduces hybrid score distillation sampling, an alternating optimization procedure that blends supervision signals from multiple pre-trained diffusion models and incorporates benefits of each for high-fidelity text-to-4D generation and demonstrates synthesis of 4D scenes with compelling appearance, 3D structure, and motion. ... Our method is related to techniques from multiple areas of generative modeling, including text-to-image, text-to-video, and text-to-3D models. For more extensive discussions of related works, we refer readers to a recent state-of-the-art report on diffusion models [44]. \n\nText-to-image generation. Methods for generating images from text prompts are a relatively new innovation, first demonstrated using generative adversarial networks [50,74,81]. The problem itself is also related to other methods for text-based image retrieval [35] or image-conditioned text generation [62,78]. More recently, models trained on textimage datasets with billions o"
+      },
+      {
+        "paper_id": "253237527",
+        "markdown_evidence": "Large language models with a huge number of parameters, when trained on near internet-sized number of tokens, have been empirically shown to obey neural scaling laws: specifically, their performance behaves predictably as a power law in either parameters or dataset size until bottlenecked by the other resource. To understand this better, we first identify the necessary properties allowing such scaling laws to arise and then propose a statistical model – a joint generative data model and random feature model – that captures this neural scaling phenomenology. By solving this model in the dual limit of large training set size and large number of parameters, we gain insight into (i) the statistical structure of datasets and tasks that lead to scaling laws, (ii) the way nonlinear feature maps, such as those provided by neural networks, enable scaling laws when trained on these datasets, (iii) the optimality of the equiparameterization scaling of training sets and parameters, and (iv) whether such scaling laws can break down and how they behave when they do. Key findings are the manner in which the power laws that occur in the statistics of natural datasets are extended by nonlinear random feature maps and then translated into power-law scalings of the test loss and how the finite extent of the data’s spectral power law causes the model’s performance to plateau. ? Equal contribution. ... Key findings are the manner in which the power laws that occur in the statistics of natural datasets are extended by nonlinear random feature maps and then translated into power-law scalings of the test loss and how the finite extent of the data’s spectral power law causes the model’'s performance to plateau. ... from this new latent feature.\n\nAn important insight that emerges from our analysis is the role of a new scale that determines when the empirical behavior found by [18] breaks down. This scale can be understood as the size of the latent space from which the data is generated and must be much larger than both the size of the training set and the number of parameters of the model in order to observe the power-law scaling and bottleneck behavior of Ref. [18]. 5 If either of these two resource scales exceed the size of the latent space, our analysis shows a new regime of different behaviors for the test loss that has not yet been seen in the LLM e"
+      },
+      {
+        "paper_id": "273233741",
+        "markdown_evidence": "Diffusion transformers (DiT) have already achieved appealing synthesis and scaling properties in content recreation, e.g., image and video generation. However, scaling laws of DiT are less explored, which usually offer precise predictions regarding optimal model size and data requirements given a specific compute budget. Therefore, experiments across a broad range of compute budgets, from 1e17 to 6e18 FLOPs are conducted to confirm the existence of scaling laws in DiT for the first time. Concretely, the loss of pretraining DiT also follows a power-law relationship with the involved compute. Based on the scaling law, we can not only determine the optimal model size and required data but also accurately predict the text-to-image generation loss given a model with 1B parameters and a compute budget of 1e21 FLOPs. Additionally, we also demonstrate that the trend of pre-training loss matches the generation performances (e.g., FID), even across various datasets, which complements the mapping from compute to synthesis quality and thus provides a predictable benchmark that assesses model performance and data quality at a reduced cost. ... Based on the scaling law, the loss of pretraining DiT also follows a power-law relationship with the involved compute and can not only determine the optimal model size and required data but also accurately predict the text-to-image generation loss given a model with 1B parameters and a compute budget of 1e21 FLOPs. ... As observed in Kaplan et al. (2020), model design has limited influence on scaling behavior unless the architecture is extremely shallow or narrow. We adopt a vanilla transformer architecture (Vaswani, 2017) with minimal modifications. Input tokens-comprising text, image, and timestep embeddings-are concatenated following in-context conditioning (Peebles & Xie, 2023). Our dataset consists of 108 million image-text pairs randomly sampled from Laion-Aesthetic (Schuhmann et al., 2022), and re-captioned using LLAVA 1.5 (Liu et al., 2024). A validation set of 1 million samples is drawn from the same subset. Further details are provided in Appendix"
+      },
+      {
+        "paper_id": "277313695",
+        "markdown_evidence": "The progress on generative models has led to significant advances on text-to-video (T2V) generation, yet the motion controllability of generated videos remains limited. Existing motion transfer methods explored the motion representations of reference videos to guide generation. Nevertheless, these methods typically rely on sample-specific optimization strategy, resulting in high computational burdens. In this paper, we propose EfficientMT, a novel and efficient end-to-end framework for video motion transfer. By leveraging a small set of synthetic paired motion transfer samples, EfficientMT effectively adapts a pretrained T2V model into a general motion transfer framework that can accurately capture and reproduce diverse motion patterns. Specifically, we repurpose the backbone of the T2V model to extract temporal information from reference videos, and further propose a scaler module to distill motion-related information. Subsequently, we introduce a temporal integration mechanism that seamlessly incorporates reference motion features into the video generation process. After training on our self-collected synthetic paired samples, EfficientMT enables general video motion transfer without requiring test-time optimization. Extensive experiments demonstrate that our EfficientMT outperforms existing methods in efficiency while maintaining flexible motion controllability. Our code is  ... This paper repurposes the backbone of the T2V model to extract temporal information from reference videos, and proposes a scaler module to distill motion-related information, and introduces a temporal integration mechanism that seamlessly incorporates reference motion features into the video generation process. ... Diffusion model [8] is a parametric neural network that approximates complex high-dimensional distributions through an iterative denoising process, making it widely adopted in visual generation. With the advancements of the  classifier-free guidance technique [7] and language models [19,20], subsequent research has explored text-conditioned visual generation. Leveraging large-scale text-image pairs [25], pretrained text-to-image diffusion models [21,22,24] have demonstrated unprecedented generative performance. Extending this capability to video, AnimateDiff [6] and Align Your Latents [2] integrate temporal attention modules into Stable Diffu"
+      },
+      {
+        "paper_id": "237592821",
+        "markdown_evidence": "There remain many open questions pertaining to the scaling behaviour of Transformer architectures. These scaling decisions and findings can be critical, as training runs often come with an associated computational cost which have both financial and/or environmental impact. The goal of this paper is to present scaling insights from pretraining and finetuning Transformers. While Kaplan et al. presents a comprehensive study of the scaling behaviour of Transformer language models, the scope is only on the upstream (pretraining) loss. Therefore, it is still unclear if these set of findings transfer to downstream task within the context of the pretrain-finetune paradigm. The key findings of this paper are as follows: (1) we show that aside from only the model size, model shape matters for downstream fine-tuning, (2) scaling protocols operate differently at different compute regions, (3) widely adopted T5-base and T5-large sizes are Pareto-inefficient. To this end, we present improved scaling protocols whereby our redesigned models achieve similar downstream fine-tuning quality while having 50\\% fewer parameters and training 40\\% faster compared to the widely adopted T5-base model. We publicly release over 100 pretrained checkpoints of different T5 configurations to facilitate future research and analysis. ... It is shown that aside from only the model size, model shape matters for downstream fine-tuning, and scaling protocols operate differently at different compute regions, and widely adopted T5-base and T4-large sizes are Pareto-inefficient. ... Transformers (Vaswani et al., 2017) have become ubiquitous in the modern deep learning stack and have seen widespread impact across not only language (Devlin et al., 2018;Raffel et al., 2019;Brown et al., 2020) but also computer vision (Dosovitskiy et al., 2020;Arnab et al., 2021), reinforcement learning (Parisotto et al., 2020) and computational biology (Senior et al., 2020). To this end,   discovering empirical scaling laws of these models is a research area that has garnered considerable interest (Kaplan et al., 2020;Henighan et al., 2020;Hernandez et al., 2021;Bahri et al., 2021). \n\nDiscovering empirical scaling laws that govern neural la"
+      },
+      {
+        "paper_id": "276422481",
+        "markdown_evidence": "Diffusion models are successful for synthesizing high-quality videos but are limited to generating short clips (e.g., 2-10 seconds). Synthesizing sustained footage (e.g. over minutes) still remains an open research question. In this paper, we propose MALT Diffusion (using Memory-Augmented Latent Transformers), a new diffusion model specialized for long video generation. MALT Diffusion (or just MALT) handles long videos by subdividing them into short segments and doing segment-level autoregressive generation. To achieve this, we first propose recurrent attention layers that encode multiple segments into a compact memory latent vector; by maintaining this memory vector over time, MALT is able to condition on it and continuously generate new footage based on a long temporal context. We also present several training techniques that enable the model to generate frames over a long horizon with consistent quality and minimal degradation. We validate the effectiveness of MALT through experiments on long video benchmarks. We first perform extensive analysis of MALT in long-contextual understanding capability and stability using popular long video benchmarks. For example, MALT achieves an FVD score of 220.4 on 128-frame video generation on UCF-101, outperforming the previous state-of-the-art of 648.4. Finally, we explore MALT's capabilities in a text-to-video generation setting and show  ... This paper proposes MALT Diffusion (using Memory-Augmented Latent Transformers), a new diffusion model specialized for long video generation and explores its capabilities in a text-to-video generation setting and shows that it can produce long videos compared with recent techniques for long text-to-video generation. ... While MALT shows strong performance in long video generation benchmarks, it is as-yet tested only with a relatively small model. Considering the scalability of diffusion transformer architectures in text-to-image [15] or text-to-video generation [31], we expect the performance of MALT to show a similar trend given more data and larger models. Moreover, considering that our text-to-video model is trained on short videos (up to 37 frames), training MALT on largescale text and long-video paired datasets is a natural next direction. Finally, one can combine our approach with other techniques for sequence data, such as Ruhe et al. [76], or conside"
+      },
+      {
+        "paper_id": "274445822",
+        "markdown_evidence": "The end-to-end autonomous driving paradigm has recently attracted lots of attention due to its scalability. However, existing methods are constrained by the limited scale of real-world data, which hinders a comprehensive exploration of the scaling laws associated with end-to-end autonomous driving. To address this issue, we collected substantial data from various driving scenarios and behaviors and conducted an extensive study on the scaling laws of existing imitation learning-based end-to-end autonomous driving paradigms. Specifically, approximately 4 million demonstrations from 23 different scenario types were gathered, amounting to over 30,000 hours of driving demonstrations. We performed open-loop evaluations and closed-loop simulation evaluations in 1,400 diverse driving demonstrations (1,300 for open-loop and 100 for closed-loop) under stringent assessment conditions. Through experimental analysis, we discovered that (1) the performance of the driving model exhibits a power-law relationship with the amount of data, but this is not the case in closed-loop evaluation. The inconsistency between the two assessments shifts our focus toward the distribution of data rather than merely expanding its volume. (2) a small increase in the quantity of long-tailed data can significantly improve the performance for the corresponding scenarios; (3) appropriate scaling of data enables the ... It is discovered that the performance of the driving model exhibits a power-law relationship with the amount of data, but this is not the case in closed-loop evaluation, which highlights the critical role of data scaling in improving the generalizability of models across diverse autonomous driving scenarios, assuring safe deployment in the real wor"
+      },
+      {
+        "paper_id": "274992610",
+        "markdown_evidence": "Sora-like video generation models have achieved remarkable progress with a Multi-Modal Diffusion Transformer (MM-DiT) architecture. However, the current video generation models predominantly focus on single-prompt, struggling to generate coherent scenes with multiple sequential prompts that better reflect real-world dynamic scenarios. While some pioneering works have explored multi-prompt video generation, they face significant challenges including strict training data requirements, weak prompt following, and unnatural transitions. To address these problems, we propose DiTCtrl, a training-free multi-prompt video generation method under MM-DiT architectures for the first time. Our key idea is to take the multi-prompt video generation task as temporal video editing with smooth transitions. To achieve this goal, we first analyze MM-DiT’s attention mechanism, finding that the 3D full attention behaves similarly to that of the cross/self-attention blocks in the UNet-like diffusion models, enabling mask-guided precise semantic control across different prompts with attention sharing for multi-prompt video generation. Based on our careful design, the video generated by DiTCtrl achieves smooth transitions and consistent object motion given multiple sequential prompts without additional training. Besides, we also present MPVBench, a new benchmark specially designed for multi-prompt video ... DiTCtrl is proposed, a training-free multi-prompt video generation method under MM-DiT architectures for the first time that achieves state-of-the-art performance without additional training and presents MPVBench, a new benchmark specially designed for multi-prompt video generation to evaluate the performance of multi-prompt generation. ... Video Diffusion Model. Diffusion models have achieved significant success in the field of text-to-image generation [28, [37][38][39], and these advancements have also propelled progress in video generation from text or images [3,7,8,10,11,15,16,21,40]. Among these methods, Animate-Diff [16] attempts to turn existing text-to-image diffusion models with a motion module. Other models such as Imagen Video [21] and Make-a-Video [40] train a cascade model of spatial and temporal layers directly in pixel space. To improve efficiency, many other works [3,7,8,10,11,15] generate the videos in latent space, leveraging an auto-encoder to compress the vid"
+      },
+      {
+        "paper_id": "277451906",
+        "markdown_evidence": "Text-to-image generation models, especially Multimodal Diffusion Transformers (MMDiT), have shown remarkable progress in generating high-quality images. However, these models often face significant computational bottlenecks, particularly in attention mechanisms, which hinder their scalability and efficiency. In this paper, we introduce DiTFastAttnV2, a post-training compression method designed to accelerate attention in MMDiT. Through an in-depth analysis of MMDiT's attention patterns, we identify key differences from prior DiT-based methods and propose headwise arrow attention and caching mechanisms to dynamically adjust attention heads, effectively bridging this gap. We also design an Efficient Fused Kernel for further acceleration. By leveraging local metric methods and optimization techniques, our approach significantly reduces the search time for optimal compression schemes to just minutes while maintaining generation quality. Furthermore, with the customized kernel, DiTFastAttnV2 achieves a 68% reduction in attention FLOPs and $1.5 \\times$ end-to-end speedup on 2K image generation without compromising visual fidelity. ... This paper introduces DiTFastAttnV2, a post-training compression method designed to accelerate attention in MMDiT and proposes headwise arrow attention and caching mechanisms to dynamically adjust attention heads, effectively bridging this gap. ... In recent years, diffusion models [32] have achieved groundbreaking progress and are playing a vital role across various fields [12], including image [39,40], video [3], and 3D generation [42]. Earlier diffusion models were primarily based on the UNet architecture; however, it has gradually been recognized that the Diffusion Transformer architecture [30], which follows scaling laws, offers greater advantages. This can be seen in notable models such as the Pixart series [7,9] and Hunyuan-DiT in image generation, as well as in video generation with models like Sora [5], Open-Sora [53], and LTX-Video [16]. Proposed by SD3 [14], the MMDiT (Multim"
+      },
+      {
+        "paper_id": "270068104",
+        "markdown_evidence": "This work uniquely identifies and characterizes four prevalent multimodal model architectural patterns in the contemporary multimodal landscape. Systematically categorizing models by architecture type facilitates monitoring of developments in the multimodal domain. Distinct from recent survey papers that present general information on multimodal architectures, this research conducts a comprehensive exploration of architectural details and identifies four specific architectural types. The types are distinguished by their respective methodologies for integrating multimodal inputs into the deep neural network model. The first two types (Type A and B) deeply fuses multimodal inputs within the internal layers of the model, whereas the following two types (Type C and D) facilitate early fusion at the input stage. Type-A employs standard cross-attention, whereas Type-B utilizes custom-designed layers for modality fusion within the internal layers. On the other hand, Type-C utilizes modality-specific encoders, while Type-D leverages tokenizers to process the modalities at the model's input stage. The identified architecture types aid the monitoring of any-to-any multimodal model development. Notably, Type-C and Type-D are currently favored in the construction of any-to-any multimodal models. Type-C, distinguished by its non-tokenizing multimodal model architecture, is emerging as a via ... This work uniquely identifies and categorizes existing multimodal model architectures in four types.Each architecture type is discussed in detail, including visualization of the general model architecture along with insights into their respective characteristics.Through a thorough examination of existing architectural patterns used in the development of any-to-any multimodal models, this research effort sheds light on the two prevalent approaches (Type-C and Type-D) that are currently driving advancements in this field.By comparing & contrasting architecture types to each other by describing their advantage & disadvantages, this work aids in  ... The Evolution of Multimodal Model Architectures"
+      },
+      {
+        "paper_id": "267060976",
+        "markdown_evidence": "Vision-Language Models pre-trained on large-scale image-text datasets have shown superior performance in downstream tasks such as image retrieval. Most of the images for pre-training are presented in the form of open domain common-sense visual elements. Differently, video covers in short video search scenarios are presented as user-originated contents that provide important visual summaries of videos. In addition, a portion of the video covers come with manually designed cover texts that provide semantic complements. In order to fill in the gaps in short video cover data, we establish the first large-scale cover-text benchmark for Chinese short video search scenarios. Specifically, we release two large-scale datasets CBVS-5M/10M to provide short video covers, and the manual fine-labeling dataset CBVS-20K to provide real user queries, which serves as an image-text benchmark test in the Chinese short video search field. To integrate the semantics of cover text in the case of modality missing, we propose UniCLIP where cover texts play a guiding role during training, however are not relied upon by inference. Extensive evaluation on CBVS-20K demonstrates the excellent performance of our proposal. UniCLIP has been deployed to Tencent's online video search systems with hundreds of millions of visits and achieved significant gains. The dataset and code are available at https://github.c ... This work releases two large-scale datasets CBVS-5M/10M to provide short video covers, and the manual fine-labeling dataset CBVS-20K to provide real user queries, which serves as an image-text benchmark test in the Chinese short video search field. ... CLIP [Radford et al., 2021] demonstrates the promise of performing contrastive learning pre-training on large-scale image-text data from the web with a data size of 400 million. In this work, visual base models represented by ViT [Dosovitskiy et al., 2020] are aligned with textual base models represented by Bert [Vaswani et al., 2017;Devlin et al., 2018] by learning on large-scale unsupervised data. These base models can be transferred to downstream tasks such as image search [Hendriksen et al., 2022] via natural language prompts [Zhou et al., 2022]. \n\nIn the field of Chinese multi-modal representation learning, previous work [Yang et al., 20"
+      },
+      {
+        "paper_id": "268531271",
+        "markdown_evidence": "The social media landscape of conflict dynamics has grown increasingly multi-modal. Recent advancements in model architectures such as CLIP have enabled researchers to begin studying the interplay between the modalities of text and images in a shared latent space. However, CLIP models fail to handle situations on social media when modalities present in a post expand above two. Social media dynamics often require understanding the interplay between not only text and images, but video as well. In this paper we explore an extension of the contrastive loss function to allow for any number of modalities, and demonstrate its usefulness in trimodal spaces on social media. By extending CLIP into three dimensions we can further aide understanding social media landscapes where all three modalities are present (an increasingly common situation). We use a newly collected public data set of Telegram posts containing all three modalities to train, and then demonstrate the usefulness of, a trimodal model in two OSINT scenarios: classifying a social media artifact post as either pro-Russian or pro-Ukrainian and identifying which account a given artifact originated from. While trimodal CLIP models have been explored before (though not on social media data), we also display a novel quadmodal CLIP model. This model can learn the interplay between text, image, video, and audio. We demonstrate new  ... An extension of the contrastive loss function to allow for any number of modalities, and its usefulness in trimodal spaces on social media is demonstrated, and a novel quadmodal CLIP model is displayed that can learn the interplay between text, image, video, and audio. ... We take as our \"ground-truth\" tuples the N artifacts present in a single social media post, where each artifact is from a different modality.If bimodal contrastive loss can be visualized as a grid of pairs, trimodal contrastive loss could be visualized as a cube (refer to Figure 1).More than three modalities begins to be harder to visualize, but the process of the extensions is the same as going from 2 to 3 modalities.\n\nThe loss function for N-Dimensional CLIP Loss is given by:\n\nwhere M i represents the embedding from the i th modality, sim() is a similarity function (like cosine similarity), and τ is a temperature parameter that scales the s"
+      },
+      {
+        "paper_id": "278200815",
+        "markdown_evidence": "The text-to-video generation task can provide people with rich and diverse video content, but it also has some typical issues, such as content inconsistency between video frames or text alignment failure, which degrade the smoothness of video. And in the process of improving the video smoothing problems, the background texture and artistic expression are often lost because of the excessive smoothing. Based on the above problems, this paper proposes INR Smooth, a type of video smoothing strategy based on the relationship between interframe noise, which can improve the smoothness of most T2V generation tasks. Based on INR Smooth, two video smoothing editing methods are proposed in this paper. One is for T2V training models, based on the studied interframe noise relationship, noise constraints are carried out from the beginning and end of the video simultaneously, and video smoothing loss functions are constructed. The other is for T2V training-free models, this paper introduces DDIM Inversion additionally to ensure text alignment, so as to improve the smoothness. Through experimental comparison, it is found that the proposed methods can significantly improve text alignment, temporal consistency, and has outstanding performance in the smooth transition of real scenes and the portrayal of artistic styles. The proposed training-free method and zero-shot fine-tuning training method f ... INR Smooth is proposed, a type of video smoothing strategy based on the relationship between interframe noise, which can improve the smoothness of most T2V generation tasks and has outstanding performance in the smooth transition of real scenes and the portrayal of artistic styles. ... The large-scale text-to-image (T2I) diffusion models has achieved unprecedented success, so researchers focus on applying the diffusion models to the field of video generation, and have achieved a series of remarkable research results. While many research [1,4,6,11] bring visual impact to people, but super computing resources make it difficult for individual researchers or small research teams, so researchers try to study how to better achieve text-to-video generation on the basis of lightweight resource utilization. For example, many T2V studies based on Zero-Shot, One-Shot, Few Shot and Training-Free have achieved better generation effects."
+      },
+      {
+        "paper_id": "268247485",
+        "markdown_evidence": "Recently, video generation has achieved significant rapid development based on superior text-to-image generation techniques. In this work, we propose a high fidelity framework for image-to-video generation, named AtomoVideo. Based on multi-granularity image injection, we achieve higher fidelity of the generated video to the given image. In addition, thanks to high quality datasets and training strategies, we achieve greater motion intensity while maintaining superior temporal consistency and stability. Our architecture extends flexibly to the video frame prediction task, enabling long sequence prediction through iterative generation. Furthermore, due to the design of adapter training, our approach can be well combined with existing personalized models and controllable modules. By quantitatively and qualitatively evaluation, AtomoVideo achieves superior results compared to popular methods, more examples can be found on our project website: https://atomo-video.github.io/. ... This work proposes a high fidelity framework for image-to-video generation, named AtomoVideo, based on multi-granularity image injection, which achieves higher fidelity of the generated video to the given image. ... Diffusion Models. Due to the outstanding generative capabilities and controllability, Diffusion Probabilistic Model (DPM) [17] and its variants have recently ascended to a dominant status within the field of generative modeling. Diffusion models [9,17,33] accomplish the iterative refinement process by learning to progressively denoise samples from the normal distribution, while subsequent works [29,34] reduce the computational burden by further leveraging learned representations in the latent space . For textto-image generation models [7,24,[28][29][30], it is common to use a language model such as CLIP [25] and T5 [27] as a text encoder and "
+      },
+      {
+        "paper_id": "248986979",
+        "markdown_evidence": "Recent large language models have been trained on vast datasets, but also often on repeated data, either intentionally for the purpose of upweighting higher quality data, or unintentionally because data deduplication is not perfect and the model is exposed to repeated data at the sentence, paragraph, or document level. Some works have reported substantial negative performance effects of this repeated data. In this paper we attempt to study repeated data systematically and to understand its effects mechanistically. To do this, we train a family of models where most of the data is unique but a small fraction of it is repeated many times. We find a strong double descent phenomenon, in which repeated data can lead test loss to increase midway through training. A predictable range of repetition frequency leads to surprisingly severe degradation in performance. For instance, performance of an 800M parameter model can be degraded to that of a 2x smaller model (400M params) by repeating 0.1% of the data 100 times, despite the other 90% of the training tokens remaining unique. We suspect there is a range in the middle where the data can be memorized and doing so consumes a large fraction of the model's capacity, and this may be where the peak of degradation occurs. Finally, we connect these observations to recent mechanistic interpretability work - attempting to reverse engineer the det ... It is shown that data repetition disproportionately damages copying and internal structures associated with generalization, such as induction heads, providing a possible mechanism for the shift from generalization to memorization. ... Scaling Laws A scaling law lens consists of finding a small set of hyperparameters that have large, predictable impacts on model performance, and was present throughout this work (at least one of the hyperparameters is generally model size, compute, or dataset size). The predictive nature of scaling laws makes them useful in a broad number of research and engineering settings. The implications of scaling laws are sufficiently broad and understandable that understanding them is relevant to policy makers [Ganguli et al., 2022]. Predictable scaling trends in neural networks were first studied with [Hestness et al., 2017]. [Kaplan et al., 2020] d"
+      },
+      {
+        "paper_id": "276117091",
+        "markdown_evidence": "The emergence of multimodal large models has advanced artificial intelligence, introducing unprecedented levels of performance and functionality. However, optimizing these models remains challenging due to historically isolated paths of model-centric and data-centric developments, leading to suboptimal outcomes and inefficient resource utilization. In response, we present a new sandbox suite tailored for integrated data-model co-development. This sandbox provides a feedback-driven experimental platform, enabling cost-effective iteration and guided refinement of both data and models. Our proposed ``Probe-Analyze-Refine'' workflow, validated through practical use cases on multimodal tasks such as image-text pre-training with CLIP, image-to-text generation with LLaVA-like models, and text-to-video generation with DiT-based models, yields transferable and notable performance boosts, such as topping the VBench leaderboard. A comprehensive set of over 100 experiments demonstrated the suite's usability and extensibility, while also uncovering insights into the interplay between data quality, diversity, model behavior, and computational costs. All codes, datasets, and models are open-sourced to foster future research and applications that would otherwise be infeasible due to the lack of a dedicated co-development infrastructure. ... A new sandbox suite tailored for integrated data-model co-development, enabling cost-effective iteration and guided refinement of both data and models, and uncovering insights into the interplay between data quality, diversity, model behavior, and computational costs. ... Reproducibility is essential for validating research outcomes. To facilitate this, we have organized detailed descriptions within the appendix of our paper. Key components of our experimental setup, including implementation details such as datasets and training configurations for the image-to-text, text-to-video and image-text pre-training use cases can be found in Appendix D.4, Appendix D.5 and Appendix D.6 respectively. We also provide details into the methodologies for combining multiple operators based on their correlations in Appendix D.1, as well as descriptions of performance metrics (Appendix D.2). Furthermore, Appendix D.3 outlines t"
+      },
+      {
+        "paper_id": "277349534",
+        "markdown_evidence": "Reconstructing dynamic 3D scenes (i.e., 4D geometry) from monocular video is an important yet challenging problem. Conventional multiview geometry-based approaches often struggle with dynamic motion, whereas recent learning-based methods either require specialized 4D representation or sophisticated optimization. In this paper, we present Sora3R, a novel framework that taps into the rich spatiotemporal priors of large-scale video diffusion models to directly infer 4D pointmaps from casual videos. Sora3R follows a two-stage pipeline: (1) we adapt a pointmap VAE from a pretrained video VAE, ensuring compatibility between the geometry and video latent spaces; (2) we finetune a diffusion backbone in combined video and pointmap latent space to generate coherent 4D pointmaps for every frame. Sora3R operates in a fully feedforward manner, requiring no external modules (e.g., depth, optical flow, or segmentation) or iterative global alignment. Extensive experiments demonstrate that Sora3R reliably recovers both camera poses and detailed scene geometry, achieving performance on par with state-of-the-art methods for dynamic 4D reconstruction across diverse scenarios. ... Sora3R is a novel framework that taps into the rich spatiotemporal priors of large-scale video diffusion models to directly infer 4D pointmaps from casual videos, achieving performance on par with state-of-the-art methods for dynamic 4D reconstruction across diverse scenarios. ... Video Diffusion Models. Diffusion models (DM) [50,54,95], designed to recover data from noise incrementally, have been validated as scalable solutions for large generative systems, including multimodal image generation [25,29,31,38,86,109,113,114,154,155] and multimodal video generation [8,13,22,23,27,36,41,44,51,65,66,77,90,139,150,162,167]. In image generation tasks, the model produces an image aligned with the input text or class label. For video generation, temporal layers are added to the image-based DM, allowing the model to generate a video based on a text prompt, an image, or both. Recent diffusion models primarily adopt the latent di"
+      },
+      {
+        "paper_id": "249394660",
+        "markdown_evidence": "Multi-channel video-language retrieval require models to understand information from different channels (e.g. video+question, video+speech) to correctly link a video with a textual response or query. Fortunately, contrastive multimodal models are shown to be highly effective at aligning entities in images/videos and text, e.g., CLIP [20]; text contrastive models are extensively studied recently for their strong ability of producing discriminative sentence embeddings, e.g., SimCSE [5]. However, there is not a clear way to quickly adapt these two lines to multi-channel video-language retrieval with limited data and resources. In this paper, we identify a principled model design space with two axes: how to represent videos and how to fuse video and text information. Based on categorization of recent methods, we investigate the options of representing videos using continuous feature vectors or discrete text tokens; for the fusion method, we explore the use of a multimodal transformer or a pretrained contrastive text model. We extensively evaluate the four combinations on five video-language datasets. We surprisingly find that discrete text tokens coupled with a pretrained contrastive text model yields the best performance, which can even outperform state-of-the-art on the iVQA and How2QA datasets without additional training on millions of video-text data. Further analysis shows tha ... It is found that discrete text tokens coupled with a pretrained contrastive text model yields the best performance, which can even outperform state-of-the-art on the iVQA and How2QA datasets without additional training on millions of video-text data. ... Through pretraining on millions of images/videos, these models are highly effective at encoding visual inputs and linking entities across modalities. Meanwhile, contrastive text models [8,28] have been also densely studied to obtain discriminative sentence embeddings. These models are shown to perform well on challenging text retrieval tasks such as semantic search [24], which requires the model to understand both language and real-world knowledge [8,28]. Such an ability allows the model to retrieve a text response or encode a text query in multichannel video-language retrieval-style tasks. Thereby, once the video information is effectively i"
+      },
+      {
+        "paper_id": "273821300",
+        "markdown_evidence": "Multimodal foundation models (MFMs) have revolutionized sequential recommender systems through advanced representation learning. While Parameter-efficient Fine-tuning (PEFT) is commonly used to adapt these models, studies often prioritize parameter efficiency, neglecting GPU memory and training speed. To address this, we introduced the IISAN framework, significantly enhancing efficiency. However, IISAN was limited to symmetrical MFMs and identical text and image encoders, preventing the use of state-of-the-art Large Language Models. To overcome this, we developed IISAN-Versa, a versatile plug-and-play architecture compatible with both symmetrical and asymmetrical MFMs. IISAN-Versa employs a Decoupled PEFT structure and utilizes both intra- and inter-modal adaptation. It effectively handles asymmetry through a simple yet effective combination of group layer-dropping and dimension transformation alignment. Our research demonstrates that IISAN-Versa effectively adapts large text encoders, and we further identify a scaling effect where larger text encoders generally perform better. IISAN-Versa also demonstrates strong versatility in our defined multimodal scenarios, which include raw titles and captions generated from images and videos. Additionally, IISAN-Versa achieved state-of-the-art performance on the MicroLens public benchmark. ... IISAN-Versa is developed, a versatile plug-and-play architecture compatible with both symmetrical and asymmetrical MFMs that effectively adapts large text encoders and identifies a scaling effect where larger text encoders generally perform better. ... For IISAN-VA, we address the challenge of asymmetric multimodal backbone networks by proposing a simple yet effective strategy that combines group layer-dropping with dimension transformation alignment. The IISAN-VA variant, with a larger text encoder, significantly outperforms the standard symmetrical IISAN-VS, which uses BERT-base text encoders, while maintaining high efficiency. This demonstrates IISAN-Versa's effectiveness in accommodating a larger and more powerful model. Moreover, we extend and validate the IISAN-Versa framework to a wider range of multimodal scenarios, particularly focusing on multimodal text, thereby validating its sc"
+      },
+      {
+        "paper_id": "267628004",
+        "markdown_evidence": "As AI model size grows, neural scaling laws have become a crucial tool to predict the improvements of large models when increasing capacity and the size of original (human or natural) training data. Yet, the widespread use of popular models means that the ecosystem of online data and text will co-evolve to progressively contain increased amounts of synthesized data. In this paper we ask: How will the scaling laws change in the inevitable regime where synthetic data makes its way into the training corpus? Will future models, still improve, or be doomed to degenerate up to total (model) collapse? We develop a theoretical framework of model collapse through the lens of scaling laws. We discover a wide range of decay phenomena, analyzing loss of scaling, shifted scaling with number of generations, the ''un-learning\"of skills, and grokking when mixing human and synthesized data. Our theory is validated by large-scale experiments with a transformer on an arithmetic task and text generation using the large language model Llama2. ... A theoretical framework of model collapse through the lens of scaling laws is developed and a wide range of decay phenomena is discovered, analyzing loss of scaling, shifted scaling with number of generations, the ''un-learning\" of skills, and grokking when mixing human and synthesized data. ... In many domains of machine learning including speech, translation, vision, video, and mathematical problem solving, empirically observed neural scaling laws (Hestness et al., 2017;Rosenfeld et al., 2020;Kaplan et al., 2020;Hoffmann et al., 2022;Gordon et al., 2021;Henighan et al., 2021;Aghajanyan et al., 2023) demonstrate that test error often falls off as a power law with the amount of training data, model size, and compute. Theoretically, scaling laws have been derived in a variety of settings (e.g. Hutter (2021); Cabannes et al. (2023) for \"LLM-like\" models). \n\nScaling laws are intimately related to the emergence of abilities (Wei et al., "
+      },
+      {
+        "paper_id": "275515921",
+        "markdown_evidence": "Existing video generation models struggle to follow complex text prompts and synthesize multiple objects, raising the need for additional grounding input for improved controllability. In this work, we propose to decompose videos into visual primitives – blob video representation, a general representation for controllable video generation. Based on blob conditions, we develop a blob-grounded video diffusion model named BlobGEN-Vid that allows users to control object motions and fine-grained object appearance. In particular, we introduce a masked 3D attention module that effectively improves regional consistency across frames. In addition, we introduce a learnable module to interpolate text embeddings so that users can control semantics in specific frames and obtain smooth object transitions. We show that our framework is model-agnostic and can build BlobGEN-Vid on both U-Net and DiT-based video diffusion models. Extensive experimental results show that BlobGEN-Vid achieves superior zero-shot video generation ability and state-of-the-art layout controllability on multiple benchmarks. When combined with an LLM for layout planning, our framework even outperforms proprietary text-to-video generators regarding compositional accuracy. Our project page: blobgen-vid.github.io ... This work develops a blob-grounded video diffusion model named BlobGEN-Vid, a general representation for controllable video generation that allows users to control object motions and fine-grained object appearance and introduces a masked 3D attention module that effectively improves regional consistency across frames. ... Text-to-video generation. The field of text-to-video generation (T2V) has gained much attention thanks to the advancement in new model architecture [2,15,29,50], large-scale video datasets [6,43], and improved training techniques [4,7,16]. There are mainly two streams of video diffusion models in terms of model architecture. Primitive video diffusion models such as Video LDM [2], VideoCrafter [3,4] and some others [38,40,48] are achieved by adding temporal self-attention modules into a U-Net diffusion backbone [11]. The U-Net usually operates in the latent space [37] and can be inherited from a pretrained text-to-image model such as Stable Di"
+      },
+      {
+        "paper_id": "264182966",
+        "markdown_evidence": "Large Language Models (LLMs) are a type of artificial intelligence that uses information from very large datasets to model the use of language and generate content. While LLMs like GPT-3 have been used widely in many applications, the recent public release of OpenAI's ChatGPT has opened more debate about the potential uses and abuses of LLMs. In this paper, we provide a brief introduction to LLMs and discuss their potential application in political science and political methodology. We use two examples of LLMs from our recent research to illustrate how LLMs open new areas of research. We conclude with a discussion of how researchers can use LLMs in their work, and issues that researchers need to be aware of regarding using LLMs in political science and political methodology. ... A brief introduction to LLMs is provided and two examples of LLMs from recent research are used to illustrate how LLMs open new areas of research. ... Another category of models takes textual descriptions and transforms them into visual counterparts (Gozalo-Brizuela and Garrido-Merchan, 2023;Zhang et al., 2023b). These models employ a two-step process: the language model first changes the input text into a latent representation, followed by a generative image model that creates an image conditioned on that representation (Borji, 2022). There are several popular models in this space. \n\nMidJourney: This AI-driven tool stands out in the arena of text-to-video platforms by efficiently transforming textual prompts into corresponding images. It demonstrates a special capability in adapting real a"
+      },
+      {
+        "paper_id": "269430328",
+        "markdown_evidence": "Vision-language pre-training has significantly elevated performance across a wide range of image-language applications. Yet, the pre-training process for video-related tasks demands exceptionally large computational and data resources, which hinders the progress of video-language models. This paper investigates a straight-forward, highly efficient, and resource-light approach to adapting an existing image-language pre-trained model for dense video understanding. Our preliminary experiments reveal that directly fine-tuning pre-trained image-language models with multiple frames as inputs on video datasets leads to performance saturation or even a drop. Our further investigation reveals that it is largely attributed to the bias of learned high-norm visual features. Motivated by this finding, we propose a simple but effective pooling strategy to smooth the feature distribution along the temporal dimension and thus reduce the dominant impacts from the extreme features. The new model is termed Pooling LLaVA, or PLLaVA in short. PLLaVA achieves new state-of-the-art performance on modern benchmark datasets for both video question-answer and captioning tasks. Notably, on the recent popular VideoChatGPT benchmark, PLLaVA achieves a score of 3.48 out of 5 on average of five evaluated dimensions, exceeding the previous SOTA results from GPT4V (IG-VLM) by 9%. On the latest multi-choice benc ... This paper investigates a straight-forward, highly efficient, and resource-light approach to adapting an existing image-language pre-trained model for dense video understanding, and proposes a simple but effective pooling strategy to smooth the feature distribution along the temporal dimension and thus reduce the dominant impacts from the extreme f"
+      },
+      {
+        "paper_id": "271310121",
+        "markdown_evidence": "With the advancement of computer vision and natural language processing, text-to-video generation, enabled by text-to-video diffusion models, has become more prevalent. These models are trained using a large amount of data from the internet. However, the training data often contain copyrighted content, including cartoon character icons and artist styles, private portraits, and unsafe videos. Since filtering the data and retraining the model is challenging, methods for unlearning specific concepts from text-to-video diffusion models have been investigated. However, due to the high computational complexity and relative large optimization scale, there is little work on unlearning methods for text-to-video diffusion models. We propose a novel concept-unlearning method by transferring the unlearning capability of the text encoder of text-to-image diffusion models to text-to-video diffusion models. Specifically, the method optimizes the text encoder using few-shot unlearning, where several generated images are used. We then use the optimized text encoder in text-to-video diffusion models to generate videos. Our method costs low computation resources and has small optimization scale. We discuss the generated videos after unlearning a concept. The experiments demonstrates that our method can unlearn copyrighted cartoon characters, artist styles, objects and people's facial characterist ... A novel concept-unlearning method is proposed by transferring the unlearning capability of the text encoder of text-to-image diffusion models to text-to-video diffusion models, which makes concept unlearning feasible and more accessible in the text-to-video domain. ... θ denotes that parameters are fixed and β denotes that parameters need to be optimized. cal solutions. \n\nCleaning the datasets and retraining the text-to-video models require a great amount of work and expenditure. For example, training text-to-video diffusion models, as described in (Wang et al. 2023;Ho et al. 2022), requires about 10 million videos. One feasible approach is to use unlearning methods (Bourtoule et al. 2021), which are proposed to eliminate the influence of specific data or concepts. Previous studies have successfully unlearned specific concepts from text-to-image models by optimizing the weights of U-Net (Ronneberger, Fische"
+      },
+      {
+        "paper_id": "270440881",
+        "markdown_evidence": "While diffusion models have shown impressive performance in 2D image/video generation, diffusion-based Text-to-Multi-view-Video (T2MVid) generation remains underexplored. The new challenges posed by T2MVid generation lie in the lack of massive captioned multi-view videos and the complexity of modeling such multi-dimensional distribution. To this end, we propose a novel diffusion-based pipeline that generates high-quality multi-view videos centered around a dynamic 3D object from text. Specifically, we factor the T2MVid problem into viewpoint-space and time components. Such factorization allows us to combine and reuse layers of advanced pre-trained multi-view image and 2D video diffusion models to ensure multi-view consistency as well as temporal coherence for the generated multi-view videos, largely reducing the training cost. We further introduce alignment modules to align the latent spaces of layers from the pre-trained multi-view and the 2D video diffusion models, addressing the reused layers' incompatibility that arises from the domain gap between 2D and multi-view data. In support of this and future research, we further contribute a captioned multi-view video dataset. Experimental results demonstrate that our method generates high-quality multi-view videos, exhibiting vivid motions, temporal coherence, and multi-view consistency, given a variety of text prompts. ... A novel diffusion-based pipeline is proposed that generates high-quality multi-view videos centered around a dynamic 3D object from text, exhibiting vivid motions, temporal coherence, and multi-view consistency, given a variety of text prompts. ... 2D video diffusion model.Many previous approaches have explored autoregressive transformers (e.g., [17,26,96]) or GANs (e.g., [8,48,69]) for video generation.Recently, more and more efforts have been devoted to diffusion-based video generation [19,24,57,85,90,93,99,109,34], inspired by the impressive results of image diffusion models [10,11,66,68,75,103].\n\nThe amount of available captioned 2D video data is significantly less than the vast number of 2D image-text pairs available on the Internet.Most methods [7,20,21,81,82,83] extend pre-trained 2D image diffusion models to video generation to address the challenge of limited training data.Some"
+      },
+      {
+        "paper_id": "278501597",
+        "markdown_evidence": "In this work, we present GPDiT, a Generative Pre-trained Autoregressive Diffusion Transformer that unifies the strengths of diffusion and autoregressive modeling for long-range video synthesis, within a continuous latent space. Instead of predicting discrete tokens, GPDiT autoregressively predicts future latent frames using a diffusion loss, enabling natural modeling of motion dynamics and semantic consistency across frames. This continuous autoregressive framework not only enhances generation quality but also endows the model with representation capabilities. Additionally, we introduce a lightweight causal attention variant and a parameter-free rotation-based time-conditioning mechanism, improving both the training and inference efficiency. Extensive experiments demonstrate that GPDiT achieves strong performance in video generation quality, video representation ability, and few-shot learning tasks, highlighting its potential as an effective framework for video modeling in continuous space. ... Video Diffusion models. Diffusion and flow-based generative models [13,23,24,41,46,54] have demonstrated unprecedented ability to capture visual concepts and produce high-quality images. Video Diffusion Models [14] is the first work to introduce diffusion models for video generation. However, the expense associated with pixel space diffusion and denoising is nontrivial, requiring substantial computational resources. Models such as Magicvideo [60] and LVDM [11] speed up training and sampling efficiency by compressing high-dimensional video data into a latent space. \n\nRecent efforts have scaled diffusion transformers to substantially larger cap"
+      },
+      {
+        "paper_id": "62521807",
+        "markdown_evidence": "Abstract Multimedia technology has influenced modern society in many ways. Multimedia has evolved to applications in physical space, wherein media such as sound, visuals and interactive content have taken on spatial significance. Especially interesting for architectural design is the progressive approach to spatial context evident in multimedia installation artworks and interactive spaces. This paper seeks to identify key forms of influence multimedia has in an architectural context and the spatial significance of architectonic functions afforded by those influences. Multiple case studies were conducted applying a systems theory approach to evaluate 25 works of multimedia installation art and interactive spaces. Evaluations referenced the forms of media used, their observed influence on the correlating architectural space and the manner in which people experience the resultant space. Based on observations and analysis, this paper is proposing transformation, interaction and temporality as three key influences of multimedia. These influences and the architectonic functions they afford were used to create a matrix framework that indicates the potential of multimedia in an architectural context and establishes a theoretical basis for developing methods to integrate multimedia technology into architectural design. ... Transformation, interaction and temporality are proposed as three key influences of multimedia that indicate the potential of multimedia in an architectural context and establishes a theoretical basis for developing methods to integrate multimedia technology into architectural design. ... Theoretical Connection Points Between Multimedia and Architecture ... The manner in which people share, access and exchange knowledge has been indelibly changed by multimedia technology. Examples can be found in applications to computers, communication and information devices and gaming systems. Multimedia technology has also made advancements to address applications in habitable, physical environments and that has opened the door for new modes of contemplating spatial function, reflecting not only how people interact with and experience a space, but also how a space can benefit people by sensing and interacting with them. (Bullivant 2006, pp.6-17) This can be evidenced in libraries, museums and installation ar"
+      },
+      {
+        "paper_id": "259145019",
+        "markdown_evidence": "Transformer is a deep neural network that employs a self-attention mechanism to comprehend the contextual relationships within sequential data. Unlike conventional neural networks or updated versions of Recurrent Neural Networks (RNNs) such as Long Short-Term Memory (LSTM), transformer models excel in handling long dependencies between input sequence elements and enable parallel processing. As a result, transformer-based models have attracted substantial interest among researchers in the field of artificial intelligence. This can be attributed to their immense potential and remarkable achievements, not only in Natural Language Processing (NLP) tasks but also in a wide range of domains, including computer vision, audio and speech processing, healthcare, and the Internet of Things (IoT). Although several survey papers have been published highlighting the transformer's contributions in specific fields, architectural differences, or performance evaluations, there is still a significant absence of a comprehensive survey paper encompassing its major applications across various domains. Therefore, we undertook the task of filling this gap by conducting an extensive survey of proposed transformer models from 2017 to 2022. Our survey encompasses the identification of the top five application domains for transformer-based models, namely: NLP, Computer Vision, Multi-Modality, Audio and Sp ... An extensive survey of proposed transformer models from 2017 to 2022 encompasses the identification of the top five application domains for transformer-based models, namely: NLP, Computer Vision, Multi-Modality, Audio and Speech Processing, and Signal Processing and analyzes the impact of highly influential transformer- based models in these domain"
+      },
+      {
+        "paper_id": "271097419",
+        "markdown_evidence": "Understanding of video creativity and content often varies among individuals, with differences in focal points and cognitive levels across different ages, experiences, and genders. There is currently a lack of research in this area, and most existing benchmarks suffer from several drawbacks: 1) a limited number of modalities and answers with restrictive length; 2) the content and scenarios within the videos are excessively monotonous, transmitting allegories and emotions that are overly simplistic. To bridge the gap to real-world applications, we introduce a large-scale Video Subjective Multi-modal Evaluation dataset, namely Video-SME. Specifically, we collected real changes in Electroencephalographic (EEG) and eye-tracking regions from different demographics while they viewed identical video content. Utilizing this multi-modal dataset, we developed tasks and protocols to analyze and evaluate the extent of cognitive understanding of video content among different users. Along with the dataset, we designed a Hypergraph Multi-modal Large Language Model (HMLLM) to explore the associations among different demographics, video elements, EEG and eye-tracking indicators. HMLLM could bridge semantic gaps across rich modalities and integrate information beyond different modalities to perform logical reasoning. Extensive experimental evaluations on Video-SME and other additional video-base ... A large-scale Video Subjective Multi-modal Evaluation dataset, namely Video-SME, is introduced and a Hypergraph Multi-modal Large Language Model (HMLLM) is designed to explore the associations among different demographics, video elements, EEG and eye-tracking indicators. ... Multi-modal Large Language Models (MLLMs), primarily serving as vision-language models, transform images or videos into texts. These models are mainly divided into two categories: traditional large-scale pretraining [37,38,65] and instruction tuning using pre-trained LLMs [47,75,84]. The first category comprises models that blend a visual encoder with a language model, either developed from scratch or based on pre-existing models, possibly including a trainable module to bridge the two modalities. Utilizing autoregressive loss for text generation, these models are training on extensive image-text datasets, including image-text pairs [28,37,38"
+      },
+      {
+        "paper_id": "269791266",
+        "markdown_evidence": "As large language models (LLMs) evolve, their integration with 3D spatial data (3D-LLMs) has seen rapid progress, offering unprecedented capabilities for understanding and interacting with physical spaces. This survey provides a comprehensive overview of the methodologies enabling LLMs to process, understand, and generate 3D data. Highlighting the unique advantages of LLMs, such as in-context learning, step-by-step reasoning, open-vocabulary capabilities, and extensive world knowledge, we underscore their potential to significantly advance spatial comprehension and interaction within embodied Artificial Intelligence (AI) systems. Our investigation spans various 3D data representations, from point clouds to Neural Radiance Fields (NeRFs). It examines their integration with LLMs for tasks such as 3D scene understanding, captioning, question-answering, and dialogue, as well as LLM-based agents for spatial reasoning, planning, and navigation. The paper also includes a brief review of other methods that integrate 3D and language. The meta-analysis presented in this paper reveals significant progress yet underscores the necessity for novel approaches to harness the full potential of 3D-LLMs. Hence, with this paper, we aim to chart a course for future research that explores and expands the capabilities of 3D-LLMs in understanding and interacting with the complex 3D world. To support t ... This survey provides a comprehensive overview of the methodologies enabling LLMs to process, understand, and generate 3D data, and examines their integration with LLMs for tasks such as 3D scene understanding, captioning, question-answering, and dialogue. ... Vision-Language Models are a family of models which aim to capture and exploit the relationship between text and images/video, and are capable of performing interactive tasks between the two modalities.The majority of VLMs have transformer-based architectures.By leveraging the attention module, visual and textual contents are conditioned on each other, which enables mutual interaction.In the following paragraphs, we briefly cover the applications of VLMs to discriminative and generative tasks.\n\nDiscriminative tasks involve predicting a certain characteristic about the data.VLMs, such as CLIP [174] and ALIGN [175], have shown exceptional perfo"
+      },
+      {
+        "paper_id": "268819254",
+        "markdown_evidence": "Recent advances in the diffusion models have significantly improved text-to-image generation. However, generating videos from text is a more challenging task than generating images from text, due to the much larger dataset and higher computational cost required. Most existing video generation methods use either a 3D U-Net architecture that considers the temporal dimension or autoregressive generation. These methods require large datasets and are limited in terms of computational costs compared to text-to-image generation. To tackle these challenges, we propose a simple but effective novel grid diffusion for text-to-video generation without temporal dimension in architecture and a large text-video paired dataset. We can generate a high-quality video using a fixed amount of GPU memory regardless of the number of frames by representing the video as a grid image. Additionally, since our method reduces the dimensions of the video to the dimensions of the image, various image-based methods can be applied to videos, such as textguided video manipulation from image manipulation. Our proposed method outperforms the existing methods in both quantitative and qualitative evaluations, demonstrating the suitability of our model for real-world video generation. ... This work proposes a simple but effective novel grid diffusion for text-to-video generation without temporal dimension in architecture and a large text-video paired dataset that outperforms the existing methods in both quantitative and qualitative evaluations, demonstrating the suitability of the model for real-world video generation. ... The advancement of diffusion models has resulted in significant improvements in the performance of text-to-image models [9,18,23,24,26]. Unlike GAN-based models, the diffusion model is easier to train, offering desirable properties such as distribution coverage, a stationary training objective, and easy scalability [8]. Based on these strengths, various studies [5,16,45,47] are being conducted to manipulate or generate images from text using diffusion, and research on generating videos [4,6,12,15,17,29] from text is also actively being pursued. However, video generation is more challenging than image generation because videos have higher dime"
+      },
+      {
+        "paper_id": "271903662",
+        "markdown_evidence": "Traditional animation generation methods depend on training generative models with human-labelled data, entailing a sophisticated multi-stage pipeline that demands substantial human effort and incurs high training costs. Due to limited prompting plans, these methods typically produce brief, information-poor, and context-incoherent animations. To overcome these limitations and automate the animation process, we pioneer the introduction of large multimodal models (LMMs) as the core processor to build an autonomous animation-making agent, named Anim-Director. This agent mainly harnesses the advanced understanding and reasoning capabilities of LMMs and generative AI tools to create animated videos from concise narratives or simple instructions. Specifically, it operates in three main stages: Firstly, the Anim-Director generates a coherent storyline from user inputs, followed by a detailed director’s script that encompasses settings of character profiles and interior/exterior descriptions, and context-coherent scene descriptions that include appearing characters, interiors or exteriors, and scene events. Secondly, we employ LMMs with the image generation tool to produce visual images of settings and scenes. These images are designed to maintain visual consistency across different scenes using a visual-language prompting method that combines scene descriptions and images of the appea ... The introduction of large multimodal models (LMMs) as the core processor to build an autonomous animation-making agent, named Anim-Director, which mainly harnesses the advanced understanding and reasoning capabilities of LMMs and generative AI tools to create animated videos from concise narratives or simple instructions. ... We primarily assess Anim-Director against other notable models in the field of animation and image generation. Specifically, we compare it with the open-source animation generation model Custom Diffusion [Kumari et al. 2023] and other advanced image/video generation models. The DPT-T2I model introduced by Qu et al. [2024] enhances the discriminative capabilities of Text-to-Image (T2I) models, achieving more precise text-to-image alignment. Midjourney V6 is an AI-driven art generator that creates images from text descriptions and Pika v2 is a versatile video generator capable of dynamically modifying elements within the frame or changing style"
+      },
+      {
+        "paper_id": "272600571",
+        "markdown_evidence": "Text-to-video (T2V) models have shown remarkable capabilities in generating diverse videos. However, they struggle to produce user-desired stylized videos due to (i) text's inherent clumsiness in expressing specific styles and (ii) the generally degraded style fidelity. To address these challenges, we introduce StyleCrafter, a generic method that enhances pre-trained T2V models with a style control adapter, enabling video generation in any style by providing a reference image. Considering the scarcity of stylized video datasets, we propose to first train a style control adapter using style-rich image datasets, then transfer the learned stylization ability to video generation through a tailor-made finetuning paradigm. To promote content-style disentanglement, we remove style descriptions from the text prompt and extract style information solely from the reference image using a decoupling learning strategy. Additionally, we design a scale-adaptive fusion module to balance the influences of text-based content features and image-based style features, which helps generalization across various text and style combinations. StyleCrafter efficiently generates high-quality stylized videos that align with the content of the texts and resemble the style of the reference images. Experiments demonstrate that our approach is more flexible and efficient than existing competitors. ... StyleCrafter is introduced, a generic method that enhances pre-trained T2V models with a style control adapter, enabling video generation in any style by providing a reference image, and designs a scale-adaptive fusion module to balance the influences of text-based content features and image-based style features. ... On the other, a finetuning paradigm enables text-to-video models with better adaptation to the style concepts extracted from the previously trained style adapter, while avoiding degradation of temporal quality in video generation. \n\nTo effectively capture the style features and promote content-style disentanglement, we adopt the widely used query transformer to extract style concepts from a single image. Particularly, we design a scale-adaptive fusion module to balance the influences of text-based content features and image-based style features, which helps generalization across various text and style combinations. During the training process"
+      },
+      {
+        "paper_id": "277509893",
+        "markdown_evidence": "This paper presents SkyReels-A2, a controllable video generation framework capable of assembling arbitrary visual elements (e.g., characters, objects, backgrounds) into synthesized videos based on textual prompts while maintaining strict consistency with reference images for each element. We term this task elements-to-video (E2V), whose primary challenges lie in preserving the fidelity of each reference element, ensuring coherent composition of the scene, and achieving natural outputs. To address these, we first design a comprehensive data pipeline to construct prompt-reference-video triplets for model training. Next, we propose a novel image-text joint embedding model to inject multi-element representations into the generative process, balancing element-specific consistency with global coherence and text alignment. We also optimize the inference pipeline for both speed and output stability. Moreover, we introduce a carefully curated benchmark for systematic evaluation, i.e, A2 Bench. Experiments demonstrate that our framework can generate diverse, high-quality videos with precise element control. SkyReels-A2 is the first open-source commercial grade model for the generation of E2V, performing favorably against advanced closed-source commercial models. We anticipate SkyReels-A2 will advance creative applications such as drama and virtual e-commerce, pushing the boundaries of co ... SkyReels-A2 is the first open-source commercial grade model for the generation of E2V, performing favorably against advanced closed-source commercial models, and is anticipated to advance creative applications such as drama and virtual e-commerce, pushing the boundaries of controllable video generation. ... The emergence of diffusion models has significantly advanced the field of generative modeling, fundamentally transforming the paradigm of content creation [75,65,58,14,24,25]. Building upon text-to-image architectures, large-scale pre-trained video diffusion frameworks have achieved remarkable breakthroughs by incorporating temporal consistency mechanisms into their attention designs [39,5,73,32,6]. Notably, the scalability of diffusion transformer architectures with full 3D attention [58,49,102,103,91,60,86,84] has propelled the field toward high-quality visual content, enabling a broad spectrum of downstream applications [98,99,72,95,77,96,"
+      },
+      {
+        "paper_id": "235306585",
+        "markdown_evidence": "When can we expect a text-video retrieval system to work effectively on datasets that differ from its training domain? In this work, we investigate this question through the lens of unsupervised domain adaptation in which the objective is to match natural language queries and video content in the presence of domain shift at query-time. Such systems have significant practical applications since they are capable generalising to new data sources without requiring corresponding text annotations. We make the following contributions: (1) We propose the UDAVR (Unsupervised Domain Adaptation for Video Retrieval) benchmark and employ it to study the performance of text-video retrieval in the presence of domain\nshift. (2) We propose Concept-Aware-Pseudo-Query (CAPQ), a method for learning discriminative and transferable features that bridge these cross-domain discrepancies to enable effective target domain retrieval using source domain supervision. (3) We show that CAPQ outperforms alternative domain adaptation strategies on UDAVR. ... This work proposes Concept-Aware-Pseudo-Query (CAPQ), a method for learning discriminative and transferable features that bridge these cross-domain discrepancies to enable effective target domain retrieval using source domain supervision. ... Given a natural language query and a pool of videos, the goal of text-video retrieval is to rank the videos according to how well their content fits the query. Recent years have seen substantial progress on popular benchmarks for assessing text-video retrieval (Chen and Dolan 2011;Rohrbach et al. 2015;Xu et al. 2016) through effective use of multimodal cues (Mithun et al. 2018) and powerful pretrained models (Miech, Laptev, and Sivic 2018;Liu et al. 2019). These impressive gains have been driven by access to large quantities of labeled data for supervised learning. To date, much of the work in this area has relied on the assumption that the t ... Mind-the-Gap! Unsupervised Domain Adaptation for Text-Video Retrieval"
+      },
+      {
+        "paper_id": "53867380",
+        "markdown_evidence": "For example, image recognition accuracy is improved with sub-band processing. A water‐ mark is typically embedded into a middle frequency band in order to make the scheme not only robust to compression but also secure against attacks on the watermark. Thus, it is highly desirable that analysis filters have excellent frequency characteristics to appropriately decompose signals in such applications. ... It is highly desirable that analysis filters have excellent frequency characteristics to appropriately decompose signals in such applications as image recognition accuracy and sub-band processing. ... The scaling"
+      },
+      {
+        "paper_id": "265821110",
+        "markdown_evidence": "Text-to-image generation (TTI) refers to the usage of models that could process text input and generate high fidelity images based on text descriptions. Text-to-image generation using neural networks could be traced back to the emergence of Generative Adversial Network (GAN), followed by the autoregressive Transformer. Diffusion models are one prominent type of generative model used for the generation of images through the systematic introduction of noises with repeating steps. As an effect of the impressive results of diffusion models on image synthesis, it has been cemented as the major image decoder used by text-to-image models and brought text-to-image generation to the forefront of machine-learning (ML) research. In the era of large models, scaling up model size and the integration with large language models have further improved the performance of TTI models, resulting the generation result nearly indistinguishable from real-world images, revolutionizing the way we retrieval images. Our explorative study has incentivised us to think that there are further ways of scaling text-to-image models with the combination of innovative model architectures and prediction enhancement techniques. We have divided the work of this survey into five main sections wherein we detail the frameworks of major literature in order to delve into the different types of text-to-image generation met ... It is argued that TTI development could yield impressive productivity improvements for creation, particularly in the context of the AIGC era, and could be extended to more complex tasks such as video generation and 3D generation."
+      },
+      {
+        "paper_id": "248987346",
+        "markdown_evidence": "The goal of this work is to build flexible video-language models that can generalize to various video-to-text tasks from few examples, such as domain-specific captioning, question answering, and future event prediction. Existing few-shot video-language learners focus exclusively on the encoder, resulting in the absence of a video-to-text decoder to handle generative tasks. Video captioners have been pretrained on large-scale video-language datasets, but they rely heavily on finetuning and lack the ability to generate text for unseen tasks in a few-shot setting. We propose VidIL, a few-shot Video-language Learner via Image and Language models, which demonstrates strong performance on few-shot video-to-text tasks without the necessity of pretraining or finetuning on any video datasets. We use the image-language models to translate the video content into frame captions, object, attribute, and event phrases, and compose them into a temporal structure template. We then instruct a language model, with a prompt containing a few in-context examples, to generate a target output from the composed content. The flexibility of prompting allows the model to capture any form of text input, such as automatic speech recognition (ASR) transcripts. Our experiments demonstrate the power of language models in understanding videos on a wide variety of video-language tasks, including video captioning ... We report BLEU-4 [41], ROUGE-L [31], METEOR [5], and CIDEr [54] scores on three video captioning benchmarks covering both open-domain (MSR-VTT, VaTeX) and domain-specific (YouCook2) videos. We compare with both state-of-the-art video captioner (UniVL [35]) and image captioner (BLIP [26]). In order to implement the BLIP baseline for few-shot video captioning, we extend the approach used for text-video retrieval evaluation in [26] to video-language training. Specifically, we concatenate the visual features of sampled frames and then feed them into the image-grounded text-encoder to compute the language modeling loss. This is equivalent to stitc"
+      },
+      {
+        "paper_id": "271334095",
+        "markdown_evidence": "In Composed Video Retrieval, a video and a textual description which modifies the video content are provided as inputs to the model. The aim is to retrieve the relevant video with the modified content from a database of videos. In this challenging task, the first step is to acquire large-scale training datasets and collect high-quality benchmarks for evaluation. In this work, we introduce EgoCVR, a new evaluation benchmark for fine-grained Composed Video Retrieval using large-scale egocentric video datasets. EgoCVR consists of 2,295 queries that specifically focus on high-quality temporal video understanding. We find that existing Composed Video Retrieval frameworks do not achieve the necessary high-quality temporal video understanding for this task. To address this shortcoming, we adapt a simple training-free method, propose a generic re-ranking framework for Composed Video Retrieval, and demonstrate that this achieves strong results on EgoCVR. Our code and benchmark are freely available at https://github.com/ExplainableML/EgoCVR. ... A simple training-free method is adapted, a generic re-ranking framework for Composed Video Retrieval is proposed, and this achieves strong results on EgoCVR, a new evaluation benchmark for fine-grained Composed Video Retrieval using large-scale egocentric video datasets. ... Video-Language Models and Retrieval.Early work on video retrieval often focused on extending retrieval approaches from images to videos by aggregating image features within a video [14,41,48,57].However, with the introduction of large-scale video-text datasets [4,39,53,56], and contrastive language-image pretraining [31,32,43], there have been several models proposed for the task of videotext retrieval [5,20,38,60].Due to the growing popularity of egocentric video datasets [21,22], video-language models have been proposed that specifically focus on this setting [34,42,59].However, while there has been growing interest in developing video-base"
+      },
+      {
+        "paper_id": "269033049",
+        "markdown_evidence": "Vision-language models (VLMs) are trained for thousands of GPU hours on carefully selected subsets of massive web scrapes. For instance, the LAION public dataset retained only about 10% of the total crawled data. In recent times, data curation has gained prominence with several works developing strategies to retain ‘high-quality’ subsets of ‘raw’ scraped data. However, these strategies are typically developed agnostic to the available compute for training. In this paper, we demonstrate that making filtering decisions independent of training compute is often suboptimal—well-curated data rapidly loses its utility when repeated, eventually decreasing below the utility of ‘unseen’ but ‘lower-quality’ data. While past research in neural scaling laws has considered web data to be homogenous, real data is not. Our work bridges this important gap in the literature by developing scaling laws that characterize the differing ‘utility’ of various data subsets, and accounting for how this diminishes for a data point at its ‘nth’ repetition. Our key message is that data curation can not be agnostic of the total compute a model will be trained for. Even without ever jointly training on multiple data buckets, our scaling laws enable us to estimate model performance under this dynamic trade-off between quality and repetition. This allows us to curate the best possible pool for achieving top per ... It is demonstrated that making filtering decisions independent of training compute is often suboptimal—well-curated data rapidly loses its utility when repeated, eventually decreasing below the utility of ‘unseen’ but ‘lower-quality’ data. ... Conventionally scaling laws have been studied in the context of language models (Hoffmann et al. 2022;Kaplan et al. 2020).To the best of our knowledge, the only large scale attempt at predicting scaling of vision language models was done in the work of Cherti et al. (2023).However, the extrapolated graphs in their work showed large errors as compared to the actual performance of the models.Hence, the scaling of vision language models is still an open question, especially when trained under contrastive loss.\n\nChallenge: Squared Contrastive Pairs This is a fundamentally new challenge because in a data pool of N samples, there exist N 2 pairs of"
+      },
+      {
+        "paper_id": "264814430",
+        "markdown_evidence": "Motion prediction and planning are vital tasks in autonomous driving, and recent efforts have shifted to machine learning-based approaches. The challenges include understanding diverse road topologies, reasoning traffic dynamics over a long time horizon, interpreting heterogeneous behaviors, and generating policies in a large continuous state space. Inspired by the success of large language models in addressing similar complexities through model scaling, we introduce a scalable trajectory model called State Transformer (STR). STR reformulates the motion prediction and motion planning problems by arranging observations, states, and actions into one unified sequence modeling task. Our approach unites trajectory generation problems with other sequence modeling problems, powering rapid iterations with breakthroughs in neighbor domains such as language modeling. Remarkably, experimental results reveal that large trajectory models (LTMs), such as STR, adhere to the scaling laws by presenting outstanding adaptability and learning efficiency. Qualitative results further demonstrate that LTMs are capable of making plausible predictions in scenarios that diverge significantly from the training data distribution. LTMs also learn to make complex reasonings for long-term planning, without explicit loss designs or costly high-level annotations. ... Inspired by the success of large language models in addressing similar complexities through model scaling, a scalable trajectory model called State Transformer (STR) is introduced, which reformulates the motion prediction and motion planning problems by arranging observations, states, and actions into one unified sequence modeling task. ... This research laid the groundwork for understanding how scaling influences the efficacy of language models. Henighan et al. (Henighan et al., 2020) further studied scaling laws in autoregressive generative modeling of images, videos, vision-language, and mathematical problems. These works suggest that scaling laws have important implications for neural network performance."
+      },
+      {
+        "paper_id": "239768993",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237532682",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2262414",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278394411",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268724158",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258426219",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273654912",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274192435",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251187468",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270371039",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266053134",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277467678",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276765405",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266209871",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257632405",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249394517",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269010000",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "17491965",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247649821",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276885235",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271218232",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54682033",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269293420",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14942338",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216371440",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "230533339",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235490558",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270062943",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "147322645",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54670514",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266933410",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "119213768",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250459913",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271270488",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "55288401",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263308129",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227126545",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "26084120",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246865215",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250322617",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260775655",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266844878",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266125606",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269863158",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234126928",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "239049626",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "126096246",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "182950647",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270870796",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221641001",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264832629",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216646161",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225304842",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248571753",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257622679",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259461144",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273850426",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271534103",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "118932724",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219615871",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256715941",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271154584",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244907632",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216080945",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "4429215",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267199802",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "201698484",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268512394",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260900208",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273963060",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278394433",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266844853",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275788854",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "10361212",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231621276",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16107645",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "119506866",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270619480",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274423430",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259732467",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247447153",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267028095",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "242166498",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233307052",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "197574291",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273641314",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "40203979",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256902434",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219687598",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254823471",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273773750",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "9338736",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267317777",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244909127",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259505366",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258546790",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276421795",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52198665",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277622249",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16108144",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269590566",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277510256",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258767209",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250906550",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "128192995",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264889170",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265609001",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252416326",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277128236",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276116799",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277467354",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252222167",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53026948",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "55040369",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258519117",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276308001",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269926650",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259596728",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "868299",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "34782655",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250264634",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276258680",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255130272",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56144291",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278166181",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278367674",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247536895",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269005850",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271525553",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237806271",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257038528",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "184488029",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "11099061",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269293730",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252519182",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268264281",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "119085094",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274023126",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257631986",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220546091",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248700973",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "238215257",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

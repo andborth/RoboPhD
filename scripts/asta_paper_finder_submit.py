@@ -118,6 +118,23 @@ SUBMISSIONS = [
         # Patch 0_0_7 continues the cross-benchmark sequence after
         # DS-1000's v0_0_6.
     ),
+    Submission(
+        name="v0_0_8_soft_cap_0_033_opus",
+        agent_rel_path="agents/iter9_rerank_rich_v1/agent.py",
+        model_arg="none",
+        # Run robophd-asta_paper_finder-006 (opus-4.8-evolved; luna
+        # no-prose training judge), winner iter9_rerank_rich_v1 (Elo 1589,
+        # 7 test rounds) — the platform's own Elo pick, submitted as such
+        # even though iter14 finished 1.07 Elo behind on a higher train
+        # mean (see the snapshot README). Internal test 0.2754 mean F1 @
+        # $0.006/query on a full stock GPT-4o re-eval (free zone $0.033).
+        # Sole model gpt-5.4-mini, already covered by AGENT_MODELS.
+        # The cheap counterpart to v0_0_7, not a replacement: the two are
+        # distinct Pareto points (0.3749 @ $0.0533 vs 0.2754 @ $0.006).
+        # model_arg stays "none" despite the single model — the recorded
+        # eval.model would otherwise claim a primary, and per-call usage
+        # is already captured in stats.model_usage.
+    ),
 ]
 
 
@@ -291,15 +308,20 @@ from agent_inner import make_solver as _inner_make_solver
 from seed_agent import make_solver as _seed_make_solver
 
 
-PRIMARY_TIMEOUT_S = 3000  # 50 min — must clear the agent's OWN pacing
-# (SOFT_DEADLINE=1300 / TAIL_DEADLINE=1550 in agent_inner), which was
-# evolved against training's 1800s external cap. A tighter wrapper
-# guillotines the agent INSIDE its planned budget: at 1500s the first
-# official attempt seed-fell-back on 5 of 9 samples (0.57->0.06 on
-# semantic_5); at 2100 the second attempt watched semantic_25 finish 48s
-# short of the line as MCP latency stretched solves to ~30 min. Wall
-# clock is unscored officially; the ceiling exists only to bound true
-# hangs, so generosity costs nothing.
+PRIMARY_TIMEOUT_S = 3000  # 50 min — a hang bound, not a work budget.
+# It has to clear whatever pacing the staged agent has, and agents differ:
+# v0_0_7's iter12 self-paced (SOFT_DEADLINE=1300 / TAIL_DEADLINE=1550,
+# evolved against training's 1800s external cap), while v0_0_8's iter9 has
+# no deadline constants at all — its runtime comes from a fixed work plan,
+# and with no per-call timeouts a hung tool call runs until this ceiling
+# fires. For a self-pacing agent a tight ceiling guillotines it INSIDE its
+# planned budget: at 1500s the first official attempt seed-fell-back on 5
+# of 9 samples (0.57->0.06 on semantic_5); at 2100 the second watched
+# semantic_25 finish 48s short as MCP latency stretched solves to ~30 min.
+# For a non-pacing agent the ceiling should only ever fire on a true hang.
+# Either way firing means a seed-tier fallback for that sample. Wall clock
+# is unscored officially, so generosity costs nothing — size this off the
+# slowest agent in SUBMISSIONS, never the newest.
 SEED_TIMEOUT_S = 1500     # fallback tier, applied independently
 
 

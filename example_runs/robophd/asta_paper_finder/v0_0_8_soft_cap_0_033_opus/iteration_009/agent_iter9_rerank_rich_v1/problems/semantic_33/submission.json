@@ -1,0 +1,823 @@
+{
+  "output": {
+    "query_id": "semantic_33",
+    "results": [
+      {
+        "paper_id": "273098139",
+        "markdown_evidence": "We present UncertaintyRAG, a novel approach for long-context Retrieval-Augmented Generation (RAG) that utilizes Signal-to-Noise Ratio (SNR)-based span uncertainty to estimate similarity between text chunks. This span uncertainty enhances model calibration, improving robustness and mitigating semantic inconsistencies introduced by random chunking. Leveraging this insight, we propose an efficient unsupervised learning technique to train the retrieval model, alongside an effective data sampling and scaling strategy. UncertaintyRAG outperforms baselines by 2.03% on LLaMA-2-7B, achieving state-of-the-art results while using only 4% of the training data compared to other advanced open-source retrieval models under distribution shift settings. Our method demonstrates strong calibration through span uncertainty, leading to improved generalization and robustness in long-context RAG tasks. Additionally, UncertaintyRAG provides a lightweight retrieval model that can be integrated into any large language model with varying context window lengths, without the need for fine-tuning, showcasing the flexibility of our approach. ... A novel approach for long-context Retrieval-Augmented Generation that utilizes Signal-to-Noise Ratio (SNR)-based span uncertainty to estimate similarity between text chunks, leading to improved generalization and robustness in long-context RAG tasks. ... In Table 1, our analysis reveals that the span uncertainty method, following SNR calibration, demonstrates significant improvements compared to both All Chunking and Precise Chunking. This enhancement is primarily due to the incorporation of self-information from certain tokens in the first chunk, which comes from the flexible sampling of spans across the two chunks by SNR. Thus, we can draw the following conclusions. i): SNR calibration effectively captures the similarity between the two chunks. ii): The tokens within the span sampled by SNR play a crucial role in assessing the relationship between the two chunks, suggesting that future rese"
+      },
+      {
+        "paper_id": "16052179",
+        "markdown_evidence": "It is well known that occurrence counts of words in documents are often modeled poorly by standard distributions like the binomial or Poisson. Observed counts vary more than simple models predict, prompting the use of overdispersed models like Gamma-Poisson or Beta-binomial mixtures as robust alternatives. Another deficiency of standard models is due to the fact that most words never occur in a given document, resulting in large amounts of zero counts. We propose using zero-inflated models for dealing with this, and evaluate competing models on a Naive Bayes text classification task. Simple zero-inflated models can account for practically relevant variation, and can be easier to work with than overdispersed models. ... This work proposes using zero-inflated models for dealing with occurrence counts of words in documents, and evaluates competing models on a Naive Bayes text classification task. ... close. Also following McCallum and Nigam (1998) we performed a 4:1 random split into training and test data. The reported results were obtained by training classification models on the training data and evaluating on the unseen test data.\n\nWe compared four models of token frequency. Each model is conditional on the document length n (but assumes that the parameters of the distribution do not depend on document length), and is derived from the binomial distribution\n\nwhich we view as a one-parameter conditional model, our first model: x represents the token counts (0 ≤ x ≤ n); and n is the length of the document measured as the total number of "
+      },
+      {
+        "paper_id": "236486146",
+        "markdown_evidence": "It has been long known that sparsity is an effective inductive bias for learning efficient representation of data in vectors with fixed dimensionality, and it has been explored in many areas of representation learning. Of particular interest to this work is the investigation of the sparsity within the VAE framework which has been explored a lot in the image domain, but has been lacking even a basic level of exploration in NLP. Additionally, NLP is also lagging behind in terms of learning sparse representations of large units of text e.g., sentences. We use the VAEs that induce sparse latent representations of large units of text to address the aforementioned shortcomings. First, we move in this direction by measuring the success of unsupervised state-of-the-art (SOTA) and other strong VAE-based sparsification baselines for text and propose a hierarchical sparse VAE model to address the stability issue of SOTA. Then, we look at the implications of sparsity on text classification across 3 datasets, and highlight a link between performance of sparse latent representations on downstream tasks and its ability to encode task-related information. ... This work measures the success of unsupervised state-of-the-art (SOTA) and other strong VAE-based sparsification baselines for text and proposes a hierarchical sparse VAE model to address the stability issue of SOTA and looks at the implications of sparsity on text classification across 3 datasets. ... Sampling a value from the Spike-and-Slab posterior distribution ( | , ) is a two step process. First a spike or slab component is sampled which is a binary decision, we use Binary Concrete distribution (Maddison et al., 2016) to make this sampling step end-to-end differentiable. Then the value is sampled from the corresponding component, for this we employ the reparameterization trick (Kingma and Welling, 2014). Also, samples from the Beta distribution are pathwise differentiable (Figurnov et al., 2018)."
+      },
+      {
+        "paper_id": "274328561",
+        "markdown_evidence": "This paper presents an extension of the Dirichlet multinomial regression (DMR) and deep Dirichlet multinomial regression (dDMR) topic modelling approaches by incorporating the generalised Dirichlet (GD) and Beta‐Liouville (BL) distributions using collapsed Gibbs sampling for parameter inference. The DMR and dDMR approaches have been shown to be effective in discovering latent topics in text corpora. However, these approaches have limitations when it comes to handling complex data structures and overfitting issues. To address these limitations, we introduce the GD and BL distributions, which have more flexibility in modelling complex data structures and handling sparse data. Additionally, we use collapsed Gibbs sampling to estimate the model parameters, which provides a computationally efficient method for inference. Experimental results on benchmark datasets demonstrate the effectiveness of the proposed approach in improving topic modelling performance, particularly in handling complex data structures and reducing overfitting. The proposed models also exhibit good interpretability of the learned topics, making them suitable for various applications in natural language processing and machine learning. ... An extension of the Dirichlet multinomial regression and deep Dirichlet multinomial regression topic modelling approaches is presented by incorporating the generalised Dirichlet (GD) and Beta‐Liouville (BL) distributions using collapsed Gibbs sampling for parameter inference. ... By integrating the probability density function of the Beta-Liouville distribution over the parameter and incorporating updated parameters derived from the remaining integral in Equation ( 38), we are able to express it as a fraction of Gamma functions. The following shows the updated parameters, where N jk represents counts corresponding variables (Bouguila, 2011;Ihou and Bouguila 2020). \n\nThe Equation ( 36) is then equivalent to: \n\nThe parameters 1 , … , k , , and correspond to the Beta-Liouville distribution, while m k represents the number of documents in cluster k. \n\nAfter the sampling process, parameter estimation is performed. Subseque"
+      },
+      {
+        "paper_id": "2407601",
+        "markdown_evidence": "Many machine learning algorithms require the input to be represented as a fixed-length feature vector. When it comes to texts, one of the most common fixed-length features is bag-of-words. Despite their popularity, bag-of-words features have two major weaknesses: they lose the ordering of the words and they also ignore semantics of the words. For example, \"powerful,\" \"strong\" and \"Paris\" are equally distant. In this paper, we propose Paragraph Vector, an unsupervised algorithm that learns fixed-length feature representations from variable-length pieces of texts, such as sentences, paragraphs, and documents. Our algorithm represents each document by a dense vector which is trained to predict words in the document. Its construction gives our algorithm the potential to overcome the weaknesses of bag-of-words models. Empirical results show that Paragraph Vectors outperforms bag-of-words models as well as other techniques for text representations. Finally, we achieve new state-of-the-art results on several text classification and sentiment analysis tasks. ... Paragraph Vector is an unsupervised algorithm that learns fixed-length feature representations from variable-length pieces of texts, such as sentences, paragraphs, and documents, and its construction gives the algorithm the potential to overcome the weaknesses of bag-of-words models. ... We described Paragraph Vector, an unsupervised learning algorithm that learns vector representations for variablelength pieces of texts such as sentences and documents. \n\nThe vector representations are learned to predict the surrounding words in contexts sampled from the paragraph. \n\nOur experiments on several text classification tasks such as Stanford Treebank and IMDB sentiment analysis datasets show that the method is competitive with state-of-the-art methods. The good performance demonstrates the merits of Paragraph Vector in capturing the semantics of paragraphs. In fact, paragraph vectors have the potential to overcome many weaknesses o"
+      },
+      {
+        "paper_id": "273662048",
+        "markdown_evidence": "This paper presents a variant of the Multinomial mixture model tailored to the unsupervised classification of short text data. While the Multinomial probability vector is traditionally assigned a Dirichlet prior distribution, this work explores an alternative formulation based on the Beta-Liouville distribution, which offers a more flexible correlation structure than the Dirichlet. We examine the theoretical properties of the Beta-Liouville distribution, with particular focus on its conjugacy with the Multinomial likelihood. This property enables the derivation of update equations for a CAVI (Coordinate Ascent Variational Inference) algorithm, facilitating approximate posterior inference of the model parameters. In addition, we introduce a stochastic variant of the CAVI algorithm to enhance scalability. The paper concludes with empirical examples demonstrating effective strategies for selecting the Beta-Liouville hyperparameters. ... The dataset is a subset of the Reuters 21578 collection (Apté et al, 1994;Lewis et al, 2004), obtained by sampling 10% of the documents within the G = 5 categories listed in the first column of Table 1. To convert the documents into a bag-of-words (BOW) representation, the raw text data was preprocessed using R 4.4.1 and the tm library (Feinerer et al, 2008) through the following steps: removal of extra spaces, punctuation marks, and numbers; conversion to lowercase; elimination of stop words; stemming to reduce inflectional forms to their common base form; recompletion using the most frequent match; and tokenization into unigrams, retaining  ... The Unigram mixture model has become a standard tool for analyzing and performing unsupervised classification on text corpora composed of short documents, such as abstracts, emails, social media posts, and web news. From a Bayesian perspective, inference is often performed using the Dirichlet distribution as a prior over the term vocabulary. In this paper, we discuss an alternative to the Dirichlet distribution: the Beta-Liouville distribution. This distribution, which has only one additional parameter for the same vocabulary size, offers a more flexible correlation structure than the Dirichlet. Furthermore, we explore variational inference f"
+      },
+      {
+        "paper_id": "273877511",
+        "markdown_evidence": "ABSTRACT We introduce a data-centric hypothesis-testing framework to quantify the influence of sequentially correlated literary properties – such as thematic continuity – on textual classification tasks. Our method models label sequences as stochastic processes and uses an empirical autocovariance matrix to generate surrogate labelings that preserve sequential dependencies. This enables statistical testing to determine whether classification outcomes are primarily driven by thematic structure or by non-sequential features like authorial style. Applying this framework to a diverse corpus of English prose, we compare traditional (word n-grams and character k-mers) and neural (contrastively trained) embeddings in both supervised and unsupervised settings. Crucially, our method identifies when classifications are confounded by sequentially correlated similarity, showing that supervised and neural models are more prone to false positives – mistaking shared themes or cross-genre differences for stylistic signals. In contrast, unsupervised models using traditional features often yield high true positive rates with minimal false positives, especially in genre-consistent settings. By disentangling sequential from non-sequential influences, our approach provides a principled way to assess classification reliability. This is particularly impactful for authorship attribution, forensic ling ... A data-centric hypothesis-testing framework to quantify the influence of sequentially correlated literary properties – such as thematic continuity – on textual classification tasks and provides a principled way to assess classification reliability. ... Here, we present the results of experiments where we (1) distinguish 50 pairs of texts composed by different authors and all (55) permutations of pairs of texts written by the same author in our corpus, and (2) apply our hypothesistesting method on all resulting classifications to determine whether it is based on predominantly sequentially correlated literary properties or not. We perform these experiments in four configurations, where in all cases, we split the texts into units of varying length ( §4.4): \n\n• Unsupervised Classification of Traditionally-Embedded Texts: We apply the 2-means algorithm ( §4.5.1) to classify texts embedded accord"
+      },
+      {
+        "paper_id": "276258933",
+        "markdown_evidence": "Recent advances in deep learning rely heavily on massive datasets, leading to substantial storage and training costs. Dataset pruning aims to alleviate this demand by discarding redundant examples. However, many existing methods require training a model with a full dataset over a large number of epochs before being able to prune the dataset, which ironically makes the pruning process more expensive than just training the model on the entire dataset. To overcome this limitation, we introduce a Difficulty and Uncertainty-Aware Lightweight (DUAL) score, which aims to identify important samples from the early training stage by considering both example difficulty and prediction uncertainty. To address a catastrophic accuracy drop at an extreme pruning, we further propose a ratio-adaptive sampling using Beta distribution. Experiments on various datasets and learning scenarios such as image classification with label noise and image corruption, and model architecture generalization demonstrate the superiority of our method over previous state-of-the-art (SOTA) approaches. Specifically, on ImageNet-1k, our method reduces the time cost for pruning to 66% compared to previous methods while achieving a SOTA, specifically 60% test accuracy at a 90% pruning ratio. On CIFAR datasets, the time cost is reduced to just 15% while maintaining SOTA performance. ... A Difficulty and Uncertainty-Aware Lightweight (DUAL) score is introduced, which aims to identify important samples from the early training stage by considering both example difficulty and prediction uncertainty, and a ratio-adaptive sampling using Beta distribution is proposed to address a catastrophic accuracy drop at an extreme pruning. ... Geometry-based methods concentrate on providing a better representation by minimizing the redundancy of selected samples. SSP (Sorscher et al., 2022) selects the samples most distant from k-means cluster centers, while Moderate (Xia et al., 2022) prefers samples near the median. However, these methods often compromise generalization performance, since they underestimate the effect of difficult examples. \n\nRecently, hybrid approaches have emerged that harmonize both difficulty and diversity. CCS (Zheng et al., 2022) partitions difficulty scores into bins and selects an equal number of samples from each bin to ensure balanced representation. D "
+      },
+      {
+        "paper_id": "234741794",
+        "markdown_evidence": "We consider the task of linking social media accounts that belong to the same author in an automated fashion on the basis of the content and meta-data of the corresponding document streams. We focus on learning an embedding that maps variable-sized samples of user activity–ranging from single posts to entire months of activity–to a vector space, where samples by the same author map to nearby points. Our approach does not require human-annotated data for training purposes, which allows us to leverage large amounts of social media content. The proposed model outperforms several competitive baselines under a novel evaluation framework modeled after established recognition benchmarks in other domains. Our method achieves high linking accuracy, even with small samples from accounts not seen at training time, a prerequisite for practical applications of the proposed linking framework. ... This work focuses on learning an embedding that maps variable-sized samples of user activity to a vector space, where samples by the same author map to nearby points, and achieves high linking accuracy. ... During training we randomly select document stream samples of sizes varying between R = 1 and S = 16, which we regard as hyperparameters of the model. To select a sample from the stream a 1 , a 2 , . . . , a L we first choose its length M = R + x (S − R) where x ∼ Beta (3, 1) and take the sample a i , a i+1 , . . . , a i+M −1 where 1 ≤ i ≤ L − M + 1 is chosen uniformly at random. Selecting M according to Beta (3, 1) provides an expected sample size closer to S than to R, a tradeoff that allows the model to quickly learn features of a document stream by exposing it to larger samples most of the time, while still maintaining the flexibility to "
+      },
+      {
+        "paper_id": "233263714",
+        "markdown_evidence": "Service search in IoT’s large-scale, heterogeneous and multi-domain services space is a challenging task. It can take the time that may not be acceptable for many IoT applications and requires resources that may not be available in many IoT devices. A categorisation of these services into their application domains can reduce the search space and offer an efficient and scalable service search. Recently, in many fields, such as short text messages and categorisation of IoT service specifications, generative probabilistic models, like Topic modelling, are being used. Generally, IoT service descriptions are short and sparse. Existing work on IoT services categorisation is based on Latent Dirichlet Allocation (LDA), but it does not perform well in short and sparse texts. Also, IoT services categorisation has few specific issues, which are not well addressed by existing short texts-specific topic modelling approaches. In this paper, we identify these issues and quantitatively and qualitatively evaluate how well a set of selected short texts-specific topic modelling approaches perform as IoT service categorisers against these issues. The results show that these approaches do not perform well in a corpus of noisy APIs descriptions and heterogeneous service descriptions. Also, they do not support domain identification of services, which is essential in domain-based service search. We co ... It is concluded that integrating an appropriate and comprehensive knowledge base (i.e., domain ontology) could minimise noise and address IoT’s APIs and service descriptions’ heterogeneity and identify the domains of those APIs and services. ... BTM [28] learns topics over short texts or service descriptions based on the aggregated biterms in the whole corpus to tackle the sparsity problem in a single document or service description. The direct modelling of biterm co-occurrence pattern, rather than a single word, offers semantic information of topics. It considers that the whole corpus as a mixture of topics (θ C ), where each biterm (b) (e.g., mobile sensor, Draw two words: w i , w j ∼ Mult(φ t ) 6: end for body sensor) is drawn from a specific topic (Z b ) independently. The probability that a biterm drawn from a specific topic is further captured by the chances that both words in "
+      },
+      {
+        "paper_id": "31527677",
+        "markdown_evidence": "MICAI 2007: Advances in Artificial Intelligence, 6th Mexican International Conference on Artificial Intelligence, Aguascalientes, Mexico, November 4-10, 2007, Proceedings"
+      },
+      {
+        "paper_id": "273323794",
+        "markdown_evidence": "A straightforward pipeline for zero-shot out-of-distribution (OOD) detection involves selecting potential OOD labels from an extensive semantic pool and then leveraging a pre-trained vision-language model to perform classification on both in-distribution (ID) and OOD labels. In this paper, we theorize that enhancing performance requires expanding the semantic pool, while increasing the expected probability of selected OOD labels being activated by OOD samples, and ensuring low mutual dependence among the activations of these OOD labels. A natural expansion manner is to adopt a larger lexicon; however, the inevitable introduction of numerous synonyms and uncommon words fails to meet the above requirements, indicating that viable expansion manners move beyond merely selecting words from a lexicon. Since OOD detection aims to correctly classify input images into ID/OOD class groups, we can\"make up\"OOD label candidates which are not standard class names but beneficial for the process. Observing that the original semantic pool is comprised of unmodified specific class names, we correspondingly construct a conjugated semantic pool (CSP) consisting of modified superclass names, each serving as a cluster center for samples sharing similar properties across different categories. Consistent with our established theory, expanding OOD label candidates with the CSP satisfies the requirement ... It is theorized that enhancing performance requires expanding the semantic pool, while increasing the expected probability of selected OOD labels being activated by OOD samples, and ensuring low mutual dependence among the activations of these OOD labels. ... Therefore, we come to the conclusion that variables q 0 , r 0 , and v 2 remain nearly constant with a sufficiently large semantic pool, thus exerting marginal impact to the right side of Eqn. 8. \n\nA.5 Analysis of a condition in Eq.( 9) \n\nBy adjusting its shape parameters, α and β, the Beta distribution can flexibly simulate a range of distinct probability distribution profiles. This flexibility is particularly useful in statistical modeling and analysis where the behavior of probabilities needs to be accurately described. Assuming that p out i follows a Beta distribution, we know that \n\nIf q 2 − 2v 2 ≥ 0 does not hold, it means that \n\nwhich i"
+      },
+      {
+        "paper_id": "231972010",
+        "markdown_evidence": "Semantic Web is considered as the backbone of web 3.0 and ontologies are an integral part of the Semantic Web. Though an increase of ontologies in different domains is reported due to various benefits which include data heterogeneity, automated information analysis, and reusability, however, finding an appropriate ontology according to user requirement remains cumbersome task due to time and efforts required, context-awareness, and computational complexity. To overcome these issues, an ontology recommendation framework is proposed. The Proposed framework employs text categorization and unsupervised learning techniques. The benefits of the proposed framework are twofold: 1) ontology organization according to the opinion of domain experts and 2) ontology recommendation with respect to user requirement. Moreover, an evaluation model is also proposed to assess the effectiveness of the proposed framework in terms of ontologies organization and recommendation. The main consequences of the proposed framework are 1) ontologies of a corpus can be organized effectively, 2) no effort and time are required to select an appropriate ontology, 3) computational complexity is only limited to the use of unsupervised learning techniques, and 4) due to no requirement of context awareness, the proposed framework can be effective for any corpus or online libraries of ontologies. ... The main consequences of the proposed framework are 1) ontologies of a corpus can be organized effectively, no effort and time are required to select an appropriate ontology, and 3) computational complexity is only limited to the use of unsupervised learning techniques. ... The TFIDF weighting method does not take into account the length of documents. TFC is a variant of TFIDF, however, for TFC length normalisation is used. TFC uses a normalized TFIDF weight for document terms."
+      },
+      {
+        "paper_id": "260682258",
+        "markdown_evidence": "We present GTE, a general-purpose text embedding model trained with multi-stage contrastive learning. In line with recent advancements in unifying various NLP tasks into a single format, we train a unified text embedding model by employing contrastive learning over a diverse mixture of datasets from multiple sources. By significantly increasing the number of training data during both unsupervised pre-training and supervised fine-tuning stages, we achieve substantial performance gains over existing embedding models. Notably, even with a relatively modest parameter count of 110M, GTE$_\\text{base}$ outperforms the black-box embedding API provided by OpenAI and even surpasses 10x larger text embedding models on the massive text embedding benchmark. Furthermore, without additional fine-tuning on each programming language individually, our model outperforms previous best code retrievers of similar size by treating code as text. In summary, our model achieves impressive results by effectively harnessing multi-stage contrastive learning, offering a powerful and efficient text embedding model with broad applicability across various NLP and code-related tasks. ... GTE, a general-purpose text embedding model trained with multi-stage contrastive learning, is presented, offering a powerful and efficient textembedding model with broad applicability across various NLP and code-related tasks. ... Data Sampling In the initial stage of unsupervised pre-training, data sources often differ significantly in terms of the number of training instances. \n\nTo address this imbalance, we employ a multinomial distribution to sample data batches from different data sources, taking into account their respective sizes. Suppose the whole pre-training dataset D consists of m different subsets {D 1 , . . . , D m } and denote the size of each subset as n i = |D i |, at each training iteration, the probability of sampling data from the i-th subset D i can be represented by: \n\nwhere we set α = 0.5 in this work. Furthermore, to prevent the model from solely"
+      },
+      {
+        "paper_id": "249840771",
+        "markdown_evidence": "Few-shot text classification has recently been promoted by the meta-learning paradigm which aims to identify target classes with knowledge transferred from source classes with sets of small tasks named episodes. Despite their success, existing works building their meta-learner based on Prototypical Networks are unsatisfactory in learning discriminative text representations between similar classes, which may lead to contradictions during label prediction. In addition, the task-level and instance-level overfitting problems in few-shot text classification caused by a few training examples are not sufficiently tackled. In this work, we propose a contrastive learning framework named ContrastNet to tackle both discriminative representation and overfitting problems in few-shot text classification. ContrastNet learns to pull closer text representations belonging to the same class and push away text representations belonging to different classes, while simultaneously introducing unsupervised contrastive regularization at both task-level and instance-level to prevent overfitting. Experiments on 8 few-shot text classification datasets show that ContrastNet outperforms the current state-of-the-art models. ... This work proposes a contrastive learning framework named ContrastNet to tackle both discriminative representation and overfitting problems in few-shot text classification, and shows that ContrastNet outperforms the current state-of-the-art models. ... are forced to produce discriminative representations by the contrastive loss, thus alleviate the contradictions during prediction.\n\nAnother challenge in few-shot text classification is that the models are prone to overfit the source classes based on the biased distribution formed by a few training examples Dopierre, Gravier, and Logerais 2021). The authors of  propose to tackle the overfitting problem in few-shot image classification by training with additional instances generated from calibrated distributions. In few-shot text classification, PRO-TAUGMENT (Dopierre, Gravier, and Logerais 2021) introduce an unsupervised cross-entropy loss wit"
+      },
+      {
+        "paper_id": "246634534",
+        "markdown_evidence": "Social scientists often classify text documents to use the resulting labels as an outcome or a predictor in empirical research. Automated text classification has become a standard tool since it requires less human coding. However, scholars still need many human-labeled documents for training. To reduce labeling costs, we propose a new algorithm for text classification that combines a probabilistic model with active learning. The probabilistic model uses both labeled and unlabeled data, and active learning concentrates labeling efforts on difficult documents to classify. Our validation study shows that with few labeled data, the classification performance of our algorithm is comparable to state-of-the-art methods at a fraction of the computational cost. We replicate the results of two published articles with only a small fraction of the original labeled data used in those studies and provide open-source software to implement our method. ... This work proposes a new algorithm for text classification that combines a probabilistic model with active learning that is comparable to state-of-the-art methods at a fraction of the computational cost. ... Given π, for each document indexed by i, we draw the class assignment indicator Z i from a Bernoulli distribution. 11 Then, we draw features for document i from a multinomial distribution governed by the total number of words in document i (n i ) and the vector η Ák represents the kth column of the V × K matrix η, where each entry of η Ák is represented by the scalar η vk ¼ pðD iv jZ i ¼ kÞ. The prior of η Ák is the Dirichlet distribution with hyperparameter vector β Ák (the kth column of the V × K matrix β). Finally, D iÁ is a row vector of length V that represents the word counts of document i. Conditional on Z i ¼ k, D iÁ is drawn from a m"
+      },
+      {
+        "paper_id": "267636581",
+        "markdown_evidence": "Pretrained language models are long known to be subpar in capturing sentence and document-level semantics. Though heavily investigated, transferring perturbation-based methods from unsupervised visual representation learning to NLP remains an unsolved problem. This is largely due to the discreteness of subword units brought by tokenization of language models, limiting small perturbations of inputs to form semantics-preserved positive pairs. In this work, we conceptualize the learning of sentence-level textual semantics as a visual representation learning process. Drawing from cognitive and linguistic sciences, we introduce an unsupervised visual sentence representation learning framework, employing visually-grounded text perturbation methods like typos and word order shuffling, resonating with human cognitive patterns, and enabling perturbation to texts to be perceived as continuous. Our approach is further bolstered by large-scale unsupervised topical alignment training and natural language inference supervision, achieving comparable performance in semantic textual similarity (STS) to existing state-of-the-art NLP methods. Additionally, we unveil our method's inherent zero-shot cross-lingual transferability and a unique leapfrogging pattern across languages during iterative training. To our knowledge, this is the first representation learning method devoid of traditional langu ... To the knowledge, this is the first representation learning method devoid of traditional language models for understanding sentence and document semantics, marking a stride closer to human-like textual comprehension. ... Character Deletion randomly deletes a character in a sample (e.g., sentence → setence). Character Substitution randomly replaces a character by either a character with similar visual appearance (e.g, a and e), or a character that is next to the original character on the keyboard (e.g, a and s). Character Neighbor Swap randomly swaps the order of two adjacent characters (e.g., random → radnom). \n\nThe superiority of word and character-level perturbation, when combining with vision encoders, compared to combining with text encoders, is the continuity. Were to process the perturbed texts with language models, a small perturbation would even lead "
+      },
+      {
+        "paper_id": "265506786",
+        "markdown_evidence": "Self-supervised learning is one of the most promising approaches to acquiring knowledge from limited labeled data. Despite the substantial advancements made in recent years, self-supervised models have posed a challenge to practitioners, as they do not readily provide insight into the model's confidence and uncertainty. Tackling this issue is no simple feat, primarily due to the complexity involved in implementing techniques that can make use of the latent representations learned during pre-training without relying on explicit labels. Motivated by this, we introduce a new stochastic vision transformer that integrates uncertainty and distance awareness into self-supervised learning (SSL) pipelines. Instead of the conventional deterministic vector embedding, our novel stochastic vision transformer encodes image patches into elliptical Gaussian distributional embeddings. Notably, the attention matrices of these stochastic representational embeddings are computed using Wasserstein distance-based attention, effectively capitalizing on the distributional nature of these embeddings. Additionally, we propose a regularization term based on Wasserstein distance for both pre-training and fine-tuning processes, thereby incorporating distance awareness into latent representations. We perform extensive experiments across different tasks such as in-distribution generalization, out-of-distribu ... This work introduces a new stochastic vision transformer that integrates uncertainty and distance awareness into self-supervised learning (SSL) pipelines, and proposes a regularization term based on Wasserstein distance for both pre-training and fine-tuning processes, thereby incorporatingdistance awareness into latent representations. ... The conventional transformer embeds input data tokens into vector points. Positional encoding is applied to maintain the positional information of the embedded vectors. Again, the embedding components found in classical transformers are deterministic. An alternative approach is to map the data tokens into probability distributions instead of point vectors. \n\nThe embedding of text data into Gaussian distributions has been explored by Vilnis & McCallum (2015) and Qian et al. (2021), with the advocated benefit of uncertainty representation in the embedding space and diversity of representation in comparison to the dot product. Gaussian distribut"
+      },
+      {
+        "paper_id": "273654899",
+        "markdown_evidence": "Current techniques for detecting AI-generated text are largely confined to manual feature crafting and supervised binary classification paradigms. These methodologies typically lead to performance bottlenecks and unsatisfactory generalizability. Consequently, these methods are often inapplicable for out-of-distribution (OOD) data and newly emerged large language models (LLMs). In this paper, we revisit the task of AI-generated text detection. We argue that the key to accomplishing this task lies in distinguishing writing styles of different authors, rather than simply classifying the text into human-written or AI-generated text. To this end, we propose DeTeCtive, a multi-task auxiliary, multi-level contrastive learning framework. DeTeCtive is designed to facilitate the learning of distinct writing styles, combined with a dense information retrieval pipeline for AI-generated text detection. Our method is compatible with a range of text encoders. Extensive experiments demonstrate that our method enhances the ability of various text encoders in detecting AI-generated text across multiple benchmarks and achieves state-of-the-art results. Notably, in OOD zero-shot evaluation, our method outperforms existing approaches by a large margin. Moreover, we find our method boasts a Training-Free Incremental Adaptation (TFIA) capability towards OOD data, further enhancing its efficacy in OOD ... It is argued that the key to accomplishing this task lies in distinguishing writing styles of different authors, rather than simply classifying the text into human-written or AI-generated text, and proposed DeTeCtive, a multi-task auxiliary, multi-level contrastive learning framework. ... Contrastive learning for NLP. The success of MoCo [25] and SimCLR [9] in the field of Computer Vision through contrastive learning has prompted research efforts to explore its potential in the area of Natural Language Processing (NLP), resulting in the development of various strategies to enhance text encoding capabilities via contrastive learning. IS-BERT [78] employs the DIM [26] framework to learn text representations. The ArcCon loss [80] is proposed to further enhance the model's semantic discriminating ability. MixCSE [79] introduces an unsupervised method for text representation learning, which incorporates a mixed negative sample stra"
+      },
+      {
+        "paper_id": "4871425",
+        "markdown_evidence": "In many computer vision applications, obtaining images of high resolution in both the spatial and spectral domains are equally important. However, due to hardware limitations, one can only expect to acquire images of high resolution in either the spatial or spectral domains. This paper focuses on hyperspectral image super-resolution (HSI-SR), where a hyperspectral image (HSI) with low spatial resolution (LR) but high spectral resolution is fused with a multispectral image (MSI) with high spatial resolution (HR) but low spectral resolution to obtain HR HSI. Existing deep learning-based solutions are all supervised that would need a large training set and the availability of HR HSI, which is unrealistic. Here, we make the first attempt to solving the HSI-SR problem using an unsupervised encoder-decoder architecture that carries the following uniquenesses. First, it is composed of two encoder-decoder networks, coupled through a shared decoder, in order to preserve the rich spectral information from the HSI network. Second, the network encourages the representations from both modalities to follow a sparse Dirichlet distribution which naturally incorporates the two physical constraints of HSI and MSI. Third, the angular difference between representations are minimized in order to reduce the spectral distortion. We refer to the proposed architecture as unsupervised Sparse Dirichlet-N ... This paper makes the first attempt to solving the HSI-SR problem using an unsupervised encoder-decoder architecture that carries the following uniquenesses: it is composed of two encoder and decoder networks, coupled through a shared decoder, in order to preserve the rich spectral information from the H SI network. ... It has been proved that when v o ∼ Beta(u, 1, β), s follows a Dirichlet distribution. Since it is difficult to draw samples directly from Beta distribution, we draw samples from the inverse transform of Kumaraswamy distribution, as shown in Eq. ( 5), which is equivalent to Beta distribution when α = 1 or β = 1, \n\nwhere α > 0, β > 0 and u ∈ (0, 1). The benefit of Kumaraswamy distribution is that it has a closed-form CDF, where the inverse transform is defined as \n\nLet α = 1, parameters u and β are learned through the network as illustrated in Fig. 3. Because β > 0, a softplus is adopted as the activation function [11] at the β layer. Similarly"
+      },
+      {
+        "paper_id": "253892344",
+        "markdown_evidence": "Mobile app stores produce a tremendous amount of data in the form of user reviews, which is a huge source of user requirements and sentiments; such reviews allow app developers to proactively address issues in their apps. However, only a small number of reviews capture common issues and sentiments which creates a need for automatically identifying prominent reviews. Unfortunately, most existing work in text ranking and popularity prediction focuses on social contexts where other signals are available, which renders such works ineffective in the context of app reviews. In this work, we propose a new framework, PPrior, that enables proactive prioritization of app issues through identifying prominent reviews (ones predicted to receive a large number of votes in a given time window). Predicting highly-voted reviews is challenging given that, unlike social posts, social network features of users are not available. Moreover, there is an issue of class imbalance, since a large number of user reviews receive little to no votes. PPrior employs a pre-trained T5 model and works in three phases. Phase one adapts the pre-trained T5 model to the user reviews data in a self-supervised fashion. In phase two, we leverage contrastive training to learn a generic and task-independent representation of user reviews. Phase three uses radius neighbors classifier t o m ake t he final predictions. This ... This work proposes a new framework, PPrior, that enables proactive prioritization of app issues through identifying prominent reviews (ones predicted to receive a large number of votes in a given time window) and demonstrates the effectiveness of the proposed framework when compared against several state-of-the-art approaches. ... Our proposed framework, PPrior, builds upon several mature components from natural language processing (NLP) literature. We provide a brief overview of those in the following. \n\nUnsupervised Representation Learning and Pre-trained Language Models. Unsupervised (or self-supervised) latent representation learning [48] and pre-trained language models have contributed greatly to recent NLP success [10], [35], [36], [50], including facilitating zero-shot learning [47], [49]. The unsupervised learning technique enabled the development of more robust NLP systems due to the abundance of textual data. We need to optimize the proposed framework using u"
+      },
+      {
+        "paper_id": "277741105",
+        "markdown_evidence": "Traditionally, authorship attribution (AA) tasks relied on statistical data analysis and classification based on stylistic features extracted from texts. In recent years, pre-trained language models (PLMs) have attracted significant attention in text classification tasks. However, although they demonstrate excellent performance on large-scale short-text datasets, their effectiveness remains under-explored for small samples, particularly in AA tasks. Additionally, a key challenge is how to effectively leverage PLMs in conjunction with traditional feature-based methods to advance AA research. In this study, we aimed to significantly improve performance using an integrated integrative ensemble of traditional feature-based and modern PLM-based methods on an AA task in a small sample. For the experiment, we used two corpora of literary works to classify 10 authors each. The results indicate that BERT is effective, even for small-sample AA tasks. Both BERT-based and classifier ensembles outperformed their respective stand-alone models, and the integrated ensemble approach further improved the scores significantly. For the corpus that was not included in the pre-training data, the integrated ensemble improved the F1 score by approximately 14 points, compared to the best-performing single model. Our methodology provides a viable solution for the efficient use of the ever-expanding arra ... This study aimed to significantly improve performance using an integrated integrative ensemble of traditional feature-based and modern PLM-based methods on an AA task in a small sample and indicates that BERT is effective, even for small-sample AA tasks. ... Multivariate data analysis methods that use features extracted manually or automatically from texts have been used in AA tasks since 1960. These methods include unsupervised techniques, such as principal component analysis, correspondence analysis, and clustering, as well as supervised techniques, such as linear and nonlinear discriminant analysis. Since the 1990s, neural networks [12,13], SVM, RF, boosting classifiers have been employed [2,3,14,15]. \n\nJin and Murakami [14] demonstrated that RF is more effective than SVM for noisy data. They also analyzed the decrease in the RF and SVM scores with decreasing sample size. Liu and Jin [15] cond"
+      },
+      {
+        "paper_id": "53384564",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "37864875",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271600511",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274859492",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "28789062",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253384678",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "60748447",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235386502",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218889354",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "195767214",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233289620",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263135624",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274149862",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237406390",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267923595",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275959469",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273901285",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248085000",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264350504",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262282866",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251223901",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "488",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260704700",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "214667397",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "23639312",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "32582164",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "117720535",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "119265428",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233776029",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247625720",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "788838",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216560900",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262583807",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263243146",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209516291",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1225426",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273811349",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "577288",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1873417",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "18312071",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6996464",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13694262",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53957026",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13243633",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237407242",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273901755",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271768937",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221379008",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277381077",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255174038",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "63779445",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258236342",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "51882191",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251280129",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219530980",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "46896845",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266177158",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256676853",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219720965",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "44571603",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56319153",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265432244",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54787167",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255074733",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258557002",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276558158",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1427",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1767481",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235187338",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "8462383",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "8867575",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "228626920",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "289312867",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53081529",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272881140",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255394016",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231715114",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "8918550",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222182745",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265446825",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218773333",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258887457",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264490580",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265212912",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248366563",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "155099437",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "85459358",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263482398",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3212834",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "24509218",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260481767",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276021455",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14552449",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "37741427",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "15106300",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261440070",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221319863",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247218082",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246435908",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "198229624",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248078748",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "60382947",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246016220",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270045775",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "208006482",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271957390",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268793559",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246543331",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237581146",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250334476",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "59316969",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "59606306",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257412593",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248266537",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53363101",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "212415185",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "67875680",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14085702",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268379167",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14884938",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269761957",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "7208184",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277999825",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251710482",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "32596486",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266899691",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244140448",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "7477896",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "51868942",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235436224",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "64317682",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226283737",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271161969",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235352552",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "11113728",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "201672695",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277349997",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235358864",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "204704110",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273811735",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255523580",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268701228",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "23417389",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260926049",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275342450",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272550672",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "60863367",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267662865",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3525802",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13246898",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276107889",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265295374",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261822803",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271244533",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270216150",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "215745794",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "903211",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267069927",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260720731",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "238227259",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56489759",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52198143",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265506143",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237592974",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237491953",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "4953493",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227173218",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "43281911",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2740527",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221655488",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "21384115",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "43053056",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "27857577",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233210439",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248525074",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "7126531",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "61280968",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "8517264",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245264683",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235097413",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "28165556",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254101198",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

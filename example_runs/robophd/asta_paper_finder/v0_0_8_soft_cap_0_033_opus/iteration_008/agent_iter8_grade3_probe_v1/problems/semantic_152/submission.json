@@ -1,0 +1,823 @@
+{
+  "output": {
+    "query_id": "semantic_152",
+    "results": [
+      {
+        "paper_id": "276259248",
+        "markdown_evidence": "With the advancement of large language models (LLMs), solving complex reasoning tasks has gained increasing attention. Inference-time computation methods (e.g., Best-of-N, beam search, et al.) are particularly valuable as they can enhance reasoning performance without modifying model parameters or requiring additional training. However, these techniques come with implementation challenges, and most existing methods remain at the proof-of-concept stage with limited practical adoption due to their computational complexity and varying effectiveness across different tasks. In this paper, we investigate and benchmark diverse inference-time computation strategies across reasoning tasks of varying complexity. Since most current methods rely on a proposer-verifier pipeline that first generates candidate solutions (e.g., reasoning solutions) and then selects the best one based on reward signals (e.g., RLHF rewards, process rewards), our research focuses on optimizing both candidate solution generation (e.g., instructing prompts, hyperparameters such as temperature and top-p) and reward mechanisms (e.g., self-evaluation, reward types). Through extensive experiments (more than 20,000 A100-80G GPU hours with over 1,000 experiments) across a variety of models (e.g., Llama, Qwen, and Mistral families) of various sizes, our ablation studies reveal that previously overlooked strategies can sig ... This paper investigates and benchmark diverse inference-time computation strategies across reasoning tasks of varying complexity and establishes a standardized benchmark for inference-time computation by systematically evaluating six representative methods across eight reasoning tasks. ... Selecting optimal solutions is a critical step in the inferencetime computation of LLM reasoning. This process typically involves either selection by the inference model itself (e.g., voting or prompt-based selection) or the use of external reward models (e.g., RLHF, Proof-Critical, or process reward models). A key question is whether LLMs can effectively evaluate their own solutions. However, self-evaluation methods often fall short, as LLMs struggle to correct errors without external guidance. Moreover, reward models frequently fail to distinguish truly correct answers from superficially correct ones, leading to inflated performance evaluat"
+      },
+      {
+        "paper_id": "277954852",
+        "markdown_evidence": "There is intense interest in investigating how inference time compute (ITC) (e.g. repeated sampling, refinements, etc) can improve large language model (LLM) capabilities. At the same time, recent breakthroughs in reasoning models, such as Deepseek-R1, unlock the opportunity for reinforcement learning to improve LLM reasoning skills. An in-depth understanding of how ITC interacts with reasoning across different models could provide important guidance on how to further advance the LLM frontier. This work conducts a comprehensive analysis of inference-time scaling methods for both reasoning and non-reasoning models on challenging reasoning tasks. Specifically, we focus our research on verifier-free inference time-scaling methods due to its generalizability without needing a reward model. We construct the Pareto frontier of quality and efficiency. We find that non-reasoning models, even with an extremely high inference budget, still fall substantially behind reasoning models. For reasoning models, majority voting proves to be a robust inference strategy, generally competitive or outperforming other more sophisticated ITC methods like best-of-N and sequential revisions, while the additional inference compute offers minimal improvements. We further perform in-depth analyses of the association of key response features (length and linguistic markers) with response quality, with which  ... This work conducts a comprehensive analysis of inference-time scaling methods for both reasoning and non-reasoning models on challenging reasoning tasks and constructs the Pareto frontier of quality and efficiency. ... Recent work has explored inference-time optimization strategies that trade additional computation for improved model performance. A key approach is repeated sampling and majority voting, leveraging LLMs' generative diversity (Brown et al., 2024b;Wang & Li, 2024). To reduce computational cost, refinements like Confidence-Informed Self-Consistency (CISC) use confidence-weighted voting, cutting required samples by over 40% (Zhang & Kumar, 2024). Another strategy, DivSampling, injects prompt perturbations to increase answer diversity, boosting performance across math, reasoning, and code generation (Liu & Chen, 2024). These methods illustrate a b"
+      },
+      {
+        "paper_id": "277510339",
+        "markdown_evidence": "Reinforcement learning (RL) has been widely adopted in post-training for large language models (LLMs) at scale. Recently, the incentivization of reasoning capabilities in LLMs from RL indicates that $\\textit{proper learning methods could enable effective inference-time scalability}$. A key challenge of RL is to obtain accurate reward signals for LLMs in various domains beyond verifiable questions or artificial rules. In this work, we investigate how to improve reward modeling (RM) with more inference compute for general queries, i.e. the $\\textbf{inference-time scalability of generalist RM}$, and further, how to improve the effectiveness of performance-compute scaling with proper learning methods. For the RM approach, we adopt pointwise generative reward modeling (GRM) to enable flexibility for different input types and potential for inference-time scaling. For the learning method, we propose Self-Principled Critique Tuning (SPCT) to foster scalable reward generation behaviors in GRMs through online RL, to generate principles adaptively and critiques accurately, resulting in $\\textbf{DeepSeek-GRM}$ models. Furthermore, for effective inference-time scaling, we use parallel sampling to expand compute usage, and introduce a meta RM to guide voting process for better scaling performance. Empirically, we show that SPCT significantly improves the quality and scalability of GRMs, outp ... Self-Principled Critique Tuning (SPCT) significantly improves the quality and scalability of GRMs, outperforming existing methods and models in various RM benchmarks without severe biases, and could achieve better performance compared to training-time scaling. ... To further improve the performance of DeepSeek-GRM for generalist reward generation using more inference compute, we explore sampling-based strategies to achieve effective inference-time scalability. \n\nVoting with Generated Rewards Voting is a widely adopted method for inference-time scaling in RM. Recalling the approaches in Section 2.1, we demonstrate voting results of k samples for semi-scalar and generative RMs. For semi-scalar RMs (Ankner et al., 2024;Zhang et al., 2025a), voting is performed as averaging: \n\nwhere S * is the final reward. In practice, the scalar value has limited variance which could hinder the scalability. For pairwise "
+      },
+      {
+        "paper_id": "277467423",
+        "markdown_evidence": "This paper presents a simple, effective, and cost-efficient strategy, named ModelSwitch, to improve LLM performance by scaling test-time compute. ModelSwitch builds upon the repeated-sampling-then-voting framework, with a novel twist: incorporating multiple models, even weaker ones, to leverage their complementary strengths that potentially arise from diverse training data and paradigms. By using sample consistency as a signal, our strategy dynamically switches between models. Theoretical analysis highlights the efficiency and performance advantages of our strategy. Extensive experiments on seven datasets demonstrate that our strategy not only outperforms self-consistency and state-of-the-art multi-agent debate approaches, but also significantly reduces inference costs. Additionally, our strategy requires only a few comparable LLMs to achieve optimal performance and can be extended with verification methods, demonstrating the potential of leveraging multiple LLMs in the generation-verification paradigm. ... In this section, we combine ModelSwitch with Qwen2.5-MATH-RM-72B [9], a highly capable mathematical reward model, to score different samples from GPT-4o mini and Gemini 1.5 Flash. We utilize the Best of N (BoN) strategy to select the answer with the highest score instead of voting . Specifically, our approach is to replace the voting_algorithm (all_results) in Algorithm 1 with BoN (all_results). We compare the performance curves of the best single LLM and ModelSwitch under RM-BoN strategy. The results are shown in Figure 7. \n\nModelSwitch, when combined with stronger verification method (RM-BoN), achieves a notable improvement in performance ( ... To theoretically understand the promotion of the multi-LLM repeated sampling method, we first introduce a simple formulation of our problem. We start with one single query q and a given model M . Let M (q) denote the set of all possible answers of model M on query q and ∆(M (q)) as the distribution of M 's answer given query q. In the following context, we denote ∆(M (q)) as ∆(M ) for simplicity. Then we denote Φ as the algorithm for determining the final answer, such as majority voting. Let Φ(M ) denote the distribution of model's final answers after applying Φ (we omit the query q). We denote f : ∆(M ) → R as the loss function. By selecting"
+      },
+      {
+        "paper_id": "276249402",
+        "markdown_evidence": "Multi-sample aggregation strategies, such as majority voting and best-of-N sampling, are widely used in contemporary large language models (LLMs) to enhance predictive accuracy across various tasks. A key challenge in this process is temperature selection, which significantly impacts model performance. Existing approaches either rely on a fixed default temperature or require labeled validation data for tuning, which are often scarce and difficult to obtain. This paper addresses the challenge of automatically identifying the (near)-optimal temperature for different LLMs using multi-sample aggregation strategies, without relying on task-specific validation data. We provide a comprehensive analysis of temperature's role in performance optimization, considering variations in model architectures, datasets, task types, model sizes, and predictive accuracy. Furthermore, we propose a novel entropy-based metric for automated temperature optimization, which consistently outperforms fixed-temperature baselines. Additionally, we incorporate a stochastic process model to enhance interpretability, offering deeper insights into the relationship between temperature and model performance. ... This paper provides a comprehensive analysis of temperature's role in performance optimization, considering variations in model architectures, datasets, task types, model sizes, and predictive accuracy, and proposes a novel entropy-based metric for automated temperature optimization. ... Since different random seeds can produce varying outcomes, a common approach to mitigate sampling variance is to draw multiple samples and aggregate their results. In practice, it leads to substantial performance improvements and has been widely adopted to achieve state-of-the-art performance in math reasoning (Sun et al., 2024;Jaech et al., 2024), code generation (Wang et al., 2024a), and many other domains. \n\nSpecifically, a set of candidate outputs Y = {Y 1 , . . . , Y N } is generated and then aggregated into a final answer. Two standard aggregation methods are typically employed: \n\n• Majority Voting: The final answer is the output that a"
+      },
+      {
+        "paper_id": "271571035",
+        "markdown_evidence": "Scaling the amount of compute used to train language models has dramatically improved their capabilities. However, when it comes to inference, we often limit models to making only one attempt at a problem. Here, we explore inference compute as another axis for scaling, using the simple technique of repeatedly sampling candidate solutions from a model. Across multiple tasks and models, we observe that coverage -- the fraction of problems that are solved by any generated sample -- scales with the number of samples over four orders of magnitude. Interestingly, the relationship between coverage and the number of samples is often log-linear and can be modelled with an exponentiated power law, suggesting the existence of inference-time scaling laws. In domains like coding and formal proofs, where answers can be automatically verified, these increases in coverage directly translate into improved performance. When we apply repeated sampling to SWE-bench Lite, the fraction of issues solved with DeepSeek-Coder-V2-Instruct increases from 15.9% with one sample to 56% with 250 samples, outperforming the single-sample state-of-the-art of 43%. In domains without automatic verifiers, we find that common methods for picking from a sample collection (majority voting and reward models) plateau beyond several hundred samples and fail to fully scale with the sample budget. ... This work explores inference compute as another axis for scaling, using the simple technique of repeatedly sampling candidate solutions from a model, and observes that coverage -- the fraction of problems that are solved by any generated sample -- scales with the number of samples over four orders of magnitude. ... Scaling Inference Compute: Methods that perform additional computation during inference have been successful across many areas of deep learning. Across a variety of game environments, state-of-the-art methods leverage inference-time search to examine many possible future game states before deciding on a move [12,50,10]. Similar tree-based methods can also be effective in combination with LLMs, allowing models to better plan and explore different approaches [63,8,53,54]. Another axis for increasing LLM inference compute allows models to spend tokens deliberating on a problem before coming to a solution [62,61,64]. Additionally, multiple models"
+      },
+      {
+        "paper_id": "276774342",
+        "markdown_evidence": "Test-time scaling enhances large language model performance by allocating additional compute resources during inference. Best-of-N (BoN) sampling serves as a common sampling-based scaling technique, broadening the search space in parallel to find better solutions from the model distribution. However, its cost-performance trade-off is still underexplored. Two main challenges limit the efficiency of BoN sampling: (1) Generating N full samples consumes substantial GPU memory, reducing inference capacity under limited resources. (2) Reward models add extra memory and latency overhead, and training strong reward models introduces potential training data costs. Although some studies have explored efficiency improvements, none have addressed both challenges at once. To address this gap, we propose Self-Truncation Best-of-N (ST-BoN), a decoding method that avoids fully generating all N samples and eliminates the need for reward models. It leverages early sampling consistency in the model's internal states to identify the most promising path and truncate suboptimal ones. In terms of cost, ST-BoN reduces dynamic GPU memory usage by over 80% and inference latency by 50%. In terms of cost-performance trade-off, ST-BoN achieves the same performance as Full-BoN while saving computational cost by 70%-80%, and under the same cost, it can improve accuracy by 3-4 points. ... Self-Truncation Best-of-N (ST-BoN), a decoding method that avoids fully generating all N samples and eliminates the need for reward models, and achieves the same performance as Full-BoN while saving computational cost by 70%-80%, and under the same cost, it can improve accuracy by 3-4 points. ... BoN sampling was originally proposed for inference-time preference alignment [33], using a reward model to select the best sample and further fine-tune the base model [42]. Its effectiveness has been theoretically supported by several studies [12,31,4,56]. BoN has also seen broad adoption in reasoning tasks [40], notably in the self-consistency paradigm [47], which uses majority voting to select answers unsupervisedly. More recently, process reward models [28,46] have enabled direct scoring within BoN for reasoning. However, reward models raise computational costs and are vulnerable to overoptimization, and rely heavily on their model capabil"
+      },
+      {
+        "paper_id": "278714789",
+        "markdown_evidence": "The development of reasoning capabilities represents a critical frontier in large language models (LLMs) research, where reinforcement learning (RL) and process reward models (PRMs) have emerged as predominant methodological frameworks. Contrary to conventional wisdom, empirical evidence from DeepSeek-R1 demonstrates that pure RL training focused on mathematical problem-solving can progressively enhance reasoning abilities without PRM integration, challenging the perceived necessity of process supervision. In this study, we conduct a systematic investigation of the relationship between RL training and PRM capabilities. Our findings demonstrate that problem-solving proficiency and process supervision capabilities represent complementary dimensions of reasoning that co-evolve synergistically during pure RL training. In particular, current PRMs underperform simple baselines like majority voting when applied to state-of-the-art models such as DeepSeek-R1 and QwQ-32B. To address this limitation, we propose Self-PRM, an introspective framework in which models autonomously evaluate and rerank their generated solutions through self-reward mechanisms. Although Self-PRM consistently improves the accuracy of the benchmark (particularly with larger sample sizes), analysis exposes persistent challenges: The approach exhibits low precision (<10\\%) on difficult problems, frequently misclassif ... The findings suggest that PRM may not be essential for enhancing complex reasoning, as pure RL not only improves problem-solving skills but also inherently fosters robust PRM capabilities. ... Table 4: Comparison of sampling@k (k = 8, 16, 32, 64) across QwQ-32B and DeepSeek-R1-on three benchmarks under three settings: direct sampling (Pass@), majority voting, BoN with External PRM (BoN w/ PRM), and BoN with Self-PRM. To evaluate whether current state-of-the-art PRMs can enhance the performance of reasoning models in complex mathematical reasoning tasks, we conduct experiments on AIME24, AIME25, and CNMO24, using Qwen2.5-Math-PRM-72B as the PRM for reranking. Specifically, we apply the Best-of-N with PRM (BoN w/ PRM) strategy, which selects the highest-scoring solution based on the PRM's minimum-step reward among the candidates. As "
+      },
+      {
+        "paper_id": "273345614",
+        "markdown_evidence": "In this technical report, we introduce OpenR, an open-source framework designed to integrate key components for enhancing the reasoning capabilities of large language models (LLMs). OpenR unifies data acquisition, reinforcement learning training (both online and offline), and non-autoregressive decoding into a cohesive software platform. Our goal is to establish an open-source platform and community to accelerate the development of LLM reasoning. Inspired by the success of OpenAI's o1 model, which demonstrated improved reasoning abilities through step-by-step reasoning and reinforcement learning, OpenR integrates test-time compute, reinforcement learning, and process supervision to improve reasoning in LLMs. Our work is the first to provide an open-source framework that explores the core techniques of OpenAI's o1 model with reinforcement learning, achieving advanced reasoning capabilities beyond traditional autoregressive methods. We demonstrate the efficacy of OpenR by evaluating it on the MATH dataset, utilising publicly available data and search methods. Our initial experiments confirm substantial gains, with relative improvements in reasoning and performance driven by test-time computation and reinforcement learning through process reward models. The OpenR framework, including code, models, and datasets, is accessible at https://openreasoner.github.io. ... This work is the first to provide an open-source framework that explores the core techniques of OpenAI's o1 model with reinforcement learning, achieving advanced reasoning capabilities beyond traditional autoregressive methods. ... Following Snell et al. [2024], we use PRMs to assess the accuracy of each solution step. Once a high-quality process reward model is trained, we integrate it into the decoding process alongside the language model, enabling guided search and scoring or voting across multiple generations. \n\nTo use PRMs as verifiers, we define a method for evaluating the correctness of LLM-generated solutions. Specifically, we map the scores of individual steps {r P RM t } T t=0 to a final score. Following the strategies outlined by Lightman et al. [2023] and Snell et al. [2024], we employ two approaches: \n\n• PRM-Min: choose the minimum value among all scores, i"
+      },
+      {
+        "paper_id": "278394558",
+        "markdown_evidence": "Prevalent reinforcement learning~(RL) methods for fine-tuning LLM reasoners, such as GRPO or Leave-one-out PPO, abandon the learned value function in favor of empirically estimated returns. This hinders test-time compute scaling that relies on using the value-function for verification. Yet if parallel test-time compute is already part of the deployment plan, training should be designed to support it. In this work, we propose RL$^V$ that augments any ``value-free''RL method by jointly training the LLM as both a reasoner and a generative verifier using RL-generated data, adding verification capabilities without significant overhead. Empirically, RL$^V$ boosts MATH accuracy by over 20\\% with parallel sampling and enables $8-32\\times$ efficient test-time compute scaling compared to the base RL method. RL$^V$ also exhibits strong generalization capabilities for both easy-to-hard and out-of-domain tasks. Furthermore, RL$^V$ achieves $1.2-1.6\\times$ higher performance when jointly scaling parallel and sequential test-time compute with a long reasoning R1 model. More broadly, RL$^V$ instantiates the principle of co-training for test-time scaling: jointly optimizing for task performance and a capability useful at inference, using data that RL training already produces. ... This work proposes RL$^V, a RL method that augments any ``value-free''RL method by jointly training the LLM as both a reasoner and a generative verifier using RL-generated data, adding verification capabilities without significant overhead. ... Test-time Scaling At test time, we use the LLM verifier to score solutions generated by itself to guide the final answer selection. This score s(x, y) quantifies the verifier's confidence as its 'Yes' probability given the problem x, solution y, and prompt I, that is, s(x, y) := π θ (Yes | x, y, I). Here, we consider three parallel sampling approaches: \n\n• Majority Voting: A verifier-free baseline that selects the most frequent answer. \n\n• Best-of-N: Selects the solution with the highest verifier score s(x, y). \n\n• Weighted Voting: Sum the verifier scores s(x, y) for solutions yielding the same final answer; select the answer with the highest"
+      },
+      {
+        "paper_id": "276249712",
+        "markdown_evidence": "Recent reasoning models, such as OpenAI's O1 series, have demonstrated exceptional performance on complex reasoning tasks and revealed new test-time scaling laws. Inspired by this, many people have been studying how to train models to achieve effective self-evaluation and self-correction to further enable the scaling paradigm. However, less studied is how to efficiently scale test-time compute from a fixed model, and this remains a challenge. In this paper, we address this challenge by focusing on enhancing the quality of self-reflection data generation for complex problem-solving at test time, which can also subsequently improve the training of next-generation large language models (LLMs). Specifically, we explore how systematically triggering a model's self-correction mechanisms can improve performance on challenging reasoning tasks. To this end, we propose a novel iterative deepening sampling algorithm framework designed to enhance self-correction and generate higher-quality samples. Through extensive experiments on Math500 and AIME benchmarks, we demonstrate that our method achieves a higher success rate on difficult tasks and provide detailed ablation studies to analyze its effectiveness across diverse settings. ... This paper explores how systematically triggering a model's self-correction mechanisms can improve performance on challenging reasoning tasks and proposes a novel iterative deepening sampling algorithm framework designed to enhance self-correction and generate higher-quality samples. ... Similar to BoN sampling, majority voting, also known as self-consistency (cons@n), provides an alternative approach for aggregating N different responses (Wang et al., 2022). As the name suggests, this method involves generating N responses, counting the frequency of each unique answer, and selecting the most frequently occurring response as the final output. This approach leverages the inherent redundancy in multiple generations to improve robustness and reliability, making it particularly useful for tasks requiring high confidence in correctness. \n\nMajority voting offers the advantage of aggregating responses efficiently without relying on "
+      },
+      {
+        "paper_id": "276884594",
+        "markdown_evidence": "Inference-time scaling techniques have shown promise in enhancing the reasoning capabilities of large language models (LLMs). While recent research has primarily focused on training-time optimization, our work highlights inference-time reward model (RM)-based reasoning as a critical yet overlooked avenue. In this paper, we conduct a systematic analysis of RM behavior across downstream reasoning tasks, revealing three key limitations: (1) RM can impair performance on simple questions, (2) its discriminative ability declines with increased sampling, and (3) high search diversity undermines RM performance. To address these issues, we propose CRISP (Clustered Reward Integration with Stepwise Prefixing), a novel inference-time algorithm that clusters generated reasoning paths by final answers, aggregates reward signals at the cluster level, and adaptively updates prefix prompts to guide generation. Experimental results demonstrate that CRISP significantly enhances LLM reasoning performance, achieving up to 5% accuracy improvement over other RM-based inference methods and an average of 10% gain over advanced reasoning models. ... This work proposes CRISP (Clustered Reward Integration with Stepwise Prefixing), a novel inference-time algorithm that clusters generated reasoning paths by final answers, aggregates reward signals at the cluster level, and adaptively updates prefix prompts to guide generation. ... In contrast, our RM-based inference method, applied to its base model Qwen2.5-Math-7B (Yang et al., 2024b), reaches a higher accuracy of 72.0 using only 1,100 tokens on average. Therefore, optimizing inference-time reasoning remains a critical direction, particularly for smaller models. \n\nHow can we further improve the reasoning performance of LLMs at inference time? Revisiting R1-style work, one key insight is their identification of the reward hacking issue during RL training, which they address using rule-based reward functions, ultimately improving performances (Liu et al., 2024b;DeepSeek-AI et al., 2025;Gao et al., 2023). This raises a n"
+      },
+      {
+        "paper_id": "269804400",
+        "markdown_evidence": "Recent advancements in Chain-of-Thought prompting have facilitated significant breakthroughs for Large Language Models (LLMs) in complex reasoning tasks. Current research enhances the reasoning performance of LLMs by sampling multiple reasoning chains and ensembling based on the answer frequency. However, this approach fails in scenarios where the correct answers are in the minority. We identify this as a primary factor constraining the reasoning capabilities of LLMs, a limitation that cannot be resolved solely based on the predicted answers. To address this shortcoming, we introduce a hierarchical reasoning aggregation framework AoR (Aggregation of Reasoning), which selects answers based on the evaluation of reasoning chains. Additionally, AoR incorporates dynamic sampling, adjusting the number of reasoning chains in accordance with the complexity of the task. Experimental results on a series of complex reasoning tasks show that AoR outperforms prominent ensemble methods. Further analysis reveals that AoR not only adapts various LLMs but also achieves a superior performance ceiling when compared to current methods. ... A hierarchical reasoning aggregation framework AoR (Aggregation of Reasoning), which selects answers based on the evaluation of reasoning chains and incorporates dynamic sampling, adjusting the number of reasoning chains in accordance with the complexity of the task. ... Figure 1: An illustrative example from AQuA (Ling et al., 2017), with 5 reasoning chains generated through temperature sampling.Although LLM is able to generate the correct answer, majority voting ultimately selects an incorrect answer due to the abundance of incorrect answers.This ensemble approach based on majority-voting has not only elevated the reasoning capability of LLMs but has also emerged as the predominant paradigm for LLMs in reasoning tasks (Chu et al., 2023;Yu et al., 2023)  However, when confronted with more complex questions, LLMs often waver among multiple answers.A dilemma arises when the incorrect answers outnumber the corr"
+      },
+      {
+        "paper_id": "276960938",
+        "markdown_evidence": "Large language models (LLMs) exhibit strong reasoning abilities, often attributed to few-shot or zero-shot chain-of-thought (CoT) prompting. While effective, these methods require labor-intensive prompt engineering, raising the question of whether reasoning can be induced without reliance on explicit prompts. In this work, we unlock the reasoning capabilities of LLMs without explicit prompting. Inspired by zero-shot CoT and CoT-decoding, we propose a novel decoding strategy that systematically nudges LLMs to continue reasoning, thereby preventing immature reasoning processes. Specifically, we monitor the model's generation and inject a designated phrase whenever it is likely to conclude its response prematurely, before completing the reasoning process. Our experimental evaluations on diverse reasoning benchmarks demonstrate that our proposed strategy substantially improves LLM reasoning capabilities, highlighting the potential of decoding-based interventions as an alternative to traditional prompting techniques. ... A novel decoding strategy is proposed that systematically nudges LLMs to continue reasoning, thereby preventing immature reasoning processes and highlighting the potential of decoding-based interventions as an alternative to traditional prompting techniques. ... Sampling-Based Methods Approaches based on sampling seek to improve reliability of reasoning in LLMs by generating multiple candidate solutions. For example, self-consistency sampling (Wang et al., 2023a) aggregates multiple outputs to select a consensus or majority-vote answer, while universal self-consistency (Chen et al., 2024) generalizes this concept to tasks where multiple lines of reasoning may converge on the correct outcome. These methods benefit from exploring diverse reasoning paths but come at the cost of multiple forward passes through the model. In many settings, this extra computational burden can be prohibitive. \n\nOur approach"
+      },
+      {
+        "paper_id": "277626950",
+        "markdown_evidence": "Chain-of-thought explanations are widely used to inspect the decision process of large language models (LLMs) and to evaluate the trustworthiness of model outputs, making them important for effective collaboration between LLMs and humans. We demonstrate that preference optimization - a key step in the alignment phase - can inadvertently reduce the faithfulness of these explanations. This occurs because the reward model (RM), which guides alignment, is tasked with optimizing both the expected quality of the response and the appropriateness of the explanations (e.g., minimizing bias or adhering to safety standards), creating potential conflicts. The RM lacks a mechanism to assess the consistency between the model's internal decision process and the generated explanation. Consequently, the LLM may engage in\"reward hacking\"by producing a final response that scores highly while giving an explanation tailored to maximize reward rather than accurately reflecting its reasoning. To address this issue, we propose enriching the RM's input with a causal attribution of the prediction, allowing the RM to detect discrepancies between the generated self-explanation and the model's decision process. In controlled settings, we show that this approach reduces the tendency of the LLM to generate misleading explanations. ... This work proposes enriching the RM's input with a causal attribution of the prediction, allowing the RM to detect discrepancies between the generated self-explanation and the model's decision process, and shows that this approach reduces the tendency of the LLM to generate misleading explanations. ... We study two ways of leveraging a reward model to steer the LLM's outputs: (i) best-of-N decoding (BoN), as an inference-time approach (Stiennon et al., 2020;Nakano et al., 2021;Beirami et al., 2024); and (ii) direct preference optimization (Rafailov et al., 2023, DPO), an alignment method. Both approaches allow us to investigate how reward models can influence the generation of unfaithful responses, as well as how the behaviour is affected when adding the interpretability signal to the RM input. In BoN the reward model is used to select the best response from a set of responses sampled from the LLM. In DPO, the reward model is used to obtain"
+      },
+      {
+        "paper_id": "273404003",
+        "markdown_evidence": "Reinforcement Learning from Human Feedback (RLHF) has greatly improved the performance of modern Large Language Models (LLMs). The RLHF process is resource-intensive and technically challenging, generally requiring a large collection of human preference labels over model-generated outputs. Reinforcement Learning from AI Feedback (RLAIF) addresses this data collection challenge by leveraging synthetic preferences generated by an LLM. However, recent work has shown that synthetic preferences labels may not align well with human preference judgments. To address this, we propose a hybrid approach that unifies RLHF and RLAIF methodologies. We introduce GenRM, an iterative algorithm that trains an LLM on self-generated reasoning traces, leading to synthetic preference labels matching human preference judgments. Empirically, we show that zero-shot LLM-based judgments under-perform compared to Bradley-Terry reward models on in-distribution tasks (between 9-36%). In contrast, GenRM achieves in-distribution accuracy comparable to Bradley-Terry models, while significantly outperforming them on out-of-distribution tasks (between 10-45%). Moreover, GenRM surpasses the performance of using LLMs as judges on both in-distribution (by 9-31%) and out-of-distribution tasks (by 2- 6%). Our results show that combining the strengths of RLHF and RLAIF offers a promising approach for improving the qua ... GenRM, an iterative algorithm that trains an LLM on self-generated reasoning traces, leading to synthetic preference labels matching human preference judgments, is introduced, showing that combining the strengths of RLHF and RLAIF offers a promising approach for improving the quality of synthetic preference labels. ... In addition to the previously discussed benefits, using LLMs as reward models also allows us to utilize additional inference time compute to improve performance. Indeed our results from the previous sections show that using COT prompt-Preprint ing to induce reasoning in the evaluator model can significantly improve performance on new prompts and tasks over the base GenRM approach (which does not use CoT). In this section we show further results on accuracy using self-consistency and majority voting. Our results are shown in Fig. 5. We see that majority voting at 32 improves performance consistently and adds 1.6% accuracy on the UltraFeedback "
+      },
+      {
+        "paper_id": "276618155",
+        "markdown_evidence": "Best-of-N selection is a key technique for improving the reasoning performance of Large Language Models (LLMs) through increased test-time computation. Current state-of-the-art methods often employ computationally intensive reward models for response evaluation and selection. Reward-free alternatives, like self-consistency and universal self-consistency, are limited in their ability to handle open-ended generation tasks or scale effectively. To address these limitations, we propose self-certainty, a novel and efficient metric that leverages the inherent probability distribution of LLM outputs to estimate response quality without requiring external reward models. We hypothesize that higher distributional self-certainty, aggregated across multiple samples, correlates with improved response accuracy, as it reflects greater confidence in the generated output. Through extensive experiments on various reasoning tasks, we demonstrate that self-certainty (1) scales effectively with increasing sample size N, akin to reward models but without the computational overhead; (2) complements chain-of-thought, improving reasoning performance beyond greedy decoding; and (3) generalizes to open-ended tasks where traditional self-consistency methods fall short. Our findings establish self-certainty as a practical and efficient way for improving LLM reasoning capabilities. The code is available at  ... This work proposes self-certainty, a novel and efficient metric that leverages the inherent probability distribution of LLM outputs to estimate response quality without requiring external reward models and establishes self-certainty as a practical and efficient way for improving LLM reasoning capabilities. ... Large Language Models (LLMs) have achieved impressive reasoning abilities, yet reliably producing accurate outputs for complex tasks often requires techniques to enhance inference-time performance [Wu et al., 2024, Xiang et al., 2025]. Best-of-N selection, generating and selecting from multiple candidate responses, has emerged as a powerful paradigm for significantly improving reasoning accuracy [Snell et al., 2024]. Current Best-of-N methods frequently rely on reward models, such as Outcome Reward Models (ORMs) [Cobbe et al., 2021a] and Process Reward Models (PRMs) [Lightman et al., 2023, Uesato et al., 2022], not only for output selection b"
+      },
+      {
+        "paper_id": "276094621",
+        "markdown_evidence": "We investigate the logical reasoning capabilities of large language models (LLMs) and their scalability in complex non-monotonic reasoning. To this end, we introduce ZebraLogic, a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems (CSPs). ZebraLogic enables the generation of puzzles with controllable and quantifiable complexity, facilitating a systematic study of the scaling limits of models such as Llama, o1 models, and DeepSeek-R1. By encompassing a broad range of search space complexities and diverse logical constraints, ZebraLogic provides a structured environment to evaluate reasoning under increasing difficulty. Our results reveal a significant decline in accuracy as problem complexity grows -- a phenomenon we term the curse of complexity. This limitation persists even with larger models and increased inference-time computation, suggesting inherent constraints in current LLM reasoning capabilities. Additionally, we explore strategies to enhance logical reasoning, including Best-of-N sampling, backtracking mechanisms, and self-verification prompts. Our findings offer critical insights into the scalability of LLM reasoning, highlight fundamental limitations, and outline potential directions for improvement. ... ZebraLogic, a comprehensive evaluation framework for assessing LLM reasoning performance on logic grid puzzles derived from constraint satisfaction problems, is introduced, offering critical insights into the scalability of LLM reasoning, highlight fundamental limitations, and outline potential directions for improvement. ... • We scale the test-time compute of LLMs by increasing the number of generation samples, revealing that it has both promise and challenges. While Best-of-N sampling can improve potential performance, practical selection methods like majority voting or reward models show limited improvement. Additionally, even pass@128 cannot break the curse of complexity ( §5). • We find that it's much more promising to scale up the reasoning tokens (i.e., chain-of-thoughts; CoTs) generated during inference with a backtracking mechanism. We take OpenAI's o1 models as a typical example and show that they generate significantly more, nearly 10x (hidden) reasoni"
+      },
+      {
+        "paper_id": "275324127",
+        "markdown_evidence": "Current inference scaling methods, such as Self-consistency and Best-of-N, have proven effective in improving the accuracy of LLMs on complex reasoning tasks. However, these methods rely heavily on the quality of candidate responses and are unable to produce correct answers when all candidates are incorrect. In this paper, we propose a novel inference scaling strategy, CoT-based Synthesizer, which leverages CoT reasoning to synthesize superior answers by analyzing complementary information from multiple candidate responses, even when all candidate responses are flawed. To enable a lightweight and cost-effective implementation, we introduce an automated data generation pipeline that creates diverse training data. This allows smaller LLMs trained on this data to improve the inference accuracy of larger models, including API-based LLMs. Experimental results across four benchmark datasets with seven policy models demonstrate that our method significantly enhances performance, with gains of 11.8% for Llama3-8B and 10.3% for GPT-4o on the MATH dataset. The corresponding training data and code are publicly available on https://github.com/RUCKBReasoning/CoT-based-Synthesizer. ... This paper proposes a novel inference scaling strategy, CoT-based Synthesizer, which leverages CoT reasoning to synthesize superior answers by analyzing complementary information from multiple candidate responses, even when all candidate responses are flawed. ... Best-of-N. The Best-of-N approach, introduced as a common method for improving the quality of generated outputs, involves sampling multiple solutions and selecting the best one based on a scoring mechanism (Stiennon et al., 2020). Previous works have trained a reward model, often referred to as a \"verifier\", to discriminate between correct and incorrect solutions, either through binary classification (Cobbe et al., 2021;Uesato et al., 2022;Yu et al., 2023) or by ranking preferences between solutions (Stiennon et al., 2020;Nakano et al., 2021). Recent works integrate the generative capabilities of LLMs with the discriminative power of reward m"
+      },
+      {
+        "paper_id": "276725054",
+        "markdown_evidence": "Large Language Models (LLMs) have transformed the natural language processing landscape and brought to life diverse applications. Pretraining on vast web-scale data has laid the foundation for these models, yet the research community is now increasingly shifting focus toward post-training techniques to achieve further breakthroughs. While pretraining provides a broad linguistic foundation, post-training methods enable LLMs to refine their knowledge, improve reasoning, enhance factual accuracy, and align more effectively with user intents and ethical considerations. Fine-tuning, reinforcement learning, and test-time scaling have emerged as critical strategies for optimizing LLMs performance, ensuring robustness, and improving adaptability across various real-world tasks. This survey provides a systematic exploration of post-training methodologies, analyzing their role in refining LLMs beyond pretraining, addressing key challenges such as catastrophic forgetting, reward hacking, and inference-time trade-offs. We highlight emerging directions in model alignment, scalable adaptation, and inference-time reasoning, and outline future research directions. We also provide a public repository to continually track developments in this fast-evolving field: https://github.com/mbzuai-oryx/Awesome-LLM-Post-training. ... This survey provides a systematic exploration of post-training methodologies, analyzing their role in refining LLMs beyond pretraining, addressing key challenges such as catastrophic forgetting, reward hacking, and inference-time trade-offs. ... In confidence-based sampling, the language model generates multiple candidate solutions or reasoning paths and then prioritizes or selects among them based on the model's own confidence in each outcome [248]. This can happen in two ways: (a) Selection: Generate N outputs and pick the one with the highest log probability (i.e., the model's most confident output). This is essentially best-of-N by probability -the model chooses the answer it thinks is most likely correct. (b) Guided exploration: When exploring a reasoning tree or multi-step solution, use the model's token probabilities to decide which branch to expand (higher confidence branches"
+      },
+      {
+        "paper_id": "265506019",
+        "markdown_evidence": "Retrieval-Augmented Generation (RAG), by incorporating external knowledge with parametric memory of language models, has become the state-of-the-art architecture for open-domain QA tasks. However, common knowledge bases are inherently constrained by limited coverage and noisy information, making retrieval-based approaches inadequate to answer implicit reasoning questions. In this paper, we propose an Induction-Augmented Generation (IAG) framework that utilizes inductive knowledge along with the retrieved documents for implicit reasoning. We leverage large language models (LLMs) for deriving such knowledge via a novel prompting method based on inductive reasoning patterns. On top of this, we implement two versions of IAG named IAG-GPT and IAG-Student, respectively. IAG-GPT directly utilizes the knowledge generated by GPT-3 for answer prediction, while IAG-Student gets rid of dependencies on GPT service at inference time by incorporating a student inductor model. The inductor is firstly trained via knowledge distillation and further optimized by back-propagating the generator feedback via differentiable beam scores. Experimental results show that IAG outperforms RAG baselines as well as ChatGPT on two Open-Domain QA tasks. Notably, our best models have won the first place in the official leaderboards of CSQA2.0 (since Nov 1, 2022) and StrategyQA (since Jan 8, 2023). ... This paper proposes an Induction-Augmented Generation (IAG) framework that utilizes inductive knowledge along with the retrieved documents for implicit reasoning via a novel prompting method based on inductive reasoning patterns. ... IAG fuses multiple sampled knowledge statements into the generator for prediction. In contrast, the self-consistency approach (Wang et al., 2022) proposes to explicitly vote on different reasoning paths sampled from LLM. We implement the idea of self-consistency on IAG by allowing the generator to predict multiple answers based on individual knowledge statements and reach a consensus by majority voting. Table 4 compares different methods including the retrieval-only baseline. The knowledge fusion mechanism is obviously superior to the selfconsistency approach. We hypothesize that fusing all knowledge statements allows the generator to have a "
+      },
+      {
+        "paper_id": "278339678",
+        "markdown_evidence": "Multimodal Reward Models (MRMs) play a crucial role in enhancing the performance of Multimodal Large Language Models (MLLMs). While recent advancements have primarily focused on improving the model structure and training data of MRMs, there has been limited exploration into the effectiveness of long-term reasoning capabilities for reward modeling and how to activate these capabilities in MRMs. In this paper, we explore how Reinforcement Learning (RL) can be used to improve reward modeling. Specifically, we reformulate the reward modeling problem as a rule-based RL task. However, we observe that directly applying existing RL algorithms, such as Reinforce++, to reward modeling often leads to training instability or even collapse due to the inherent limitations of these algorithms. To address this issue, we propose the StableReinforce algorithm, which refines the training loss, advantage estimation strategy, and reward design of existing RL methods. These refinements result in more stable training dynamics and superior performance. To facilitate MRM training, we collect 200K preference data from diverse datasets. Our reward model, R1-Reward, trained using the StableReinforce algorithm on this dataset, significantly improves performance on multimodal reward modeling benchmarks. Compared to previous SOTA models, R1-Reward achieves a $8.4\\%$ improvement on the VL Reward-Bench and a $ ... The StableReinforce algorithm is proposed, which refines the training loss, advantage estimation strategy, and reward design of existing RL methods, and results in more stable training dynamics and superior performance on multimodal reward modeling benchmarks. ... In contrast, R1-Reward demonstrates balanced performance across all benchmarks. Moreover, when performing voting on five sampled results, its accuracy reaches 85.3%, and when sampling 15 times, it reaches 86.47%-significantly outperforming existing models. \n\nTest-Time Scaling. In Figure 4, we explore whether increasing the number of samples can lead to improved performance. It is important to note that the temperature is set to 1.0, which causes the result with a single sample (k = 1) to slightly differ from the main results (which use greedy decoding by default). As the number of samples increases, the model's performance improves consistent"
+      },
+      {
+        "paper_id": "277313266",
+        "markdown_evidence": "In this work, we investigate the merits of explicitly optimizing for inference time algorithmic performance during model training. We show how optimizing for inference time performance can improve overall model efficacy. We consider generic inference time objectives with $k$ samples, with a focus on pass@$k$ and majority voting as two main applications. With language model training on reasoning datasets, we showcase the performance trade-off enabled by training with such objectives. When training on code generation tasks, we show that the approach significantly improves pass@$k$ objectives compared to the baseline method. ... A language model can be understood as a policy π θ in the context of reinforcement learning (RL) (Sutton & Barto, 1998). Given a prompt x, the policy generates a response y, which then gets assessed by a human user. Usually, the objective is to optimize π θ such that certain reward function r(x, y) that captures human preference (HF) is maximized (Christiano et al., 2017;Ziegler et al., 2019;Ouyang et al., 2022;Bai et al., 2022). Formally, consider the average reward optimization problem \n\nwhere ρ is a distribution over prompt set. Below, when the context is clear we will omit the dependency on the prompt x. Given samples y drawn from π θ , w ... The reward scores only the final answer r(x, y) = r(x, a), i.e., for problems with short and verifiable answers. It has proved highly effective at leveraging inference time compute for improved performance in various domains (Wang et al., 2022;Lightman et al., 2023). Concretely, the majority voting objective is \n\n, where the operation maj(•) extracts the majority element from a set of items. We assume random tie breaks in case more than one element takes the majority. \n\nWe will focus on these two objectives as they are selfcontained given a language model. There are alternative inference time methods such as best-of-k with access to auxiliary"
+      },
+      {
+        "paper_id": "276409072",
+        "markdown_evidence": "Large language model (LLM) scaling inference is key to unlocking greater performance, and leveraging diversity has proven an effective way to enhance it. Motivated by the observed relationship between solution accuracy and meaningful response diversity, we systematically study the effect of prompt diversity in scaling inference. We theoretically explain why diversified sampling improves Best-of-N scaling, showing that responses generated from diverse prompts after Best-of-N selection exhibit significantly lower error rates than those produced from stationary prompts. Building on this analysis, we derive a diversity-fidelity trade-off principle, that guides the design of sampling strategies introducing diversity. From this guidance, we instantiate a family of effective perturbation styles. We theoretically and empirically characterize when diversified exploration remains effective, demonstrating that it works under a variety of conditions, and we further show that under majority voting, diversity may vanish. Finally, we systematically evaluate how effective sampling diversity is and show that, when applied appropriately in different contexts, it yields relative gains of 10.8% in EM@100 for reasoning, 9.6% for mathematics, and 9.5% in Pass@100 for code generation. Overall, this work provides a systematic analysis that offers a theoretical and empirical foundation for understandin ... This work theoretically explain why diversified sampling improves Best-of-N scaling, and theoretically and empirically characterize when diversified exploration remains effective, demonstrating that it works under a variety of conditions. ... Figure 8 reports the performance of perturbations under a majority-voting reward on MATH, where we find that perturbations do not yield consistent improvements over direct sampling, thereby providing further empirical support for our theoretical analysis. \n\nDiversified sampling appear effective under the LLM-as-a-Judge setting, yet their benefits may not hold under majority-voting reward as performance gains require convergence toward the correct solution rather than diversity."
+      },
+      {
+        "paper_id": "263605799",
+        "markdown_evidence": "Table Question Answering (TQA) presents a substantial challenge at the intersection of natural language processing and data analytics. This task involves answering natural language (NL) questions on top of tabular data, demanding proficiency in logical reasoning, understanding of data semantics, and fundamental analytical capabilities. Due to its significance, a substantial volume of research has been dedicated to exploring a wide range of strategies aimed at tackling this challenge including approaches that leverage Large Language Models (LLMs) through in-context learning or Chain-of-Thought (CoT) prompting as well as approaches that train and fine-tune custom models.\n \n Nonetheless, a conspicuous gap exists in the research landscape, where there is limited exploration of how innovative foundational research, which integrates incremental reasoning with external tools in the context of LLMs, as exemplified by the ReAct paradigm, could potentially bring advantages to the TQA task. In this paper, we aim to fill this gap, by introducing ReAcTable (\n ReAct\n for\n Table\n Question Answering tasks), a framework inspired by the ReAct paradigm that is carefully enhanced to address the challenges uniquely appearing in TQA tasks such as interpreting complex data semantics, dealing with errors generated by inconsistent data and generating intricate data transformations. ReAcTable relies on  ... ReAcTable is introduced, a framework inspired by the ReAct paradigm that is carefully enhanced to address the challenges uniquely appearing in TQA tasks such as interpreting complex data semantics, dealing with errors generated by inconsistent data and generating intricate data transformations. ... LLMs may produce responses that are uncertain or inuenced by biases. Majority voting mechanisms in LLMs serve as a widely adopted approach to improve the response quality and mitigate potential biases. With majority voting mechanisms, multiple responses are sampled from the LLM's output distribution and one of the responses is selected based on some criteria. One common majority voting method is simple majority voting, which simply selects the response that occurs most frequently among the multiple generated outputs. Other criteria can be applied in majority voting methods, tailored to specic applications. For example, in code generation task"
+      },
+      {
+        "paper_id": "274776862",
+        "markdown_evidence": "Large language models (LLMs) have shown promise in performing complex multi-step reasoning, yet they continue to struggle with mathematical reasoning, often making systematic errors. A promising solution is reinforcement learning (RL) guided by reward models, particularly those focusing on process rewards, which score each intermediate step rather than solely evaluating the final outcome. This approach is more effective at guiding policy models towards correct reasoning trajectories. In this work, we propose an entropy-regularized process reward model (ER-PRM) that integrates KL-regularized Markov Decision Processes (MDP) to balance policy optimization with the need to prevent the policy from shifting too far from its initial distribution. We derive a novel reward construction method based on the theoretical results. Our theoretical analysis shows that we could derive the optimal reward model from the initial policy sampling. Our empirical experiments on the MATH and GSM8K benchmarks demonstrate that ER-PRM consistently outperforms existing process reward models, achieving 1% improvement on GSM8K and 2-3% improvement on MATH under best-of-N evaluation, and more than 1% improvement under RLHF. These results highlight the efficacy of entropy-regularization in enhancing LLMs'reasoning capabilities. ... This work proposes an entropy-regularized process reward model (ER-PRM) that integrates KL-regularized Markov Decision Processes (MDP) to balance policy optimization with the need to prevent the policy from shifting too far from its initial distribution, and derives a novel reward construction method based on the theoretical results. ... Online iterative DPO, initially for chat tasks (Xiong et al., 2024a;Xu et al., 2023), has been adapted for CoT reasoning (Xie et al., 2024;Xiong et al., 2024b;Pang et al., 2024). Additionally, inference-time RL methods like best-of-n sampling (Dong et al., 2023;Lightman et al., 2023) and MCTS (Xie et al., 2024;Chen et al., 2024a;Lai et al., 2024) guide decoding or response selection using external reward models. These approaches, including deep RL, iterative preference learning, and inference-time methods, all depend on reward models and can benefit from our study. \n\nReward Modeling in Mathematical Reasoning. In mathematical reasoning, reward"
+      },
+      {
+        "paper_id": "269149545",
+        "markdown_evidence": "Uncertainty estimation is a significant issue for current large language models (LLMs) that are generally poorly calibrated and over-confident, especially with reinforcement learning from human feedback (RLHF). Unlike humans, whose decisions and confidences not only stem from intrinsic beliefs but can also be adjusted through daily observations, existing calibration methods for LLMs focus on estimating or eliciting individual confidence without taking full advantage of the\"Collective Wisdom\": the interaction among multiple LLMs that can collectively improve both accuracy and calibration. In this work, we propose Collaborative Calibration, a post-hoc training-free calibration strategy that leverages the collaborative and expressive capabilities of multiple tool-augmented LLM agents in a simulated group deliberation process. We demonstrate the effectiveness of Collaborative Calibration on generative QA tasks across various domains, showing its potential in harnessing the rationalization of collectively calibrated confidence assessments and improving the reliability of model predictions. ... This work proposes Collaborative Calibration, a post-hoc training-free calibration strategy that leverages the collaborative and expressive capabilities of multiple tool-augmented LLM agents in a simulated group deliberation process and demonstrates the effectiveness of Collaborative Calibration on generative QA tasks across various domains. ... LLM Agent Ensemble: Augmented with external memory system and tool-use abilities, LLMpowered language agents (Park et al., 2023) display great potential to serve as self-consistent human proxies that can plan by self-reflection and refinement (Shinn et al., 2024;Madaan et al., 2024;Sun et al., 2024).Harnessing the diversity and collaboration strengths of multiple LLM agents, the ensemble and interaction can effectively enhance their capabilities in complex reasoning (Xiong et al., 2023;Chen et al., 2023b;Wang et al., 2023a), instruction following (Jiang et al., 2023b), and value alignment (Liu et al., 2023a).Du et al. (2023) introduce a multi"
+      },
+      {
+        "paper_id": "275337290",
+        "markdown_evidence": "The remarkable performance of the o1 model in complex reasoning demonstrates that test-time compute scaling can further unlock the model’s potential, enabling powerful System-2 thinking. However, there is still a lack of comprehensive surveys for test-time compute scaling. We trace the concept of test-time compute back to System-1 models. In System-1 models, test-time compute addresses distribution shifts and improves robustness and generalization through parameter updating, input modification, representation editing, and output calibration. In System-2 models, it enhances the model’s reasoning ability to solve complex problems through repeated sampling, self-correction, and tree search. We organize this survey according to the trend of System-1 to System-2 thinking, highlighting the key role of test-time compute in the transition from System-1 models to weak System-2 models, and then to strong System-2 models.We also point out advanced topics and future directions. ... This survey organizes this survey according to the trend of System-1 to System-2 thinking, highlighting the key role of test-time compute in the transition from System-1 models to weak System-2 models, and then to strong System-2 models. ... Sampling strategies such as top-p and top-k are commonly used decoding algorithms in LLM inference. They introduce randomness during decoding to enhance text diversity, allowing for parallelly sampling multiple generated texts. \n\nThrough repeated sampling, we have more opportunities to find the correct answer. Repeated sampling is particularly suitable for tasks that can be automatically verified, such as code generation, where we can easily identify the correct solution from multiple samples using unit tests [169,248]. For tasks that are difficult to verify, like math word problems, the key to the effectiveness of repeated sampling is the ve"
+      },
+      {
+        "paper_id": "277510502",
+        "markdown_evidence": "Recent advances in fine-tuning large language models (LLMs) with reinforcement learning (RL) have shown promising improvements in complex reasoning tasks, particularly when paired with chain-of-thought (CoT) prompting. However, these successes have been largely demonstrated on large-scale models with billions of parameters, where a strong pretraining foundation ensures effective initial exploration. In contrast, RL remains challenging for tiny LLMs with 1 billion parameters or fewer because they lack the necessary pretraining strength to explore effectively, often leading to suboptimal reasoning patterns. This work introduces a novel intrinsic motivation approach that leverages episodic memory to address this challenge, improving tiny LLMs in CoT reasoning tasks. Inspired by human memory-driven learning, our method leverages successful reasoning patterns stored in memory while allowing for controlled exploration to generate novel responses. Intrinsic rewards are computed efficiently using a kNN-based episodic memory, allowing the model to discover new reasoning strategies while quickly adapting to effective past solutions. Experiments on fine-tuning GSM8K and AI-MO datasets demonstrate that our approach significantly enhances smaller LLMs' sample efficiency and generalization capability, making RL-based reasoning improvements more accessible in low-resource settings. ... This work introduces a novel intrinsic motivation approach that leverages episodic memory to address this challenge, improving tiny LLMs in CoT reasoning tasks and making RL-based reasoning improvements more accessible in low-resource settings. ... Enhancing LLM Reasoning Recent advancements in LLM reasoning have focused on scaling test-time computation to improve accuracy in complex tasks. Test-time search strategies, such as beam search [Gao et al., 2023] and majority vote [Wang et al., 2022], aggregate predictions from multiple inference traces to refine accuracy. While these methods are effective, they come with the drawback of significantly increasing computational costs. More sophisticated techniques, using Monte Carlo Tree Search [Feng et al., 2023] and Tree-of-Thoughts [Yao et al., 2023], adopt structured search approaches to explore possible reasoning paths more systematically."
+      },
+      {
+        "paper_id": "273185830",
+        "markdown_evidence": "Combining large language models during training or at inference time has shown substantial performance gain over component LLMs. This paper presents LLM-TOPLA, a diversity-optimized LLM ensemble method with three unique properties: (i) We introduce the focal diversity metric to capture the diversity-performance correlation among component LLMs of an ensemble. (ii) We develop a diversity-optimized ensemble pruning algorithm to select the top-k sub-ensembles from a pool of $N$ base LLMs. Our pruning method recommends top-performing LLM subensembles of size $S$, often much smaller than $N$. (iii) We generate new output for each prompt query by utilizing a learn-to-ensemble approach, which learns to detect and resolve the output inconsistency among all component LLMs of an ensemble. Extensive evaluation on four different benchmarks shows good performance gain over the best LLM ensemble methods: (i) In constrained solution set problems, LLM-TOPLA outperforms the best-performing ensemble (Mixtral) by 2.2\\% in accuracy on MMLU and the best-performing LLM ensemble (MoreAgent) on GSM8k by 2.1\\%. (ii) In generative tasks, LLM-TOPLA outperforms the top-2 performers (Llama70b/Mixtral) on SearchQA by $3.9\\mathrm{x}$ in F1, and on XSum by more than $38$ in ROUGE-1. Our code and dataset, which contains outputs of 8 modern LLMs on 4 benchmarks is available at https://github.com/git-disl/llm-to ... The focal diversity metric is introduced to capture the diversity-performance correlation among component LLMs of an ensemble and a diversity-optimized ensemble pruning algorithm is developed to select the top-k sub-ensembles from a pool of base LLMs. ... The downside of majority voting is the definition of equality between divergent answers. Compared to math problems or multiple-choice problems, consensus-based approaches like weighted majority voting may do poorly for generative queries. Recently, two threads of research to further improve CoT. One advocates integrating more agents (models) from different LLM producers (Li et al., 2024) and utilizing the BLEU score as the heuristic to compare answers. Another is to enhance the BLEU score-based answer combination method by either assigning weights (Yao et al., 2024) or by creating a debate environment (Wan et al., 2024). One caveat in common "
+      },
+      {
+        "paper_id": "262466051",
+        "markdown_evidence": "Large language models (LLMs) can improve their accuracy on various tasks through iteratively refining and revising their output based on feedback. We observe that these revisions can introduce errors, in which case it is better to roll back to a previous result. Further, revisions are typically homogeneous: they use the same reasoning method that produced the initial answer, which may not correct errors. To enable exploration in this space, we present SCREWS, a modular framework for reasoning with revisions. It is comprised of three main modules: Sampling, Conditional Resampling, and Selection, each consisting of sub-modules that can be hand-selected per task. We show that SCREWS not only unifies several previous approaches under a common framework, but also reveals several novel strategies for identifying improved reasoning chains. We evaluate our framework with state-of-the-art LLMs (ChatGPT and GPT-4) on a diverse set of reasoning tasks and uncover useful new reasoning strategies for each: arithmetic word problems, multi-hop question answering, and code debugging. Heterogeneous revision strategies prove to be important, as does selection between original and revised candidates. ... This work presents SCREWS, a modular framework for reasoning with revisions that not only unifies several previous approaches under a common framework, but also reveals several novel strategies for identifying improved reasoning chains. ... The use of feedback to improve generated samples has been well studied, where the feedback can come either from humans (Tandon et al., 2021;Bai et al., 2022;Elgohary et al., 2021), from reward models (Ziegler et al., 2019;Lu et al., 2022;Shridhar et al., 2022;Christiano et al., 2017;Lightman et al., 2023), from external tools such as code interpreters (Schick et al., 2023;Chen et al., 2022), or from other LLMs (Madaan et al., 2023;Welleck et al., 2022;Fu et al., 2023;Peng et al., 2023;Yang et al., 2022;Zheng et al., 2023;Cohen et al., 2023;Ling et al., 2023;Khalifa et al., 2023). However, even if these feedback mechanisms are infallible, the "
+      },
+      {
+        "paper_id": "278714886",
+        "markdown_evidence": "Majority voting is considered an effective method to enhance chain-of-thought reasoning, as it selects the answer with the highest\"self-consistency\"among different reasoning paths (Wang et al., 2023). However, previous chain-of-thought reasoning methods typically generate only a single answer in each trial, thereby ignoring the possibility of other potential answers. As a result, these alternative answers are often overlooked in subsequent voting processes. In this work, we propose to generate ranked answers in each reasoning process and conduct ranked voting among multiple ranked answers from different responses, thereby making the overall self-consistency more reliable. Specifically, we use three ranked voting methods: Instant-runoff voting, Borda count voting, and mean reciprocal rank voting. We validate our methods on six datasets, including three multiple-choice and three open-ended question-answering tasks, using both advanced open-source and closed-source large language models. Extensive experimental results indicate that our proposed method outperforms the baselines, showcasing the potential of leveraging the information of ranked answers and using ranked voting to improve reasoning performance. The code is available at https://github.com/szu-tera/RankedVotingSC. ... This work proposes to generate ranked answers in each reasoning process and conduct ranked voting among multiple ranked answers from different responses, thereby making the overall self-consistency more reliable. ... Approval Voting. In addition to the three voting methods discussed in the main pages, we introduce an additional approach called approval voting (Laslier and Vander Straeten, 2003). This voting system enables participants to express their stance on an issue-whether to approve or disapprove. To streamline this process, approval voting assumes that higher-ranked answers are more likely to be accepted as correct. Therefore, we establish a threshold t: answers ranked before this threshold are considered approved, while those ranked after are deemed disapproved: \n\nNext, we conduct majority voting to select the answer with the most supporters, wher"
+      },
+      {
+        "paper_id": "278394315",
+        "markdown_evidence": "Recent advances in large language models (LLMs) trained with reinforcement learning (RL) have improved Text-to-SQL performance. However, RL-based approaches still struggle with complex queries due to two key limitations: insufficient stepwise execution-aware reasoning grounded in database feedback, and the lack of process-level rewards for guiding reasoning optimization. To address these issues, we propose CoCTE, a divide-and-conquer and execution-aware reasoning framework that progressively composes SQL queries through intermediate view validation and structured Common Table Expressions (CTEs), improving both accuracy and interpretability. To realize a CoCTE reasoning process, we develop Reward-SQL, a unified approach with three stages: (1) model initialization, which equips LLMs with structured CoCTE reasoning capabilities; (2) process reward design, which delivers fine-grained, execution-aware supervision; and (3) process-supervised RL and inference, which integrates process rewards into training and guides the inference stage by process rewards. This paper addresses the core challenges in Reward-SQL and makes the following contributions. We introduce a process reward model (PRM) that combines execution-aware trajectory scoring with entropy-based step weighting, providing dense and interpretable supervision across reasoning steps. We integrate PRM into both RL training and i ... A process reward model (PRM) is introduced that combines execution-aware trajectory scoring with entropy-based step weighting, providing dense and interpretable supervision across reasoning steps, and is integrated into both RL training and inference stages, stabilizing optimization and improving trajectory exploration with process-level signals."
+      },
+      {
+        "paper_id": "278000696",
+        "markdown_evidence": "Verifiers are auxiliary models that assess the correctness of outputs generated by base large language models (LLMs). They play a crucial role in many strategies for solving reasoning-intensive problems with LLMs. Typically, verifiers are LLMs themselves, often as large (or larger) than the base model they support, making them computationally expensive. In this work, we introduce a novel lightweight verification approach, LiLaVe, which reliably extracts correctness signals from the hidden states of the base LLM. A key advantage of LiLaVe is its ability to operate with only a small fraction of the computational budget required by traditional LLM-based verifiers. To demonstrate its practicality, we couple LiLaVe with popular meta-generation strategies, like best-of-n or self-consistency. Moreover, we design novel LiLaVe-based approaches, like conditional self-correction or conditional majority voting, that significantly improve both accuracy and efficiency in generation tasks with smaller LLMs. Our work demonstrates the fruitfulness of extracting latent information from the hidden states of LLMs, and opens the door to scalable and resource-efficient solutions for reasoning-intensive applications. ... This work introduces a novel lightweight verification approach, LiLaVe, which reliably extracts correctness signals from the hidden states of the base LLM, and designs novel LiLaVe-based approaches that significantly improve both accuracy and efficiency in generation tasks with smaller LLMs. ... We consider several meta-generation strategies, i.e., strategies that build on top of the base generator (the base language model) and a trained LiLaVe verifier. First, we experiment with two standard approaches: best-of-n sampling and weighted majority voting. In both approaches, we first sample n responses from the base generator with fixed temperature t > 0. As the final response in best-of-n, we select the one with the highest LiLaVe score. In weighted majority voting, we perform a majority voting across the final answers extracted from n full responses, weighted by their LiLaVe scores. \n\nStandard majority voting and its weighted variant "
+      },
+      {
+        "paper_id": "276408420",
+        "markdown_evidence": "The reasoning capabilities of advanced large language models (LLMs) like o1 have revolutionized artificial intelligence applications. Nevertheless, evaluating and optimizing complex reasoning processes remain significant challenges due to diverse policy distributions and the inherent limitations of human effort and accuracy. In this paper, we present AURORA, a novel automated framework for training universal process reward models (PRMs) using ensemble prompting and reverse verification. The framework employs a two-phase approach: First, it uses diverse prompting strategies and ensemble methods to perform automated annotation and evaluation of processes, ensuring robust assessments for reward learning. Second, it leverages practical reference answers for reverse verification, enhancing the model's ability to validate outputs and improving training accuracy. To assess the framework's performance, we extend beyond the existing ProcessBench benchmark by introducing UniversalBench, which evaluates reward predictions across full trajectories under diverse policy distribtion with long Chain-of-Thought (CoT) outputs. Experimental results demonstrate that AURORA enhances process evaluation accuracy, improves PRMs' accuracy for diverse policy distributions and long-CoT responses. ... Experimental results demonstrate that AURORA enhances process evaluation accuracy, improves PRMs' accuracy for diverse policy distributions and long-CoT responses, and extends beyond the existing ProcessBench benchmark by introducing UniversalBench, which evaluates reward predictions across full trajectories under diverse policy distribtion with lo ... The first strategy involves one-shot ICL with varied exemplars. By carefully selecting and altering the one-shot examples, we introduce distinct inductive biases into the LLM's discrimination process, enabling richer perspectives on each query. The second strategy utilizes a re-reading technique (Xu et al., 2024), which adjusts the LLM's attention allocation during inference, further diversifying the inductive biases in its responses. After that, we ensemble outputs from these varied inductive biases by averaging the results. This approach can be interpreted as a form of Bayesian model averaging (Zhang et al., 2023), where the outputs from di"
+      },
+      {
+        "paper_id": "277451521",
+        "markdown_evidence": "Recent breakthroughs in generative reasoning have fundamentally reshaped how large language models (LLMs) address complex tasks, enabling them to dynamically retrieve, refine, and organize information into coherent multi-step reasoning chains. Techniques such as inference-time scaling, reinforcement learning, supervised fine-tuning, and distillation have been effectively applied to state-of-the-art models, including DeepSeek-R1, OpenAI o1 and o3, GPT-4o, Qwen-32B, and various Llama variants, significantly enhancing their reasoning capabilities. In this paper, we present a comprehensive review of the top 27 LLMs released between 2023 and 2025, such as Mistral AI Small 3 24B, DeepSeek-R1, Search-o1, QwQ-32B, and Phi-4, and analyze their core innovations and performance improvements. We also provide a detailed overview of recent advancements in multilingual large language models (MLLMs), emphasizing methods that improve cross-lingual reasoning and address the limitations of English-centric training. In parallel, we present a comprehensive review of progress in state space model (SSM)-based architectures, including models such as Mamba, which demonstrate improved efficiency for long-context processing compared to transformer-based approaches. Our analysis covers training strategies including general optimization techniques, mixture-of-experts (MoE) configurations, retrieval-augment ... A comprehensive review of the top 27 LLMs released between 2023 and 2025, including models such as Mistral AI Small 3 24B, DeepSeek-R1, Search-o1, QwQ-32B, and Phi-4, and analyze their core innovations and performance improvements. ... Brown et al. [84] explore an often-overlooked axis of scaling-namely, inference compute-by systematically examining how repeated sampling can enhance the performance of language models. Traditionally, LLMs make a single attempt at generating an answer, but this study demonstrates that generating multiple, diverse candidate solutions and selecting the best one can significantly improve the fraction of problems solved, a metric referred to as coverage. Empirical results indicate that coverage scales in a log-linear fashion with the number of samples, following an exponentiated power law. In domains such as coding and formal proofs-where automat"
+      },
+      {
+        "paper_id": "276482600",
+        "markdown_evidence": "Recent progress in large language models (LLM) found chain-of-thought prompting strategies to improve the reasoning ability of LLMs by encouraging problem solving through multiple steps. Therefore, subsequent research aimed to integrate the multi-step reasoning process into the LLM itself through process rewards as feedback and achieved improvements over prompting strategies. Due to the cost of step-level annotation, some turn to outcome rewards as feedback. Aside from these training-based approaches, training-free techniques leverage frozen LLMs or external tools for feedback at each step to enhance the reasoning process. With the abundance of work in mathematics due to its logical nature, we present a survey of strategies utilizing feedback at the step and outcome levels to enhance multi-step math reasoning for LLMs. As multi-step reasoning emerges a crucial component in scaling LLMs, we hope to establish its foundation for easier understanding and empower further research. ... This work presents a survey of strategies utilizing feedback at the step and outcome levels to enhance multi-step math reasoning for LLMs and hopes to establish its foundation for easier understanding and empower further research. ... To integrate multi-step reasoning into LLMs, Uesato et al. (2022) conducted SFT on a pre-trained LLM by treating the question as input tokens and the multi-step solution as the target tokens. They annotated each step whether the m th solution has been correct so far, resulting in step-label pairs \n\n, where s is a binary label. Process reward models (PRMs) utilize this additional supervision for each reasoning step and the training combines with the language model objective. In Cobbe et al. (2021), a scalar head implemented as a bias parameter and a gain parameter operates on the logit of the special token for binary classification. To save an"
+      },
+      {
+        "paper_id": "274610711",
+        "markdown_evidence": "Ensembles of generative large language models (LLMs) are a promising way to compensate for individual model limitations, integrating the strengths of different LLMs. Existing LLM ensemble methods, however, face limitations such as first-token delay and challenges in long-range semantic collaboration between models, Moreover, they typically assume equal voting weights for all models during ensemble, ignoring task-specific performance differences among models. In this work, we propose SpecEM, a training-free, plug-and-play LLM ensemble framework that dynamically adjusts each model's model contribution in real time based on task performance. Inspired by speculative decoding, SpecEM iteratively performs drafting and verification, allowing models to collaborate semantically at the segment level for integrated output. Furthermore, we introduce an online feedback mechanism with multiplicative weight updates, where each model's voting weight is adjusted on-the-fly according to how often it outperforms others during verification stage, ensuring that stronger models exert greater influence during ensembling. Experimental results on five LLM families (ranging from 7B to 72B parameters) and six benchmark datasets, spanning open-domain instruction following, reasoning, commonsense, demonstrate consistent performance improvements compared to state-of-the-art LLM ensemble methods. Our code is ... This work proposes SpecEM, a training-free, plug-and-play LLM ensemble framework that dynamically adjusts each model's model contribution in real time based on task performance, and introduces an online feedback mechanism with multiplicative weight updates. ... Comparative methods. We compare our proposed SpecEM with several strong recent LLM ensemble methods, including PairRank [Jiang et al., 2023b], Minimum Bayes Risk (MBR) [Freitag et al., 2023], Generation Fusion (GF) [Jiang et al., 2023b], Mixture-of-Agents (MOA) [Wang et al., 2024], Majority Voting [Davani et al., 2022], and Unite [Yao et al., 2025]. Please refer to Appendix B.3 for a detailed description of these baseline methods. \n\nImplement details. SpecEM requires no training and operates purely during inference. All models are loaded using bfloat16 precision, with do_sample = T rue, temperature = 0.6, and top_p = 0.9 generation settings. "
+      },
+      {
+        "paper_id": "276079559",
+        "markdown_evidence": "We introduce Reward-Guided Speculative Decoding (RSD), a novel framework aimed at improving the efficiency of inference in large language models (LLMs). RSD synergistically combines a lightweight draft model with a more powerful target model, incorporating a controlled bias to prioritize high-reward outputs, in contrast to existing speculative decoding methods that enforce strict unbiasedness. RSD employs a process reward model to evaluate intermediate decoding steps and dynamically decide whether to invoke the target model, optimizing the trade-off between computational cost and output quality. We theoretically demonstrate that a threshold-based mixture strategy achieves an optimal balance between resource utilization and performance. Extensive evaluations on challenging reasoning benchmarks, including Olympiad-level tasks, show that RSD delivers significant efficiency gains against decoding with the target model only (up to 4.4x fewer FLOPs), while achieving significant better accuracy than parallel decoding method on average (up to +3.5). These results highlight RSD as a robust and cost-effective approach for deploying LLMs in resource-intensive scenarios. The code is available at https://github.com/BaohaoLiao/RSD. ... Reward-Guided Speculative Decoding is introduced, a novel framework aimed at improving the efficiency of inference in large language models (LLMs) by incorporating a controlled bias to prioritize high-reward outputs in contrast to existing speculative decoding methods that enforce strict unbiasedness. ... Models. To assess the performance of RSD, we employ both general-purpose and math-focused LLMs as our target and draft models, specifically Qwen-2.5 (Yang et al., 2024a), Llama-3 (Dubey et al., 2024), and Qwen-2.5-Math (Yang et al., 2024b). Our system utilizes Skywork-o1-Open-PRM (o1 Team, 2024) as the process reward model (PRM), as it was the most advanced open-source PRM available during our experiments (Zheng et al., 2024). The reward score ranges from 0 to 1, the higher the better. Datasets. We evaluate our method on a diverse set of reasoning tasks, including GSM8K (Cobbe et al., 2021b), MATH500 (Hendrycks et al., 2021), MMLU STEM (Hendr"
+      },
+      {
+        "paper_id": "276928659",
+        "markdown_evidence": "Queueing systems present many opportunities for applying machine-learning predictions, such as estimated service times, to improve system performance. This integration raises numerous open questions about how predictions can be effectively leveraged to improve scheduling decisions. Recent studies explore queues with predicted service times, typically aiming to minimize job time in the system. We review these works, highlight the effectiveness of predictions, and present open questions on queue performance. We then move to consider an important practical example of using predictions in scheduling, namely Large Language Model (LLM) systems, which presents novel scheduling challenges and highlights the potential for predictions to improve performance. In particular, we consider LLMs performing inference. Inference requests (jobs) in LLM systems are inherently complex; they have variable inference times, dynamic memory footprints that are constrained by key-value (KV) store memory limitations, and multiple possible preemption approaches that affect performance differently. We provide background on the important aspects of scheduling in LLM systems, and introduce new models and open problems that arise from them. We argue that there are significant opportunities for applying insights and analysis from queueing theory to scheduling in LLM systems. ... It is argued that there are significant opportunities for applying insights and analysis from queueing theory to scheduling in LLM systems, which presents novel scheduling challenges and highlights the potential for predictions to improve performance. ... LLMs can now perform advanced reasoning tasks such as solving mathematical problems, generating code, and analyzing legal documents. Inference-time reasoning algorithms play a key role by allowing LLMs to evaluate their outputs, explore alternative reasoning paths, and produce more reliable responses to complex questions. LLM reasoning algorithms have two fundamental phases: expansion, in which the model generates tokens to explore different solution paths, where allocating more compute to expansion improves answer quality, and aggregation, where these candidate solutions are combined to produce a final answer. LLM reasoning can be approached"
+      },
+      {
+        "paper_id": "277244806",
+        "markdown_evidence": "Enhancing the reasoning capabilities of large language models (LLMs), particularly for complex tasks requiring multi-step logical deductions, remains a significant challenge. Traditional inference time scaling methods utilize scalar reward signals from process reward models to evaluate candidate reasoning steps, but these scalar rewards lack the nuanced qualitative information essential for understanding and justifying each step. In this paper, we propose a novel inference-time scaling approach -- stepwise natural language self-critique (PANEL), which employs self-generated natural language critiques as feedback to guide the step-level search process. By generating rich, human-readable critiques for each candidate reasoning step, PANEL retains essential qualitative information, facilitating better-informed decision-making during inference. This approach bypasses the need for task-specific verifiers and the associated training overhead, making it broadly applicable across diverse tasks. Experimental results on challenging reasoning benchmarks, including AIME and GPQA, demonstrate that PANEL significantly enhances reasoning performance, outperforming traditional scalar reward-based methods. Our code is available at https://github.com/puddingyeah/PANEL to support and encourage future research in this promising field. ... This paper proposes a novel inference-time scaling approach -- stepwise natural language self-critique (PANEL), which employs self-generated natural language critiques as feedback to guide the step-level search process, and demonstrates that PANEL significantly enhances reasoning performance, outperforming traditional scalar reward-based methods. ... Our work is closely related to three key areas of research: inference time scaling, reward verification, and natural language critique. This section reviews recent advancements in these areas. \n\nInference Time Scaling LLM reasoning extends to complex tasks such as logical inference (Kojima et al., 2022;Brown et al., 2020), step-by-step problem-solving (Wei et al., 2022), and understanding cause-effect relationships (Wang et al., 2022;Zhou et al.). Reasoning structures like Tree-of-Thoughts (Yao et al., 2024;Xie et al., 2024) and Graph-of-Thoughts (Besta et al., 2024) incorporate metacognitive patterns like planning (Wang et al., 2023a) and di"
+      },
+      {
+        "paper_id": "276725221",
+        "markdown_evidence": "Recent advances in test-time scaling have shown promising results in improving Large Language Model (LLM) performance through strategic computation allocation during inference. While this approach has demonstrated strong improvements in logical and mathematical reasoning tasks, its application to natural language generation (NLG), particularly summarization, remains unexplored. Multi-Document Summarization (MDS), a fundamental task in NLG, presents unique challenges by requiring models to extract and synthesize essential information across multiple lengthy documents. Unlike reasoning tasks, MDS demands a more nuanced approach to prompt design and ensemble methods, as no single\"best\"prompt can satisfy diverse summarization requirements. We propose a novel framework leveraging test-time scaling for MDS. Our approach employs prompt ensemble techniques to generate multiple candidate summaries using various prompts, then combines them with an aggregator to produce a refined summary. To evaluate our method effectively, we also introduce two new LLM-based metrics: the Consistency-Aware Preference (CAP) score and LLM Atom-Content-Unit (LLM-ACU) score, which assess summary quality while addressing the positional bias inherent in traditional automatic evaluation. Our extensive experiments demonstrate that this framework significantly enhances summary quality while also revealing the prac ... This work proposes a novel framework leveraging test-time scaling for MDS, which employs prompt ensemble techniques to generate multiple candidate summaries using various prompts, then combines them with an aggregator to produce a refined summary. ... Test-time scaling strategies can be broadly classified into three categories: repeated sampling, deliberative approaches, and self-refinement. Repeated sampling leverages techniques like temperature sampling (Ackley et al., 1985), top-k, and top-p sampling (Holtzman et al., 2020) to generate diverse outputs, which are then enhanced through aggregation strategies such as majority voting (Wang et al., 2023b), weighted majority voting (Li et al., 2023a), or best-of-n selection (Cobbe et al., 2021). \n\nRecent work (Brown et al., 2024;Wu et al., 2024;Stroebl et al., 2024;Zhao et al., 2025) demonstrates that repeated sampling can significantly expan"
+      },
+      {
+        "paper_id": "275119287",
+        "markdown_evidence": "Language model alignment is a critical step in training modern generative language models. Alignment targets to improve win rate of a sample from the aligned model against the base model. Today, we are increasingly using inference-time algorithms (e.g., Best-of-N, controlled decoding, tree search) to decode from language models rather than standard sampling. We show that this train/test mismatch makes standard RLHF framework sub-optimal in view of such inference-time methods. To this end, we propose a framework for inference-aware alignment (InfAlign), which aims to optimize inference-time win rate of the aligned policy against the base model. We prove that for any inference-time decoding procedure, the optimal aligned policy is the solution to the standard RLHF problem with a transformation of the reward. This motivates us to provide the calibrate-and-transform RL (InfAlign-CTRL) algorithm to solve this problem, which involves a reward calibration step and a KL-regularized reward maximization step with a transformation of the calibrated reward. For best-of-N sampling and best-of-N jailbreaking, we propose specific transformations offering up to 3-8% improvement on inference-time win rates. Finally, we also show that our proposed reward calibration method is a strong baseline for optimizing standard win rate. ... This work proves that for any inference-time decoding procedure, the optimal aligned policy is the solution to the standard RLHF problem with a transformation of the reward, and proposes a framework for inference-aware alignment (InfAlign), which aims to optimize inference-time win rate of the aligned policy against the base model. ... We show that our theoretical framework generalizes IPO (Azar et al., 2023) and best-of-N distillation (Gui et al., 2024;Amini et al., 2024;Sessa et al., 2024) as special cases. \n\nWe are motivated by recent work that apply meta-generation procedures (Welleck et al., 2024) at inference-time such as chaining prompted models (Brown et al., 2024), problem decomposition through chain-of-thought (Wei et al., 2022), Best-of-N reranking (Collins & Koo, 2005;Charniak & Johnson, 2005;Pauls & Klein, 2009) applied on reasoning traces (OpenAI, 2024). Our InfAlign framework was also motivated by complex inference-time strategies that involve transformation "
+      },
+      {
+        "paper_id": "273502123",
+        "markdown_evidence": "Reward models have been increasingly critical for improving the reasoning capability of LLMs. Existing research has shown that a well-trained reward model can substantially improve model performances at inference time via search. However, the potential of reward models during RL training time still remains largely under-explored. It is currently unclear whether these reward models can provide additional training signals to enhance the reasoning capabilities of LLMs in RL training that uses sparse success rewards, which verify the correctness of solutions. In this work, we evaluate popular reward models for RL training, including the Outcome-supervised Reward Model (ORM) and the Process-supervised Reward Model (PRM), and train a collection of LLMs for math problems using RL by combining these learned rewards with success rewards. Surprisingly, even though these learned reward models have strong inference-time performances, they may NOT help or even hurt RL training, producing worse performances than LLMs trained with the success reward only. Our analysis reveals that an LLM can receive high rewards from some of these reward models by repeating correct but unnecessary reasoning steps, leading to a severe reward hacking issue. Therefore, we introduce two novel reward refinement techniques, including Clipping and Delta. The key idea is to ensure the accumulative reward of any reaso ... This work evaluates popular reward models for RL training, including the Outcome-supervised Reward Model (ORM) and the Process-supervised Reward Model (PRM), and trains a collection of LLMs for math problems using RL by combining these learned rewards with success rewards, revealing that an LLM can receive high rewards from some of these reward mod"
+      },
+      {
+        "paper_id": "273234123",
+        "markdown_evidence": "Large Language Model (LLM) based multi-agent systems (MAS) show remarkable potential in collaborative problem-solving, yet they still face critical challenges: low communication efficiency, poor scalability, and a lack of effective parameter-updating optimization methods. We present Optima, a novel framework that addresses these issues by significantly enhancing both communication efficiency and task effectiveness in LLM-based MAS through LLM training. Optima employs an iterative generate, rank, select, and train paradigm with a reward function balancing task performance, token efficiency, and communication readability. We explore various RL algorithms, including Supervised Fine-Tuning, Direct Preference Optimization, and their hybrid approaches, providing insights into their effectiveness-efficiency trade-offs. We integrate Monte Carlo Tree Search-inspired techniques for DPO data generation, treating conversation turns as tree nodes to explore diverse interaction paths. Evaluated on common multi-agent tasks, including information-asymmetric question answering and complex reasoning, Optima shows consistent and substantial improvements over single-agent baselines and vanilla MAS based on Llama 3 8B, achieving up to 2.8x performance gain with less than 10\\% tokens on tasks requiring heavy information exchange. Moreover, Optima's efficiency gains open new possibilities for leverag ... Evaluated on common multi-agent tasks, including information-asymmetric question answering and complex reasoning, Optima shows consistent and substantial improvements over single-agent baselines and vanilla MAS based on Llama 3 8B, achieving up to 2.8x performance gain. ... Recent research emphasizes inference-time scaling, which describes how model performance improves with increased compute during inference, typically by generating multiple samples per problem (Brown et al., 2024;Wu et al., 2024). Unlike training scaling laws, which focus on model size, dataset size, and performance, inference-time scaling explore the trade-off between compute budget and task accuracy, offering a promising way to en-0 2 1 2 2 2 3 2 4 2  hance model capabilities without further training. Fig. 3 illustrates OPTIMA's impact on inferencetime scaling. The left panel shows the relationship between SC steps and performance on multiag"
+      },
+      {
+        "paper_id": "277781795",
+        "markdown_evidence": "Multi-agent systems (MAS) built on large language models (LLMs) offer a promising path toward solving complex, real-world tasks that single-agent systems often struggle to manage. While recent advancements in test-time scaling (TTS) have significantly improved single-agent performance on challenging reasoning tasks, how to effectively scale collaboration and reasoning in MAS remains an open question. In this work, we introduce an adaptive multi-agent framework designed to enhance collaborative reasoning through both model-level training and system-level coordination. We construct M500, a high-quality dataset containing 500 multi-agent collaborative reasoning traces, and fine-tune Qwen2.5-32B-Instruct on this dataset to produce M1-32B, a model optimized for multi-agent collaboration. To further enable adaptive reasoning, we propose a novel CEO agent that dynamically manages the discussion process, guiding agent collaboration and adjusting reasoning depth for more effective problem-solving. Evaluated in an open-source MAS across a range of tasks-including general understanding, mathematical reasoning, and coding-our system significantly outperforms strong baselines. For instance, M1-32B achieves 12% improvement on GPQA-Diamond, 41% on AIME2024, and 10% on MBPP-Sanitized, matching the performance of state-of-the-art models like DeepSeek-R1 on some tasks. These results highlight th ... An adaptive multi-agent framework designed to enhance collaborative reasoning through both model-level training and system-level coordination is introduced, and a novel CEO agent is proposed that dynamically manages the discussion process, guiding agent collaboration and adjusting reasoning depth for more effective problem-solving. ... A wide range of methods have been developed to improve reasoning in LLMs by leveraging test-time scaling (TTS). Recent work explores techniques including hierarchical hypothesis search, which enables inductive reasoning through structured exploration [79], and tool augmentation during inference, which enhances downstream performance by allowing models to interact with external environments [15,20,61]. Other approaches focus on internal mechanisms, such as learning thought tokens in an unsupervised manner [18,96], allowing models to better utilize extended reasoning sequences. Among the most studied scaling paradigms are parallel and sequentia"
+      },
+      {
+        "paper_id": "276409085",
+        "markdown_evidence": "OpenAI o1 has shown that applying reinforcement learning to integrate reasoning steps directly during inference can significantly improve a model's reasoning capabilities. This result is exciting as the field transitions from the conventional autoregressive method of generating answers to a more deliberate approach that models the slow-thinking process through step-by-step reasoning training. Reinforcement learning plays a key role in both the model's training and decoding processes. In this article, we present a comprehensive formulation of reasoning problems and investigate the use of both model-based and model-free approaches to better support this slow-thinking framework. ... This article presents a comprehensive formulation of reasoning problems and investigates the use of both model-based and model-free approaches to better support this slow-thinking framework. ... Verifier models (outcome-reward models and process-reward models) have become an important area of research in improving LLM reasoning reliability. Papers like [4] introduced the earliest formal attempt (outcome reward only) at using verifiers in mathematical reasoning tasks, laying the groundwork for subsequent research. The follow-up work [27] expands on the concept of verifiers, integrating process-based reasoning mechanisms, and was followed by OpenAI's work on Process Reward Models (PRMs) [12]. These verifiers play a crucial role in ensuring the correctness of reasoning, addressing one of the major challenges in LLMs-maintaining coherenc"
+      },
+      {
+        "paper_id": "252440797",
+        "markdown_evidence": "Predictive variability due to data ambiguities has typically been addressed via construction of dedicated models with built-in probabilistic capabilities that are trained to predict uncertainty estimates as variables of interest. These approaches require distinct architectural components and training mechanisms, may include restrictive assumptions and exhibit overconfidence, i.e., high confidence in imprecise predictions. In this work, we propose a post-hoc sampling strategy for estimating predictive uncertainty accounting for data ambiguity. The method can generate different plausible outputs for a given input and does not assume parametric forms of predictive distributions. It is architecture agnostic and can be applied to any feed-forward deterministic network without changes to the architecture or training procedure. Experiments on regression tasks on imaging and non-imaging input data show the method's ability to generate diverse and multi-modal predictive distributions, and a desirable correlation of the estimated uncertainty with the prediction error. ... Experiments on regression tasks on imaging and non-imaging input data show the method's ability to generate diverse and multi-modal predictive distributions, and a desirable correlation of the estimated uncertainty with the prediction error. ... Quantification of Predictive Uncertainty via Inference-Time Sampling"
+      },
+      {
+        "paper_id": "273403589",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268264399",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271601023",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276236153",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271709606",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272593122",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270514382",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276249976",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265552111",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274789452",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257050283",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260438790",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273707752",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "203588911",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229376837",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253442580",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229924337",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229378090",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252630797",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237826881",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261048634",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252378444",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "67474954",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219573578",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216478882",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "243985986",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267301109",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236415674",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52897262",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276928110",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226553668",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209444959",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276937735",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "133105731",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248987432",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "79500574",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16430996",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268379465",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "243238675",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276190314",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "189762066",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267717161",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256274607",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227275386",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251332720",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253412969",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269484704",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226975992",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "241687649",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273612532",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271218871",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272608679",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257038266",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261822185",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251945231",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52054209",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276773739",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267027618",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "19966876",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251555572",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265034141",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "81005839",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245514955",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270095770",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277501653",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255522467",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233610981",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265457262",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "33461829",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266307605",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "27328299",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259930536",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277824349",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267627646",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247393661",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232289580",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272969087",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273868697",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "9897938",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278714658",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267499902",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252372581",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "586482",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259211853",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "240740345",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253237425",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "29641357",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "30274007",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264405682",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278602328",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272860285",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273229522",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269118814",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250579710",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272310241",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251719684",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268230824",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "49583428",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "8482792",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272998431",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220525363",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271218456",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "125905250",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255604359",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "24346401",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269502534",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "115366164",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254878989",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219653255",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220252021",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "17042589",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276161041",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273233481",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54846761",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "214605657",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "49670564",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5660714",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "213225386",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270080788",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209202525",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269131009",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258557722",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260147424",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255255995",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277622235",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53231301",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232270111",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "199119870",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264288937",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "164270442",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229396952",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261583498",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "169820578",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219636214",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265836541",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234515511",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234230470",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "36436614",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202360781",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "17205381",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264172653",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234028262",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271274974",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54825277",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235853494",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254913046",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "88520024",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "243845206",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252438965",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271855041",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266939165",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251622472",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202326336",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233265693",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277634411",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273707757",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

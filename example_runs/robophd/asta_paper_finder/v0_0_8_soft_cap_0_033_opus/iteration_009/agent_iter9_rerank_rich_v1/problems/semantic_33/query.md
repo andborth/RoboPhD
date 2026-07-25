@@ -1,0 +1,1 @@
+Could you suggest a study that explores employing a beta distribution to sample span sizes within unsupervised learning frameworks for text representation?

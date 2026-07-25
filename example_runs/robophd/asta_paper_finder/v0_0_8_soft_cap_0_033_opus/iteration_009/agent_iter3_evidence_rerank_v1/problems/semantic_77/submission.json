@@ -1,0 +1,315 @@
+{
+  "output": {
+    "query_id": "semantic_77",
+    "results": [
+      {
+        "paper_id": "258947018",
+        "markdown_evidence": "4-bit Weight Quantization. We hereby present the W4A16 results for OPT and BLOOM, as delineated in Table 4, corresponding to an array of quantization block sizes. The performance sees a significant improvement with smaller block sizes compared to per-row quantization. The point of diminishing returns, however, varies for different model sizes. For example, smaller models (such as OPT-6.7B and BLOOM-1.7b) continue to see substantial gains until the block size reduces to 32. In contrast, for larger models (those exceeding 10B, with OPT-66B as the exception), the benefits derived from smaller block sizes wane rapidly around block-256/512. Most crucially, for models equal to or larger than 13B,  ... For all detailed numbers, please see Appendix E. \n\nas to whether these methods are achieving their optimal potential in minimizing Large Language Models (LLMs) sizes. With these observations in mind, our study sets forth to address two salient questions: (1) When subjected to quantization, do LLMs of varying sizes and pretraining data exhibit similar behavior? (2) Are existing quantization methods truly leveraging their full potential in reducing the sizes of LLMs? Contribution. To elucidate these queries, we undertake an exhaustive examination of the impact of PTQ on weight-only, activation-only, and combined weight-and-activation quantization. This investigation incorporates a range of PTQ ... However, all of the results fall into either Class-2 or Class-3. This suggests that for certain applications, it might be more beneficial to use smaller models with fewer parameters rather than larger, quantized models. \n\nAmong quantization-based methods, ZQ-Global * and ZQ-Local * generally outperform GPTQ, which is anticipated given that GPTQ was originally designed for weight-only quantization. ZQ-Global * performs better than ZQ-Local * in most cases except for the two largest models, OPT-66B and Bloom-176B, despite having larger trainable parameters in one step. This again signifies the need for a more suitable and advanced optimization method for large language models (LLMs). One poten ... Post-training quantization (PTQ) has emerged as a promising technique for mitigating memory consumption and computational costs in large language models (LLMs). However, a systematic examination of various quantization schemes, model families, and quantization bit precision has been a"
+      },
+      {
+        "paper_id": "270062537",
+        "markdown_evidence": "Recent advancements in Large Language Models (LLMs) have yielded impressive accomplishments across a variety of tasks.Building on the pioneering work of GPT-3 [3], a series of influential LLMs such as OPT [47], BLOOM [23], LLaMA [37], Mixtral [21] and Yi [45] have consistently demonstrated that expanding model size predictably promotes modeling accuracy (a.k.a. the scaling law [17]).The pursue of large (e.g.hundreds of billions of parameters), and even larger language models is often considered as a promising avenue towards Artificial General Intelligence (AGI) [4].\n\nNevertheless, the significant computational and memory demands of LLMs pose unprecedented challenges.For example, deploying th ... In this paper, we introduce a novel and effective training-free quantization framework for LLMs, namely Column-Level Adaptive weight Quantization (CLAQ), which utilizes three distinct columnlevel strategies to enhance the performance of low-bit (i.e., 2-bit and 3-bit) quantization.Specifically, we initially apply a K-Means clustering based quantization that enables the adaptive generation of quantization centroids for each column of a weight matrix.Then, a simple yet powerful quantization sensitivity metric (Outlier Order) is described, which aims to identify parameter columns that are highly sensitive to quantization.Leveraging this metric, we further proposed two strategies to enhance quan ... Parameter quantization for Large Language Models (LLMs) has attracted increasing attentions recently in reducing memory costs and improving computational efficiency. Early approaches have been widely adopted. However, the existing methods suffer from poor performance in low-bit (such as 2 to 3 bits) scenarios. In this paper, we present a novel and effective Column-Level Adaptive weight Quantization (CLAQ) framework by introducing three different types of adaptive strategies for LLM quantization. Firstly, a K-Means clustering based algorithm is proposed that allows dynamic generation of quantization centroids for each column of a parameter matrix. Secondly, we design an outlier-guided adaptive precision search strategy which can dynamically assign varying bit-widths to different columns. Finally, a dynamic outlier reservation scheme is developed to retain some parameters in their original float point precision, in trade off of boosted model performance. Experiments on various "
+      },
+      {
+        "paper_id": "261049460",
+        "markdown_evidence": "Table 1 presents the impact of quantization on various natural language tasks using different models. The results show that, in general, 8-bit weight-only quantization does not significantly affect the accuracy compared to fp16. This is observed across different language tasks, indicating that the models produce similar outputs. However, 4-bit quantization with column-wise granularity leads to some degradation in accuracy due to outliers in the weight distribution, as discussed in Section 3.2. To recover the accuracy, we adopt a group-wise quantization strategy, which shows similar accuracy to the original fp16. \n\nTable 1: Accuracy of various models with low-bit weight only quantization on d ... Numerous studies have demonstrated the effectiveness of quantization in accelerating neural network model inference (Rodriguez et al., 2018;Stock et al., 2019;Choukroun et al., 2019;Gholami et al., 2022), particularly in natural language generation, such as machine translation (Kim et al., 2019;Aji and Heafield, 2020;Fan et al., 2021;Park et al., 2022;Kim et al., 2022) and natural language understanding tasks (Kim and Awadalla, 2020). However, it is still under-explored how weight-only quantization can be effectively utilized in the context of large language models. Also, the existing methods introduce complex and costly procedures such as additional Quantization Aware Training (QAT) and/or  ... This paper presents a method for accelerating large language models through the use of low-bit quantization. The proposed weight-only quantization technique demonstrates promising results in compressing very large models with up to 175 billion parameters, while still maintaining accuracy. \n\nTo address the issue of outliers affecting the quantized weight distribution, fine-grained quantization is employed. \n\nDespite its strengths, the study does have a few limitations. Firstly, optimized GPU kernels are only implemented for group size 64. However, we plan to expand support for any power of 2 group size greater than 16. Secondly, the performance benchmarking is conducted solely on A100 GPUs, s ... Large Language Models (LLMs) have achieved state-of-the-art performance across various language tasks but pose challenges for practical deployment due to their substantial memory requirements. Furthermore, the latest generative models suffer from high inference costs caused by the mem"
+      },
+      {
+        "paper_id": "268032411",
+        "markdown_evidence": "4-bit quantization offers a trade-off between the LLMs' capacity and the number of bits in the low-precision format. As the number of quantized bits decreases to 3 bits or lower, there is a noticeable performance discrepancy between the LLMs and their quantized counterparts. Experimental results suggest that when the LLMs are quantized to 8 bits, the majority of LLMs, irrespective of their parameter scales, can maintain a performance level comparable to their non-quantized equivalents. Moreover, LLMs that are quantized to 4 bits can also uphold similar performance to their non-quantized versions across most benchmarks. However, if these LLMs are further quantized to 3 bits or lower, the capa ... The average absolute value of the Pearson correlation coefficient is notably high at 0.7895. This evidence reinforces our claim that perplexity serves as a reliable performance indicator for quantized LLMs on evaluation benchmarks. \n\nIdentifying and isolating outlier weights is crucial for SpQR to effectively quantize LLMs to an extreme level of 2 bits. Experimental results indicate a sharp decline in the performance of LLMs quantized to 2 bits by GPTQ, to the extent that they fail to produce coherent text. In contrast, LLMs quantized to 2 bits by SpQR exhibit a relatively moderate performance across all evaluated benchmarks. SpQR introduces two innovative strategies to enhance the performan ... Despite the risk of performance degradation, PTQ is more prevalent due to the prohibitive training costs associated with QAT. However, several aspects pertaining to the evaluation of PTQ require further exploration. Firstly, the majority of PTQ methods are evaluated solely by assessing the performance of the quantized pre-trained LLMs on benchmarks, leaving the performance of quantized LLMs that have undergone instruction tuning unclear -despite the latter being more commonly used in real-world scenarios (Ouyang et al., 2022;Bai et al., 2022;Peng et al., 2023). Secondly, the evaluation of quantized models is limited to the language modeling task and a few classification tasks. This restricts ... Increasing the number of parameters in large language models (LLMs) usually improves performance in downstream tasks but raises compute and memory costs, making deployment difficult in resource-limited settings. Quantization techniques, which reduce the bits needed for model weights o"
+      },
+      {
+        "paper_id": "273501713",
+        "markdown_evidence": "The overall results suggest that code LLMs quantized at 4-bit integer precision can be comfortably run on an average CPU-only consumer laptop while maintaining good performance relative to other quantized and non-quantized code LLMs. The 4-bit quantized models also outperformed the non-quantized models with lower parameter numbers. \n\nHowever, the study also revealed that the exact effects of quantization are not homogeneous among the five tested models. The performance of a quantized model may also be a subject of the model architecture, pre-trained dataset, training procedure, and follow-up fine-tuning. Therefore, a more in-depth study is necessary to explore how these factors and quantizat ... Quantization is a compression of a Large Language Model to reduce its size with the least impact on its performance [16]. There are several benefits of applying quantization to LLMs including reduced computational demands and greater accessibility of LLMs. There are two main methods of quantization, Post-Training Quantization (PTQ) and Quantization-Aware Training (QAT). While QAT methods apply quantization during the training process, PTQ methods are applied after the training phase. Because of the computational demand for QAT methods, PTQ methods are more prevalent [23]. This study is therefore concerned with PTQ only. \n\nPTQ methods can compress weights only or both weights and activations  ... Democratization of AI is an important topic within the broader topic of the digital divide. This issue is relevant to LLMs, which are becoming popular as AI co-pilots but suffer from a lack of accessibility due to high computational demand. In this study, we evaluate whether quantization is a viable approach toward enabling LLMs on generic consumer devices. The study assesses the performance of five quantized code LLMs in Lua code generation tasks. To evaluate the impact of quantization, the models with 7B parameters were tested on a consumer laptop at 2-, 4-, and 8-bit integer precisions and compared to non-quantized code LLMs with 1.3, 2, and 3 billion parameters. Lua is chosen as a low-level resource language to avoid models' biases related to high-resource languages. The results suggest that the models quantized at the 4-bit integer precision offer the best trade-off between performance and model size. These models can be comfortably deployed on an average laptop without "
+      },
+      {
+        "paper_id": "258999941",
+        "markdown_evidence": "Quantization. We focus on weight-only grouped quantization in this work. As shown in previous work (Dettmers & Zettlemoyer, 2022;Frantar et al., 2022), grouped quantization is always helpful for improving performance/model size trade-off. We used a group size of 128 throughout the work, except otherwise specified. We focus on INT4/INT3 quantization since they are able to mostly preserve the LLMs' performance (Dettmers & Zettlemoyer, 2022). For AWQ, we used a small calibration set from the Pile (Gao et al., 2020) dataset in order not to overfit to a specific downstream domain. We used a grid size of 20 to search for the optimal α in Equation 5. \n\nModels. We benchmarked our method on LLaMA (To ... Large language models (LLMs) have transformed numerous AI applications. On-device LLM is becoming increasingly important: running LLMs locally on edge devices can reduce cloud computing costs and protect users' privacy. However, the astronomical model size and the limited hardware resources pose significant deployment challenges. To solve these issues, we propose Activation-aware Weight Quantization (AWQ) and TinyChat, an algorithm-system full-stack solution for efficient on-device LLM deployment. AWQ is a novel quantization method that identifies and protects salient weights based on activation distribution, significantly reducing model size while preserving performance. TinyChat, an optimized inference framework, translates AWQ's theoretical memory savings into practical speedups through techniques such as on-the-fly dequantization, SIMD-aware weight packing, and kernel fusion. Together, they enable 4x model size reduction and 3-4x acceleration across various edge platforms, from high-end desktop GPUs to resource-constrained IoT devices. This solution democratizes on-device LLM deployment, offering privacy-preserving, low-latency AI capabilities across a wide range of applications. ... This work proposes Activation-aware Weight Quantization (AWQ) and TinyChat, an algorithm-system full-stack solution for efficient on-device LLM deployment that democratizes on-device LLM deployment, offering privacy-preserving, low-latency AI capabilities across a wide range of applications."
+      },
+      {
+        "paper_id": "264424348",
+        "markdown_evidence": "In this section, we show how OS+ can help standard quantization achieve satisfying results from both the small models and LLMs aspects. reduce the performance gap to 5.6% on 4-bit. \n\nOPT and BLOOM. With standard quantization, we list 8-bit and 6-bit accuracy in Table 2. It can be observed that OS+ outperforms ZeroQuant by a large margin. While SmoothQuant suffers from non-negligible accuracy drops on much harder settings like the 6-bit 175B model with significantly severe outliers, ours still gives enjoyable results, owning 32.5% upswings on HellaSwag task, 27.4% boost on PIQA. Results of BLOOM models indicate that their quantization challenges are less severe than OPTs with smaller accuracy ... Post-training quantization~(PTQ) of transformer language models faces significant challenges due to the existence of detrimental outliers in activations. We observe that these outliers are concentrated in specific channels and are asymmetric across channels. To address this issue, we propose the Outlier Suppression+~(OS+) framework, which contains the channel-wise shifting for asymmetry and channel-wise scaling for concentration. We show that these operations can be seamlessly migrated into subsequent modules while maintaining equivalence. Second, we propose a fast and stable scheme to calculate effective shifting and scaling values. The channel-wise shifting aligns the center of each channel for removal of outlier asymmetry. The channel-wise scaling quantitatively evaluates changes brought by migration and quantization for better quantization burden balance. We validate our OS+ under both standard and fine-grained quantization settings with models including BERT, OPT, BLOOM, BLOOMZ, and LLaMA. Comprehensive results across various tasks demonstrate the superiority of our approach. Especially, with standard quantization, OS+ can achieve near-floating-point performance on both small models and large language models on 8-bit and 6-bit. Besides, we establish a new state-of-the-art for 4-bit BERT with 15.5\\% improvement. Our code is available at \\url{https://github.com/ModelTC/Outli ... The Outlier Suppression+~(OS+) framework, which contains the channel-wise shifting for asymmetry and channel- wise scaling for concentration, can be seamlessly migrated into subsequent modules while maintaining equivalence and validated under both standard and fine-grained quantization set"
+      },
+      {
+        "paper_id": "268357772",
+        "markdown_evidence": "Our findings indicate that the impact of quantization varies significantly across different model families and sizes.The BLOOM and LLAMA model families exhibit greater robustness to quantization, while OPT models are more sensitive to quantization.Furthermore, we observe that the scale of the model is a crucial factor that affects the quality of quantization.Finally, we find that activation quantization has a significant effect on performance.\n\nTo account for the various factors that impact quantization, it is important to establish an analytical framework.This is where \"the lens of perturbation\" comes to play.We view quantization as the addition of small perturbations to the weights and/or  ... Quantization has emerged as a promising technique for improving the memory and computational efficiency of large language models (LLMs). Though the trade-off between performance and efficiency is well-known, there is still much to be learned about the relationship between quantization and LLM performance. To shed light on this relationship, we propose a new perspective on quantization, viewing it as perturbations added to the weights and activations of LLMs. We call this approach ``the lens of perturbation\". Using this lens, we conduct experiments with various artificial perturbations to explore their impact on LLM performance. Our findings reveal several connections between the properties of perturbations and LLM performance, providing insights into the failure cases of uniform quantization and suggesting potential solutions to improve the robustness of LLM quantization.\nTo demonstrate the significance of our findings, we implement a simple non-uniform quantization approach based on our insights. Our experiments show that this approach achieves minimal performance degradation on both 4-bit weight quantization and 8-bit quantization for weights and activations. These results validate the correctness of our approach and highlight its potential to improve the efficiency of LLMs without sacrificing performance. ... This work proposes a new perspective on quantization, viewing it as perturbations added to the weights and activations of LLMs, providing insights into the failure cases of uniform quantization and suggesting potential solutions to improve the robustness of LLM quantization."
+      },
+      {
+        "paper_id": "271083368",
+        "markdown_evidence": "Technique Performance Cost Scalability GPTQ [80] Achieves high accuracy with post-training quantization to 3 or 4 bits per parameter. \n\nReduces the bit width of the weights (down to 3 or 4 bits), significantly reducing the model size. \n\nAllows inference of large GPT models on a single GPU due to its compressed size. FPTQ [81] Achieves SOTA performance on popular LLMs (BLOOM, LLaMA) with 4-bit weights and 8-bit activations (W4A8). \n\nUtilizes a 4-bit weight quantization strategy, reduces the model size compared to full precision models. \n\nEnables deployment of LLMs on resource-constrained devices by achieving high-performance W4A8 quantization (low memory footprint) without sacrificing accurac ... In recent years, large language models (LLMs) have achieved remarkable success in natural language processing (NLP). LLMs require an extreme amount of parameters to attain high performance. As models grow into the trillion-parameter range, computational and memory costs increase significantly. This makes it difficult for many researchers to access the resources needed to train or apply these models. Optimizing LLM performance involves two main approaches: fine-tuning pre-trained models for specific tasks to achieve state-of-the-art performance, and reducing costs or improving training time while maintaining similar performance. This paper presents a systematic literature review (SLR) following the Preferred Reporting Items for Systematic Reviews and Meta-Analyses (PRISMA) statement. We reviewed 65 publications out of 983 from 2017 to December 2023, retrieved from 5 databases. The study presents methods to optimize and accelerate LLMs while achieving cutting-edge results without sacrificing accuracy. We begin with an overview of the development of language modeling, followed by a detailed explanation of commonly used frameworks and libraries, and a taxonomy for improving and speeding up LLMs based on three classes: LLM training, LLM inference, and system serving. We then delve into recent optimization and acceleration strategies such as training optimization, hardware optimizati ... This paper presents a systematic literature review (SLR) following the Preferred Reporting Items for Systematic Reviews and Meta-Analyses (PRISMA) statement, and presents methods to optimize and accelerate LLMs while achieving cutting-edge results without sacrificing accuracy."
+      },
+      {
+        "paper_id": "276117030",
+        "markdown_evidence": "The quantization of Large Language Models (LLMs) has emerged as a pivotal research area, driven by the imperative to reduce computational and memory demands while preserving model performance [Liu et al., 2023c, Dettmers et al., 2022, Xiao et al., 2022]. A notable trend is the quantization of LLMs to lower bit-widths [Ma et al., 2024, Kaushal et al., 2024]. \n\nInitial efforts, such as LLM.int8() [Dettmers et al., 2022] and SmoothQuant [Xiao et al., 2022], concentrated on quantizing LLMs to 8-bit weights and 8-bit activations. Subsequently, numerous studies have demonstrated the feasibility of quantizing LLMs to 4-bit with minimal accuracy degradation, employing both post-training quantization ... The optimal bit-width for achieving the best trade-off between quantized model size and accuracy has been a subject of ongoing debate. While some advocate for 4-bit quantization, others propose that 1.58-bit offers superior results. However, the lack of a cohesive framework for different bits has left such conclusions relatively tenuous. We present ParetoQ, the first unified framework that facilitates rigorous comparisons across 1-bit, 1.58-bit, 2-bit, 3-bit, and 4-bit quantization settings. Our findings reveal a notable learning transition between 2 and 3 bits: For 3-bits and above, the fine-tuned models stay close to their original pre-trained distributions, whereas for learning 2-bit networks or below, the representations change drastically. By optimizing training schemes and refining quantization functions, ParetoQ surpasses all previous methods tailored to specific bit widths. Remarkably, our ParetoQ ternary 600M-parameter model even outperforms the previous SoTA ternary 3B-parameter model in accuracy, using only one-fifth of the parameters. Extensive experimentation shows that ternary, 2-bit, and 3-bit quantization maintains comparable performance in the size-accuracy trade-off and generally exceeds 4-bit and binary quantization. Considering hardware constraints, 2-bit quantization offers promising potential for memory reduction and speedup. ... ParetoQ is presented, the first unified framework that facilitates rigorous comparisons across 1-bit, 1.58-bit, 2-bit, 3-bit, and 4-bit quantization settings and reveals a notable learning transition between 2 and 3 bits."
+      },
+      {
+        "paper_id": "270068353",
+        "markdown_evidence": "Notably, our work is the first to address integer-only quantization for LLMs, whereas all the methods we compare against in our experiments are not integer-only except I-Bert.Although this may seem somewhat unfair for us, I-LLM still demonstrates the superiority through its remarkable performance.\n\nFig 4 illustrates the efficacy of our 8-bit quantization technique on widely adopted large-scale language models.Despite SmoothQuant's prior success with 8-bit quantization, our approach demonstrates performance for each model that is closer to floating-point precision.This suggests that even with lowbit quantization using integer-only conditions (e.g., 8-bit), we can achieve performance comparabl ... Post-training quantization (PTQ) serves as a potent technique to accelerate the inference of large language models (LLMs). Nonetheless, existing works still necessitate a considerable number of floating-point (FP) operations during inference, including additional quantization and de-quantization, as well as non-linear operators such as RMSNorm and Softmax. This limitation hinders the deployment of LLMs on the edge and cloud devices. In this paper, we identify the primary obstacle to integer-only quantization for LLMs lies in the large fluctuation of activations across channels and tokens in both linear and non-linear operations. To address this issue, we propose I-LLM, a novel integer-only fully-quantized PTQ framework tailored for LLMs. Specifically, (1) we develop Fully-Smooth Block-Reconstruction (FSBR) to aggressively smooth inter-channel variations of all activations and weights. (2) to alleviate degradation caused by inter-token variations, we introduce a novel approach called Dynamic Integer-only MatMul (DI-MatMul). This method enables dynamic quantization in full-integer matrix multiplication by dynamically quantizing the input and outputs with integer-only operations. (3) we design DI-ClippedSoftmax, DI-Exp, and DI-Normalization, which utilize bit shift to execute non-linear operators efficiently while maintaining accuracy. The experiment shows that our I-LLM achieves  ... This work proposes I-LLM, a novel integer-only fully-quantized PTQ framework tailored for LLMs, and introduces a novel approach called Dynamic Integer-only MatMul (DI-MatMul), the first to bridge the gap between integer-only quantization and LLMs."
+      },
+      {
+        "paper_id": "269982661",
+        "markdown_evidence": "Quantization is one of the most adopted optimization techniques to compress LLMs to their extremity.Nevertheless, it becomes more challenging as we chase for the quantization of lower bit widths (e.g.4-bit, 2-bit, or binary), it faces more critical accuracy loss.It also requires efficient hardware-aware implementations that demand strenuous engineering effort.\n\nWeight-only Quantization.GPTQ [14] renovates OBQ [12] to obtain an approximate second-order method that compensates for the quantization error.AWQ [26] is a mixed-precision weight-only method that locates salient weight channels and searches for the corresponding optimal scales.Omniquant [41] introduces learnable weight clipping that  ... We introduce Integer Scale, a novel post-training quantization scheme for large language models that effectively resolves the inference bottleneck in current fine-grained quantization approaches while maintaining similar accuracies. Integer Scale is a free lunch as it requires no extra calibration or fine-tuning which will otherwise incur additional costs. It can be used plug-and-play for most fine-grained quantization methods. Its integration results in at most 1.85x end-to-end speed boost over the original counterpart with comparable accuracy. Additionally, due to the orchestration of the proposed Integer Scale and fine-grained quantization, we resolved the quantization difficulty for Mixtral-8x7B and LLaMA-3 models with negligible performance degradation, and it comes with an end-to-end speed boost of 2.13x, and 2.31x compared with their FP16 versions respectively. ... Integer Scale is a novel post-training quantization scheme for large language models that effectively resolves the inference bottleneck in current fine-grained quantization approaches while maintaining similar accuracies and is a free lunch as it requires no extra calibration or fine-tuning."
+      },
+      {
+        "paper_id": "275336258",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258841328",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268041618",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261339179",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273638521",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277620971",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265066991",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275820398",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266210416",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254853733",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272694046",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271720097",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259937594",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273404332",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267740313",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277627966",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272550783",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258999931",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275358312",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278164868",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278129868",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270878268",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278326880",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278500670",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276618110",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273963038",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268033066",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271218273",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276574918",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277786677",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221112343",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278501529",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273302528",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277999558",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272703964",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "49415838",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277197048",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "39867659",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233951938",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270380065",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264451753",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277405128",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269004480",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274234894",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277955075",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257913374",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269605694",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265019394",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258833451",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276421854",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274281148",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258179335",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276902966",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274859441",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273822014",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261557634",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259982476",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277104762",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268709609",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259375692",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277824213",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276450004",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266191568",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270062873",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276575417",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}
