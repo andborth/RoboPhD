@@ -9,6 +9,7 @@ Each round uses explicit session ID management (--session-id and --resume) to ma
 context while preventing interference from concurrent Claude Code sessions.
 """
 
+import ast
 import json
 import logging
 import os
@@ -29,6 +30,12 @@ from RoboPhD.config import CLAUDE_CLI_MODEL_MAP, build_evolution_env
 from utilities.claude_cli import call_claude_cli, claude_cli_settings, RateLimitExceeded
 
 logger = logging.getLogger(__name__)
+
+# Ceiling for a missing-file recovery call, which resumes a session that was
+# just killed and asks for a single file. Deliberately far below the evolution
+# timeout: resuming a SIGKILLed transcript can fail on an unmatched tool_use
+# block, and that failure should cost minutes, not another full round.
+_RECOVERY_TIMEOUT_S = 600
 
 EVOLUTION_ENVIRONMENT_GUIDE = """\
 # Evolution Environment
@@ -120,6 +127,11 @@ class DeepFocusEvolutionManager:
         self._file_mapping = getattr(domain, 'file_mapping', {}) if domain else {}
         self._task_objective = getattr(domain, 'task_objective', '') if domain else ''
         self._task_background = getattr(domain, 'task_background', '') if domain else ''
+
+        # Whether the most recent _call_claude_code hit its ceiling, as opposed
+        # to failing some other way. Round gates read it to decide whether
+        # on-disk artifacts deserve a look before the run is abandoned.
+        self._last_call_timed_out: bool = False
 
         # Set during evolve_agent() call
         self.working_dir: Optional[Path] = None
@@ -500,6 +512,8 @@ class DeepFocusEvolutionManager:
 
 ## Round 1: Analysis, Planning, and Implementation
 
+**Time budget:** this session is capped at {self.timeout // 60} minutes of wall clock.
+
 Based on the evolution strategy guidance above, please complete both steps below.
 
 ### Step 1: Analysis and Planning
@@ -537,7 +551,18 @@ After completing both steps, respond with: "ROUND 1 COMPLETE"
         )
 
         if not success:
-            raise RuntimeError("Round 1 (analysis, planning, and implementation) failed")
+            if not self._last_call_timed_out:
+                raise RuntimeError("Round 1 (analysis, planning, and implementation) failed")
+            # A session killed at its ceiling has often already written the
+            # deliverables and was polishing or self-testing when the clock ran
+            # out. Fall through to the verification below rather than discard
+            # the round: it checks the same artifacts a clean exit would, and
+            # recovers any that are missing.
+            logger.warning(
+                f"Round 1 timed out after {self.timeout}s — checking for usable "
+                f"artifacts on disk before abandoning the iteration"
+            )
+            self._require_artifacts_intact("Round 1 timed out")
 
         # Verify reasoning.md was created
         reasoning_file = self.working_dir / "reasoning.md"
@@ -908,6 +933,8 @@ Your new agent's per-problem output:
         prompt = f"""
 ## Round {round_num}: Testing and Refinement
 
+**Time budget:** this session is capped at {self.timeout // 60} minutes of wall clock.
+
 Your agent was tested on data from iteration {test_iteration}.
 
 ### Results
@@ -931,7 +958,19 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
         )
 
         if not success:
-            raise RuntimeError(f"Round {round_num} (refinement) failed")
+            if not self._last_call_timed_out:
+                raise RuntimeError(f"Round {round_num} (refinement) failed")
+            # Refinement edits artifacts Round 1 already wrote, so a timeout
+            # here leaves either the previous version or a partially-edited
+            # one — never a missing file, which is the only thing recovery
+            # fixes. The parse check is the whole guard: it keeps a truncated
+            # mid-edit artifact out of the pool while letting a merely
+            # half-refined one through for Elo to judge.
+            logger.warning(
+                f"Round {round_num} timed out after {self.timeout}s — keeping the "
+                f"artifacts on disk if they are intact"
+            )
+            self._require_artifacts_intact(f"Round {round_num} timed out")
 
         logger.info(f"✓ Round {round_num} refinement complete")
 
@@ -993,7 +1032,8 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
         self,
         prompt: str,
         continue_session: bool,
-        expected_completion: Optional[str]
+        expected_completion: Optional[str],
+        timeout_override: Optional[int] = None
     ) -> bool:
         """
         Call Claude Code CLI with the given prompt.
@@ -1002,10 +1042,20 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             prompt: Prompt to send to Claude Code
             continue_session: Whether to resume existing session (True) or create new (False)
             expected_completion: Expected completion message (None = don't check)
+            timeout_override: Seconds to allow instead of the evolution timeout.
 
         Returns:
             True if call succeeded, False otherwise
+
+        On a False return, ``self._last_call_timed_out`` distinguishes a
+        timeout from every other failure. Callers use it to decide whether
+        artifacts on disk are worth inspecting: a session killed at its
+        ceiling may have written usable work, whereas a CLI that never
+        launched has no claim on whatever happens to be there.
         """
+        self._last_call_timed_out = False
+        timeout = timeout_override or self.timeout
+
         # Build command
         claude_cli = self._get_claude_cli_path()
         # Map API model name to Claude CLI name (e.g., 'sonnet-4.5' -> 'sonnet')
@@ -1043,7 +1093,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             result = call_claude_cli(
                 cmd=cmd,
                 cwd=self.working_dir,
-                timeout=self.timeout,
+                timeout=timeout,
                 logger=logger,
                 extra_env=extra_env
             )
@@ -1081,7 +1131,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
                         retry_result = call_claude_cli(
                             cmd=retry_cmd,
                             cwd=self.working_dir,
-                            timeout=self.timeout,
+                            timeout=timeout,
                             logger=logger,
                             extra_env=extra_env
                         )
@@ -1139,7 +1189,7 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             output = (e.stdout or "") + (e.stderr or "")
             if expected_completion and expected_completion in output:
                 logger.warning(
-                    f"Claude Code timed out after {self.timeout}s but completion "
+                    f"Claude Code timed out after {timeout}s but completion "
                     f"marker found in stdout — treating as success"
                 )
                 return True
@@ -1148,11 +1198,12 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
             # marker. Fall back to the on-disk session transcript.
             if expected_completion and self._marker_in_transcript(expected_completion):
                 logger.warning(
-                    f"Claude Code timed out after {self.timeout}s but completion "
+                    f"Claude Code timed out after {timeout}s but completion "
                     f"marker found in session transcript — treating as success"
                 )
                 return True
-            logger.error(f"Claude Code call timed out after {self.timeout}s")
+            self._last_call_timed_out = True
+            logger.error(f"Claude Code call timed out after {timeout}s")
             return False
         except RateLimitExceeded as e:
             # Let rate limit exceeded propagate for checkpoint/exit handling
@@ -1288,6 +1339,38 @@ After refinements, respond with: "ROUND {round_num} COMPLETE"
         logger.info(f"Final artifacts verified: {len(artifact_paths)} files")
 
         return artifact_paths
+
+    def _require_artifacts_intact(self, context: str) -> None:
+        """Raise if an artifact exists on disk but is truncated or unparseable.
+
+        Missing files are deliberately not this method's business —
+        ``_recover_missing_file`` can recreate those. This guards the case a
+        kill creates and recovery cannot detect: a file that is present,
+        non-empty, and corrupt. A half-written ``agent.py`` is worse than an
+        absent one, because it imports cleanly right up to the truncation
+        point and then fails somewhere unrelated.
+
+        Raises:
+            RuntimeError: if any present artifact is empty or, for Python
+                sources, does not parse.
+        """
+        for rel_path in self._file_mapping.values():
+            artifact = self.working_dir / rel_path
+            if not artifact.exists():
+                continue
+            if artifact.stat().st_size == 0:
+                raise RuntimeError(
+                    f"{context}: {rel_path} exists but is empty — "
+                    f"refusing to treat a truncated artifact as usable"
+                )
+            if artifact.suffix == ".py":
+                try:
+                    ast.parse(artifact.read_text())
+                except SyntaxError as e:
+                    raise RuntimeError(
+                        f"{context}: {rel_path} exists but does not parse "
+                        f"({e}) — refusing to treat a truncated artifact as usable"
+                    ) from e
 
     def _marker_in_transcript(self, marker: str) -> bool:
         """Return True if the marker appears in an assistant text block
@@ -1448,11 +1531,17 @@ Please ensure `{filename}` exists at the exact path specified above. If it exist
 Respond with "FILE READY" when `{filename}` exists at `{expected_path.resolve()}`.
 """
 
-        # Make recovery call (cost tracked automatically via _call_claude_code)
+        # Make recovery call (cost tracked automatically via _call_claude_code).
+        # Bounded well below the evolution timeout: this asks for one file, and
+        # when it follows a timeout it is resuming a session that was killed
+        # mid-turn, which can fail outright. Neither case should cost another
+        # full round. The prompt deliberately does not mention the budget — a
+        # stated allowance invites a single file write to fill it.
         success = self._call_claude_code(
             prompt=recovery_prompt,
             continue_session=True,  # Continue same session
-            expected_completion="FILE READY"
+            expected_completion="FILE READY",
+            timeout_override=_RECOVERY_TIMEOUT_S
         )
 
         # Verify file is now in correct location
