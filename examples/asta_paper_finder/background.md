@@ -224,7 +224,4 @@ Grade 2 ("Highly Relevant") exists only as this threshold band, never as a judge
 
 Any `print()` output from the agent is captured and included in evaluation diagnostics as `agent_stdout`. Use `print()` to log anything you think would be helpful for you to see when improving the agent in later rounds.
 
-**Session-side corpus access (yours, not the agent's).** Two read-only surfaces are available to you for analysis; neither may appear in agent code — the agent's only corpus access is `state.tools` (see the Standard Tools constraint).
-
-- **The tool probe** — `python ../../session_tools/tool_probe.py` from your workspace — calls the same Asta MCP corpus tools through the same task-side wrappers the evaluation applies (same snapshot date-cutoff, same field defaults, same retry behavior), so its output is exactly what your agent's own tool call would return. `--list` prints the eight tools and their parameters; arguments are `key=value` pairs, e.g. `python ../../session_tools/tool_probe.py search_papers_by_relevance keyword="sparse attention" limit=5`.
-- **The public Semantic Scholar API** (`api.semanticscholar.org`) — the live world-view, useful precisely where the probe's snapshot view is not: resolving gold `corpus_id`s to titles and publication dates, or checking whether an id postdates the snapshot. Batch every id into one call (`POST /graph/v1/paper/batch` with ids like `CorpusId:123`); unauthenticated per-id calls hit the rate limit. Its records are live and can differ from what the tools return.
+${SESSION_ACCESS_NOTE}

@@ -1265,25 +1265,9 @@ class ParallelAgentResearcher:
         print(f"🎲 Random seed: {self.random_seed}")
     
     def _materialize_session_tools(self, paths: Optional[List[str]]) -> None:
-        """Copy session helper scripts into ``<experiment>/session_tools/``.
-
-        The directory sits inside the evolution sessions' read scope but
-        outside their per-iteration write root, so sessions can run the
-        scripts but not modify them. Copies overwrite on every startup so
-        resumed runs pick up repo-side fixes; a missing source file is a
-        hard error rather than a silently thinner toolset.
-        """
-        if not paths:
-            return
-        dest_dir = self.experiment_dir / "session_tools"
-        dest_dir.mkdir(parents=True, exist_ok=True)
-        for p in paths:
-            src = Path(p)
-            if not src.is_file():
-                raise FileNotFoundError(
-                    f"session_tools entry does not exist or is not a file: {p}"
-                )
-            shutil.copy2(src, dest_dir / src.name)
+        """Copy session helper scripts into ``<experiment>/session_tools/``."""
+        from RoboPhD.session_tools import materialize_session_tools
+        materialize_session_tools(self.experiment_dir, paths)
 
     def _load_data(self):
         """Load questions and databases using domain abstraction."""

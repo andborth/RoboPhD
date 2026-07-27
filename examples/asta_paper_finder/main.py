@@ -870,6 +870,40 @@ def main():
 
     cost_penalty_table = _build_cost_penalty_table(cost_threshold, cost_per_error)
 
+    # Session-side analysis surfaces, per engine: RoboPhD and autoresearch
+    # sessions have a shell (session_tools path differs by workspace
+    # depth); GEPA's reflection pass has none, so it gets no note at all.
+    if args.engine == "gepa":
+        session_access_note = ""
+    else:
+        tools_rel = ("../session_tools" if args.engine == "autoresearch"
+                     else "../../session_tools")
+        session_access_note = (
+            "**Session-side corpus access (yours, not the agent's).** Two "
+            "read-only surfaces are available to you for analysis; neither "
+            "may appear in agent code — the agent's only corpus access is "
+            "`state.tools` (see the Standard Tools constraint).\n"
+            "\n"
+            f"- **The tool probe** — `python {tools_rel}/tool_probe.py` from "
+            "your workspace — calls the same Asta MCP corpus tools through "
+            "the same task-side wrappers the evaluation applies (same "
+            "snapshot date-cutoff, same field defaults, same retry "
+            "behavior), so its output is exactly what your agent's own tool "
+            "call would return. `--list` prints the eight tools and their "
+            "parameters; arguments are `key=value` pairs, e.g. `python "
+            f"{tools_rel}/tool_probe.py search_papers_by_relevance "
+            'keyword="sparse attention" limit=5`.\n'
+            "- **The public Semantic Scholar API** "
+            "(`api.semanticscholar.org`) — the live world-view, useful "
+            "precisely where the probe's snapshot view is not: resolving "
+            "gold `corpus_id`s to titles and publication dates, or checking "
+            "whether an id postdates the snapshot. Batch every id into one "
+            "call (`POST /graph/v1/paper/batch` with ids like "
+            "`CorpusId:123`); unauthenticated per-id calls hit the rate "
+            "limit. Its records are live and can differ from what the "
+            "tools return."
+        )
+
     def _interpolate(text: str) -> str:
         return (
             text
@@ -881,6 +915,8 @@ def main():
             # Floored & buffer-aware so the doc never over-promises the
             # wall-clock the agent actually gets.
             .replace("${EVAL_TIMEOUT_MIN}", str((EVAL_TIMEOUT - 30) // 60))
+            # Per-engine session-access note (empty for GEPA — no shell).
+            .replace("${SESSION_ACCESS_NOTE}", session_access_note)
             # Enforced-cap contract line (empty when the cap is off, so the
             # docs never describe an unenforced constraint).
             .replace("${EVIDENCE_CAP_NOTE}", (
@@ -1095,6 +1131,9 @@ def main():
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
             eval_timeout=EVAL_TIMEOUT,
+            # Copied into <output_dir>/session_tools/ at startup; the
+            # session reads it from the workspace at ../session_tools/.
+            session_tools=[str(HERE / "tool_probe.py")],
         )
         cfg = apply_engine_config(cfg, parsed_engine_config)
         dataset = train

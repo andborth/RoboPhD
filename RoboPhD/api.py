@@ -292,6 +292,12 @@ class AutoresearchConfig:
     parent_experiments_dir: Union[str, Path, None] = None
     """Root directory for experiment output. None = ``../robophd_runs``."""
 
+    session_tools: Optional[List[str]] = None
+    """Files copied into ``<output_dir>/session_tools/`` at run startup
+    as helper scripts for the autonomous session (readable/runnable from
+    the workspace at ``../session_tools/``, outside its write root). A
+    missing source file fails loudly."""
+
 
 _TASK_CONFIG_RESERVED_KEYS = ("file_mapping", "objective", "background")
 

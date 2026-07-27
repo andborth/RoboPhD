@@ -209,6 +209,11 @@ def run_autoresearch(
     output_dir = run_dir / "autoresearch" / f"{task_name}_{timestamp}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Session helper scripts: readable from the workspace at
+    # ../session_tools/, outside its write root.
+    from RoboPhD.session_tools import materialize_session_tools
+    materialize_session_tools(output_dir, cfg.session_tools)
+
     # Build train/val split
     trainset, valset = build_val_split(
         dataset, cfg.val_dataset, cfg.val_size, cfg.seed,
@@ -262,10 +267,14 @@ def run_autoresearch(
     from utilities.claude_cli import claude_cli_settings
 
     install_evolution_sandbox(workspace)
-    # Read scope and write scope are both the workspace: the agent edits the
-    # candidate files in place there and evaluates via the localhost EvalServer,
-    # so it never legitimately needs to read outside the workspace.
-    sandbox_env = build_evolution_env(cfg.model, workspace, workspace)
+    # Write scope is the workspace: the agent edits the candidate files in
+    # place there and evaluates via the localhost EvalServer. Read scope is
+    # also the workspace — unless the task ships session_tools, which land
+    # one level up at <output_dir>/session_tools/ and must be readable
+    # (still outside the write root, so the session can run but not
+    # modify them).
+    read_root = output_dir if cfg.session_tools else workspace
+    sandbox_env = build_evolution_env(cfg.model, read_root, workspace)
     # autoCompact + Read(/<repo>/**) deny, matching the RoboPhD evolution
     # session. The hook above is the robust layer (covers Bash); this closes the
     # agent's Read tool as defense in depth.

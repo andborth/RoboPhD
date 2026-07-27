@@ -62,13 +62,17 @@ def test_main_help_and_key_guard(monkeypatch, capsys):
 
 
 def test_shipped_filename_consistent_across_docs():
-    """Anti-staleness guard: the filename main.py ships must exist and be
-    the same one background.md tells sessions to run."""
+    """Anti-staleness guard: the filename shipped via session_tools must
+    exist, ship on BOTH shell-bearing engines (RoboPhD + autoresearch),
+    and be the one the interpolated session-access note tells sessions
+    to run."""
     main_src = (HERE / "main.py").read_text()
-    match = re.search(r'session_tools=\[str\(HERE / "([^"]+)"\)\]', main_src)
-    assert match, "main.py no longer ships session_tools"
-    shipped = match.group(1)
+    shipped = re.findall(r'session_tools=\[str\(HERE / "([^"]+)"\)\]', main_src)
+    assert len(shipped) == 2, "expected RoboPhD + Autoresearch to ship session_tools"
+    assert set(shipped) == {"tool_probe.py"}
+    assert (HERE / "tool_probe.py").is_file()
 
-    assert (HERE / shipped).is_file()
-    background = (HERE / "background.md").read_text()
-    assert f"session_tools/{shipped}" in background
+    # The note text references the shipped script, and background.md
+    # carries the placeholder the note lands in.
+    assert "/tool_probe.py" in main_src
+    assert "${SESSION_ACCESS_NOTE}" in (HERE / "background.md").read_text()
