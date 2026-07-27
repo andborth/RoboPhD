@@ -319,8 +319,3 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 
 Both RoboPhD entries are under review concurrently: v0_0_7 (0.3749 @
 $0.0533) and this one (0.2205 @ $0.0059).
-
-The submitted form text says "five times under its own cap" where the
-exact figure is 5.5× ($0.033 / $0.005943). Noted so the public
-description and these records can be reconciled later; everything else in
-the form matches what is written here.
