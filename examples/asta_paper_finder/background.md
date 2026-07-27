@@ -80,7 +80,7 @@ def parse_items(raw):
 | `search_authors_by_name` | `name` (str), `fields` (str), `limit` (int) | author records with `authorId`, `name`, `paperCount` |
 | `get_author_papers` | `author_id` (str), `paper_fields` (str), `limit` (int) | an author's papers |
 
-**Requestable `fields`** (verified; applies to the paper search/get tools): `abstract`, `authors`, `citations`, `corpusId`, `externalIds`, `fieldsOfStudy`, `isOpenAccess`, `journal`, `publicationDate`, `references`, `tldr`, `url`, `venue`, `year`. `paperId` and `title` are always returned. `tldr` is an auto-generated one-sentence summary of the paper — useful raw material for `markdown_evidence`. `citations`/`references` return nested arrays and can be heavy. An invalid field name raises a tool error (with an unhelpful message), so stick to this list.
+**Requestable `fields`** (verified; applies to the paper search/get tools): `abstract`, `authors`, `citationCount`, `citations`, `corpusId`, `externalIds`, `fieldsOfStudy`, `influentialCitationCount`, `isOpenAccess`, `journal`, `publicationDate`, `referenceCount`, `references`, `tldr`, `url`, `venue`, `year`. `paperId` and `title` are always returned. `tldr` is an auto-generated one-sentence summary of the paper — useful raw material for `markdown_evidence`. `citations`/`references` return nested arrays and can be heavy. An invalid field name raises a tool error (with an unhelpful message), so stick to this list.
 
 ### Search semantics (verified against the live server)
 
