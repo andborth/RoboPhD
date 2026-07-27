@@ -94,6 +94,14 @@ class RoboPhDConfig:
     ``RoboPhD/benchmark_resources``). Read-only — does not grant write
     permission."""
 
+    session_tools: Optional[List[str]] = None
+    """Files copied into ``<experiment>/session_tools/`` at researcher
+    startup as helper scripts for evolution sessions (inside the
+    sessions' read scope, outside their write root). Copied on fresh
+    starts AND resumes — a resumed run picks up repo-side fixes — and a
+    missing source file fails loudly. Not persisted in the checkpoint;
+    re-supply on every invocation, like ``extra_read_paths``."""
+
     # Task-specific persistence
     task_config_extras: Optional[Dict[str, Any]] = None
     """Caller-owned keys merged into the run's ``task_config``, which the
@@ -590,6 +598,7 @@ def optimize_anything(
             "runs_dir": str(run_dir),
             "eval_timeout": cfg.eval_timeout,
             "extra_read_paths": cfg.extra_read_paths,
+            "session_tools": cfg.session_tools,
         }
 
         researcher = ParallelAgentResearcher(
@@ -650,6 +659,7 @@ def optimize_anything(
             "runs_dir": str(run_dir),
             "eval_timeout": cfg.eval_timeout,
             "extra_read_paths": cfg.extra_read_paths,
+            "session_tools": cfg.session_tools,
         }
 
         # Persist objective/background in task_config so they survive

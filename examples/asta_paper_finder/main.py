@@ -1108,6 +1108,11 @@ def main():
             meta_evolution_strategy=args.meta_evolution_strategy,
             engine_overrides=engine_overrides,
             eval_timeout=EVAL_TIMEOUT,
+            # Copied into <experiment>/session_tools/ at startup (fresh
+            # and resume): read-only helper scripts for evolution
+            # sessions. tool_probe.py gives sessions an agent-identical
+            # view of the corpus tools (same cutoff/wrapper stack).
+            session_tools=[str(HERE / "tool_probe.py")],
             # Persisted into checkpoint.json's task_config every iteration,
             # so the knobs survive any interruption that leaves a resumable
             # checkpoint. On resume this is the same values re-resolved

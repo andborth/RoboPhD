@@ -866,6 +866,18 @@ class ParallelAgentEvolver:
             clean_name = agent_name.replace('agent_', '')
             lines.append(f"- {agent_name} (source: ../../agents/{clean_name}/)")
 
+        # List session helper scripts, when the task ships any
+        tools_dir = self.experiment_dir / "session_tools"
+        if tools_dir.is_dir():
+            scripts = sorted(f.name for f in tools_dir.iterdir() if f.is_file())
+            if scripts:
+                lines.append("")
+                lines.append(
+                    "Session helper scripts (read-only; run with e.g. "
+                    "`python ../../session_tools/<script>`): "
+                    + ", ".join(scripts)
+                )
+
         return "\n".join(lines)
     
     def _get_previous_iteration_summary(self, iteration: int, test_history: List) -> str:
@@ -1192,6 +1204,12 @@ class ParallelAgentResearcher:
         if not hasattr(self, 'dev_eval_mode'):
             self.dev_eval_mode = dev_eval_mode
 
+        # Materialize session helper scripts on fresh starts AND resumes,
+        # after both branches have set experiment_dir.
+        self._materialize_session_tools(
+            (runtime_config or {}).get("session_tools")
+        )
+
         # Initialize evolver (will be recreated per iteration with current config)
         # For now, create with iteration 1 config - run() will recreate per iteration
         self.evolver = ParallelAgentEvolver(
@@ -1246,6 +1264,27 @@ class ParallelAgentResearcher:
         print(f"📂 Experiment directory: {self.experiment_dir}")
         print(f"🎲 Random seed: {self.random_seed}")
     
+    def _materialize_session_tools(self, paths: Optional[List[str]]) -> None:
+        """Copy session helper scripts into ``<experiment>/session_tools/``.
+
+        The directory sits inside the evolution sessions' read scope but
+        outside their per-iteration write root, so sessions can run the
+        scripts but not modify them. Copies overwrite on every startup so
+        resumed runs pick up repo-side fixes; a missing source file is a
+        hard error rather than a silently thinner toolset.
+        """
+        if not paths:
+            return
+        dest_dir = self.experiment_dir / "session_tools"
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        for p in paths:
+            src = Path(p)
+            if not src.is_file():
+                raise FileNotFoundError(
+                    f"session_tools entry does not exist or is not a file: {p}"
+                )
+            shutil.copy2(src, dest_dir / src.name)
+
     def _load_data(self):
         """Load questions and databases using domain abstraction."""
         # Use full resolved config so domain gets all fields (coder_model, codegen_split, etc.)
