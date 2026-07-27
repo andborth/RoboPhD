@@ -221,7 +221,72 @@ def _install_safe_judge_cache() -> None:
     _pf_eval.update_references = _safe_update_references
 
 
+def _install_tool_transport_hardening() -> None:
+    """Patch astabench's tool transport, in this process's namespaces only
+    (no astabench file on disk is touched; official `astabench eval`
+    submissions run stock code in a separate process and never see this).
+
+    Two patches, motivated by run asta_paper_finder_20260724_193339
+    (iterations 9-11: HTTP 500 burst windows from the shared Asta MCP
+    endpoint — 100+ tool errors in one 14-query batch, exact-match queries
+    zeroed when every retrieval probe died inside one window):
+
+    1. `_is_retryable_error`: upstream retries only {429, 529, 504}. 500s
+       arrive in contention windows and are transient, so 500/502/503 are
+       added. Resolved as a module global inside the retry loop, so the
+       patch reaches wrappers created before or after install.
+    2. `make_retry_wrapper`: each underlying attempt first acquires a
+       global per-endpoint launch slot (tool_pacer; ~8 launches/s shared
+       across ALL eval subprocesses via PF_TOOL_PACER_PATH). Pacing sits
+       INSIDE the retry ladder so retries are paced too — retries during
+       a burst are otherwise the biggest burst amplifier. Per-agent
+       self-throttles cannot do this: no agent can see the other workers.
+
+    Idempotent via marker attributes; signature of make_retry_wrapper is
+    preserved (the transport docs pin test inspects it).
+    """
+    import functools
+
+    from astabench.tools import asta_tools as _at
+
+    import tool_pacer as _tp
+
+    if getattr(_at.make_retry_wrapper, "_robophd_paced", False):
+        return
+
+    _orig_retryable = _at._is_retryable_error
+    _orig_make_retry_wrapper = _at.make_retry_wrapper
+    _RETRYABLE_5XX = {500, 502, 503}
+
+    def _retryable_with_5xx(error: Exception) -> bool:
+        import httpx
+        for leaf in _at._unravel_exception_group(error):
+            if isinstance(leaf, httpx.HTTPStatusError) and hasattr(leaf, "response"):
+                if leaf.response.status_code in _RETRYABLE_5XX:
+                    return True
+                break  # defer non-5xx status decisions to upstream
+        return _orig_retryable(error)
+
+    @functools.wraps(_orig_make_retry_wrapper)
+    def _paced_make_retry_wrapper(td, *args, **kwargs):
+        orig_call = td.tool
+        name = td.name
+
+        async def _paced(*a, **kw):
+            await _tp.pace(name)
+            return await orig_call(*a, **kw)
+
+        td.tool = _paced
+        return _orig_make_retry_wrapper(td, *args, **kwargs)
+
+    _retryable_with_5xx._robophd_5xx = True  # type: ignore[attr-defined]
+    _paced_make_retry_wrapper._robophd_paced = True  # type: ignore[attr-defined]
+    _at._is_retryable_error = _retryable_with_5xx
+    _at.make_retry_wrapper = _paced_make_retry_wrapper
+
+
 _install_safe_judge_cache()
+_install_tool_transport_hardening()
 # Install AFTER the safe cache writer so the grounded judge's dynamic
 # update_references lookup resolves to the multiprocess-safe version.
 grounding.install_grounded_judge()
@@ -833,6 +898,11 @@ def _tool_failure_summary(exc: BaseException) -> str | None:
             code = leaf.response.status_code
             if code == 429:
                 return "HTTP 429 rate-limited (retry budget exhausted)"
+            if code in (500, 502, 503):
+                return (
+                    f"HTTP {code} server error (retried with backoff; "
+                    f"retry budget exhausted)"
+                )
             return f"HTTP {code}"
         if isinstance(leaf, httpx.TimeoutException):
             return f"transport timeout ({type(leaf).__name__})"

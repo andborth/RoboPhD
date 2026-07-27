@@ -103,7 +103,7 @@ For information — the layers a corpus tool call passes through, bottom-up. In 
 
 1. **Connect: 5 s** to establish the HTTP connection to the MCP server.
 2. **Response read: 300 s** — the per-call ceiling. A call whose response takes longer (cold `snippet_search` is the usual case) raises, without retry.
-3. **Automatic retries on transient errors**: HTTP 429/529/504 and broken connections are retried with exponential backoff (up to 10 attempts, ~5 minutes of accumulated waiting worst-case; no overall per-call deadline). The backend enforces a rate limit of **10 requests/second per endpoint**, shared by everything using the key at once — including other concurrently running evaluations — so sustained bursts convert into backoff latency here rather than errors.
+3. **Automatic retries on transient errors**: HTTP 429/529/504 and server errors (500/502/503) and broken connections are retried with exponential backoff (up to 10 attempts, ~5 minutes of accumulated waiting worst-case; no overall per-call deadline). The backend enforces a rate limit of **10 requests/second per endpoint**, shared by everything using the key at once — including other concurrently running evaluations — so sustained bursts convert into backoff latency here rather than errors.${TOOL_LAUNCH_NOTE}
 4. **The per-query wall-clock budget** ("Time budget" below) is the only other deadline anywhere in the stack.
 
 A call that still fails raises into your code with the root cause named in the exception message (e.g. `HTTP 429 rate-limited (retry budget exhausted)`, a transport timeout, or a broken connection).

@@ -73,9 +73,20 @@ logger = logging.getLogger(__name__)
 # Framework default for parallel eval workers. Single source of truth in
 # code: referenced from both --max-workers' resolution logic AND its
 # argparse help text (via f-string). The Asta MCP rate limit is 10 req/s
-# per endpoint on the default key; each worker's agent typically issues
-# a few tool calls per query, so 8 workers sits comfortably under it.
+# per endpoint on the default key; aggregate launch rate across workers is
+# governed by the global tool-call pacer (DEFAULT_TOOL_LAUNCH_RATE below),
+# so workers mainly trade wall-clock overlap, not endpoint budget.
 DEFAULT_MAX_WORKERS = 8
+
+# Global tool-call launch pacer: launches/second per endpoint, shared by
+# ALL concurrently evaluating agents (cross-process slot state under
+# --runs-dir; see tool_pacer.py). 8.0 leaves headroom under the endpoint's
+# documented 10 req/s. <= 0 disables pacing. Rationale: 8 workers x
+# per-agent concurrency aggregated to ~56 req/s in run 20260724_193339,
+# and the overrun surfaced as HTTP 500 burst windows that zeroed
+# exact-match queries; per-agent self-throttles cannot bound the
+# aggregate because no agent can see the other workers.
+DEFAULT_TOOL_LAUNCH_RATE = 8.0
 
 DEFAULT_NUM_ITERATIONS = 999
 # Default evaluation budget (max fresh evaluator calls across all
@@ -508,6 +519,13 @@ def parse_args():
                         f"limit (10 req/s per endpoint) is the ceiling to "
                         f"watch when raising this."
                         "%(default).0s")  # suppress argparse's auto "(default: None)"
+    p.add_argument("--tool-launch-rate", type=float, default=DEFAULT_TOOL_LAUNCH_RATE,
+                   help="Global Asta MCP tool-call launch pacer: launches/second "
+                        "per endpoint, shared across ALL concurrent eval "
+                        "subprocesses (slot state under --runs-dir/.tool_pacer). "
+                        "Bounds launches, not in-flight calls, so slow responses "
+                        "still overlap. <= 0 disables pacing. "
+                        "(default: %(default)s)")
     p.add_argument("--runs-dir", default="../robophd_runs",
                    help="Root directory for experiment output (default: %(default)s)")
     p.add_argument("--cap-judge-to-estimate", action=argparse.BooleanOptionalAction,
@@ -606,6 +624,23 @@ def parse_args():
 
 def main():
     args = parse_args()
+
+    # Global tool-call launch pacer, configured before ANY evaluator work so
+    # training, --eval-only, and --eval-test-set paths all inherit it. Env
+    # vars are the one channel that crosses the per-sample subprocess
+    # boundary (Popen inherits the parent env; see evaluator.py's env-var
+    # note). The slot-state file lives under --runs-dir so concurrent runs
+    # on this host share the launch budget — correct, since they share the
+    # API key. Deliberately NOT run-immutable: pacing is evaluation
+    # infrastructure, not task definition.
+    import tool_pacer
+    os.environ[tool_pacer.ENV_RATE] = str(args.tool_launch_rate)
+    if args.tool_launch_rate > 0:
+        os.environ[tool_pacer.ENV_PATH] = str(
+            Path(args.runs_dir) / ".tool_pacer" / "launch_slots.json"
+        )
+    else:
+        os.environ.pop(tool_pacer.ENV_PATH, None)
 
     from evaluator import (
         CACHE_PATH_ENV,
@@ -854,6 +889,17 @@ def main():
                 f"text past the cap earns nothing (clipped papers are "
                 f"listed per-problem in `evidence_truncation.md`)."
                 if evidence_char_cap > 0 else ""
+            ))
+            # Global launch-pacer contract line (empty when pacing is off,
+            # so the docs never describe an unenforced constraint).
+            .replace("${TOOL_LAUNCH_NOTE}", (
+                f" The harness additionally serializes tool-call LAUNCHES at "
+                f"{args.tool_launch_rate:g}/second per endpoint, shared "
+                f"across every agent evaluating concurrently — a call may "
+                f"wait briefly before launching. Pacing bounds the launch "
+                f"rate, not the number of in-flight calls, so slow responses "
+                f"still overlap."
+                if args.tool_launch_rate > 0 else ""
             ))
         )
 

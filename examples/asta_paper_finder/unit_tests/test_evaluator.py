@@ -708,6 +708,96 @@ def test_wrapped_tool_reraises_with_named_cause(ev_mod):
         asyncio.run(wrapped(query="x"))
 
 
+def _leaf_status(code: int):
+    import httpx
+    req = httpx.Request("GET", "https://asta-tools.allen.ai/mcp/v1")
+    resp = httpx.Response(code, request=req)
+    return httpx.HTTPStatusError(str(code), request=req, response=resp)
+
+
+def test_transport_hardening_makes_5xx_retryable(ev_mod):
+    """The evaluator's import-time monkeypatch extends astabench's
+    retryable set with 500/502/503 (contention-window server errors —
+    run asta_paper_finder_20260724_193339). 429 stays retryable, 404
+    stays fatal, BrokenResourceError keeps upstream's blind retry."""
+    import anyio
+    from astabench.tools import asta_tools
+
+    assert getattr(asta_tools._is_retryable_error, "_robophd_5xx", False)
+    for code in (500, 502, 503, 429, 529, 504):
+        assert asta_tools._is_retryable_error(
+            ExceptionGroup("g", [_leaf_status(code)])
+        ), f"{code} should be retryable"
+    assert not asta_tools._is_retryable_error(_leaf_status(404))
+    assert asta_tools._is_retryable_error(anyio.BrokenResourceError())
+
+
+def test_transport_hardening_idempotent(ev_mod):
+    from astabench.tools import asta_tools
+
+    before = asta_tools.make_retry_wrapper
+    ev_mod._install_tool_transport_hardening()
+    assert asta_tools.make_retry_wrapper is before
+
+
+def test_transport_hardening_preserves_retry_wrapper_signature(ev_mod):
+    """test_transport_docs_match_astabench_defaults inspects the retry
+    wrapper's defaults; functools.wraps must keep them reachable."""
+    import inspect as pyinspect
+    from astabench.tools import asta_tools
+
+    sig = pyinspect.signature(asta_tools.make_retry_wrapper)
+    assert sig.parameters["max_retries"].default == 10
+
+
+def test_retry_wrapper_paces_every_attempt(ev_mod, monkeypatch):
+    """Pacing sits INSIDE the retry ladder: each underlying attempt
+    acquires a launch slot, so retries during a burst are paced too."""
+    import asyncio
+
+    import tool_pacer
+    from astabench.tools import asta_tools
+    from inspect_ai.tool import ToolDef
+
+    paced_names = []
+
+    async def _fake_pace(name, rate=None):
+        paced_names.append(name)
+
+    monkeypatch.setattr(tool_pacer, "pace", _fake_pace)
+
+    calls = {"n": 0}
+
+    async def search_papers(query: str) -> str:
+        """Search for papers.
+
+        Args:
+            query: The search query.
+
+        Returns:
+            Search results.
+        """
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise _leaf_status(500)
+        return "ok"
+
+    td = ToolDef(search_papers)
+    td.tool = asta_tools.make_retry_wrapper(td, base_delay=0.01, max_delay=0.02)
+    result = asyncio.run(td.tool(query="x"))
+    assert result == "ok"
+    assert calls["n"] == 3            # 500s were retried (patched set)
+    assert len(paced_names) == 3      # ...and every attempt was paced
+    assert set(paced_names) == {"search_papers"}
+
+
+def test_tool_failure_summary_labels_5xx(ev_mod):
+    eg = ExceptionGroup("outer", [_leaf_status(500)])
+    assert ev_mod._tool_failure_summary(eg) == (
+        "HTTP 500 server error (retried with backoff; retry budget exhausted)"
+    )
+
+
 def test_wrapped_tool_propagates_cancellation_group(ev_mod):
     """A BaseExceptionGroup carrying cancellation is not an Exception and
     must pass through untouched — rewriting it would break asyncio's
@@ -744,7 +834,10 @@ def test_transport_docs_match_astabench_defaults(ev_mod):
 
     background = (PFB_DIR / "background.md").read_text()
     for needle in ("**Connect: 5 s**", "**Response read: 300 s**",
-                   "up to 10 attempts", "10 requests/second"):
+                   "up to 10 attempts", "10 requests/second",
+                   # transport hardening (evaluator monkeypatch): 5xx retry
+                   # and the global launch pacer's contract line.
+                   "server errors (500/502/503)", "${TOOL_LAUNCH_NOTE}"):
         assert needle in background, f"background.md lost: {needle}"
 
 

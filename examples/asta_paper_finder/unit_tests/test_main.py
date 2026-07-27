@@ -67,6 +67,7 @@ EXPECTED_PLACEHOLDERS = {
     "${COST_PER_ERROR}",
     "${EVAL_TIMEOUT_MIN}",
     "${EVIDENCE_CAP_NOTE}",
+    "${TOOL_LAUNCH_NOTE}",
 }
 
 
@@ -133,7 +134,7 @@ def test_model_flag_removed():
 def test_cost_and_tool_knobs_present():
     flags = _argparse_flags()
     for required in ("--cost-threshold", "--cost-per-error",
-                     "--cap-judge-to-estimate",
+                     "--cap-judge-to-estimate", "--tool-launch-rate",
                      "--max-workers", "--eval-only", "--eval-agent"):
         assert required in flags, f"missing CLI flag: {required}"
 

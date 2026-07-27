@@ -296,6 +296,15 @@ wedge the eval indefinitely. Internal training capped queries at 1800s;
 asyncio.TimeoutError is a subclass of Exception on Python 3.11+, so the
 `except Exception` blocks catch the timeout and fall through naturally.
 
+Tool-call launch pacing: `astabench eval` runs all samples as asyncio
+tasks in ONE process (--max-samples concurrent), all sharing the Asta MCP
+key and its ~10 req/s per-endpoint budget. Each sample's tools are wrapped
+with tool_pacer.pace_tools (in-process mode, ~8 launches/s per endpoint
+globally) so concurrent samples cannot aggregate into the HTTP 500
+contention windows observed in training. Standard-tier legal: stdlib
+pacing around the task-provided tools, same category as this wrapper's
+retry/fallback plumbing.
+
 Wrapper recipe lives in scripts/asta_paper_finder_submit.py:WRAPPER_TEMPLATE.
 """
 import asyncio
@@ -304,6 +313,7 @@ import traceback
 
 from inspect_ai.solver import Generate, TaskState, solver
 
+import tool_pacer
 from agent_inner import make_solver as _inner_make_solver
 from seed_agent import make_solver as _seed_make_solver
 
@@ -337,6 +347,10 @@ def make_solver():
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         if state.metadata is None:
             state.metadata = {}
+        # Global in-process launch pacing across concurrent samples (see
+        # module docstring). Wrapping here covers the seed tier too, since
+        # it sees the same state.tools.
+        state.tools = tool_pacer.pace_tools(state.tools)
         try:
             return await asyncio.wait_for(inner(state, generate), timeout=PRIMARY_TIMEOUT_S)
         except Exception as primary:
@@ -368,6 +382,8 @@ def stage(s: Submission) -> Path:
       agent_inner.py    — the primary evolved agent source (renamed)
       seed_agent.py     — the baseline seed agent (the fallback tier)
       model_registry.py — copied from examples/asta_paper_finder/
+      tool_pacer.py     — copied from examples/asta_paper_finder/ (global
+                          launch pacing across concurrent samples)
 
     Returns the working dir path.
     """
@@ -380,6 +396,7 @@ def stage(s: Submission) -> Path:
     shutil.copy(src_seed, dst_dir / "seed_agent.py")
     (dst_dir / "agent.py").write_text(WRAPPER_TEMPLATE)
     shutil.copy(src_registry, dst_dir / "model_registry.py")
+    shutil.copy(EXAMPLES_DIR / "tool_pacer.py", dst_dir / "tool_pacer.py")
     return dst_dir
 
 
