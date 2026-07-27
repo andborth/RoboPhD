@@ -167,7 +167,7 @@ It must **not** import third-party search backends (Elasticsearch, Pinecone, cus
 
 ## Per-query cost
 
-Your cost is the LLM calls your agent makes through `model_registry` handles (`agent_cost_usd`). Tool calls (`paper_search`, `snippet_search`, the rest of the MCP suite) are free, in unlimited quantity.
+Your cost is the LLM calls your agent makes through `model_registry` handles, recorded per problem as `eval_cost` in `result.json`. Tool calls (`paper_search`, `snippet_search`, the rest of the MCP suite) are free, in unlimited quantity.
 
 ## The relevance judge (semantic queries)
 
