@@ -45,7 +45,7 @@ Notes on the schema:
 
 ## Available tools (`state.tools`)
 
-The PaperFindingBench task attaches the **Asta MCP corpus tools** — eight of them. A date-cutoff filter is applied task-side so results don't leak papers published after the benchmark snapshot.
+The PaperFindingBench task attaches the **Asta MCP corpus tools** — eight of them. A date-cutoff filter is applied task-side so results don't leak papers published after the benchmark snapshot — with one gap: the citing-paper lists returned by `get_citations` are not filtered (see the search-semantics notes below).
 
 To find a tool by name in `state.tools`:
 
@@ -95,7 +95,8 @@ def parse_items(raw):
 - `snippet_search` is a **passage-retrieval engine**, not a paper search: it ranks ~500-word chunks (title/abstract/body; `snippet.section` says which) across the whole corpus and returns the top `limit` passages, score-descending. `paper_ids` is a scope filter, not a per-paper allocation — multiple passages routinely come from the same paper (verified: 8-of-10 from one paper in a two-paper scope), so for evidence on *each* of a shortlist's candidates, call per-paper or raise `limit`; a single scoped call starves the weaker matches.
 - `snippet_search` latency is variable (seconds to minutes on cold queries). Budget for it or scope it with `paper_ids` to a shortlist you already retrieved.
 - `search_papers_by_relevance` takes `keyword=`, `snippet_search` takes `query=` — read before calling.
-- The author/citation tools make `metadata_f1` queries (author/venue/year filters) tractable without keyword-search gymnastics — but note `get_citations`' 1000 cap makes "papers citing <hugely-cited paper>" queries structurally incomplete.
+- The author/citation tools make `metadata_f1` queries (author/venue/year filters) tractable without keyword-search gymnastics.
+- **`get_citations` is the one tool the snapshot date-cutoff does not cover.** Its citing-paper list comes back unfiltered, so it can include papers published after the benchmark snapshot; on the exact-match paths such papers are never in gold, so submitting them is a pure precision loss — post-filter by `year`/`publicationDate` yourself. (The nested `citations` *field* on the metadata tools **is** filtered — the gap is only this tool's own output.) Results are observed (not guaranteed) to arrive newest-first, so on a heavily-cited target the ≤1000-entry window can be dominated by post-snapshot citers while older citers stay unreachable — this ordering plus the 1000 cap makes "papers citing <hugely-cited paper>" queries structurally incomplete.
 
 ### Tool-call transport: timeouts, retries, and the rate limit
 
