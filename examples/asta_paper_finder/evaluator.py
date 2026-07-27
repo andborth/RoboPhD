@@ -699,6 +699,64 @@ def _score_calculation_markdown(
     return "\n".join(lines)
 
 
+def _score_meta_json(
+    score_type: str,
+    score_meta: dict,
+    submitted: list[str],
+    gold_ids: list[str],
+    k_estimate: int | None,
+) -> str | None:
+    """Machine-readable sibling of score_calculation.md: the same scorer
+    component metrics, serialized instead of rendered into prose, so
+    analysis scripts read exact floats rather than regexing formula
+    text. Same sources and same None conditions as the markdown; no
+    extra LLM calls.
+    """
+    if score_type.startswith("semantic"):
+        rank = score_meta.get("rank")
+        recall = score_meta.get("estimated_recall_at_estimate")
+        f1 = score_meta.get("adjusted_f1")
+        if rank is None or recall is None or f1 is None:
+            return None
+        hits_full = score_meta.get("relevant_predictions_at_full")
+        if k_estimate is None:
+            recall_full = score_meta.get("estimated_recall_at_full") or 0
+            if hits_full and recall_full:
+                k_estimate = round(hits_full / recall_full)
+        n_top_k = round(float(recall) * k_estimate) if k_estimate else None
+        data = {
+            "score_type": score_type,
+            "score": float(f1),
+            "rank": float(rank),
+            "recall": float(recall),
+            "k_estimate": int(k_estimate) if k_estimate else None,
+            "grade3_in_top_k": n_top_k,
+            "grade3_at_full": int(hits_full) if hits_full is not None else None,
+        }
+    else:
+        precision = score_meta.get("precision")
+        recall = score_meta.get("known_recall_at_full")
+        f1 = score_meta.get("standard_f1")
+        if precision is None or recall is None or f1 is None:
+            return None
+        unique_submitted = list(dict.fromkeys(submitted))[:250]
+        gold_set = set(gold_ids)
+        submitted_set = set(unique_submitted)
+        hits = score_meta.get("relevant_predictions_at_full")
+        data = {
+            "score_type": score_type,
+            "score": float(f1),
+            "precision": float(precision),
+            "recall": float(recall),
+            "hits": int(hits) if hits is not None else None,
+            "n_submitted": len(unique_submitted),
+            "n_gold": len(gold_ids),
+            "matched_gold_ids": [p for p in unique_submitted if p in gold_set],
+            "missed_gold_ids": [g for g in gold_ids if g not in submitted_set],
+        }
+    return json.dumps(data, indent=2)
+
+
 def _judge_verdicts_markdown(
     submitted_ids: list[str], query_id: str, known_good: set[str]
 ) -> str | None:
@@ -788,6 +846,47 @@ def _judge_verdicts_markdown(
             "the rank sequence and recall — neither credited nor penalized."
         )
     return "\n".join(lines)
+
+
+def _judge_verdicts_json(
+    submitted_ids: list[str], known_good: set[str]
+) -> str | None:
+    """Machine-readable sibling of judge_verdicts.md: per-paper judge
+    outcomes in submitted order. The markdown's parenthetical per-paper
+    states are carried as an explicit `status` field — "judged",
+    "known_good" (pre-seeded Perfect, never LLM-judged),
+    "beyond_scored_depth" (deliberately unjudged), "judge_call_failed"
+    (judge-side error, excluded from scoring — neither credited nor
+    penalized), or "no_verdict_recorded" — and labels are the judge's
+    raw strings ("perfectly_relevant_papers", ...). Same in-process
+    sources and same None conditions as the markdown; no extra LLM
+    calls.
+    """
+    if not submitted_ids:
+        return None
+    raw_judgements = grounding.last_judgements()
+    if not raw_judgements and not known_good:
+        return None
+    judged = {
+        normalize_corpus_id(str(k)): str(v) for k, v in raw_judgements.items()
+    }
+    cap = grounding.last_cap()
+    papers = []
+    for i, pid in enumerate(submitted_ids[:250], 1):  # scorer reads first 250
+        if pid in known_good:
+            status, label = "known_good", "perfectly_relevant_papers"
+        elif pid in judged:
+            status, label = "judged", judged[pid]
+        elif cap is not None and i > cap:
+            status, label = "beyond_scored_depth", None
+        elif judged:
+            status, label = "judge_call_failed", None
+        else:
+            status, label = "no_verdict_recorded", None
+        papers.append(
+            {"position": i, "paper_id": pid, "status": status, "label": label}
+        )
+    return json.dumps({"scored_depth_cap": cap, "papers": papers}, indent=2)
 
 
 def _evidence_grounding_markdown() -> str | None:
@@ -1624,12 +1723,17 @@ class PaperFinderEvaluator:
                 if score_obj is not None else {}
             )
             if score_meta:
+                k_estimate = _lookup_k_estimate(str(example.id))
                 calc = _score_calculation_markdown(
-                    score_type, score_meta, submitted, gold_ids,
-                    _lookup_k_estimate(str(example.id)),
+                    score_type, score_meta, submitted, gold_ids, k_estimate,
                 )
                 if calc:
                     diagnostics["score_calculation.md"] = calc
+                meta_json = _score_meta_json(
+                    score_type, score_meta, submitted, gold_ids, k_estimate,
+                )
+                if meta_json:
+                    diagnostics["score_meta.json"] = meta_json
             else:
                 # No component metrics means the scorer bailed before its
                 # normal path — e.g. "Agent output has an invalid format".
@@ -1652,6 +1756,9 @@ class PaperFinderEvaluator:
                 )
                 if verdicts:
                     diagnostics["judge_verdicts.md"] = verdicts
+                verdicts_json = _judge_verdicts_json(submitted, known_good)
+                if verdicts_json:
+                    diagnostics["judge_verdicts.json"] = verdicts_json
                 grounding_md = _evidence_grounding_markdown()
                 if grounding_md:
                     diagnostics["evidence_grounding.md"] = grounding_md

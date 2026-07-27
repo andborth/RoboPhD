@@ -301,6 +301,45 @@ def test_judge_verdicts_markdown_empty_submission(ev_mod, verdict_cache):
     assert ev_mod._judge_verdicts_markdown([], "semantic_9", set()) is None
 
 
+def test_judge_verdicts_json_mirrors_markdown_states(ev_mod, verdict_cache):
+    """The JSON sibling carries the markdown's parenthetical states as an
+    explicit status field, with the judge's raw label strings."""
+    import json
+    verdict_cache({
+        "111": "perfectly_relevant_papers",
+        "222": "not_relevant_papers",
+    })
+    data = json.loads(ev_mod._judge_verdicts_json(
+        ["222", "333", "111", "444"], {"333"}
+    ))
+    papers = data["papers"]
+    assert [p["paper_id"] for p in papers] == ["222", "333", "111", "444"]
+    assert papers[0] == {"position": 1, "paper_id": "222",
+                         "status": "judged", "label": "not_relevant_papers"}
+    assert papers[1]["status"] == "known_good"
+    assert papers[1]["label"] == "perfectly_relevant_papers"
+    assert papers[2]["status"] == "judged"
+    assert papers[3]["status"] == "judge_call_failed"
+    assert papers[3]["label"] is None
+
+
+def test_judge_verdicts_json_cap_and_none_cases(ev_mod, verdict_cache):
+    import json
+    verdict_cache({"111": "perfectly_relevant_papers"}, cap=2)
+    data = json.loads(ev_mod._judge_verdicts_json(["111", "222", "333"], set()))
+    assert data["scored_depth_cap"] == 2
+    assert [p["status"] for p in data["papers"]] == [
+        "judged", "judge_call_failed", "beyond_scored_depth"
+    ]
+
+    # Same None conditions as the markdown.
+    assert ev_mod._judge_verdicts_json([], set()) is None
+    verdict_cache({})
+    assert ev_mod._judge_verdicts_json(["111"], set()) is None
+    data = json.loads(ev_mod._judge_verdicts_json(["111"], {"111"}))
+    assert data["papers"][0]["status"] == "known_good"
+
+
 def _fake_log_with_submission(model_usage, results, **score_kwargs):
     import json as _json
     log = _fake_log(model_usage, **score_kwargs)
@@ -324,6 +363,12 @@ def test_extract_emits_judge_verdicts_for_semantic(ev_mod, monkeypatch, verdict_
     _, diag = ev._extract_score_and_diagnostics(log, _fake_sample(ev_mod), "")
     assert "judge_verdicts.md" in diag
     assert "1. 999 — Highly Relevant" in diag["judge_verdicts.md"]
+    # The machine-readable sibling rides the same path.
+    import json
+    papers = json.loads(diag["judge_verdicts.json"])["papers"]
+    assert papers[0]["paper_id"] == "999"
+    assert papers[0]["status"] == "judged"
+    assert papers[0]["label"] == "highly_relevant_papers"
 
 
 def test_extract_no_verdicts_for_non_semantic(ev_mod, monkeypatch, verdict_cache):
@@ -343,6 +388,7 @@ def test_extract_no_verdicts_for_non_semantic(ev_mod, monkeypatch, verdict_cache
     )
     _, diag = ev._extract_score_and_diagnostics(log, sample, "")
     assert "judge_verdicts.md" not in diag
+    assert "judge_verdicts.json" not in diag
 
 
 # --- score-calculation surfacing -------------------------------------------------
@@ -388,6 +434,42 @@ def test_score_calc_semantic_with_k(ev_mod):
     # 7 Perfect overall but only 5 within top K → the ordering-cost line.
     assert "2 more Perfect paper(s) ranked below position K" in md
     assert "judge_verdicts.md" in md  # pointer to the per-paper grades
+
+
+def test_score_meta_json_semantic(ev_mod):
+    """Same scorer metadata as score_calculation.md, exact floats, K included."""
+    import json
+    meta = {"adjusted_f1": 0.5306, "rank": 0.7312,
+            "estimated_recall_at_estimate": 5 / 12,
+            "estimated_recall_at_full": 7 / 12,
+            "relevant_predictions_at_full": 7}
+    data = json.loads(ev_mod._score_meta_json("semantic_f1", meta, [], [], 12))
+    assert data["score_type"] == "semantic_f1"
+    assert data["k_estimate"] == 12
+    assert data["grade3_in_top_k"] == 5
+    assert data["grade3_at_full"] == 7
+    assert data["rank"] == pytest.approx(0.7312)
+    assert data["recall"] == pytest.approx(5 / 12)  # exact, not 4-decimal
+    assert data["score"] == pytest.approx(0.5306)
+
+
+def test_score_meta_json_exact_match(ev_mod):
+    import json
+    meta = {"standard_f1": 0.5, "precision": 1 / 3,
+            "known_recall_at_full": 1.0, "relevant_predictions_at_full": 1}
+    data = json.loads(ev_mod._score_meta_json(
+        "specific_f1", meta, ["123456789", "111", "222"], ["123456789"], None))
+    assert data["matched_gold_ids"] == ["123456789"]
+    assert data["missed_gold_ids"] == []
+    assert data["n_submitted"] == 3
+    assert data["n_gold"] == 1
+    assert data["hits"] == 1
+    assert data["precision"] == pytest.approx(1 / 3)
+
+
+def test_score_meta_json_none_when_scorer_bailed(ev_mod):
+    assert ev_mod._score_meta_json("semantic_f1", {}, [], [], None) is None
+    assert ev_mod._score_meta_json("specific_f1", {}, [], [], None) is None
 
 
 def test_score_calc_semantic_k_derived_or_unknown(ev_mod):
