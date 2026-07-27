@@ -193,7 +193,19 @@ Cost came in at **$118.68** total — $117.09 judge (98.7%), $1.59 agent —
 against a pre-run projection of $140–175. The agent-side cost matched
 internal prediction to four decimals.
 
-### Internal over-predicted, and only on `specific`
+### Internal over-predicted; two-thirds of it is `specific`
+
+Weighting the per-type deltas by query count decomposes the −0.055:
+**`specific` contributes −0.036 (65%)**, `semantic` −0.020 (36%),
+`metadata` ≈0. Per-type figures alone are misleading here — `specific`'s
+−0.250 lands on only 14% of queries while `semantic`'s −0.027 lands on
+73%, so the smaller-looking metric carries a real share of the total.
+
+`specific` is nonetheless the part that needs explaining: it is the
+larger contributor, and unlike `semantic` it has no judging-basis story
+available (see below). `semantic`'s −0.027 is statistically real
+(t = −3.37) but confounded with the capped+cached → fresh+uncapped
+change, so it cannot be attributed to agent behaviour on this evidence.
 
 | | internal (stock) | official | Δ |
 | --- | --- | --- | --- |
