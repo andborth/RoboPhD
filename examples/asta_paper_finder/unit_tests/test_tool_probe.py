@@ -73,14 +73,22 @@ def test_shipped_filename_consistent_across_docs():
     """Anti-staleness guard: the filename shipped via session_tools must
     exist, ship on BOTH shell-bearing engines (RoboPhD + autoresearch),
     and be the one the interpolated session-access note tells sessions
-    to run."""
+    to run. Both sides are extracted from source and compared — nothing
+    is hardcoded, so a rename that misses one side fails here instead of
+    shipping a note that points at a file that doesn't exist."""
     main_src = (HERE / "main.py").read_text()
     shipped = re.findall(r'session_tools=\[str\(HERE / "([^"]+)"\)\]', main_src)
     assert len(shipped) == 2, "expected RoboPhD + Autoresearch to ship session_tools"
-    assert set(shipped) == {"tool_probe.py"}
-    assert (HERE / "tool_probe.py").is_file()
+    names = set(shipped)
+    assert len(names) == 1, f"engines ship different files: {sorted(names)}"
+    name = names.pop()
+    assert (HERE / name).is_file()
 
-    # The note text references the shipped script, and background.md
-    # carries the placeholder the note lands in.
-    assert "/tool_probe.py" in main_src
+    # Every filename the note text references (rendered by main.py as
+    # f"{tools_rel}/<name>") must be the shipped one.
+    note_refs = re.findall(r"\{tools_rel\}/([\w.]+)", main_src)
+    assert note_refs, "session-access note no longer references the shipped script"
+    assert set(note_refs) == {name}, (
+        f"note references {sorted(set(note_refs))} but configs ship {name}"
+    )
     assert "${SESSION_ACCESS_NOTE}" in (HERE / "background.md").read_text()
