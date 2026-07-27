@@ -13,20 +13,32 @@ price (0.2754 @ $0.006).
 
 ## The cost gate was aimed at a named competitor
 
-The $0.033 free-zone threshold was not a round number. Smolagents Coder
-GPT-5 Mini sits on the board at **0.172 @ $0.03**, so a free zone just
-above $0.03 forces evolution to land at or under that agent's price —
-securing the *cost* half of a Pareto-dominance claim by construction and
-leaving only the *score* half to win. The run cleared 0.172 comfortably
-at 0.2754.
+The $0.033 free-zone threshold was not a round number — it is, to the
+cent, a competitor's price. The board's frontier has two points at the
+cheap end: Smolagents Coder Llama 4 Scout 17B at **0.070 @ $0.013**
+(cheapest) and Smolagents Coder GPT-5 Mini at **0.172 @ $0.033**
+(second-cheapest). The board rounds both displays down — to $0.01 and
+$0.03 — so the true figures are what the gate was built from.
+
+The gate was aimed at the **second**-cheapest, because it is the harder
+and more valuable target: clearing $0.033 on cost is easier than clearing
+$0.013, while 0.172 is the higher score bar of the two.
+
+Setting the free zone *at* $0.033 — exactly that competitor's price,
+not above it — means any agent evolution is willing to keep spends at
+most what that competitor spends. That buys the *cost* half of a
+Pareto-dominance claim by construction, leaving only the *score* half to
+win. The run cleared 0.172 comfortably, at 0.2754 internally and 0.2205
+officially.
 
 Evolution then overshot the target: rather than spending up to the
-ceiling it came in at **$0.006/query**, 5× under the gate, which also
-undercuts **Smolagents Coder Llama 4 Scout 17B (0.070 @ $0.013)**. The
-entry therefore dominates *both* cheap-end points rather than the one it
-was aimed at — strictly higher score at strictly lower cost than every
-listed agent at ≤$0.03, with no competitive neighbor anywhere near
-$0.006.
+ceiling it came in at **$0.0059/query**, **5.5× under the gate**, which
+also undercuts Llama 4 Scout's $0.013. The entry therefore dominates
+*both* cheap-end frontier points rather than the one it was aimed at —
+strictly higher score at strictly lower cost than every listed agent at
+≤$0.033. Only the first domination was by design; the second is a
+consequence of undershooting, and would not have followed from the gate
+alone. Nothing on the board sits near $0.0059.
 
 Recording this because the technique generalizes: a cost gate
 reverse-engineered from a specific leaderboard entry is a repeatable way
@@ -145,9 +157,9 @@ Agent description as submitted on the form:
 
 > Evolved by RoboPhD with Claude Opus 4.8 as the evolution (but not a
 > solver) model, under a $0.033/query soft training cost cap on solver
-> spend — a cap set just above the cheapest competitive entry on the
-> board so that evolution had to win on score at a price already known to
-> be competitive. It answered by building a pipeline that runs every LLM
+> spend — a cap set at exactly the price of the second-cheapest point on
+> the board's cost-quality frontier, so that evolution had to win on score
+> at a price already known to be competitive. It answered by building a pipeline that runs every LLM
 > call on a single cheap model, GPT-5.4-mini, and came in at $0.006/query,
 > five times under its own cap. The agent retrieves facet-diverse
 > candidates from keyword and snippet search, enriches abstracts, then
@@ -160,6 +172,74 @@ Agent description as submitted on the form:
 > quoted verbatim from retrieved text. Same RoboPhD code base as our
 > DS-1000 submissions and as v0_0_7 on this task; this entry targets the
 > cheap end of the cost-quality frontier rather than peak score.
+
+## Official result (2026-07-25)
+
+**adjusted_f1_micro_avg = 0.2205** (stderr 0.0155) @ **$0.005943/query**
+(litellm 1.88.1 bundled pricing). Per-type: semantic 0.1809, specific
+0.4956, metadata 0.1410. Run took 1h32m at `--max-samples 6` — no false
+starts, zero sample errors, zero tool errors, zero retries.
+
+**The Pareto claim holds.** Against the two cheap-end frontier points:
+dominates Smolagents Coder GPT-5 Mini (0.172 @ $0.033) by +0.048 score at
+1/5 the cost, and Smolagents Coder Llama 4 Scout 17B (0.070 @ $0.013)
+outright. It also *matches* ReAct GPT-5 Mini (0.220 @ $0.060) at 10×
+cheaper — parity, not dominance; 0.2205 vs 0.220 is noise.
+
+Cost came in at **$118.68** total — $117.09 judge (98.7%), $1.59 agent —
+against a pre-run projection of $140–175. The agent-side cost matched
+internal prediction to four decimals.
+
+### Internal over-predicted, and only on `specific`
+
+| | internal (stock) | official | Δ |
+| --- | --- | --- | --- |
+| overall | 0.2754 | 0.2205 | −0.055 (~3.4σ) |
+| semantic | 0.2080 | 0.1809 | −0.027 |
+| **specific** | **0.7456** | **0.4956** | **−0.250** |
+| metadata | 0.1384 | 0.1410 | +0.003 |
+
+`specific_f1` is deterministic exact-match — **the judge is never
+invoked** — so the judging-basis story that explained v0_0_7's clean
+transfer cannot apply. Three runs of this same agent settle what did
+happen (luna internal / stock internal / official are three independent
+agent runs; luna-vs-stock is a *pure* re-run, since the judge does not
+touch this metric):
+
+```
+specific   luna 0.7325 | stock 0.7456 | official 0.4956
+  luna -> stock       Δ +0.013   identical 33/38   sign-test p=1.00   t=+0.28
+  stock -> OFFICIAL   Δ -0.250   identical 21/38   sign-test p=0.049  t=-3.11
+metadata (the control, also judge-free)
+  stock -> OFFICIAL   Δ +0.003   identical 29/35   sign-test p=0.69   t=+0.10
+```
+
+Two internal runs agree to within noise; official differs by ~19× that
+scale, one-directionally (13 worse, 4 better; 12 queries nonzero in
+*both* internals and exactly 0.0 officially). Metadata makes the
+identical internal→official transition with no shift at all, which rules
+out a general miscalibration of our harness on deterministic metrics.
+
+**But the failure mode is chronic, not new.** Every query that failed in
+both internal runs failed the *same* way — a topically-related paper
+instead of the canonical one ("the gru paper" → three different plausible
+GRU papers, none Cho et al.; "the gpt-3 paper" → *a survey on GPT-3*;
+"the snli paper" → *Unpacking the Resilience of SNLI Contradiction
+Examples*). On `specific_32` and `specific_13` an internal run made
+exactly the official error. So the agent has a standing weakness — it
+does not reliably separate "the canonical X paper" from "a paper about
+X" — and what changed officially is the *rate*: 6, 5, then 17 failures
+out of 38. The weakness is the vulnerability; the environment difference
+is only the trigger.
+
+**Consequence for selection, not just reporting:** iter9 was ranked
+during evolution on a specific signal inflated by ~0.25 on 14% of the
+query mix. Elo may have crowned it partly on a measurement that does not
+survive contact with the official harness. The fix is an evolution
+target: "the X paper" queries need explicit canonical-vs-derivative
+disambiguation (prefer the earliest / most-cited paper that *introduces*
+X over one that surveys or extends it). iter9 has no such logic and takes
+what search ranks first, which is recency-biased.
 
 ## Official-result risks (assessed pre-submission)
 
@@ -190,6 +270,28 @@ Agent description as submitted on the form:
   apply. At $0.006/query the free-zone margin is enormous; repricing
   cannot plausibly threaten the cost claim.
 
+### How they resolved
+
+Three of the four were non-issues: no self-pacing never bit (zero
+errors, zero retries, 1h32m total, the 3000s ceiling never fired), the
+judge pin held, and repricing reproduced the agent cost to four decimals.
+Cost came in **under** the projection ($118.68 vs $140–175) — the
+per-verdict figure inherited from v0_0_7 was too high for this agent's
+shorter evidence.
+
+The judging-basis risk is the one worth re-reading, because **it was
+mis-scoped**. It was written as though a judging-basis shift were the
+main threat to transfer. It wasn't: semantic (the judged metric) moved
+only −0.027, while the metric that actually broke — `specific`, −0.250 —
+has no judge in it at all. v0_0_7's clean transfer made the
+capped-vs-uncapped question look like the thing to watch, and that
+inherited confidence pointed at the wrong risk entirely.
+
+The real lesson for the next submission: internal evals predict the
+*judged* metric well, and a deterministic metric can still diverge badly
+if the agent's behaviour is environment-sensitive. Do not read "internal
+matched official" on one submission as a general guarantee.
+
 ## Reproduce
 
 ```bash
@@ -208,6 +310,6 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 
 ## Submission status
 
-- [ ] Official eval run
-- [ ] Tarball uploaded
-- [ ] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
+- [x] Official eval run (2026-07-25: 0.2205 @ $0.005943/query, $118.68 spend, 1h32m)
+- [ ] Tarball uploaded (`submissions/asta_paper_finder/v0_0_8_soft_cap_0_033_opus.tar.gz`, 145 MB)
+- [x] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`

@@ -29,16 +29,26 @@ Per submission, the script:
 The script does NOT submit. After a full run, one .tar.gz per selected
 submission is ready for manual upload via the HF Spaces leaderboard form.
 
-Cost / time (full test split, 267 queries, sequential):
-    v0_0_7_soft_cap_0_06_fable   ~$200-270   12-18 hr
-        (~12 min/semantic query at --max-samples 4; wall clock is unscored
-        officially, so duration buys evidence quality, not points)
-        agent  ≈ $15  (internal test measured $14.83)
-        judge  ≈ $205-245 — official judging is FRESH and UNCAPPED:
-        ~194 semantic queries × ~250 submitted papers ≈ 48.5K GPT-4o
-        verdicts at a measured ~$0.0042/paper, billed to OPENAI_API_KEY
-        during the eval. (Internal capped+cached judging cost $88.38.)
-    A `--limit 3` smoke run costs ~$3 and validates the whole path first.
+Cost / time (full test split, 267 queries). Judge spend dominates — it
+was 98.7% of the v0_0_8 bill — and it scales with how much evidence the
+agent ships, not with the agent's own price. Two measured points:
+
+    v0_0_7_soft_cap_0_06_fable    $192 judge + $15 agent   ~19 hr
+        976 chars/paper evidence, 250 papers/semantic query,
+        ~12 min/semantic query at --max-samples 4.
+    v0_0_8_soft_cap_0_033_opus    $117 judge + $1.59 agent  1h32m
+        750 chars/paper, 203.5 papers/query, --max-samples 6.
+
+So a cheap agent is not merely cheap to run — its shorter evidence and
+shorter submission lists cut the judge bill too, which is the term that
+actually matters. Wall clock is unscored officially, so duration buys
+evidence quality, not points.
+
+Official judging is FRESH and UNCAPPED (every submitted paper, no top-K
+cap, no cache), billed to OPENAI_API_KEY during the eval — internal
+capped+cached judging is much cheaper and is not a guide.
+
+A `--limit 3` smoke run costs ~$3 and validates the whole path first.
 
 Prerequisites:
   - OPENAI_API_KEY               (agent models gpt-5.4-mini/gpt-5.4 AND the
@@ -82,11 +92,16 @@ TASK_NAME = "PaperFindingBench_test"
 # as `astabench score` cost=null.
 AGENT_MODELS = ["gpt-5.4-mini", "gpt-5.4-2026-03-05"]
 
-# Official-judging cost projection, printed before eval. Constants measured
-# from the internal test eval of run asta_paper_finder_20260717_170858:
-# $88.38 judge spend / 20,915 capped verdicts ≈ $0.0042/paper; iter12
-# submits 250 papers on every semantic query; test split has 194 semantic.
-JUDGE_COST_PER_PAPER_USD = 0.0042
+# Official-judging cost projection, printed before eval. Now calibrated on
+# two completed official runs rather than an internal capped estimate:
+#   v0_0_7  $192 judge / 194 x 250 = 48.5K verdicts  ≈ $0.0040/paper (976 chars/paper)
+#   v0_0_8  $117 judge / 194 x 203.5 = 39.5K verdicts ≈ $0.0030/paper (750 chars/paper)
+# Per-verdict cost tracks evidence length, so the rate is a range, not a
+# constant. The projection uses the upper end and the 250-paper cap: it is
+# a spend ceiling to sanity-check against, and will overestimate for an
+# agent that ships short evidence or short lists (it printed ~$219 for
+# v0_0_8, which actually cost $118.68 all-in).
+JUDGE_COST_PER_PAPER_USD = 0.0040
 SEMANTIC_TEST_QUERIES = 194
 PAPERS_PER_SEMANTIC_QUERY = 250
 
