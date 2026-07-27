@@ -162,7 +162,7 @@ This benchmark targets the **Standard Tools** leaderboard tier. The agent may us
 - LLM calls through `model_registry` handles (Inspect-tracked)
 - Standard Python (json, re, asyncio, dataclasses, ...)
 
-It must **not** import third-party search backends (Elasticsearch, Pinecone, custom indices), nor the AI2-internal Mabool client (`paper_finder_ai2i`), nor persist retrieval results across queries — every evaluation's papers must come through the tools (within-query in-memory bookkeeping over tool results is normal and fine). The evaluator may reject candidates that import outside an allowlist.
+It must **not** import third-party search backends (Elasticsearch, Pinecone, custom indices), nor the AI2-internal Mabool client (`paper_finder_ai2i`), nor call web APIs directly — including the public Semantic Scholar API (`api.semanticscholar.org`): the `state.tools` suite is the agent's only corpus access. Those tools enforce the benchmark's snapshot date-cutoff; the live public API does not, so calling it both breaks the Standard Tools tier and leaks post-snapshot papers the scorer treats as wrong. It must also not persist retrieval results across queries — every evaluation's papers must come through the tools (within-query in-memory bookkeeping over tool results is normal and fine). The evaluator may reject candidates that import outside an allowlist.
 
 ## Per-query cost
 
@@ -222,3 +222,5 @@ Grade 2 ("Highly Relevant") exists only as this threshold band, never as a judge
 ## Diagnostics
 
 Any `print()` output from the agent is captured and included in evaluation diagnostics as `agent_stdout`. Use `print()` to log anything you think would be helpful for you to see when improving the agent in later rounds.
+
+**Post-hoc analysis only — the public Semantic Scholar API.** Your own shell (unlike the agent) has ordinary internet access, and `api.semanticscholar.org` is available for forensics — e.g. resolving a problem's missed gold `corpus_id`s to titles and publication dates. Batch every id into one call (`POST /graph/v1/paper/batch` with ids like `CorpusId:123`); unauthenticated per-id calls hit the rate limit. Two caveats: the public API is live while the benchmark corpus is a dated snapshot, so its records can differ from what the tools return; and this access is for your analysis only — the agent may not call it (see the Standard Tools constraint).
