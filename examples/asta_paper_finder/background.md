@@ -184,7 +184,7 @@ ${COST_PENALTY_TABLE}
 
 ## Time budget
 
-Your agent times out and the query scores 0 if a single query takes more than **${EVAL_TIMEOUT_MIN} minutes** of wall-clock. This is a generous budget and is unlikely to be the binding constraint. Per-query wall-clock is recorded as `eval_wall_clock_seconds` in each problem's `result.json`.
+Your agent times out and the query scores 0 if a single query takes more than **${EVAL_TIMEOUT_MIN} minutes** of wall-clock. Per-query wall-clock is recorded as `eval_wall_clock_seconds` in each problem's `result.json`.
 
 ## Scoring (per query)
 
