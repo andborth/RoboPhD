@@ -17,6 +17,14 @@ def materialize_session_tools(
     """
     if not paths:
         return
+    names = [Path(p).name for p in paths]
+    dupes = {n for n in names if names.count(n) > 1}
+    if dupes:
+        raise ValueError(
+            f"session_tools entries share basenames {sorted(dupes)} — "
+            f"files are materialized flat by filename, so these would "
+            f"silently clobber each other"
+        )
     dest_dir = Path(run_root) / "session_tools"
     dest_dir.mkdir(parents=True, exist_ok=True)
     for p in paths:

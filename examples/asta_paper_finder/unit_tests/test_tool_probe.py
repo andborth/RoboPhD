@@ -6,7 +6,6 @@ no MCP handshake.
 """
 import importlib.util
 import re
-import sys
 from pathlib import Path
 
 import pytest
@@ -24,11 +23,20 @@ def _load_probe():
 
 
 def test_import_is_network_free():
-    """Module import must not touch astabench/inspect_ai (no handshake)."""
-    before = set(sys.modules)
-    _load_probe()
-    loaded = set(sys.modules) - before
-    assert not any(m.startswith(("astabench", "inspect_ai")) for m in loaded)
+    """tool_probe must defer astabench/inspect_ai imports into functions
+    so module import never triggers the MCP handshake. Checked at the
+    AST level — a sys.modules delta would pass vacuously whenever an
+    earlier test in the process already imported astabench."""
+    import ast
+    tree = ast.parse((HERE / "tool_probe.py").read_text())
+    offenders = []
+    for node in tree.body:
+        if isinstance(node, ast.Import):
+            offenders += [a.name for a in node.names]
+        elif isinstance(node, ast.ImportFrom):
+            offenders.append(node.module or "")
+    offenders = [m for m in offenders if m.startswith(("astabench", "inspect_ai"))]
+    assert not offenders, f"top-level heavyweight imports: {offenders}"
 
 
 def test_parse_kv_types():

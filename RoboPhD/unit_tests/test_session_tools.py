@@ -53,6 +53,25 @@ def test_missing_source_fails_loudly(tmp_path):
         _materialize(_stub(exp), [str(tmp_path / "nope.py")])
 
 
+def test_duplicate_basenames_rejected_before_any_copy(tmp_path):
+    """Flat-by-filename materialization must refuse colliding basenames
+    loudly instead of letting the last entry silently clobber."""
+    a = tmp_path / "a"
+    b = tmp_path / "b"
+    a.mkdir()
+    b.mkdir()
+    (a / "probe.py").write_text("A")
+    (b / "probe.py").write_text("B")
+    exp = tmp_path / "exp"
+    exp.mkdir()
+
+    with pytest.raises(ValueError, match="basename"):
+        _materialize(_stub(exp), [str(a / "probe.py"), str(b / "probe.py")])
+
+    # Validation precedes copying: nothing was materialized.
+    assert not (exp / "session_tools").exists()
+
+
 def test_no_paths_creates_nothing(tmp_path):
     exp = tmp_path / "exp"
     exp.mkdir()

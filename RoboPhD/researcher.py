@@ -1205,10 +1205,12 @@ class ParallelAgentResearcher:
             self.dev_eval_mode = dev_eval_mode
 
         # Materialize session helper scripts on fresh starts AND resumes,
-        # after both branches have set experiment_dir.
-        self._materialize_session_tools(
-            (runtime_config or {}).get("session_tools")
-        )
+        # after both branches have set experiment_dir. Dev-eval mode is
+        # excluded: evaluation must not write into the run directory.
+        if not self.dev_eval_mode:
+            self._materialize_session_tools(
+                (runtime_config or {}).get("session_tools")
+            )
 
         # Initialize evolver (will be recreated per iteration with current config)
         # For now, create with iteration 1 config - run() will recreate per iteration
