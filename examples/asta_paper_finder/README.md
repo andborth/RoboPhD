@@ -11,7 +11,7 @@ Snapshots live in `example_runs/robophd/asta_paper_finder/<name>/`; the pipeline
 | Submission | Agent (run) | Internal test | Official |
 | --- | --- | --- | --- |
 | `v0_0_7_soft_cap_0_06_fable` | `iter12_body_conjunction` (`robophd-asta_paper_finder-003`, fable-5-evolved) | 0.3724 @ $0.0556/query | **0.3749 @ $0.0533/query** (under review) |
-| `v0_0_8_soft_cap_0_033_opus` | `iter9_rerank_rich_v1` (`robophd-asta_paper_finder-006`, opus-4.8-evolved) | 0.2754 @ $0.006/query | **0.2205 @ $0.0059/query** (upload pending) |
+| `v0_0_8_soft_cap_0_033_opus` | `iter9_rerank_rich_v1` (`robophd-asta_paper_finder-006`, opus-4.8-evolved) | 0.2754 @ $0.006/query | **0.2205 @ $0.0059/query** (under review) |
 
 v0_0_8's internal-to-official transfer was **not** clean, unlike v0_0_7's: −0.055 overall, essentially all of it in `specific_f1` (0.7456 → 0.4956), a metric the judge never touches. Three runs of the same agent show it is systematic rather than variance, and the snapshot README has the analysis. Don't read v0_0_7's clean transfer as a general guarantee that internal predicts official.
 

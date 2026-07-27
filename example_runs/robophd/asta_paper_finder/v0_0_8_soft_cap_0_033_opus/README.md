@@ -314,5 +314,13 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 ## Submission status
 
 - [x] Official eval run (2026-07-25: 0.2205 @ $0.005943/query, $118.68 spend, 1h32m)
-- [ ] Tarball uploaded (`submissions/asta_paper_finder/v0_0_8_soft_cap_0_033_opus.tar.gz`, 145 MB)
+- [x] Tarball uploaded — submitted to AstaBench 2026-07-27, under official review
 - [x] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
+
+Both RoboPhD entries are under review concurrently: v0_0_7 (0.3749 @
+$0.0533) and this one (0.2205 @ $0.0059).
+
+The submitted form text says "five times under its own cap" where the
+exact figure is 5.5× ($0.033 / $0.005943). Noted so the public
+description and these records can be reconciled later; everything else in
+the form matches what is written here.
