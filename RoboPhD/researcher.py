@@ -841,7 +841,11 @@ class ParallelAgentEvolver:
         if not iter_dir.exists() or iteration < 1:
             return "No previous iteration data available yet."
 
-        lines.append("Experiment directory structure (paths relative to evolution workspace):")
+        lines.append(
+            "Experiment directory structure (paths are relative to your shell's "
+            "working directory — your session's workspace directory under "
+            "`evolution_output/`, two levels below the experiment root):"
+        )
         lines.append("")
 
         agent_dirs = sorted(iter_dir.glob("agent_*"))

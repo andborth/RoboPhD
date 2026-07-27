@@ -658,7 +658,11 @@ Agent source code:
   ../../agents/
     <agent_name>/
 {file_listing}
-```"""
+```
+
+Two sibling trees share iteration numbering — don't conflate them:
+- `../../iteration_XXX/` — evaluation results (the tree above)
+- `../../evolution_output/iteration_XXX/` — that iteration's evolution-session workspace (`reasoning.md`, `evolution_reflection.md`); your own cwd is the current iteration's directory in this tree"""
 
     # -----------------------------------------------------------------
     # Helpers
