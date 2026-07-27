@@ -90,12 +90,12 @@ If no issues: just the assessment, skip the Issues section.
 
 **For commits only** (skip this entirely for staged changes):
 
-1. **Update the tracking file** with the last reviewed commit:
+1. **Update the tracking file** with the last reviewed commit — do this BEFORE writing your findings, not after:
    ```bash
    echo "<latest-reviewed-commit-hash>" > .claude/last_critique_commit
    ```
 
-2. **Summary**: End with a brief summary like:
+2. **Present the findings**: the per-commit blocks and closing summary must be the final message of the turn, with NO tool calls after them — text emitted before a tool call may never be shown to the user. End with:
    ```
    Reviewed X commits (abc123..def456). Y issues found.
    ```
