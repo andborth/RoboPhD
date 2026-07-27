@@ -183,8 +183,11 @@ starts, zero sample errors, zero tool errors, zero retries.
 **The Pareto claim holds.** Against the two cheap-end frontier points:
 dominates Smolagents Coder GPT-5 Mini (0.172 @ $0.033) by +0.048 score at
 1/5 the cost, and Smolagents Coder Llama 4 Scout 17B (0.070 @ $0.013)
-outright. It also *matches* ReAct GPT-5 Mini (0.220 @ $0.060) at 10×
-cheaper — parity, not dominance; 0.2205 vs 0.220 is noise.
+outright. It also dominates ReAct GPT-5 Mini (0.220 @ $0.060) — equal
+score at 10× lower cost, which satisfies dominance (equal-or-better on
+every axis, strictly better on one). The dominance there rests entirely
+on the cost axis: our 0.2205 and their 0.220 are the same number at the
+board's displayed precision, so this is not a claim to a *higher* score.
 
 Cost came in at **$118.68** total — $117.09 judge (98.7%), $1.59 agent —
 against a pre-run projection of $140–175. The agent-side cost matched
