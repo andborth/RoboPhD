@@ -991,14 +991,11 @@ def test_apply_training_grader_noop_without_env(ev_mod, monkeypatch):
     assert relevance.extract_json_from_response is before_extract
 
 
-def test_extract_emits_judge_repairs_as_string_diagnostic(ev_mod, monkeypatch,
-                                                          verdict_cache):
-    """judge_format_repairs must be emitted as a STRING under a .md key:
-    the domain layer persists string diagnostics as files but drops
-    unknown dict keys from result.json's fixed schema — the original
-    dict-shaped emission never reached disk (0 of 64 semantic problems
-    in the first luna run). A revert to the dict shape would silently
-    reproduce that vanishing."""
+def test_extract_emits_no_judge_repairs_diagnostic(ev_mod, monkeypatch,
+                                                   verdict_cache):
+    """The judge_format_repairs diagnostic was removed (task freeze):
+    normalizer repair counts stay internal to _judge_normalize and must
+    not surface as a per-problem file under either the dict or .md key."""
     import _judge_normalize
     verdict_cache({"999": "perfectly_relevant_papers"})
     monkeypatch.setattr(
@@ -1010,7 +1007,6 @@ def test_extract_emits_judge_repairs_as_string_diagnostic(ev_mod, monkeypatch,
         {"openai/gpt-5.4-mini": (100, 10)},
         [{"paper_id": "999", "markdown_evidence": "x"}],
     )
-    # Simulate the lenient normalizer having repaired one judge response.
     _judge_normalize.reset()
     _judge_normalize._REPAIR["recovered"] = 1
     _judge_normalize._REPAIR["strict_ok"] = 4
@@ -1018,10 +1014,8 @@ def test_extract_emits_judge_repairs_as_string_diagnostic(ev_mod, monkeypatch,
         _, diag = ev._extract_score_and_diagnostics(log, _fake_sample(ev_mod), "")
     finally:
         _judge_normalize.reset()
-    assert "judge_format_repairs" not in diag  # the dict shape must stay gone
-    md = diag["judge_format_repairs.md"]
-    assert isinstance(md, str)
-    assert "1 recovered" in md and "5 judge responses" in md
+    assert "judge_format_repairs" not in diag
+    assert "judge_format_repairs.md" not in diag
 
 
 def test_apply_training_grader_no_prose_profile(ev_mod, monkeypatch):

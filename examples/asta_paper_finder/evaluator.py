@@ -657,8 +657,8 @@ def _score_calculation_markdown(
             ]
         lines += [
             "",
-            '(per-paper grades: judge_verdicts.md · formulas: background.md '
-            '"Scoring (per query)")',
+            '(per-paper grades: judge_verdicts.md · formulas: the task '
+            'documentation\'s "Scoring (per query)" section)',
         ]
         return "\n".join(lines)
 
@@ -1618,25 +1618,6 @@ class PaperFinderEvaluator:
             )
             if submission:
                 diagnostics["submission.json"] = submission
-
-            # Judge format-repair counts (nonzero only when the alternate
-            # training judge + lenient normalizer are active). Surfaced so
-            # drift in the judge's format discipline is visible instead of
-            # silently repaired. Emitted as a STRING diagnostic: the domain
-            # layer persists string values as per-problem files but drops
-            # unknown dict keys from result.json — a dict here would never
-            # reach disk (found empirically on the first luna run).
-            import _judge_normalize
-            repairs = _judge_normalize.last_repairs()
-            if repairs.get("recovered") or repairs.get("shape_fixed") or repairs.get("unrecoverable"):
-                diagnostics["judge_format_repairs.md"] = (
-                    f"Lenient judge-output normalizer activity this eval "
-                    f"(alternate training judge): {repairs['recovered']} "
-                    f"recovered, {repairs['shape_fixed']} shape-fixed, "
-                    f"{repairs['unrecoverable']} unrecoverable (dropped -> "
-                    f"scored Not Relevant, same as stock), of "
-                    f"{sum(repairs.values())} judge responses parsed."
-                )
 
             score_meta = (
                 dict(getattr(score_obj, "metadata", None) or {})
