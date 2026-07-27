@@ -323,6 +323,75 @@ def test_judge_verdicts_json_mirrors_markdown_states(ev_mod, verdict_cache):
     assert papers[3]["label"] is None
 
 
+def test_verdict_siblings_agree_on_identical_inputs(ev_mod, verdict_cache):
+    """Parity guard: the prose and JSON siblings must describe the same
+    per-paper outcomes for the same inputs. Both render from
+    _verdict_states; this test fails if the derivation is ever re-split."""
+    import json
+    verdict_cache({
+        "111": "perfectly_relevant_papers",
+        "222": "not_relevant_papers",
+    }, cap=4)
+    submitted = ["222", "333", "111", "444", "555"]
+    md_lines = ev_mod._judge_verdicts_markdown(
+        submitted, "semantic_9", {"333"}
+    ).splitlines()
+    data = json.loads(ev_mod._judge_verdicts_json(submitted, {"333"}))
+
+    status_md_marker = {
+        "known_good": "(known-good)",
+        "beyond_scored_depth": "beyond scored depth",
+        "judge_call_failed": "judge call failed",
+        "no_verdict_recorded": "no verdict recorded",
+    }
+    label_md = {
+        "perfectly_relevant_papers": "Perfectly Relevant",
+        "not_relevant_papers": "Not Relevant",
+    }
+    assert len(data["papers"]) == len(submitted)
+    # Exercised states must cover the interesting cases.
+    assert {p["status"] for p in data["papers"]} == {
+        "judged", "known_good", "judge_call_failed", "beyond_scored_depth"
+    }
+    for paper, line in zip(data["papers"], md_lines):
+        assert line.startswith(f"{paper['position']}. {paper['paper_id']} — ")
+        if paper["status"] == "judged":
+            assert label_md[paper["label"]] in line
+        else:
+            assert status_md_marker[paper["status"]] in line
+
+
+def test_score_meta_siblings_agree_on_identical_inputs(ev_mod):
+    """Parity guard: the numbers score_calculation.md renders must be the
+    ones score_meta.json serializes — including a derived K, the shared
+    fallback both consume from _semantic_score_components."""
+    import json
+    meta = {"adjusted_f1": 0.5306, "rank": 0.7312,
+            "estimated_recall_at_estimate": 5 / 12,
+            "estimated_recall_at_full": 7 / 12,
+            "relevant_predictions_at_full": 7}
+    md = ev_mod._score_calculation_markdown("semantic_f1", meta, [], [], None)
+    data = json.loads(ev_mod._score_meta_json("semantic_f1", meta, [], [], None))
+    assert f"K={data['k_estimate']}" in md
+    assert f"rank   = {data['rank']:.4f}" in md
+    assert f"recall = {data['recall']:.4f}" in md
+    assert f"harmonic(rank, recall) = {data['score']:.4f}" in md
+    assert f"{data['grade3_in_top_k']} of K=" in md
+    assert (f"{data['grade3_at_full'] - data['grade3_in_top_k']} more Perfect "
+            f"paper(s)") in md
+
+    meta = {"standard_f1": 0.5, "precision": 1 / 3,
+            "known_recall_at_full": 1.0, "relevant_predictions_at_full": 1}
+    args = ("specific_f1", meta, ["123456789", "111"], ["123456789", "999"], None)
+    md = ev_mod._score_calculation_markdown(*args)
+    data = json.loads(ev_mod._score_meta_json(*args))
+    assert f"hits (submitted ∩ gold): {data['hits']}" in md
+    assert f"missed gold ids: {', '.join(data['missed_gold_ids'])}" in md
+    assert f"→ {', '.join(data['matched_gold_ids'])}" in md
+    assert f"submitted: {data['n_submitted']} unique" in md
+    assert f"gold: {data['n_gold']}" in md
+
+
 def test_judge_verdicts_json_cap_and_none_cases(ev_mod, verdict_cache):
     import json
     verdict_cache({"111": "perfectly_relevant_papers"}, cap=2)

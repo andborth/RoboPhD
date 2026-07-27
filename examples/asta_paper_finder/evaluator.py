@@ -603,6 +603,63 @@ def _lookup_k_estimate(query_id: str) -> int | None:
         return None
 
 
+def _semantic_score_components(
+    score_meta: dict, k_estimate: int | None
+) -> dict | None:
+    """Derived semantic score components shared by the prose and JSON
+    score diagnostics — the single home of the K-fallback derivation
+    (K from hits/recall when no estimate is provided, grade-3-in-top-K
+    from recall·K), so the two renderings cannot drift. Returns None
+    when the scorer didn't produce its normal component metrics."""
+    rank = score_meta.get("rank")
+    recall = score_meta.get("estimated_recall_at_estimate")
+    f1 = score_meta.get("adjusted_f1")
+    if rank is None or recall is None or f1 is None:
+        return None
+    hits_full = score_meta.get("relevant_predictions_at_full")
+    if k_estimate is None:
+        recall_full = score_meta.get("estimated_recall_at_full") or 0
+        if hits_full and recall_full:
+            k_estimate = round(hits_full / recall_full)
+    n_top_k = round(float(recall) * k_estimate) if k_estimate else None
+    return {
+        "score": float(f1),
+        "rank": float(rank),
+        "recall": float(recall),
+        "k_estimate": int(k_estimate) if k_estimate else None,
+        "grade3_in_top_k": n_top_k,
+        "grade3_at_full": int(hits_full) if hits_full is not None else None,
+    }
+
+
+def _exact_score_components(
+    score_meta: dict, submitted: list[str], gold_ids: list[str]
+) -> dict | None:
+    """Derived exact-match score components shared by the prose and JSON
+    score diagnostics — the single home of the dedup/cap and
+    matched/missed derivations. Returns None when the scorer didn't
+    produce its normal component metrics."""
+    precision = score_meta.get("precision")
+    recall = score_meta.get("known_recall_at_full")
+    f1 = score_meta.get("standard_f1")
+    if precision is None or recall is None or f1 is None:
+        return None
+    unique_submitted = list(dict.fromkeys(submitted))[:250]
+    gold_set = set(gold_ids)
+    submitted_set = set(unique_submitted)
+    hits = score_meta.get("relevant_predictions_at_full")
+    return {
+        "score": float(f1),
+        "precision": float(precision),
+        "recall": float(recall),
+        "hits": int(hits) if hits is not None else None,
+        "n_submitted": len(unique_submitted),
+        "n_gold": len(gold_ids),
+        "matched_gold_ids": [p for p in unique_submitted if p in gold_set],
+        "missed_gold_ids": [g for g in gold_ids if g not in submitted_set],
+    }
+
+
 def _score_calculation_markdown(
     score_type: str,
     score_meta: dict,
@@ -623,35 +680,29 @@ def _score_calculation_markdown(
     path).
     """
     if score_type.startswith("semantic"):
-        rank = score_meta.get("rank")
-        recall = score_meta.get("estimated_recall_at_estimate")
-        f1 = score_meta.get("adjusted_f1")
-        if rank is None or recall is None or f1 is None:
+        c = _semantic_score_components(score_meta, k_estimate)
+        if c is None:
             return None
-        hits_full = score_meta.get("relevant_predictions_at_full")
-        if k_estimate is None:
-            recall_full = score_meta.get("estimated_recall_at_full") or 0
-            if hits_full and recall_full:
-                k_estimate = round(hits_full / recall_full)
-        n_top_k: int | None = None
-        if k_estimate:
-            n_top_k = round(recall * k_estimate)
+        k = c["k_estimate"]
+        n_top_k = c["grade3_in_top_k"]
+        hits_full = c["grade3_at_full"]
+        if k:
             recall_note = (
-                f"({n_top_k} of K={k_estimate} estimated relevant found in "
+                f"({n_top_k} of K={k} estimated relevant found in "
                 f"your top K; only grade-3 papers count)"
             )
         else:
             recall_note = "(K unknown; only grade-3 papers count)"
         lines = [
-            f"rank   = {rank:.4f}   (order quality: lower-bound-corrected "
+            f"rank   = {c['rank']:.4f}   (order quality: lower-bound-corrected "
             f"nDCG over the judged grades)",
-            f"recall = {recall:.4f}   {recall_note}",
-            f"score  = harmonic(rank, recall) = {f1:.4f}",
+            f"recall = {c['recall']:.4f}   {recall_note}",
+            f"score  = harmonic(rank, recall) = {c['score']:.4f}",
         ]
         if hits_full is not None and n_top_k is not None and hits_full > n_top_k:
             lines += [
                 "",
-                f"{int(hits_full) - n_top_k} more Perfect paper(s) ranked "
+                f"{hits_full - n_top_k} more Perfect paper(s) ranked "
                 f"below position K earned no recall credit — ordering cost "
                 f"you recall.",
             ]
@@ -663,19 +714,11 @@ def _score_calculation_markdown(
         return "\n".join(lines)
 
     # specific_f1 / metadata_f1: exact-match standard F1.
-    precision = score_meta.get("precision")
-    recall = score_meta.get("known_recall_at_full")
-    f1 = score_meta.get("standard_f1")
-    if precision is None or recall is None or f1 is None:
+    c = _exact_score_components(score_meta, submitted, gold_ids)
+    if c is None:
         return None
-    hits = score_meta.get("relevant_predictions_at_full")
-    unique_submitted = list(dict.fromkeys(submitted))[:250]
-    n_sub = len(unique_submitted)
-    n_gold = len(gold_ids)
-    gold_set = set(gold_ids)
-    submitted_set = set(unique_submitted)
-    matched = [pid for pid in unique_submitted if pid in gold_set]
-    missed = [g for g in gold_ids if g not in submitted_set]
+    matched = c["matched_gold_ids"]
+    missed = c["missed_gold_ids"]
 
     def _frac(num, den, value: float) -> str:
         # Show the hits/N fraction only when it reproduces the scorer's
@@ -684,17 +727,19 @@ def _score_calculation_markdown(
             return f"{value:.4f}"
         return f"{int(num)}/{den} = {value:.4f}"
 
-    hits_shown = int(hits) if hits is not None else len(matched)
+    hits_shown = c["hits"] if c["hits"] is not None else len(matched)
     lines = [
-        f"submitted: {n_sub} unique paper id(s) (scorer reads first 250) "
-        f"· gold: {n_gold}",
+        f"submitted: {c['n_submitted']} unique paper id(s) (scorer reads "
+        f"first 250) · gold: {c['n_gold']}",
         f"hits (submitted ∩ gold): {hits_shown}"
         + (f" → {', '.join(matched)}" if matched else ""),
         f"missed gold ids: {', '.join(missed) if missed else '(none)'}",
         "",
-        f"precision = hits / #submitted = {_frac(hits, n_sub, precision)}",
-        f"recall    = hits / #gold      = {_frac(hits, n_gold, recall)}",
-        f"score     = harmonic(precision, recall) = {f1:.4f}",
+        f"precision = hits / #submitted = "
+        f"{_frac(c['hits'], c['n_submitted'], c['precision'])}",
+        f"recall    = hits / #gold      = "
+        f"{_frac(c['hits'], c['n_gold'], c['recall'])}",
+        f"score     = harmonic(precision, recall) = {c['score']:.4f}",
     ]
     return "\n".join(lines)
 
@@ -713,54 +758,21 @@ def _score_meta_json(
     extra LLM calls.
     """
     if score_type.startswith("semantic"):
-        rank = score_meta.get("rank")
-        recall = score_meta.get("estimated_recall_at_estimate")
-        f1 = score_meta.get("adjusted_f1")
-        if rank is None or recall is None or f1 is None:
-            return None
-        hits_full = score_meta.get("relevant_predictions_at_full")
-        if k_estimate is None:
-            recall_full = score_meta.get("estimated_recall_at_full") or 0
-            if hits_full and recall_full:
-                k_estimate = round(hits_full / recall_full)
-        n_top_k = round(float(recall) * k_estimate) if k_estimate else None
-        data = {
-            "score_type": score_type,
-            "score": float(f1),
-            "rank": float(rank),
-            "recall": float(recall),
-            "k_estimate": int(k_estimate) if k_estimate else None,
-            "grade3_in_top_k": n_top_k,
-            "grade3_at_full": int(hits_full) if hits_full is not None else None,
-        }
+        c = _semantic_score_components(score_meta, k_estimate)
     else:
-        precision = score_meta.get("precision")
-        recall = score_meta.get("known_recall_at_full")
-        f1 = score_meta.get("standard_f1")
-        if precision is None or recall is None or f1 is None:
-            return None
-        unique_submitted = list(dict.fromkeys(submitted))[:250]
-        gold_set = set(gold_ids)
-        submitted_set = set(unique_submitted)
-        hits = score_meta.get("relevant_predictions_at_full")
-        data = {
-            "score_type": score_type,
-            "score": float(f1),
-            "precision": float(precision),
-            "recall": float(recall),
-            "hits": int(hits) if hits is not None else None,
-            "n_submitted": len(unique_submitted),
-            "n_gold": len(gold_ids),
-            "matched_gold_ids": [p for p in unique_submitted if p in gold_set],
-            "missed_gold_ids": [g for g in gold_ids if g not in submitted_set],
-        }
-    return json.dumps(data, indent=2)
+        c = _exact_score_components(score_meta, submitted, gold_ids)
+    if c is None:
+        return None
+    return json.dumps({"score_type": score_type, **c}, indent=2)
 
 
-def _judge_verdicts_markdown(
-    submitted_ids: list[str], query_id: str, known_good: set[str]
-) -> str | None:
-    """Per-paper judge verdicts for a semantic query, in submitted order.
+def _verdict_states(
+    submitted_ids: list[str], known_good: set[str]
+) -> tuple[int | None, list[tuple[int, str, str, str | None]]] | None:
+    """Per-paper judge outcome states shared by the prose and JSON verdict
+    diagnostics — the single home of the status-inference ordering
+    (known-good → judged → beyond-cap → judge-failed → no-record), so the
+    two renderings cannot drift.
 
     Sourced from the grounded judge's in-process record of THIS evaluation
     (grounding.last_judgements()), not the persistent cache file — so the
@@ -768,27 +780,57 @@ def _judge_verdicts_markdown(
     evidence, never a stale entry another agent wrote for the same paper.
     Zero extra LLM calls.
 
-    Verdict per submitted paper:
-      - in the query's known_to_be_good list → pre-seeded Perfect (the
-        scorer never LLM-judges these)
-      - judged this eval → the judge's label, verbatim
-      - unjudged while the judge demonstrably ran → "(judge call failed —
-        excluded from scoring)", plus a footer line saying it is judge-side
-        and neutral, so evolution doesn't misread the gap as agent-caused
-        or as a 0
-      - unjudged with no judgements at all (scorer didn't run) →
-        "(no verdict recorded)"
+    Training caps judging at the top-`cap` submitted papers (recall depth);
+    deeper papers are intentionally not judged and get their own state
+    rather than a judge-failure — otherwise evolution would chase
+    "missing" verdicts on papers that cannot affect the score.
 
-    Returns None when there's nothing to report (no submissions, or no
-    grounded judgements were produced and nothing is known-good).
-    """
+    Returns (cap, states) with states as (position, paper_id, status,
+    raw_label) in submitted order — status one of "judged", "known_good"
+    (pre-seeded Perfect, never LLM-judged), "beyond_scored_depth",
+    "judge_call_failed" (judge-side error: the paper is excluded from both
+    the rank sequence and recall — neither credited nor penalized), or
+    "no_verdict_recorded" — or None when there is nothing to report (no
+    submissions, or no grounded judgements and nothing known-good)."""
     if not submitted_ids:
         return None
     raw_judgements = grounding.last_judgements()
     if not raw_judgements and not known_good:
         return None
     # Normalize judgement keys to match the normalized submitted_ids.
-    judged = {normalize_corpus_id(str(k)): str(v) for k, v in raw_judgements.items()}
+    judged = {
+        normalize_corpus_id(str(k)): str(v) for k, v in raw_judgements.items()
+    }
+    cap = grounding.last_cap()
+    states = []
+    for i, pid in enumerate(submitted_ids[:250], 1):  # scorer reads first 250
+        if pid in known_good:
+            status, label = "known_good", "perfectly_relevant_papers"
+        elif pid in judged:
+            status, label = "judged", judged[pid]
+        elif cap is not None and i > cap:
+            status, label = "beyond_scored_depth", None
+        elif judged:
+            status, label = "judge_call_failed", None
+        else:
+            status, label = "no_verdict_recorded", None
+        states.append((i, pid, status, label))
+    return cap, states
+
+
+def _judge_verdicts_markdown(
+    submitted_ids: list[str], query_id: str, known_good: set[str]
+) -> str | None:
+    """Prose rendering of the per-paper judge verdicts for a semantic
+    query, in submitted order, with a summary-count footer. State
+    semantics, sources, and None conditions live in _verdict_states; a
+    judge-call failure additionally gets a footer line saying it is
+    judge-side and neutral, so evolution doesn't misread the gap as
+    agent-caused or as a 0."""
+    res = _verdict_states(submitted_ids, known_good)
+    if res is None:
+        return None
+    _cap, states = res
 
     # The judge stores astabench's internal label strings
     # ("perfectly_relevant_papers", ...); translate to the human labels.
@@ -799,38 +841,29 @@ def _judge_verdicts_markdown(
         "not_relevant_papers": "Not Relevant",
     }
     perfect_raw = "perfectly_relevant_papers"
-
-    # Training caps judging at the top-`cap` submitted papers (recall depth);
-    # deeper papers are intentionally not judged, so label them as such rather
-    # than as a judge failure — otherwise evolution would chase "missing"
-    # verdicts on papers that cannot affect the score.
-    cap = grounding.last_cap()
+    status_text = {
+        "beyond_scored_depth": "(beyond scored depth — not judged)",
+        "judge_call_failed": "(judge call failed — excluded from scoring)",
+        "no_verdict_recorded": "(no verdict recorded)",
+    }
 
     lines = []
     n_perfect = n_lower = n_unknown = n_beyond = 0
-    for i, pid in enumerate(submitted_ids[:250], 1):  # scorer reads first 250
-        if pid in known_good:
+    for i, pid, status, label in states:
+        if status == "known_good":
             verdict = "Perfectly Relevant (known-good)"
             n_perfect += 1
-        elif pid in judged:
-            raw = judged[pid]
-            verdict = pretty.get(raw, raw)
-            if raw == perfect_raw:
+        elif status == "judged":
+            verdict = pretty.get(label, label)
+            if label == perfect_raw:
                 n_perfect += 1
             else:
                 n_lower += 1
-        elif cap is not None and i > cap:
-            verdict = "(beyond scored depth — not judged)"
+        elif status == "beyond_scored_depth":
+            verdict = status_text[status]
             n_beyond += 1
-        elif judged:
-            # The judge ran (other papers have verdicts) but this one has
-            # none: a judge-side call failure. The scorer excludes the paper
-            # from both the rank sequence and recall — neither credited nor
-            # penalized.
-            verdict = "(judge call failed — excluded from scoring)"
-            n_unknown += 1
         else:
-            verdict = "(no verdict recorded)"
+            verdict = status_text[status]
             n_unknown += 1
         lines.append(f"{i}. {pid} — {verdict}")
     n_submitted = len(lines)
@@ -839,7 +872,7 @@ def _judge_verdicts_markdown(
         f"\n{n_perfect} Perfect / {n_lower} lower / {n_unknown} no verdict"
         f"{tail}, of {n_submitted} submitted"
     )
-    if judged and n_unknown:
+    if any(status == "judge_call_failed" for _, _, status, _ in states):
         lines.append(
             "Judge-call failures are a judge-side error (rare, ~1%), unrelated "
             "to your submission or evidence: the paper is excluded from both "
@@ -852,40 +885,19 @@ def _judge_verdicts_json(
     submitted_ids: list[str], known_good: set[str]
 ) -> str | None:
     """Machine-readable sibling of judge_verdicts.md: per-paper judge
-    outcomes in submitted order. The markdown's parenthetical per-paper
-    states are carried as an explicit `status` field — "judged",
-    "known_good" (pre-seeded Perfect, never LLM-judged),
-    "beyond_scored_depth" (deliberately unjudged), "judge_call_failed"
-    (judge-side error, excluded from scoring — neither credited nor
-    penalized), or "no_verdict_recorded" — and labels are the judge's
-    raw strings ("perfectly_relevant_papers", ...). Same in-process
-    sources and same None conditions as the markdown; no extra LLM
-    calls.
-    """
-    if not submitted_ids:
+    outcomes in submitted order, with the markdown's parenthetical
+    per-paper states carried as an explicit `status` field and labels
+    kept as the judge's raw strings ("perfectly_relevant_papers", ...).
+    State semantics, sources, and None conditions live in
+    _verdict_states."""
+    res = _verdict_states(submitted_ids, known_good)
+    if res is None:
         return None
-    raw_judgements = grounding.last_judgements()
-    if not raw_judgements and not known_good:
-        return None
-    judged = {
-        normalize_corpus_id(str(k)): str(v) for k, v in raw_judgements.items()
-    }
-    cap = grounding.last_cap()
-    papers = []
-    for i, pid in enumerate(submitted_ids[:250], 1):  # scorer reads first 250
-        if pid in known_good:
-            status, label = "known_good", "perfectly_relevant_papers"
-        elif pid in judged:
-            status, label = "judged", judged[pid]
-        elif cap is not None and i > cap:
-            status, label = "beyond_scored_depth", None
-        elif judged:
-            status, label = "judge_call_failed", None
-        else:
-            status, label = "no_verdict_recorded", None
-        papers.append(
-            {"position": i, "paper_id": pid, "status": status, "label": label}
-        )
+    cap, states = res
+    papers = [
+        {"position": i, "paper_id": pid, "status": status, "label": label}
+        for i, pid, status, label in states
+    ]
     return json.dumps({"scored_depth_cap": cap, "papers": papers}, indent=2)
 
 
