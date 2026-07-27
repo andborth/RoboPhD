@@ -42,7 +42,7 @@ Review the specific commit(s) listed in `$ARGUMENTS` (space or comma separated).
 
 2. **Analyze** using the same criteria as commits (see below).
 
-3. **Provide concise feedback** — same format as commits but without a commit hash.
+3. **Provide concise feedback** — same format as commits but without a commit hash. The findings must still be the final message of the turn, with no tool calls after them (see Important Notes).
 
 ## For each commit:
 
@@ -95,13 +95,14 @@ If no issues: just the assessment, skip the Issues section.
    echo "<latest-reviewed-commit-hash>" > .claude/last_critique_commit
    ```
 
-2. **Present the findings**: the per-commit blocks and closing summary must be the final message of the turn, with NO tool calls after them — text emitted before a tool call may never be shown to the user. End with:
+2. **Present the findings**: the per-commit blocks and closing summary come after the tracking-file update, ending with:
    ```
    Reviewed X commits (abc123..def456). Y issues found.
    ```
 
 # Important Notes
 
+- **In every mode (commits or staged), the findings must be the final message of the turn, with NO tool calls after them** — text emitted before a tool call may never be shown to the user. Run all tool calls (diff fetching, tracking-file update) before writing the review.
 - Be direct and concise - no fluff
 - Focus on substantive issues, not style nitpicks
 - If a commit addresses feedback from a previous review, acknowledge it briefly
