@@ -388,8 +388,15 @@ def test_test_cache_env_no_prose_basis(main_mod, _judge_env, tmp_path):
     assert "NOT comparable" in mode["judge_note"]
 
 
-def test_judge_prompt_choices_and_runtime_packing():
-    """--judge-prompt is choice-limited and rides paper_finder_runtime."""
+def test_judge_prompt_is_derived_not_settable_and_still_persisted():
+    """The judge-prompt profile is a property of the judge, not a knob.
+
+    It could only ever take one correct value per judge (no-prose is
+    validated for luna and rejected for gpt-4o), so exposing it added a
+    way to mispair the two and nothing else. It still rides
+    paper_finder_runtime, because the resolved value scopes the verdict
+    cache and the test-result filename, and resume must restore it.
+    """
     import ast as _ast
     packs = [
         node for node in _ast.walk(MAIN_TREE)
@@ -397,10 +404,73 @@ def test_judge_prompt_choices_and_runtime_packing():
         and any(getattr(t, "id", None) == "resolved_runtime" for t in node.targets)
     ]
     keys = {getattr(k, "value", None) for k in packs[0].value.keys}
-    assert "judge_prompt" in keys
-    src = MAIN_SRC
-    assert 'choices=JUDGE_PROMPT_CHOICES' in src
-    assert '--judge-prompt no-prose requires the alternate judge' in src
+    assert "judge_prompt" in keys, "profile must stay persisted for resume"
+
+    flags = _argparse_flags()
+    assert "--judge-prompt" not in flags, "profile is derived, not settable"
+    assert "--training-judge" in flags, "the judge itself stays selectable"
+
+
+def test_prompt_derivation_pairs_each_judge_with_its_validated_profile(main_mod):
+    """gpt-4o -> stock, luna -> no-prose, and nothing else is reachable."""
+    from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
+
+    assert main_mod._prompt_for_judge(GRADER_MODEL_NAME) == "stock"
+    assert main_mod._prompt_for_judge("openai/gpt-5.6-luna") == "no-prose"
+    # Every selectable judge derives a profile in JUDGE_PROMPT_CHOICES.
+    for judge in main_mod.TRAINING_JUDGE_CHOICES:
+        assert main_mod._prompt_for_judge(judge) in main_mod.JUDGE_PROMPT_CHOICES
+
+
+def test_stock_judge_never_derives_no_prose(main_mod):
+    """The rejected pairing is unreachable by construction.
+
+    gpt-4o under no-prose inflates its Perfect rate ~18.5%, which is a
+    silent scoring error rather than a loud failure -- so the guard that
+    used to catch a mispaired flag is now an assertion against a
+    hand-edited checkpoint, and the derivation itself must never produce
+    that pairing.
+    """
+    from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
+
+    assert main_mod._prompt_for_judge(GRADER_MODEL_NAME) != "no-prose"
+    assert "is not a supported basis" in MAIN_SRC, "keep the checkpoint guard"
+
+
+def test_resume_restores_stored_profile_rather_than_deriving_it():
+    """A resume must never re-base an existing campaign.
+
+    Two legacy shapes both have to keep resolving to "stock", and the
+    derivation would send both to no-prose if it were allowed to run:
+
+      * checkpoints predating the knob (the feature did not exist, so
+        every one of them ran the stock prompt);
+      * the one prose-luna campaign (20260721_215631), which ran luna
+        under the stock prompt while that pairing was still selectable.
+
+    Both are covered by reading the stored value with a "stock" fallback,
+    so this pins that the resume branch does exactly that and does not
+    consult _prompt_for_judge.
+    """
+    import ast as _ast
+
+    fn = next(
+        n for n in _ast.walk(MAIN_TREE)
+        if isinstance(n, _ast.FunctionDef) and n.name == "main"
+    )
+    assign = next(
+        n for n in _ast.walk(fn)
+        if isinstance(n, _ast.If)
+        and _ast.unparse(n.test) == "checkpoint_pfb is not None"
+        and "judge_prompt" in _ast.unparse(n)
+    )
+    resume_branch, fresh_branch = _ast.unparse(assign.body), _ast.unparse(assign.orelse)
+
+    assert "checkpoint_pfb.get('judge_prompt', 'stock')" in resume_branch
+    assert "_prompt_for_judge" not in resume_branch, \
+        "resume must restore the stored basis, never re-derive it"
+    assert "_prompt_for_judge" in fresh_branch, \
+        "a fresh run derives the profile from its judge"
 
 
 def test_training_judge_is_run_immutable_and_persisted():

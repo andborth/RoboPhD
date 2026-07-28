@@ -131,15 +131,11 @@ On `semantic_f1` queries (73% of validation) the scorer runs a GPT-4o relevance 
 
 ### Training judge (`--training-judge`)
 
-Two judge models are available. Since 2026-07-28 fresh runs default to **`openai/gpt-5.6-luna` with `--judge-prompt no-prose`** — the calibrated cheap basis, standard practice across several campaigns. Stock `openai/gpt-4o-2024-11-20` remains astabench's hardcoded official judge and **the only scoring basis comparable to leaderboard results**; select it with:
+Two judge models are available. Since 2026-07-28 **training** defaults to `openai/gpt-5.6-luna` — the calibrated cheap basis, standard practice across several campaigns. Stock `openai/gpt-4o-2024-11-20` remains astabench's hardcoded official judge and **the only scoring basis comparable to leaderboard results**; select it with `--training-judge openai/gpt-4o-2024-11-20`.
 
-```bash
---training-judge openai/gpt-4o-2024-11-20 --judge-prompt stock
-```
+**The judge-prompt profile is derived, not selected.** `no-prose` is validated for luna and rejected for gpt-4o, so each judge has exactly one correct profile — `gpt-4o → stock`, `luna → no-prose` — and there is no `--judge-prompt` flag to mispair. The profile is still persisted in `paper_finder_runtime`, because it scopes the verdict cache and the test-result filename, and a resume restores the stored value rather than re-deriving it (so the one prose-luna campaign, and any checkpoint predating the knob, keep their original basis).
 
-Both flags are needed together — `no-prose` is luna-only and the run aborts if it is left on with the stock judge. The two defaults therefore move as a pair; reverting one means reverting both. Resume is unaffected: a stored value always wins, so no in-flight campaign changes basis, and a legacy checkpoint predating the knob still resolves to `stock`.
-
-**Consequence worth knowing:** `--eval-test-set` on a default run now writes judge-suffixed, *not* official-comparable test results. Get the comparable number with a second pass — `--eval-only --training-judge openai/gpt-4o-2024-11-20 --judge-prompt stock` — which is what run -006 did (train on luna, then a full stock re-eval for the headline).
+**Test evals are unaffected by the training default.** They read the raw `--training-judge` flag, so an unflagged `--eval-test-set` still judges on stock GPT-4o and writes plain `test_results.json`: cheap training and an official-comparable headline, with no extra flags. Pass `--training-judge` explicitly if you want the test eval on luna too (it then writes judge-suffixed, non-comparable files).
 
 Calibration record:
 

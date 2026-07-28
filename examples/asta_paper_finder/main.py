@@ -344,25 +344,45 @@ TRAINING_JUDGE_CHOICES = [
 # gets its own cache namespace and test-result filename suffix.
 JUDGE_PROMPT_CHOICES = ["stock", "no-prose"]
 
+# Module-level alias for the stock judge. main() imports astabench's
+# GRADER_MODEL_NAME as _STOCK_GRADER for the same purpose, but that import
+# is function-scoped; element 0 is pinned to it by a unit test, so the two
+# cannot drift apart.
+_STOCK_GRADER_ID = TRAINING_JUDGE_CHOICES[0]
 
-# Defaults for FRESH runs (2026-07-28). Training moved to the cheap
-# calibrated basis after it became standard practice across several
-# campaigns: luna + no-prose roughly quarters the judge bill (run -006
-# trained for $30.08 against -005's $128.32) and the full stock-vs-luna
-# pairing on all 267 test queries put the gap at +0.0136 overall
-# (se 0.0091), inside noise.
+
+# Default judge for FRESH runs (2026-07-28): the cheap calibrated basis,
+# after it became standard practice across several campaigns. luna +
+# no-prose roughly quarters the judge bill (run -006 trained for $30.08
+# against -005's $128.32) and the full stock-vs-luna pairing on all 267
+# test queries put the gap at +0.0136 overall (se 0.0091), inside noise.
 #
-# These two MUST move together: no-prose is luna-only, and a fresh run
-# defaulting to no-prose with the stock judge would die at the SystemExit
-# below. Reverting one means reverting both.
-#
-# Resume is unaffected — a stored value always wins, so no in-flight
-# campaign switches basis. What DOES change: `--eval-test-set` now writes
-# judge-suffixed, NOT-official-comparable test results by default. For a
-# leaderboard-comparable number, re-run with
-# `--eval-only --training-judge openai/gpt-4o-2024-11-20 --judge-prompt stock`.
+# This is the TRAINING default only. The test-eval paths read the raw
+# `--training-judge` flag rather than this resolved value, so an unflagged
+# `--eval-test-set` still judges on stock GPT-4o and still writes plain
+# `test_results.json` — cheap training, official-comparable headline, no
+# extra flags. Passing --training-judge explicitly moves both.
 _DEFAULT_TRAINING_JUDGE = "openai/gpt-5.6-luna"
-_DEFAULT_JUDGE_PROMPT = "no-prose"
+
+
+def _prompt_for_judge(judge: str) -> str:
+    """The judge-prompt profile a given judge is run under.
+
+    There is no separate knob: the profile is a property of the judge.
+    no-prose was validated at the rerun-noise floor for luna and REJECTED
+    for gpt-4o (+18.5% Perfect inflation), so the only two coherent
+    pairings are the two this returns. Deriving them removes a
+    run-immutable flag that could only ever be set to one correct value
+    per judge, and with it the failure mode of changing the judge and
+    forgetting its profile.
+
+    Fresh runs only — resume always restores the stored profile, so a
+    checkpoint written before this derivation (notably the one prose-luna
+    campaign, 20260721_215631, which ran luna under the stock prompt)
+    still resumes on its original basis rather than being silently
+    re-based by today's rule.
+    """
+    return "no-prose" if judge != _STOCK_GRADER_ID else "stock"
 
 
 def _judge_slug(judge: str) -> str:
@@ -599,24 +619,18 @@ def parse_args():
                         "evals. Default: openai/gpt-5.6-luna, the calibrated "
                         "cheap judge (kappa 0.755, 2026-07-20; ~2x cheaper — "
                         "see README 'Training judge'). Pass "
-                        "openai/gpt-4o-2024-11-20 with --judge-prompt stock "
-                        "for the official basis — the ONLY one comparable to "
-                        "leaderboard scores. Non-stock test results are "
+                        "openai/gpt-4o-2024-11-20 for the official basis — "
+                        "the ONLY one comparable to leaderboard scores. The "
+                        "judge-prompt profile follows from this choice "
+                        "(gpt-4o -> stock, luna -> no-prose) and is not "
+                        "separately settable. Non-stock test results are "
                         "written to judge-suffixed files. Official "
                         "submissions always use stock GPT-4o regardless. "
                         "Each judge has its own verdict-cache namespace.")
-    p.add_argument("--judge-prompt", type=str, default=None,
-                   choices=JUDGE_PROMPT_CHOICES,
-                   help="Judge-prompt profile for the ALTERNATE judge only. "
-                        "Default: no-prose, which drops the snippet/summary "
-                        "output the scorer never reads — validated at the "
-                        "rerun-noise floor for gpt-5.6-luna (output -65%%, "
-                        "~2x cheaper judging), REJECTED for gpt-4o (+18.5%% "
-                        "Perfect inflation), so it requires --training-judge "
-                        "openai/gpt-5.6-luna and must be set to 'stock' "
-                        "whenever you select the gpt-4o judge. "
-                        "Run-immutable; own verdict-cache namespace "
-                        "(_noprose) and test-result suffix.")
+    # There is deliberately no --judge-prompt flag: the profile is derived
+    # from the judge (see _prompt_for_judge). It could only ever be set to
+    # one correct value per judge, so exposing it added a way to get the
+    # pairing wrong and nothing else.
     p.add_argument("--evidence-char-cap", type=int, default=None,
                    help="Per-paper markdown_evidence character cap, ENFORCED "
                         "during training only (truncated before grounding/"
@@ -819,34 +833,36 @@ def main():
             "shell that launches the run (see README 'Credentials')."
         )
 
-    # Judge-prompt profile: part of the verdict basis, so run-immutable
-    # like the judge itself. Legacy checkpoints predate the knob and ALL
-    # ran the stock prompt (the feature didn't exist), so a present-but-
-    # keyless store safely resolves to "stock" — unlike training_judge,
-    # where either value was possible pre-persistence and missing is a
-    # hard error.
-    # Fresh runs default to no-prose (see _DEFAULT_JUDGE_PROMPT). The
-    # stored-value fallback stays "stock" on purpose: legacy checkpoints
-    # predate the knob and every one of them ran the stock prompt, so a
-    # resume must resolve to stock rather than inherit today's default and
-    # switch a campaign's verdict basis mid-flight.
-    judge_prompt = _enforce_immutable_on_resume(
-        cli_value=args.judge_prompt,
-        stored_value=(
-            checkpoint_pfb.get("judge_prompt", "stock") if checkpoint_pfb else None
-        ),
-        default_value=_DEFAULT_JUDGE_PROMPT,
-        name="judge-prompt",
-        on_resume=on_resume,
-        fmt=str,
-    )
+    # Judge-prompt profile: part of the verdict basis, so it stays
+    # persisted and run-immutable like the judge itself — but it is no
+    # longer settable. On a fresh run it is derived from the judge; on a
+    # resume the stored value always wins.
+    #
+    # Two distinct legacy shapes both have to keep resolving to "stock",
+    # and for different reasons:
+    #   * checkpoints predating the knob entirely — the feature did not
+    #     exist, so every one of them ran the stock prompt;
+    #   * the one prose-luna campaign (20260721_215631), which ran luna
+    #     under the stock prompt back when that pairing was selectable.
+    # The derivation would re-base both to no-prose, so it must not reach
+    # them: `.get("judge_prompt", "stock")` covers the first and the
+    # stored value covers the second.
+    if checkpoint_pfb is not None:
+        judge_prompt = checkpoint_pfb.get("judge_prompt", "stock")
+    else:
+        judge_prompt = _prompt_for_judge(training_judge)
+
+    # Unreachable via the CLI now that the profile is derived — kept as an
+    # assertion against a hand-edited or corrupted checkpoint, since this
+    # pairing silently inflates gpt-4o's Perfect rate rather than failing
+    # loudly on its own.
     if judge_prompt != "stock" and (training_judge or _STOCK_GRADER) == _STOCK_GRADER:
         raise SystemExit(
-            "--judge-prompt no-prose requires the alternate judge "
-            "(--training-judge openai/gpt-5.6-luna). The stock GPT-4o basis "
-            "must stay byte-identical to official scoring — and gpt-4o "
-            "FAILED the no-prose calibration (+18.5% Perfect inflation, "
-            "2026-07-23 study; see README 'Training judge')."
+            f"Stored judge_prompt={judge_prompt!r} with the stock GPT-4o "
+            "judge is not a supported basis: the stock basis must stay "
+            "byte-identical to official scoring, and gpt-4o FAILED the "
+            "no-prose calibration (+18.5% Perfect inflation, 2026-07-23 "
+            "study; see README 'Training judge')."
         )
 
     # Evidence char cap: shapes what the judge sees during training, hence
@@ -1045,7 +1061,7 @@ def main():
             cap=cap_judge_to_estimate,
             judge=args.training_judge or _STOCK_GRADER,
             stock=_STOCK_GRADER,
-            judge_prompt=args.judge_prompt or "stock",
+            judge_prompt=_prompt_for_judge(args.training_judge or _STOCK_GRADER),
         )
         test_data = [s.model_dump() for s in load_paper_finder("test")]
         logger.info(f"Test set: {len(test_data)} samples")
@@ -1075,7 +1091,7 @@ def main():
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
         results_filename = _test_results_filename(
             args.eval_agent, args.training_judge or _STOCK_GRADER, _STOCK_GRADER,
-            judge_prompt=args.judge_prompt or "stock",
+            judge_prompt=_prompt_for_judge(args.training_judge or _STOCK_GRADER),
         )
         summary_path, per_problem_path = _write_test_results(
             eval_result=eval_result,
@@ -1230,7 +1246,7 @@ def main():
                 cap=cap_judge_to_estimate,
                 judge=args.training_judge or _STOCK_GRADER,
                 stock=_STOCK_GRADER,
-                judge_prompt=args.judge_prompt or "stock",
+                judge_prompt=_prompt_for_judge(args.training_judge or _STOCK_GRADER),
             )
             test_data = [s.model_dump() for s in load_paper_finder("test")]
             logger.info(f"Test evaluation: {len(test_data)} samples")
@@ -1248,7 +1264,7 @@ def main():
                 agent_name="best",
                 summary_filename=_test_results_filename(
                     None, args.training_judge or _STOCK_GRADER, _STOCK_GRADER,
-                    judge_prompt=args.judge_prompt or "stock",
+                    judge_prompt=_prompt_for_judge(args.training_judge or _STOCK_GRADER),
                 ),
                 scoring_mode=scoring_mode,
             )
