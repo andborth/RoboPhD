@@ -64,7 +64,7 @@ from evaluator import (  # noqa: E402
 )
 from main import (  # noqa: E402
     JUDGE_PROMPT_CHOICES,
-    TRAINING_JUDGE_CHOICES,
+    JUDGE_CHOICES,
     _judge_basis_slug,
     _judge_cache_dir,
 )
@@ -85,7 +85,7 @@ from astabench.evals.paper_finder.relevance import (  # noqa: E402
     bench_rj_2_pf_rj,
 )
 
-STOCK = TRAINING_JUDGE_CHOICES[0]
+STOCK = JUDGE_CHOICES[0]
 
 
 @dataclass
@@ -503,7 +503,7 @@ def main() -> int:
         "a different judge basis; no agent re-run."
     )
     ap.add_argument("run_dir", type=Path)
-    ap.add_argument("--judge", required=True, choices=TRAINING_JUDGE_CHOICES)
+    ap.add_argument("--judge", required=True, choices=JUDGE_CHOICES)
     ap.add_argument("--judge-prompt", default="stock", choices=JUDGE_PROMPT_CHOICES)
     ap.add_argument(
         "--no-baseline", dest="baseline", action="store_false", default=True,

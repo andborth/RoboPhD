@@ -418,7 +418,7 @@ def test_prompt_derivation_pairs_each_judge_with_its_validated_profile(main_mod)
     assert main_mod._prompt_for_judge(GRADER_MODEL_NAME) == "stock"
     assert main_mod._prompt_for_judge("openai/gpt-5.6-luna") == "no-prose"
     # Every selectable judge derives a profile in JUDGE_PROMPT_CHOICES.
-    for judge in main_mod.TRAINING_JUDGE_CHOICES:
+    for judge in main_mod.JUDGE_CHOICES:
         assert main_mod._prompt_for_judge(judge) in main_mod.JUDGE_PROMPT_CHOICES
 
 
@@ -435,6 +435,56 @@ def test_stock_judge_never_derives_no_prose(main_mod):
 
     assert main_mod._prompt_for_judge(GRADER_MODEL_NAME) != "no-prose"
     assert "is not a supported basis" in MAIN_SRC, "keep the checkpoint guard"
+
+
+def test_training_and_test_judges_are_independent_flags():
+    """Separate knobs, separate defaults — training cheap, test official.
+
+    They answer different questions: training wants the cheapest basis
+    that ranks agents faithfully, a test eval wants the basis the
+    leaderboard uses. One flag serving both created an
+    explicit-default-is-not-default trap, where `--training-judge <luna>`
+    moved the test eval but relying on the same value as a default did
+    not.
+    """
+    flags = _argparse_flags()
+    assert "--training-judge" in flags
+    assert "--test-judge" in flags
+    assert "_DEFAULT_TRAINING_JUDGE = " in MAIN_SRC
+    assert "_DEFAULT_TEST_JUDGE = " in MAIN_SRC
+
+
+def test_test_eval_sites_never_read_the_training_judge():
+    """The trap regression test.
+
+    Every test-eval call site must resolve from `test_judge`. If one
+    reads `args.training_judge`, stating the training default explicitly
+    silently changes what a test score means -- and the score still looks
+    like a normal number.
+    """
+    import ast as _ast
+
+    offenders = []
+    for node in _ast.walk(MAIN_TREE):
+        if not (isinstance(node, _ast.Call) and getattr(node.func, "id", None)
+                in ("_set_test_cache_env", "_test_results_filename")):
+            continue
+        src = _ast.unparse(node)
+        if "training_judge" in src:
+            offenders.append(f"line {node.lineno}: {getattr(node.func, 'id')}")
+    assert not offenders, (
+        "test-eval sites reading the training judge: " + "; ".join(offenders)
+    )
+
+
+def test_default_test_judge_is_the_official_one(main_mod):
+    """An unflagged test eval must land on the leaderboard's basis."""
+    from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
+
+    assert main_mod._DEFAULT_TEST_JUDGE == GRADER_MODEL_NAME
+    assert main_mod._DEFAULT_TRAINING_JUDGE != GRADER_MODEL_NAME, \
+        "training default is the cheap basis; if these ever match, the " \
+        "cost saving is gone and this test should be the thing that says so"
 
 
 def test_resume_restores_stored_profile_rather_than_deriving_it():
@@ -527,7 +577,7 @@ def test_training_judge_choices_pinned(main_mod):
     from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME
     from evaluator import JUDGE_MODEL_IDS
 
-    choices = main_mod.TRAINING_JUDGE_CHOICES
+    choices = main_mod.JUDGE_CHOICES
     assert choices[0] == GRADER_MODEL_NAME
     assert set(choices) <= JUDGE_MODEL_IDS
     assert "openai/gpt-5.6-luna" in choices

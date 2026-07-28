@@ -331,7 +331,7 @@ def _write_test_results(
 # gate on 2026-07-20 (kappa 0.755, matched Perfect rates — see README
 # "Training judge"). A unit test pins element 0 to astabench's
 # GRADER_MODEL_NAME and both elements to evaluator.JUDGE_MODEL_IDS.
-TRAINING_JUDGE_CHOICES = [
+JUDGE_CHOICES = [
     "openai/gpt-4o-2024-11-20",
     "openai/gpt-5.6-luna",
 ]
@@ -348,7 +348,7 @@ JUDGE_PROMPT_CHOICES = ["stock", "no-prose"]
 # GRADER_MODEL_NAME as _STOCK_GRADER for the same purpose, but that import
 # is function-scoped; element 0 is pinned to it by a unit test, so the two
 # cannot drift apart.
-_STOCK_GRADER_ID = TRAINING_JUDGE_CHOICES[0]
+_STOCK_GRADER_ID = JUDGE_CHOICES[0]
 
 
 # Default judge for FRESH runs (2026-07-28): the cheap calibrated basis,
@@ -357,12 +357,15 @@ _STOCK_GRADER_ID = TRAINING_JUDGE_CHOICES[0]
 # against -005's $128.32) and the full stock-vs-luna pairing on all 267
 # test queries put the gap at +0.0136 overall (se 0.0091), inside noise.
 #
-# This is the TRAINING default only. The test-eval paths read the raw
-# `--training-judge` flag rather than this resolved value, so an unflagged
-# `--eval-test-set` still judges on stock GPT-4o and still writes plain
-# `test_results.json` — cheap training, official-comparable headline, no
-# extra flags. Passing --training-judge explicitly moves both.
+# Training and test judging are separate choices with separate defaults,
+# because they answer different questions. Training wants the cheapest
+# basis that ranks agents faithfully; a test eval wants the basis the
+# leaderboard uses. Conflating them into one flag made stating a default
+# explicitly behave differently from omitting it — `--training-judge
+# <luna>` moved the test eval too, while relying on the same value as a
+# default did not. Two flags, two defaults, no such trap.
 _DEFAULT_TRAINING_JUDGE = "openai/gpt-5.6-luna"
+_DEFAULT_TEST_JUDGE = _STOCK_GRADER_ID
 
 
 def _prompt_for_judge(judge: str) -> str:
@@ -496,9 +499,12 @@ def _set_test_cache_env(
         os.environ[CAP_JUDGE_ENV] = "1"
     else:
         os.environ.pop(CAP_JUDGE_ENV, None)
+    # State the basis affirmatively in BOTH directions. A silent "stock"
+    # reads the same as an unconsidered default, and which basis a test
+    # score is on is the one thing a reader must not have to infer.
     logger.info(
         f"Judge cache ({scope} {label}): {path}; judge: {judge}"
-        f"{'' if is_stock else ' (NON-STOCK — not official-comparable)'}; "
+        f"{' (STOCK — official-comparable)' if is_stock else ' (NON-STOCK — not official-comparable)'}; "
         f"judging cap: {'on' if cap else 'off'}"
     )
     record_extra = {} if is_stock else {
@@ -613,20 +619,32 @@ def parse_args():
     # active (stock paths stay strict for official parity). Choices are
     # pinned to evaluator.JUDGE_MODEL_IDS by a unit test.
     p.add_argument("--training-judge", type=str, default=None,
-                   choices=TRAINING_JUDGE_CHOICES,
+                   choices=JUDGE_CHOICES,
                    help="Relevance-judge model for training AND (if passed "
                         "with --eval-test-set/--eval-only) internal test "
                         "evals. Default: openai/gpt-5.6-luna, the calibrated "
                         "cheap judge (kappa 0.755, 2026-07-20; ~2x cheaper — "
                         "see README 'Training judge'). Pass "
-                        "openai/gpt-4o-2024-11-20 for the official basis — "
-                        "the ONLY one comparable to leaderboard scores. The "
-                        "judge-prompt profile follows from this choice "
-                        "(gpt-4o -> stock, luna -> no-prose) and is not "
-                        "separately settable. Non-stock test results are "
-                        "written to judge-suffixed files. Official "
-                        "submissions always use stock GPT-4o regardless. "
+                        "openai/gpt-4o-2024-11-20 to train on the official "
+                        "basis instead. Affects TRAINING ONLY — see "
+                        "--test-judge for held-out evals. The judge-prompt "
+                        "profile follows from this choice (gpt-4o -> stock, "
+                        "luna -> no-prose) and is not separately settable. "
+                        "Run-immutable: persisted, and a resume restores it. "
                         "Each judge has its own verdict-cache namespace.")
+    p.add_argument("--test-judge", type=str, default=None,
+                   choices=JUDGE_CHOICES,
+                   help="Relevance-judge model for held-out test evals "
+                        "(--eval-test-set / --eval-only). Default: "
+                        "openai/gpt-4o-2024-11-20, astabench's official judge "
+                        "and the ONLY basis comparable to leaderboard scores. "
+                        "Independent of --training-judge, so the cheap "
+                        "training default never silently changes what a test "
+                        "score means. Choosing a non-stock judge here writes "
+                        "judge-suffixed result files carrying a judge_note. "
+                        "An eval-time choice, not run-immutable — the basis "
+                        "used is recorded in test_results.json. Official "
+                        "submissions always use stock GPT-4o regardless.")
     # There is deliberately no --judge-prompt flag: the profile is derived
     # from the judge (see _prompt_for_judge). It could only ever be set to
     # one correct value per judge, so exposing it added a way to get the
@@ -806,13 +824,11 @@ def main():
     # requires stating the judge explicitly once (a one-time bootstrap,
     # locked thereafter) — deliberately never a silent default, because a
     # pre-persistence run may have trained under either judge.
-    # Fresh runs default to the calibrated cheap judge. Only the default
-    # moved (2026-07-28): resume still takes the stored value, and a legacy
+    # Fresh runs default to the calibrated cheap judge (2026-07-28). Only
+    # the default moved: resume still takes the stored value, and a legacy
     # checkpoint without the key still demands an explicit judge rather
     # than silently adopting this one, so no in-flight campaign changes
-    # basis. Pass --training-judge <stock id> --judge-prompt stock for a
-    # leaderboard-comparable eval; test results under any non-stock judge
-    # are written to judge-suffixed files and are NOT official-comparable.
+    # basis. Test evals are governed separately by --test-judge.
     training_judge = _enforce_immutable_on_resume(
         cli_value=args.training_judge,
         stored_value=checkpoint_pfb.get("training_judge"),
@@ -821,6 +837,14 @@ def main():
         on_resume=on_resume,
         fmt=str,
     )
+
+    # The test judge is an EVAL-TIME choice, not part of the run's identity:
+    # a completed run can legitimately be re-scored on either basis (that is
+    # exactly what run -006 did), and the basis used is recorded in
+    # test_results.json alongside the scores. So it resolves straight from
+    # the flag with no immutability machinery — unlike training_judge,
+    # where a mid-campaign switch would contaminate Elo.
+    test_judge = args.test_judge or _DEFAULT_TEST_JUDGE
 
     # ASTA_TOOL_KEY is validated by the evaluator's constructor preflight
     # (hard-required alongside the three provider keys); fail here first
@@ -1059,9 +1083,9 @@ def main():
             runs_dir=args.runs_dir,
             shared=not args.no_shared_judge_cache,
             cap=cap_judge_to_estimate,
-            judge=args.training_judge or _STOCK_GRADER,
+            judge=test_judge,
             stock=_STOCK_GRADER,
-            judge_prompt=_prompt_for_judge(args.training_judge or _STOCK_GRADER),
+            judge_prompt=_prompt_for_judge(test_judge),
         )
         test_data = [s.model_dump() for s in load_paper_finder("test")]
         logger.info(f"Test set: {len(test_data)} samples")
@@ -1090,8 +1114,8 @@ def main():
 
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
         results_filename = _test_results_filename(
-            args.eval_agent, args.training_judge or _STOCK_GRADER, _STOCK_GRADER,
-            judge_prompt=_prompt_for_judge(args.training_judge or _STOCK_GRADER),
+            args.eval_agent, test_judge, _STOCK_GRADER,
+            judge_prompt=_prompt_for_judge(test_judge),
         )
         summary_path, per_problem_path = _write_test_results(
             eval_result=eval_result,
@@ -1244,9 +1268,9 @@ def main():
                 runs_dir=args.runs_dir,
                 shared=not args.no_shared_judge_cache,
                 cap=cap_judge_to_estimate,
-                judge=args.training_judge or _STOCK_GRADER,
+                judge=test_judge,
                 stock=_STOCK_GRADER,
-                judge_prompt=_prompt_for_judge(args.training_judge or _STOCK_GRADER),
+                judge_prompt=_prompt_for_judge(test_judge),
             )
             test_data = [s.model_dump() for s in load_paper_finder("test")]
             logger.info(f"Test evaluation: {len(test_data)} samples")
@@ -1263,8 +1287,8 @@ def main():
                 output_dir=result.experiment_dir,
                 agent_name="best",
                 summary_filename=_test_results_filename(
-                    None, args.training_judge or _STOCK_GRADER, _STOCK_GRADER,
-                    judge_prompt=_prompt_for_judge(args.training_judge or _STOCK_GRADER),
+                    None, test_judge, _STOCK_GRADER,
+                    judge_prompt=_prompt_for_judge(test_judge),
                 ),
                 scoring_mode=scoring_mode,
             )

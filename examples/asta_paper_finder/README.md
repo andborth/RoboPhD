@@ -131,11 +131,18 @@ On `semantic_f1` queries (73% of validation) the scorer runs a GPT-4o relevance 
 
 ### Training judge (`--training-judge`)
 
-Two judge models are available. Since 2026-07-28 **training** defaults to `openai/gpt-5.6-luna` — the calibrated cheap basis, standard practice across several campaigns. Stock `openai/gpt-4o-2024-11-20` remains astabench's hardcoded official judge and **the only scoring basis comparable to leaderboard results**; select it with `--training-judge openai/gpt-4o-2024-11-20`.
+**Training and test judging are separate choices with separate defaults**, because they answer different questions: training wants the cheapest basis that ranks agents faithfully, a test eval wants the basis the leaderboard uses.
+
+| Flag | Default | Scope |
+| --- | --- | --- |
+| `--training-judge` | `openai/gpt-5.6-luna` — the calibrated cheap basis | Training only. Run-immutable (persisted; a resume restores it), because a mid-campaign switch would contaminate Elo. |
+| `--test-judge` | `openai/gpt-4o-2024-11-20` — astabench's official judge, **the only basis comparable to leaderboard results** | Held-out evals only (`--eval-test-set` / `--eval-only`). An eval-time choice, not run-immutable — a completed run can legitimately be re-scored on either basis, and the one used is recorded in `test_results.json`. |
+
+So the default run gives you cheap training *and* an official-comparable headline with no flags at all. Choosing a non-stock `--test-judge` writes judge-suffixed result files carrying a `judge_note`, and every test eval logs its basis affirmatively — `(STOCK — official-comparable)` or `(NON-STOCK — not official-comparable)`.
+
+These were one flag until 2026-07-28, which created an explicit-default-is-not-default trap: passing `--training-judge openai/gpt-5.6-luna` moved the *test* eval to luna, while relying on that same value as the default did not — identical training configurations producing different test bases depending on whether the default was spelled out. Two flags remove the trap by construction.
 
 **The judge-prompt profile is derived, not selected.** `no-prose` is validated for luna and rejected for gpt-4o, so each judge has exactly one correct profile — `gpt-4o → stock`, `luna → no-prose` — and there is no `--judge-prompt` flag to mispair. The profile is still persisted in `paper_finder_runtime`, because it scopes the verdict cache and the test-result filename, and a resume restores the stored value rather than re-deriving it (so the one prose-luna campaign, and any checkpoint predating the knob, keep their original basis).
-
-**Test evals are unaffected by the training default.** They read the raw `--training-judge` flag, so an unflagged `--eval-test-set` still judges on stock GPT-4o and writes plain `test_results.json`: cheap training and an official-comparable headline, with no extra flags. Pass `--training-judge` explicitly if you want the test eval on luna too (it then writes judge-suffixed, non-comparable files).
 
 Calibration record:
 
