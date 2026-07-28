@@ -637,6 +637,58 @@ def test_cost_per_error_help_documents_both_forms(main_mod):
     )
 
 
+# --- README vs the constants it documents -------------------------------------
+#
+# The judge section went stale twice without anything failing: it claimed
+# GPT-4o was still the training default months after the flip, and kept
+# documenting --judge-prompt as a selectable flag after its removal. Both
+# were readable contradictions with the paragraphs directly above them. The
+# --help guards below caught neither, because none of it is in --help.
+
+
+def _readme_row(flag: str) -> str:
+    """The judge table's row for `flag`, as written in the README."""
+    readme = (PFB_DIR / "README.md").read_text()
+    for line in readme.splitlines():
+        if line.startswith(f"| `{flag}` |"):
+            return line
+    raise AssertionError(f"no README judge-table row for {flag}")
+
+
+@pytest.mark.parametrize("flag,attr", [
+    ("--training-judge", "_DEFAULT_TRAINING_JUDGE"),
+    ("--test-judge", "_DEFAULT_TEST_JUDGE"),
+])
+def test_readme_states_the_defaults_the_code_actually_uses(main_mod, flag, attr):
+    """Pins the model id to its own row, not the surrounding prose — the
+    row is free to be reworded, but it cannot name the wrong judge."""
+    expected = getattr(main_mod, attr)
+    row = _readme_row(flag)
+    assert expected in row, (
+        f"README's {flag} row does not name its actual default {expected!r}: {row}"
+    )
+    stale = [j for j in main_mod.JUDGE_CHOICES if j != expected]
+    for other in stale:
+        assert other not in row, (
+            f"README's {flag} row names {other!r}, which is not its default"
+        )
+
+
+def test_readme_does_not_present_judge_prompt_as_selectable():
+    """--judge-prompt was removed in favor of deriving the profile from the
+    judge. The README may still *mention* the flag to say it is gone; what
+    it must not do is show a value being passed to it."""
+    readme = (PFB_DIR / "README.md").read_text()
+    usages = re.findall(r"--judge-prompt[ =]+(\S+)", readme)
+    assert not usages, (
+        "README shows --judge-prompt being passed a value "
+        f"({usages}), but main.py derives the profile from the judge"
+    )
+    assert "--judge-prompt" not in _argparse_flags(), (
+        "the flag came back; this guard and the README both need revisiting"
+    )
+
+
 def test_default_test_judge_is_the_official_one(main_mod):
     """An unflagged test eval must land on the leaderboard's basis."""
     from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME

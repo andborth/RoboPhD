@@ -333,13 +333,16 @@ def _apply_cache_redirect() -> None:
 _apply_cache_redirect()
 
 
-# Environment variable naming the TRAINING relevance-judge model. When set, the
-# scorer's grader is overridden to this model for cost control; the held-out
-# test / formal path leaves it unset so scoring uses astabench's stock GPT-4o
-# grader. main.py only sets this when the user opts in via --training-judge,
-# and clears it on every test path. Enabling nano is gated on the calibration
-# study (_check_judge_calibration.py) showing high GPT-4o agreement — training
-# optimizes against this judge but test scores on GPT-4o.
+# Environment variable naming the relevance-judge model in force. When set,
+# the scorer's grader is overridden to this model; when unset, scoring uses
+# astabench's stock GPT-4o grader. Despite the PF_TRAINING_ name (kept for
+# checkpoint/cache compatibility) it is set on BOTH phases: main.py writes
+# --training-judge for training and --test-judge for held-out evals, each
+# resolved independently. Since 2026-07-28 the training default is luna, so a
+# flagless run sets this during training and clears it for the test eval —
+# training optimizes against the cheap basis, the headline scores on GPT-4o.
+# Any judge named here must have passed _check_judge_calibration.py; see
+# JUDGE_MODEL_IDS for the approved set and the models rejected from it.
 TRAINING_GRADER_ENV = "PF_TRAINING_GRADER_MODEL"
 # Judge-prompt profile for the alternate judge: "no-prose" drops the
 # snippet/summary prose the scorer never reads (validated for luna only —
@@ -360,8 +363,9 @@ def _apply_training_grader() -> None:
     (_judge_normalize.install) is patched in as well: alternate judges emit
     rare near-JSON that astabench's strict parser would silently drop as
     Not Relevant (luna: 2/300 in calibration). Stock GPT-4o paths — the
-    training default, non-overridden test evals, official submissions —
-    are never patched, preserving strict-parser parity with astabench.
+    default test eval, official submissions, and any run that opts training
+    back onto GPT-4o — are never patched, preserving strict-parser parity
+    with astabench.
 
     Warns if the model isn't priced in the bundled map AND has no
     JUDGE_PRICE_OVERRIDES entry — an unpriced grader would silently zero

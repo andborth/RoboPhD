@@ -156,10 +156,13 @@ def install() -> None:
 # +9% vs the floor's own +6%) while cutting output tokens 65% —
 # $0.0022/verdict, ~5.7x cheaper than the stock GPT-4o basis. UNSAFE for
 # gpt-4o (+18.5% Perfect inflation vs a stable 54->54 floor: the
-# snippet-writing is chain-of-thought for the older model) — enforcement
-# lives in main.py (--judge-prompt no-prose requires the luna judge) and
-# in _apply_training_grader (refuses a prompt profile without a judge
-# override). The shape normalizer backfills the pydantic-required
+# snippet-writing is chain-of-thought for the older model) — mispairing is
+# impossible by construction in main.py, where the profile is DERIVED from
+# the judge (_prompt_for_judge) rather than chosen, and refused outright in
+# _apply_training_grader (a prompt profile without a judge override is a
+# hard error). rejudge_test.py keeps an explicit --judge-prompt because it
+# re-judges stored submissions on arbitrary bases; it validates the same
+# pairing itself. The shape normalizer backfills the pydantic-required
 # snippet/summary fields as nulls, so astabench's parsing is untouched.
 NO_PROSE_JUDGE_TEMPLATE = """
 Judge how relevant the following paper is to each of the provided criteria. For each criterion, consider its entire description when making your judgement.

@@ -451,8 +451,10 @@ def _set_test_cache_env(
     """Configure the judge env for a test / formal eval and return the
     scoring-mode record for test_results.json.
 
-    ``judge`` is the effective grader (``--training-judge`` or the stock
-    GPT-4o id in ``stock``). Stock evals clear the override env and are
+    ``judge`` is the effective grader — ``--test-judge``, which defaults to
+    the stock GPT-4o id in ``stock`` and is resolved independently of
+    ``--training-judge``, so the cheap training default never follows an
+    agent into its held-out eval. Stock evals clear the override env and are
     the ONLY basis comparable to official astabench scores; a non-stock
     judge (opt-in, e.g. the calibrated gpt-5.6-luna) sets the override —
     the evaluator then also installs the lenient output normalizer — and
