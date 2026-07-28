@@ -637,6 +637,85 @@ def test_cost_per_error_help_documents_both_forms(main_mod):
     )
 
 
+# --- cost-knob validation -----------------------------------------------------
+#
+# Making the default slope relative introduced one input where it cannot be
+# derived at all: --cost-threshold 0 ("no free zone, penalize from the first
+# cent"), a legal threshold the evaluator accepts. 10% of nothing is nothing,
+# so the run must stop — but it used to stop while quoting a flag the user
+# never passed, saying nothing about the threshold that caused it.
+
+
+def test_zero_threshold_with_the_default_slope_blames_the_threshold(main_mod):
+    """The regression this pair of validators exists for."""
+    with pytest.raises(SystemExit) as exc:
+        main_mod._validate_cost_slope(0.0, 0.0, None)
+    msg = str(exc.value)
+    assert "--cost-threshold" in msg, (
+        "the zero threshold is the cause; a message that only names "
+        "--cost-per-error sends the reader to a flag they did not pass"
+    )
+    assert "the default" in msg, (
+        "the slope was never typed by anyone — say where it came from"
+    )
+    assert "--cost-per-error 0.006" in msg, "no actionable way out"
+
+
+def test_zero_threshold_with_an_explicit_percentage_blames_the_threshold(main_mod):
+    with pytest.raises(SystemExit) as exc:
+        main_mod._validate_cost_slope(0.0, 0.0, "10%")
+    msg = str(exc.value)
+    assert "--cost-threshold" in msg
+    assert "'10%'" in msg, "quote what the user actually passed"
+
+
+def test_zero_threshold_stays_reachable_with_an_explicit_dollar_slope(main_mod):
+    """The configuration must not become unusable — only under-specified."""
+    main_mod._validate_cost_threshold(0.0)
+    main_mod._validate_cost_slope(0.006, 0.0, "0.006")
+
+
+@pytest.mark.parametrize("resolved,spec", [
+    (0.0, "0"),        # dollars, typed as zero
+    (0.0, "0%"),       # a percentage the user chose to be zero
+    (-0.5, "-0.5"),    # negative dollars
+])
+def test_a_typed_zero_slope_is_not_blamed_on_the_threshold(
+    main_mod, resolved, spec
+):
+    """At a healthy threshold the user asked for a non-positive slope; the
+    threshold is innocent and the message must not implicate it."""
+    with pytest.raises(SystemExit) as exc:
+        main_mod._validate_cost_slope(resolved, 0.06, spec)
+    msg = str(exc.value)
+    assert "--cost-per-error must be > 0" in msg
+    assert "no free zone" not in msg, (
+        f"{spec!r} at a $0.06 threshold wrongly blamed the threshold"
+    )
+
+
+def test_negative_threshold_is_rejected_by_name(main_mod):
+    """Otherwise it reaches the slope derivation and produces a message
+    about a free zone that has no width, which is not the real problem."""
+    with pytest.raises(SystemExit, match="--cost-threshold"):
+        main_mod._validate_cost_threshold(-1.0)
+
+
+def test_valid_knobs_pass(main_mod):
+    main_mod._validate_cost_threshold(0.06)
+    main_mod._validate_cost_slope(0.006, 0.06, None)
+    main_mod._validate_cost_slope(0.02, 0.06, "0.02")
+
+
+def test_main_routes_both_knobs_through_the_validators():
+    """The validators are only worth anything if main() calls them."""
+    assert "_validate_cost_threshold(cost_threshold)" in MAIN_SRC
+    assert (
+        "_validate_cost_slope(cost_per_error, cost_threshold, args.cost_per_error)"
+        in MAIN_SRC
+    ), "the slope validator needs the RAW spec to tell a percentage from dollars"
+
+
 # --- README vs the constants it documents -------------------------------------
 #
 # The judge section went stale twice without anything failing: it claimed
