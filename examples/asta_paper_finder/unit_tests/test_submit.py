@@ -241,3 +241,41 @@ def test_smoke_runs_are_log_isolated_and_untarred(submit_mod, submit_tree) -> No
     assert "args.limit is None and (not tar_submission" in src, (
         "tar_submission must be gated on `args.limit is None`"
     )
+
+
+def test_backup_stock_judge_cache_moves_file_aside(submit_mod, monkeypatch,
+                                                   tmp_path) -> None:
+    """A fresh full run must judge cold: the accumulated stock verdict cache
+    is moved to a timestamped sibling (never deleted), because cache hits
+    permute the nDCG verdict ordering (../robophd_runs/docs/astabench_judge_ordering_issue.md)."""
+    from astabench.evals.paper_finder import paper_finder_utils as pfu
+
+    cache = tmp_path / "detailed_reference.json"
+    cache.write_text('{"semantic_1": {"123": "perfectly_relevant_papers"}}')
+    monkeypatch.setattr(pfu, "detailed_reference_path", str(cache))
+    submit_mod.backup_stock_judge_cache()
+    assert not cache.exists()
+    baks = list(tmp_path.glob("detailed_reference.json.bak-*"))
+    assert len(baks) == 1
+    assert "semantic_1" in baks[0].read_text()  # content preserved, not deleted
+
+    # Missing file (fresh install / already cold): silent no-op.
+    submit_mod.backup_stock_judge_cache()
+    assert len(list(tmp_path.glob("detailed_reference.json.bak-*"))) == 1
+
+
+def test_eval_submission_backs_up_cache_only_on_fresh_full_run(
+        submit_tree) -> None:
+    """The backup must fire for a fresh FULL run only: smoke runs don't
+    need it (the full run clears their warmth anyway) and a resume keeps
+    the cache — its completed samples' ordering is already baked into the
+    log."""
+    fn = next(
+        n for n in ast.walk(submit_tree)
+        if isinstance(n, ast.FunctionDef) and n.name == "eval_submission"
+    )
+    src = ast.unparse(fn)
+    assert "backup_stock_judge_cache()" in src
+    assert "elif limit is None:" in src, (
+        "backup must be in the fresh-start (status is None) full-run branch"
+    )

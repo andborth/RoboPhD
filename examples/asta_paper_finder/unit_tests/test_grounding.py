@@ -374,6 +374,46 @@ def test_e2e_known_good_is_perfect_regardless_of_evidence(monkeypatch):
     assert judgements["7"] == rel.Relevance.PERFECT.value
 
 
+def test_e2e_judgements_returned_in_submission_order(monkeypatch):
+    """Mixed cache-hit / fresh submissions must come back in submission order:
+    the nDCG rank term reads dict order as the agent's ranking, so a cache hit
+    must not promote a paper above fresh-judged ones, and known-good papers
+    must not be promoted to the front. Identical submissions must score
+    identically regardless of judge-cache warmth."""
+    from astabench.evals.paper_finder import eval as pe
+    from astabench.evals.paper_finder import relevance as rel
+    from astabench.evals.paper_finder import paper_finder_utils as pfu
+
+    async def _fake_judge(docs, criteria):
+        return {d.corpus_id: rel.Relevance.PERFECT.value for d in docs}
+
+    async def _fake_update(qid, judgements):
+        pass
+
+    monkeypatch.setattr(rel, "load_relevance_judgement", _fake_judge)
+    monkeypatch.setattr(pfu, "update_references", _fake_update)
+
+    g.reset()
+    for pid, text in (("1", "text one"), ("2", "text two"), ("4", "text four")):
+        g.record_tool_result({"data": [{"corpusId": int(pid), "abstract": text}]})
+
+    # Position 0 and 3 are fresh-judged, position 1 is a cache hit, position 2
+    # is known-good — the pre-fix permutation would return [2, 3, 1, 4].
+    cache = {"semantic_9": {g.cache_key("2", "text two"): rel.Relevance.NOT_RELEVANT.value}}
+    monkeypatch.setattr(pe, "get_normalizer_references", lambda: ({}, cache))
+
+    get_llm_relevance = _install_and_get_patched()
+    metric = SimpleNamespace(known_to_be_good={"3"}, relevance_criteria=[])
+
+    out = _output([("1", "text one"), ("2", "text two"),
+                   ("3", "gold paper, evidence ignored"), ("4", "text four")])
+    judgements = asyncio.run(get_llm_relevance(out, metric))
+
+    assert list(judgements) == ["1", "2", "3", "4"]
+    assert judgements["2"] == rel.Relevance.NOT_RELEVANT.value  # cache hit honored
+    assert judgements["3"] == rel.Relevance.PERFECT.value       # known-good honored
+
+
 # --- the real tool-wrapping seam -------------------------------------------
 
 def test_wrap_tools_records_and_preserves_interface():

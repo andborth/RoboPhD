@@ -365,6 +365,10 @@ def install_grounded_judge() -> None:
         except ValueError:
             ev_cap = 0
         judgements: dict[str, str] = {}
+        # Submission order of every considered paper: the nDCG rank term reads
+        # dict-insertion order as the agent's ranking, so judgements must be
+        # rebuilt in this order at the end.
+        order: list[str] = []
         # (paper_id, dropped_passages, raw_evidence, kind) where kind is
         # "partial" (some passages kept) or "full" (all dropped).
         blanked: list[tuple[str, list[str], str, str]] = []
@@ -380,6 +384,7 @@ def install_grounded_judge() -> None:
             if cap is not None and idx >= cap:
                 break
             pid = result.paper_id
+            order.append(pid)
             # Gold papers are Perfect regardless of evidence — the metric never
             # judges them, so grounding is moot.
             if pid in metric.known_to_be_good:
@@ -424,6 +429,13 @@ def install_grounded_judge() -> None:
                 # patch is installed (the multiprocess-safe writer), regardless
                 # of import order.
                 await _pf_utils.update_references(qid, cache_write)
+
+        # Upstream leaves fresh verdicts appended after cached ones, so the
+        # rank term scores a cache-state-dependent permutation instead of the
+        # agent's ranking. Rebuild in submission order: identical submissions
+        # must score identically regardless of judge-cache warmth. (Duplicate
+        # paper_ids keep their first position — dict semantics.)
+        judgements = {pid: judgements[pid] for pid in order if pid in judgements}
 
         _LAST.clear()
         _LAST.update(query_id=qid, judgements=dict(judgements), blanked=blanked,

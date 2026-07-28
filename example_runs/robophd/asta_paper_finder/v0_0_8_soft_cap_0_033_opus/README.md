@@ -319,6 +319,14 @@ Push the commit **before** the full run — `astabench eval` stamps the
 commit SHA into `eval_spec.revision`, and the form points reviewers at
 the GitHub URL above; an unpushed SHA resolves to nothing.
 
+A fresh full run first moves astabench's accumulated stock judge cache
+aside and judges cold (`backup_stock_judge_cache` in the submit script):
+warm-cache scoring permutes the nDCG verdict ordering, so cold is the
+only reproducible official basis (../robophd_runs/docs/astabench_judge_ordering_issue.md).
+Budget the full judge spend accordingly. This run's official score
+predates that guard and was scored against whatever the stock cache
+held at the time (v0_0_7's verdicts included).
+
 Then upload `submissions/asta_paper_finder/v0_0_8_soft_cap_0_033_opus.tar.gz`
 via the HF Spaces form (https://huggingface.co/spaces/allenai/asta-bench-leaderboard).
 Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".

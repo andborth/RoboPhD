@@ -1,0 +1,655 @@
+#!/usr/bin/env python3
+"""Offline re-judge of a completed test-set eval with a different judge model.
+
+A test eval persists everything the judge saw under test_problems/<sid>/
+(ordered submission.json with the exact evidence, gold_criteria.md,
+judge_verdicts.json with the scored-depth cap, score_meta.json with the
+recall denominator K). This tool replays those stored submissions through a
+new judge basis (model + prompt profile) and recomputes adjusted F1 —
+without re-running the agent.
+
+Scoring uses CANONICAL (submission-order) verdict ordering for every pass.
+The live scoring path builds the nDCG grade list with cache-hit verdicts at
+their submission position but freshly-judged ones appended after the loop,
+so stored per-query rank values depend on judge-cache state at eval time.
+A new judge cold-misses everything, so comparing it against the stored
+aggregate would conflate the judge change with the ordering artifact.
+Therefore the default A/B recomputes a stock GPT-4o baseline under the same
+canonical ordering (cheap: the stock test cache already holds nearly all
+verdicts) and reports the new judge against THAT.
+
+Verdicts are read from and written to the same shared per-basis test caches
+a real `--eval-only --training-judge` run uses (shared_test_<basis>.json),
+so a later live eval with the new judge starts warm.
+
+Usage:
+    python rejudge_test.py <run_dir> --judge openai/gpt-5.6-luna
+        [--judge-prompt no-prose] [--no-baseline] [--limit N]
+        [--concurrency 4] [--retries 1] [--no-cache-write]
+        [--dry-run] [--force]
+
+The two test_results.rejudge_* outputs are non-clobbering (--force to
+overwrite). The per-problem judge_verdicts.rejudge_<basis>.json diagnostics
+are deliberately NOT gated: an interrupted run must be able to resume, and a
+same-basis rerun replays identical cached verdicts anyway.
+
+Requires OPENAI_API_KEY (both supported judges are OpenAI models).
+"""
+
+import argparse
+import asyncio
+import json
+import os
+import sys
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+# Stale judge-override env would make evaluator's import-time
+# _apply_training_grader() install the lenient normalizer, which is not
+# reversible — and the stock baseline pass must run with the strict parser.
+for _k in ("PF_TRAINING_GRADER_MODEL", "PF_TRAINING_GRADER_PROMPT"):
+    os.environ.pop(_k, None)
+
+from evaluator import (  # noqa: E402
+    EVIDENCE_OMITTED_MARKER,
+    PaperFinderEvaluator,
+    TRAINING_GRADER_ENV,
+    TRAINING_GRADER_PROMPT_ENV,
+    _apply_training_grader,
+    _safe_cache_rmw,
+)
+from main import (  # noqa: E402
+    JUDGE_PROMPT_CHOICES,
+    TRAINING_JUDGE_CHOICES,
+    _judge_basis_slug,
+    _judge_cache_dir,
+)
+import _grounding  # noqa: E402
+from _check_judge_calibration import _extract_results_lenient  # noqa: E402
+
+from astabench.evals.paper_finder import relevance as rel  # noqa: E402
+from astabench.evals.paper_finder.eval import (  # noqa: E402
+    _calc_any_f,
+    lower_bound_corrected_ndcg,
+)
+from astabench.evals.paper_finder.paper_finder_utils import (  # noqa: E402
+    MAX_RESULTS_TO_CONSIDER,
+)
+from astabench.evals.paper_finder.relevance import (  # noqa: E402
+    Relevance,
+    RelevanceCriterion,
+    bench_rj_2_pf_rj,
+)
+
+STOCK = TRAINING_JUDGE_CHOICES[0]
+
+
+@dataclass
+class Sample:
+    sid: str
+    score_type: str
+    stored_score: float
+    problem_dir: Path
+    carry: bool = False
+    carried_reason: str = ""
+    results: list = field(default_factory=list)  # [(paper_id, evidence)] in submission order
+    known_good: set = field(default_factory=set)
+    criteria: list = field(default_factory=list)  # raw relevance_criteria dicts
+    cap: int | None = None
+    k_estimate: int | None = None
+
+
+def load_run(run_dir: Path, limit: int | None = None) -> list[Sample]:
+    """Load every test problem; exact-match and unreconstructable queries are
+    marked carry (stored score reused verbatim). Hard-stops on missing data
+    that would silently skew the aggregate."""
+    tp = run_dir / "test_problems"
+    if not tp.is_dir():
+        raise SystemExit(f"{tp} not found — is this a completed test-eval run dir?")
+    scrubbed = sorted(p.parent.name for p in tp.glob("*/evidence_grounding.md"))
+    if scrubbed:
+        raise SystemExit(
+            f"{len(scrubbed)} problems had evidence scrubbed by the grounding "
+            f"check at eval time (e.g. {scrubbed[0]}); submission.json holds "
+            f"pre-scrub evidence there, so an offline rejudge would judge text "
+            f"the original judge never saw. Refusing."
+        )
+    samples: list[Sample] = []
+    for pdir in sorted(tp.iterdir()):
+        if not pdir.is_dir():
+            continue
+        try:
+            result = json.loads((pdir / "result.json").read_text())
+        except (OSError, json.JSONDecodeError) as e:
+            raise SystemExit(f"{pdir.name}: unreadable result.json ({e})")
+        sid = result.get("sample_id") or pdir.name
+        s = Sample(
+            sid=sid,
+            score_type=result.get("score_type") or "",
+            stored_score=float(result.get("score") or 0.0),
+            problem_dir=pdir,
+        )
+        if not sid.startswith("semantic"):
+            # specific_*/metadata_* are exact-match scored — no LLM judge.
+            s.carry, s.carried_reason = True, "exact_match"
+            samples.append(s)
+            continue
+        try:
+            text = (pdir / "submission.json").read_text()
+        except OSError:
+            text = ""
+        try:
+            results = (json.loads(text).get("output") or {}).get("results") or []
+            results = [r for r in results if isinstance(r, dict)]
+        except (json.JSONDecodeError, AttributeError):
+            results = _extract_results_lenient(text)
+        pairs = [
+            (str(r.get("paper_id", "")).strip(), r.get("markdown_evidence") or "")
+            for r in results
+            if str(r.get("paper_id", "")).strip()
+        ]
+        if not pairs:
+            s.carry, s.carried_reason = True, "no_submission"
+            samples.append(s)
+            continue
+        try:
+            gold = json.loads((pdir / "gold_criteria.md").read_text())
+        except (OSError, json.JSONDecodeError) as e:
+            raise SystemExit(f"{sid}: unreadable gold_criteria.md ({e})")
+        s.known_good = {str(x) for x in (gold.get("known_to_be_good") or [])}
+        s.criteria = gold.get("relevance_criteria") or []
+        try:
+            s.cap = json.loads((pdir / "judge_verdicts.json").read_text()).get(
+                "scored_depth_cap"
+            )
+        except (OSError, json.JSONDecodeError):
+            s.cap = None
+        try:
+            s.k_estimate = json.loads((pdir / "score_meta.json").read_text()).get(
+                "k_estimate"
+            )
+        except (OSError, json.JSONDecodeError):
+            s.k_estimate = None
+        if s.k_estimate is None:
+            s.k_estimate = s.cap
+        if s.k_estimate is None:
+            raise SystemExit(
+                f"{sid}: no k_estimate in score_meta.json and no scored_depth_cap "
+                f"in judge_verdicts.json — cannot compute recall"
+            )
+        s.results = pairs[:MAX_RESULTS_TO_CONSIDER]
+        samples.append(s)
+    if limit is not None:
+        semantic = [s for s in samples if not s.carry][:limit]
+        samples = semantic  # smoke mode: aggregate over the selected subset only
+    return samples
+
+
+def plan_sample(sample: Sample, cache_q: dict):
+    """Mirror the live judging loop (sans grounding, a no-op for persisted
+    evidence): per position decide preset verdict / judge call / exclusion.
+
+    Returns (order, preset, to_judge, statuses):
+      order    — first-occurrence submission order of scoreable paper_ids
+      preset   — {pid: label} for known-good / cache-hit / empty-evidence
+      to_judge — [(pid, evidence, cache_key)] needing a judge call
+      statuses — per-position (pid, status) for the verdict diagnostic
+    """
+    order: list[str] = []
+    preset: dict[str, str] = {}
+    to_judge: list[tuple[str, str, str]] = []
+    statuses: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for idx, (pid, ev) in enumerate(sample.results):
+        if sample.cap is not None and idx >= sample.cap:
+            statuses.append((pid, "beyond_scored_depth"))
+            continue
+        if pid in seen:
+            # A later duplicate can neither add a verdict nor move the first
+            # occurrence's position (dict semantics upstream).
+            statuses.append((pid, "duplicate"))
+            continue
+        seen.add(pid)
+        if pid in sample.known_good:
+            order.append(pid)
+            preset[pid] = Relevance.PERFECT.value
+            statuses.append((pid, "known_good"))
+            continue
+        if ev == EVIDENCE_OMITTED_MARKER:
+            # Beyond-cap remnant in submission.json; belt-and-braces with the
+            # cap check above.
+            statuses.append((pid, "beyond_scored_depth"))
+            continue
+        if not ev.strip():
+            order.append(pid)
+            preset[pid] = Relevance.NOT_RELEVANT.value
+            statuses.append((pid, "empty_evidence"))
+            continue
+        order.append(pid)
+        ckey = _grounding.cache_key(pid, ev)
+        hit = cache_q.get(ckey)
+        if hit is not None:
+            preset[pid] = hit
+            statuses.append((pid, "cached"))
+        else:
+            to_judge.append((pid, ev, ckey))
+            statuses.append((pid, "pending"))
+    return order, preset, to_judge, statuses
+
+
+def score_sample(sample: Sample, judgements: dict[str, str]) -> dict:
+    """Adjusted F1 from canonical-order judgements. Same math as astabench's
+    calc_adjusted_f1, with K read from the stored k_estimate instead of the
+    normalizer reference (no HF download, no astabench global state)."""
+    grades = [bench_rj_2_pf_rj[v] for v in judgements.values()]
+    rank = lower_bound_corrected_ndcg(grades)["rank"]
+    k = sample.k_estimate or 0
+    # Upstream parity (calc_recall_at_k): the K-window slices the RAW
+    # submission, so a duplicated pid inside the window consumes two of the
+    # K slots. Deduping here would diverge from official scoring.
+    top_k = set(
+        [pid for pid, _ in sample.results if pid in judgements][:k]
+    )
+    hits = sum(
+        1
+        for pid, label in judgements.items()
+        if label == Relevance.PERFECT.value and pid in top_k
+    )
+    recall = hits / k if k else 0.0
+    return {
+        "score": _calc_any_f([rank, recall]),
+        "rank": rank,
+        "recall": recall,
+        "k_estimate": k,
+        "grade3_in_top_k": hits,
+    }
+
+
+class _UsageMeter:
+    """Accumulate judge token usage by wrapping relevance.get_model — the
+    only usage source in this direct-call path (there is no inspect eval
+    log). load_relevance_judgement resolves get_model from its module
+    namespace at call time, so rebinding the attribute captures every call."""
+
+    def __init__(self):
+        self.by_model: dict[str, dict] = {}
+        self._orig = None
+
+    def install(self):
+        self._orig = rel.get_model
+        meter = self
+
+        def metered_get_model(name, *a, **kw):
+            return _MeteredModel(meter._orig(name, *a, **kw), meter, str(name))
+
+        rel.get_model = metered_get_model
+
+    def uninstall(self):
+        if self._orig is not None:
+            rel.get_model = self._orig
+            self._orig = None
+
+    def add(self, model: str, usage) -> None:
+        acc = self.by_model.setdefault(model, {})
+        for f in (
+            "input_tokens", "output_tokens", "total_tokens", "reasoning_tokens",
+            "input_tokens_cache_read", "input_tokens_cache_write",
+        ):
+            acc[f] = acc.get(f, 0) + (getattr(usage, f, None) or 0)
+
+    def cost(self) -> float:
+        return sum(
+            PaperFinderEvaluator._estimate_cost(m, c)
+            for m, c in self.by_model.items()
+        )
+
+
+class _MeteredModel:
+    def __init__(self, real, meter, name):
+        self._real, self._meter, self._name = real, meter, name
+
+    async def generate(self, *a, **kw):
+        out = await self._real.generate(*a, **kw)
+        usage = getattr(out, "usage", None)
+        if usage is not None:
+            self._meter.add(str(getattr(self._real, "name", self._name)), usage)
+        return out
+
+    def __getattr__(self, item):
+        return getattr(self._real, item)
+
+
+def _load_cache(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text())
+    except OSError:
+        return {}
+    except json.JSONDecodeError as e:
+        print(f"WARNING: judge cache {path} unparseable ({e}); treating as empty")
+        return {}
+
+
+async def _judge_batch(criteria_raw: list, docs: list) -> dict:
+    """One judge call over (pid, evidence) docs; {pid: label}. Resolved via
+    the relevance module at call time so grader/normalizer patches apply."""
+    criteria = [
+        RelevanceCriterion(
+            name=c["name"], description=c["description"], weight=c["weight"]
+        )
+        for c in criteria_raw
+    ]
+    entities = [rel.Document(corpus_id=pid, markdown=ev) for pid, ev in docs]
+    return await rel.load_relevance_judgement(entities, criteria)
+
+
+async def _process_sample(sample, cache, cache_path, sem, args, progress):
+    cache_q = cache.get(sample.sid) or {}
+    order, preset, to_judge, statuses = plan_sample(sample, cache_q)
+    fresh: dict[str, str] = {}
+    if to_judge:
+        async with sem:
+            pending = to_judge
+            for _attempt in range(args.retries + 1):
+                res = await _judge_batch(
+                    sample.criteria, [(p, e) for p, e, _ in pending]
+                )
+                fresh.update(res)
+                # The judge silently drops docs whose response fails to
+                # parse or names the wrong criteria; re-ask just those.
+                pending = [t for t in pending if t[0] not in fresh]
+                if not pending:
+                    break
+        if fresh and not args.no_cache_write:
+            writes = {ck: fresh[p] for p, _e, ck in to_judge if p in fresh}
+            if writes:
+                await asyncio.to_thread(
+                    _safe_cache_rmw, str(cache_path), sample.sid, writes
+                )
+    # Canonical ordering: every verdict at its submission position.
+    merged = {**preset, **fresh}
+    judgements = {pid: merged[pid] for pid in order if pid in merged}
+    scored = score_sample(sample, judgements)
+    n_failed = sum(1 for p, _e, _c in to_judge if p not in fresh)
+
+    def _final_status(pid: str, st: str) -> str:
+        if st == "pending":
+            return "judged" if pid in fresh else "judge_call_failed"
+        return st
+
+    papers = [
+        {
+            # 1-based to match the sibling judge_verdicts.json the evaluator
+            # writes — consumers diff the two files per position.
+            "position": i,
+            "paper_id": pid,
+            "status": _final_status(pid, st),
+            "label": judgements.get(pid),
+        }
+        for i, (pid, st) in enumerate(statuses, 1)
+    ]
+    # Overwritten (not --force-gated) by design: an interrupted run must be
+    # able to resume, and a same-basis rerun replays identical cached
+    # verdicts anyway; different bases write different filenames.
+    verdict_path = sample.problem_dir / f"judge_verdicts.rejudge_{args.basis}.json"
+    verdict_path.write_text(
+        json.dumps({"scored_depth_cap": sample.cap, "papers": papers}, indent=2)
+    )
+
+    progress["done"] += 1
+    print(
+        f"  [{progress['done']}/{progress['total']}] {sample.sid}: "
+        f"{scored['score']:.3f} (judged {len(fresh)}, cached "
+        f"{sum(1 for _p, st in statuses if st == 'cached')}"
+        f"{f', failed {n_failed}' if n_failed else ''})"
+    )
+    return {
+        "sample_id": sample.sid,
+        **scored,
+        "n_fresh": len(fresh),
+        "n_cached": sum(1 for _p, st in statuses if st == "cached"),
+        "n_failed": n_failed,
+    }
+
+
+async def run_pass(samples, judge, judge_prompt, cache_path, args):
+    """One full judging+scoring sweep for one judge basis. Returns
+    {sid: row} for semantic samples plus pass-level usage/cost/cache stats."""
+    if judge == STOCK and judge_prompt == "stock":
+        # Stock basis must stay byte-identical to official scoring: env unset,
+        # strict parser. Must run before any alternate-judge pass because the
+        # lenient-normalizer install is not reversible — a plain raise, not an
+        # assert, so python -O cannot strip the guard.
+        if rel.GRADER_MODEL_NAME != STOCK:
+            raise RuntimeError(
+                "stock pass must run before any alternate-judge pass: grader "
+                f"is already {rel.GRADER_MODEL_NAME!r} and the lenient "
+                "normalizer may be installed"
+            )
+    else:
+        os.environ[TRAINING_GRADER_ENV] = judge
+        if judge_prompt != "stock":
+            os.environ[TRAINING_GRADER_PROMPT_ENV] = judge_prompt
+        _apply_training_grader()
+
+    semantic = [s for s in samples if not s.carry]
+    cache = _load_cache(cache_path)
+    meter = _UsageMeter()
+    meter.install()
+    progress = {"done": 0, "total": len(semantic)}
+    try:
+        sem = asyncio.Semaphore(args.concurrency)
+        rows = await asyncio.gather(
+            *[
+                _process_sample(s, cache, cache_path, sem, args, progress)
+                for s in semantic
+            ]
+        )
+    finally:
+        meter.uninstall()
+    return {
+        "rows": {r["sample_id"]: r for r in rows},
+        "judge_cost_usd": meter.cost(),
+        "usage_by_model": meter.by_model,
+    }
+
+
+def _coverage(samples, cache) -> tuple[int, int]:
+    """(cache hits, total scoreable docs) for this run's submissions."""
+    hits = total = 0
+    for s in samples:
+        if s.carry:
+            continue
+        cache_q = cache.get(s.sid) or {}
+        _order, _preset, to_judge, statuses = plan_sample(s, cache_q)
+        n_cached = sum(1 for _p, st in statuses if st == "cached")
+        hits += n_cached
+        total += n_cached + len(to_judge)
+    return hits, total
+
+
+def _aggregate(samples, rows: dict) -> float:
+    """Plain unweighted mean over all loaded problems (matches the test
+    aggregate: no cost penalty, no weighting)."""
+    scores = [
+        rows[s.sid]["score"] if s.sid in rows else s.stored_score for s in samples
+    ]
+    return sum(scores) / len(scores) if scores else 0.0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(
+        description="Re-judge a completed test eval's stored submissions with "
+        "a different judge basis; no agent re-run."
+    )
+    ap.add_argument("run_dir", type=Path)
+    ap.add_argument("--judge", required=True, choices=TRAINING_JUDGE_CHOICES)
+    ap.add_argument("--judge-prompt", default="stock", choices=JUDGE_PROMPT_CHOICES)
+    ap.add_argument(
+        "--no-baseline", dest="baseline", action="store_false", default=True,
+        help="skip the canonical stock-GPT-4o A/B pass",
+    )
+    ap.add_argument("--limit", type=int, help="first N semantic queries (smoke)")
+    ap.add_argument("--concurrency", type=int, default=4,
+                    help="queries judged in flight (each judges all its docs at once)")
+    ap.add_argument("--retries", type=int, default=1,
+                    help="re-ask passes for docs the judge dropped")
+    ap.add_argument("--no-cache-write", action="store_true")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="no LLM calls: doc counts + per-basis cache coverage")
+    ap.add_argument("--force", action="store_true", help="overwrite existing outputs")
+    args = ap.parse_args()
+
+    if args.judge_prompt != "stock" and args.judge == STOCK:
+        ap.error("--judge-prompt no-prose is validated for the alternate judge "
+                 "only; the stock GPT-4o basis must stay byte-identical to "
+                 "official scoring")
+    run_dir = args.run_dir.resolve()
+    args.basis = _judge_basis_slug(args.judge, args.judge_prompt)
+    stock_basis = _judge_basis_slug(STOCK, "stock")
+    is_stock_target = args.basis == stock_basis
+    cache_dir = _judge_cache_dir(str(run_dir.parent.parent))
+    if not cache_dir.is_dir() and not args.dry_run:
+        print(f"NOTE: {cache_dir} does not exist yet (unusual for a completed "
+              f"run — check run_dir depth); it will be created on first write")
+    target_cache = cache_dir / f"shared_test_{args.basis}.json"
+    stock_cache = cache_dir / f"shared_test_{stock_basis}.json"
+
+    samples = load_run(run_dir, args.limit)
+    semantic = [s for s in samples if not s.carry]
+    carried = [s for s in samples if s.carry]
+    print(f"Loaded {len(samples)} problems: {len(semantic)} semantic to rejudge, "
+          f"{len(carried)} carried "
+          f"({sum(1 for s in carried if s.carried_reason == 'exact_match')} "
+          f"exact-match)")
+
+    if args.dry_run:
+        # With an empty cache every scoreable doc plans as a judge call.
+        n_docs = sum(len(plan_sample(s, {})[2]) for s in semantic)
+        print(f"Judge-scoreable docs (excl. known-good/empty): {n_docs}")
+        for label, path in (("target", target_cache), ("stock", stock_cache)):
+            hits, total = _coverage(samples, _load_cache(path))
+            pct = hits / total * 100 if total else 0.0
+            print(f"  {label:6} cache {path.name}: {hits}/{total} ({pct:.1f}%)")
+        return 0
+
+    if not os.environ.get("OPENAI_API_KEY"):
+        raise SystemExit("OPENAI_API_KEY is required (both judges are OpenAI)")
+
+    suffix = f".limit{args.limit}" if args.limit is not None else ""
+    out_summary = run_dir / f"test_results.rejudge_{args.basis}{suffix}.json"
+    out_per_problem = (
+        run_dir / f"test_results.rejudge_{args.basis}{suffix}.per_problem.json"
+    )
+    for p in (out_summary, out_per_problem):
+        if p.exists() and not args.force:
+            raise SystemExit(f"{p} exists; pass --force to overwrite")
+
+    # Stock pass first (strict parser; the alternate judge's lenient
+    # normalizer install is one-way).
+    baseline_result = None
+    if is_stock_target:
+        target_result = asyncio.run(
+            run_pass(samples, STOCK, "stock", stock_cache, args)
+        )
+    else:
+        if args.baseline:
+            print(f"\n=== Pass 1/2: canonical baseline ({STOCK}) ===")
+            baseline_result = asyncio.run(
+                run_pass(samples, STOCK, "stock", stock_cache, args)
+            )
+        print(f"\n=== Judging with {args.judge} ({args.judge_prompt}) ===")
+        target_result = asyncio.run(
+            run_pass(samples, args.judge, args.judge_prompt, target_cache, args)
+        )
+
+    stored_agg = sum(s.stored_score for s in samples) / len(samples)
+    target_agg = _aggregate(samples, target_result["rows"])
+    baseline_agg = (
+        _aggregate(samples, baseline_result["rows"]) if baseline_result else None
+    )
+
+    per_problem = []
+    for s in samples:
+        row = target_result["rows"].get(s.sid)
+        base_row = (baseline_result or {"rows": {}})["rows"].get(s.sid)
+        base_score = (
+            base_row["score"] if base_row
+            else (s.stored_score if s.carry else None)
+        )
+        new_score = row["score"] if row else s.stored_score
+        per_problem.append({
+            "sample_id": s.sid,
+            "score_type": s.score_type,
+            "status": "carried" if s.carry else "rejudged",
+            "stored_score": s.stored_score,
+            "baseline_canonical_score": base_score,
+            "new_score": new_score,
+            "delta_vs_baseline": (
+                new_score - base_score if base_score is not None else None
+            ),
+            "n_judge_failures": row["n_failed"] if row else 0,
+        })
+    out_per_problem.write_text(json.dumps(per_problem, indent=2))
+
+    summary = {
+        "source_run": str(run_dir),
+        "judge": args.judge,
+        "judge_prompt": args.judge_prompt,
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "aggregate": target_agg,
+        "n_problems": len(samples),
+        "n_semantic_rejudged": len(semantic),
+        "n_carried": len(carried),
+        "judge_cost_usd": round(target_result["judge_cost_usd"], 4),
+        "usage_by_model": target_result["usage_by_model"],
+        "cache_path": str(target_cache),
+        "cache_writes_enabled": not args.no_cache_write,
+        "stored_aggregate": stored_agg,
+        "stored_aggregate_note": (
+            "as-scored at eval time; rank ordering there depends on judge-cache "
+            "state, so compare against baseline_canonical, not this"
+        ),
+        "baseline_canonical": (
+            {
+                "judge": STOCK,
+                "aggregate": baseline_agg,
+                "judge_cost_usd": round(baseline_result["judge_cost_usd"], 4),
+            }
+            if baseline_result
+            else None
+        ),
+        "limit": args.limit,
+    }
+    out_summary.write_text(json.dumps(summary, indent=2))
+
+    def _fmt(v):
+        return f"{v:.5f}" if v is not None else "    -    "
+
+    print(f"\n{'':12} {'stored':>9} {'canonical-4o':>12} "
+          f"{args.judge.split('/')[-1]:>16} {'delta':>8}")
+    groups = sorted({s.score_type.split("_")[0] for s in samples})
+    for grp in groups + ["ALL"]:
+        sel = samples if grp == "ALL" else [
+            s for s in samples if s.score_type.startswith(grp)
+        ]
+        st = sum(s.stored_score for s in sel) / len(sel)
+        ba = (
+            _aggregate(sel, baseline_result["rows"]) if baseline_result else None
+        )
+        nw = _aggregate(sel, target_result["rows"])
+        delta = f"{nw - ba:+.5f}" if ba is not None else "   -"
+        print(f"{grp:12} {st:9.5f} {_fmt(ba):>12} {nw:16.5f} {delta:>8}")
+    print(f"\nJudge spend: ${target_result['judge_cost_usd']:.2f} ({args.judge})"
+          + (f" + ${baseline_result['judge_cost_usd']:.2f} (baseline)"
+             if baseline_result else ""))
+    print(f"Wrote {out_summary.name}, {out_per_problem.name}, and per-problem "
+          f"judge_verdicts.rejudge_{args.basis}.json files")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

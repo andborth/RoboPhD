@@ -44,9 +44,19 @@ shorter submission lists cut the judge bill too, which is the term that
 actually matters. Wall clock is unscored officially, so duration buys
 evidence quality, not points.
 
-Official judging is FRESH and UNCAPPED (every submitted paper, no top-K
-cap, no cache), billed to OPENAI_API_KEY during the eval — internal
-capped+cached judging is much cheaper and is not a guide.
+Official judging is UNCAPPED (every submitted paper, no top-K cap),
+billed to OPENAI_API_KEY during the eval — internal capped+cached
+judging is much cheaper and is not a guide. Stock astabench keeps a
+persistent verdict cache (detailed_reference.json inside the installed
+package) that accumulates across every run on this machine — and the
+scoring loop inserts cached verdicts at submission position while
+appending fresh ones after, so the nDCG rank term of a warm-cache run
+scores a permuted ranking (see ../robophd_runs/docs/astabench_judge_ordering_issue.md).
+A fresh FULL run therefore moves that cache aside first
+(backup_stock_judge_cache) and judges cold: deterministic, reproducible
+ordering at full judge spend. Resumed full runs and smoke runs keep the
+cache as-is (a resume's completed samples already baked their ordering;
+a smoke's warmth is cleared later by the full run's backup anyway).
 
 A `--limit 3` smoke run costs ~$3 and validates the whole path first.
 
@@ -71,6 +81,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import NamedTuple
 
@@ -445,6 +456,38 @@ def _log_status(log_dir: Path) -> tuple[str | None, int]:
     return log.status, completed
 
 
+def backup_stock_judge_cache() -> None:
+    """Move astabench's accumulated judge-verdict cache aside (timestamped
+    sibling, never deleted) so a fresh full run judges cold.
+
+    Cold judging is the only reproducible official-scoring mode: with a warm
+    cache, cached verdicts land at submission position while fresh ones are
+    appended after the scoring loop, so the nDCG rank term depends on how
+    much this submission's papers overlap with whatever was scored on this
+    machine before (../robophd_runs/docs/astabench_judge_ordering_issue.md). Costs the full
+    judge spend — the budgeted figure — instead of a discounted but
+    cache-order-contaminated number.
+
+    The path comes from astabench itself, never hardcoded. Missing file
+    (fresh install) is a silent no-op.
+    """
+    from astabench.evals.paper_finder.paper_finder_utils import (
+        detailed_reference_path,
+    )
+
+    path = Path(detailed_reference_path)
+    if not path.exists():
+        print("[judge-cache] no stock detailed_reference.json — already cold")
+        return
+    bak = path.with_name(
+        f"{path.name}.bak-{time.strftime('%Y%m%d_%H%M%S')}"
+    )
+    size_mb = path.stat().st_size / 1e6
+    path.rename(bak)
+    print(f"[judge-cache] moved stock cache aside ({size_mb:.1f} MB) -> "
+          f"{bak} — full run will judge cold (reproducible rank ordering)")
+
+
 def eval_submission(s: Submission, working_dir: Path, limit: int | None) -> bool:
     status, completed = _log_status(working_dir / log_subdir(limit))
     if status == "success":
@@ -455,6 +498,10 @@ def eval_submission(s: Submission, working_dir: Path, limit: int | None) -> bool
         print(f"[resume] {s.name}: previous eval status={status!r} with "
               f"{completed} completed sample(s) — re-running; inspect "
               f"eval-set reuses completed samples and runs the rest")
+    elif limit is None:
+        # Fresh full run: judge cold. A resume keeps the cache — its
+        # completed samples' verdict ordering is already baked into the log.
+        backup_stock_judge_cache()
     log_dir = working_dir / log_subdir(limit)
     log_dir.mkdir(parents=True, exist_ok=True)
     # LITELLM_LOCAL_MODEL_COST_MAP is required by `astabench score`;
