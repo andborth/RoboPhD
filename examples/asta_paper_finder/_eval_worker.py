@@ -15,8 +15,8 @@ Input JSON shape:
   {"candidate": {"agent.py": "..."},
    "example": {<Sample.model_dump()>},
    "apply_cost_penalty": true,
-   "min_cost_threshold": 0.10,
-   "cost_per_error": 0.02}
+   "min_cost_threshold": 0.06,
+   "cost_per_error": 0.006}
 
 Output JSON shape:
   {"score": <float>, "diagnostics": <dict>}

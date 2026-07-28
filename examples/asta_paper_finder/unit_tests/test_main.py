@@ -542,6 +542,101 @@ def test_training_judge_help_does_not_claim_test_evals(main_mod):
         )
 
 
+# --- --cost-per-error: dollars or percent-of-threshold ------------------------
+#
+# The percentage form is a front-end convenience only. These guard the two
+# ways it could stop being one: argparse coercing the string away before the
+# parser sees it, and the conversion binding to the wrong threshold.
+
+
+def test_cost_per_error_is_not_coerced_to_float_by_argparse():
+    """type=float would reject "10%" at the argparse layer, before
+    parse_dollars_or_percent ever runs — the percentage form would be
+    dead on arrival with an argparse-generated error."""
+    for node in ast.walk(MAIN_TREE):
+        if (
+            isinstance(node, ast.Call)
+            and getattr(node.func, "attr", None) == "add_argument"
+            and node.args
+            and getattr(node.args[0], "value", None) == "--cost-per-error"
+        ):
+            types = [kw.value for kw in node.keywords if kw.arg == "type"]
+            assert types, "--cost-per-error declares no type"
+            assert getattr(types[0], "id", None) == "str", (
+                "--cost-per-error must take a str so a percentage survives "
+                "argparse; got type=" + ast.unparse(types[0])
+            )
+            return
+    raise AssertionError("--cost-per-error not found in main.py")
+
+
+def test_percentage_resolves_against_the_resolved_threshold():
+    """`of=` must be the resolved cost_threshold, not MIN_COST_THRESHOLD.
+
+    On --resume the threshold in force is the stored one, so binding the
+    percentage to the module constant would silently mis-scale the
+    penalty for every run that moved --cost-threshold.
+    """
+    assert "of=cost_threshold" in MAIN_SRC, (
+        "--cost-per-error's percentage must resolve against the run's "
+        "resolved threshold"
+    )
+    assert "of=MIN_COST_THRESHOLD" not in MAIN_SRC
+
+
+def test_default_slope_is_derived_from_the_resolved_threshold():
+    """Same property for the default: `default_cost_per_error(cost_threshold)`,
+    never a frozen dollar constant."""
+    assert "default_value=default_cost_per_error(cost_threshold)" in MAIN_SRC
+
+
+def test_only_dollars_are_persisted_and_interpolated():
+    """The percentage never reaches a checkpoint or an agent-facing doc.
+
+    Both sites must read the resolved float `cost_per_error`, not the raw
+    `args.cost_per_error` string.
+    """
+    assert '"cost_per_error": cost_per_error' in MAIN_SRC
+    assert '.replace("${COST_PER_ERROR}", _fmt_cost(cost_per_error))' in MAIN_SRC
+    assert "args.cost_per_error" not in MAIN_SRC.split("resolved_runtime = {")[1], (
+        "the raw CLI string leaks past the resolution point"
+    )
+
+
+def test_cli_default_matches_the_evaluator_default(main_mod):
+    """Guards the explicit-default-is-not-default trap: passing the
+    default value by hand must be indistinguishable from omitting it."""
+    if str(PFB_DIR) not in sys.path:
+        sys.path.insert(0, str(PFB_DIR))
+    import evaluator
+
+    from RoboPhD.runner_utils import parse_dollars_or_percent
+
+    for threshold in (0.06, 0.033):
+        omitted = evaluator.default_cost_per_error(threshold)
+        spelled_out = parse_dollars_or_percent(
+            f"{evaluator.COST_PER_ERROR_FRACTION:.0%}",
+            of=threshold, flag="cost-per-error",
+        )
+        assert omitted == spelled_out, (
+            f"at threshold {threshold}, omitting --cost-per-error gives "
+            f"{omitted} but passing its documented default gives {spelled_out}"
+        )
+
+
+def test_cost_per_error_help_documents_both_forms(main_mod):
+    """A user cannot discover the percentage form from anywhere else."""
+    help_text = _rendered_help(main_mod)
+    options = help_text[help_text.index("\noptions:"):]
+    start = options.index("--cost-per-error AMOUNT")
+    end = options.index("--max-workers")
+    flag_help = options[start:end]
+    assert "%" in flag_help, "help never mentions the percentage form"
+    assert "--cost-threshold" in flag_help, (
+        "help must say what the percentage is a percentage OF"
+    )
+
+
 def test_default_test_judge_is_the_official_one(main_mod):
     """An unflagged test eval must land on the leaderboard's basis."""
     from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME

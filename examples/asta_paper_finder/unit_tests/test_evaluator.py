@@ -136,6 +136,58 @@ def test_constructor_rejects_bad_knobs(ev_mod, monkeypatch, kwargs, match):
         ev_mod.PaperFinderEvaluator(**kwargs)
 
 
+def test_default_cost_per_error_scales_with_the_threshold(ev_mod):
+    """The default slope is a fraction of the free zone, not a fixed
+    dollar figure — the whole point of the percentage knob is that the
+    two move together."""
+    frac = ev_mod.COST_PER_ERROR_FRACTION
+    for threshold in (0.06, 0.033, 0.003, 0.12):
+        assert ev_mod.default_cost_per_error(threshold) == pytest.approx(
+            threshold * frac
+        )
+
+
+def test_default_cost_per_error_is_rounded_clean(ev_mod):
+    """0.10 * 0.033 is 0.0033000000000000004 in binary float; a stored
+    checkpoint value would then compare unequal on --resume."""
+    assert repr(ev_mod.default_cost_per_error(0.033)) == "0.0033"
+
+
+def test_constructor_default_slope_tracks_a_moved_threshold(ev_mod, monkeypatch):
+    """A caller that moves min_cost_threshold and leaves cost_per_error
+    alone must get the slope for the threshold it actually asked for.
+    A signature default would have frozen it at MIN_COST_THRESHOLD's."""
+    for key in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY",
+                "GOOGLE_API_KEY", "ASTA_TOOL_KEY"):
+        monkeypatch.setenv(key, "test-key")
+    ev = ev_mod.PaperFinderEvaluator(min_cost_threshold=0.033)
+    assert ev.cost_per_error == ev_mod.default_cost_per_error(0.033)
+    assert ev.cost_per_error != ev_mod.default_cost_per_error(
+        ev_mod.MIN_COST_THRESHOLD
+    )
+
+
+def test_explicit_cost_per_error_still_wins(ev_mod, monkeypatch):
+    for key in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY",
+                "GOOGLE_API_KEY", "ASTA_TOOL_KEY"):
+        monkeypatch.setenv(key, "test-key")
+    ev = ev_mod.PaperFinderEvaluator(min_cost_threshold=0.033, cost_per_error=0.02)
+    assert ev.cost_per_error == 0.02
+
+
+def test_with_overrides_carries_the_resolved_slope(ev_mod, monkeypatch):
+    """The test evaluator is derived from the training one. It must
+    inherit the resolved dollars, not re-default — otherwise a run with
+    an explicit --cost-per-error would score its two paths differently."""
+    for key in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY",
+                "GOOGLE_API_KEY", "ASTA_TOOL_KEY"):
+        monkeypatch.setenv(key, "test-key")
+    ev = ev_mod.PaperFinderEvaluator(min_cost_threshold=0.033, cost_per_error=0.02)
+    sibling = ev.with_overrides(apply_cost_penalty=False)
+    assert sibling.cost_per_error == 0.02
+    assert sibling.min_cost_threshold == 0.033
+
+
 def test_constructor_requires_provider_keys(ev_mod, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)

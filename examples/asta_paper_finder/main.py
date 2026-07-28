@@ -53,6 +53,7 @@ from RoboPhD import (
 )
 from RoboPhD.runner_utils import (
     apply_engine_config,
+    parse_dollars_or_percent,
     read_task_config_extras,
     resolve_run_immutable,
 )
@@ -547,8 +548,13 @@ def _set_test_cache_env(
 
 def parse_args():
     # Pull the resolved defaults from the evaluator so --help never drifts from
-    # the actual constants (MIN_COST_THRESHOLD / COST_PER_ERROR).
-    from evaluator import COST_PER_ERROR, MIN_COST_THRESHOLD, _fmt_cost
+    # the actual constants (MIN_COST_THRESHOLD / COST_PER_ERROR_FRACTION).
+    from evaluator import (
+        COST_PER_ERROR_FRACTION,
+        MIN_COST_THRESHOLD,
+        _fmt_cost,
+        default_cost_per_error,
+    )
 
     p = argparse.ArgumentParser(
         description="Evolve PaperFindingBench agents on AstaBench (Standard tools)",
@@ -567,10 +573,18 @@ def parse_args():
                         "this is in the free zone (no penalty). Judge cost "
                         f"never counts. Default {_fmt_cost(MIN_COST_THRESHOLD)}."
                         "%(default).0s")
-    p.add_argument("--cost-per-error", type=float, default=None,
-                   help="Dollars of mean batch spend (over --cost-threshold) "
-                        "that equals one fully-wrong query of penalty. "
-                        f"Default {_fmt_cost(COST_PER_ERROR)}. See README "
+    # argparse %-expands help strings, so every literal % must be doubled —
+    # including the one the format spec produces.
+    _pct_default = f"{COST_PER_ERROR_FRACTION:.0%}".replace("%", "%%")
+    p.add_argument("--cost-per-error", type=str, default=None, metavar="AMOUNT",
+                   help="Mean batch spend (over --cost-threshold) that equals "
+                        "one fully-wrong query of penalty. Accepts dollars "
+                        "(0.006) or a percentage of --cost-threshold (10%%) — "
+                        "the percentage form keeps the penalty's character "
+                        "fixed when the threshold moves. Default "
+                        f"{_pct_default} "
+                        f"({_fmt_cost(default_cost_per_error(MIN_COST_THRESHOLD))} "
+                        f"at the default threshold). See README "
                         "'Cost-penalty math'."
                         "%(default).0s")
 
@@ -716,13 +730,13 @@ def main():
     from evaluator import (
         CACHE_PATH_ENV,
         CAP_JUDGE_ENV,
-        COST_PER_ERROR,
         EVIDENCE_CAP_ENV,
         MIN_COST_THRESHOLD,
         PaperFinderEvaluator,
         TRAINING_GRADER_ENV,
         TRAINING_GRADER_PROMPT_ENV,
         _fmt_cost,
+        default_cost_per_error,
         load_paper_finder,
     )
     # The stock grader in effect when no --training-judge override is set; used
@@ -810,14 +824,30 @@ def main():
         on_resume=on_resume,
         fmt=_fmt_cost,
     )
+    # --cost-per-error resolves against the threshold above, so it is parsed
+    # only after cost_threshold is final — a percentage is meaningless until
+    # then, and on --resume the threshold in force may be the stored one
+    # rather than this invocation's default. Both the CLI value and the
+    # default become dollars here: the string form never leaves the front
+    # end, so scoring, checkpoints and the interpolated docs are unchanged.
     cost_per_error = _enforce_immutable_on_resume(
-        cli_value=args.cost_per_error,
+        cli_value=(
+            None if args.cost_per_error is None
+            else parse_dollars_or_percent(
+                args.cost_per_error, of=cost_threshold, flag="cost-per-error"
+            )
+        ),
         stored_value=checkpoint_pfb.get("cost_per_error"),
-        default_value=COST_PER_ERROR,
+        default_value=default_cost_per_error(cost_threshold),
         name="cost-per-error",
         on_resume=on_resume,
         fmt=_fmt_cost,
     )
+    if cost_per_error <= 0:
+        raise SystemExit(
+            f"--cost-per-error must be > 0; got "
+            f"{args.cost_per_error!r} (= {_fmt_cost(cost_per_error)})"
+        )
     # The top-estimate judging cap changes the training scoring basis (how many
     # papers the rank term sees), so like the cost knobs it must be immutable
     # across a run — a mid-run flip would make later iterations' Elo

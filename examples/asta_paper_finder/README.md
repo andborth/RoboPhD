@@ -113,11 +113,19 @@ Evolved agents import handles and call `.generate(...)`; the provider/model stri
 The iteration-aggregate score during training is:
 
 ```
-errors_equivalent = max(0, mean_cost − $0.10) / $0.02
+errors_equivalent = max(0, mean_cost − $0.06) / $0.006
 score = 100 · mean_F1 − errors_equivalent · (100 / n)
 ```
 
-where `mean_cost` is the batch's mean **agent** spend (judge cost excluded) and `n` is the iteration batch size. One error-equivalent of penalty costs exactly one fully-wrong query of raw score, so the penalty lives in the agent's own currency (queries), not dollars. The free-zone width ($0.10) covers the Standard-tier leaderboard reference (ReAct + GPT-5 Mini, ~$0.06/query) with margin — a tighter zone would penalize the most promising evolution direction. Above the threshold, the penalty is **unbounded** — a catastrophically expensive agent can score well negative, which is intentional.
+where `mean_cost` is the batch's mean **agent** spend (judge cost excluded) and `n` is the iteration batch size. One error-equivalent of penalty costs exactly one fully-wrong query of raw score, so the penalty lives in the agent's own currency (queries), not dollars. The free-zone width ($0.06) sits at the Standard-tier leaderboard reference (ReAct + GPT-5 Mini, ~$0.06/query), so an agent that matches those points' score while staying inside the zone wins on the cost axis. Above the threshold, the penalty is **unbounded** — a catastrophically expensive agent can score well negative, which is intentional.
+
+### Writing `--cost-per-error` as a percentage
+
+`--cost-per-error` accepts either dollars (`0.006`) or a **percentage of `--cost-threshold`** (`10%`), and its default is `10%` — not a fixed dollar figure. The reason is that the dollars which make a sensible penalty slope scale with the free zone they sit beside: the $0.02 that was a mild tiebreaker against a $0.12 threshold is a wall against a $0.033 one, and campaigns now move the threshold by 4× between runs. Recent runs had been re-deriving the ratio by hand anyway (v0_0_8 ran `$0.033`/`$0.003` = 9.1%; ds1000's sharp-cap arm ran exactly 10%), so 10% is the observed practice made into the default.
+
+Conversion happens once, at the CLI boundary, against the *resolved* threshold — so on `--resume` a percentage is measured against the run's stored threshold, not this invocation's default. Everything downstream (the scoring function, `paper_finder_runtime` in `checkpoint.json`, the `${COST_PER_ERROR}` figure interpolated into the agent-facing docs) sees dollars only; the percentage form never reaches an agent or a stored record.
+
+Note this **sharpened the default** relative to the old flat `$0.02`: at the default threshold the slope is now $0.006, 3.3× steeper. ds1000's two-arm experiment on a 3.33× sharpening at a fixed threshold (`cost_per_error` 0.001 → 0.0003) cost ~3.9pp of accuracy for 51% cheaper inference, with evolution retreating well under the cap rather than buying through it — expect the same direction here.
 
 The three knobs (`--cost-threshold`, `--cost-per-error`, `--cap-judge-to-estimate`) are independently tunable, resolved at run start, persisted into `checkpoint.json`'s `task_config.paper_finder_runtime`, and **immutable on `--resume`** (a disagreeing flag is a hard error). Exception: on `--eval-only`, `--cap-judge-to-estimate` is taken from the CLI (default on) rather than the stored value — test scoring is the eval-time caller's choice, and the mode used is recorded in `test_results.json`. The per-iteration `aggregate_explanation` (in `evaluation.json`) carries the resolved excess and error-count so failure analysis can read "good but expensive" off the page.
 

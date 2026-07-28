@@ -474,6 +474,44 @@ def read_task_config_extras(resume_dir, task_key: str,
     return {}
 
 
+def parse_dollars_or_percent(value, *, of: float, flag: str) -> float:
+    """Parse a money knob written either absolutely or relative to another
+    knob: ``"0.006"`` -> 0.006, ``"10%"`` -> 10% of ``of``.
+
+    The relative form exists because the sensible absolute value tracks
+    whatever it is measured against. A cost-per-error slope that is a mild
+    tiebreaker beside a $0.12 free zone is a wall beside a $0.033 one, so
+    the percentage is the quantity that stays meaningful across runs.
+
+    Returns dollars either way, so the percent form is purely a front-end
+    convenience — nothing downstream (scoring, checkpoints, interpolated
+    docs) ever sees a percentage.
+
+    The 12-decimal rounding is load-bearing, not cosmetic: binary float
+    noise makes ``0.10 * 0.033`` come out 0.0033000000000000004, which
+    resolve_run_immutable would then reject as a disagreeing value against
+    a stored 0.0033 on --resume.
+    """
+    text = str(value).strip()
+    if not text.endswith("%"):
+        try:
+            return float(text)
+        except ValueError:
+            raise SystemExit(
+                f"--{flag}: expected a dollar amount (e.g. 0.006) or a "
+                f"percentage of the knob it is measured against (e.g. 10%); "
+                f"got {value!r}"
+            )
+    try:
+        percent = float(text[:-1].strip())
+    except ValueError:
+        raise SystemExit(
+            f"--{flag}: {value!r} is not a valid percentage; expected a "
+            f"number followed by '%', e.g. 10% or 7.5%"
+        )
+    return round(of * percent / 100.0, 12)
+
+
 def resolve_run_immutable(cli_value, stored_value, default_value, flag: str, *,
                           on_resume: bool, fmt=str, missing_note: str = ""):
     """Resolve a per-run-immutable task knob (e.g. asta_ds1000's

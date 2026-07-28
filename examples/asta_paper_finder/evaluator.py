@@ -482,7 +482,7 @@ def _head_tail_truncate(s: str, head: int = 200, tail: int = 1500) -> str:
 # Iteration-level score during training (apply_cost_penalty=True), via
 # PaperFinderEvaluator.aggregate:
 #   score = SCORE_SCALE * mean_raw - penalty_pts
-#   errors_equivalent = max(0, mean_cost - MIN_COST_THRESHOLD) / COST_PER_ERROR
+#   errors_equivalent = max(0, mean_cost - min_cost_threshold) / cost_per_error
 #   penalty_pts = errors_equivalent * (SCORE_SCALE / n)
 # mean_raw is the mean of per-example F1 scores (continuous in [0, 1]:
 # adjusted F1 on semantic queries, standard F1 on specific/metadata).
@@ -509,16 +509,41 @@ SCORE_SCALE = 100.0
 # (task_config_extras), so in-flight runs keep their stored threshold on
 # resume; only fresh runs pick up this default.
 MIN_COST_THRESHOLD = 0.06
-# Dollars of mean batch spend (over threshold) that equals one
-# fully-wrong query of penalty. PFB scores are continuous F1 (typical
-# per-query 0.2-0.4), so one error-equivalent is a LARGER unit than in a
-# binary benchmark — $0.02 (half DS-1000's slope) keeps cost an active
-# pull without collapsing evolution into degenerate zero-LLM agents.
-# At n=20 a $0.30-mean Sonnet-tier pipeline pays 50 pts — still
-# prohibitive. Set this large (e.g. $1, $10) to recover pure-tiebreaker
-# semantics. Score is unbounded below — catastrophically expensive
-# agents land well negative, which is intentional.
-COST_PER_ERROR = 0.02
+# Default cost_per_error, expressed as a FRACTION of the free zone
+# rather than in dollars: the dollars that make a sensible penalty slope
+# scale with the threshold they sit beside. The same $0.02 that is a mild
+# tiebreaker against a $0.12 free zone is a wall against a $0.033 one, and
+# campaigns now routinely move the threshold by 4x between runs, so a
+# fixed-dollar default silently changes the penalty's character every time.
+# 10% is the ratio the recent campaigns converged on by hand (v0_0_8 ran
+# $0.033/$0.003 = 9.1%; ds1000's sharp-cap arm ran exactly 10%).
+#
+# It is a real sharpening of the old $0.02 default: at the $0.06 threshold
+# the slope goes $0.02 -> $0.006, i.e. 3.3x steeper. ds1000's two-arm
+# result for a 3.33x sharpening (0.001 -> 0.0003, same threshold) was
+# ~-3.9pp accuracy for 51% cheaper inference — expect evolution to retreat
+# further under the cap rather than buy through it.
+#
+# Sizing, in the units the penalty is denominated in: PFB scores are
+# continuous F1 (typical per-query 0.2-0.4), so one error-equivalent is a
+# LARGER unit than in a binary benchmark. At the default threshold a n=20
+# $0.30-mean Sonnet-tier pipeline pays 200 pts — decisively prohibitive.
+# Set cost_per_error large (e.g. $1, $10) to recover pure-tiebreaker
+# semantics. Score is unbounded below — catastrophically expensive agents
+# land well negative, which is intentional.
+COST_PER_ERROR_FRACTION = 0.10
+
+
+def default_cost_per_error(min_cost_threshold: float) -> float:
+    """The default penalty slope for a given free-zone width.
+
+    Single source for both the evaluator's own default and main.py's
+    --cost-per-error default, so the two can never drift into an
+    explicit-default-is-not-default trap. Rounded for the same reason as
+    runner_utils.parse_dollars_or_percent: float noise in the product
+    would compare unequal to a stored value on --resume.
+    """
+    return round(min_cost_threshold * COST_PER_ERROR_FRACTION, 12)
 
 
 def _fmt_cost(x: float) -> str:
@@ -1156,7 +1181,7 @@ class PaperFinderEvaluator:
         eval_timeout: int = 600,
         apply_cost_penalty: bool = True,
         min_cost_threshold: float = MIN_COST_THRESHOLD,
-        cost_per_error: float = COST_PER_ERROR,
+        cost_per_error: float | None = None,
     ):
         # Hard requirement: every provider key the registry references
         # must be set, even if the seed only uses one. Evolution can
@@ -1221,6 +1246,13 @@ class PaperFinderEvaluator:
             raise ValueError(
                 f"min_cost_threshold must be >= 0; got {min_cost_threshold}"
             )
+        # Defaulted here rather than in the signature because it is
+        # relative to another argument (COST_PER_ERROR_FRACTION of the
+        # free zone) — a signature default would freeze it at the
+        # MIN_COST_THRESHOLD constant and silently mis-scale any caller
+        # that moved the threshold.
+        if cost_per_error is None:
+            cost_per_error = default_cost_per_error(min_cost_threshold)
         if cost_per_error <= 0:
             raise ValueError(
                 f"cost_per_error must be > 0; got {cost_per_error}"
