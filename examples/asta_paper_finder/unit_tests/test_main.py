@@ -477,6 +477,55 @@ def test_test_eval_sites_never_read_the_training_judge():
     )
 
 
+def _rendered_help(main_mod) -> str:
+    import contextlib, io, sys
+
+    argv = sys.argv
+    sys.argv = ["main.py", "--help"]
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            main_mod.parse_args()
+    except SystemExit:
+        pass
+    finally:
+        sys.argv = argv
+    return buf.getvalue()
+
+
+def test_help_never_prints_default_none(main_mod):
+    """"(default: None)" is a contradiction, not information.
+
+    Fourteen flags default to None so the resume path can tell "user
+    passed nothing" from "user passed X"; the real default is resolved
+    later and stated in prose. Letting ArgumentDefaultsHelpFormatter
+    append "(default: None)" prints it directly beneath sentences like
+    "Default: openai/gpt-5.6-luna".
+    """
+    help_text = _rendered_help(main_mod)
+    assert "(default: None)" not in help_text
+    # ...while genuine defaults are still shown.
+    assert "(default: 999)" in help_text
+
+
+def test_training_judge_help_does_not_claim_test_evals(main_mod):
+    """The help is where a user decides which flag to pass, so a stale
+    sentence there re-teaches the exact coupling the split removed."""
+    help_text = _rendered_help(main_mod)
+    # Slice the options block, not the usage banner at the top (which
+    # lists every flag name and would otherwise be what we matched).
+    options = help_text[help_text.index("\noptions:"):]
+    start = options.index("--training-judge {")
+    end = options.index("--test-judge {")
+    training_help = options[start:end]
+    assert "TRAINING evals only" in training_help
+    for stale in ("--eval-test-set", "--eval-only", "internal test evals"):
+        assert stale not in training_help, (
+            f"--training-judge help still references {stale!r}; it governs "
+            "training only since the --test-judge split"
+        )
+
+
 def test_default_test_judge_is_the_official_one(main_mod):
     """An unflagged test eval must land on the leaderboard's basis."""
     from astabench.evals.paper_finder.relevance import GRADER_MODEL_NAME

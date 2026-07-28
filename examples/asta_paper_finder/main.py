@@ -368,6 +368,23 @@ _DEFAULT_TRAINING_JUDGE = "openai/gpt-5.6-luna"
 _DEFAULT_TEST_JUDGE = _STOCK_GRADER_ID
 
 
+class _DefaultsHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
+    """ArgumentDefaultsHelpFormatter without the useless "(default: None)".
+
+    Fourteen flags default to None deliberately: None is how the resume
+    path tells "user passed nothing" from "user passed X", so the real
+    default is resolved afterwards and stated in the help prose. Letting
+    argparse append "(default: None)" then prints a flat contradiction
+    next to sentences like "Default: openai/gpt-5.6-luna" — in the one
+    place a user goes to decide what to pass.
+    """
+
+    def _get_help_string(self, action):
+        if action.default is None:
+            return action.help
+        return super()._get_help_string(action)
+
+
 def _prompt_for_judge(judge: str) -> str:
     """The judge-prompt profile a given judge is run under.
 
@@ -535,7 +552,7 @@ def parse_args():
 
     p = argparse.ArgumentParser(
         description="Evolve PaperFindingBench agents on AstaBench (Standard tools)",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=_DefaultsHelpFormatter,
     )
     p.add_argument("--num-iterations", type=int, default=DEFAULT_NUM_ITERATIONS,
                    help="Iteration cap, deliberately loose — runs are bound by "
@@ -620,18 +637,17 @@ def parse_args():
     # pinned to evaluator.JUDGE_MODEL_IDS by a unit test.
     p.add_argument("--training-judge", type=str, default=None,
                    choices=JUDGE_CHOICES,
-                   help="Relevance-judge model for training AND (if passed "
-                        "with --eval-test-set/--eval-only) internal test "
-                        "evals. Default: openai/gpt-5.6-luna, the calibrated "
-                        "cheap judge (kappa 0.755, 2026-07-20; ~2x cheaper — "
-                        "see README 'Training judge'). Pass "
+                   help="Relevance-judge model for TRAINING evals only — "
+                        "held-out test evals are governed by --test-judge. "
+                        "Default: openai/gpt-5.6-luna, the calibrated cheap "
+                        "judge (kappa 0.755, 2026-07-20; ~2x cheaper — see "
+                        "README 'Training judge'). Pass "
                         "openai/gpt-4o-2024-11-20 to train on the official "
-                        "basis instead. Affects TRAINING ONLY — see "
-                        "--test-judge for held-out evals. The judge-prompt "
-                        "profile follows from this choice (gpt-4o -> stock, "
-                        "luna -> no-prose) and is not separately settable. "
-                        "Run-immutable: persisted, and a resume restores it. "
-                        "Each judge has its own verdict-cache namespace.")
+                        "basis instead. The judge-prompt profile follows from "
+                        "this choice (gpt-4o -> stock, luna -> no-prose) and "
+                        "is not separately settable. Run-immutable: "
+                        "persisted, and a resume restores it. Each judge has "
+                        "its own verdict-cache namespace.")
     p.add_argument("--test-judge", type=str, default=None,
                    choices=JUDGE_CHOICES,
                    help="Relevance-judge model for held-out test evals "
