@@ -325,11 +325,11 @@ def _write_test_results(
     return summary_path, per_problem_path
 
 
-# The two judges a run may use. Stock GPT-4o is the default, astabench's
-# hardcoded official judge, and the only basis comparable to leaderboard
-# scores. gpt-5.6-luna is the sole approved alternate: it passed the
-# calibration gate on 2026-07-20 (kappa 0.755, matched Perfect rates —
-# see README "Training judge"). A unit test pins element 0 to astabench's
+# The two judges a run may use. Element 0 is astabench's hardcoded
+# official judge and the only basis comparable to leaderboard scores.
+# gpt-5.6-luna is the sole approved alternate: it passed the calibration
+# gate on 2026-07-20 (kappa 0.755, matched Perfect rates — see README
+# "Training judge"). A unit test pins element 0 to astabench's
 # GRADER_MODEL_NAME and both elements to evaluator.JUDGE_MODEL_IDS.
 TRAINING_JUDGE_CHOICES = [
     "openai/gpt-4o-2024-11-20",
@@ -343,6 +343,26 @@ TRAINING_JUDGE_CHOICES = [
 # README "Training judge"). A profile is part of the verdict BASIS: it
 # gets its own cache namespace and test-result filename suffix.
 JUDGE_PROMPT_CHOICES = ["stock", "no-prose"]
+
+
+# Defaults for FRESH runs (2026-07-28). Training moved to the cheap
+# calibrated basis after it became standard practice across several
+# campaigns: luna + no-prose roughly quarters the judge bill (run -006
+# trained for $30.08 against -005's $128.32) and the full stock-vs-luna
+# pairing on all 267 test queries put the gap at +0.0136 overall
+# (se 0.0091), inside noise.
+#
+# These two MUST move together: no-prose is luna-only, and a fresh run
+# defaulting to no-prose with the stock judge would die at the SystemExit
+# below. Reverting one means reverting both.
+#
+# Resume is unaffected — a stored value always wins, so no in-flight
+# campaign switches basis. What DOES change: `--eval-test-set` now writes
+# judge-suffixed, NOT-official-comparable test results by default. For a
+# leaderboard-comparable number, re-run with
+# `--eval-only --training-judge openai/gpt-4o-2024-11-20 --judge-prompt stock`.
+_DEFAULT_TRAINING_JUDGE = "openai/gpt-5.6-luna"
+_DEFAULT_JUDGE_PROMPT = "no-prose"
 
 
 def _judge_slug(judge: str) -> str:
@@ -576,24 +596,27 @@ def parse_args():
                    choices=TRAINING_JUDGE_CHOICES,
                    help="Relevance-judge model for training AND (if passed "
                         "with --eval-test-set/--eval-only) internal test "
-                        "evals. Default: stock GPT-4o — the official judge "
-                        "and the only basis comparable to leaderboard "
-                        "scores. gpt-5.6-luna passed the calibration gate "
-                        "(kappa 0.755, 2026-07-20; ~2x cheaper — see README "
-                        "'Training judge'). Non-stock test results are "
+                        "evals. Default: openai/gpt-5.6-luna, the calibrated "
+                        "cheap judge (kappa 0.755, 2026-07-20; ~2x cheaper — "
+                        "see README 'Training judge'). Pass "
+                        "openai/gpt-4o-2024-11-20 with --judge-prompt stock "
+                        "for the official basis — the ONLY one comparable to "
+                        "leaderboard scores. Non-stock test results are "
                         "written to judge-suffixed files. Official "
                         "submissions always use stock GPT-4o regardless. "
                         "Each judge has its own verdict-cache namespace.")
     p.add_argument("--judge-prompt", type=str, default=None,
                    choices=JUDGE_PROMPT_CHOICES,
                    help="Judge-prompt profile for the ALTERNATE judge only. "
-                        "'no-prose' drops the snippet/summary output the "
-                        "scorer never reads: validated at the rerun-noise "
-                        "floor for gpt-5.6-luna (output -65%%, ~2x cheaper "
-                        "judging), REJECTED for gpt-4o (+18.5%% Perfect "
-                        "inflation) — requires --training-judge "
-                        "openai/gpt-5.6-luna. Run-immutable; own verdict-"
-                        "cache namespace (_noprose) and test-result suffix.")
+                        "Default: no-prose, which drops the snippet/summary "
+                        "output the scorer never reads — validated at the "
+                        "rerun-noise floor for gpt-5.6-luna (output -65%%, "
+                        "~2x cheaper judging), REJECTED for gpt-4o (+18.5%% "
+                        "Perfect inflation), so it requires --training-judge "
+                        "openai/gpt-5.6-luna and must be set to 'stock' "
+                        "whenever you select the gpt-4o judge. "
+                        "Run-immutable; own verdict-cache namespace "
+                        "(_noprose) and test-result suffix.")
     p.add_argument("--evidence-char-cap", type=int, default=None,
                    help="Per-paper markdown_evidence character cap, ENFORCED "
                         "during training only (truncated before grounding/"
@@ -769,10 +792,17 @@ def main():
     # requires stating the judge explicitly once (a one-time bootstrap,
     # locked thereafter) — deliberately never a silent default, because a
     # pre-persistence run may have trained under either judge.
+    # Fresh runs default to the calibrated cheap judge. Only the default
+    # moved (2026-07-28): resume still takes the stored value, and a legacy
+    # checkpoint without the key still demands an explicit judge rather
+    # than silently adopting this one, so no in-flight campaign changes
+    # basis. Pass --training-judge <stock id> --judge-prompt stock for a
+    # leaderboard-comparable eval; test results under any non-stock judge
+    # are written to judge-suffixed files and are NOT official-comparable.
     training_judge = _enforce_immutable_on_resume(
         cli_value=args.training_judge,
         stored_value=checkpoint_pfb.get("training_judge"),
-        default_value=_STOCK_GRADER,
+        default_value=_DEFAULT_TRAINING_JUDGE,
         name="training-judge",
         on_resume=on_resume,
         fmt=str,
@@ -795,12 +825,17 @@ def main():
     # keyless store safely resolves to "stock" — unlike training_judge,
     # where either value was possible pre-persistence and missing is a
     # hard error.
+    # Fresh runs default to no-prose (see _DEFAULT_JUDGE_PROMPT). The
+    # stored-value fallback stays "stock" on purpose: legacy checkpoints
+    # predate the knob and every one of them ran the stock prompt, so a
+    # resume must resolve to stock rather than inherit today's default and
+    # switch a campaign's verdict basis mid-flight.
     judge_prompt = _enforce_immutable_on_resume(
         cli_value=args.judge_prompt,
         stored_value=(
             checkpoint_pfb.get("judge_prompt", "stock") if checkpoint_pfb else None
         ),
-        default_value="stock",
+        default_value=_DEFAULT_JUDGE_PROMPT,
         name="judge-prompt",
         on_resume=on_resume,
         fmt=str,

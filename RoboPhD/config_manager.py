@@ -106,7 +106,7 @@ class ConfigManager:
 
             # Prompt content
             "include_evolution_rankings": False,  # Exclude Performance Rankings table and Agent Pool from evolution prompt
-            "include_prior_evolution": False,     # Add prompt section pointing at prior sessions' reasoning/reflection in evolution_output/
+            "include_prior_evolution": True,      # Prompt section pointing at prior sessions' reasoning/reflection in evolution_output/ (default since 2026-07-28 — standard practice for several campaigns)
 
             # Other
             "debug_log_probability": 0.02,

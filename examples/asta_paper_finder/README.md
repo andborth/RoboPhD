@@ -131,7 +131,17 @@ On `semantic_f1` queries (73% of validation) the scorer runs a GPT-4o relevance 
 
 ### Training judge (`--training-judge`)
 
-Two judge models are available; **stock `openai/gpt-4o-2024-11-20` is the default** (astabench's hardcoded official judge, and the only scoring basis comparable to leaderboard results):
+Two judge models are available. Since 2026-07-28 fresh runs default to **`openai/gpt-5.6-luna` with `--judge-prompt no-prose`** — the calibrated cheap basis, standard practice across several campaigns. Stock `openai/gpt-4o-2024-11-20` remains astabench's hardcoded official judge and **the only scoring basis comparable to leaderboard results**; select it with:
+
+```bash
+--training-judge openai/gpt-4o-2024-11-20 --judge-prompt stock
+```
+
+Both flags are needed together — `no-prose` is luna-only and the run aborts if it is left on with the stock judge. The two defaults therefore move as a pair; reverting one means reverting both. Resume is unaffected: a stored value always wins, so no in-flight campaign changes basis, and a legacy checkpoint predating the knob still resolves to `stock`.
+
+**Consequence worth knowing:** `--eval-test-set` on a default run now writes judge-suffixed, *not* official-comparable test results. Get the comparable number with a second pass — `--eval-only --training-judge openai/gpt-4o-2024-11-20 --judge-prompt stock` — which is what run -006 did (train on luna, then a full stock re-eval for the headline).
+
+Calibration record:
 
 | Candidate | Calibration vs GPT-4o (n=150, untruncated v0_0_7-lineage evidence) | Verdict |
 | --- | --- | --- |
