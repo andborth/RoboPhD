@@ -503,9 +503,19 @@ def test_help_never_prints_default_none(main_mod):
     "Default: openai/gpt-5.6-luna".
     """
     help_text = _rendered_help(main_mod)
-    assert "(default: None)" not in help_text
-    # ...while genuine defaults are still shown.
-    assert "(default: 999)" in help_text
+    rendered = re.findall(r"\(default: ([^)]*)\)", help_text)
+    # Both halves stated over the rendered set rather than any one flag's
+    # value: the property is "no default renders as None, and the
+    # formatter still renders the real ones", which no particular flag
+    # should be able to break by changing its own default.
+    assert "None" not in rendered, (
+        "a flag's default rendered as None; the real default is resolved "
+        "after argparse and stated in prose, so printing None contradicts it"
+    )
+    assert rendered, (
+        "no defaults rendered at all — the formatter suppressed every "
+        "default, not just the None ones"
+    )
 
 
 def test_training_judge_help_does_not_claim_test_evals(main_mod):
@@ -518,7 +528,13 @@ def test_training_judge_help_does_not_claim_test_evals(main_mod):
     start = options.index("--training-judge {")
     end = options.index("--test-judge {")
     training_help = options[start:end]
-    assert "TRAINING evals only" in training_help
+    # Redirect rather than exact phrasing: the negatives below would also
+    # pass on an EMPTY help string, so something positive is needed — but
+    # pinning a sentence would fail on a harmless reword. Pointing at the
+    # flag that does govern test evals is the substantive content.
+    assert "--test-judge" in training_help, (
+        "--training-judge help should point at the flag that governs test evals"
+    )
     for stale in ("--eval-test-set", "--eval-only", "internal test evals"):
         assert stale not in training_help, (
             f"--training-judge help still references {stale!r}; it governs "
