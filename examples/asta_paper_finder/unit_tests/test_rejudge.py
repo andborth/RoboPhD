@@ -196,6 +196,35 @@ def test_dropped_doc_retried_then_failed(tmp_path):
     assert row["rank"] == pytest.approx(_rank([3, 3]))
 
 
+def test_duplicate_statuses_match_evaluator_rule(tmp_path):
+    """Verdict-file duplicate semantics follow the evaluator's
+    _verdict_states rule, not just its status name: a repeat of a
+    verdict-holding paper is 'duplicate' with label None — including a
+    repeat beyond the cap (the recall window filters by membership,
+    position-blind) — while a repeat of a judge-failed paper mirrors the
+    first occurrence's outcome (scorer-invisible, no slot consumed)."""
+    s = _sample(
+        tmp_path, [("F", "f"), ("F", "f2"), ("A", "a"), ("A", "x")],
+        k=3, cap=3,
+    )
+
+    def impl(entities):
+        # F fails every ask; A judges fine.
+        return {d.corpus_id: PERFECT for d in entities if d.corpus_id != "F"}
+
+    _run_process(tmp_path, s, impl, no_cache_write=True)
+    verdicts = json.loads(
+        (s.problem_dir / "judge_verdicts.rejudge_testbasis.json").read_text()
+    )
+    rows = [(p["status"], p["label"]) for p in verdicts["papers"]]
+    assert rows == [
+        ("judge_call_failed", None),   # F, first occurrence
+        ("judge_call_failed", None),   # F repeat: mirrors, NOT "duplicate"
+        ("judged", PERFECT),           # A
+        ("duplicate", None),           # A repeat beyond cap: still a dup
+    ]
+
+
 def test_canonical_order_despite_fresh_after_cached(tmp_path):
     """Fresh verdicts must land at submission position, not appended after
     cache hits — identical submissions score identically at any cache

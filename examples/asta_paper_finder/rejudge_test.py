@@ -380,17 +380,34 @@ async def _process_sample(sample, cache, cache_path, sem, args, progress):
             return "judged" if pid in fresh else "judge_call_failed"
         return st
 
-    papers = [
-        {
-            # 1-based to match the sibling judge_verdicts.json the evaluator
-            # writes — consumers diff the two files per position.
-            "position": i,
-            "paper_id": pid,
-            "status": _final_status(pid, st),
-            "label": judgements.get(pid),
-        }
-        for i, (pid, st) in enumerate(statuses, 1)
-    ]
+    # 1-based positions to match the sibling judge_verdicts.json the
+    # evaluator writes — consumers diff the two files per position. Same
+    # duplicate rule as the evaluator's _verdict_states (by rule, not just
+    # by name): a repeat of a VERDICT-HOLDING paper is "duplicate" with
+    # label None — including a repeat that fell beyond the cap, since the
+    # recall window filters by membership, position-blind — while a repeat
+    # of a no-verdict paper is scorer-invisible and mirrors its first
+    # occurrence's outcome.
+    papers = []
+    first_status: dict[str, str] = {}
+    for i, (pid, st) in enumerate(statuses, 1):
+        if st == "duplicate":
+            if pid in judgements:
+                status, label = "duplicate", None
+            else:
+                status = first_status.get(pid, "judge_call_failed")
+                label = None
+        elif st == "beyond_scored_depth" and pid in judgements:
+            # judgements holds in-cap pids only, so this pid was already
+            # scored at an earlier position: a beyond-cap repeat.
+            status, label = "duplicate", None
+        else:
+            status = _final_status(pid, st)
+            label = judgements.get(pid)
+            first_status.setdefault(pid, status)
+        papers.append(
+            {"position": i, "paper_id": pid, "status": status, "label": label}
+        )
     # Overwritten (not --force-gated) by design: an interrupted run must be
     # able to resume, and a same-basis rerun replays identical cached
     # verdicts anyway; different bases write different filenames.

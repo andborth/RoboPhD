@@ -19,6 +19,7 @@ without provider keys or an astabench-importable environment beyond
 what evaluator.py itself needs at module import.
 """
 import ast
+import json
 import sys
 import threading
 from pathlib import Path
@@ -287,6 +288,35 @@ def test_judge_verdicts_markdown_labels_beyond_cap(ev_mod, verdict_cache):
     assert lines[2] == "3. 333 — (beyond scored depth — not judged)"
     assert lines[3] == "4. 444 — (beyond scored depth — not judged)"
     assert "2 beyond scored depth" in md
+
+
+def test_judge_verdicts_markdown_flags_duplicates(ev_mod, verdict_cache):
+    """A repeat of a verdict-holding paper wastes a top-K recall slot (the
+    scorer's recall window slices the raw submission), so it must be
+    surfaced — the second occurrence must NOT render as a healthy 'judged'
+    entry. A repeat of a paper with no verdict keeps its positional status
+    (the scorer ignores it entirely)."""
+    verdict_cache({"111": "perfectly_relevant_papers"}, cap=3)
+    md = ev_mod._judge_verdicts_markdown(
+        ["111", "222", "111", "444", "444"], "semantic_9", known_good={"222"}
+    )
+    lines = md.splitlines()
+    assert lines[0] == "1. 111 — Perfectly Relevant"
+    assert lines[1] == "2. 222 — Perfectly Relevant (known-good)"
+    assert lines[2] == "3. 111 — (duplicate submission — consumes a recall slot, adds nothing)"
+    # 444 has no verdict: its repeat is scorer-invisible, not a wasted slot
+    assert lines[3] == "4. 444 — (beyond scored depth — not judged)"
+    assert lines[4] == "5. 444 — (beyond scored depth — not judged)"
+    assert "1 duplicate" in md
+    assert "submit each paper once" in md
+    # JSON sibling shares the state machine
+    js = json.loads(ev_mod._judge_verdicts_json(
+        ["111", "222", "111", "444", "444"], known_good={"222"}
+    ))
+    assert [p["status"] for p in js["papers"]] == [
+        "judged", "known_good", "duplicate",
+        "beyond_scored_depth", "beyond_scored_depth",
+    ]
 
 
 def test_judge_verdicts_markdown_handles_no_record(ev_mod, verdict_cache):

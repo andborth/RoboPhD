@@ -787,7 +787,10 @@ def _verdict_states(
 
     Returns (cap, states) with states as (position, paper_id, status,
     raw_label) in submitted order — status one of "judged", "known_good"
-    (pre-seeded Perfect, never LLM-judged), "beyond_scored_depth",
+    (pre-seeded Perfect, never LLM-judged), "duplicate" (repeat of a
+    verdict-holding paper: the scorer's recall window slices the raw
+    submission filtered only by verdict membership, so the repeat consumes
+    a top-K slot while adding nothing), "beyond_scored_depth",
     "judge_call_failed" (judge-side error: the paper is excluded from both
     the rank sequence and recall — neither credited nor penalized), or
     "no_verdict_recorded" — or None when there is nothing to report (no
@@ -803,8 +806,13 @@ def _verdict_states(
     }
     cap = grounding.last_cap()
     states = []
+    seen: set[str] = set()
     for i, pid in enumerate(submitted_ids[:250], 1):  # scorer reads first 250
-        if pid in known_good:
+        if pid in seen and (pid in judged or pid in known_good):
+            # A repeat of a paper WITHOUT a verdict is position-noise the
+            # scorer ignores entirely; those keep their positional status.
+            status, label = "duplicate", None
+        elif pid in known_good:
             status, label = "known_good", "perfectly_relevant_papers"
         elif pid in judged:
             status, label = "judged", judged[pid]
@@ -814,6 +822,7 @@ def _verdict_states(
             status, label = "judge_call_failed", None
         else:
             status, label = "no_verdict_recorded", None
+        seen.add(pid)
         states.append((i, pid, status, label))
     return cap, states
 
@@ -842,13 +851,14 @@ def _judge_verdicts_markdown(
     }
     perfect_raw = "perfectly_relevant_papers"
     status_text = {
+        "duplicate": "(duplicate submission — consumes a recall slot, adds nothing)",
         "beyond_scored_depth": "(beyond scored depth — not judged)",
         "judge_call_failed": "(judge call failed — excluded from scoring)",
         "no_verdict_recorded": "(no verdict recorded)",
     }
 
     lines = []
-    n_perfect = n_lower = n_unknown = n_beyond = 0
+    n_perfect = n_lower = n_unknown = n_beyond = n_dup = 0
     for i, pid, status, label in states:
         if status == "known_good":
             verdict = "Perfectly Relevant (known-good)"
@@ -859,6 +869,9 @@ def _judge_verdicts_markdown(
                 n_perfect += 1
             else:
                 n_lower += 1
+        elif status == "duplicate":
+            verdict = status_text[status]
+            n_dup += 1
         elif status == "beyond_scored_depth":
             verdict = status_text[status]
             n_beyond += 1
@@ -868,10 +881,17 @@ def _judge_verdicts_markdown(
         lines.append(f"{i}. {pid} — {verdict}")
     n_submitted = len(lines)
     tail = f" / {n_beyond} beyond scored depth" if n_beyond else ""
+    dup_tail = f" / {n_dup} duplicate" if n_dup else ""
     lines.append(
         f"\n{n_perfect} Perfect / {n_lower} lower / {n_unknown} no verdict"
-        f"{tail}, of {n_submitted} submitted"
+        f"{dup_tail}{tail}, of {n_submitted} submitted"
     )
+    if n_dup:
+        lines.append(
+            "Duplicate submissions are pure waste: each repeat of a paper "
+            "that already has a verdict consumes one top-K recall slot and "
+            "adds nothing to rank or recall — submit each paper once."
+        )
     if any(status == "judge_call_failed" for _, _, status, _ in states):
         lines.append(
             "Judge-call failures are a judge-side error (rare, ~1%), unrelated "
