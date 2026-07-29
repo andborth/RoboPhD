@@ -4,7 +4,7 @@ Covers the canonical-ordering scorer (the whole point of the tool: scores
 must not depend on judge-cache state), the judging plan (cap, known-good,
 omitted/empty evidence, duplicates, cache-key parity with the live judge),
 the judge-drop retry path, cache write-through, exact-match carry, and the
-CLI guards (non-clobber, no-prose-with-stock rejection).
+CLI guards (non-clobber; prompt profile derived from the judge, not a flag).
 """
 
 import asyncio
@@ -337,21 +337,30 @@ def test_aggregate_mixes_rejudged_and_carried(tmp_path):
 
 # --- CLI guards -------------------------------------------------------------
 
-def test_no_prose_with_stock_judge_rejected(monkeypatch, capsys):
+def test_judge_prompt_not_separately_settable(monkeypatch, capsys):
+    """The prompt profile is a property of the judge (main._prompt_for_judge);
+    a --judge-prompt flag must not exist, or a rejudge could measure a basis
+    no live eval can produce."""
     monkeypatch.setattr(sys, "argv", [
         "rejudge_test.py", "/nonexistent", "--judge", rt.STOCK,
         "--judge-prompt", "no-prose",
     ])
     with pytest.raises(SystemExit):
         rt.main()
-    assert "no-prose" in capsys.readouterr().err
+    assert "unrecognized arguments" in capsys.readouterr().err
 
 
-def test_non_clobber_without_force(tmp_path, monkeypatch):
+def test_non_clobber_without_force_and_derived_basis(tmp_path, monkeypatch):
+    """Luna's basis derives to no-prose (matching live evals), so the
+    non-clobber gate must guard the _noprose-suffixed filename."""
     tp = tmp_path / "runs" / "robophd" / "run1" / "test_problems"
     _mk_problem(tp, "metadata_1", score=1.0)
     run_dir = tmp_path / "runs" / "robophd" / "run1"
-    basis = rt._judge_basis_slug("openai/gpt-5.6-luna", "stock")
+    from main import _prompt_for_judge
+    basis = rt._judge_basis_slug(
+        "openai/gpt-5.6-luna", _prompt_for_judge("openai/gpt-5.6-luna")
+    )
+    assert basis.endswith("_noprose")
     existing = run_dir / f"test_results.rejudge_{basis}.json"
     existing.write_text("{}")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key-never-used")

@@ -24,9 +24,14 @@ so a later live eval with the new judge starts warm.
 
 Usage:
     python rejudge_test.py <run_dir> --judge openai/gpt-5.6-luna
-        [--judge-prompt no-prose] [--no-baseline] [--limit N]
-        [--concurrency 4] [--retries 1] [--no-cache-write]
-        [--dry-run] [--force]
+        [--no-baseline] [--limit N] [--concurrency 4] [--retries 1]
+        [--no-cache-write] [--dry-run] [--force]
+
+The judge-prompt profile is a property of the judge (main._prompt_for_judge:
+gpt-4o -> stock, luna -> no-prose), matching what a live --training-judge /
+--test-judge eval would run — a rejudge exists to predict those. Outputs
+from before this derivation (stock-prompt luna) remain on disk under their
+own basis-suffixed names and caches.
 
 The two test_results.rejudge_* outputs are non-clobbering (--force to
 overwrite). The per-problem judge_verdicts.rejudge_<basis>.json diagnostics
@@ -63,10 +68,10 @@ from evaluator import (  # noqa: E402
     _safe_cache_rmw,
 )
 from main import (  # noqa: E402
-    JUDGE_PROMPT_CHOICES,
     JUDGE_CHOICES,
     _judge_basis_slug,
     _judge_cache_dir,
+    _prompt_for_judge,
 )
 import _grounding  # noqa: E402
 from _check_judge_calibration import _extract_results_lenient  # noqa: E402
@@ -503,8 +508,12 @@ def main() -> int:
         "a different judge basis; no agent re-run."
     )
     ap.add_argument("run_dir", type=Path)
-    ap.add_argument("--judge", required=True, choices=JUDGE_CHOICES)
-    ap.add_argument("--judge-prompt", default="stock", choices=JUDGE_PROMPT_CHOICES)
+    ap.add_argument(
+        "--judge", required=True, choices=JUDGE_CHOICES,
+        help="judge model; its prompt profile follows (gpt-4o -> stock, "
+             "luna -> no-prose), matching live --training-judge/--test-judge "
+             "evals",
+    )
     ap.add_argument(
         "--no-baseline", dest="baseline", action="store_false", default=True,
         help="skip the canonical stock-GPT-4o A/B pass",
@@ -520,10 +529,10 @@ def main() -> int:
     ap.add_argument("--force", action="store_true", help="overwrite existing outputs")
     args = ap.parse_args()
 
-    if args.judge_prompt != "stock" and args.judge == STOCK:
-        ap.error("--judge-prompt no-prose is validated for the alternate judge "
-                 "only; the stock GPT-4o basis must stay byte-identical to "
-                 "official scoring")
+    # No separate prompt knob: the profile is a property of the judge
+    # (single-sourced from main.py), so a rejudge always measures a basis a
+    # live eval can actually produce.
+    args.judge_prompt = _prompt_for_judge(args.judge)
     run_dir = args.run_dir.resolve()
     args.basis = _judge_basis_slug(args.judge, args.judge_prompt)
     stock_basis = _judge_basis_slug(STOCK, "stock")
