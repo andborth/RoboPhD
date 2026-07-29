@@ -458,6 +458,21 @@ def _prompt_for_judge(judge: str) -> str:
     return "no-prose" if judge != _STOCK_GRADER_ID else "stock"
 
 
+def _resolve_judge_prompt(
+    resuming: bool, checkpoint_pfb: dict, training_judge: str
+) -> str:
+    """Run-effective judge-prompt profile.
+
+    Fresh runs derive it from the judge (_prompt_for_judge) — there is no
+    knob. Resumes take the stored value so a campaign never changes verdict
+    basis mid-run, with missing-key legacy checkpoints resolving to "stock"
+    (the only profile that existed before the knob).
+    """
+    if resuming:
+        return checkpoint_pfb.get("judge_prompt", "stock")
+    return _prompt_for_judge(training_judge)
+
+
 def _judge_slug(judge: str) -> str:
     """Filesystem-safe judge-model slug used in judge-cache filenames."""
     return re.sub(r"[^A-Za-z0-9._-]+", "_", judge)
@@ -963,15 +978,18 @@ def main():
     # and for different reasons:
     #   * checkpoints predating the knob entirely — the feature did not
     #     exist, so every one of them ran the stock prompt;
-    #   * the one prose-luna campaign (20260721_215631), which ran luna
-    #     under the stock prompt back when that pairing was selectable.
+    #   * prose-luna campaigns (20260721_215631, and 20260728_191654 which
+    #     was launched under the fresh-run bug fixed here), which ran luna
+    #     under the stock prompt.
     # The derivation would re-base both to no-prose, so it must not reach
     # them: `.get("judge_prompt", "stock")` covers the first and the
-    # stored value covers the second.
-    if checkpoint_pfb is not None:
-        judge_prompt = checkpoint_pfb.get("judge_prompt", "stock")
-    else:
-        judge_prompt = _prompt_for_judge(training_judge)
+    # stored value covers the second. Branch on RESUMING, not on the
+    # checkpoint dict — fresh runs carry an empty dict, and `{} is not
+    # None` silently routed every fresh run to the legacy "stock" default
+    # (run 20260728_191654), leaving the derivation dead code.
+    judge_prompt = _resolve_judge_prompt(
+        bool(args.resume), checkpoint_pfb, training_judge
+    )
 
     # Unreachable via the CLI now that the profile is derived — kept as an
     # assertion against a hand-edited or corrupted checkpoint, since this

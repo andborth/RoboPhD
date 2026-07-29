@@ -422,6 +422,26 @@ def test_prompt_derivation_pairs_each_judge_with_its_validated_profile(main_mod)
         assert main_mod._prompt_for_judge(judge) in main_mod.JUDGE_PROMPT_CHOICES
 
 
+def test_resolve_judge_prompt_fresh_derives_resume_restores(main_mod):
+    """The resolution wiring, not just the mapping — regression for run
+    20260728_191654: fresh runs carry checkpoint_pfb={}, and branching on
+    `is not None` routed EVERY fresh run to the legacy "stock" default,
+    leaving the derivation dead code. Fresh must derive from the judge;
+    resume must restore the stored basis verbatim (incl. the prose-luna
+    campaigns), with missing-key legacy checkpoints resolving to stock."""
+    luna = "openai/gpt-5.6-luna"
+    stock = main_mod._STOCK_GRADER_ID
+    f = main_mod._resolve_judge_prompt
+    # Fresh run (empty checkpoint dict): derive — THE regression case.
+    assert f(False, {}, luna) == "no-prose"
+    assert f(False, {}, stock) == "stock"
+    # Resume: stored value wins, even where derivation would disagree.
+    assert f(True, {"judge_prompt": "stock", "training_judge": luna}, luna) == "stock"
+    assert f(True, {"judge_prompt": "no-prose"}, luna) == "no-prose"
+    # Legacy checkpoint without the key: the only pre-knob profile.
+    assert f(True, {}, luna) == "stock"
+
+
 def test_stock_judge_never_derives_no_prose(main_mod):
     """The rejected pairing is unreachable by construction.
 
@@ -789,9 +809,13 @@ def test_resume_restores_stored_profile_rather_than_deriving_it():
       * the one prose-luna campaign (20260721_215631), which ran luna
         under the stock prompt while that pairing was still selectable.
 
-    Both are covered by reading the stored value with a "stock" fallback,
-    so this pins that the resume branch does exactly that and does not
-    consult _prompt_for_judge.
+    Both are covered by reading the stored value with a "stock" fallback.
+    The resolution lives in _resolve_judge_prompt (behavior pinned in
+    test_resolve_judge_prompt_fresh_derives_resume_restores); here pin the
+    WIRING: main() must branch on whether we are RESUMING, not on the
+    checkpoint dict — fresh runs carry an empty dict, and a `checkpoint_pfb
+    is not None` test silently routed every fresh run to the legacy "stock"
+    default (run 20260728_191654 trained prose-luna because of it).
     """
     import ast as _ast
 
@@ -799,19 +823,22 @@ def test_resume_restores_stored_profile_rather_than_deriving_it():
         n for n in _ast.walk(MAIN_TREE)
         if isinstance(n, _ast.FunctionDef) and n.name == "main"
     )
-    assign = next(
+    calls = [
         n for n in _ast.walk(fn)
-        if isinstance(n, _ast.If)
-        and _ast.unparse(n.test) == "checkpoint_pfb is not None"
-        and "judge_prompt" in _ast.unparse(n)
+        if isinstance(n, _ast.Call)
+        and getattr(n.func, "id", None) == "_resolve_judge_prompt"
+    ]
+    assert calls, "main() must resolve the profile via _resolve_judge_prompt"
+    call = calls[0]
+    resuming_arg = call.args[0] if call.args else next(
+        (kw.value for kw in call.keywords if kw.arg == "resuming"), None
     )
-    resume_branch, fresh_branch = _ast.unparse(assign.body), _ast.unparse(assign.orelse)
-
-    assert "checkpoint_pfb.get('judge_prompt', 'stock')" in resume_branch
-    assert "_prompt_for_judge" not in resume_branch, \
-        "resume must restore the stored basis, never re-derive it"
-    assert "_prompt_for_judge" in fresh_branch, \
-        "a fresh run derives the profile from its judge"
+    assert resuming_arg is not None, \
+        "_resolve_judge_prompt must be passed the resuming flag " \
+        "(positionally or as resuming=)"
+    assert _ast.unparse(resuming_arg) == "bool(args.resume)", \
+        "the resume/fresh branch must key on args.resume, never on the " \
+        "checkpoint dict (empty ≠ absent)"
 
 
 def test_training_judge_is_run_immutable_and_persisted():
