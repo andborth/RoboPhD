@@ -422,6 +422,11 @@ def _guard_stub(**overrides):
         # Pulled from the class rather than hardcoded, so a rename fails
         # here instead of silently diverging from what the guard reads.
         _NON_EVOLVING_STRATEGIES=ParallelAgentResearcher._NON_EVOLVING_STRATEGIES,
+        # The verdict helper is a plain method on the same class; binding it
+        # keeps the stub exercising the real computation rather than a mock.
+        _reachability_verdict=lambda config: (
+            ParallelAgentResearcher._reachability_verdict(stub, config)
+        ),
         config_manager=cm,
         reachability_guard_state={},
         # A runaway leader with a nearly-exhausted budget: unreachable.
@@ -455,7 +460,7 @@ def test_guard_rewrites_the_strategy_when_unreachable():
     assert changed is True
     assert resolved["evolution_strategy"] == "greedy"
     assert stub.reachability_guard_state["fired_at"] == 5
-    assert stub.reachability_guard_state["restore_to"] == "use_your_judgment"
+    assert stub.reachability_guard_state["displaced_strategy"] == "use_your_judgment"
 
 
 def test_guard_records_its_decision_in_config_history():
@@ -509,43 +514,62 @@ def test_guard_still_fires_on_a_random_round():
     changed, resolved = _run_guard(stub, evolution_strategy="random")
     assert changed is True
     assert resolved["evolution_strategy"] == "greedy"
-    assert stub.reachability_guard_state["restore_to"] == "random"
+    assert stub.reachability_guard_state["displaced_strategy"] == "random"
 
 
-def test_guard_restores_the_displaced_strategy_next_round():
-    """Without this the greedy delta persists and evolution never resumes,
-    because config values carry forward until overridden."""
+def test_greedy_is_sticky_once_fired():
+    """Alternating back would spend an evolution session on the worst
+    candidate in the run. The verdict only deteriorates from here — a greedy
+    round still spends evaluations, so the horizon shrinks — so there is
+    nothing to go back for."""
     stub = _guard_stub()
     _run_guard(stub, iteration=5)
     assert stub.config_manager.get_config(5)["evolution_strategy"] == "greedy"
 
     stub.config_manager.set_current_iteration(6)
     changed, resolved = _run_guard(stub, iteration=6)
+    assert changed is False, "nothing to change; greedy is inherited"
+    assert resolved["evolution_strategy"] == "greedy"
+
+
+def test_sticky_is_not_a_latch_when_the_horizon_grows_back():
+    """The property that makes stickiness safe. --extend or a raised budget
+    can make agents reachable again, and the guard has to notice rather than
+    hold the run in greedy for the rest of its life."""
+    stub = _guard_stub()
+    _run_guard(stub, iteration=5)
+    assert stub.config_manager.get_config(5)["evolution_strategy"] == "greedy"
+
+    # An --extend-sized budget increase: the horizon reopens.
+    stub.config_manager.set_current_iteration(6)
+    changed, resolved = _run_guard(stub, iteration=6, evaluation_budget=100_000)
     assert changed is True
-    assert resolved["evolution_strategy"] == "use_your_judgment"
+    assert resolved["evolution_strategy"] == "use_your_judgment", (
+        "the displaced strategy must come back, not some default"
+    )
     assert stub.reachability_guard_state == {}
 
 
-def test_guard_never_fires_twice_consecutively():
-    """The alternation rule, asserted on the round after a firing even
-    though the numbers there are even worse (a greedy round spends budget
-    too, so the horizon only shrinks)."""
-    stub = _guard_stub()
-    _run_guard(stub, iteration=5)
-    stub.config_manager.set_current_iteration(6)
-    _, resolved = _run_guard(stub, iteration=6)
-    assert resolved["evolution_strategy"] != "greedy"
+def test_restore_only_reverts_what_the_guard_itself_displaced():
+    """A greedy round the user or meta-evolution asked for is not the
+    guard's to undo, however the horizon looks."""
+    stub = _guard_stub(reachability_guard_state={})
+    changed, _ = _run_guard(
+        stub, iteration=6, evolution_strategy="greedy",
+        evaluation_budget=100_000,
+    )
+    assert changed is False
 
 
 def test_guard_state_survives_a_checkpoint_round_trip():
-    """The alternation rule spans two iterations, so a resume between them
-    must not lose the fact that a greedy round just happened."""
+    """The displaced strategy spans iterations, so a resume must not lose
+    what evolution should return to."""
     import json
 
     stub = _guard_stub()
     _run_guard(stub, iteration=5)
     revived = json.loads(json.dumps(stub.reachability_guard_state))
-    assert revived == {"fired_at": 5, "restore_to": "use_your_judgment"}
+    assert revived == {"fired_at": 5, "displaced_strategy": "use_your_judgment"}
 
 
 def test_guard_ignores_untested_agents():

@@ -137,25 +137,27 @@ def main():
     if not args.at_iteration:
         print("-" * 100)
         if fired:
-            # Alternation: the guard skips the round after each firing, so
-            # consecutive candidate iterations do not all become greedy.
-            actual = []
-            for it in fired:
-                if not actual or it - actual[-1] > 1:
-                    actual.append(it)
-            print(f"Would have fired at: {actual}  "
-                  f"({len(actual)} of {len(test_history) - 1} evolving iterations)")
-            print(f"Candidate iterations before the no-two-in-a-row rule: {fired}")
-            agents_after = [
-                a for a in perf
-                if any(a in test_history[i - 1] for i in fired if i <= len(test_history))
-            ]
+            # Every unreachable iteration becomes greedy: the guard is sticky
+            # once fired, because the verdict only deteriorates from there.
+            # This retrospective view double-counts slightly in one respect —
+            # replacing evolution with a greedy round changes what the later
+            # iterations would have contained, so iterations after the first
+            # firing are counterfactual rather than observed.
+            print(f"Would have fired at: {fired}  "
+                  f"({len(fired)} of {len(test_history) - 1} evolving iterations)")
+            print(f"First firing: iteration {fired[0]}. From there the run "
+                  f"stays greedy unless the horizon grows (--extend).")
             print(f"\nCheck against the outcome: the winner was {winner}. If it "
-                  f"was created at or after the first firing, the guard would "
-                  f"have suppressed the run's best agent.")
-            if agents_after:
-                print(f"Agents present in would-be-suppressed iterations: "
-                      f"{sorted(agents_after)[:8]}")
+                  f"was created at or after iteration {fired[0]}, the guard "
+                  f"would have suppressed the run's best agent.")
+            suppressed = sorted(
+                a for a in perf
+                if any(a in test_history[i - 1]
+                       for i in fired if i <= len(test_history))
+                and a.startswith(tuple(f"iter{i}_" for i in fired))
+            )
+            if suppressed:
+                print(f"Agents that would not have been created: {suppressed}")
         else:
             print("Would never have fired on this run.")
 

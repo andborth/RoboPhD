@@ -2393,14 +2393,22 @@ class ParallelAgentResearcher:
         the iteration on a greedy round instead (deterministic top-k by Elo,
         no evolution).
 
-        Never fires twice in a row. The round after an intervention restores
-        the strategy that was displaced, so the guard alternates rather than
-        ending evolution outright — a run that is merely *near* the boundary
-        keeps evolving every other iteration.
+        Once it fires it stays fired, because the verdict can only get worse:
+        a greedy round still spends evaluations, so the horizon shrinks, and
+        the round's winner gains rating, so the bar rises. Alternating back
+        to evolution would spend a session on the worst candidate in the run
+        — the one with the least remaining runway.
 
-        The decision is recorded through ConfigManager.apply_delta, so it
-        lands in config_change_history and the checkpoint like any other
-        config change, and survives a resume.
+        It is nonetheless NOT a latch. The verdict is recomputed every
+        iteration, so if the horizon genuinely grows (``--extend``, a raised
+        evaluation_budget, a smaller agents_per_iteration) the guard restores
+        the strategy it displaced and evolution resumes on its own. That
+        recomputation is what makes stickiness safe, and it is why the
+        displaced strategy has to be remembered rather than discarded.
+
+        Decisions go through ConfigManager.apply_delta, so they land in
+        config_change_history and the checkpoint like any other config
+        change, and survive a resume.
 
         Returns:
             True if the config was changed and the caller must re-resolve it.
@@ -2412,55 +2420,38 @@ class ParallelAgentResearcher:
             return False
 
         state = getattr(self, "reachability_guard_state", None) or {}
-
-        # Alternation: the round after an intervention gives evolution its
-        # slot back. Checked before the reachability test so two consecutive
-        # greedy rounds are impossible regardless of what the numbers say.
-        if state.get("fired_at") == iteration - 1:
-            restore_to = state.get("restore_to")
-            self.reachability_guard_state = {}
-            if restore_to and config.get("evolution_strategy") == "greedy":
-                self.config_manager.apply_delta(
-                    iteration,
-                    {"evolution_strategy": restore_to},
-                    ConfigSource.ELO_REACHABILITY,
-                    rationale=(
-                        f"Restoring '{restore_to}' after the greedy round at "
-                        f"iteration {iteration - 1}; the guard never fires twice "
-                        f"consecutively."
-                    ),
-                )
-                print(f"\n♻️  Reachability guard: restored '{restore_to}' after greedy round")
-                return True
-            return False
-
+        displaced = state.get("displaced_strategy")
         current_strategy = config.get("evolution_strategy")
+
+        # Case 1: the guard is currently holding this run in greedy. Re-check
+        # rather than assume, so a grown horizon can hand evolution back.
+        if displaced and current_strategy == "greedy":
+            verdict = self._reachability_verdict(config)
+            if verdict is None or not verdict.reachable:
+                return False   # still no path; the inherited greedy stands
+            self.reachability_guard_state = {}
+            self.config_manager.apply_delta(
+                iteration,
+                {"evolution_strategy": displaced},
+                ConfigSource.ELO_REACHABILITY,
+                rationale=(
+                    f"Horizon grew back: {verdict.reason}. Restoring "
+                    f"'{displaced}', displaced at iteration "
+                    f"{state.get('fired_at')}."
+                ),
+            )
+            print(f"\n♻️  Reachability guard: horizon grew back — restoring "
+                  f"'{displaced}' ({verdict.summary()})")
+            return True
+
+        # Case 2: someone else chose a non-evolving round. Not ours to touch,
+        # and nothing to save by intervening.
         if current_strategy in self._NON_EVOLVING_STRATEGIES:
             return False
 
-        # Ratings in performance_records are post-clone-penalty, while the
-        # Elo formula operates pre-penalty. Project on the pre-penalty basis
-        # and let assess_reachability re-impose penalties before comparing.
-        penalties = clone_penalty_totals(getattr(self, "clone_detections", []) or [])
-        judged_elos = {
-            agent_id: perf.get("elo", 1500.0)
-            for agent_id, perf in self.performance_records.items()
-            if perf.get("test_count", 0) > 0
-        }
-        if not judged_elos:
-            return False
-
-        verdict = assess_reachability(
-            strip_clone_penalties(judged_elos, penalties),
-            rounds_remaining=remaining_rounds(
-                self.iteration_fresh_evals, config.get("evaluation_budget")
-            ),
-            agents_per_iteration=config["agents_per_iteration"],
-            min_rounds=config.get("elo_reachability_min_rounds", 3),
-            clone_penalties=penalties,
-        )
-        logger.info(f"Elo reachability: {verdict.summary()}")
-        if verdict.reachable:
+        # Case 3: an ordinary evolving round — decide whether to displace it.
+        verdict = self._reachability_verdict(config)
+        if verdict is None or verdict.reachable:
             return False
 
         print(f"\n🛑 Reachability guard: {verdict.summary()}")
@@ -2477,9 +2468,37 @@ class ParallelAgentResearcher:
         )
         self.reachability_guard_state = {
             "fired_at": iteration,
-            "restore_to": current_strategy,
+            "displaced_strategy": current_strategy,
         }
         return True
+
+    def _reachability_verdict(self, config: Dict):
+        """Current reachability verdict, or None when there is nothing to judge.
+
+        Ratings in performance_records are post-clone-penalty while the Elo
+        formula operates pre-penalty, so the projection runs on the stripped
+        basis and assess_reachability re-imposes penalties before comparing.
+        """
+        penalties = clone_penalty_totals(getattr(self, "clone_detections", []) or [])
+        judged_elos = {
+            agent_id: perf.get("elo", 1500.0)
+            for agent_id, perf in self.performance_records.items()
+            if perf.get("test_count", 0) > 0
+        }
+        if not judged_elos:
+            return None
+
+        verdict = assess_reachability(
+            strip_clone_penalties(judged_elos, penalties),
+            rounds_remaining=remaining_rounds(
+                self.iteration_fresh_evals, config.get("evaluation_budget")
+            ),
+            agents_per_iteration=config["agents_per_iteration"],
+            min_rounds=config.get("elo_reachability_min_rounds", 3),
+            clone_penalties=penalties,
+        )
+        logger.info(f"Elo reachability: {verdict.summary()}")
+        return verdict
 
     def _recalculate_all_elo_scores(self):
         """
