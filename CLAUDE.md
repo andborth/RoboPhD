@@ -167,6 +167,7 @@ The `optimize_anything()` API supports three engines, selected by config type:
 
 ### Core
 - **`RoboPhD/researcher.py`**: ParallelAgentResearcher — Elo evolution loop
+- **`RoboPhD/elo_reachability.py`**: Elo update formula (single source) + the reachability search behind the opt-in guard; no framework imports, so it is unit-testable standalone
 - **`RoboPhD/evolution.py`**: Evolution strategy selector
 - **`RoboPhD/deep_focus_evolution_manager.py`**: Multi-round evolution with testing
 - **`RoboPhD/meta_evolution_manager.py`**: Meta-evolution for strategy improvement
@@ -223,6 +224,36 @@ python examples/cant_be_late/main.py --engine-config '{
 - **K-factor**: 32, **Initial Elo**: 1500
 - **Tie Handling**: 0.5 points each, random winner selection
 - **Clone detection**: -200 Elo penalty for identical predictions
+- **Elo update**: `RoboPhD/elo_reachability.calculate_elo_updates` — `researcher.py` delegates to it, so the ladder and the reachability projection cannot use different formulas
+
+### Elo-Reachability Guard (opt-in, off by default)
+
+Late in a run a newly evolved agent can be arithmetically incapable of climbing from 1500 to the incumbent's rating before the budget runs out. `find_best_agent` selects by max Elo, so such an agent cannot be the run's output: it burns an evolution session *and* takes a round-robin slot that would otherwise compare the agents still in contention. When that is provable, the guard switches the iteration to `greedy` (no evolution, deterministic top-k by Elo).
+
+```bash
+python examples/asta_paper_finder/main.py \
+  --engine-config '{"elo_reachability_guard": true}'
+```
+
+| Key | Default | Meaning |
+|---|---|---|
+| `elo_reachability_guard` | `false` | the switch |
+| `elo_reachability_min_history` | `5` (= `TRAILING_WINDOW`) | completed iterations required before it can fire |
+
+`min_history` does two jobs with one number, which is why it defaults to the horizon's averaging window rather than its own literal: iteration 1 runs no evolution and costs ~half a steady-state iteration, so a short trailing mean overstates the horizon ~2×; and it keeps the guard off smoke-test runs (`--num-iterations 3` or `5`, extended later), which would otherwise lose their *final* evolution round. It covers caps ≤5 — raise it if you routinely smoke-test longer.
+
+**Mechanics** (`RoboPhD/elo_reachability.py`): reachability is existential, so the search returns on the first line of play where the new agent leads. `reachable=False` therefore means "no line exists", not "a heuristic didn't find one"; if the node budget runs out first the verdict fails safe (declines to fire) rather than firing unproven. The horizon takes both terminators — `evaluation_budget` and `num_iterations` — whichever binds first. Once fired it stays greedy, since the verdict only deteriorates as budget drains, but it is re-checked every iteration so `--extend` restores the displaced strategy. Decisions go through `ConfigManager.apply_delta` with source `elo_reachability`, landing in `config_change_history` and the checkpoint.
+
+**Cannot be enabled on King-of-the-Hill runs** (`agents_per_iteration: 2` with `oldest_agent_wins_ties: true`) — `ConfigManager` raises at startup. A KotH run's result is whichever agent won the last round, not the Elo leader (`runner_utils.find_last_winner`), so a new agent becomes the output by winning one round whatever its rating and nothing is ever dead weight. ~20% of archived runs are this shape.
+
+Replay it against a finished run before enabling it on a real one — free, and it refuses KotH runs the same way:
+
+```bash
+python scripts/elo_reachability.py ../robophd_runs/robophd/<run>
+python scripts/elo_reachability.py <run> --min-history 0   # show what the floor suppresses
+```
+
+Measured over 121 eligible archived runs: fires in 66%, with no run's winning agent suppressed. Almost always on the final iteration (78 of 80 firings); reach scales with Elo spread, and the archive's widest leaders (~1650) buy only one extra iteration.
 
 ## Development Tips
 
@@ -233,6 +264,7 @@ python examples/cant_be_late/main.py --engine-config '{
 - **Evolution Output**: Check `evolution_output/iteration_XXX/` for Claude's reasoning
 - **Run Outputs**: All runs land in `../robophd_runs/` (`robophd/` for Elo, `gepa/` for GEPA, `autoresearch/` for Autoresearch)
 - **Cleanup**: `python scripts/cleanup_runs.py` to find and remove short/experimental runs
+- **Reachability replay**: `python scripts/elo_reachability.py <run_dir>` replays the Elo-reachability guard over a finished run's `test_history` — what it would have done, and whether that would have suppressed the run's best agent
 
 ## Troubleshooting
 
