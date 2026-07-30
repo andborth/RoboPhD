@@ -47,6 +47,7 @@ try:
         clone_penalty_totals,
         horizon,
         strip_clone_penalties,
+        TRAILING_WINDOW,
     )
 except ImportError:
     # When run as a script, use absolute imports
@@ -73,6 +74,7 @@ except ImportError:
         clone_penalty_totals,
         horizon,
         strip_clone_penalties,
+        TRAILING_WINDOW,
     )
 
 # Utilities
@@ -2510,6 +2512,11 @@ class ParallelAgentResearcher:
             min_rounds=config.get("elo_reachability_min_rounds", 3),
             clone_penalties=penalties,
             binding_constraint=binding,
+            # Completed iterations, not the iteration number. They agree in
+            # every path today (--from-iteration trims this list to match),
+            # but "enough data to average" is the actual requirement.
+            history_depth=len(self.iteration_fresh_evals),
+            min_history=config.get("elo_reachability_min_history", TRAILING_WINDOW),
         )
         logger.info(f"Elo reachability: {verdict.summary()}")
         return verdict

@@ -295,7 +295,7 @@ def test_unbounded_horizon_names_no_terminator():
 def test_guard_fires_on_an_iteration_capped_run_with_no_budget():
     """End-to-end through the guard for scenario 2, which previously could
     not fire at all."""
-    stub = _guard_stub(num_iterations=5, iteration_fresh_evals=[30, 30, 30])
+    stub = _guard_stub(num_iterations=5, iteration_fresh_evals=[30] * 5)
     changed, resolved = _run_guard(stub, iteration=5, evaluation_budget=None)
     assert changed is True
     assert resolved["evolution_strategy"] == "greedy"
@@ -304,7 +304,7 @@ def test_guard_fires_on_an_iteration_capped_run_with_no_budget():
 def test_extend_reopens_an_iteration_capped_run():
     """--extend raises num_iterations on the researcher, so the sticky greedy
     has to notice and hand evolution back."""
-    stub = _guard_stub(num_iterations=5, iteration_fresh_evals=[30, 30, 30])
+    stub = _guard_stub(num_iterations=5, iteration_fresh_evals=[30] * 5)
     _run_guard(stub, iteration=5, evaluation_budget=None)
     assert stub.config_manager.get_config(5)["evolution_strategy"] == "greedy"
 
@@ -313,6 +313,166 @@ def test_extend_reopens_an_iteration_capped_run():
     changed, resolved = _run_guard(stub, iteration=6, evaluation_budget=None)
     assert changed is True
     assert resolved["evolution_strategy"] == "use_your_judgment"
+
+
+# --- the minimum-history floor ------------------------------------------------
+#
+# Two independent reasons, both wanting the same number, which is why the
+# default is derived from TRAILING_WINDOW rather than being its own literal:
+#
+#   1. Iteration 1 runs no evolution, so it costs about half a steady-state
+#      iteration. A one- or two-iteration mean understates cost ~2x and so
+#      overstates the horizon ~2x, converging around N=5.
+#   2. A smoke test (--num-iterations 3 or 5, extended afterwards) would
+#      otherwise have the guard fire on its FINAL iteration, quietly turning
+#      the last evolution round into a greedy one.
+
+
+def test_floor_defaults_to_the_averaging_window():
+    """Derived, not a coincidence of two literals. Tuning the window has to
+    move the floor with it."""
+    from RoboPhD.config_manager import ConfigManager
+    from RoboPhD.elo_reachability import TRAILING_WINDOW
+
+    assert ConfigManager().get_defaults()["elo_reachability_min_history"] == (
+        TRAILING_WINDOW
+    )
+
+
+@pytest.mark.parametrize("depth", [0, 1, 2, 3, 4])
+def test_short_history_never_fires(depth):
+    """A runaway leader and no horizon at all still must not fire while the
+    history is too short to average."""
+    verdict = assess_reachability(
+        {"leader": 5000.0, "b": 1500.0},
+        rounds_remaining=0,
+        agents_per_iteration=3,
+        history_depth=depth,
+    )
+    assert verdict.reachable
+    assert not verdict.projection_ran
+    assert f"only {depth} completed iteration" in verdict.reason
+
+
+def test_a_full_window_lets_the_guard_through():
+    verdict = assess_reachability(
+        {"leader": 5000.0, "b": 1500.0},
+        rounds_remaining=1,
+        agents_per_iteration=3,
+        history_depth=5,
+    )
+    assert not verdict.reachable
+
+
+def test_floor_is_skipped_when_depth_is_unstated():
+    """Callers that do not track history (ad-hoc use of the module) should
+    not silently get a floor they never asked for."""
+    verdict = assess_reachability(
+        {"leader": 5000.0, "b": 1500.0},
+        rounds_remaining=1, agents_per_iteration=3,
+    )
+    assert not verdict.reachable
+
+
+def test_floor_is_checked_before_the_horizon():
+    """With a short history the horizon is the least trustworthy number
+    available, so it must not be what decides anything — including via the
+    min_rounds early-out, which would otherwise report a different reason."""
+    verdict = assess_reachability(
+        {"leader": 5000.0}, rounds_remaining=math.inf,
+        agents_per_iteration=3, history_depth=1,
+    )
+    assert "completed iteration" in verdict.reason
+    assert "rounds remain" not in verdict.reason
+
+
+def test_floor_applies_whichever_terminator_binds():
+    """The averaging rationale is about history depth, not about which
+    terminator is in play. `--evaluation-budget 60` at ~30 evals/iteration is
+    a 2-iteration run — the CLAUDE.md smoke config — and firing there is wrong
+    for the same reason as an iteration-capped smoke test."""
+    for binding in ("budget", "iterations"):
+        verdict = assess_reachability(
+            {"leader": 5000.0, "b": 1500.0},
+            rounds_remaining=0, agents_per_iteration=3,
+            history_depth=2, binding_constraint=binding,
+        )
+        assert verdict.reachable, f"fired too early on a {binding}-bound run"
+
+
+def test_a_five_iteration_smoke_test_is_fully_protected():
+    """The case that motivated the floor. Simulated across the whole run:
+    without it the guard fires at iteration 5, the smoke test's last
+    evolution round."""
+    from RoboPhD.elo_reachability import horizon
+
+    def field_after(n):
+        elos = {"a": 1500.0, "b": 1500.0, "c": 1500.0}
+        for _ in range(n):
+            elos = calculate_elo_updates(elos, {
+                "a": {"average_score": 0.9},
+                "b": {"average_score": 0.5},
+                "c": {"average_score": 0.1}})
+        return elos
+
+    fired_without, fired_with = [], []
+    for iteration in range(2, 6):
+        rounds, binding = horizon(
+            [20] * (iteration - 1), None,
+            current_iteration=iteration, num_iterations=5,
+        )
+        common = dict(rounds_remaining=rounds, agents_per_iteration=3,
+                      binding_constraint=binding)
+        if not assess_reachability(field_after(iteration - 1), **common).reachable:
+            fired_without.append(iteration)
+        if not assess_reachability(
+            field_after(iteration - 1), history_depth=iteration - 1, **common
+        ).reachable:
+            fired_with.append(iteration)
+
+    assert fired_without == [5], (
+        f"expected the unprotected guard to fire on the final iteration, "
+        f"got {fired_without}"
+    )
+    assert fired_with == [], f"the floor should suppress all of it, got {fired_with}"
+
+
+def test_the_floor_does_not_cover_larger_smoke_tests():
+    """Stated as a known limit rather than left to be discovered. A run capped
+    at 8 still fires on its last iteration (history depth 7 clears a floor of
+    5); the backstop there is --extend restoring the displaced strategy."""
+    from RoboPhD.elo_reachability import horizon
+
+    elos = {"a": 1500.0, "b": 1500.0, "c": 1500.0}
+    for _ in range(7):
+        elos = calculate_elo_updates(elos, {
+            "a": {"average_score": 0.9}, "b": {"average_score": 0.5},
+            "c": {"average_score": 0.1}})
+    rounds, binding = horizon([20] * 7, None, current_iteration=8,
+                              num_iterations=8)
+    verdict = assess_reachability(
+        elos, rounds_remaining=rounds, agents_per_iteration=3,
+        binding_constraint=binding, history_depth=7,
+    )
+    assert not verdict.reachable
+
+
+def test_guard_respects_the_floor_end_to_end():
+    stub = _guard_stub(iteration_fresh_evals=[30, 30])   # depth 2
+    changed, resolved = _run_guard(stub, iteration=3)
+    assert changed is False
+    assert resolved["evolution_strategy"] == "use_your_judgment"
+
+
+def test_guard_floor_is_configurable():
+    """So an 8-iteration smoke habit can raise it past the default."""
+    stub = _guard_stub(iteration_fresh_evals=[30] * 7)   # depth 7
+    changed, _ = _run_guard(stub, iteration=8)
+    assert changed is True, "depth 7 clears the default floor of 5"
+
+    stub = _guard_stub(iteration_fresh_evals=[30] * 7)
+    changed, _ = _run_guard(stub, iteration=8, elo_reachability_min_history=10)
+    assert changed is False, "a raised floor must suppress the same case"
 
 
 # --- ordering enumeration -----------------------------------------------------
@@ -522,7 +682,7 @@ def _guard_stub(**overrides):
 
     cm = ConfigManager()
     cm.set_initial_config({"elo_reachability_guard": True,
-                           "evaluation_budget": 100})
+                           "evaluation_budget": 160})
     cm.set_current_iteration(overrides.get("iteration", 5))
     stub = SimpleNamespace(
         # Pulled from the class rather than hardcoded, so a rename fails
@@ -545,7 +705,10 @@ def _guard_stub(**overrides):
             "c": {"elo": 1450.0, "test_count": 3},
         },
         clone_detections=[],
-        iteration_fresh_evals=[30, 30, 30],   # 90 of 100 spent
+        # Five entries so the default min-history floor is cleared; these
+        # tests are about the decision logic, not the floor. 150 of 160 spent
+        # leaves a third of a round -- one playable iteration.
+        iteration_fresh_evals=[30] * 5,
     )
     for key, value in overrides.items():
         setattr(stub, key, value)

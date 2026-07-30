@@ -76,6 +76,32 @@ CLONE_PENALTY = 200.0
 # legal agent name so it can never collide with a real pool entry.
 CHALLENGER_ID = "<challenger>"
 
+# Trailing window for the per-iteration eval-cost mean, and — because the two
+# want the same number for related reasons — the minimum history the guard
+# requires before it will fire at all.
+#
+# Iteration 1 runs no evolution (no new agent, no Deep Focus evals), so it
+# costs about half a steady-state iteration and drags the mean down with it.
+# Measured on the archived runs, fresh evals per iteration:
+#
+#   v0_0_8:  [14, 26, 33, 38, 35, ...]  trailing mean N=1:14  N=3:24  N=5:29
+#   v0_0_1:  [20, 34, 52, 48, 51, ...]  trailing mean N=1:20  N=3:35  N=5:41
+#
+# So a one- or two-iteration mean understates cost roughly 2x, which overstates
+# the horizon roughly 2x. That error is optimistic — it delays firing — so it
+# is unreliable rather than unsafe, but it is large, and it converges right
+# around N=5. Requiring a full window before firing removes it for free.
+#
+# The same floor independently protects short runs. A smoke test
+# (--num-iterations 3 or 5, often extended afterwards) has no tail worth
+# saving: the guard would fire on its FINAL iteration, silently converting the
+# last evolution round into a greedy one, so a run whose whole purpose was to
+# exercise evolution would quietly exercise less of it. A floor of 5 blocks
+# firing at iterations 2-5, covering any run capped at 5 or fewer; larger
+# smoke tests still fire on their last iteration and rely on --extend
+# restoring the displaced strategy.
+TRAILING_WINDOW = 5
+
 # Weak-ordering enumeration is a Fubini number in the opponent count
 # (2->3, 3->13, 4->75, 5->541, 6->4683). Past this we fall back to a
 # single heuristic ordering and say so in the verdict, rather than
@@ -179,7 +205,7 @@ def apply_clone_penalties(
 def remaining_rounds(
     iteration_fresh_evals: Sequence[int],
     evaluation_budget: Optional[int],
-    window: int = 5,
+    window: int = TRAILING_WINDOW,
 ) -> float:
     """How many more iterations the evaluation budget affords.
 
@@ -230,7 +256,7 @@ def horizon(
     *,
     current_iteration: int,
     num_iterations: Optional[int],
-    window: int = 5,
+    window: int = TRAILING_WINDOW,
 ) -> tuple[float, str]:
     """Rounds remaining under whichever terminator binds first.
 
@@ -416,6 +442,8 @@ def assess_reachability(
     min_rounds: int = 3,
     clone_penalties: Optional[Dict[str, float]] = None,
     binding_constraint: str = "none",
+    history_depth: Optional[int] = None,
+    min_history: int = TRAILING_WINDOW,
     k: int = K_FACTOR,
 ) -> ReachabilityVerdict:
     """Decide whether an agent evolved next iteration could lead on Elo.
@@ -435,6 +463,21 @@ def assess_reachability(
         A verdict carrying the numbers behind it, for logging.
     """
     penalties = clone_penalties or {}
+
+    # Too early to judge. Checked before anything else, and before the
+    # horizon is even consulted, because with a short history the horizon is
+    # the least trustworthy number available — see TRAILING_WINDOW.
+    if history_depth is not None and history_depth < min_history:
+        return ReachabilityVerdict(
+            reachable=True,
+            reason=(
+                f"only {history_depth} completed iteration(s) of history; the "
+                f"guard needs {min_history} before its horizon estimate means "
+                f"anything"
+            ),
+            rounds_remaining=rounds_remaining,
+            binding_constraint=binding_constraint,
+        )
 
     if not current_elos:
         return ReachabilityVerdict(

@@ -28,6 +28,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from RoboPhD.elo_reachability import (  # noqa: E402
+    TRAILING_WINDOW,
     assess_reachability,
     calculate_elo_updates,
     clone_penalty_totals,
@@ -66,6 +67,10 @@ def main():
     ap.add_argument("--min-rounds", type=int, default=3,
                     help="Rounds remaining above which the guard never fires "
                          "(default: %(default)s)")
+    ap.add_argument("--min-history", type=int, default=TRAILING_WINDOW,
+                    help="Completed iterations required before the guard fires "
+                         "at all (default: %(default)s). Pass 0 to see the "
+                         "verdicts the floor is suppressing")
     ap.add_argument("--agents-per-iteration", type=int, default=None,
                     help="Round-robin size (default: read from the checkpoint)")
     ap.add_argument("--evaluation-budget", type=int, default=None,
@@ -139,6 +144,8 @@ def main():
             min_rounds=args.min_rounds,
             clone_penalties=penalties,
             binding_constraint=binding,
+            history_depth=len(fresh_evals[:iteration - 1]),
+            min_history=args.min_history,
         )
         tag = "reachable" if verdict.reachable else "WOULD FIRE"
         print(f"{iteration:>5}  {tag:<12}  {verdict.summary()}")

@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from RoboPhD.config import validate_model_alias
+from RoboPhD.elo_reachability import TRAILING_WINDOW
 
 
 
@@ -93,6 +94,13 @@ class ConfigManager:
             # early-out that also keeps it out of the long-horizon regime
             # where its cross-round search is least trustworthy.
             "elo_reachability_min_rounds": 3,
+            # Completed iterations required before the guard will fire at all.
+            # Defaults to the trailing window the horizon is averaged over
+            # rather than its own literal, so tuning one moves the other —
+            # they want the same number for related reasons (see
+            # elo_reachability.TRAILING_WINDOW). Raise it if you routinely
+            # smoke-test at more than 5 iterations before extending.
+            "elo_reachability_min_history": TRAILING_WINDOW,
 
             # Meta-evolution parameters
             "meta_evolution_strategy": None,       # Which meta-evolution strategy to use (None = off)
