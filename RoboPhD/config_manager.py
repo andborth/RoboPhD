@@ -90,10 +90,6 @@ class ConfigManager:
             # to how a run spends its tail, so it should be opted into rather
             # than silently applied to every existing configuration.
             "elo_reachability_guard": False,
-            # Rounds remaining above which the guard never fires — a cheap
-            # early-out that also keeps it out of the long-horizon regime
-            # where its cross-round search is least trustworthy.
-            "elo_reachability_min_rounds": 3,
             # Completed iterations required before the guard will fire at all.
             # Defaults to the trailing window the horizon is averaged over
             # rather than its own literal, so tuning one moves the other —
@@ -698,17 +694,22 @@ class ConfigManager:
         several iterations in.
         """
         # King of the Hill: a two-agent round-robin where ties go to the
-        # incumbent. The reachability guard must not run on this shape.
+        # incumbent. The reachability guard must not run on this shape, and
+        # the reason is that its QUESTION is wrong here, not merely that its
+        # answer would be pessimistic.
         #
-        # Every round is exactly champion vs challenger -- pending winner plus
-        # newly evolved agent, with no free slot -- so a new agent gets ONE
-        # game per iteration instead of two, and its rating climbs at half
-        # speed. Reachability then reads as "unreachable" for most of a run,
-        # and the guard would suppress the very mechanism KotH is built on:
-        # repeatedly throwing fresh challengers at an entrenched champion.
-        # Worse, oldest_agent_wins_ties makes the champion strictly harder to
-        # displace, so the gap widens monotonically and the guard would fire
-        # earlier and earlier.
+        # KotH's result is the agent that won the last round, full stop -- see
+        # runner_utils.find_last_winner, which exists because "for
+        # king-of-the-hill runs the last-round winner may differ from the Elo
+        # leader". So a newly evolved agent becomes the run's output by winning
+        # a single round, whatever its rating. "Could it become Elo leader" is
+        # not the criterion, no agent is ever dead weight, and there is never
+        # anything to be saved by switching to greedy.
+        #
+        # (It would also answer pessimistically if asked: with no free slot the
+        # round is exactly champion vs challenger, so a new agent plays one
+        # game per iteration instead of two and its rating climbs at half
+        # speed. But that is a secondary point -- the premise fails first.)
         if (
             config.get("elo_reachability_guard")
             and config.get("agents_per_iteration") == 2
@@ -718,11 +719,11 @@ class ConfigManager:
                 f"elo_reachability_guard cannot be enabled on a King-of-the-Hill "
                 f"run (iteration {iteration}: agents_per_iteration=2 with "
                 f"oldest_agent_wins_ties=True).\n\n"
-                f"KotH rounds are champion-vs-challenger with no free slot, so a "
-                f"new agent plays one game per iteration instead of two and "
-                f"climbs at half speed. The guard would read that as "
-                f"'unreachable' for most of the run and suppress the challenge "
-                f"mechanism the format is built on.\n\n"
+                f"A KotH run's result is whichever agent won the LAST ROUND, not "
+                f"the Elo leader (see runner_utils.find_last_winner). A newly "
+                f"evolved agent can therefore become the run's output by winning "
+                f"one round regardless of its rating, so no agent is ever dead "
+                f"weight and the guard has nothing to save.\n\n"
                 f"Either drop elo_reachability_guard, or raise "
                 f"agents_per_iteration above 2."
             )

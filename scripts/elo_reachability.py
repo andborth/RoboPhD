@@ -75,9 +75,6 @@ def main():
     ap.add_argument("run_dir", help="Run directory containing checkpoint.json")
     ap.add_argument("--at-iteration", type=int, default=None,
                     help="Report a single iteration instead of every one")
-    ap.add_argument("--min-rounds", type=int, default=3,
-                    help="Rounds remaining above which the guard never fires "
-                         "(default: %(default)s)")
     ap.add_argument("--min-history", type=int, default=TRAILING_WINDOW,
                     help="Completed iterations required before the guard fires "
                          "at all (default: %(default)s). Pass 0 to see the "
@@ -152,7 +149,6 @@ def main():
             strip_clone_penalties(elos, penalties),
             rounds_remaining=rounds,
             agents_per_iteration=per_iter,
-            min_rounds=args.min_rounds,
             clone_penalties=penalties,
             binding_constraint=binding,
             history_depth=len(fresh_evals[:iteration - 1]),

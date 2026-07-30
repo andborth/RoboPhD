@@ -599,7 +599,6 @@ def assess_reachability(
     *,
     rounds_remaining: float,
     agents_per_iteration: int,
-    min_rounds: int = 3,
     clone_penalties: Optional[Dict[str, float]] = None,
     binding_constraint: str = "none",
     previous_winner: Optional[str] = None,
@@ -613,10 +612,6 @@ def assess_reachability(
         current_elos: PRE-penalty ratings (see `strip_clone_penalties`).
         rounds_remaining: from `remaining_rounds`; `inf` means unbounded.
         agents_per_iteration: round-robin size, hence games per round.
-        min_rounds: above this many remaining rounds, return reachable
-            without projecting. A cheap early-out, and it keeps the guard
-            out of the long-horizon regime where the greedy cross-round
-            search is least trustworthy.
         clone_penalties: agent_id -> penalty, re-applied before comparing
             because leadership is judged post-penalty.
 
@@ -651,10 +646,10 @@ def assess_reachability(
     judged = apply_clone_penalties(current_elos, penalties)
     leader_id = max(judged, key=lambda a: judged[a])
 
-    if rounds_remaining > min_rounds:
+    if math.isinf(rounds_remaining):
         return ReachabilityVerdict(
             reachable=True,
-            reason=f"more than {min_rounds} rounds remain",
+            reason="the horizon is unbounded",
             rounds_remaining=rounds_remaining,
             leader_id=leader_id,
             leader_elo=judged[leader_id],
@@ -677,12 +672,32 @@ def assess_reachability(
 
     if reachable:
         reason = "a winning line exists"
-    elif complete:
-        reason = f"no line of play passes {best_rival_id}"
-    else:
-        reason = (
-            f"no line found passing {best_rival_id} within the search budget"
+    elif not complete:
+        # The search ran out of budget without finding a winning line, which
+        # is NOT the same as proving there isn't one. Firing here would undo
+        # the whole point of searching for existence: an unreachable verdict
+        # is supposed to be a proof. Fail safe -- decline to fire, and say
+        # why, so an operator can see the guard gave up rather than cleared
+        # the iteration.
+        return ReachabilityVerdict(
+            reachable=True,
+            reason=(
+                f"could not prove unreachability within the search budget "
+                f"(best line found reaches "
+                f"{judged_projection[CHALLENGER_ID]:.0f} vs "
+                f"{best_rival_id}); declining to fire on an unproven verdict"
+            ),
+            rounds_remaining=rounds_remaining,
+            leader_id=leader_id,
+            leader_elo=judged[leader_id],
+            projected_challenger_elo=challenger,
+            projected_best_rival_elo=best_rival,
+            projection_ran=True,
+            search_exhaustive=False,
+            binding_constraint=binding_constraint,
         )
+    else:
+        reason = f"no line of play passes {best_rival_id}"
     return ReachabilityVerdict(
         reachable=reachable,
         reason=reason,

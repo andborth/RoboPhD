@@ -334,8 +334,12 @@ def test_floor_defaults_to_the_averaging_window():
     from RoboPhD.config_manager import ConfigManager
     from RoboPhD.elo_reachability import TRAILING_WINDOW
 
-    assert ConfigManager().get_defaults()["elo_reachability_min_history"] == (
-        TRAILING_WINDOW
+    defaults = ConfigManager().get_defaults()
+    assert defaults["elo_reachability_min_history"] == TRAILING_WINDOW
+    assert "elo_reachability_min_rounds" not in defaults, (
+        "min_rounds was removed: its only justification was distrust of a "
+        "greedy search that no longer exists, and an unproven verdict now "
+        "fails safe instead of being capped away"
     )
 
 
@@ -377,7 +381,7 @@ def test_floor_is_skipped_when_depth_is_unstated():
 def test_floor_is_checked_before_the_horizon():
     """With a short history the horizon is the least trustworthy number
     available, so it must not be what decides anything — including via the
-    min_rounds early-out, which would otherwise report a different reason."""
+    unbounded-horizon early-out, which reports a different reason."""
     verdict = assess_reachability(
         {"leader": 5000.0}, rounds_remaining=math.inf,
         agents_per_iteration=3, history_depth=1,
@@ -638,15 +642,15 @@ def test_search_is_flagged_when_orderings_are_truncated():
 # --- the verdict --------------------------------------------------------------
 
 
-def test_long_horizon_short_circuits_without_projecting():
+def test_a_long_finite_horizon_is_searched_not_skipped():
+    """min_rounds used to short-circuit here. With it gone a long horizon is
+    searched like any other, and a runaway leader is still reachable given
+    enough rounds — found by the search rather than assumed by a threshold."""
     verdict = assess_reachability(
-        {"a": 5000.0}, rounds_remaining=10, agents_per_iteration=3, min_rounds=3
+        {"a": 1900.0, "b": 1500.0}, rounds_remaining=15, agents_per_iteration=3
     )
     assert verdict.reachable
-    assert not verdict.projection_ran, (
-        "a long horizon should skip the projection entirely, not compute and "
-        "discard it"
-    )
+    assert verdict.projection_ran, "a finite horizon must actually be searched"
 
 
 def test_unbounded_horizon_never_fires():
@@ -739,7 +743,6 @@ def test_guard_is_off_by_default():
 
     defaults = ConfigManager().get_defaults()
     assert defaults["elo_reachability_guard"] is False
-    assert defaults["elo_reachability_min_rounds"] == 3
 
 
 # --- the guard's own wiring ---------------------------------------------------
@@ -951,12 +954,12 @@ def _koth(**extra):
 def test_guard_cannot_be_enabled_on_a_koth_run():
     """agents_per_iteration=2 with oldest_agent_wins_ties is King of the Hill.
 
-    Every round is champion vs challenger — pending winner plus newly evolved
-    agent, with no free slot — so a new agent gets ONE game per iteration
-    instead of two and climbs at half speed. The guard would read that as
-    unreachable for most of the run and suppress the challenge mechanism the
-    format exists for. oldest_agent_wins_ties makes it worse: the champion is
-    strictly harder to displace, so the gap widens monotonically.
+    The guard's QUESTION is wrong here, not just its answer. A KotH run's
+    result is whichever agent won the last round, full stop — which is why
+    runner_utils.find_last_winner exists and documents that "the last-round
+    winner may differ from the Elo leader". A newly evolved agent becomes the
+    output by winning one round whatever its rating, so no agent is ever dead
+    weight and greedy saves nothing.
     """
     with pytest.raises(ValueError, match="King-of-the-Hill"):
         _koth(elo_reachability_guard=True)
@@ -1004,3 +1007,30 @@ def test_koth_error_names_both_escape_routes():
     msg = str(exc.value)
     assert "elo_reachability_guard" in msg
     assert "agents_per_iteration" in msg
+
+
+# --- unproven verdicts fail safe ----------------------------------------------
+
+
+def test_budget_exhaustion_declines_to_fire():
+    """The point of searching for existence is that "unreachable" is a proof.
+    A search that ran out of budget without finding a winning line has proved
+    nothing, so firing there would undo the whole reframing. It must read as
+    reachable, and say why."""
+    field = {"leader": 2300.0, "b": 1520.0, "c": 1500.0, "d": 1490.0, "e": 1480.0}
+    verdict = assess_reachability(
+        field, rounds_remaining=5, agents_per_iteration=5,
+    )
+    assert verdict.reachable, "fired on a verdict it could not prove"
+    assert verdict.search_exhaustive is False
+    assert "unproven" in verdict.reason
+
+
+def test_a_proven_unreachable_still_fires():
+    """The fail-safe must not swallow the real case."""
+    verdict = assess_reachability(
+        {"leader": 2200.0, "b": 1500.0, "c": 1480.0},
+        rounds_remaining=1, agents_per_iteration=3,
+    )
+    assert not verdict.reachable
+    assert verdict.search_exhaustive is True

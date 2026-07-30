@@ -2525,7 +2525,6 @@ class ParallelAgentResearcher:
             strip_clone_penalties(judged_elos, penalties),
             rounds_remaining=rounds,
             agents_per_iteration=config["agents_per_iteration"],
-            min_rounds=config.get("elo_reachability_min_rounds", 3),
             clone_penalties=penalties,
             binding_constraint=binding,
             # select_agents_for_iteration's P1: the last completed iteration's
