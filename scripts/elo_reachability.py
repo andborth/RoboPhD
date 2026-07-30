@@ -13,12 +13,22 @@ the outcome.
 Usage:
     python scripts/elo_reachability.py <run_dir>
     python scripts/elo_reachability.py <run_dir> --at-iteration 12
-    python scripts/elo_reachability.py <run_dir> --min-rounds 2
+    python scripts/elo_reachability.py <run_dir> --min-history 0
 
-Caveat on the retrospective view: ratings are replayed from `test_history`,
-so the figures at iteration N are exactly what the guard would have seen
-live. The horizon, however, uses the budget recorded in the checkpoint; a
-run that was resumed with a different budget will show that later value.
+Three caveats on the retrospective view:
+
+- Ratings are replayed from `test_history`, so the figures at iteration N
+  are exactly what the guard would have seen live. The horizon, however,
+  uses the budget recorded in the checkpoint; a run resumed with a different
+  budget will show that later value.
+- Only the FIRST firing is observed. Replacing an evolution round with a
+  greedy one changes what later iterations would have contained, so every
+  row after it describes a run that did not happen.
+- King-of-the-Hill runs are refused, matching the runtime. Sweeping without
+  that exclusion silently measures a regime the guard cannot be enabled in,
+  and the numbers look plausible rather than broken -- a KotH ladder freezes
+  an early leader once it stops playing, so "unreachable" appears with lots
+  of runway and reads as a deep multi-round save.
 """
 import argparse
 import json

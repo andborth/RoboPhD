@@ -358,7 +358,7 @@ def test_short_history_never_fires(depth):
         history_depth=depth,
     )
     assert verdict.reachable
-    assert not verdict.projection_ran
+    assert not verdict.search_ran
     assert f"only {depth} completed iteration" in verdict.reason
 
 
@@ -656,7 +656,7 @@ def test_a_long_finite_horizon_is_searched_not_skipped():
         {"a": 1900.0, "b": 1500.0}, rounds_remaining=15, agents_per_iteration=3
     )
     assert verdict.reachable
-    assert verdict.projection_ran, "a finite horizon must actually be searched"
+    assert verdict.search_ran, "a finite horizon must actually be searched"
 
 
 def test_unbounded_horizon_never_fires():
@@ -674,7 +674,7 @@ def test_unreachable_against_a_runaway_leader_with_one_round_left():
         agents_per_iteration=3,
     )
     assert not verdict.reachable
-    assert verdict.projection_ran
+    assert verdict.search_ran
     assert verdict.leader_id == "leader"
     assert verdict.projected_challenger_elo < verdict.projected_best_rival_elo
 
@@ -691,7 +691,7 @@ def test_reachable_when_the_field_is_close():
 def test_empty_field_is_reachable():
     verdict = assess_reachability({}, rounds_remaining=1, agents_per_iteration=3)
     assert verdict.reachable
-    assert not verdict.projection_ran
+    assert not verdict.search_ran
 
 
 def test_summary_is_legible_in_both_directions():
@@ -1194,3 +1194,41 @@ def test_replay_script_delegates_the_koth_definition():
         "the replay script must reuse ConfigManager's definition, not carry "
         "its own copy"
     )
+
+
+def test_a_single_rival_still_produces_a_round():
+    """Regression: when the pool holds one agent it is BOTH the forced slot
+    and the entire free pool, so the de-duplication that stops the free slot
+    repeating the forced one used to skip the only viable set and yield
+    nothing at all. The search then could not expand and reported
+    "no line of play passes X" about a lone 1500-rated agent the challenger
+    would simply beat.
+
+    Reachable in normal operation only via --min-history 0 (the floor gates
+    the early iterations where a pool this small occurs), but a proven-
+    unreachable verdict that is flatly wrong is worth closing regardless.
+    """
+    from RoboPhD.elo_reachability import _round_participants
+
+    elos = {"solo": 1500.0, CHALLENGER_ID: 1500.0}
+    sets = list(_round_participants(elos, CHALLENGER_ID, 2, 0, "solo"))
+    assert sets == [["solo"]], f"expected one short round, got {sets}"
+
+    reachable, final, _ = search_reachable(
+        {"solo": 1500.0}, rounds=1, agents_per_iteration=3,
+        previous_winner="solo",
+    )
+    assert reachable
+    assert final[CHALLENGER_ID] > INITIAL_ELO
+
+
+def test_short_rounds_when_the_pool_is_smaller_than_the_round_robin():
+    """agents_per_iteration is a cap, not a requirement — the selector fills
+    what it can. The search must model that rather than assuming a full field."""
+    for n_rivals in (1, 2, 3):
+        elos = {f"a{i}": 1500.0 + i for i in range(n_rivals)}
+        reachable, _, complete = search_reachable(
+            elos, rounds=2, agents_per_iteration=5,
+        )
+        assert complete, f"search failed to terminate with {n_rivals} rival(s)"
+        assert reachable, f"a level field with {n_rivals} rival(s) must be reachable"

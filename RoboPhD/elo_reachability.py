@@ -40,6 +40,13 @@ says so (`search_exhaustive`) when the node budget cut the search short.
 Cost is asymmetric in the useful direction: a reachable field exits on the
 first winning path, and only the rare unreachable field pays for the tree.
 
+Four gates run before any of that, in this order: the guard must be enabled,
+the iteration must be past the first, the run must have `min_history`
+completed iterations (see TRAILING_WINDOW), and the horizon must be finite.
+The history check deliberately precedes the horizon: with a short history the
+horizon is the least trustworthy number available, so it should not be what
+decides anything -- not even which reason gets reported.
+
 Two assumptions remain, both stated in the verdict's own terms:
 
   - **The challenger wins every game it plays.** By construction — this is
@@ -309,7 +316,7 @@ def rounds_playable(rounds_remaining: float) -> int:
     return max(0, math.ceil(rounds_remaining))
 
 
-# --- best-case projection ---------------------------------------------------
+# --- the existence search ----------------------------------------------------
 
 
 def _weak_orderings(items: Sequence[str]) -> Iterator[List[Tuple[str, ...]]]:
@@ -404,6 +411,7 @@ def _round_participants(
         return
 
     forced = forced_opponent if (forced_opponent and forced_opponent in elos) else None
+    yielded = False
     for chosen in free_pool:
         if forced is not None and chosen == forced:
             continue
@@ -416,6 +424,16 @@ def _round_participants(
             if extra not in opponents:
                 opponents.append(extra)
         yield opponents
+        yielded = True
+
+    if not yielded:
+        # The free pool offers nothing distinct from the forced slot, i.e. the
+        # whole pool is one agent. Yield the short round rather than nothing:
+        # the real selector fills what it can and runs a smaller round-robin,
+        # it does not invent agents. Yielding nothing here left the search
+        # unable to expand at all, so it reported "no line of play passes X"
+        # about a lone 1500-rated agent the challenger would simply beat.
+        yield [forced] if forced is not None else [rivals[0]]
 
 
 def _round_states(
@@ -576,7 +594,9 @@ class ReachabilityVerdict:
     leader_elo: Optional[float] = None
     projected_challenger_elo: Optional[float] = None
     projected_best_rival_elo: Optional[float] = None
-    projection_ran: bool = False
+    # Did the search actually run, or did a gate return early? Distinguishes
+    # "no line exists" from "we never looked".
+    search_ran: bool = False
     search_exhaustive: bool = True
     # Which terminator set the horizon: "budget", "iterations", or "none".
     # Named in the summary because the remedy differs -- raise
@@ -591,7 +611,7 @@ class ReachabilityVerdict:
         bound = ("" if self.binding_constraint == "none"
                  else f", limited by {self.binding_constraint}")
         line = f"{head}: {self.reason} (rounds remaining: {rounds}{bound})"
-        if self.projection_ran:
+        if self.search_ran:
             line += (
                 f" | best-case challenger {self.projected_challenger_elo:.0f}"
                 f" vs best rival {self.projected_best_rival_elo:.0f}"
@@ -699,7 +719,7 @@ def assess_reachability(
             leader_elo=judged[leader_id],
             projected_challenger_elo=challenger,
             projected_best_rival_elo=best_rival,
-            projection_ran=True,
+            search_ran=True,
             search_exhaustive=False,
             binding_constraint=binding_constraint,
         )
@@ -713,7 +733,7 @@ def assess_reachability(
         leader_elo=judged[leader_id],
         projected_challenger_elo=challenger,
         projected_best_rival_elo=best_rival,
-        projection_ran=True,
+        search_ran=True,
         search_exhaustive=complete,
         binding_constraint=binding_constraint,
     )
