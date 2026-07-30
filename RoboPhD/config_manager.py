@@ -36,6 +36,7 @@ class ConfigSource(Enum):
     SCHEDULE = "schedule"
     WEIGHTED_RANDOM = "weighted_random"
     META_EVOLUTION = "meta_evolution"
+    ELO_REACHABILITY = "elo_reachability"
     USER_MODIFICATION = "user_modification"
     RESUME = "resume"
     EXTEND = "extend"
@@ -78,6 +79,20 @@ class ConfigManager:
 
             # Evolution parameters (NO LONGER SPECIAL!)
             "evolution_strategy": "use_your_judgment",
+
+            # Elo-reachability guard. When on, the run checks each iteration
+            # whether an agent evolved now could still finish as Elo leader;
+            # if it provably could not, that iteration switches to "greedy"
+            # (no evolution, deterministic top-k by Elo) so the remaining
+            # budget re-tests real contenders instead of a dead-weight agent.
+            # Off by default: it ends evolution early, which is a real change
+            # to how a run spends its tail, so it should be opted into rather
+            # than silently applied to every existing configuration.
+            "elo_reachability_guard": False,
+            # Rounds remaining above which the guard never fires — a cheap
+            # early-out that also keeps it out of the long-horizon regime
+            # where its cross-round search is least trustworthy.
+            "elo_reachability_min_rounds": 3,
 
             # Meta-evolution parameters
             "meta_evolution_strategy": None,       # Which meta-evolution strategy to use (None = off)

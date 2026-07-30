@@ -417,14 +417,31 @@ class MetaEvolutionManager:
             return set()
         return {d.name for d in strategies_dir.iterdir() if d.is_dir()}
 
+    @staticmethod
+    def _builtin_strategy_names() -> set:
+        """Strategy names the researcher implements rather than loads.
+
+        Sourced from the researcher itself so the two never disagree about
+        what is schedulable. Imported lazily: meta_evolution_manager is
+        imported *by* researcher, so a module-level import would be circular.
+        """
+        from RoboPhD.researcher import ParallelAgentResearcher
+
+        return set(ParallelAgentResearcher.NON_FILE_STRATEGIES)
+
     def _find_unresolved_strategy_refs(self, meta_config_schedule: Dict) -> List:
         """
         Walk a meta_config_schedule for evolution_strategy references that don't
         resolve to an installed strategy.
 
         Checks both top-level ``evolution_strategy`` values and entries inside
-        ``weighted_random_configs``. The literal string ``"none"`` is allowed
-        (means "skip evolution this iteration").
+        ``weighted_random_configs``. Strategy names in
+        ``ParallelAgentResearcher.NON_FILE_STRATEGIES`` are always allowed:
+        they are behaviors implemented in the researcher rather than
+        directories under ``evolution_strategies/``, so they have nothing to
+        resolve against. Validating them as unresolved would tell the
+        meta-evolution AI that ``greedy``, ``challenger`` and ``random`` do
+        not exist, making them permanently unschedulable.
 
         Args:
             meta_config_schedule: Parsed schedule dict from
@@ -435,13 +452,14 @@ class MetaEvolutionManager:
             unresolved reference. Empty list = all references resolve.
         """
         installed = self._installed_strategy_names()
+        builtin = self._builtin_strategy_names()
         unresolved = []
         for iter_str, delta in meta_config_schedule.items():
             if not isinstance(delta, dict):
                 continue
             if "evolution_strategy" in delta:
                 name = delta["evolution_strategy"]
-                if name and name != "none" and name not in installed:
+                if name and name not in builtin and name not in installed:
                     unresolved.append((iter_str, name, "evolution_strategy"))
             if "weighted_random_configs" in delta:
                 for entry_idx, entry in enumerate(delta.get("weighted_random_configs") or []):
@@ -449,7 +467,7 @@ class MetaEvolutionManager:
                         config_dict = entry[0]
                         if isinstance(config_dict, dict) and "evolution_strategy" in config_dict:
                             name = config_dict["evolution_strategy"]
-                            if name and name != "none" and name not in installed:
+                            if name and name not in builtin and name not in installed:
                                 unresolved.append(
                                     (iter_str, name, f"weighted_random_configs[{entry_idx}]")
                                 )

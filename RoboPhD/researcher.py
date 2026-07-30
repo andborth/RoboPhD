@@ -41,6 +41,13 @@ try:
     from .report_generator import ReportGenerator, is_continuous_scoring
     from .deep_focus_evolution_manager import DeepFocusEvolutionManager
     from .eval_utils import EvalRateLimitError, get_eval_counters
+    from .elo_reachability import (
+        assess_reachability,
+        calculate_elo_updates,
+        clone_penalty_totals,
+        remaining_rounds,
+        strip_clone_penalties,
+    )
 except ImportError:
     # When run as a script, use absolute imports
     import sys
@@ -60,6 +67,13 @@ except ImportError:
     from RoboPhD.deep_focus_evolution_manager import DeepFocusEvolutionManager
     from RoboPhD.domains.base import SampledProblems
     from RoboPhD.eval_utils import EvalRateLimitError, get_eval_counters
+    from RoboPhD.elo_reachability import (
+        assess_reachability,
+        calculate_elo_updates,
+        clone_penalty_totals,
+        remaining_rounds,
+        strip_clone_penalties,
+    )
 
 # Utilities
 import psutil
@@ -1095,6 +1109,8 @@ class ParallelAgentResearcher:
             self.iteration_times = resume_checkpoint.get('iteration_times', [])
             self.iteration_claude_costs = resume_checkpoint.get('iteration_claude_costs', [])
             self.iteration_fresh_evals = resume_checkpoint.get('iteration_fresh_evals', [])
+            self.reachability_guard_state = resume_checkpoint.get(
+                'reachability_guard_state', {}) or {}
             self.evolution_times = resume_checkpoint.get('evolution_times', [])
             self.meta_evolution_times = resume_checkpoint.get('meta_evolution_times', [])
             # Persistent meta-evolution session id (one Claude Code session shared across all firings).
@@ -1188,6 +1204,7 @@ class ParallelAgentResearcher:
             self.iteration_times = []
             self.iteration_claude_costs = []
             self.iteration_fresh_evals = []
+            self.reachability_guard_state = {}
             self._current_deep_focus_fresh_evals = 0
             self.current_iteration_evolution_cost = None
             self.evolution_times = []
@@ -2348,67 +2365,122 @@ class ParallelAgentResearcher:
 
         return iteration_results, results_by_agent, costs_by_context, eval_cache_stats
 
-    @staticmethod
-    def _calculate_elo_updates(current_elos: Dict[str, float], iteration_results: Dict, k: int = 32) -> Dict[str, float]:
-        """
-        Calculate updated Elo scores based on head-to-head results, properly handling ties.
+    # The Elo update itself lives in RoboPhD/elo_reachability.py, which also
+    # projects hypothetical iterations forward for the reachability guard.
+    # Both must use the identical formula or the guard's verdict describes a
+    # ladder the run isn't climbing, so there is exactly one implementation
+    # and this is a delegation to it.
+    _calculate_elo_updates = staticmethod(calculate_elo_updates)
 
-        Args:
-            current_elos: Dictionary of agent_id -> current Elo score
-            iteration_results: Dictionary of agent_id -> {'average_score': float, ...}
-            k: K-factor for Elo calculations (default 32)
+    # Strategies that already skip evolution, so there is nothing for the
+    # reachability guard to save by intervening.
+    #
+    # Deliberately NOT the same as NON_FILE_STRATEGIES, which it otherwise
+    # resembles: "random" is non-file but very much evolving — it resolves to
+    # a randomly chosen real strategy (evolution.py:110) and runs a full
+    # session. Folding the two sets together would make the guard decline to
+    # fire on precisely a round worth saving.
+    _NON_EVOLVING_STRATEGIES = {"none", "greedy", "challenger"}
+
+    def _apply_reachability_guard(self, iteration: int, config: Dict) -> bool:
+        """Switch this iteration to "greedy" if a new agent cannot win.
+
+        A run's output is its highest-Elo agent, so an agent evolved with too
+        few evaluations left to climb from 1500 to the incumbent's rating is
+        dead weight by construction: it consumes an evolution session and a
+        share of the remaining budget, and it takes a slot that could have
+        re-tested an actual contender. When that is provably the case, spend
+        the iteration on a greedy round instead (deterministic top-k by Elo,
+        no evolution).
+
+        Never fires twice in a row. The round after an intervention restores
+        the strategy that was displaced, so the guard alternates rather than
+        ending evolution outright — a run that is merely *near* the boundary
+        keeps evolving every other iteration.
+
+        The decision is recorded through ConfigManager.apply_delta, so it
+        lands in config_change_history and the checkpoint like any other
+        config change, and survives a resume.
 
         Returns:
-            Dictionary of agent_id -> updated Elo score
+            True if the config was changed and the caller must re-resolve it.
         """
-        # Create a copy to avoid modifying the input
-        updated_elos = current_elos.copy()
-        agents = list(iteration_results.keys())
+        if not config.get("elo_reachability_guard"):
+            return False
+        # Iteration 1 has no evolution step to displace.
+        if iteration <= 1:
+            return False
 
-        # Group agents by score to identify ties
-        # Round to 6 decimals to collapse floating-point noise into ties
-        score_groups = {}
-        for agent in agents:
-            score = round(iteration_results[agent]['average_score'], 6)
-            if score not in score_groups:
-                score_groups[score] = []
-            score_groups[score].append(agent)
+        state = getattr(self, "reachability_guard_state", None) or {}
 
-        # Process ties within groups (each agent draws against others in same group)
-        for score, group in score_groups.items():
-            if len(group) > 1:
-                # Process all pairs within the tied group
-                for i, agent1 in enumerate(group):
-                    for agent2 in group[i+1:]:
-                        # Handle as a draw (0.5 points each)
-                        elo1 = updated_elos[agent1]
-                        elo2 = updated_elos[agent2]
+        # Alternation: the round after an intervention gives evolution its
+        # slot back. Checked before the reachability test so two consecutive
+        # greedy rounds are impossible regardless of what the numbers say.
+        if state.get("fired_at") == iteration - 1:
+            restore_to = state.get("restore_to")
+            self.reachability_guard_state = {}
+            if restore_to and config.get("evolution_strategy") == "greedy":
+                self.config_manager.apply_delta(
+                    iteration,
+                    {"evolution_strategy": restore_to},
+                    ConfigSource.ELO_REACHABILITY,
+                    rationale=(
+                        f"Restoring '{restore_to}' after the greedy round at "
+                        f"iteration {iteration - 1}; the guard never fires twice "
+                        f"consecutively."
+                    ),
+                )
+                print(f"\n♻️  Reachability guard: restored '{restore_to}' after greedy round")
+                return True
+            return False
 
-                        expected1 = 1 / (1 + 10**((elo2 - elo1) / 400))
-                        expected2 = 1 / (1 + 10**((elo1 - elo2) / 400))
+        current_strategy = config.get("evolution_strategy")
+        if current_strategy in self._NON_EVOLVING_STRATEGIES:
+            return False
 
-                        updated_elos[agent1] += k * (0.5 - expected1)
-                        updated_elos[agent2] += k * (0.5 - expected2)
+        # Ratings in performance_records are post-clone-penalty, while the
+        # Elo formula operates pre-penalty. Project on the pre-penalty basis
+        # and let assess_reachability re-impose penalties before comparing.
+        penalties = clone_penalty_totals(getattr(self, "clone_detections", []) or [])
+        judged_elos = {
+            agent_id: perf.get("elo", 1500.0)
+            for agent_id, perf in self.performance_records.items()
+            if perf.get("test_count", 0) > 0
+        }
+        if not judged_elos:
+            return False
 
-        # Process wins/losses between different score groups
-        sorted_groups = sorted(score_groups.keys(), reverse=True)
-        for i, higher_score in enumerate(sorted_groups[:-1]):
-            for lower_score in sorted_groups[i+1:]:
-                for winner in score_groups[higher_score]:
-                    for loser in score_groups[lower_score]:
-                        # Winner beats loser
-                        winner_elo = updated_elos[winner]
-                        loser_elo = updated_elos[loser]
+        verdict = assess_reachability(
+            strip_clone_penalties(judged_elos, penalties),
+            rounds_remaining=remaining_rounds(
+                self.iteration_fresh_evals, config.get("evaluation_budget")
+            ),
+            agents_per_iteration=config["agents_per_iteration"],
+            min_rounds=config.get("elo_reachability_min_rounds", 3),
+            clone_penalties=penalties,
+        )
+        logger.info(f"Elo reachability: {verdict.summary()}")
+        if verdict.reachable:
+            return False
 
-                        # Elo calculation
-                        expected_winner = 1 / (1 + 10**((loser_elo - winner_elo) / 400))
-                        expected_loser = 1 / (1 + 10**((winner_elo - loser_elo) / 400))
+        print(f"\n🛑 Reachability guard: {verdict.summary()}")
+        print(f"   Switching iteration {iteration} to a greedy round "
+              f"(no evolution; deterministic top-k by Elo)")
+        self.config_manager.apply_delta(
+            iteration,
+            {"evolution_strategy": "greedy"},
+            ConfigSource.ELO_REACHABILITY,
+            rationale=(
+                f"An agent evolved at iteration {iteration} could not become "
+                f"Elo leader: {verdict.reason}. Displaced '{current_strategy}'."
+            ),
+        )
+        self.reachability_guard_state = {
+            "fired_at": iteration,
+            "restore_to": current_strategy,
+        }
+        return True
 
-                        updated_elos[winner] += k * (1 - expected_winner)
-                        updated_elos[loser] += k * (0 - expected_loser)
-
-        return updated_elos
-    
     def _recalculate_all_elo_scores(self):
         """
         Recalculate all Elo scores from scratch based on test_history.
@@ -3157,6 +3229,12 @@ class ParallelAgentResearcher:
 
             # Get config for THIS iteration
             config = self.config_manager.get_config(iteration)
+
+            # Elo-reachability guard: may rewrite evolution_strategy to
+            # "greedy" for this iteration, so it runs before anything reads
+            # the strategy and re-resolves the config if it fired.
+            if self._apply_reachability_guard(iteration, config):
+                config = self.config_manager.get_config(iteration)
 
             # Update random seed for this iteration
             self.random_seed = (self.original_seed + iteration * 10000) % (2**32)
@@ -4058,6 +4136,7 @@ class ParallelAgentResearcher:
             'iteration_times': self.iteration_times,
             'iteration_claude_costs': self.iteration_claude_costs,
             'iteration_fresh_evals': self.iteration_fresh_evals,
+            'reachability_guard_state': getattr(self, 'reachability_guard_state', {}),
             'evolution_times': self.evolution_times,
             'meta_evolution_times': self.meta_evolution_times,
             'zero_accuracy_cases': self.zero_accuracy_cases,
