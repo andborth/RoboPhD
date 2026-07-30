@@ -178,6 +178,10 @@ class ConfigManager:
         # Resolve iteration 1 = defaults + user overrides
         resolved = defaults.copy()
         resolved.update(user_config)
+        # Built inline rather than via _resolve_config, so the combination
+        # check has to be invoked here too — this is the path that catches a
+        # bad CLI invocation at startup.
+        self._validate_resolved_semantics(resolved, 1)
         self.resolved_configs[1] = resolved
 
         # Record in history
@@ -679,7 +683,49 @@ class ConfigManager:
                     "rationale": f"Weighted random selection from pool of {len(pool)} configs (selected with {selected_weight}% probability)"
                 })
 
+        self._validate_resolved_semantics(config, iteration)
         return config
+
+    @staticmethod
+    def _validate_resolved_semantics(config: Dict[str, Any], iteration: int) -> None:
+        """Reject parameter COMBINATIONS that are individually valid but
+        incoherent together.
+
+        Checked on the resolved config rather than on a delta, because a
+        conflict can be assembled across several deltas (a CLI flag plus a
+        scheduled change) with no single one being wrong. Raising from
+        _resolve_config means a bad combination fails at startup, not
+        several iterations in.
+        """
+        # King of the Hill: a two-agent round-robin where ties go to the
+        # incumbent. The reachability guard must not run on this shape.
+        #
+        # Every round is exactly champion vs challenger -- pending winner plus
+        # newly evolved agent, with no free slot -- so a new agent gets ONE
+        # game per iteration instead of two, and its rating climbs at half
+        # speed. Reachability then reads as "unreachable" for most of a run,
+        # and the guard would suppress the very mechanism KotH is built on:
+        # repeatedly throwing fresh challengers at an entrenched champion.
+        # Worse, oldest_agent_wins_ties makes the champion strictly harder to
+        # displace, so the gap widens monotonically and the guard would fire
+        # earlier and earlier.
+        if (
+            config.get("elo_reachability_guard")
+            and config.get("agents_per_iteration") == 2
+            and config.get("oldest_agent_wins_ties")
+        ):
+            raise ValueError(
+                f"elo_reachability_guard cannot be enabled on a King-of-the-Hill "
+                f"run (iteration {iteration}: agents_per_iteration=2 with "
+                f"oldest_agent_wins_ties=True).\n\n"
+                f"KotH rounds are champion-vs-challenger with no free slot, so a "
+                f"new agent plays one game per iteration instead of two and "
+                f"climbs at half speed. The guard would read that as "
+                f"'unreachable' for most of the run and suppress the challenge "
+                f"mechanism the format is built on.\n\n"
+                f"Either drop elo_reachability_guard, or raise "
+                f"agents_per_iteration above 2."
+            )
 
     def _select_from_weighted_pool(self,
                                    pool: List[Tuple[Dict[str, Any], int]]) -> Dict[str, Any]:

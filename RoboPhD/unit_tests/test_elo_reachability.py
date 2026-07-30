@@ -19,7 +19,7 @@ from RoboPhD.elo_reachability import (
     ReachabilityVerdict,
     apply_clone_penalties,
     assess_reachability,
-    best_case_projection,
+    search_reachable,
     calculate_elo_updates,
     clone_penalty_totals,
     remaining_rounds,
@@ -199,12 +199,12 @@ def test_a_challenger_created_at_the_buzzer_still_plays_once():
     is created, evaluated, and can move on the ladder."""
     from RoboPhD.elo_reachability import rounds_playable
 
-    projected, _ = best_case_projection(
+    _, final, _ = search_reachable(
         {"a": 1500.0, "b": 1500.0},
         rounds=rounds_playable(0.7),
         agents_per_iteration=3,
     )
-    assert projected[CHALLENGER_ID] > INITIAL_ELO, (
+    assert final[CHALLENGER_ID] > INITIAL_ELO, (
         "an agent that plays a round must be able to gain rating"
     )
 
@@ -489,55 +489,150 @@ def test_weak_orderings_include_the_all_tied_case():
     assert [{"a", "b"}] in orderings
 
 
-# --- best-case projection -----------------------------------------------------
+# --- the existence search -----------------------------------------------------
+#
+# Reachability is existential, so the search returns the moment it finds a
+# winning line rather than computing an optimum and testing it. That is what
+# makes an "unreachable" verdict a proof instead of a failed heuristic: an
+# earlier greedy-per-round formulation could miss a winning line because the
+# per-round objective fights itself over a horizon (keeping opponents highly
+# rated earns more, pushing them down clears the path).
 
 
 def test_challenger_enters_at_base_rating():
-    projected, _ = best_case_projection(
+    _, final, _ = search_reachable(
         {"a": 1600.0}, rounds=0, agents_per_iteration=3
     )
-    assert projected[CHALLENGER_ID] == INITIAL_ELO
-
-
-def test_projection_climbs_with_more_rounds():
-    field = {"a": 1700.0, "b": 1650.0, "c": 1600.0}
-    one, _ = best_case_projection(field, rounds=1, agents_per_iteration=3)
-    three, _ = best_case_projection(field, rounds=3, agents_per_iteration=3)
-    assert three[CHALLENGER_ID] > one[CHALLENGER_ID]
+    assert final[CHALLENGER_ID] == INITIAL_ELO
 
 
 def test_zero_rounds_leaves_the_field_untouched():
     field = {"a": 1700.0, "b": 1650.0}
-    projected, _ = best_case_projection(field, rounds=0, agents_per_iteration=3)
-    assert projected["a"] == 1700.0 and projected["b"] == 1650.0
+    _, final, _ = search_reachable(field, rounds=0, agents_per_iteration=3)
+    assert final["a"] == 1700.0 and final["b"] == 1650.0
 
 
-def test_projection_is_exact_against_a_hand_run_round():
-    """The projection must agree with calculate_elo_updates applied
-    directly — it is the same ladder, not a model of it."""
-    field = {"a": 1500.0, "b": 1500.0}
-    projected, _ = best_case_projection(field, rounds=1, agents_per_iteration=3)
+def test_more_rounds_never_hurt():
+    """Monotonicity. The search must not find a winning line at one horizon
+    and lose it at a longer one."""
+    field = {"leader": 1750.0, "b": 1600.0, "c": 1550.0}
+    verdicts = [
+        search_reachable(field, rounds=r, agents_per_iteration=3)[0]
+        for r in range(1, 9)
+    ]
+    first = next((i for i, v in enumerate(verdicts) if v), None)
+    if first is not None:
+        assert all(verdicts[first:]), f"reachability flip-flopped: {verdicts}"
+
+
+def test_search_arithmetic_is_the_real_elo_update():
+    """Not a model of the ladder — the same function that scores it."""
+    _, final, _ = search_reachable(
+        {"a": 1500.0, "b": 1500.0}, rounds=1, agents_per_iteration=3,
+    )
     manual = calculate_elo_updates(
         {CHALLENGER_ID: 1500.0, "a": 1500.0, "b": 1500.0},
         {CHALLENGER_ID: {"average_score": 3.0},
          "a": {"average_score": 2.0},
          "b": {"average_score": 1.0}},
     )
-    assert projected[CHALLENGER_ID] == pytest.approx(manual[CHALLENGER_ID])
+    assert final[CHALLENGER_ID] == pytest.approx(manual[CHALLENGER_ID])
 
 
-def test_search_is_flagged_when_truncated():
-    """Past MAX_EXHAUSTIVE_OPPONENTS the search stops being exhaustive, and
-    the verdict has to say so rather than imply a proof it did not run."""
-    field = {f"a{i}": 1600.0 + i for i in range(12)}
-    _, exhaustive = best_case_projection(
-        field, rounds=1, agents_per_iteration=12
+def test_success_short_circuits():
+    """The whole point: a reachable field must not pay for the tree. An
+    obviously-winnable field should settle in a handful of nodes, which a
+    tiny budget proves without needing to instrument the search."""
+    field = {"a": 1500.0, "b": 1490.0}
+    reachable, _, complete = search_reachable(
+        field, rounds=5, agents_per_iteration=3, node_budget=4,
     )
+    assert reachable, (
+        "a winning line exists immediately, so a 4-node budget must suffice"
+    )
+    assert complete, (
+        "a found winner settles existence; the flag only qualifies an "
+        "UNREACHABLE answer"
+    )
+
+
+def test_unreachable_pays_for_the_tree_but_stays_bounded():
+    field = {"leader": 5000.0, "b": 1500.0, "c": 1480.0}
+    reachable, _, complete = search_reachable(
+        field, rounds=5, agents_per_iteration=3,
+    )
+    assert not reachable
+    assert complete, "at 3 agents/iteration the tree is small enough to prove"
+
+
+def test_budget_exhaustion_is_reported_not_hidden():
+    """An incomplete search must not masquerade as a proof.
+
+    Needs a wide round-robin: at 3 agents/iteration the admissible prune
+    disposes of a hopeless field in a handful of nodes, so the budget is
+    never approached -- which is the desirable behaviour, just not what this
+    test is about."""
+    field = {f"a{i}": 1600.0 - i * 5 for i in range(8)}
+    reachable, _, complete = search_reachable(
+        field, rounds=6, agents_per_iteration=6, node_budget=5,
+    )
+    assert not reachable
+    assert complete is False
+
+
+def test_budget_exhaustion_still_reports_a_winner_it_already_found():
+    """Regression: the budget path used to clear the stack, discarding
+    already-generated states -- so a winning line one node past the limit
+    became a false "unreachable"."""
+    field = {"a": 1500.0, "b": 1490.0}
+    reachable, _, _ = search_reachable(
+        field, rounds=5, agents_per_iteration=3, node_budget=1,
+    )
+    assert reachable, (
+        "a state generated before the budget ran out must still be checked"
+    )
+
+
+def test_forced_slot_is_the_previous_winner_in_round_one():
+    """select_agents_for_iteration's P1: the previous round's winner is always
+    pending, so it always occupies one of the challenger's two games."""
+    from RoboPhD.elo_reachability import _round_participants
+
+    elos = {"leader": 1700.0, "second": 1650.0, "mid": 1540.0}
+    sets = list(_round_participants(elos, CHALLENGER_ID, 2, 0, "mid"))
+    assert sets, "no participant sets produced"
+    for opponents in sets:
+        assert "mid" in opponents, (
+            f"the forced pending winner is missing from {opponents}"
+        )
+    # ...and the leader is reachable in the free slot, because P4 draws from
+    # the top 2 by Elo.
+    assert any("leader" in o for o in sets)
+
+
+def test_later_rounds_force_a_fresh_rival_not_a_strong_one():
+    """Once the challenger is itself the pending winner, the forced slot is
+    that iteration's OWN newly evolved agent at 1500 — worth far less to beat
+    than a strong agent, which is why real climbing is slower than a
+    top-k model implies."""
+    from RoboPhD.elo_reachability import _round_states
+
+    elos = {CHALLENGER_ID: 1560.0, "leader": 1700.0, "second": 1650.0}
+    states = list(_round_states(elos, CHALLENGER_ID, 2, K_FACTOR, 1, None))
+    assert states
+    fresh = [a for a, _ in states[0][0].items() if a.startswith(f"{CHALLENGER_ID}_rival_")]
+    assert fresh, "no freshly evolved rival was introduced for round 2"
+
+
+def test_search_is_flagged_when_orderings_are_truncated():
+    """Past MAX_EXHAUSTIVE_OPPONENTS the ordering enumeration falls back to a
+    heuristic, and the verdict has to say so rather than imply a proof."""
+    from RoboPhD.elo_reachability import _orderings_for
+
+    _, exhaustive = _orderings_for([f"a{i}" for i in range(9)])
     assert exhaustive is False
-    _, exhaustive_small = best_case_projection(
-        field, rounds=1, agents_per_iteration=3
-    )
-    assert exhaustive_small is True
+    _, small = _orderings_for(["a", "b"])
+    assert small is True
 
 
 # --- the verdict --------------------------------------------------------------
@@ -587,24 +682,6 @@ def test_empty_field_is_reachable():
     verdict = assess_reachability({}, rounds_remaining=1, agents_per_iteration=3)
     assert verdict.reachable
     assert not verdict.projection_ran
-
-
-def test_more_rounds_can_only_help():
-    """Monotonicity: extra rounds must never turn a reachable verdict
-    unreachable. A violation would mean the per-round search is fighting
-    itself badly enough to invert the answer."""
-    field = {"leader": 1750.0, "b": 1600.0, "c": 1550.0}
-    verdicts = [
-        assess_reachability(
-            field, rounds_remaining=r, agents_per_iteration=3, min_rounds=99
-        ).reachable
-        for r in range(1, 8)
-    ]
-    first_true = next((i for i, v in enumerate(verdicts) if v), None)
-    if first_true is not None:
-        assert all(verdicts[first_true:]), (
-            f"reachability flip-flopped across horizons: {verdicts}"
-        )
 
 
 def test_summary_is_legible_in_both_directions():
@@ -696,6 +773,12 @@ def _guard_stub(**overrides):
         # Loose, like every shipped example's --num-iterations default, so
         # the budget is what binds unless a test says otherwise.
         num_iterations=999,
+        # Bound from the class so the real history-reading logic runs.
+        _last_iteration_winner=lambda: (
+            ParallelAgentResearcher._last_iteration_winner(stub)
+        ),
+        test_history=[{"leader": {"average_score": 0.9},
+                       "b": {"average_score": 0.4}}],
         config_manager=cm,
         reachability_guard_state={},
         # A runaway leader with a nearly-exhausted budget: unreachable.
@@ -852,3 +935,72 @@ def test_guard_ignores_untested_agents():
     })
     changed, _ = _run_guard(stub)
     assert changed is False, "no rated agents means nothing to overtake"
+
+
+# --- King of the Hill exclusion -----------------------------------------------
+
+
+def _koth(**extra):
+    from RoboPhD.config_manager import ConfigManager, ConfigSource
+
+    cfg = {"agents_per_iteration": 2, "oldest_agent_wins_ties": True}
+    cfg.update(extra)
+    ConfigManager().set_initial_config(cfg, ConfigSource.CLI)
+
+
+def test_guard_cannot_be_enabled_on_a_koth_run():
+    """agents_per_iteration=2 with oldest_agent_wins_ties is King of the Hill.
+
+    Every round is champion vs challenger — pending winner plus newly evolved
+    agent, with no free slot — so a new agent gets ONE game per iteration
+    instead of two and climbs at half speed. The guard would read that as
+    unreachable for most of the run and suppress the challenge mechanism the
+    format exists for. oldest_agent_wins_ties makes it worse: the champion is
+    strictly harder to displace, so the gap widens monotonically.
+    """
+    with pytest.raises(ValueError, match="King-of-the-Hill"):
+        _koth(elo_reachability_guard=True)
+
+
+def test_koth_without_the_guard_is_fine():
+    _koth()
+
+
+def test_two_agents_alone_is_not_koth():
+    """The tie rule is what identifies the format; a two-agent round-robin
+    with ordinary tie handling is not it."""
+    from RoboPhD.config_manager import ConfigManager, ConfigSource
+
+    ConfigManager().set_initial_config(
+        {"agents_per_iteration": 2, "elo_reachability_guard": True},
+        ConfigSource.CLI,
+    )
+
+
+def test_koth_conflict_is_caught_when_assembled_across_deltas():
+    """Neither delta is wrong on its own, so a per-delta check would miss it.
+    The combination is validated on the RESOLVED config for this reason."""
+    from RoboPhD.config_manager import ConfigManager, ConfigSource
+
+    cm = ConfigManager()
+    cm.set_initial_config(
+        {"elo_reachability_guard": True, "agents_per_iteration": 2},
+        ConfigSource.CLI,
+    )
+    cm.set_current_iteration(3)
+    with pytest.raises(ValueError, match="King-of-the-Hill"):
+        cm.apply_delta(3, {"oldest_agent_wins_ties": True}, ConfigSource.SCHEDULE)
+
+
+def test_koth_error_names_both_escape_routes():
+    from RoboPhD.config_manager import ConfigManager, ConfigSource
+
+    with pytest.raises(ValueError) as exc:
+        ConfigManager().set_initial_config(
+            {"agents_per_iteration": 2, "oldest_agent_wins_ties": True,
+             "elo_reachability_guard": True},
+            ConfigSource.CLI,
+        )
+    msg = str(exc.value)
+    assert "elo_reachability_guard" in msg
+    assert "agents_per_iteration" in msg

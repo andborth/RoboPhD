@@ -22,31 +22,35 @@ the two agreeing. The dependency points this way because this module has
 no framework imports at all, which also keeps it unit-testable without
 constructing a researcher.
 
-## What "best case" means, precisely
+## The question is existential, and the search reflects that
 
-The projection is optimistic on every axis the caller does not control:
+"Could a new agent end up leader" asks whether ANY line of play gets it
+there. One winning path is enough and which path does not matter, so
+`search_reachable` is a depth-first search that returns the moment the
+challenger leads rather than computing a best case and testing it at the end.
 
-  - the challenger wins every game it plays;
-  - it is matched against the highest-rated agents available each round
-    (beating a stronger opponent yields more rating and costs that
-    opponent more, so this dominates facing weaker agents);
-  - the remaining agents' results are chosen to maximize the challenger's
-    final lead, searched exhaustively over weak orderings (ties allowed).
+That matters for trust. An earlier formulation optimised each round in
+isolation, but the per-round objective fights itself over a horizon --
+keeping opponents highly rated earns the challenger more, while pushing them
+down is what clears its path -- so a locally-greedy line could miss a winning
+one and report a false "unreachable". Searching for existence closes that gap:
+within the assumptions below, `reachable=False` is a proof, and the verdict
+says so (`search_exhaustive`) when the node budget cut the search short.
 
-Two honest limits on the verdict:
+Cost is asymmetric in the useful direction: a reachable field exits on the
+first winning path, and only the rare unreachable field pays for the tree.
 
+Two assumptions remain, both stated in the verdict's own terms:
+
+  - **The challenger wins every game it plays.** By construction — this is
+    the best case for it.
   - **Matchmaking is assumed, not guaranteed.** Real selection is
     priority-based (pending winners, the new agent, untested agents, then
-    top-k), so the challenger may never face the leader at all. Assuming
-    it does is the optimistic choice, which is the right direction for a
-    guard that should only fire when there is clearly no path.
-  - **The search is greedy across rounds.** Each round is optimized in
-    isolation, and the per-round objective genuinely trades off against
-    itself over a horizon: keeping opponents highly rated grows the
-    challenger's wins, while pushing them down is what clears its path.
-    So `reachable=False` means "no path found under optimistic play", not
-    a proof of impossibility. `min_rounds` exists to keep the guard away
-    from the regime where that distinction could matter.
+    top-k), so the challenger may never face the leader at all. Assuming it
+    does is the optimistic choice, which is the right direction for a guard
+    that should only fire when there is no path. Facing the top-rated agents
+    is also taken as dominant rather than searched: it both earns more and
+    costs the agents that threaten the challenger.
 
 ## Clone penalties
 
@@ -107,6 +111,13 @@ TRAILING_WINDOW = 5
 # single heuristic ordering and say so in the verdict, rather than
 # silently spending minutes or silently searching less.
 MAX_EXHAUSTIVE_OPPONENTS = 6
+
+# Nodes the existence search will expand before giving up and reporting an
+# incomplete verdict. Only an UNREACHABLE field can approach this: a reachable
+# one exits on the first winning path found. At the default
+# agents_per_iteration=3 the whole tree is 3^rounds -- 243 at five rounds --
+# so the budget is never approached and every verdict is a proof.
+SEARCH_NODE_BUDGET = 200_000
 
 
 def calculate_elo_updates(
@@ -330,48 +341,103 @@ def _orderings_for(opponents: Sequence[str]) -> tuple[Iterable[List[Set[str]]], 
     return [[{a} for a in ascending]], False
 
 
-def best_case_projection(
-    current_elos: Dict[str, float],
-    *,
-    rounds: int,
-    agents_per_iteration: int,
-    k: int = K_FACTOR,
-    challenger_id: str = CHALLENGER_ID,
-) -> tuple[Dict[str, float], bool]:
-    """Project ratings forward under play maximally favorable to a new agent.
+def _round_participants(
+    elos: Dict[str, float],
+    challenger_id: str,
+    n_opponents: int,
+    round_index: int,
+    forced_opponent: Optional[str],
+) -> Iterator[List[str]]:
+    """Opponent sets the challenger could face in one round.
 
-    The challenger enters at INITIAL_ELO and wins every game. Each round it
-    faces the top `agents_per_iteration - 1` agents by current projected
-    rating, and the others' results are chosen to maximize the challenger's
-    lead. See the module docstring for what this does and does not prove.
+    Mirrors select_agents_for_iteration's priority order rather than assuming
+    a top-k field, because the two differ in a way that matters:
 
-    Appending projected iterations this way is exact, not an approximation:
-    `_recalculate_all_elo_scores` replays history through this same update,
-    so iterating it forward from current ratings yields what the replay
-    would produce for those additional iterations.
+      P1  pending winners      -- the previous round's winner is ALWAYS pending
+                                  (it won at N-1 and was tested at N-1, so
+                                  last_test <= last_win holds)
+      P2  the newly evolved agent -- always gets a slot
+      P3  untested agents
+      P4  random from the top 2*slots with Elo > 1500
 
-    Returns:
-        (projected ratings including the challenger, search_was_exhaustive)
+    So at agents_per_iteration=3 a round is exactly: pending winner + new agent
+    + one filler. One of the challenger's two games is FORCED and one is free:
+
+      round 1     forced slot = the winner of the last completed iteration
+      round 2+    the challenger, having won, is itself the pending winner, so
+                  the forced slot is that iteration's OWN newly evolved agent,
+                  entering at INITIAL_ELO
+
+    The free slot is searched over the top-2-by-Elo pool. Exploring the
+    most favourable draw is legitimate rather than optimistic: P4's draw is
+    random, so a draw that lands on the leader is a real path through the
+    algorithm, and reachability asks whether any path exists. That is why the
+    leader can be dragged down every round even though it is never guaranteed
+    to play.
     """
-    elos = dict(current_elos)
-    elos[challenger_id] = INITIAL_ELO
-    n_opponents = max(1, agents_per_iteration - 1)
-    exhaustive = True
+    rivals = sorted(
+        (a for a in elos if a != challenger_id),
+        key=lambda a: elos[a],
+        reverse=True,
+    )
+    if not rivals:
+        return
 
-    for _ in range(max(0, int(rounds))):   # rounds is pre-computed by rounds_playable
-        opponents = sorted(
-            (a for a in elos if a != challenger_id),
-            key=lambda a: elos[a],
-            reverse=True,
-        )[:n_opponents]
-        if not opponents:
-            break
+    # P4 draws from the top 2*slots; with one free slot that is the top 2, so
+    # the leader is always an available choice.
+    free_pool = rivals[:2] or rivals[:1]
 
-        orderings, round_exhaustive = _orderings_for(opponents)
-        exhaustive = exhaustive and round_exhaustive
+    if n_opponents <= 1:
+        # Nothing free to search: the single slot is the forced one. This is
+        # the KotH shape (agents_per_iteration=2).
+        if forced_opponent and forced_opponent in elos:
+            yield [forced_opponent]
+        else:
+            yield [rivals[0]]
+        return
 
-        best_lead = None
-        best_update = None
+    forced = forced_opponent if (forced_opponent and forced_opponent in elos) else None
+    for chosen in free_pool:
+        if forced is not None and chosen == forced:
+            continue
+        opponents = [forced] if forced is not None else []
+        opponents.append(chosen)
+        # Any remaining slots (agents_per_iteration > 3) fill from the pool.
+        for extra in rivals:
+            if len(opponents) >= n_opponents:
+                break
+            if extra not in opponents:
+                opponents.append(extra)
+        yield opponents
+
+
+def _round_states(
+    elos: Dict[str, float],
+    challenger_id: str,
+    n_opponents: int,
+    k: int,
+    round_index: int,
+    forced_opponent: Optional[str],
+) -> Iterator[tuple[Dict[str, float], Optional[str]]]:
+    """Every rating state reachable from `elos` by one round the challenger wins.
+
+    Yields (next ratings, forced opponent for the following round). After the
+    challenger wins it becomes the pending winner, so the next round's forced
+    slot is a freshly evolved agent -- created here at INITIAL_ELO so the
+    arithmetic is exact rather than an approximation of one.
+    """
+    working = dict(elos)
+    if round_index > 0:
+        # The challenger is the pending winner now; the forced slot is this
+        # iteration's own new agent. Distinct id per round so it never
+        # collides, and it can never become the leader (it only ever loses).
+        forced_opponent = f"{CHALLENGER_ID}_rival_{round_index}"
+        working[forced_opponent] = INITIAL_ELO
+
+    for opponents in _round_participants(
+        working, challenger_id, n_opponents, round_index, forced_opponent
+    ):
+        orderings, _ = _orderings_for(opponents)
         for ordering in orderings:
             # Encode the ranking as scores: the challenger strictly above
             # every tier, then one score per tier, descending.
@@ -380,19 +446,113 @@ def best_case_projection(
                 tier_score = float(len(ordering) - tier_idx)
                 for agent in tier:
                     results[agent] = {'average_score': tier_score}
+            sub_elos = {a: working[a] for a in results}
+            nxt = dict(working)
+            nxt.update(calculate_elo_updates(sub_elos, results, k))
+            yield nxt, None
 
-            sub_elos = {a: elos[a] for a in results}
-            updated = calculate_elo_updates(sub_elos, results, k)
-            lead = updated[challenger_id] - max(
-                v for a, v in updated.items() if a != challenger_id
-            )
-            if best_lead is None or lead > best_lead:
-                best_lead = lead
-                best_update = updated
 
-        elos.update(best_update or {})
+def _leads(elos: Dict[str, float], challenger_id: str,
+           penalties: Dict[str, float]) -> float:
+    """Challenger's margin over the best rival, on the judged (post-penalty)
+    basis -- the one find_best_agent reads."""
+    judged = apply_clone_penalties(elos, penalties)
+    rivals = [v for a, v in judged.items() if a != challenger_id]
+    return judged[challenger_id] - max(rivals) if rivals else math.inf
 
-    return elos, exhaustive
+
+def search_reachable(
+    current_elos: Dict[str, float],
+    *,
+    rounds: int,
+    agents_per_iteration: int,
+    k: int = K_FACTOR,
+    challenger_id: str = CHALLENGER_ID,
+    penalties: Optional[Dict[str, float]] = None,
+    previous_winner: Optional[str] = None,
+    node_budget: int = SEARCH_NODE_BUDGET,
+) -> tuple[bool, Dict[str, float], bool]:
+    """Does ANY line of play leave a new agent on top of the ladder?
+
+    Reachability is existential, not an optimisation: one winning path is
+    enough, and which path does not matter. So this is a depth-first search
+    that RETURNS THE MOMENT it finds a state where the challenger leads,
+    rather than computing a best-case projection and testing it at the end.
+
+    That distinction is what makes an "unreachable" verdict trustworthy. The
+    earlier formulation optimised each round in isolation, and the per-round
+    objective genuinely fights itself over a horizon -- keeping opponents
+    highly rated earns the challenger more, while pushing them down is what
+    clears its path -- so a locally-greedy line could miss a winning one and
+    report a false "unreachable". Searching for existence has no such gap.
+
+    Cost is asymmetric in the useful direction. A reachable field usually
+    exits on the first path tried, because the natural ordering is also the
+    winning one; only the rare unreachable field pays for the full tree, and
+    that is the answer worth being sure about. Two further bounds keep even
+    that finite: an admissible prune (no line can close the gap faster than
+    `k` per game) and `node_budget`.
+
+    Returns:
+        (reachable, ratings of the winning line — or the best line found if
+        none, for diagnostics — whether an UNREACHABLE answer was proven
+        rather than cut short by the budget; always True when reachable,
+        since one winning line settles existence)
+    """
+    penalties = penalties or {}
+    start = dict(current_elos)
+    start[challenger_id] = INITIAL_ELO
+    rounds = max(0, int(rounds))
+    n_opponents = max(1, agents_per_iteration - 1)
+
+    # Admissible bound: per round the challenger plays n_opponents games and
+    # can gain at most k each, while the strongest rival can shed at most the
+    # same. If that cannot close the gap, no line in this subtree can.
+    max_swing_per_round = 2.0 * k * n_opponents
+
+    best_state = start
+    best_lead = _leads(start, challenger_id, penalties)
+    complete = True
+    exhausted = False
+    nodes = 0
+
+    # (ratings, rounds left, forced opponent for this round). The forced slot
+    # starts as the last completed iteration's winner and is replaced each
+    # subsequent round by a freshly evolved agent -- see _round_states.
+    stack: List[tuple[Dict[str, float], int, Optional[str]]] = [
+        (start, rounds, previous_winner)
+    ]
+    while stack:
+        elos, left, forced = stack.pop()
+        lead = _leads(elos, challenger_id, penalties)
+        if lead > 0:
+            # Existence proved. `complete` is reported True unconditionally
+            # here: it exists to say whether an UNREACHABLE verdict was
+            # proven, and a found winning line is definitive whether or not
+            # the rest of the tree was ever explored.
+            return True, elos, True
+        if lead > best_lead:
+            best_lead, best_state = lead, elos
+        if left <= 0 or exhausted:
+            continue
+        if lead + max_swing_per_round * left <= 0:
+            continue                              # unreachable subtree
+        round_index = rounds - left
+        for nxt, next_forced in _round_states(
+            elos, challenger_id, n_opponents, k, round_index, forced
+        ):
+            nodes += 1
+            if nodes > node_budget:
+                # Stop EXPANDING, but keep draining the stack. Discarding it
+                # here would throw away already-generated states, one of which
+                # may be the winner -- turning a budget limit into a false
+                # "unreachable".
+                complete = False
+                exhausted = True
+                break
+            stack.append((nxt, left - 1, next_forced))
+
+    return False, best_state, complete
 
 
 # --- verdict ----------------------------------------------------------------
@@ -442,6 +602,7 @@ def assess_reachability(
     min_rounds: int = 3,
     clone_penalties: Optional[Dict[str, float]] = None,
     binding_constraint: str = "none",
+    previous_winner: Optional[str] = None,
     history_depth: Optional[int] = None,
     min_history: int = TRAILING_WINDOW,
     k: int = K_FACTOR,
@@ -500,24 +661,28 @@ def assess_reachability(
             binding_constraint=binding_constraint,
         )
 
-    projected, exhaustive = best_case_projection(
+    reachable, final, complete = search_reachable(
         current_elos,
         rounds=rounds_playable(rounds_remaining),
         agents_per_iteration=agents_per_iteration,
         k=k,
+        penalties=penalties,
+        previous_winner=previous_winner,
     )
-    judged_projection = apply_clone_penalties(projected, penalties)
+    judged_projection = apply_clone_penalties(final, penalties)
     challenger = judged_projection[CHALLENGER_ID]
     rivals = {a: v for a, v in judged_projection.items() if a != CHALLENGER_ID}
     best_rival_id = max(rivals, key=lambda a: rivals[a])
     best_rival = rivals[best_rival_id]
-    reachable = challenger > best_rival
 
-    reason = (
-        "best-case play overtakes the field"
-        if reachable
-        else f"even winning every game it cannot pass {best_rival_id}"
-    )
+    if reachable:
+        reason = "a winning line exists"
+    elif complete:
+        reason = f"no line of play passes {best_rival_id}"
+    else:
+        reason = (
+            f"no line found passing {best_rival_id} within the search budget"
+        )
     return ReachabilityVerdict(
         reachable=reachable,
         reason=reason,
@@ -527,6 +692,6 @@ def assess_reachability(
         projected_challenger_elo=challenger,
         projected_best_rival_elo=best_rival,
         projection_ran=True,
-        search_exhaustive=exhaustive,
+        search_exhaustive=complete,
         binding_constraint=binding_constraint,
     )

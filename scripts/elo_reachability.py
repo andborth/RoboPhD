@@ -57,6 +57,17 @@ def replay_elos_through(test_history, upto):
     return elos
 
 
+def _winner_of(test_history, upto):
+    """Highest scorer of iteration `upto` — the agent the pending-winner
+    priority guarantees a slot in the next round."""
+    if not 1 <= upto <= len(test_history):
+        return None
+    data = test_history[upto - 1]
+    if not data:
+        return None
+    return max(data, key=lambda a: data[a].get("average_score", 0.0))
+
+
 def main():
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -146,6 +157,7 @@ def main():
             binding_constraint=binding,
             history_depth=len(fresh_evals[:iteration - 1]),
             min_history=args.min_history,
+            previous_winner=_winner_of(test_history, iteration - 1),
         )
         tag = "reachable" if verdict.reachable else "WOULD FIRE"
         print(f"{iteration:>5}  {tag:<12}  {verdict.summary()}")

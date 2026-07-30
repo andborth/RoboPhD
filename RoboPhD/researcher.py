@@ -2474,6 +2474,22 @@ class ParallelAgentResearcher:
         }
         return True
 
+    def _last_iteration_winner(self) -> Optional[str]:
+        """Highest scorer of the most recent completed iteration, or None.
+
+        This is the agent guaranteed a slot next iteration by the pending-
+        winner priority, hence the forced opponent in the reachability
+        projection. Read from test_history rather than last_win_iteration so
+        it reflects the same record the Elo replay uses.
+        """
+        for iteration_data in reversed(self.test_history or []):
+            if iteration_data:
+                return max(
+                    iteration_data,
+                    key=lambda a: iteration_data[a].get("average_score", 0.0),
+                )
+        return None
+
     def _reachability_verdict(self, config: Dict, iteration: int):
         """Current reachability verdict, or None when there is nothing to judge.
 
@@ -2512,6 +2528,11 @@ class ParallelAgentResearcher:
             min_rounds=config.get("elo_reachability_min_rounds", 3),
             clone_penalties=penalties,
             binding_constraint=binding,
+            # select_agents_for_iteration's P1: the last completed iteration's
+            # winner is always a pending winner, so it always occupies one of
+            # the new agent's games. Passing it makes the projection model the
+            # real field instead of an all-top-k one it never faces.
+            previous_winner=self._last_iteration_winner(),
             # Completed iterations, not the iteration number. They agree in
             # every path today (--from-iteration trims this list to match),
             # but "enough data to average" is the actual requirement.
