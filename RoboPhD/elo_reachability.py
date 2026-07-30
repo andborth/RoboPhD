@@ -205,6 +205,26 @@ def remaining_rounds(
     return max(0.0, (evaluation_budget - spent) / avg)
 
 
+def rounds_playable(rounds_remaining: float) -> int:
+    """Whole iterations a challenger created next round will actually play.
+
+    Ceiling, not floor, and the difference matters at exactly the horizon
+    where the guard fires. The evaluation-budget check runs *after* an
+    iteration completes (researcher.py, "Check evaluation budget"), so a
+    partial round's worth of budget still buys a whole iteration — one that
+    overshoots and then ends the run. With 0.7 rounds of budget left the
+    upcoming iteration runs in full, and the agent it creates plays that
+    round-robin; flooring would model it as never playing a game and call it
+    unreachable on a technicality.
+
+    Zero only when the budget is already spent, in which case the run ends
+    before the upcoming iteration and there is no agent to reason about.
+    """
+    if math.isinf(rounds_remaining):
+        return 0  # callers short-circuit on an unbounded horizon
+    return max(0, math.ceil(rounds_remaining))
+
+
 # --- best-case projection ---------------------------------------------------
 
 
@@ -265,7 +285,7 @@ def best_case_projection(
     n_opponents = max(1, agents_per_iteration - 1)
     exhaustive = True
 
-    for _ in range(max(0, int(rounds))):
+    for _ in range(max(0, int(rounds))):   # rounds is pre-computed by rounds_playable
         opponents = sorted(
             (a for a in elos if a != challenger_id),
             key=lambda a: elos[a],
@@ -383,7 +403,7 @@ def assess_reachability(
 
     projected, exhaustive = best_case_projection(
         current_elos,
-        rounds=int(rounds_remaining),
+        rounds=rounds_playable(rounds_remaining),
         agents_per_iteration=agents_per_iteration,
         k=k,
     )

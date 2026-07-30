@@ -174,6 +174,41 @@ def test_unknown_horizon_is_unbounded(evals, budget):
     assert remaining_rounds(evals, budget) == math.inf
 
 
+@pytest.mark.parametrize("remaining,playable", [
+    (0.0, 0),    # budget already gone; the run ends before the next iteration
+    (0.1, 1),    # a sliver of budget still buys a whole overshooting round
+    (0.7, 1),
+    (1.0, 1),
+    (1.6, 2),
+    (2.0, 2),
+    (2.4, 3),
+])
+def test_rounds_playable_rounds_up(remaining, playable):
+    """Ceiling, not floor. The evaluation-budget check runs AFTER an
+    iteration, so a partial round's budget still buys a full iteration that
+    overshoots and then ends the run. Flooring modelled an agent created with
+    0.7 rounds left as never playing a game, and called it unreachable on
+    that technicality — it fired the guard a whole iteration early."""
+    from RoboPhD.elo_reachability import rounds_playable
+
+    assert rounds_playable(remaining) == playable
+
+
+def test_a_challenger_created_at_the_buzzer_still_plays_once():
+    """The concrete consequence: with a fraction of a round left, the agent
+    is created, evaluated, and can move on the ladder."""
+    from RoboPhD.elo_reachability import rounds_playable
+
+    projected, _ = best_case_projection(
+        {"a": 1500.0, "b": 1500.0},
+        rounds=rounds_playable(0.7),
+        agents_per_iteration=3,
+    )
+    assert projected[CHALLENGER_ID] > INITIAL_ELO, (
+        "an agent that plays a round must be able to gain rating"
+    )
+
+
 # --- ordering enumeration -----------------------------------------------------
 
 
