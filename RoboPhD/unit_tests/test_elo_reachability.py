@@ -1115,3 +1115,82 @@ def test_tiers_are_ordered_not_sets():
                 f"tier {tier!r} is a {type(tier).__name__}; ordered tiers are "
                 f"what make the Elo update reproducible"
             )
+
+
+def _write_fake_checkpoint(tmp_path, *, agents_per_iteration, oldest_wins):
+    import json
+
+    ckpt = {
+        "test_history": [
+            {"a": {"average_score": 0.9}, "b": {"average_score": 0.4}},
+            {"a": {"average_score": 0.8}, "b": {"average_score": 0.5}},
+            {"a": {"average_score": 0.7}, "b": {"average_score": 0.6}},
+        ],
+        "iteration_fresh_evals": [20, 20, 20],
+        "performance_records": {"a": {"elo": 1550.0}, "b": {"elo": 1450.0}},
+        "num_iterations": 10,
+        "config_manager": {"resolved_configs": {"1": {
+            "agents_per_iteration": agents_per_iteration,
+            "oldest_agent_wins_ties": oldest_wins,
+            "evaluation_budget": 200,
+        }}},
+    }
+    d = tmp_path / "run"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "checkpoint.json").write_text(json.dumps(ckpt))
+    return d
+
+
+def _run_replay_script(run_dir):
+    import subprocess
+    import sys as _sys
+
+    return subprocess.run(
+        [_sys.executable, str(REPO_ROOT / "scripts" / "elo_reachability.py"),
+         str(run_dir)],
+        capture_output=True, text=True, cwd=str(REPO_ROOT),
+    )
+
+
+def test_replay_script_refuses_koth_runs(tmp_path):
+    """The retrospective must exclude what the runtime forbids.
+
+    Sweeping the archive without this measured 31 KotH runs the guard can
+    never legally run on, and the results looked plausible rather than
+    broken: a KotH ladder freezes an early leader once it stops playing, so
+    unreachable verdicts appear with lots of runway and read as deep
+    multi-round saves. That inflated "18 runs fire with 2+ rounds of runway,
+    up to horizon 6" out of a true figure of 2 runs at horizon 2.
+
+    Behavioural rather than source-level: an earlier AST guard here looked
+    for a hand-rolled `agents_per_iteration == 2` and silently missed an
+    injected copy that used a local alias, which is precisely the false
+    confidence a structural check invites.
+    """
+    koth = _write_fake_checkpoint(tmp_path, agents_per_iteration=2, oldest_wins=True)
+    result = _run_replay_script(koth)
+    assert result.returncode != 0, "replayed a run the guard cannot be enabled on"
+    assert "King-of-the-Hill" in result.stderr + result.stdout
+
+
+def test_replay_script_accepts_an_ordinary_run(tmp_path):
+    """The exclusion must be specific — two agents alone, or KotH tie-handling
+    at a wider round-robin, are both legal."""
+    for api, oldest in ((3, True), (2, False), (3, False)):
+        run = _write_fake_checkpoint(
+            tmp_path / f"c{api}{oldest}", agents_per_iteration=api,
+            oldest_wins=oldest)
+        result = _run_replay_script(run)
+        assert result.returncode == 0, (
+            f"refused a legal config (agents_per_iteration={api}, "
+            f"oldest_agent_wins_ties={oldest}): {result.stdout[-300:]}"
+        )
+
+
+def test_replay_script_delegates_the_koth_definition():
+    """One definition of an illegal configuration, not two that can drift."""
+    src = (REPO_ROOT / "scripts" / "elo_reachability.py").read_text()
+    assert "_validate_resolved_semantics" in src, (
+        "the replay script must reuse ConfigManager's definition, not carry "
+        "its own copy"
+    )

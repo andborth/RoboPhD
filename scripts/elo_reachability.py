@@ -27,6 +27,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from RoboPhD.config_manager import ConfigManager  # noqa: E402
 from RoboPhD.elo_reachability import (  # noqa: E402
     TRAILING_WINDOW,
     assess_reachability,
@@ -109,6 +110,29 @@ def main():
 
     budget = args.evaluation_budget or _cfg("evaluation_budget", None)
     per_iter = args.agents_per_iteration or _cfg("agents_per_iteration", 3)
+
+    # Refuse runs the guard could not legally be enabled on, delegating the
+    # definition to ConfigManager so the script and the runtime can never
+    # disagree about what counts as King of the Hill. Replaying such a run
+    # measures a regime that cannot occur, and the answers look plausible:
+    # a KotH ladder freezes an early leader that stops playing, so
+    # "unreachable" verdicts appear with lots of runway left and read as
+    # deep multi-round saves. They are neither -- KotH's result is the
+    # last-round winner, so firing there would suppress the actual output.
+    try:
+        ConfigManager._validate_resolved_semantics(
+            {
+                "elo_reachability_guard": True,
+                "agents_per_iteration": per_iter,
+                "oldest_agent_wins_ties": _cfg("oldest_agent_wins_ties", False),
+            },
+            iteration=1,
+        )
+    except ValueError as exc:
+        raise SystemExit(
+            f"{args.run_dir} is a run the guard cannot be enabled on, so "
+            f"there is nothing to replay.\n\n{exc}"
+        )
     # num_iterations is system-managed (--extend raises it), so it sits at the
     # checkpoint top level rather than in a resolved config.
     cap = args.num_iterations or ckpt.get("num_iterations")
