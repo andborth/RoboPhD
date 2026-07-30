@@ -28,11 +28,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from RoboPhD.elo_reachability import (  # noqa: E402
-    CHALLENGER_ID,
     assess_reachability,
     calculate_elo_updates,
     clone_penalty_totals,
-    remaining_rounds,
+    horizon,
     strip_clone_penalties,
 )
 
@@ -71,6 +70,10 @@ def main():
                     help="Round-robin size (default: read from the checkpoint)")
     ap.add_argument("--evaluation-budget", type=int, default=None,
                     help="Override the budget recorded in the checkpoint")
+    ap.add_argument("--num-iterations", type=int, default=None,
+                    help="Override the iteration cap recorded in the "
+                         "checkpoint. A run can end on either terminator, so "
+                         "both feed the horizon")
     args = ap.parse_args()
 
     checkpoint_path = Path(args.run_dir) / "checkpoint.json"
@@ -94,17 +97,20 @@ def main():
 
     budget = args.evaluation_budget or _cfg("evaluation_budget", None)
     per_iter = args.agents_per_iteration or _cfg("agents_per_iteration", 3)
+    # num_iterations is system-managed (--extend raises it), so it sits at the
+    # checkpoint top level rather than in a resolved config.
+    cap = args.num_iterations or ckpt.get("num_iterations")
 
     perf = ckpt.get("performance_records") or {}
     winner = max(perf, key=lambda a: perf[a].get("elo", 0)) if perf else "?"
 
     print(f"Run: {args.run_dir}")
     print(f"Iterations: {len(test_history)}   agents/iteration: {per_iter}   "
-          f"budget: {budget}")
+          f"budget: {budget}   iteration cap: {cap}")
     print(f"Final Elo leader: {winner}"
           + (f" ({perf[winner]['elo']:.0f})" if winner in perf else ""))
-    if budget is None:
-        print("\nNOTE: no evaluation_budget recorded, so the horizon is "
+    if budget is None and cap is None:
+        print("\nNOTE: neither terminator is recorded, so the horizon is "
               "unbounded and the guard would never have fired on this run.")
 
     iterations = ([args.at_iteration] if args.at_iteration
@@ -122,12 +128,17 @@ def main():
         elos = replay_elos_through(test_history, iteration - 1)
         if not elos:
             continue
+        rounds, binding = horizon(
+            fresh_evals[:iteration - 1], budget,
+            current_iteration=iteration, num_iterations=cap,
+        )
         verdict = assess_reachability(
             strip_clone_penalties(elos, penalties),
-            rounds_remaining=remaining_rounds(fresh_evals[:iteration - 1], budget),
+            rounds_remaining=rounds,
             agents_per_iteration=per_iter,
             min_rounds=args.min_rounds,
             clone_penalties=penalties,
+            binding_constraint=binding,
         )
         tag = "reachable" if verdict.reachable else "WOULD FIRE"
         print(f"{iteration:>5}  {tag:<12}  {verdict.summary()}")

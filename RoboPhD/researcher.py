@@ -45,7 +45,7 @@ try:
         assess_reachability,
         calculate_elo_updates,
         clone_penalty_totals,
-        remaining_rounds,
+        horizon,
         strip_clone_penalties,
     )
 except ImportError:
@@ -71,7 +71,7 @@ except ImportError:
         assess_reachability,
         calculate_elo_updates,
         clone_penalty_totals,
-        remaining_rounds,
+        horizon,
         strip_clone_penalties,
     )
 
@@ -2426,7 +2426,7 @@ class ParallelAgentResearcher:
         # Case 1: the guard is currently holding this run in greedy. Re-check
         # rather than assume, so a grown horizon can hand evolution back.
         if displaced and current_strategy == "greedy":
-            verdict = self._reachability_verdict(config)
+            verdict = self._reachability_verdict(config, iteration)
             if verdict is None or not verdict.reachable:
                 return False   # still no path; the inherited greedy stands
             self.reachability_guard_state = {}
@@ -2450,7 +2450,7 @@ class ParallelAgentResearcher:
             return False
 
         # Case 3: an ordinary evolving round — decide whether to displace it.
-        verdict = self._reachability_verdict(config)
+        verdict = self._reachability_verdict(config, iteration)
         if verdict is None or verdict.reachable:
             return False
 
@@ -2472,8 +2472,14 @@ class ParallelAgentResearcher:
         }
         return True
 
-    def _reachability_verdict(self, config: Dict):
+    def _reachability_verdict(self, config: Dict, iteration: int):
         """Current reachability verdict, or None when there is nothing to judge.
+
+        The horizon takes BOTH terminators into account -- the evaluation
+        budget and the num_iterations cap -- because either can bind first and
+        a run may set one, the other, or both. Reading only the budget would
+        never fire on an iteration-capped run with no budget, and would
+        overestimate the horizon whenever the iteration cap binds first.
 
         Ratings in performance_records are post-clone-penalty while the Elo
         formula operates pre-penalty, so the projection runs on the stripped
@@ -2488,14 +2494,22 @@ class ParallelAgentResearcher:
         if not judged_elos:
             return None
 
+        rounds, binding = horizon(
+            self.iteration_fresh_evals,
+            config.get("evaluation_budget"),
+            current_iteration=iteration,
+            # self.num_iterations, not config: it is system-managed and
+            # immutable in ConfigManager, and --extend raises it on the
+            # researcher rather than through a config delta.
+            num_iterations=getattr(self, "num_iterations", None),
+        )
         verdict = assess_reachability(
             strip_clone_penalties(judged_elos, penalties),
-            rounds_remaining=remaining_rounds(
-                self.iteration_fresh_evals, config.get("evaluation_budget")
-            ),
+            rounds_remaining=rounds,
             agents_per_iteration=config["agents_per_iteration"],
             min_rounds=config.get("elo_reachability_min_rounds", 3),
             clone_penalties=penalties,
+            binding_constraint=binding,
         )
         logger.info(f"Elo reachability: {verdict.summary()}")
         return verdict

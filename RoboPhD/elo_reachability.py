@@ -205,6 +205,53 @@ def remaining_rounds(
     return max(0.0, (evaluation_budget - spent) / avg)
 
 
+def iterations_remaining(
+    current_iteration: int, num_iterations: Optional[int]
+) -> float:
+    """Iterations the loop will still run, counting the current one.
+
+    The second terminator, independent of the budget: researcher's loop is
+    `while iteration <= self.num_iterations`. Exact rather than estimated —
+    no trailing mean needed — because it is a plain iteration count.
+
+    `inf` when no cap is configured. Note that every shipped example defaults
+    `--num-iterations` to 999 precisely so the budget is the real limit, so
+    in normal use this returns a large number and the budget binds; it is the
+    binding constraint only when a run is deliberately capped by iteration.
+    """
+    if num_iterations is None:
+        return math.inf
+    return max(0, num_iterations - current_iteration + 1)
+
+
+def horizon(
+    iteration_fresh_evals: Sequence[int],
+    evaluation_budget: Optional[int],
+    *,
+    current_iteration: int,
+    num_iterations: Optional[int],
+    window: int = 5,
+) -> tuple[float, str]:
+    """Rounds remaining under whichever terminator binds first.
+
+    A run can end two ways and either may come first, so the horizon is the
+    minimum. Considering only the budget overestimates the horizon of an
+    iteration-capped run (firing late or never); considering only the
+    iteration cap overestimates a budget-bound one.
+
+    Returns (rounds, which) where `which` names the binding terminator —
+    "budget", "iterations", or "none". Reported in the verdict because the
+    remedy differs entirely: raise --evaluation-budget, or --extend.
+    """
+    budget_rounds = remaining_rounds(iteration_fresh_evals, evaluation_budget, window)
+    iteration_rounds = iterations_remaining(current_iteration, num_iterations)
+    if budget_rounds <= iteration_rounds:
+        which = "none" if math.isinf(budget_rounds) else "budget"
+        return budget_rounds, which
+    which = "none" if math.isinf(iteration_rounds) else "iterations"
+    return iteration_rounds, which
+
+
 def rounds_playable(rounds_remaining: float) -> int:
     """Whole iterations a challenger created next round will actually play.
 
@@ -338,13 +385,19 @@ class ReachabilityVerdict:
     projected_best_rival_elo: Optional[float] = None
     projection_ran: bool = False
     search_exhaustive: bool = True
+    # Which terminator set the horizon: "budget", "iterations", or "none".
+    # Named in the summary because the remedy differs -- raise
+    # --evaluation-budget, or --extend.
+    binding_constraint: str = "none"
 
     def summary(self) -> str:
         """One-line, log-ready account of the decision."""
         head = "reachable" if self.reachable else "UNREACHABLE"
         rounds = ("unbounded" if math.isinf(self.rounds_remaining)
                   else f"{self.rounds_remaining:.1f}")
-        line = f"{head}: {self.reason} (rounds remaining: {rounds})"
+        bound = ("" if self.binding_constraint == "none"
+                 else f", limited by {self.binding_constraint}")
+        line = f"{head}: {self.reason} (rounds remaining: {rounds}{bound})"
         if self.projection_ran:
             line += (
                 f" | best-case challenger {self.projected_challenger_elo:.0f}"
@@ -362,6 +415,7 @@ def assess_reachability(
     agents_per_iteration: int,
     min_rounds: int = 3,
     clone_penalties: Optional[Dict[str, float]] = None,
+    binding_constraint: str = "none",
     k: int = K_FACTOR,
 ) -> ReachabilityVerdict:
     """Decide whether an agent evolved next iteration could lead on Elo.
@@ -387,6 +441,7 @@ def assess_reachability(
             reachable=True,
             reason="no rated agents yet, so nothing to overtake",
             rounds_remaining=rounds_remaining,
+            binding_constraint=binding_constraint,
         )
 
     judged = apply_clone_penalties(current_elos, penalties)
@@ -399,6 +454,7 @@ def assess_reachability(
             rounds_remaining=rounds_remaining,
             leader_id=leader_id,
             leader_elo=judged[leader_id],
+            binding_constraint=binding_constraint,
         )
 
     projected, exhaustive = best_case_projection(
@@ -429,4 +485,5 @@ def assess_reachability(
         projected_best_rival_elo=best_rival,
         projection_ran=True,
         search_exhaustive=exhaustive,
+        binding_constraint=binding_constraint,
     )

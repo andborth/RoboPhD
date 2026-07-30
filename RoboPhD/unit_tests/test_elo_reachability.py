@@ -209,6 +209,112 @@ def test_a_challenger_created_at_the_buzzer_still_plays_once():
     )
 
 
+# --- the three horizon scenarios ----------------------------------------------
+#
+# A run can end two ways and either may come first, so all three combinations
+# have to work: budget only (the normal case, every example defaults
+# --num-iterations to 999 so the budget binds), iteration cap only, and both.
+
+
+def test_budget_only_is_the_budget_horizon():
+    from RoboPhD.elo_reachability import horizon
+
+    rounds, binding = horizon(
+        [30, 30, 30], 150, current_iteration=4, num_iterations=None
+    )
+    assert (rounds, binding) == (2.0, "budget")
+
+
+def test_iterations_only_has_a_real_horizon():
+    """The bug this pair of terminators fixes: with no budget configured the
+    horizon used to come back inf and the guard could never fire, even though
+    `--num-iterations 10` at iteration 9 leaves an exactly known 2 rounds."""
+    from RoboPhD.elo_reachability import horizon
+
+    rounds, binding = horizon(
+        [], None, current_iteration=9, num_iterations=10
+    )
+    assert (rounds, binding) == (2, "iterations")
+
+
+def test_both_set_takes_whichever_binds_first():
+    from RoboPhD.elo_reachability import horizon
+
+    # Vast budget, tight iteration cap.
+    assert horizon([30, 30, 30], 100_000,
+                   current_iteration=9, num_iterations=10) == (2, "iterations")
+    # Tight budget, loose iteration cap.
+    rounds, binding = horizon([30, 30, 30], 120,
+                              current_iteration=4, num_iterations=999)
+    assert (rounds, binding) == (1.0, "budget")
+
+
+def test_neither_set_is_unbounded():
+    from RoboPhD.elo_reachability import horizon
+
+    rounds, binding = horizon([], None, current_iteration=1, num_iterations=None)
+    assert math.isinf(rounds)
+    assert binding == "none"
+
+
+@pytest.mark.parametrize("current,cap,expected", [
+    (10, 10, 1),    # the last iteration still runs
+    (9, 10, 2),
+    (1, 10, 10),
+    (11, 10, 0),    # past the cap; the loop has already exited
+])
+def test_iterations_remaining_counts_the_current_one(current, cap, expected):
+    from RoboPhD.elo_reachability import iterations_remaining
+
+    assert iterations_remaining(current, cap) == expected
+
+
+def test_verdict_names_the_binding_terminator():
+    """The remedy differs entirely -- raise --evaluation-budget, or --extend --
+    so a user reading the log needs to know which one ran out."""
+    from RoboPhD.elo_reachability import horizon
+
+    rounds, binding = horizon([], None, current_iteration=10, num_iterations=10)
+    verdict = assess_reachability(
+        {"leader": 2200.0, "b": 1500.0},
+        rounds_remaining=rounds, agents_per_iteration=3,
+        binding_constraint=binding,
+    )
+    assert not verdict.reachable
+    assert "limited by iterations" in verdict.summary()
+
+
+def test_unbounded_horizon_names_no_terminator():
+    verdict = assess_reachability(
+        {"a": 1500.0}, rounds_remaining=math.inf, agents_per_iteration=3,
+        binding_constraint="none",
+    )
+    assert "limited by" not in verdict.summary()
+
+
+def test_guard_fires_on_an_iteration_capped_run_with_no_budget():
+    """End-to-end through the guard for scenario 2, which previously could
+    not fire at all."""
+    stub = _guard_stub(num_iterations=5, iteration_fresh_evals=[30, 30, 30])
+    changed, resolved = _run_guard(stub, iteration=5, evaluation_budget=None)
+    assert changed is True
+    assert resolved["evolution_strategy"] == "greedy"
+
+
+def test_extend_reopens_an_iteration_capped_run():
+    """--extend raises num_iterations on the researcher, so the sticky greedy
+    has to notice and hand evolution back."""
+    stub = _guard_stub(num_iterations=5, iteration_fresh_evals=[30, 30, 30])
+    _run_guard(stub, iteration=5, evaluation_budget=None)
+    assert stub.config_manager.get_config(5)["evolution_strategy"] == "greedy"
+
+    stub.num_iterations = 25          # what --extend 20 does
+    stub.config_manager.set_current_iteration(6)
+    changed, resolved = _run_guard(stub, iteration=6, evaluation_budget=None)
+    assert changed is True
+    assert resolved["evolution_strategy"] == "use_your_judgment"
+
+
 # --- ordering enumeration -----------------------------------------------------
 
 
@@ -424,9 +530,12 @@ def _guard_stub(**overrides):
         _NON_EVOLVING_STRATEGIES=ParallelAgentResearcher._NON_EVOLVING_STRATEGIES,
         # The verdict helper is a plain method on the same class; binding it
         # keeps the stub exercising the real computation rather than a mock.
-        _reachability_verdict=lambda config: (
-            ParallelAgentResearcher._reachability_verdict(stub, config)
+        _reachability_verdict=lambda config, iteration: (
+            ParallelAgentResearcher._reachability_verdict(stub, config, iteration)
         ),
+        # Loose, like every shipped example's --num-iterations default, so
+        # the budget is what binds unless a test says otherwise.
+        num_iterations=999,
         config_manager=cm,
         reachability_guard_state={},
         # A runaway leader with a nearly-exhausted budget: unreachable.
