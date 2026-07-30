@@ -33,7 +33,6 @@ from RoboPhD.elo_reachability import (  # noqa: E402
     calculate_elo_updates,
     clone_penalty_totals,
     horizon,
-    strip_clone_penalties,
 )
 
 
@@ -145,8 +144,15 @@ def main():
             fresh_evals[:iteration - 1], budget,
             current_iteration=iteration, num_iterations=cap,
         )
+        # `elos` comes from replay_elos_through, which is ALREADY pre-penalty
+        # (it mirrors _recalculate_all_elo_scores' replay and stops before the
+        # penalty step). Calling strip_clone_penalties here would add 200 to
+        # every clone a second time, inventing unbeatable phantom leaders and
+        # reporting false "unreachable" verdicts. The researcher's own guard
+        # DOES strip, correctly, because it reads performance_records['elo'],
+        # which is post-penalty.
         verdict = assess_reachability(
-            strip_clone_penalties(elos, penalties),
+            elos,
             rounds_remaining=rounds,
             agents_per_iteration=per_iter,
             clone_penalties=penalties,

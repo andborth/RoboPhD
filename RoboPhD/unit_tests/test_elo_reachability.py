@@ -9,8 +9,12 @@ Two reasons this file is load-bearing beyond ordinary coverage:
     downstream would look wrong.
 """
 import math
+import os
+from pathlib import Path
 
 import pytest
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 from RoboPhD.elo_reachability import (
     CHALLENGER_ID,
@@ -490,7 +494,9 @@ def test_weak_ordering_counts_are_fubini(n, count):
 
 def test_weak_orderings_include_the_all_tied_case():
     orderings = list(_weak_orderings(["a", "b"]))
-    assert [{"a", "b"}] in orderings
+    assert [("a", "b")] in orderings, (
+        f"the both-tied ranking is missing from {orderings}"
+    )
 
 
 # --- the existence search -----------------------------------------------------
@@ -1034,3 +1040,78 @@ def test_a_proven_unreachable_still_fires():
     )
     assert not verdict.reachable
     assert verdict.search_exhaustive is True
+
+
+def test_replay_script_does_not_double_apply_clone_penalties():
+    """Regression, and a subtle one: the two callers need OPPOSITE handling.
+
+    researcher._reachability_verdict reads performance_records['elo'], which
+    _recalculate_all_elo_scores has already penalised, so it must strip.
+    scripts/elo_reachability.py replays test_history itself and stops before
+    the penalty step, so its ratings are already pre-penalty and stripping
+    again adds 200 per clone — inventing unbeatable phantom leaders and
+    producing false "unreachable" verdicts. That cost two false suppressions
+    and nine spurious firing runs across a 152-run sweep before it was found.
+    """
+    import ast
+
+    src = (REPO_ROOT / "scripts" / "elo_reachability.py").read_text()
+    # A CALL, not the string — the file names the function in a comment
+    # explaining precisely why it must not be called.
+    calls = [
+        n for n in ast.walk(ast.parse(src))
+        if isinstance(n, ast.Call)
+        and getattr(n.func, "id", getattr(n.func, "attr", None))
+        == "strip_clone_penalties"
+    ]
+    assert not calls, (
+        f"the replay script's ratings are already pre-penalty; stripping them "
+        f"double-counts the clone penalty (call at line {calls[0].lineno if calls else '?'})"
+    )
+    assert "clone_penalties=penalties" in src, (
+        "it must still PASS the penalties, which are re-applied at comparison "
+        "time because leadership is judged post-penalty"
+    )
+
+
+def test_verdicts_are_deterministic_across_processes():
+    """A reachability verdict must not depend on PYTHONHASHSEED.
+
+    _weak_orderings used to yield sets. calculate_elo_updates applies pair
+    updates sequentially against a mutating dict, so its result depends on
+    the order agents are enumerated in — and set-of-strings iteration order
+    varies between processes. The same field could be judged reachable on
+    one run and unreachable on the next, which showed up as an intermittently
+    failing test before it was understood as a real defect.
+    """
+    import subprocess
+    import sys as _sys
+
+    prog = (
+        "from RoboPhD.elo_reachability import search_reachable;"
+        "f={'leader':2300.0,'b':1520.0,'c':1500.0,'d':1490.0,'e':1480.0};"
+        "ok,fin,c=search_reachable(f,rounds=4,agents_per_iteration=5);"
+        "print(f'{ok}|{c}|{fin[\"<challenger>\"]:.6f}')"
+    )
+    seen = set()
+    for seed in ("0", "1", "12345"):
+        out = subprocess.run(
+            [_sys.executable, "-c", prog], capture_output=True, text=True,
+            cwd=str(REPO_ROOT), env={"PYTHONHASHSEED": seed, "PATH": os.environ["PATH"],
+                                     "HOME": os.environ.get("HOME", "")},
+        )
+        line = [l for l in out.stdout.splitlines() if "|" in l]
+        assert line, f"subprocess produced no verdict: {out.stderr[-400:]}"
+        seen.add(line[-1])
+    assert len(seen) == 1, f"verdict varied with hash seed: {seen}"
+
+
+def test_tiers_are_ordered_not_sets():
+    """The structural half of the guard above: a set here reintroduces the
+    nondeterminism regardless of what the end-to-end test happens to hit."""
+    for tiers in _weak_orderings(["a", "b", "c"]):
+        for tier in tiers:
+            assert isinstance(tier, tuple), (
+                f"tier {tier!r} is a {type(tier).__name__}; ordered tiers are "
+                f"what make the Elo update reproducible"
+            )

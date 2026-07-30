@@ -68,7 +68,7 @@ from __future__ import annotations
 import itertools
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Set
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
 
 # Elo constants. These are the values researcher.py has always used; they
 # live here now so the projection and the real ladder cannot disagree.
@@ -312,13 +312,20 @@ def rounds_playable(rounds_remaining: float) -> int:
 # --- best-case projection ---------------------------------------------------
 
 
-def _weak_orderings(items: Sequence[str]) -> Iterator[List[Set[str]]]:
+def _weak_orderings(items: Sequence[str]) -> Iterator[List[Tuple[str, ...]]]:
     """Every ranking of `items` that allows ties, as a list of tiers.
 
     Ties are enumerated rather than assumed away because a draw is not
     dominated: it moves the higher-rated of two opponents down and the
     lower one up, which can serve the challenger better than either strict
     ordering.
+
+    Tiers are ORDERED tuples, not sets. That is not cosmetic:
+    calculate_elo_updates applies pair updates sequentially against a
+    mutating dict, so its output depends on the order agents are enumerated
+    in — and iterating a set of strings varies between processes under hash
+    randomisation. With sets here the same field could be judged reachable
+    on one run and unreachable on the next.
     """
     items = list(items)
     if not items:
@@ -328,17 +335,17 @@ def _weak_orderings(items: Sequence[str]) -> Iterator[List[Set[str]]]:
         for combo in itertools.combinations(items, size):
             rest = [i for i in items if i not in combo]
             for tail in _weak_orderings(rest):
-                yield [set(combo)] + tail
+                yield [tuple(combo)] + tail
 
 
-def _orderings_for(opponents: Sequence[str]) -> tuple[Iterable[List[Set[str]]], bool]:
+def _orderings_for(opponents: Sequence[str]) -> tuple[Iterable[List[Tuple[str, ...]]], bool]:
     """Orderings to search, plus whether the search is exhaustive."""
     if len(opponents) <= MAX_EXHAUSTIVE_OPPONENTS:
         return list(_weak_orderings(opponents)), True
     # Heuristic: weakest wins, so the highest-rated agents shed the most
     # rating and the challenger's path clears fastest.
     ascending = sorted(opponents)
-    return [[{a} for a in ascending]], False
+    return [[(a,) for a in ascending]], False
 
 
 def _round_participants(
