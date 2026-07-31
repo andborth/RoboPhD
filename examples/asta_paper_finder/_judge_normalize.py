@@ -154,7 +154,10 @@ def install() -> None:
 # stored docs, same-prompt rerun as noise floor): labels-only sat AT the
 # floor on every measure (agreement 0.811 vs floor 0.838; Perfect drift
 # +9% vs the floor's own +6%) while cutting output tokens 65% —
-# $0.0022/verdict, ~5.7x cheaper than the stock GPT-4o basis. UNSAFE for
+# $0.0022/verdict, ~5.7x cheaper than the stock GPT-4o basis -- at the
+# then-current $1.00/$6.00 luna rates; the 2026-07-31 repricing to
+# $0.20/$1.20 makes it ~$0.00044/verdict, ~28x, leaving the 65% token
+# reduction and the agreement findings unchanged. UNSAFE for
 # gpt-4o (+18.5% Perfect inflation vs a stable 54->54 floor: the
 # snippet-writing is chain-of-thought for the older model) — mispairing is
 # impossible by construction in main.py, where the profile is DERIVED from

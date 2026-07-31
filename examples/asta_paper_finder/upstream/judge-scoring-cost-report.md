@@ -26,9 +26,16 @@ independent researchers it seems designed for.
 - Bless a calibrated cheaper judge (we have a full calibration dossier for
   `gpt-5.6-luna` vs your `gpt-4o-2024-11-20`: PERFECT/not kappa 0.755 on
   n=150 paired verdicts over real submission evidence, Perfect rates 31.3%
-  vs 32.7%, and a 25-query full-pipeline A/B with score diff −0.027 ± 0.035
-  — at ~1/3 the judging cost on evidence-rich submissions; already shared
-  with your team separately).
+  vs 32.7%, and a 25-query full-pipeline A/B with score diff −0.027 ± 0.035;
+  already shared with your team separately).
+
+  **This got substantially stronger on 2026-07-31**, when luna repriced 80%
+  down to $0.20/$1.20 per M against gpt-4o's $2.50/$10.00. The dossier's
+  "~1/3 the judging cost" figure was computed at luna's old $1.00/$6.00; at
+  the new rates the same measurements put it more than an order of magnitude
+  below the stock judge. The $192 v0_0_7 submission above would judge for
+  roughly $15, and the ~$600 evidence-rich case for roughly $50 — which
+  changes the character of the barrier in §1 rather than just its size.
 - Offer an AI2-side judging tier for submissions (predictions-only upload).
   The current process is already trust-based — submitters run the judge on
   their own keys and upload the resulting logs — so this centralizes cost
@@ -74,7 +81,10 @@ labels-only prompt, 148 identical docs each):
   floor on every measure (agreement 0.811 vs floor 0.838; Perfect drift
   +9% vs the floor's own +6%), while cutting output tokens 65% —
   $0.0022/verdict all-in, ~5.7x cheaper than the current stock judge on
-  evidence-rich submissions.
+  evidence-rich submissions. (Measured at luna's pre-2026-07-31 rates of
+  $1.00/$6.00 per M; at the current $0.20/$1.20 the same measurement is
+  ~$0.00044/verdict, ~28x. The token reduction and the agreement findings
+  are rate-independent and unchanged.)
 - Incidentally measured: gpt-4o is the noisier judge — on identical
   inputs it churns 22% of its own Perfect verdicts between reruns (luna:
   9%), and luna matches gpt-4o's Perfect set (0.82) better than gpt-4o

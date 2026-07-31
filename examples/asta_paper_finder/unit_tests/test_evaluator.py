@@ -1301,18 +1301,38 @@ def test_evidence_truncation_markdown(ev_mod, verdict_cache):
 def test_judge_price_override_prices_luna(ev_mod):
     """litellm 1.88.1 (pinned — the leaderboard billing basis) predates
     gpt-5.6-luna; JUDGE_PRICE_OVERRIDES must price it so judge cost never
-    silently reports $0. Cache-read tokens bill at the cached rate."""
+    silently reports $0. Cache-read tokens bill at the cached rate.
+
+    Expectations derive from the constant rather than restating its numbers.
+    What can regress here is the pricing PATH — the override lookup, the
+    cache-read split, the per-token arithmetic — not the rates, which are an
+    external fact no test can check. Restating them just means a vendor
+    reprice breaks a test about mechanism (luna dropped 80% on 2026-07-31).
+    """
+    rates = ev_mod.JUDGE_PRICE_OVERRIDES["gpt-5.6-luna"]
+    per_in = rates["input_cost_per_token"]
+    per_cached = rates["cached_input_cost_per_token"]
+    per_out = rates["output_cost_per_token"]
+    assert per_in > 0 and per_out > 0, (
+        "a zero rate would make judge cost silently report $0, which is the "
+        "failure this override exists to prevent"
+    )
+    assert per_cached < per_in, "cached input must be cheaper than fresh input"
+
     cost = ev_mod.PaperFinderEvaluator._estimate_cost(
         "openai/gpt-5.6-luna",
         {"input_tokens": 1_000_000, "output_tokens": 100_000, "total_tokens": 1_100_000},
     )
-    assert cost == pytest.approx(1.00 + 0.60)  # $1/M in + $6/M out
+    assert cost == pytest.approx(1_000_000 * per_in + 100_000 * per_out)
+
     cost = ev_mod.PaperFinderEvaluator._estimate_cost(
         "openai/gpt-5.6-luna",
         {"input_tokens": 1_000_000, "output_tokens": 100_000,
          "total_tokens": 1_100_000, "input_tokens_cache_read": 500_000},
     )
-    assert cost == pytest.approx(0.5 * 1.00 + 0.5 * 0.10 + 0.60)
+    assert cost == pytest.approx(
+        500_000 * per_in + 500_000 * per_cached + 100_000 * per_out
+    )
 
 
 # --- _head_tail_truncate ------------------------------------------------------

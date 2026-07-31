@@ -100,7 +100,10 @@ JUDGE_MODEL_IDS = frozenset({
 # models). Judge spend is internal accounting (other_cost_usd, never
 # penalized, never leaderboard-exposed), so a local table is sound here in a
 # way it would not be for solver pricing. Rates from OpenAI's pricing page,
-# 2026-07-20. cached_input applies to input_tokens_cache_read (measured
+# 2026-07-31 (luna repriced 80% down that day: $1.00/$0.10/$6.00 ->
+# $0.20/$0.02/$1.20; the earlier rates are what every campaign cost figure
+# recorded before that date was computed on).
+# cached_input applies to input_tokens_cache_read (measured
 # essentially unused by the astabench judge prompt — 0.007% on the v0_0_7
 # official run — but priced correctly if it ever engages). KNOWN GAP:
 # the gpt-5.6 family also BILLS cache writes at 1.25x input (older
@@ -111,9 +114,9 @@ JUDGE_MODEL_IDS = frozenset({
 # cost — revisit only if caching ever becomes material.
 JUDGE_PRICE_OVERRIDES = {
     "gpt-5.6-luna": {
-        "input_cost_per_token": 1.00e-6,
-        "cached_input_cost_per_token": 0.10e-6,
-        "output_cost_per_token": 6.00e-6,
+        "input_cost_per_token": 0.20e-6,
+        "cached_input_cost_per_token": 0.02e-6,
+        "output_cost_per_token": 1.20e-6,
     },
 }
 if _ASTABENCH_GRADER_MODEL_NAME not in JUDGE_MODEL_IDS:
