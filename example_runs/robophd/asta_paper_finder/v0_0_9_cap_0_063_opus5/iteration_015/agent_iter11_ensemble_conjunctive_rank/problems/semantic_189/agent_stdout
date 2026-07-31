@@ -1,0 +1,47 @@
+[semantic_189] score_type=semantic_f1 query='papers discussing how modern language models set d_model and number of layers in transformer architecture, focusing on t'
+  queries=['transformer d_model number of layers model depth width', 'language model transformer depth width d_model tradeoff', 'long narrow versus wide shallow transformers', 'transformer architecture layer count hidden size scaling', 'modern language models d_model layer number analysis', 'transformer width depth comparison language models', 'transformer model size depth width design survey', 'd_model layers transformer architecture tradeoffs', 'language model architecture depth width comparison', 'wide shallow versus long narrow language models', 'transformer hidden size depth tradeoff papers', 'overview transformer depth width d_model layers', 'transformer depth width scaling laws', 'language model depth width tradeoff', 'hidden size layer count transformers', 'deep narrow transformer architectures', 'wide shallow transformer models', 'transformer capacity depth versus width', 'model depth hidden dimension transformer', 'llm architecture width depth balance']
+  criterion(w=0.40): 'Transformer architecture focus' probe='transformer language model'
+  criterion(w=0.30): 'd_model and layer choice' probe='hidden size layers'
+  criterion(w=0.30): 'Depth-width comparison' probe='depth-width tradeoff'
+  year_min=None prefer_earliest=False
+  keyword runs -> [5, 35, 100, 100, 100, 100, 100, 21, 100, 100, 31, 100, 100, 100, 100, 100, 100, 65, 100, 91]
+  snippet run c-1 -> 90 papers
+  snippet run c-1 -> 89 papers
+  snippet run c-1 -> 90 papers
+  snippet run c0 -> 99 papers
+  snippet run c1 -> 96 papers
+  snippet run c2 -> 98 papers
+  pool: 1841 unique papers
+  more-like-this: 10 seed titles -> +106 new papers (pool 1947)
+  hydrated 117/117 abstract-less records
+  pre-ranked 390 candidates (256s elapsed)
+  criterion snippet harvest: 15 scoped calls over 100 papers
+  [tool-fail] snip:c0: TimeoutError: 
+  harvested 497 criterion-tagged passages over 529 papers (496s elapsed)
+  criterion repair: 240 single-paper probes over 170 papers (496s elapsed)
+  [tool-fail] repair:276107264:c2: TimeoutError: 
+  [tool-fail] repair:252626580:c2: TimeoutError: 
+  [tool-fail] repair:276449589:c2: TimeoutError: 
+  [tool-fail] repair:278996248:c2: TimeoutError: 
+  [tool-fail] repair:174799399:c2: TimeoutError: 
+  [tool-fail] repair:259075636:c2: TimeoutError: 
+  [tool-fail] repair:270440803:c2: TimeoutError: 
+  [tool-fail] repair:271244694:c2: TimeoutError: 
+  [tool-fail] repair:276421964:c2: TimeoutError: 
+  [tool-fail] repair:272389179:c2: TimeoutError: 
+  [tool-fail] repair:247447316:c2: TimeoutError: 
+  [tool-fail] repair:260164834:c0: TimeoutError: 
+  [tool-fail] repair:260164834:c2: TimeoutError: 
+  [tool-fail] repair:275920592:c2: TimeoutError: 
+  [tool-fail] repair:276449777:c1: TimeoutError: 
+  [tool-fail] repair:252968423:c2: TimeoutError: 
+  [tool-fail] repair:273963273:c2: TimeoutError: 
+  [tool-fail] repair:267627739:c2: TimeoutError: 
+  repair: +845 passages (890s elapsed)
+  evidence: 1/250 papers cover every criterion lexically (head60=1, mean_cov=0.51) (890s elapsed)
+  grade: 250/250 graded; predicted-strong(>=.90)=20
+  deep: 72/72 graded; predicted-strong(>=.90)=4
+  head: 28/28 graded; predicted-strong(>=.90)=7
+  ensemble: 1/250 papers at mean-vote >= 0.90
+  head predictions: [('264820247', 0.91, 3), ('248987030', 0.9, 3), ('278327271', 0.9, 3), ('276768884', 0.89, 3), ('234338042', 0.89, 3), ('256630716', 0.89, 3), ('174799399', 0.86, 3), ('279070746', 0.83, 2), ('275954347', 0.82, 2), ('276259070', 0.79, 2)]
+  SUBMITTED 250 papers (evidence chars avg=2035)

@@ -1,0 +1,58 @@
+[semantic_196] score_type=semantic_f1 query='papers on individually identifying individuals based on their word choice or other lexical features'
+  queries=['author identification from word choice', 'individual identification from lexical features', 'person re-identification using word choice', 'speaker identification by lexical style', 'writer identification from lexical markers', 'personal identification via word usage patterns', 'identity inference from lexical features', 'individual identification through stylometric analysis', 'person identification by lexical choice', 'authorship attribution based on word choice', 'stylometric identification of individuals', 'survey of identification from lexical features', 'lexical cues for individual identification', 'person recognition from lexical style', 'identity attribution using lexical features', 'lexical stylometry for person identification', 'authorship attribution by word usage', 'individual recognition through vocabulary patterns', 'speaker reidentification from lexical evidence', 'person reidentification via lexical style']
+  criterion(w=0.40): 'individual identity' probe='identify individuals'
+  criterion(w=0.40): 'lexical evidence' probe='lexical features'
+  criterion(w=0.20): 'explicit linkage' probe='word choice'
+  year_min=None prefer_earliest=False
+  keyword runs -> [100, 100, 100, 57, 100, 100, 100, 100, 23, 100, 85, 100, 66, 100, 100, 0, 24, 100, 100, 16]
+  snippet run c-1 -> 98 papers
+  snippet run c-1 -> 94 papers
+  snippet run c-1 -> 95 papers
+  snippet run c0 -> 97 papers
+  snippet run c1 -> 93 papers
+  snippet run c2 -> 93 papers
+  pool: 2015 unique papers
+  more-like-this: 10 seed titles -> +83 new papers (pool 2098)
+  hydrated 202/202 abstract-less records
+  pre-ranked 390 candidates (501s elapsed)
+  criterion snippet harvest: 15 scoped calls over 100 papers
+  harvested 316 criterion-tagged passages over 554 papers (716s elapsed)
+  evidence: 1/250 papers cover every criterion lexically (head60=1, mean_cov=0.22) (716s elapsed)
+  grade: 250/250 graded; predicted-strong(>=.90)=11
+  verdict repair: 49 probes over 27 near-miss papers (718s elapsed)
+  [tool-fail] vrepair:232061795:c2: TimeoutError: 
+  [tool-fail] vrepair:240285316:c2: TimeoutError: 
+  [tool-fail] vrepair:15312336:c0: TimeoutError: 
+  [tool-fail] vrepair:15312336:c2: TimeoutError: 
+  [tool-fail] vrepair:10441878:c2: TimeoutError: 
+  [tool-fail] vrepair:15024303:c1: TimeoutError: 
+  [tool-fail] vrepair:15024303:c2: TimeoutError: 
+  [tool-fail] vrepair:15596531:c1: TimeoutError: 
+  [tool-fail] vrepair:16642479:c2: TimeoutError: 
+  [tool-fail] vrepair:240004816:c1: TimeoutError: 
+  [tool-fail] vrepair:240004816:c2: TimeoutError: 
+  [tool-fail] vrepair:3741600:c1: TimeoutError: 
+  [tool-fail] vrepair:3741600:c2: TimeoutError: 
+  [tool-fail] vrepair:52181971:c0: TimeoutError: 
+  [tool-fail] vrepair:52181971:c2: TimeoutError: 
+  [tool-fail] vrepair:58021733:c1: TimeoutError: 
+  [tool-fail] vrepair:59553941:c1: TimeoutError: 
+  [tool-fail] vrepair:59553941:c2: TimeoutError: 
+  [tool-fail] vrepair:17929507:c1: TimeoutError: 
+  [tool-fail] vrepair:20960207:c0: TimeoutError: 
+  [tool-fail] vrepair:229307173:c0: TimeoutError: 
+  [tool-fail] vrepair:229307173:c1: TimeoutError: 
+  [tool-fail] vrepair:252538120:c0: TimeoutError: 
+  [tool-fail] vrepair:252538120:c1: TimeoutError: 
+  [tool-fail] vrepair:77394379:c1: TimeoutError: 
+  [tool-fail] vrepair:14728842:c1: TimeoutError: 
+  [tool-fail] vrepair:14728842:c2: TimeoutError: 
+  [tool-fail] vrepair:22354846:c2: TimeoutError: 
+  [tool-fail] vrepair:243645055:c2: TimeoutError: 
+  verdict repair: +26 passages over 6 papers (789s elapsed)
+  deep: 130/130 graded; predicted-strong(>=.90)=29
+  head: 44/44 graded; predicted-strong(>=.90)=12
+  ensemble: 7/250 papers at mean-vote >= 0.90
+  head predictions: [('207166714', 1.0, 3), ('209459782', 0.97, 3), ('241105198', 0.96, 3), ('270845856', 0.96, 3), ('278383940', 0.93, 3), ('232061795', 0.91, 3), ('13328480', 0.91, 3), ('263707470', 0.88, 3), ('16244559', 0.87, 3), ('6207947', 0.87, 3)]
+  vetting: confirmed band reaches position 130; 0 unvetted papers promoted into the top 130; digest budgets=460/500/780
+  SUBMITTED 250 papers (evidence chars avg=1474)

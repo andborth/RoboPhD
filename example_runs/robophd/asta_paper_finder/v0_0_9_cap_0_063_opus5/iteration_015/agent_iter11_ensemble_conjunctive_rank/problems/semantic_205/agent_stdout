@@ -1,0 +1,44 @@
+[semantic_205] score_type=semantic_f1 query='Can you help me find research papers that explore the use of large vision-language models as agents to automatically pla'
+  queries=['large vision-language model agents PC games', 'vision-language model agent playing PC games', 'large multimodal model agents computer games', 'vision-language agents automated PC game play', 'LLM vision-language agent gameplay PC games', 'multimodal agents for playing computer games', 'large vision-language model game-playing agents', 'vision-language model autonomous PC game agents', 'survey vision-language model agents PC games', 'overview large multimodal game-playing agents', 'comparison vision-language agents for PC games', 'taxonomy multimodal agents playing computer games', 'multimodal agent PC game automation', 'computer game playing multimodal agent', 'vision language game bot agent', 'interactive gameplay control multimodal model', 'PC game benchmark multimodal agents', 'autonomous computer game playing model', 'multimodal foundation model game agent', 'desktop game agentic vision language']
+  criterion(w=0.40): 'large vision-language model' probe='vision-language model'
+  criterion(w=0.40): 'agentic game playing' probe='agent plays game'
+  criterion(w=0.20): 'PC games explicitly' probe='PC game playing'
+  year_min=None prefer_earliest=False
+  keyword runs -> [100, 100, 100, 100, 25, 100, 100, 100, 100, 100, 15, 100, 9, 100, 100, 100, 18, 100, 100, 100]
+  snippet run c-1 -> 78 papers
+  snippet run c-1 -> 75 papers
+  snippet run c-1 -> 80 papers
+  snippet run c0 -> 98 papers
+  snippet run c1 -> 86 papers
+  snippet run c2 -> 88 papers
+  pool: 1546 unique papers
+  more-like-this: 10 seed titles -> +215 new papers (pool 1761)
+  [tool-fail] hydrate[0]: ToolError: Paper 327a6479baa3497d4ebfc21cce43e7008ae9990a is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  hydrated 22/122 abstract-less records
+  pre-ranked 390 candidates (264s elapsed)
+  criterion snippet harvest: 15 scoped calls over 100 papers
+  harvested 388 criterion-tagged passages over 471 papers (357s elapsed)
+  criterion repair: 91 single-paper probes over 83 papers (357s elapsed)
+  [tool-fail] repair:268031860:c1: TimeoutError: 
+  [tool-fail] repair:2318501:c0: TimeoutError: 
+  [tool-fail] repair:245537542:c0: TimeoutError: 
+  [tool-fail] repair:259858903:c0: TimeoutError: 
+  [tool-fail] repair:274121419:c1: TimeoutError: 
+  [tool-fail] repair:207870268:c0: TimeoutError: 
+  [tool-fail] repair:197660839:c0: TimeoutError: 
+  [tool-fail] repair:203593327:c0: TimeoutError: 
+  [tool-fail] repair:238583126:c0: TimeoutError: 
+  [tool-fail] repair:35937471:c0: TimeoutError: 
+  [tool-fail] repair:35937471:c1: TimeoutError: 
+  [tool-fail] repair:271903662:c1: TimeoutError: 
+  [tool-fail] repair:277780795:c2: TimeoutError: 
+  [tool-fail] repair:32784121:c0: TimeoutError: 
+  [tool-fail] repair:32784121:c1: TimeoutError: 
+  repair: +185 passages (553s elapsed)
+  evidence: 98/250 papers cover every criterion lexically (head60=54, mean_cov=0.75) (554s elapsed)
+  grade: 250/250 graded; predicted-strong(>=.90)=5
+  deep: 72/72 graded; predicted-strong(>=.90)=9
+  head: 28/28 graded; predicted-strong(>=.90)=5
+  ensemble: 3/250 papers at mean-vote >= 0.90
+  head predictions: [('277151026', 0.98, 3), ('272753397', 0.98, 3), ('277349352', 0.97, 3), ('274150091', 0.85, 3), ('278768453', 0.85, 3), ('276885285', 0.84, 3), ('271974920', 0.77, 3), ('276766708', 0.67, 3), ('277104623', 0.67, 3), ('276928841', 0.65, 3)]
+  SUBMITTED 250 papers (evidence chars avg=1677)

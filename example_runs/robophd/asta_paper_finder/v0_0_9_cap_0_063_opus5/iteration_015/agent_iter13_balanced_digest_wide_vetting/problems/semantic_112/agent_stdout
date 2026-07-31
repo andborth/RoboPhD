@@ -1,0 +1,73 @@
+[semantic_112] score_type=semantic_f1 query='Could you please provide some references to work on multi-document summarization?'
+  queries=['multi-document summarization references', 'multi document text summarization research', 'automatic multi-document summarization methods', 'multi-document summarization survey overview', 'extractive multi-document summarization models', 'abstractive multi-document summarization approaches', 'cross-document summarization research papers', 'multi-document summarization literature review', 'multi-document summarization evaluation methods', 'multi-document news summarization systems', 'multi-document summarization algorithms survey', 'multi-document summarization seminal papers', 'multi-document summarization bibliography survey', 'multi-document summarization related work review', 'cross-document summarization survey references', 'multi-document summarization prior work discussion', 'multi-document text synthesis survey paper', 'multi-document summarization state of the art', 'automatic cross-document summarization literature', 'multi-document summarization benchmark overview']
+  criterion(w=0.50): 'multi-document summarization' probe='multi-document summarization'
+  criterion(w=0.20): 'reference-oriented work' probe='related work'
+  criterion(w=0.30): 'paper-level relevance' probe='summarization of multiple documents'
+  year_min=None prefer_earliest=False
+  [tool-fail] kw:multi-document summarization bibliograph: RuntimeError: tool call failed: ToolError: Error executing tool search_papers_by_relevance: RetryError[<Future at 0x7f7c9b3385d0 state=finished raised ConnectionRefusedError>
+  keyword runs -> [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 0, 100, 100, 100, 100, 100, 100, 100]
+  snippet run c-1 -> 77 papers
+  snippet run c-1 -> 82 papers
+  snippet run c-1 -> 86 papers
+  snippet run c0 -> 79 papers
+  snippet run c1 -> 100 papers
+  snippet run c2 -> 81 papers
+  pool: 1378 unique papers
+  more-like-this: 10 seed titles -> +288 new papers (pool 1666)
+  [tool-fail] hydrate[1]: ToolError: Paper d302efd47c9a99ae16a77caee3b37a5e4361c341 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  hydrated 100/134 abstract-less records
+  pre-ranked 390 candidates (319s elapsed)
+  criterion snippet harvest: 15 scoped calls over 100 papers
+  harvested 497 criterion-tagged passages over 335 papers (414s elapsed)
+  criterion repair: 171 single-paper probes over 119 papers (414s elapsed)
+  [tool-fail] repair:266164114:c1: TimeoutError: 
+  [tool-fail] repair:220686889:c2: TimeoutError: 
+  [tool-fail] repair:252819448:c1: TimeoutError: 
+  [tool-fail] repair:270619335:c1: TimeoutError: 
+  [tool-fail] repair:259179220:c1: TimeoutError: 
+  [tool-fail] repair:259108204:c1: TimeoutError: 
+  [tool-fail] repair:218076648:c2: TimeoutError: 
+  [tool-fail] repair:224936945:c2: TimeoutError: 
+  [tool-fail] repair:235097309:c1: TimeoutError: 
+  [tool-fail] repair:1948673:c2: TimeoutError: 
+  [tool-fail] repair:257806309:c2: TimeoutError: 
+  [tool-fail] repair:216868126:c1: TimeoutError: 
+  [tool-fail] repair:8377315:c2: TimeoutError: 
+  [tool-fail] repair:254952632:c1: TimeoutError: 
+  [tool-fail] repair:269794983:c1: TimeoutError: 
+  [tool-fail] repair:2700066:c1: TimeoutError: 
+  [tool-fail] repair:4360899:c2: TimeoutError: 
+  [tool-fail] repair:237353454:c1: TimeoutError: 
+  [tool-fail] repair:218571152:c1: TimeoutError: 
+  [tool-fail] repair:218502469:c1: TimeoutError: 
+  [tool-fail] repair:218718706:c1: TimeoutError: 
+  [tool-fail] repair:15795297:c1: TimeoutError: 
+  [tool-fail] repair:252819431:c1: TimeoutError: 
+  [tool-fail] repair:266374529:c2: TimeoutError: 
+  [tool-fail] repair:279284116:c2: TimeoutError: 
+  [tool-fail] repair:273534999:c1: TimeoutError: 
+  [tool-fail] repair:252819076:c2: TimeoutError: 
+  [tool-fail] repair:258841548:c1: TimeoutError: 
+  [tool-fail] repair:265407823:c2: TimeoutError: 
+  [tool-fail] repair:265407823:c1: TimeoutError: 
+  [tool-fail] repair:269195784:c2: TimeoutError: 
+  [tool-fail] repair:44200100:c1: TimeoutError: 
+  [tool-fail] repair:277902007:c1: TimeoutError: 
+  [tool-fail] repair:273569491:c2: TimeoutError: 
+  [tool-fail] repair:236150987:c2: TimeoutError: 
+  [tool-fail] repair:258060196:c2: TimeoutError: 
+  [tool-fail] repair:258060196:c1: TimeoutError: 
+  [tool-fail] repair:235352668:c1: TimeoutError: 
+  [tool-fail] repair:274470988:c2: TimeoutError: 
+  [tool-fail] repair:277857446:c2: TimeoutError: 
+  [tool-fail] repair:252211797:c2: TimeoutError: 
+  [tool-fail] repair:5833652:c1: TimeoutError: 
+  repair: +294 passages (808s elapsed)
+  evidence: 62/250 papers cover every criterion lexically (head60=34, mean_cov=0.62) (808s elapsed)
+  grade: 250/250 graded; predicted-strong(>=.90)=201
+  deep: 130/130 graded; predicted-strong(>=.90)=129
+  head: 44/44 graded; predicted-strong(>=.90)=11
+  ensemble: 197/250 papers at mean-vote >= 0.90
+  head predictions: [('174799390', 1.0, 3), ('225075639', 1.0, 3), ('218076648', 1.0, 3), ('211132751', 1.0, 3), ('14085577', 1.0, 3), ('218991765', 1.0, 3), ('265456582', 1.0, 2), ('239050558', 1.0, 2), ('248496597', 1.0, 2), ('257496469', 1.0, 2)]
+  vetting: confirmed band reaches position 209; 10 unvetted papers promoted into the top 130; digest budgets=460/500/780
+  SUBMITTED 250 papers (evidence chars avg=1675)

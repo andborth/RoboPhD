@@ -1,0 +1,53 @@
+[semantic_170] score_type=semantic_f1 query='What are the central methods for aligning AI systems with human values?'
+  queries=['AI alignment human values methods', 'aligning artificial intelligence with human values', 'human value alignment methods for AI systems', 'methods for AI alignment with human values', 'survey of AI alignment methods human values', 'overview of aligning AI to human values', 'taxonomy of human value alignment methods', 'comparison of AI alignment methods values', 'reward learning human value alignment AI', 'inverse reinforcement learning human values AI', 'preference learning human values alignment', 'human feedback alignment methods AI', 'value learning and AI alignment', 'inverse reinforcement learning human preferences', 'preference-based reinforcement learning alignment', 'cooperative inverse reinforcement learning methods', 'reward learning from human feedback', 'assistance games human value alignment', 'machine ethics value alignment methods', 'specification gaming and alignment methods']
+  criterion(w=0.40): 'AI alignment topic' probe='AI alignment systems'
+  criterion(w=0.35): 'human values focus' probe='human values alignment'
+  criterion(w=0.25): 'methods or overview' probe='alignment methods survey'
+  year_min=None prefer_earliest=False
+  [tool-fail] snippet:open-1: TimeoutError: 
+  keyword runs -> [100, 100, 100, 100, 100, 12, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 23]
+  snippet run c-1 -> 0 papers
+  snippet run c-1 -> 74 papers
+  snippet run c-1 -> 74 papers
+  snippet run c-1 -> 69 papers
+  snippet run c0 -> 68 papers
+  snippet run c1 -> 83 papers
+  snippet run c2 -> 85 papers
+  pool: 1558 unique papers
+  more-like-this: 10 seed titles -> +348 new papers (pool 1906)
+  hydrated 70/70 abstract-less records
+  pre-ranked 390 candidates (399s elapsed)
+  criterion snippet harvest: 15 scoped calls over 100 papers
+  harvested 413 criterion-tagged passages over 355 papers (551s elapsed)
+  criterion repair: 190 single-paper probes over 144 papers (551s elapsed)
+  [tool-fail] repair:273098821:c2: TimeoutError: 
+  [tool-fail] repair:274488924:c2: TimeoutError: 
+  [tool-fail] repair:270560081:c0: TimeoutError: 
+  [tool-fail] repair:272927805:c2: TimeoutError: 
+  [tool-fail] repair:57373882:c2: TimeoutError: 
+  [tool-fail] repair:270067914:c0: TimeoutError: 
+  [tool-fail] repair:270067914:c2: TimeoutError: 
+  [tool-fail] repair:273003897:c0: TimeoutError: 
+  [tool-fail] repair:273003897:c2: TimeoutError: 
+  [tool-fail] repair:279987962:c0: TimeoutError: 
+  [tool-fail] repair:273901476:c2: TimeoutError: 
+  [tool-fail] repair:279986831:c0: TimeoutError: 
+  [tool-fail] repair:270703216:c2: TimeoutError: 
+  [tool-fail] repair:236519424:c0: TimeoutError: 
+  [tool-fail] repair:275153960:c2: TimeoutError: 
+  [tool-fail] repair:272600194:c0: TimeoutError: 
+  [tool-fail] repair:272600194:c2: TimeoutError: 
+  [tool-fail] repair:275787972:c2: TimeoutError: 
+  [tool-fail] repair:273501819:c0: TimeoutError: 
+  [tool-fail] repair:273501819:c2: TimeoutError: 
+  [tool-fail] repair:277201790:c1: TimeoutError: 
+  repair: +571 passages (878s elapsed)
+  evidence: 30/250 papers cover every criterion lexically (head60=18, mean_cov=0.58) (878s elapsed)
+  grade: 250/250 graded; predicted-strong(>=.90)=148
+  head: 44/44 graded; predicted-strong(>=.90)=35
+  deep: 130/130 graded; predicted-strong(>=.90)=80
+  ensemble: 98/250 papers at mean-vote >= 0.90
+  head predictions: [('277104402', 0.97, 3), ('277066295', 0.97, 3), ('276961752', 0.97, 3), ('277857379', 0.97, 3), ('268532054', 0.97, 3), ('264487383', 0.97, 3), ('271904022', 0.97, 3), ('268723950', 0.97, 3), ('259308873', 0.97, 3), ('275932464', 0.97, 3)]
+  conjunctive-agg: 39 of the top 60 moved >5 slots (new_pos, cid, old_pos, geo, arith): [(0, '277104402', 20, 0.97, 0.971), (1, '277066295', 19, 0.97, 0.971), (2, '276961752', 18, 0.97, 0.971), (3, '277857379', 21, 0.97, 0.971), (8, '259308873', 0, 0.97, 0.971), (9, '275932464', 16, 0.97, 0.971), (11, '269214026', 5, 0.97, 0.971), (14, '269982610', 7, 0.97, 0.971), (15, '267320613', 2, 0.97, 0.971), (16, '270067914', 8, 0.97, 0.971), (17, '279986831', 23, 0.97, 0.971), (18, '269605800', 6, 0.97, 0.971)]
+  vetting: confirmed band reaches position 221; 31 unvetted papers promoted into the top 130; digest budgets=460/500/780
+  SUBMITTED 250 papers (evidence chars avg=1949)

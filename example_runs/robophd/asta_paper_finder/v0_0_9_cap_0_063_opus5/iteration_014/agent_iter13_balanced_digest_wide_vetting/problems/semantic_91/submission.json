@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_91",
+    "results": [
+      {
+        "paper_id": "9225214",
+        "markdown_evidence": "An extended dependency graph for relation extraction in biomedical texts ... Experiments confirm that EDG provides up to 10% f-value improvement over dependency graph using mainstream kernel methods over five corpora and believe the use of EDG will enable machine learning methods to generalize more easily. ... Kernel-based methods are widely used for relation extraction task and obtain good results by leveraging lexical and syntactic information. However, in biomedical domain these methods are limited by the size of dataset and have difficulty in coping with variations in text. To address this problem, we propose Extended Dependency Graph (EDG) by incorporating a few simple linguistic ideas and include information beyond syntax. We believe the use of EDG will enable machine learning methods to generalize more easily. Experiments confirm that EDG provides up to 10% f-value improvement over dependency graph using mainstream kernel methods over five corpora. We conducted additional experiments to provide a more detailed analysis of the contributions of individual modules in EDG construction. ... If an entity mention spans multiple tokens in a sentence, we merge their corresponding vertices (called contracting vertices) into one vertex. EDG has two types of dependencies. The syntactic dependencies that are obtained from collapsed dependencies output by applying Stanford dependencies converter on a syntactic parsing tree (De Marneffe and Manning, 2008). The other type of dependencies are the numbered arguments based on the guidelines of PropBank (Bonial et al., 2012). Because we are currently focusing on binary relation extraction, we use only arg0 and arg1 (probably better stated as not-arg0) in EDG. ... In this paper, we use EDG to represent the structure of the sentence. Like in the case of many dependency graph representations used in relation extraction, the vertices in a EDG are labelled with information such as the text, part-of-speech, and the word lemma. If an entity mention spans multiple tokens in a sentence, we merge their corresponding vertices (called contracting vertices) into one vertex. EDG has two types of dependencies."
+      },
+      {
+        "paper_id": "49544037",
+        "markdown_evidence": "Graph Convolution over Pruned Dependency Trees Improves Relation Extraction ... An extension of graph convolutional networks that is tailored for relation extraction, which pools information over arbitrary dependency structures efficiently in parallel is proposed, and a novel pruning strategy is applied to the input trees by keeping words immediately around the shortest path between the two entities among which a relation might hold. ... Dependency trees help relation extraction models capture long-range relations between words. However, existing dependency-based models either neglect crucial information (e.g., negation) by pruning the dependency trees too aggressively, or are computationally inefficient because it is difficult to parallelize over different tree structures. We propose an extension of graph convolutional networks that is tailored for relation extraction, which pools information over arbitrary dependency structures efficiently in parallel. To incorporate relevant information while maximally removing irrelevant content, we further apply a novel pruning strategy to the input trees by keeping words immediately around the shortest path between the two entities among which a relation might hold. ... Models making use of dependency parses of the input sentences, or dependency-based models, A subtree of the original UD dependency tree between the subject (\"he\") and object (\"Mike Cane\") is also shown, where the shortest dependency path between the entities is highlighted in bold. Note that negation (\"not\") is off the dependency path. have proven to be very effective in relation extraction, because they capture long-range syntactic relations that are obscure from the surface form alone (e.g., when long clauses or complex scoping are present). ... At the core of fully-supervised and distantlysupervised relation extraction approaches are statistical classifiers, many of which find syntactic information beneficial. For example, Mintz et al. (2009) explored adding syntactic features to a statistical classifier and found them to be useful when sentences are long. Various kernel-based approaches also leverage syntactic information to measure similarity between training and test examples to predict the relation, finding that tree-based kernels (Zelenko et al., 2003) and dependency path-based kernels (Bunescu and Mooney, 2005) are effective for this task."
+      },
+      {
+        "paper_id": "65196547",
+        "markdown_evidence": "Relation extraction via one-shot dependency parsing on intersentential, higher-order, and nested relations ... This article proposes a novel language-agnostic and noiseimmune approach that does not require preprocessing of input text and formulate the relation extraction task directly as a one-shot dependency parsing problem. ... Despite the emergence of digitalization, people still interact with institutions via traditional means such as submitting free formatted petitions, orders, or applications. These noisy documents generally consist of complex relations that are nested, higher-order, and intersentential. Most of the current approaches address extraction of only sentence-level and binary relations from grammatically correct text and generally require high-level linguistic features coming from preprocessors such as a parts-of-speech tagger, chunker, or syntactic parser. In this article, we focus on extracting complex relations in order to automate the task of understanding user intentions. We propose a novel language-agnostic and noise-immune approach that does not require preprocessing of input text. Unlike previous literature that uses dependency parsing outputs as input features, we formulate the relation extraction task directly as a one-shot dependency parsing problem. The presented method was evaluated using a representative dataset from the banking domain and obtained 91.84% labeled attachment score (LAS), which provides an improvement of 42.85 percentage points over a rule-based baseline."
+      },
+      {
+        "paper_id": "59602626",
+        "markdown_evidence": "Integrating shortest dependency path and sentence sequence into a deep learning framework for relation extraction in clinical text ... A novel neural approach to model shortest dependency path (SDP) between target entities together with the sentence sequence for clinical relation extraction is proposed by modeling SDP along with sentence sequence to extract multi-relations from clinical text. ... Researchers have applied deep learning-based approaches to clinical relation extraction; but most of them consider sentence sequence only, without modeling syntactic structures. The aim of this study was to utilize a deep neural network to capture the syntactic features and further improve the performances of relation extraction in clinical notes.MethodsWe propose a novel neural approach to model shortest dependency path (SDP) between target entities together with the sentence sequence for clinical relation extraction. ... Our experimental results show that the proposed approach achieved significant improvements over comparable existing methods, demonstrating the effectiveness of utilizing syntactic structures in deep learning-based relation extraction. ... Integrating shortest dependency path and sentence sequence into a deep learning framework for relation extraction in clinical text ... Several recent studies have shown that the SDP can boost the performance of the relation extraction [24][25][26][27]. In clinical relation extraction, we also observed that the SDP between entities provides strong hints for determining the relationship. For example, in Fig. 2 the dependency syntactic structure of a sentence can be represented as a graph and there is always a shortest path between two words in the graph. The SDP between the target entities 'an epidural' and 'pain control' is: [an epidural] treatmentnmod → maintained--nmod → [pain control] problem . ... After the transformation, the representation of SDP is ConP = {ConP 1 , ConP 2 , … , ConP m − 1 }. We used {d1, d2, …, dm-1} to denote the dependency relation types between all neighboring words and each dependency relation type was randomly initialized into a vector. The output of the convolutional layer and the embeddings of dependency relation types were concatenated and fed to a Bi-LSTM network to generate the SDP representations."
+      },
+      {
+        "paper_id": "85502320",
+        "markdown_evidence": "Relation extraction between the clinical entities based on the shortest dependency path based LSTM ... This paper presents an efficient relation extraction system based on the shortest dependency path (SDP) generated from the dependency parsed tree of the sentence, and develops a dependency parser for extracting dependency information. ... Owing to the exponential rise in the electronic medical records, information extraction in this domain is becoming an important area of research in recent years. Relation extraction between the medical concepts such as medical problem, treatment, and test etc. is also one of the most important tasks in this area. In this paper, we present an efficient relation extraction system based on the shortest dependency path (SDP) generated from the dependency parsed tree of the sentence. Instead of relying on many handcrafted features and the whole sequence of tokens present in a sentence, our system relies only on the SDP between the target entities. For every pair of entities, the system takes only the words in the SDP, their dependency labels, Part-of-Speech information and the types of the entities as the input. We develop a dependency parser for extracting dependency information. ... Evaluation shows that our proposed method obtains significant improvements of F-score for most of the relation types except PIP. In summary the key contributions of our proposed work are as follows: 1. We develop a robust parser specific to the clinical texts. Its performance is found to be very close to the other state-of-the-art parsers. 2. We propose a shortest dependency path based LSTM model that provides state-of-the-art performance for relation extraction. ... Owing to the exponential rise in the electronic medical records, information extraction in this domain is becoming an important area of research in recent years. Relation extraction between the medical concepts such as medical problem, treatment, and test etc. is also one of the most important tasks in this area. In this paper, we present an efficient relation extraction system based on the shortest dependency path (SDP) generated from the dependency parsed tree of the sentence."
+      },
+      {
+        "paper_id": "44767125",
+        "markdown_evidence": "Dependency Tree Kernels for Relation Extraction from Natural Language Text ... New tree kernels over dependency parse trees automatically generated from natural language text with richer structural features significantly outperform all published approaches for kernel-based relation extraction from dependency trees."
+      },
+      {
+        "paper_id": "202769469",
+        "markdown_evidence": "Leveraging Dependency Forest for Neural Medical Relation Extraction ... A graph neural network is used to represent the forests, automatically distinguishing the useful syntactic information from parsing noise, and shows that this method outperforms the standard tree-based methods, giving the state-of-the-art results in the literature. ... Medical relation extraction discovers relations between entity mentions in text, such as research articles. For this task, dependency syntax has been recognized as a crucial source of features. Yet in the medical domain, 1-best parse trees suffer from relatively low accuracies, diminishing their usefulness. We investigate a method to alleviate this problem by utilizing dependency forests. Forests contain more than one possible decisions and therefore have higher recall but more noise compared with 1-best outputs. A graph neural network is used to represent the forests, automatically distinguishing the useful syntactic information from parsing noise. Results on two benchmarks show that our method outperforms the standard tree-based methods, giving the state-of-the-art results in the literature. ... We have proposed two algorithms for generating high-quality dependency forests for relation extraction, and studied a graph recurrent network for effectively distinguishing useful features from noise in parsing forests. Experiments on two biomedical relation extraction benchmarks show the superiority of forests versus tree structures, without introducing any additional model parameters. Our deep analyses indicate that the main advantage comes from alleviating out-of-domain parsing errors. ... . . , w N , where N is the number of words in the sentence and w i represents the i-th input word. s is annotated with boundary information (⇠ 1 : ⇠ 2 and ⇣ 1 : ⇣ 2 ) of target entity mentions (⇠ and ⇣). We focus on the classic binary relation extraction setting (Quirk and Poon, 2017), where the number of associated mentions is two. The output is a relation from a predefined relation set R = (r 1 , . . . , r M , None), where \"None\" means that no relation holds for the entities. Two steps are taken for predicting the correct relation given an input sentence."
+      },
+      {
+        "paper_id": "213029707",
+        "markdown_evidence": "Relation Extraction with Convolutional Network over Learnable Syntax-Transport Graph ... This work learns to transform the dependency tree into a weighted graph by considering the syntax dependencies of the connected nodes and persisting the structure of the original dependency tree, and refers to this graph as a syntax-transport graph. ... A large majority of approaches have been proposed to leverage the dependency tree in the relation classification task. Recent works have focused on pruning irrelevant information from the dependency tree. The state-of-the-art Attention Guided Graph Convolutional Networks (AGGCNs) transforms the dependency tree into a weighted-graph to distinguish the relevance of nodes and edges for relation classification. However, in their approach, the graph is fully connected, which destroys the structure information of the original dependency tree. How to effectively make use of relevant information while ignoring irrelevant information from the dependency trees remains a challenge in the relation classification task. In this work, we learn to transform the dependency tree into a weighted graph by considering the syntax dependencies of the connected nodes and persisting the structure of the original dependency tree. ... As the syntactic component pair (object in adverbial component, subject) is highly consistent with the syntactic component pair of Instrument and Agency, these dependencies specifying the syntactic component pair is critical for the prediction of target relation. Based on this observation, the recent dependency tree-based approaches (Zhang, Qi, and Manning 2018;Guo, Zhang, and Lu 2019) without taking the dependency relation into consideration may not sufficiently capture the precise semantic information. ... In earlier relation extraction studies, researchers focused on leveraging various kinds of linguistic features and manually designed feature in the task. However, all the feature-based methods depend strongly on the quality of designed features from a pre-processing step. Most recent works have focused on leveraging neural networks in this task. The existing approaches can be categorized into two classes: sequence-based and dependencybased. The sequence-based models only make use of the sequence of the words. (Zeng et al."
+      },
+      {
+        "paper_id": "215415893",
+        "markdown_evidence": "Efficient long-distance relation extraction with DG-SpanBERT ... DG-SpanBERT model inherits the advantage of SpanBERT on learning rich lexical features from large-scale corpus and has the ability to capture long-range relations between entities due to the usage of GCN on dependency tree. ... In natural language processing, relation extraction seeks to rationally understand unstructured text. Here, we propose a novel SpanBERT-based graph convolutional network (DG-SpanBERT) that extracts semantic features from a raw sentence using the pre-trained language model SpanBERT and a graph convolutional network to pool latent features. Our DG-SpanBERT model inherits the advantage of SpanBERT on learning rich lexical features from large-scale corpus. It also has the ability to capture long-range relations between entities due to the usage of GCN on dependency tree. The experimental results show that our model outperforms other existing dependency-based and sequence-based models and achieves a state-of-the-art performance on the TACRED dataset. ... Early research efforts on relation extraction were based on statistical methods. [11] introduced a shallow tree-based kernel to determine the relation between two entities. [12] parsed the sentence into a dependency graph and recognized the relation types from the shortest path between two named entities. [13] predicted the relations by finding maximal cliques of entities. [14] dealed with a long sentence by adding syntax features to a statistical classifier. Neural-based models have achieved a lot of success in relation extraction. ... The existing solutions for relation extraction can be categorized into dependency-based and sequence-based approaches. Dependency-based models rely on the dependency trees that are able to provide rich structural and syntactic information for classifying relations; see, for example, [4] and [5]. Sequence-based models directly operate on the word sequences and forgo the information of dependency structures. For example, the model described in [6] relies on a multi-level attention mechanism to capture the attentions regarding target entities and relations."
+      },
+      {
+        "paper_id": "190001673",
+        "markdown_evidence": "Attention Guided Graph Convolutional Networks for Relation Extraction ... Attention Guided Graph Convolutional Networks is proposed, a novel model which directly takes full dependency trees as inputs and can be understood as a soft-pruning approach that automatically learns how to selectively attend to the relevant sub-structures useful for the relation extraction task. ... Dependency trees convey rich structural information that is proven useful for extracting relations among entities in text. However, how to effectively make use of relevant information while ignoring irrelevant information from the dependency trees remains a challenging research question. Existing approaches employing rule based hard-pruning strategies for selecting relevant partial dependency structures may not always yield optimal results. In this work, we propose Attention Guided Graph Convolutional Networks (AGGCNs), a novel model which directly takes full dependency trees as inputs. Our model can be understood as a soft-pruning approach that automatically learns how to selectively attend to the relevant sub-structures useful for the relation extraction task. ... Sequence-based models operate only on the word sequences (Zeng et al., 2014;Wang et al., 2016), whereas dependencybased models incorporate dependency trees into the models (Bunescu and Mooney, 2005;Peng et al., 2017). Compared to sequence-based models, dependency-based models are able to capture non-local syntactic relations that are obscure from the surface form alone (Zhang et al., 2018). Various pruning strategies are also proposed to distill the dependency information in order to further improve the performance. Xu et al. ... Figure 1 shows an example about expressing a relation sensitivity among three entities L858E, EGFR and gefitinib in two sentences. Most existing relation extraction models can be categorized into two classes: sequence-based and dependency-based. Sequence-based models operate only on the word sequences (Zeng et al., 2014;Wang et al., 2016), whereas dependencybased models incorporate dependency trees into the models (Bunescu and Mooney, 2005;Peng et al., 2017)."
+      },
+      {
+        "paper_id": "220047189",
+        "markdown_evidence": "Exploiting the Syntax-Model Consistency for Neural Relation Extraction ... A novel deep learning model for RE is proposed that uses the dependency trees to extract the syntax-based importance scores for the words, serving as a tree representation to introduce syntactic information into the models with greater generalization. ... This paper studies the task of Relation Extraction (RE) that aims to identify the semantic relations between two entity mentions in text. In the deep learning models for RE, it has been beneficial to incorporate the syntactic structures from the dependency trees of the input sentences. In such models, the dependency trees are often used to directly structure the network architectures or to obtain the dependency relations between the word pairs to inject the syntactic information into the models via multi-task learning. The major problem with these approaches is the lack of generalization beyond the syntactic structures in the training data or the failure to capture the syntactic importance of the words for RE. ... We perform extensive experiments to demonstrate the effectiveness of the proposed method, leading to the state-of-the-art performance on three RE benchmark datasets. ... This paper studies the task of Relation Extraction (RE) that aims to identify the semantic relations between two entity mentions in text. In the deep learning models for RE, it has been beneficial to incorporate the syntactic structures from the dependency trees of the input sentences. In such models, the dependency trees are often used to directly structure the network architectures or to obtain the dependency relations between the word pairs to inject the syntactic information into the models via multi-task learning. ... This paper studies the task of Relation Extraction (RE) that aims to identify the semantic relations between two entity mentions in text. In the deep learning models for RE, it has been beneficial to incorporate the syntactic structures from the dependency trees of the input sentences. In such models, the dependency trees are often used to directly structure the network architectures or to obtain the dependency relations between the word pairs to inject the syntactic information into the models via multi-task learning."
+      },
+      {
+        "paper_id": "227230314",
+        "markdown_evidence": "Learning to Prune Dependency Trees with Rethinking for Neural Relation Extraction ... A novel architecture named Dynamically Pruned Graph Convolutional Network (DP-GCN), which learns to prune the dependency tree with rethinking in an end-to-end scheme, and achieves impressive results compared to strong competitors. ... Dependency trees have been shown to be effective in capturing long-range relations between target entities. Nevertheless, how to selectively emphasize target-relevant information and remove irrelevant content from the tree is still an open problem. Existing approaches employing pre-defined rules to eliminate noise may not always yield optimal results due to the complexity and variability of natural language. In this paper, we present a novel architecture named Dynamically Pruned Graph Convolutional Network (DP-GCN), which learns to prune the dependency tree with rethinking in an end-to-end scheme. In each layer of DP-GCN, we employ a selection module to concentrate on nodes expressing the target relation by a set of binary gates, and then augment the pruned tree with a pruned semantic graph to ensure the connectivity. ... Extensive experimental results demonstrate that our model achieves impressive results compared to strong competitors. ... Our work is inspired by two lines of research: enhancing relation extractor through syntactic dependency information and refining neural network with the rethinking mechanism. Dependency-based relation extraction. Syntactic dependency information has been widely explored in relation extraction approaches for many years. Some early works introduced syntactic features into statistical classifiers and found them to be beneficial (Zelenko et al., 2003). ... Relation extraction (RE) aims to detect the semantic relationship between two specific entities appearing in a sentence (often termed subject and object, respectively). This task plays an important role in many downstream NLP applications that require a relational understanding of unstructured text such as question answering (Dai et al., 2016) and dialogue systems (Young et al., 2018). ... Learning to Prune Dependency Trees with Rethinking for Neural Relation Extraction"
+      },
+      {
+        "paper_id": "227953254",
+        "markdown_evidence": "Distant Supervision Relation Extraction via adaptive dependency-path and additional knowledge graph supervision ... A novel DSRE framework A2DSRE is proposed, based on the Adaptive dependency-path and Additional KG supervision, to obtain the dependency paths related to entity relations adaptively, and introduces an advanced graph neural network-GeniePath into DSRE. ... Relation Extraction systems train an extractor by aligning relation instances in Knowledge Base with a large amount of labeled corpora. Since the labeled datasets are very expensive, Distant Supervision Relation Extraction (DSRE) utilizes rough corpus annotated with Knowledge Graph to reduce the cost of acquisition. Nevertheless, the data noise problem limits the performance of the DSRE. Dependency trees can be used to filter the wrong-labeled instances in the distant supervision bag. However, existing dependency tree relation extraction strategies are all based on manually-set paths between the subject and object entities, and suffer from the problem of pruning the trees too aggressively or too insufficiently. To circumvent the shortcomings, in this paper, we propose a novel DSRE framework A2DSRE, based on the Adaptive dependency-path and Additional KG supervision. To obtain the dependency paths related to entity relations adaptively, we introduce an advanced graph neural network-GeniePath into DSRE, which assigns higher weights to those direct neighbor words that contribute more to relation prediction through breadth exploration, and conducts depth exploration to determine the correlation between relations and high-order neighbors. In this way, the irrelevant nodes are pruned while the relevant nodes are kept, our method can obtain more appropriate paths associated with relations. At the same time, to further reduce the noises in the data, we incorporate additional supervision information from the knowledge graph by retracting the margin between the representation of the bag and the pre-training knowledge graph embedding. Extensive numerical experiments validate the effectiveness of our new method."
+      },
+      {
+        "paper_id": "250562910",
+        "markdown_evidence": "Dependency Position Encoding for Relation Extraction ... DPE can be seamlessly incorporated into the Transformer and makes it possible to use an one-stream scheme to extract relations between entity pairs, in contrast to previous studies that process input sentence and dependency information in separate streams. ... Leveraging the dependency tree of the input sentence is able to improve the model performance for relation extraction. A challenging issue is how to remove confusions from the tree. Efforts have been made to utilize the dependency connections between words to selectively emphasize target-relevant information. However, these approaches are limited in fo-cusing on exploiting dependency types. In this paper, we propose dependency position encoding (DPE), an efficient way of incorporating both dependency connections and dependency types into the self-attention mechanism to distinguish the importance of different word dependencies for the task. In contrast to previous studies that process input sentence and dependency information in separate streams, DPE can be seamlessly incorporated into the Transformer and makes it possible to use an one-stream scheme to extract relations between entity pairs. ... Relation extraction (RE) has been a long standing goal in natural language processing (NLP) and plays a crucial role in supporting many downstream task (Trisedya et al., 2019;Sun et al., 2019;Xu et al., 2016;Wang and Cardie, 2012). Nowadays, methods with powerful encoders (e.g. Transformer) have achieved promising success in RE (Baldini Soares et al., 2019;Tian et al., 2021;Yu et al., 2020;Guo et al., 2019;Mandya et al., 2020) due to their effectiveness in capturing contextual information. ... Relation extraction (RE) has been a long standing goal in natural language processing (NLP) and plays a crucial role in supporting many downstream task (Trisedya et al., 2019;Sun et al., 2019;Xu et al., 2016;Wang and Cardie, 2012). Nowadays, methods with powerful encoders (e.g. Transformer) have achieved promising success in RE (Baldini Soares et al., 2019;Tian et al., 2021;Yu et al., 2020;Guo et al., 2019;Mandya et al., 2020) due to their effectiveness in capturing contextual information."
+      },
+      {
+        "paper_id": "233354319",
+        "markdown_evidence": "Dependency tree positional encoding method for relation extraction ... This paper proposes a new method of injecting dependency tree information into the input representations of a model with positional encoding of dependency trees, and presents a novel strategy to convert dependency tree features to positional encoding. ... Dependency trees are recently used for relation extraction tasks to capture long-range relations among entities. Many studies have proposed various methods to apply dependency tree features to relation extraction models. However, most of these approaches are difficult to apply to different models especially when the overall structure of a model is changed or newly suggested for inserting information of the dependency trees. Existing approaches, which are a structure to use dependency trees such as graph convolutional networks (GCNs), do not use these information into input representations. In this paper, we propose a new method of injecting dependency tree information into the input representations of a model with positional encoding of dependency trees. Specifically, to incorporate dependency tree information with input vectors, we present a novel strategy to convert dependency tree features to positional encoding. The existing model (BERT) that applied our method achieves a state-of-the-art performance without changing the original model on the TACRED and SemEval-2010 Task 8, the standard benchmark dataset in relation extraction. Through detailed analysis, we show that our method is effective complementarily for relation extraction models, and is also easy to use for other models."
+      },
+      {
+        "paper_id": "15835667",
+        "markdown_evidence": "A Shortest Dependency Path Based Convolutional Neural Network for Protein-Protein Relation Extraction ... This paper tackles PPI extraction by using convolutional neural networks (CNN) and proposes a shortest dependency path based CNN (sdpCNN) model that could avoid bias from feature selection by using CNN. ... The state-of-the-art methods for protein-protein interaction (PPI) extraction are primarily based on kernel methods, and their performances strongly depend on the handcraft features. In this paper, we tackle PPI extraction by using convolutional neural networks (CNN) and propose a shortest dependency path based CNN (sdpCNN) model. The proposed method (1) only takes the sdp and word embedding as input and (2) could avoid bias from feature selection by using CNN. We performed experiments on standard Aimed and BioInfer datasets, and the experimental results demonstrated that our approach outperformed state-of-the-art kernel based methods. In particular, by tracking the sdpCNN model, we find that sdpCNN could extract key features automatically and it is verified that pretrained word embedding is crucial in PPI task. ... Extraction. Semantic dependency parsing had been frequently used to dissect sentence and to capture word semantic information close in context but far in sentence distance. To extract the relationship between two entities, the most direct approach is to use sdp. The motivation of using sdp is based on the observation that the sdp between entities usually contains necessary information to identify their relationship [9]. ... The descriptions for methods in Table 3 are as follows: Walk-Weighted Subsequence Kernel [30]. Generating sdp at first and then integrating the proposed e-walk and v-walk kernels for classification. Graph Kernel [13]. Encoding the dependency parser results into a graph, proposing an all-path graph kernel by leveraging sdp; at last, least squares support vector machine is used for classification. SDP-CPT [4]. Using both sdp and directed constituent parser tree for classification. Tree Kernel [6]. On the bias of SDP-CPT, considering the modal verb phrases and appositive dependency features. ... A Shortest Dependency Path Based Convolutional Neural Network for Protein-Protein Relation Extraction"
+      },
+      {
+        "paper_id": "5165854",
+        "markdown_evidence": "A Shortest Path Dependency Kernel for Relation Extraction ... Experiments on extracting top-level relations from the ACE (Automated Content Extraction) newspaper corpus show that the new shortest path dependency kernel outperforms a recent approach based on dependency tree kernels. ... We present a novel approach to relation extraction, based on the observation that the information required to assert a relationship between two named entities in the same sentence is typically captured by the shortest path between the two entities in the dependency graph. Experiments on extracting top-level relations from the ACE (Automated Content Extraction) newspaper corpus show that the new shortest path dependency kernel outperforms a recent approach based on dependency tree kernels. ... Local dependencies can be extracted from a CFG parse tree using simple heuristic rules for finding the head child for each type of constituent. Alternatively, head-modifier dependencies can be directly output by a parser whose model is based on lexical dependencies. In our experiments, we used the full parse output from Collins' parser (Collins, 1997), in which every non-terminal node is already annotated with head information. Because local dependencies assemble into a tree for each sentence, there is only one (shortest) path between any two entities in a dependency tree. ... Local and non-local (deep) dependencies are equally important for finding relations. In this paper we tried extracting both types of dependencies using a CCG parser, however another approach is to recover deep dependencies from syntactic parses, as in (Campbell, 2004;Levy and Manning, 2004). This may have the advantage of preserving the quality of local dependencies while completing the representation with non-local dependencies. Currently, the method assumes that the named entities are known. A natural extension is to automatically extract both the entities and their relationships."
+      },
+      {
+        "paper_id": "3065941",
+        "markdown_evidence": "Study of Kernel-Based Methods for Chinese Relation Extraction ... This paper mainly explores the effectiveness of two kernel-based methods, the convolution tree kernel and the shortest path dependency kernel, in which parsing information is directly applied to Chinese relation extraction on ACE 2007 corpus."
+      },
+      {
+        "paper_id": "250225587",
+        "markdown_evidence": "Piecewise graph convolutional network with edge-level attention for relation extraction ... A novel model, PGCN-EA, using Piecewise Graph Convolutional Network with Edge-level Attention to address redundant syntactic information and wrong dependency parsing results is proposed, and the piecewise adjacency matrix based on entity pair is employed."
+      },
+      {
+        "paper_id": "275879869",
+        "markdown_evidence": "BioGSF: a graph-driven semantic feature integration framework for biomedical relation extraction ... This study presented a graph-driven framework named BioGSF for RE from the literature by integrating shortest dependency paths (SDP) with entity-pair graph through the employment of the graph neural network model. ... Abstract The automatic and accurate extraction of diverse biomedical relations from literature constitutes the core elements of medical knowledge graphs, which are indispensable for healthcare artificial intelligence. Currently, fine-tuning through stacking various neural networks on pre-trained language models (PLMs) represents a common framework for end-to-end resolution of the biomedical relation extraction (RE) problem. Nevertheless, sequence-based PLMs, to a certain extent, fail to fully exploit the connections between semantics and the topological features formed by these connections. In this study, we presented a graph-driven framework named BioGSF for RE from the literature by integrating shortest dependency paths (SDP) with entity-pair graph through the employment of the graph neural network model. Initially, we leveraged dependency relationships to obtain the SDP between entities and incorporated this information into the entity-pair graph. ... Abstract The automatic and accurate extraction of diverse biomedical relations from literature constitutes the core elements of medical knowledge graphs, which are indispensable for healthcare artificial intelligence. Currently, fine-tuning through stacking various neural networks on pre-trained language models (PLMs) represents a common framework for end-to-end resolution of the biomedical relation extraction (RE) problem. Nevertheless, sequence-based PLMs, to a certain extent, fail to fully exploit the connections between semantics and the topological features formed by these connections. ... BioGSF: a graph-driven semantic feature integration framework for biomedical relation extraction"
+      },
+      {
+        "paper_id": "174799784",
+        "markdown_evidence": "A Richer-but-Smarter Shortest Dependency Path with Attentive Augmentation for Relation Extraction ... A combined deep neural model with a LSTM network on word sequences and a CNN on RbSP, which is based on the basic information in the SDP enhanced with information selected by several attention mechanisms with kernel filters, namely R bSP (Richer-but-Smarter SDP). ... To extract the relationship between two entities in a sentence, two common approaches are (1) using their shortest dependency path (SDP) and (2) using an attention model to capture a context-based representation of the sentence. Each approach suffers from its own disadvantage of either missing or redundant information. In this work, we propose a novel model that combines the advantages of these two approaches. This is based on the basic information in the SDP enhanced with information selected by several attention mechanisms with kernel filters, namely RbSP (Richer-but-Smarter SDP). To exploit the representation behind the RbSP structure effectively, we develop a combined deep neural model with a LSTM network on word sequences and a CNN on RbSP. Experimental results on the SemEval-2010 dataset demonstrate improved performance over competitive baselines. The data and source code are available at https://github.com/catcd/RbSP."
+      },
+      {
+        "paper_id": "91185908",
+        "markdown_evidence": "Improving Semantic Relation Extraction System with Compositional Dependency Unit on Enriched Shortest Dependency Path ... Experimental results for both general and biomedical data demonstrate the effectiveness of compositional embedding, dependency tree normalization technique as well as the suitability of the CNN model."
+      },
+      {
+        "paper_id": "258335684",
+        "markdown_evidence": "Enhancing Semantic Relation Classification With Shortest Dependency Path Reasoning ... Relation Classification (RC) is a basic and essential task of Natural Language Processing. Existing RC methods can be classified into two categories: sequence-based methods and dependency-based methods. Sequence-based methods identify the target relation based on the overall semantics of the whole sentence, which will inevitably introduce noisy features. Dependency-based methods extract indicative word-level features from the Shortest Dependency Path (SDP) between given entities and attempt to establish a statistical association between the words and the target relations. This pattern relatively eliminates the influence of noisy features and achieves a robust performance on long sentences. Nevertheless, we observe that majority of relation classification processes involve complex semantic reasoning which is hard to be achieved based on the word-level statistical association. To solve this problem, we categorize all relations into atomic relations and composed-relations. The atomic relations are the basic relations that can be identified based on the word-level features, while the composed-relation requires to be deducted from multiple atomic relations. Correspondingly, we propose the Atomic Relation Encoding and Reasoning Model (ATERM). In the atomic relation encoding stage, ATERM groups the word-level features and encodes multiple atomic relations in parallel. In the atomic relation reasoning stage, ATERM establishes the atomic relation chain where relation-level features are extracted to identify composed-relations. Experiments show that our method achieves state-of-the-art results on the three most popular relation classification datasets – TACRED, TACRED-Revisit, and SemEval 2010 task 8 with significant improvements."
+      },
+      {
+        "paper_id": "16028836",
+        "markdown_evidence": "Convolution Kernels on Constituent, Dependency and Sequential Structures for Relation Extraction ... This paper explores the use of innovative kernels based on syntactic and semantic structures for a target relation extraction task and illustrates that the combination of the above kernels achieves high effectiveness and significantly improves the current state-of-the-art. ... This paper explores the use of innovative kernels based on syntactic and semantic structures for a target relation extraction task. Syntax is derived from constituent and dependency parse trees whereas semantics concerns to entity types and lexical sequences. We investigate the effectiveness of such representations in the automated relation extraction from texts. We process the above data by means of Support Vector Machines along with the syntactic tree, the partial tree and the word sequence kernels. Our study on the ACE 2004 corpus illustrates that the combination of the above kernels achieves high effectiveness and significantly improves the current state-of-the-art. ... different NEs associated with different relations are described by the same parse tree. Therefore, it is necessary to identify the portion of the parse tree that best represent the useful syntactic information. Let e 1 and e 2 be two entity mentions in the same sentence such that they are in a relationship R. For the constituent parse tree, we used the pathenclosed tree (PET), which was firstly proposed in (Moschitti, 2004) for Semantic Role Labeling and then adapted by (Zhang et al., 2005) for relation extraction. ... This paper explores the use of innovative kernels based on syntactic and semantic structures for a target relation extraction task. Syntax is derived from constituent and dependency parse trees whereas semantics concerns to entity types and lexical sequences. We investigate the effectiveness of such representations in the automated relation extraction from texts. We process the above data by means of Support Vector Machines along with the syntactic tree, the partial tree and the word sequence kernels."
+      },
+      {
+        "paper_id": "218975413",
+        "markdown_evidence": "Document-Level Biomedical Relation Extraction Using Graph Convolutional Network and Multihead Attention: Algorithm Development and Validation ... A novel end-to-end neural network based on the graph convolutional network (GCN) and multihead attention, which makes use of the dependency syntactic information across the sentences to improve the performance of intersentence CDR extraction. ... Background Automatically extracting relations between chemicals and diseases plays an important role in biomedical text mining. Chemical-disease relation (CDR) extraction aims at extracting complex semantic relationships between entities in documents, which contain intrasentence and intersentence relations. Most previous methods did not consider dependency syntactic information across the sentences, which are very valuable for the relations extraction task, in particular, for extracting the intersentence relations accurately. Objective In this paper, we propose a novel end-to-end neural network based on the graph convolutional network (GCN) and multihead attention, which makes use of the dependency syntactic information across the sentences to improve CDR extraction task. Methods To improve the performance of intersentence relation extraction, we constructed a document-level dependency graph to capture the dependency syntactic information across sentences. GCN is applied to capture the feature representation of the document-level dependency graph. The multihead attention mechanism is employed to learn the relatively important context features from different semantic subspaces. To enhance the input representation, the deep context representation is used in our model instead of traditional word embedding. Results We evaluate our method on CDR corpus. ... Figure 2 shows an example of document-level dependency graph for 2 sentences. In this study, we use the following 3 types of intrasentence and intersentence dependency edges. 1 . Syntactic dependency edge: The syntactic structure is crucial to biomedical relation extraction. Hence, we use syntactic dependency edges derived from Stanford dependency syntactic parser as intrasentential edges. For instance, \"conj\" denotes the syntactic relation between the word \"stopped\" and \"followed\" in the same sentence. 2 . Adjacent sentence edge: Dependencies between sentences are useful for document-level relation extraction."
+      },
+      {
+        "paper_id": "53423600",
+        "markdown_evidence": "Automatic Relation Extraction for Building Smart City Ecosystems using Dependency Parsing ... An approach to automatically extract directed relations between entities within business ecosystems from online news and blog articles by using dependency parsing is presented."
+      },
+      {
+        "paper_id": "7238127",
+        "markdown_evidence": "A Web-based Collaborative Evaluation Tool for Automatically Learned Relation Extraction Patterns ... A linguistic annotation tool that allows human experts to analyze and categorize automatically learned patterns, and to identify common error classes is presented, which can be used to create datasets that enable machine learning approaches to pattern quality estimation. ... Patterns extracted from dependency parses of sentences are a major source of knowledge for most state-of-the-art relation extraction systems, but can be of low quality in distantly supervised settings. We present a linguistic annotation tool that allows human experts to analyze and categorize automatically learned patterns, and to identify common error classes. The annotations can be used to create datasets that enable machine learning approaches to pattern quality estimation. We also present an experimental pattern error analysis for three semantic relations, where we find that between 24% and 61% of the learned dependency patterns are defective due to preprocessing or parsing errors, or due to violations of the distant supervision assumption. ... Dependency parse trees of sentences have been shown to be very useful structures for relation extraction (RE), since they often capture syntactic and semantic properties of a relation and its arguments more compactly than more surfaceoriented representations (Grishman, 2012). Typically, shortest-path or similar algorithms are used to extract a pattern from a sentence's dependency parse that connects the relation's arguments. ... Dependency parse trees of sentences have been shown to be very useful structures for relation extraction (RE), since they often capture syntactic and semantic properties of a relation and its arguments more compactly than more surfaceoriented representations (Grishman, 2012). Typically, shortest-path or similar algorithms are used to extract a pattern from a sentence's dependency parse that connects the relation's arguments."
+      },
+      {
+        "paper_id": "216078490",
+        "markdown_evidence": "A Local Alignment Kernel in the Context of NLP ... A local alignment kernel based on the Smith-Waterman measure as a sequence similarity metric is defined and it is proposed to use distributional similarity measures on elements and by doing so to incorporate extra information from the unlabeled data into a learning task. ... This paper discusses local alignment kernels in the context of the relation extraction task. We define a local alignment kernel based on the Smith-Waterman measure as a sequence similarity metric and proceed with a range of possibilities for computing a similarity between elements of sequences. We propose to use distributional similarity measures on elements and by doing so we are able to incorporate extra information from the unlabeled data into a learning task. Our experiments suggest that a LA kernel provides promising results on some biomedical corpora largely outperforming a baseline. ... Many approaches to relation extraction consider syntactic information. In this paper we focus on dependency parsing. The experiments in the past have already shown syntactic analysis to be useful for relation learning. Like other work we extract a path between two nodes which correspond to the arguments of a binary relation. We also assume that each analysis results in a tree and since it is an acyclic graph, there exists only one path between each pair of nodes. ... Many approaches to relation extraction consider syntactic information. In this paper we focus on dependency parsing. The experiments in the past have already shown syntactic analysis to be useful for relation learning. Like other work we extract a path between two nodes which correspond to the arguments of a binary relation. We also assume that each analysis results in a tree and since it is an acyclic graph, there exists only one path between each pair of nodes."
+      },
+      {
+        "paper_id": "55198959",
+        "markdown_evidence": "The Chinese Open Relation Extraction Based on Dependency Parsing ... A method based on dependency parsing, and a new system called C-Reverb is proposed that efficiently improves the precision and recall rate of Chineses relation extraction and relation expressions extracted by the method are more informative than the previous method. ... Open relation extraction is one of the most promising relation extractioins.However,the precision and recall of the existing methods are far from satisfication especially for extraction from chinese text.In this paper,we propose a method based on dependency parsing, and develope a new system called C-Reverb. Specifically,we design regular expressions for relation phrase through analyzing the Chinese grammar rules.Based on statistics of a large amount of sentences ,we find the distribution between entities and relations to formulate the rules for entity identification. Afterwards, the extracted triples which lack of entities are simply filtered.The experimental results show that our method efficiently improves the precision and recall rate of Chineses relation extraction.Furthermore, relation expressions extracted by our method are more informative than the previous method. ... In 2010, FeiWu [2] matched Wikipedia's infoboxes with texts to generate training data for their model, and improved its precision and recall rate compared with TextRunner.In 2011, Fader [3] introduced two simple syntactic and lexical constraints on binary relations expressed by verbs.Based on this constrain,they developed Reverb system, which performed better than the previous models. Compared with research works in English, the research on the opening relation extraction in Chinese is insufficient. ... Based on the method of dependency analysis, this paper proposes method for open Chinese relation extraction. The experimental results show that our method efficiently improves the precision and recall rate of Chineses relation extraction.The heuristic rules will be further refined to improve the precision of extraction. ... The Chinese Open Relation Extraction Based on Dependency Parsing"
+      },
+      {
+        "paper_id": "268247791",
+        "markdown_evidence": "FCDS: Fusing Constituency and Dependency Syntax into Document-Level Relation Extraction ... This work proposes to fuse constituency and dependency syntax into DocRE, which uses constituency syntax to aggregate the whole sentence information and select the instructive sentences for the pairs of targets. ... Document-level Relation Extraction (DocRE) aims to identify relation labels between entities within a single document. It requires handling several sentences and reasoning over them. State-of-the-art DocRE methods use a graph structure to connect entities across the document to capture dependency syntax information. However, this is insufficient to fully exploit the rich syntax information in the document. In this work, we propose to fuse constituency and dependency syntax into DocRE. It uses constituency syntax to aggregate the whole sentence information and select the instructive sentences for the pairs of targets. It exploits dependency syntax in a graph structure with constituency syntax enhancement and chooses the path between entity pairs based on the dependency graph. The experimental results on datasets from various domains demonstrate the effectiveness of the proposed method. ... The first case in Figure 5a is a successful dependency graph and illustrates how the dependency syntax helps the model complete DocRE. In this case, the dependency parser successfully parses the dependency syntax within two sentences and extracts vital keywords to manage the prediction. With the short path \"Yellow is released on 2014/02/14.\", simple sentence-level models can finish the prediction. The second case in Figure 5b illustrates the motivation behind our methods, which is to alleviate the inaccuracy of the dependency parser and the failure of selecting keywords for entities. ... After obtaining the above representation, we construct a dependency graph to aggregate information of syntactically associated words. Each sentence in the document is fed into a dependency parser, which generates a dependency syntax tree. Then we convert the dependency trees to dependency graphs. Note that we add a document node to shorten the distance between entity pairs and better aggregate information of long-distance sentences. The dependency graph contains four kinds of nodes: non-root token nodes, root token nodes, mention nodes, and document nodes."
+      },
+      {
+        "paper_id": "9311057",
+        "markdown_evidence": "Semantic Relation Extraction Using Penalty Tree Similarity ... A penalty tree similarity algorithm by extending the dependency tree kernel, which computes the similarity of two parse trees by enumerating their matched sub-trees."
+      },
+      {
+        "paper_id": "201136212",
+        "markdown_evidence": "Relation extraction based on semantic dependency graph ... A BiLSTM-CNN-Attention model (BLCANN) based on semantic dependency graph to extract sentence features is proposed, which combines the structural and semantic features of the sentence, which contributes to distinguishing between positive and negative examples in multi-instance learning. ... Distant supervision has a good effect in relation extraction tasks. Meanwhile, most methods use multi-instance learning to reduce the impact of training data been wrong labelled in distant supervision. However, the effect of multi-instance learning depends on the sentence feature vector extracted by the neural network. At present, most methods for extracting sentence features only pay attention to the structural features of sentences, while ignoring semantic features. As a result, structural feature sentences and semantic feature sentences cannot occupy the same proportion in multi-instance learning, which further influences the precision of the model. To alleviate this issue, we propose a BiLSTM-CNN-Attention model (BLCANN) based on semantic dependency graph to extract sentence features. In this model, we extract the shortest dependency path between the two entities from the semantic dependency graph as the input to the model. The shortest path combines the structural and semantic features of the sentence, which contributes to distinguishing between positive and negative examples in multi-instance learning. Experimental results show that our model is adept in extracting structural features and semantic features. Our model has increased the precision of the relationship extraction on Top100 by 10 percent compared to the baseline [9]."
+      },
+      {
+        "paper_id": "260947348",
+        "markdown_evidence": "Joint entity and relation extraction with part-of-speech-aware attention and dependency parsing embedding ... The experimental results demonstrate that the proposed joint extraction model with part-of-speech-aware attention and dependency parsing embedding can solve the overlapping triple problem more effectively and outperform other baselines on three public datasets. ... Joint entity and relation extraction is an important task in natural language processing, whose purpose is to obtain all triples in text. However, the existing models seldom pay attention to the part-of-speech (pos) of each word and the dependency parsing (dp) in the sentence. To solve these problems. a joint extraction model with part-of-speech-aware attention and dependency parsing embedding is proposed, named PADPE. The proposed model obtains better word representation through pos-aware attention mechanism. In addition, the parts of speech and dependency characteristics are integrated respectively in entity classification and relation classification to improve the accuracy of the classifier. The experimental results demonstrate that our model can solve the overlapping triple problem more effectively and outperform other baselines on three public datasets."
+      },
+      {
+        "paper_id": "124169505",
+        "markdown_evidence": "A Study on Kernel-based Chinese Relation Extraction ... Experiments prove that kernel-based methods are effective for Chinese relation extraction as well and improve the shortest path dependency kernel by replacing the strict same length requirement with finding the longest common subsequences between two shortest dependency paths."
+      },
+      {
+        "paper_id": "247026096",
+        "markdown_evidence": "Automatically Generating Counterfactuals for Relation Exaction ... A novel approach to derive contextual counterfactuals for entities in relation extraction by exploiting two elementary topological properties, i.e., the centrality and the shortest path, in syntactic and semantic dependency graphs to identify and then intervene on the contextual causal features for entities."
+      },
+      {
+        "paper_id": "244899671",
+        "markdown_evidence": "An attentive joint model with transformer-based weighted graph convolutional network for extracting adverse drug event relation ... The experimental results show that ADERel is superior in performance compared with several state-of-the-art methods, and incorporating a transformer model with WGCN makes the proposed system more effective for extracting various types of ADE relations. ... Adverse drug event (ADE) relation extraction is a crucial task for drug safety surveillance which aims to discover potential relations between ADE mentions from unstructured medical texts. To date, the graph convolutional networks (GCN) have been the state-of-the-art solutions for improving the ability of relation extraction task. However, there are many challenging issues that should be addressed. Among these, the syntactic information is not fully exploited by GCN-based methods, especially the diversified dependency edges. Still, these methods fail to effectively extract complex relations that include nested, discontinuous and overlapping mentions. Besides, the task is primarily regarded as a classification problem where each candidate relation is treated independently which neglects the interaction between other relations. To deal with these issues, in this paper, we propose an attentive joint model with transformer-based weighted GCN for extracting ADE Relations, called ADERel. Firstly, the ADERel system formulates the ADE relation extraction task as an N-level sequence labelling so as to model the complex relations in different levels and capture greater interaction between relations. Then, it exploits our neural joint model to process the N-level sequences jointly. The joint model leverages the contextual and structural information by adopting a shared representation that combines a bidirectional encoder representation from transformers (BERT) and our proposed weighted GCN (WGCN). The latter assigns a score to each dependency edge within a sentence so as to capture rich syntactic features and determine the most influential edges for extracting ADE relations. Finally, the system employs a multi-head attention to exchange boundary knowledge across levels. We evaluate ADERel on two benchmark datasets from TAC 2017 and n2c2 2018 shared tasks. The experimental results show that ADERel is superior in performance compared with several state-of-the-art methods."
+      },
+      {
+        "paper_id": "258762770",
+        "markdown_evidence": "Silver Syntax Pre-training for Cross-Domain Relation Extraction ... This paper exploits the affinity between syntactic structure and semantic RE, and identifies the syntactic relations which are closely related to RE by being on the shortest dependency path between two entities. ... Relation Extraction (RE) remains a challenging task, especially when considering realistic out-of-domain evaluations. One of the main reasons for this is the limited training size of current RE datasets: obtaining high-quality (manually annotated) data is extremely expensive and cannot realistically be repeated for each new domain. An intermediate training step on data from related tasks has shown to be beneficial across many NLP tasks.However, this setup still requires supplementary annotated data, which is often not available. In this paper, we investigate intermediate pre-training specifically for RE. We exploit the affinity between syntactic structure and semantic RE, and identify the syntactic relations which are closely related to RE by being on the shortest dependency path between two entities. We then take advantage of the high accuracy of current syntactic parsers in order to automatically obtain large amounts of low-cost pre-training data. ... Recently, work has started to infuse syntax during language model pre-training (Sachan et al., 2021) showing benefits for RE as well. Syntactic parsing is a structured prediction task aiming to extract the syntactic structure of text, most commonly in the form of a tree. RE is also a structured prediction task, but with the aim of extracting the semantics expressed in a text in the form of triplets-entity A, entity B, and the semantic relation between them. 3 We exploit the affinity of these two structures by considering the shortest dependency path between two (semantic) entities (see Figure 1). ... In order to select the UD labels which most frequently appear on the shortest dependency path between two semantic entities, we parsed the training portions of CrossRE. Our analysis combines RE annotations and syntactically parsed data. We observe that the syntactic distance between two entities is often higher than one (see Figure 4), meaning that the shortest dependency path between two entities includes multiple dependencies-in the examples in Figure 1, the one above has distance one, the one below has distance two."
+      },
+      {
+        "paper_id": "227230694",
+        "markdown_evidence": "Graph Convolution over Multiple Dependency Sub-graphs for Relation Extraction ... A contextualised graph convolution network over multiple dependency-based sub-graphs for relation extraction achieves superior performance over the existing GCN-based models achieving state-of-the-art performance on cross-sentence n-ary relation extraction datasets and SemEval 2010 Task 8 sentence-level relation extraction dataset. ... We propose a contextualised graph convolution network over multiple dependency-based sub-graphs for relation extraction. A novel method to construct multiple sub-graphs using words in shortest dependency path and words linked to entities in the dependency parse is proposed. Graph convolution operation is performed over the resulting multiple sub-graphs to obtain more informative features useful for relation extraction. Our experimental results show that the proposed method achieves superior performance over the existing GCN-based models achieving state-of-the-art performance on cross-sentence n-ary relation extraction dataset and SemEval 2010 Task 8 sentence-level relation extraction dataset. Our model also achieves a comparable performance to the SoTA on the TACRED dataset. ... For this purpose, we propose a novel method to obtain multiple sub-graphs from dependency parse trees of a given sentence. To the best knowledge of the authors, this is the first study which effectively combines GCNs with multiple sub-graphs for relation extraction and shows that such a strategy is useful for achieving SoTA performance for relation extraction. ... The best performance was observed when the last four layers of the BERT model were used in the experiments. In addition to contextual embeddings, for each word w, a p-dimensional feature vector is included for Part-of-Speech (POS) tags (f pos w ); dependency grammatical relations (f dep w ); and named entity types (f net w ) embeddings. Further, a q-dimensional feature vector is included to indicate whether a given word w is the entity mention or not (f wt w ). The syntactic embeddings are randomly initialised. ... In sentence-level relation extraction, the task is to identify binary relation across entities e 1 and e 2 in a given sentence. For instance, for EXAMPLE SENTENCE 1, given below, the task is to identify the relation Entity-Origin across entities knowledge (e 1 ) and recruits (e 2 )."
+      },
+      {
+        "paper_id": "252627538",
+        "markdown_evidence": "Research on Chinese Medical Entity Relation Extraction Based on Syntactic Dependency Structure Information ... Experimental results show that the proposed relation extraction model can learn dependency relation information better and has higher performance than other baseline models. ... Extracting entity relations from unstructured medical texts is a fundamental task in the field of medical information extraction. In relation extraction, dependency trees contain rich structural information that helps capture the long-range relations between entities. However, many models cannot effectively use dependency information or learn sentence information adequately. In this paper, we propose a relation extraction model based on syntactic dependency structure information. First, the model learns sentence sequence information by Bi-LSTM. Then, the model learns syntactic dependency structure information through graph convolutional networks. Meanwhile, in order to remove irrelevant information from the dependencies, the model adopts a new pruning strategy. Finally, the model adds a multi-head attention mechanism to focus on the entity information in the sentence from multiple aspects. We evaluate the proposed model on a Chinese medical entity relation extraction dataset. ... Extracting entity relations from unstructured medical texts is a fundamental task in the field of medical information extraction. In relation extraction, dependency trees contain rich structural information that helps capture the long-range relations between entities. However, many models cannot effectively use dependency information or learn sentence information adequately. In this paper, we propose a relation extraction model based on syntactic dependency structure information. First, the model learns sentence sequence information by Bi-LSTM. ... Extracting entity relations from unstructured medical texts is a fundamental task in the field of medical information extraction. In relation extraction, dependency trees contain rich structural information that helps capture the long-range relations between entities. However, many models cannot effectively use dependency information or learn sentence information adequately. In this paper, we propose a relation extraction model based on syntactic dependency structure information. First, the model learns sentence sequence information by Bi-LSTM."
+      },
+      {
+        "paper_id": "236460104",
+        "markdown_evidence": "Dependency-driven Relation Extraction with Attentive Graph Convolutional Networks ... In this approach, an attention mechanism upon graph convolutional networks is applied to different contextual words in the dependency tree obtained from an off-the-shelf dependency parser, to distinguish the importance of different word dependencies. ... Syntactic information, especially dependency trees, has been widely used by existing studies to improve relation extraction with better semantic guidance for analyzing the context information associated with the given entities. However, most existing studies suffer from the noise in the dependency trees, especially when they are automatically generated, so that intensively leveraging dependency information may introduce confusions to relation classification and necessary pruning is of great importance in this task. In this paper, we propose a dependency-driven approach for relation extraction with attentive graph convolutional networks (A-GCN). In this approach, an attention mechanism upon graph convolutional networks is applied to different contextual words in the dependency tree obtained from an off-the-shelf dependency parser, to distinguish the importance of different word dependencies. ... Syntactic information, especially dependency trees, has been widely used by existing studies to improve relation extraction with better semantic guidance for analyzing the context information associated with the given entities. However, most existing studies suffer from the noise in the dependency trees, especially when they are automatically generated, so that intensively leveraging dependency information may introduce confusions to relation classification and necessary pruning is of great importance in this task. ... In this paper, we propose A-GCN to leverage dependency information for relation extraction, where an attention mechanism is applied to dependency connections to applying weighting on both connections and types so as to better distinguish the important dependency information and leverage them accordingly. In doing so, A-GCN is able to dynamically learn from different depen-dency connections so that less-informative dependencies are smartly pruned."
+      },
+      {
+        "paper_id": "259628991",
+        "markdown_evidence": "Self-Attention Over Tree for Relation Extraction With Data-Efficiency and Computational Efficiency ... Dependency trees parsed from natural language sentences have been proven to be beneficial for the relation extraction task by deep neural networks. However, effectively and efficiently utilizing the structural information of dependency trees remains a challenging research problem for neural networks. Existing methods either struggle to facilitate interaction between nodes at different levels that are distant in the dependency tree or face limitations due to computational inefficiency. In this article, we propose a novel model, named Self-Attention over Tree for Relation Extraction (SATRE), designed for tree-structured data and adept at fully utilizing the structural information implied in the subtrees of dependency trees. SATRE enables interactions among nodes in each subtree, even when they are on widely separated layers. As a result, nodes are learned across multiple subtrees, making SATRE data-efficient; that is, SATRE remains efficient even when data is scarce. Furthermore, SATRE is implemented using a parallel mechanism. Specifically, SATRE parallelly computes node representations of a tree in two levels: across all subtrees of the tree and across all nodes within a subtree. Empirically, SATRE consistently outperforms the compared methods on two real-world benchmarks: the TACRED and SemEval-2010 Task 8 datasets, which shows the effectiveness of SATRE. Meanwhile, extensive experiments indicate SATRE's data-efficiency in utilizing the training data and its computational efficiency in running time."
+      },
+      {
+        "paper_id": "237500059",
+        "markdown_evidence": "Improving Distant Supervised Relation Extraction using shortest dependency path ... A noval distant supervised neural relation extraction method, which makes use of the shortest dependency path to supervise the learning of word attention, is proposed and effectiveness of the model is demonstrated. ... Distant supervised relation extraction is the problem of classifying the semantic relation between a pair of entities in a given sentence, where data is created by aligning unlabelled text with knowledge base automatically. Prior researches indicated that most of the sentences in the distant supervised relation extraction setting are very long and benefit from the attention over words. We note that the shortest dependency path between the entity pair in the syntax analysis tree of a sentence can help word based attention. In this paper, we propose a noval distant supervised neural relation extraction method, which makes use of the shortest dependency path to supervise the learning of word attention. Through extensive experiments on benchmark datasets, we demonstrate effectiveness of our model. ... Improving Distant Supervised Relation Extraction using shortest dependency path ... Relation extraction (RE) can be defined as a natural language processing task that classifying the relationship between a pair of entities in a sentence, which is a subtask of information extraction. In amount of natural language processing tasks including construction of information extraction, RE has been an important step. A lot of labelled data is essential to train an efficient RE model. However, obtaining large-scale annotation data requires expensive costs. ... Distant supervised relation extraction is the problem of classifying the semantic relation between a pair of entities in a given sentence, where data is created by aligning unlabelled text with knowledge base automatically. Prior researches indicated that most of the sentences in the distant supervised relation extraction setting are very long and benefit from the attention over words. We note that the shortest dependency path between the entity pair in the syntax analysis tree of a sentence can help word based attention."
+      },
+      {
+        "paper_id": "234033943",
+        "markdown_evidence": "Hierarchical graph attention network for relation extraction ... A novel hierarchical graph attention network HierGAT is proposed, which can generate multi-level dependency trees and extract key information from them to improve relation extraction and outperforms state-of-the-art baselines on the benchmark datasets. ... Previous research on relation extraction has proved the effectiveness of using dependency trees, which build non-local connections between tokens. However, the existing dependency-based models treat the dependency trees as an inherently flat graph, which causes a loss of dependency information for representing sentences. Besides, they fail to consider the fact that the importance of tokens on the dependency tree varies with different relations to be extracted. In this paper, we propose a novel hierarchical graph attention network HierGAT, which can generate multi-level dependency trees and extract key information from them to improve relation extraction. Specifically, it contains multiple dependency-based graph attention layers, each of which takes a different dependency tree generated by an adaptive subtree pruning strategy as input, and distinguishes the importance of different tokens in a dependency tree. ... Relation extraction aims to recognize the correct relations between two entities from plain texts. It serves as a fundamental step in a variety of natural language processing applications, such as information extraction, knowledge base construction [1], question answering [2], etc. In previous research, much progress has been made on relation extraction, including traditional sequence-based methods [3,4] and dependency-based [5,6]. In contrast, dependency-based methods can achieve better performance, mainly because they can extract long-range syntactic relations that are obscure from the surface [7]. ... In this section, we will briefly describe the previous research related to our work in the field of relation extraction and graph convolutional networks. Relation Extraction. Early efforts are based on feature engineering methods. Feature engineering methods extract various kinds of linguistic features and employ them in a statistical classifier like Max Entropy [24] and SVM [25]. Then, kernel-based methods such as tree-based kernels [26] and dependency path-based kernels [9] are explored to extract the relation."
+      },
+      {
+        "paper_id": "259955798",
+        "markdown_evidence": "Extracting biomedical relation from cross-sentence text using syntactic dependency graph attention network ... A new graph attention network guided by syntactic dependency relationship (SR-GAT) for extracting biomedical relation from the cross-sentence text achieves state-of-the-art performance while requiring significantly less computational resources. ... In biomedical literature, cross-sentence texts can usually express rich knowledge, and extracting the interaction relation between entities from cross-sentence texts is of great significance to biomedical research. However, compared with single sentence, cross-sentence text has a longer sequence length, so the research on cross-sentence text information extraction should focus more on learning the context dependency structural information. Nowadays, it is still a challenge to handle global dependencies and structural information of long sequences effectively, and graph-oriented modeling methods have received more and more attention recently. In this paper, we propose a new graph attention network guided by syntactic dependency relationship (SR-GAT) for extracting biomedical relation from the cross-sentence text. It allows each node to pay attention to other nodes in its neighborhood, regardless of the sequence length. The attention weight between nodes is given by a syntactic relation graph probability network (SR-GPR), which encodes the syntactic dependency between nodes and guides the graph attention mechanism to learn information about the dependency structure. The learned feature representation retains information about the node-to-node syntactic dependency, and can further discover global dependencies effectively. The experimental results demonstrate on a publicly available biomedical dataset that, our method achieves state-of-the-art performance while requiring significantly less computational resources. Specifically, in the \"drug-mutation\" relation extraction task, our method achieves an advanced accuracy of 93.78% for binary classification and 92.14% for multi-classification. In the \"drug-gene-mutation\" relation extraction task, our method achieves an advanced accuracy of 93.22% for binary classification and 92.28% for multi-classification. Across all relation extraction tasks, our method improves accuracy by an average of 0.49% compared to the existing best model."
+      },
+      {
+        "paper_id": "260814316",
+        "markdown_evidence": "Document-Level Chemical-Induced Disease Semantic Relation Extraction Using Bidirectional Long Short-Term Memory on Dependency Graph ... The proposed model, DEGREx, is a novel graph-based neural model that presents a biomedical document as a dependency graph that improves the long-distance relation extraction by allowing direct information exchange among document graph nodes through dependency connections. ... Identifying chemical-induced disease (CID) semantic relations in the biomedical literature, including both intra- and inter-sentence interactions, has significant implications for various downstream applications. Although various advanced methods have been proposed, they often overlook the cross-sentence dependency information, which is crucial for accurately predicting inter-sentence relations. In this study, we propose DEGREx, a novel graph-based neural model that presents a biomedical document as a dependency graph. DEGREx improves the long-distance relation extraction by allowing direct information exchange among document graph nodes through dependency connections. The information transition process is based on the idea of controller gates in long short-term memory networks. ... Formally, let us consider our document dependency graph G = (V, E), where V and E represent the sets of all nodes and edges, respectively. V denotes the set of all word tokens in the document, whereas E encompasses a large number of edges belonging to one of four types below: • Syntactic Dependency Edge: Represents the syntactic relation between two nodes in the dependency tree. • Next-Sent Edge: Connects two consecutive sentences to capture cross-sentence dependencies. • Next-node edge: Connects adjacent nodes within the same sentence to capture local dependencies. ... The document-level dependency graph is the core component of our proposed method. To construct this unified graph, we generate a dependency tree for every sentence in the input document. Within the dependency tree, each node is connected to either its parent or descendant through syntactic dependencies (e.g., nsubject, case, and det). To create the cross-sentence dependency graph for the document, we connect the roots of two dependency trees for two consecutive sentences. This new edge type is referred to as next-sent."
+      },
+      {
+        "paper_id": "254449059",
+        "markdown_evidence": "Contextual Dependency-aware Graph Convolutional Network for Extracting Entity Relations ... Dependency trees contain structural information about long-distance relations between words, which is proven to be useful for relation extraction. With the continuous development of deep learning, graph neural network can best adapt to the inherent patterns of graph data, such as dependency trees. However, existing dependency-based models suffer from the noise in dependency trees generated by heuristic dependency parsing, which distorts the modeling of contextual information, especially when dependency types are introduced. Furthermore, many pruning strategies lose the complete pattern of language itself. The above two aspects may cause the model to produce semantic confusion which is bad for relation extraction. In this paper, we propose a Contextual Dependency-aware Graph Convolutional Network(C-DAGCN), which works on the complete dependency trees and perceives the importance of word dependencies from multiple angles without worrying about the noise in heuristic dependency information. Specifically, we propose the global relative position knowledge associated with the current word(CW-GRPK) which implies the associations between words, to globally enhance the text structure modeling. After that, our model weighs multiple structure knowledge to capture fine-grained word-level interactions, and encodes the knowledge-enhanced word graph without losing global linguistic patterns to constructs high-level linguistic representation for relation prediction. Experimental results show that our method outperforms nine strong baseline models on two benchmark datasets."
+      },
+      {
+        "paper_id": "270726794",
+        "markdown_evidence": "Data and text mining RelEx — Relation extraction using dependency parse trees ... RelEx, an approach for relation extraction from free text based on natural language preprocessing producing dependency parse trees and applying a small number of simple rules to these trees, is developed."
+      },
+      {
+        "paper_id": "279898795",
+        "markdown_evidence": "Data and text mining RelEx — Relation extraction using dependency parse trees ... RelEx, an approach for relation extraction from free text based on natural language preprocessing producing dependency parse trees and applying a small number of simple rules to these trees, is developed."
+      },
+      {
+        "paper_id": "58952415",
+        "markdown_evidence": "Cross-Language Learning for Arabic Relation Extraction ... A cross-language method for relation extraction is proposed, which uses the training data of other languages and trains a model for relationship extraction from Arabic text that mainly relies on the Universal Dependency (UD) parsing and the similarity of UD trees in different languages. ... Abstract Relation Extraction from Arabic text is a difficult and challenging task. Pattern-based methods often employ precise and accurate linguistics rules; however, they need huge amount of manual works to annotate corpora with desired tags. On the other hand, supervised methods need large corpus with semantic tags; which in turn imposes extra load for preparing annotated data. In this paper, a cross-language method for relation extraction is proposed, which uses the training data of other languages and trains a model for relation extraction from Arabic text. The task is supervised learning, in which several lexical and syntactic features are considered. The proposed method mainly relies on the Universal Dependency (UD) parsing and the similarity of UD trees in different languages. Regarding UD parse trees, all the features for training classifiers are extracted and represented in a universal space. To incorporate different features in training the classifier, a combination of kernel functions is proposed. Result of experiments on ACE-2004 data set reveals 63.5% F1 for Arabic test data."
+      },
+      {
+        "paper_id": "214336202",
+        "markdown_evidence": "Relation Extraction Exploiting Full Dependency Forests ... Full dependency forests are proposed to leverage for this task, where a full dependency forest encodes all possible trees and provides a differentiable connection between a parser and a relation extraction model, and thus is able to study adjusting the parser parameters based on end-task loss. ... Dependency syntax has long been recognized as a crucial source of features for relation extraction. Previous work considers 1-best trees produced by a parser during preprocessing. However, error propagation from the out-of-domain parser may impact the relation extraction performance. We propose to leverage full dependency forests for this task, where a full dependency forest encodes all possible trees. Such representations of full dependency forests provide a differentiable connection between a parser and a relation extraction model, and thus we are also able to study adjusting the parser parameters based on end-task loss. Experiments on three datasets show that full dependency forests and parser adjustment give significant improvements over carefully designed baselines, showing state-of-the-art or competitive performances on biomedical or newswire benchmarks. ... Recent work (Xu et al., 2015;Liu et al., 2015;Miwa and Bansal, 2016;Zhang, Qi, and Manning, 2018;Fu, Li, and Ma, 2019) adopting neural models also saw improvements when incorporating syntactic information into the models. In addition to the news domain, syntax is also crucial for relation extraction in biomedical domain (Quirk and Poon, 2017;Peng et al., 2017;Song et al., 2018), and one important reason is that biomedical sentences usually contain more domain-specific words (e.g. new medicines, molecules and gene IDs) than newswire text. ... Recent work (Xu et al., 2015;Liu et al., 2015;Miwa and Bansal, 2016;Zhang, Qi, and Manning, 2018;Fu, Li, and Ma, 2019) adopting neural models also saw improvements when incorporating syntactic information into the models. In addition to the news domain, syntax is also crucial for relation extraction in biomedical domain (Quirk and Poon, 2017;Peng et al., 2017;Song et al., 2018), and one important reason is that biomedical sentences usually contain more domain-specific words (e.g. new medicines, molecules and gene IDs) than newswire text."
+      },
+      {
+        "paper_id": "195833159",
+        "markdown_evidence": "Improving Cross-Domain Performance for Relation Extraction via Dependency Prediction and Information Flow Control ... A novel method to use dependency trees in RE for deep learning models that jointly predicts dependency and semantics relations is introduced and a new mechanism to control the information flow in the model based on the input entity mentions is proposed. ... Relation Extraction (RE) is one of the fundamental tasks in Information Extraction and Natural Language Processing. Dependency trees have been shown to be a very useful source of information for this task. The current deep learning models for relation extraction has mainly exploited this dependency information by guiding their computation along the structures of the dependency trees. One potential problem with this approach is it might prevent the models from capturing important context information beyond syntactic structures and cause the poor cross-domain generalization. This paper introduces a novel method to use dependency trees in RE for deep learning models that jointly predicts dependency and semantics relations. We also propose a new mechanism to control the information flow in the model based on the input entity mentions. ... Relation Extraction (RE) is one of the fundamental tasks in Information Extraction and Natural Language Processing. Dependency trees have been shown to be a very useful source of information for this task. The current deep learning models for relation extraction has mainly exploited this dependency information by guiding their computation along the structures of the dependency trees. One potential problem with this approach is it might prevent the models from capturing important context information beyond syntactic structures and cause the poor cross-domain generalization. ... In this paper, we introduce a novel model for relation extraction that uses the information in the dependency trees indirectly in a multi-task learning framework. The model jointly predicts dependency relations between words and relations between entity mentions of interest. Moreover, we propose a new control mechanism that regulates the information flow in the model based on the given entity mentions for RE and the gating techniques. The experiments show that the proposed model achieves the state-of-the-art performance for RE on both the general setting and cross-domain setting."
+      },
+      {
+        "paper_id": "13321894",
+        "markdown_evidence": "Exploiting graph kernels for high performance biomedical relation extraction ... It is shown that graph kernels are effective in extracting relations that are expressed in multiple sentences, and the graph kernels, namely the ASM and APG kernels, substantially outperform the tree kernels. ... Relation extraction from biomedical publications is an important task in the area of semantic mining of text. Kernel methods for supervised relation extraction are often preferred over manual feature engineering methods, when classifying highly ordered structures such as trees and graphs obtained from syntactic parsing of a sentence. Tree kernels such as the Subset Tree Kernel and Partial Tree Kernel have been shown to be effective for classifying constituency parse trees and basic dependency parse graphs of a sentence. Graph kernels such as the All Path Graph kernel (APG) and Approximate Subgraph Matching (ASM) kernel have been shown to be suitable for classifying general graphs with cycles, such as the enhanced dependency parse graph of a sentence. In this work, we present a high performance Chemical-Induced Disease (CID) relation extraction system. ... The performance difference between the ASM and APG kernels for CID sentence level relation extraction is not significant. ... A summary of the main contributions of this paper are : • We demonstrate a high performance CID relation extraction system, reaching an F-score of 60.3%. This performance is achieved using an effective method for non-sentence relation extraction, by combining multiple sentence level parse structures into larger units, and then applying the kernel methods on the aggregate parse structures. Our system compares favorably with prior art [21], where an ensemble of machine learning methods was used to achieve an F-score of 56% and then boosted to 61.3% using task specific post-processing rules."
+      },
+      {
+        "paper_id": "276995308",
+        "markdown_evidence": "Leveraging Weighted Dependencies in Graph Convolutional Networks for Biomedical Relation Detection ... The goal of biomedical relation extraction is to identify and extract high-quality information from extensive medical texts, which is crucial for advancing biomedical research. Recent advancements have led to significant progress in this field, with various methods demonstrating impressive results. Nevertheless, there remains substantial potential for further enhancement. In this paper, we introduce a Weighted Graph Convolutional Neural Network (WGCN) model designed specifically for extracting biomedical relations from medical texts. Our approach begins with obtaining the syntactic dependencies of the given sentences. We then integrate these dependencies with weighted information to improve relational extraction accuracy. Specifically, our method involves constructing an adjacency matrix and a dependency matrix based on the relations between words in the text, followed by the development of a corresponding weight matrix to account for the significance of different dependencies. This allows each dependency to contribute differently to the extraction of relation triples. Moreover, to address potential noise introduced by numerous dependencies within sentences, we implement a pruning strategy for the dependency tree. Experimental results on three publicly available biomedical datasets demonstrate that our proposed method is both effective and superior to the best-performing existing models. Further ablation studies confirm the effectiveness of each component within our model."
+      },
+      {
+        "paper_id": "272766743",
+        "markdown_evidence": "A hop-based parallel graph attention network for relation extraction ... The name is hop-based parallel graph attention network (Hp-GAT), which not only compensates for the shortcomings of graph neural networks but also takes into account the information on the hop distance between words. ... Using graph neural networks to model dependency grammar information for relation extraction methods has become a very common approach. However, during the updating process of graph neural networks, they may be affected by the model architecture, which can lead to excessive attention to nearby nodes and affect the learning of distant words along the path. We suggest a graph neural network solution for relation extraction tasks by incorporating hop connections to tackle this issue. Meanwhile, in order to apply the dependency relationship of one hop to multiple hops, we designed a dependency relationship embedding based on the number of hops.The name is hop-based parallel graph attention network(Hp-GAT). This method not only compensates for the shortcomings of graph neural networks but also takes into account the information on the hop distance between words. We conducted experiments on the TACRED and SEMEVAL datasets, with findings indicating that our model outperformed the baseline dependency-driven graph neural network model."
+      },
+      {
+        "paper_id": "270748821",
+        "markdown_evidence": "A Knowledge-enhanced model with syntactic-aware attentive graph convolutional network for biomedical entity and relation extraction ... A Knowledge-Enhanced Model with Syntactic-Aware Attentive Graph Convolutional Network (KESAAGCN) for biomedical entity and relation extraction and extensive experimental results on three benchmark datasets demonstrate the effectiveness and superiority of the methods."
+      },
+      {
+        "paper_id": "247185204",
+        "markdown_evidence": "Exploit Feature and Relation Hierarchy for Relation Extraction ... Existing methods in relation extraction have leveraged the lexical features in the word sequence and the syntactic features in the parse tree. Though effective, the lexical features extracted from the successive word sequence may introduce some noise that has little or no meaningful content. Meanwhile, the syntactic features are usually encoded via graph convolutional networks which have restricted receptive field. In addition, the relation between lexical and syntactic features in the representation space has been largely neglected. To address the above limitations, we propose a multi-scale representation and metric learning framework to exploit the feature and relation hierarchy for RE tasks. Methodologically, we build a lexical and syntactic feature and relation hierarchy in text data. Technically, we first develop a multi-scale convolutional neural network to aggregate the non-successive lexical patterns in the word sequence. We also design a multi-scale graph convolutional network to increase the receptive field via the coarsened syntactic graph. Moreover, we present a multi-scale metric learning paradigm to exploit both the feature-level relation between lexical and syntactic features and the sample-level relation between instances with the same or different classes. Extensive experiments on three public datasets for two RE tasks prove that our model achieves a new state-of-the-art performance."
+      },
+      {
+        "paper_id": "248780393",
+        "markdown_evidence": "Improving Relation Extraction through Syntax-induced Pre-training with Dependency Masking ... This work proposes to leverage syntactic information to improve RE by training a syntax-induced encoder on auto-parsed data through dependency masking, which significantly differs from existing studies that train language models or word embeddings by predicting the context words along the dependency paths. ... Relation extraction (RE) is an important natural language processing task that predicts the relation between two given entities, where a good understanding of the contextual information is essential to achieve an outstanding model performance. Among different types of contextual information, the auto-generated syntactic information (namely, word dependencies) has shown its effectiveness for the task. However, most existing studies require modifications to the existing baseline architectures (e.g., adding new components, such as GCN, on the top of an encoder) to leverage the syntactic information. To offer an alternative solution, we propose to leverage syntactic information to improve RE by training a syntax-induced encoder on auto-parsed data through dependency masking. ... For the second order dependencies, we construct a second order dependency connection between x i and x j if there is a word x that connects to both x i and Figure 2: An illustration of the three second-order (a) and four third-order (b) dependency types between x j and x i , based on their positions in the parse tree. x j by two connections (x i , x ) and (x , x j ) in T X . ... Relation extraction (RE) is an important natural language processing task that predicts the relation between two given entities, where a good understanding of the contextual information is essential to achieve an outstanding model performance. Among different types of contextual information, the auto-generated syntactic information (namely, word dependencies) has shown its effectiveness for the task. However, most existing studies require modifications to the existing baseline architectures (e.g., adding new components, such as GCN, on the top of an encoder) to leverage the syntactic information."
+      },
+      {
+        "paper_id": "235384242",
+        "markdown_evidence": "A Graph Convolutional Network With Multiple Dependency Representations for Relation Extraction ... This study proposes a novel GCN-based model using multiple representations to depict the dependency tree from various perspectives, and combines those dependency representations afterward to obtain a better sentence representation for relation classification. ... Dependency analysis can assist neural networks to capture semantic features within a sentence for entity relation extraction (RE). Both hard and soft strategies of encoding dependency tree structure have been developed to balance the beneficial extra information against the unfavorable interference in the task of RE. A wide application of graph convolutional network (GCN) in the field of natural language processing (NLP) has demonstrated its effectiveness in encoding the input sentence with the dependency tree structure, as well as its efficiency in parallel computation. This study proposes a novel GCN-based model using multiple representations to depict the dependency tree from various perspectives, and combines those dependency representations afterward to obtain a better sentence representation for relation classification. ... The outcome of dependency parsing is usually a graph with nodes representing tokens and edges representing dependency relations between tokens, and is called a dependency graph. Given an entity pair, the shortest dependency path (SDP) in the dependency tree is defined as the shortest path between the respective node subsets corresponding to those two entities. ... As a key task for knowledge extraction, relation extraction (RE) is aimed at identifying semantic relatedness between two entities in natural-language documents [1], [2]. It helps organize unstructured facts into a triplet format (entity 1, relation, entity 2) [3]. Therefore, RE has wide applications in building large open knowledge bases, generating knowledge graphs, as well as constructing question answering systems [2], [4], [5]. Syntactic dependency analysis has proved its capability for identifying entity relationships."
+      },
+      {
+        "paper_id": "272736923",
+        "markdown_evidence": "Effective sentence-level relation extraction model using entity-centric dependency tree ... A novel model that utilizes entity-centric dependency trees in conjunction with language models, enabling efficient relation extraction without the need for additional data or larger models is proposed. ... The syntactic information of a dependency tree is an essential feature in relation extraction studies. Traditional dependency-based relation extraction methods can be categorized into hard pruning methods, which aim to remove unnecessary information, and soft pruning methods, which aim to utilize all lexical information. However, hard pruning has the potential to overlook important lexical information, while soft pruning can weaken the syntactic information between entities. As a result, recent studies in relation extraction have been shifting from dependency-based methods to pre-trained language model (LM) based methods. Nonetheless, LM-based methods increasingly demand larger language models and additional data. This trend leads to higher resource consumption, longer training times, and increased computational costs, yet often results in only marginal performance improvements. ... Methods that utilize only the subtree between entities are categorized as hard pruning strategies, which exclude nodes not included in the subtree. In contrast, the soft pruning strategy employs an attention mechanism to assign weights to all nodes, allowing the model to adjust these weights during the learning phase to focus on information crucial for relation extraction. This approach minimizes the loss of information in sentences and facilitates effective relation extraction. However, it has the drawback of potentially weakening the important syntactic information between entities. ... The syntactic information of a dependency tree is an essential feature in relation extraction studies. Traditional dependency-based relation extraction methods can be categorized into hard pruning methods, which aim to remove unnecessary information, and soft pruning methods, which aim to utilize all lexical information. However, hard pruning has the potential to overlook important lexical information, while soft pruning can weaken the syntactic information between entities."
+      },
+      {
+        "paper_id": "251903055",
+        "markdown_evidence": "Supporting Medical Relation Extraction via Causality-Pruned Semantic Dependency Forest ... A method to jointly model semantic and syntactic information from medical texts based on causal explanation theory is proposed, which generates dependency forests consisting of the semantic-embedded 1-best dependency tree. ... Medical Relation Extraction (MRE) task aims to extract relations between entities in medical texts. Traditional relation extraction methods achieve impressive success by exploring the syntactic information, e.g., dependency tree. However, the quality of the 1-best dependency tree for medical texts produced by an out-of-domain parser is relatively limited so that the performance of medical relation extraction method may degenerate. To this end, we propose a method to jointly model semantic and syntactic information from medical texts based on causal explanation theory. We generate dependency forests consisting of the semantic-embedded 1-best dependency tree. Then, a task-specific causal explainer is adopted to prune the dependency forests, which are further fed into a designed graph convolutional network to learn the corresponding representation for downstream task. ... Our task is to extract relation between entities in a sentence, focusing on both binary relation extraction and ternary relation extraction. Formally, the input to our task is a sentence S = {w 1 , w 2 , . . . , w n } with n words and w i denotes the i-th word in the sentence. S is annotated with entity mentions E 1 and E 2 1 . The output is the relation between entities from a predefined relation set R = {r 1 , r 2 , . . . , r m }, where m denotes the number of relations. ... We evaluate our model on three datasets with two types of tasks: cross-sentence n-ary relation extraction and sentence-level relation extraction following (Guo et al., 2021). For the cross-sentence n-ary relation extraction task, we use the dataset extracted by (Peng et al., 2017) based on PubMed. Most of the instances in this dataset contain multiple sentences, and the entities in the instances are cross-sentence. In detail, this dataset contains 6987 instances of ternary relations and 6087 instances of binary relations, each of them is divided into five folders according to (Song et al., 2018)."
+      },
+      {
+        "paper_id": "208268267",
+        "markdown_evidence": "Syntax-aware Multi-task Graph Convolutional Networks for Biomedical Relation Extraction ... A novel graph convolutional networks model is proposed that incorporates dependency parsing and contextualized embedding to effectively capture comprehensive contextual information in biomedical relation extraction. ... In this paper we tackle two unique challenges in biomedical relation extraction. The first challenge is that the contextual information between two entity mentions often involves sophisticated syntactic structures. We propose a novel graph convolutional networks model that incorporates dependency parsing and contextualized embedding to effectively capture comprehensive contextual information. The second challenge is that most of the benchmark data sets for this task are quite imbalanced because more than 80% mention pairs are negative instances (i.e., no relations). We propose a multi-task learning framework to jointly model relation identification and classification tasks to propagate supervision signals from each other and apply a focal loss to focus training on ambiguous mention pairs. By applying these two strategies, experiments show that our model achieves state-of-the-art F-score on the 2013 drug-drug interaction extraction task. ... We propose a syntax-aware multi-task learning model for biomedical relation extraction. Our model can effectively extract the drug-drug interactions by capturing the syntactic information through graph convolution operations and modeling context information via contextualized embeddings. An auxiliary task with focal loss is designed to mitigate the data imbalance by leveraging the inductive signal from binary classification and increasing the influence of decisive relation types. ... . . , x n }, where x i is a vector which concatenates the representation of the token i and the position embeddings corresponding to the relative positions from candidate mention pairs. We feed the token vectors into a Llayer GCN to obtain the hidden representations of each token which are directly influenced by its neighbors no more than L edges apart in the dependency tree. We apply the Stanford dependency parser (Chen and Manning, 2014) to generate the dependency structure: where A = A+I with A is the adjacent matrix of tokens in dependency tree, I is the identity matrix."
+      },
+      {
+        "paper_id": "234331758",
+        "markdown_evidence": "Research on syntactic dependency tree and Ontology constraint in remote Supervising relation extraction ... This paper combines syntactic dependency tree and ontological constraint to carry out remote-supervised relationship extraction and improves the accuracy by 2% compared with other reference models, thus better realizing relation extraction and laying a relevant foundation for the construction of high-precision knowledge map. ... At present, research on remote-supervised relationship extraction fail to fully consider the position information among words in a sentence, and the extracted relationship may be inconsistent with the actual relationship. Therefore, this paper combines syntactic dependency tree and ontological constraint to carry out remote-supervised relationship extraction. The syntactic dependency tree is used to obtain the position weight of each word in the sentence and the domain ontology constraint is introduced to improve the accuracy of the extraction relationship. ... In the calculation of syntactic distance based on dependency tree, words closer to relational attribute have higher weight. If the relation attribute is a phrase, then the grammatical distance from each word in the sentence is calculated as represented by the last word in the phrase. Each sentence and relationship attribute , The syntax distance vector is obtained based on the dependency tree calculation，Where is the grammatical distance between word and relationship at-tribute . The weight of word in sentence is : ( Therein ， is the maximum value of . According to Equation (3) : Position weight . ... The relationship extraction method based on remote monitoring model is mainly based on the hypothesis of Mintz [9].As for the existing problems in relation extraction at present： (1) Many existing researches mainly use the pre-trained word vector to give the representation of each word in the attribute and the position feature vector to splicing to get the input vector of the model. ... Research on syntactic dependency tree and Ontology constraint in remote Supervising relation extraction ... Research on syntactic dependency tree and Ontology constraint in remote Supervising relation extraction"
+      },
+      {
+        "paper_id": "236478166",
+        "markdown_evidence": "Relation Extraction with Type-aware Map Memories of Word Dependencies ... A neural approach with type-aware map memories (TaMM) for encoding dependency types obtained from an off-the-shelf dependency parser for the input sentence that distinguishes reliable dependency information from noisy ones and appropriately model them. ... Relation extraction is an important task in information extraction and retrieval that aims to extract relations among the given entities from running texts. To achieve a good performance for this task, previous studies have shown that a good modeling of the contextual information is required, where the dependency tree of the input sentence can be a beneﬁcial source among different types of contextual information. However, most of these studies focus on the dependency connections between words with limited attention paid to exploiting dependency types. In addition, they often treat different dependency connections equally in modeling so that suffer from the noise (inaccurate dependency parses) in the auto-generated dependency tree. In this paper, we propose a neural approach for relation extraction, with type-aware map memories (TaMM) for encoding dependency types obtained from an off-the-shelf dependency parser for the input sentence. ... 1 ... Therefore, it is straightforward to consider integrating extra features to enhance contextual modeling. Of all such features, the syntactic information suggested by the dependency tree of the input sentence has been demonstrated to be useful for relation extraction in many studies (Xu et al., 2015;Zhang et al., 2018;Guo et al., 2019). However, most models to leverage the dependency information are not naturally appropriate to model the dependency types among words. It is required to find an appropriate approach to leverage the dependency type information. ... Relation extraction is an important task in NLP, which significantly relies on a good modeling of the contextual information to achieve outstanding model performance. To improve the capability of context modeling for relation extraction, studies in the past decade leverage neural networks, such as using CNN (Zeng et al., 2014;Wang et al., 2016), RNN (Socher et al., 2012;Xu et al., 2015;Zhou et al., 2016) and BERT encoders (Wu and He, 2019;Soares et al., 2019;Wang et al., 2019)."
+      },
+      {
+        "paper_id": "255290930",
+        "markdown_evidence": "Neural Attentional Relation Extraction with Dual Dependency Trees ... The Neural Attentional Relation Extraction Model with Dual Dependency Trees (called DDT-REM) is proposed, which takes advantage of both the syntactic dependency tree and the semantic dependency tree to well capture syntactic features and semantic features, respectively."
+      },
+      {
+        "paper_id": "203079536",
+        "markdown_evidence": "Semantic relation extraction using sequential and tree-structured LSTM with attention ... An end-to-end method that uses bidirectional tree-structured long short-term memory (LSTM) to extract structural features based on the dependency tree of a sentence to enhance the performance of the relation extraction. ... Abstract Semantic relation extraction is crucial to automatically constructing a knowledge graph (KG), and it supports a variety of downstream natural language processing (NLP) tasks such as query answering (QA), semantic search and textual entailment. In addition, the semantic relation extraction task is mainly responsible for identifying entity pairs from raw texts and extracting the semantic relations between the extracted entity pairs. Existing methods consider only lexical-level features and often ignore syntactic features, resulting in poor relation extraction performance. By analyzing the necessity of the syntactic dependency and the contributions of words in a sentence to relation extraction, this paper proposes an end-to-end method that uses bidirectional tree-structured long short-term memory (LSTM) to extract structural features based on the dependency tree of a sentence. To enhance the performance of the relation extraction, the bidirectional sequential LSTM with attention is used to identify word-based features including the positional information of entity pairs and the contribution of words. Then, structural features and word-based features are concatenated to optimize the relation extraction performance. Finally, the proposed method is used on the SemEval 2010 task 8 and the CoNLL04 datasets to validate its performance. The experimental results show that the proposed method achieves state-of-the-art results on the SemEval 2010 task 8 and the CoNLL04 datasets."
+      },
+      {
+        "paper_id": "265189535",
+        "markdown_evidence": "Relation Extraction Model Based on Graph Convolutional Network with Relations Types ... A graph convolutional neural network method is proposed for the attention mechanism of relation extraction, which applies the attention process to different context words in the dependency tree obtained by the dependency parser to distinguish the importance of different word dependencies. ... Relation extraction is an important task in information extraction and retrieval, which aims to extract relations between given entities from running text. Previous studies have shown that good performance in this task requires good modeling of contextual information, where the dependency tree of the input sentence can be a beneficial source among different types of contextual information. However, most of these studies focus on word-to-word dependencies and pay limited attention to the exploitation of dependency types. Most of the existing studies have the problem of noise in the dependency tree, especially when the dependency tree is generated automatically, a large amount of dependency information may bring confusion to the relation classification, so it is very important to do necessary pruning of the dependency tree. Moreover, they often treat different dependency connections equally when modeling, and thus suffer from interference (inaccurate dependency parsing) in the automatically generated dependency tree. This paper proposes a graph convolutional neural network method for the attention mechanism of relation extraction, which applies the attention mechanism based on graph convolutional network to different context words in the dependency tree obtained by the dependency parser to distinguish the importance of different word dependencies. This paper adds a new module called the Key-Value Slot (KV Slot for short). For each word in an entity, the KV Slot module maps all associated words and dependencies between them, and then assigns it a weight based on its contribution to relation extraction. The proposed method not only exploits the dependency connections and types between words, but also distinguishes reliable dependency information from noisy information, builds on it and models them appropriately. Experiments on Semeval2010-task8 and KBP37 datasets prove the effectiveness of our method, and the performance of the model has been greatly improved."
+      },
+      {
+        "paper_id": "261667099",
+        "markdown_evidence": "Weighted-Dependency with Attention-Based Graph Convolutional Network for Relation Extraction ... A new weighted-dependency with attention-based graph convolutional network (WAGCN) is proposed, which changed the dependency matrix from a 0–1 matrix to a weighted matrix by weighting each dependency class to enable the dependency matrix to fully express the syntactic dependency information in the sentence."
+      },
+      {
+        "paper_id": "226891150",
+        "markdown_evidence": "DHPs: Dependency Hearst's Patterns for Hypernym Relation Extraction ... A new formulation of Hearst's patterns using dependency parser, called Dependency Hearst’s Patterns (DHPs), which are defined as dependency patterns based on dependency relations between words."
+      },
+      {
+        "paper_id": "258832275",
+        "markdown_evidence": "Constructing Code-mixed Universal Dependency Forest for Unbiased Cross-lingual Relation Extraction ... This work investigates an unbiased UD-based XRE transfer by constructing a type of code-mixed UD forest by translating the sentence of the source language to the parallel target-side language, and merging the source-/target-side UD structures as a unified code- m mixed UD forest. ... Latest efforts on cross-lingual relation extraction (XRE) aggressively leverage the language-consistent structural features from the universal dependency (UD) resource, while they may largely suffer from biased transfer (e.g., either target-biased or source-biased) due to the inevitable linguistic disparity between languages. In this work, we investigate an unbiased UD-based XRE transfer by constructing a type of code-mixed UD forest. We first translate the sentence of the source language to the parallel target-side language, for both of which we parse the UD tree respectively. Then, we merge the source-/target-side UD structures as a unified code-mixed UD forest. With such forest features, the gaps of UD-based XRE between the training and predicting phases can be effectively closed. ... Universal dependencies (UD) have been served as effective language-consistent syntactic features for cross-lingual relation extraction (XRE). In this work, we reveal the intrinsic language discrepancies with respect to the UD structural annotations, which limit the utility of the UD features. We enhance the efficacy of UD features for an unbiased UD-based transfer, by constructing code-mixed UD forests from both the source and target UD trees. ... Relation extraction (RE) aims at extracting from the plain texts the meaningful entity mentions paired with semantic relations. One widelyacknowledged key bottleneck of RE is called the long-range dependence (LRD) issue, i.e., the decay of dependence clues of two mention entities with increasing distance in between (Culotta and Sorensen, 2004;Zhang et al., 2018;Fei et al., 2021). ... Constructing Code-mixed Universal Dependency Forest for Unbiased Cross-lingual Relation Extraction"
+      },
+      {
+        "paper_id": "237690993",
+        "markdown_evidence": "Cross-lingual transfer learning for relation extraction using Universal Dependencies ... A novel transfer learning method is presented for cross-language relation extraction using the Universal Dependency (UD) parsing, which is a language-agnostic formalism for representation of syntactic structures, and two deep networks are proposed to use this representation."
+      },
+      {
+        "paper_id": "272827963",
+        "markdown_evidence": "Entity-Aware Self-Attention and Contextualized GCN for Enhanced Relation Extraction in Long Sentences ... A novel model, Entity-aware Self-attention Contextualized GCN (ESC-GCN), which efficiently incorporates syntactic structure of input sentences and semantic context of sequences and excels in extracting relations between entities of long sentences is proposed. ... Relation extraction as an important natural Language processing (NLP) task is to identify relations between named entities in text. Recently, graph convolutional networks over dependency trees have been widely used to capture syntactic features and achieved attractive performance. However, most existing dependency-based approaches ignore the positive influence of the words outside the dependency trees, sometimes conveying rich and useful information on relation extraction. In this paper, we propose a novel model, Entity-aware Self-attention Contextualized GCN (ESC-GCN), which efficiently incorporates syntactic structure of input sentences and semantic context of sequences. ... Furthermore, entity-aware attention layer dynamically selects which token is more decisive to make final relation prediction. ... Specially, our model excels in extracting relations between entities of long sentences. ... The edges connecting different tokens identify their dependency labels. Prior efforts show that models utilizing dependency parsing of input sentences (i.e., dependency-based models) are very effective in relation extraction, because their superiority lies in drawing direct connections between distant syntactically correlated words. Xu et al. [9] first applied LSTM on the shortest dependency path (SDP) between the entities in the full tree. Miwa et al. [10] reduced the full tree into the subtree below the lowest common ancestor (LCA) of the entities. ... In this paper, we propose a novel neural model for relation extraction that is based on graph convolutional networks over dependency trees. By incorporating the context of the words related to entities with inter-dependencies of input sentence, our model can capture the long-distance dependency relation between target entities more effectively, especially in long sentences. The experimental results demonstrate that our proposed model outperforms most baseline neural sequence-based models and dependency-based models."
+      },
+      {
+        "paper_id": "276124636",
+        "markdown_evidence": "Hyperbolic Graph Convolutional Network Relation Extraction Model Combining Dependency Syntax and Contrastive Learning ... The proposed Hyperbolic Graph Convolutional Network Relation Extraction Model Combine Dependency Syntax and Contrastive Learning can effectively enhance the performance of relation extraction on public datasets, especially achieving significantly higher precision on datasets with complex sentence structures compared to in-context learning. ... In current relation extraction tasks, when the input sentence structure is complex, the performance of in-context learning methods based on large language model is still lower than that of traditional pre-train fine-tune models. For complex sentence structures, dependency syntax information can provide effective prior text structure information for relation extraction. However, most studies are affected by the noise in the syntactic information automatically extracted by natural language processing toolkits. Additionally, traditional pre-training encoders have issues such as an overly centralized representation of word embedding for high-frequency words, which adversely affects the model to learn contextual semantic information. To address proposed problem, the paper proposes a Hyperbolic Graph Convolutional Network Relation Extraction Model Combine Dependency Syntax and Contrastive Learning. Based on the hyperbolic graph neural network, dependent syntactic information and information optimization strategies are introduced to solve the problem of word embedding concentration. Simultaneously, to mitigate the impact of noise in dependency syntax information on the relation extraction task, a contrastive learning approach is employed. After the model learns context semantics separately in the original dependency syntax information and dependency syntax information with added random noise, it maximizes the mutual information between entity words to assist the model in distinguishing noise in dependency syntax. The experiments indicate that the proposed model in this paper can effectively enhance the performance of relation extraction on public datasets, especially achieving significantly higher precision on datasets with complex sentence structures compared to in-context learning."
+      },
+      {
+        "paper_id": "221743860",
+        "markdown_evidence": "Joint extraction of entities and relations using graph convolution over pruned dependency trees ... A novel end-to-end deep neural network model based on graph convolutional networks for simultaneous joint extraction of entities and relations among them and applies a path-centric pruning procedure to input trees in order to preserve useful information while maximally removing irrelevant words. ... Abstract We present a novel end-to-end deep neural network model based on graph convolutional networks for simultaneous joint extraction of entities and relations among them. Our model captures context and syntactic information from sentence by stacking a graph convolutional layer over bidirectional sequential LSTM layers. We sequentially concatenate the subject, object and sentence representations for obtaining the directionality of relations. Besides, in order to address long entity-distances problem, we further apply a path-centric pruning procedure to input trees in order to preserve useful information while maximally removing irrelevant words. Experiments are conducted on NYT dataset, and the proposed model achieves the state-of-the-art results on entity and relation extraction task. Our source code is available on Github: https://github.com/michael-hon/LSTM-GCN-ER."
+      },
+      {
+        "paper_id": "63479029",
+        "markdown_evidence": "Automatic Relation Triple Extraction by Dependency Parse Tree Traversing ... This paper focuses on the technology of extracting relation triplets automatically by traversing dependency parse tree of a sentence in postorder manner, to build ontology from plain texts."
+      },
+      {
+        "paper_id": "272110063",
+        "markdown_evidence": "A pruning-based word-centered context fragment extraction method for relation extraction ... This article proposes a new word-centered context fragment-level method based on pruning the shortest dependency path between entity pairs that outperforms the advanced model using BERT as the embedding. ... Neural relationship extraction is an important task in natural language processing, aimed at extracting relationships between target entity pairs from a given text. In recent years, with the development of deep neural networks, various types of neural networks to extract sentence entity-level, fragment-level, and sentence-level features for relationship extraction have become a mainstream research direction. Most existing studies use the BERT model to embed sentences and then use CNN to manipulate all words in the entire sentence to obtain fragment-level features. This article proposes a new word-centered context fragment-level method based on pruning the shortest dependency path between entity pairs. We demonstrate that using a pruning method based on the shortest dependency path between entity pairs can effectively improve the ability of model fragments and information extraction. We evaluated our method on a public benchmark: SemEval 2010 Task 8. The experimental results show that our method outperforms the advanced model using BERT as the embedding."
+      },
+      {
+        "paper_id": "13754159",
+        "markdown_evidence": "SIRIUS-LTG-UiO at SemEval-2018 Task 7: Convolutional Neural Networks with Shortest Dependency Paths for Semantic Relation Extraction and Classification in Scientific Papers ... This article presents the SIRIUS-LTG-UiO system for the SemEval 2018 Task 7 on Semantic Relation Extraction and Classification with a convolutional neural network which takes the shortest dependency path embeddings as input and performs relation classification with differing objectives for each subtask of the shared task. ... This article presents the SIRIUS-LTG-UiO system for the SemEval 2018 Task 7 on Semantic Relation Extraction and Classification in Scientific Papers. First we extract the shortest dependency path (sdp) between two entities, then we introduce a convolutional neural network (CNN) which takes the shortest dependency path embeddings as input and performs relation classification with differing objectives for each subtask of the shared task. This approach achieved overall F1 scores of 76.7 and 83.2 for relation classification on clean and noisy data, respectively. Furthermore, for combined relation extraction and classification on clean data, it obtained F1 scores of 37.4 and 33.6 for each phase. Our system ranks 3rd in all three sub-tasks of the shared task."
+      },
+      {
+        "paper_id": "57304052",
+        "markdown_evidence": "Binary Relation Extraction from Biomedical Literature using Dependency Trees and SVMs ... This work uses a novel approach to map dependency tree based rules to feature vectors that can be used to train a classiﬁer and quantifies the positive impact of improved relation extraction on Literature Based Discovery. ... The goal of Biomedical relation extraction is to uncover high-quality relations from life science literature with diverse applications in the ﬁelds of Biology and Medicine. In the last decade, several methods can be found in published literature ranging from binary to complex relation extraction. In this work, we present a binary relation extraction system that relies on sentence level dependency features. We use a novel approach to map dependency tree based rules to feature vectors that can be used to train a classiﬁer. We build a SVM classiﬁer using these feature vectors and our experimental results show that it outperforms simple co-occurrence and rule-based systems. Through our experiments, using two ‘real-world’ examples, we quantify the positive impact of improved relation extraction on Literature Based Discovery. ... Excellent reviews of relation extraction methods can be found in [11], [15], [16]. The NLP-based approaches differ from one another in several aspects. One of them is the technique employed to analyze the input text, i.e. Part-of-speech (POS) tagging [17], shallow parsing [18] or full parsing [19] but also in the methods for extracting and learning rules [11]. In general, a relation extraction system using NLP consists of: a) Named Entity Recognition (NER) [28], b) Relation Trigger Word Identification and c) Relation Extraction [31]."
+      },
+      {
+        "paper_id": "233347048",
+        "markdown_evidence": "Enriched Attention for Robust Relation Extraction ... This work proposes to enrich the attention function with features modeling knowledge about the relation arguments and the shortest dependency path between them, so that for different relation arguments, the model can pay attention to different parts of the sentence. ... The performance of relation extraction models has increased considerably with the rise of neural networks. However, a key issue of neural relation extraction is robustness: the models do not scale well to long sentences with multiple entities and relations. In this work, we address this problem with an enriched attention mechanism. Attention allows the model to focus on parts of the input sentence that are relevant to relation extraction. We propose to enrich the attention function with features modeling knowledge about the relation arguments and the shortest dependency path between them. Thus, for different relation arguments, the model can pay attention to different parts of the sentence. Our model outperforms prior work using comparable setups on two popular benchmarks, and our analysis confirms that it indeed scales to long sentences with many entities."
+      },
+      {
+        "paper_id": "227179888",
+        "markdown_evidence": "Bidirectional Dependency-Guided Attention for Relation Extraction ... This work proposes a novel bidirectional dependency-guided attention model that outperforms existing dependency based models as well as the powerful pretraining model and achieves the state-of-the-art performance on TACRED dataset."
+      },
+      {
+        "paper_id": "278365780",
+        "markdown_evidence": "Relationship extraction between entities with long distance dependencies and noise based on semantic and syntactic features ... A novel relation extraction method that integrates semantic and syntactic features for handling noisy long-distance dependencies, and proposes a loss computation method based on predictive interpolation, which dynamically balances the contributions of semantic and syntactic features through weighted interpolation, thereby enhancing relation extraction accuracy. ... Relation extraction plays a crucial role in tasks such as text processing and knowledge graph construction. However, existing extraction algorithms struggle to maintain accuracy when dealing with long-distance dependencies between entities and noise interference. To address these challenges, this paper proposes a novel relation extraction method that integrates semantic and syntactic features for handling noisy long-distance dependencies. Specifically, we leverage contextual semantic features generated by the pre-trained BERT model alongside syntactic features derived from dependency syntax graphs, effectively utilizing the complementary strengths of both sources of information to enhance the model’s performance in long-distance dependency scenarios. ... Although these methods refine dependency trees by assigning attention weights to different nodes, a major limitation is that they may still distort the information of entity nodes. In this work, we fully integrate sentence-level semantic information with dependency syntax trees by leveraging a Self-Attention-based Graph Convolutional Network (SA-GCN) to process entire dependency graphs. This approach enhances long-distance dependency modeling while utilizing a residual shrinking mechanism to improve noise robustness. ... further enhanced BERT-based extraction by integrating lexical and syntactic features, such as part-of-speech tags and dependency trees, achieving superior extraction performance. However, sequence-based methods heavily rely on word vector representations while neglecting the influence of syntactic dependencies within a sentence. Dependency-based extraction methods incorporate sentence-and syntax-level features to enrich entity representations. Since sentence dependencies can be naturally represented as graphs, these methods are often combined with Graph Neural Networks (GNNs). Hao et al."
+      },
+      {
+        "paper_id": "251324506",
+        "markdown_evidence": "Research on Relation Extraction of Fusion Entity Enhancement and Shortest Dependency Path based on BERT ... Deep learning models rely on single word features and location features of text to achieve good results in text relation extraction tasks. However, previous studies have failed to make full use of semantic information contained in sentence dependency syntax trees, and data sparseness and noise propagation still affect classification models. The BERT(Bidirectional Encoder Representations from Transformers) pretrained language model provides a better representation of natural language processing tasks. And entity enhancement methods have been proved to be effective in relation extraction tasks. Therefore, this paper proposes a combination of the shortest dependency path and entity-enhanced BERT pre-training language model for model construction to reduce the impact of noise terms on the classification model and obtain more semantically expressive feature representation. The algorithm is tested on SemEval-2010 Task 8 English relation extraction dataset, and the F1 value of the final experiment can reach 0. 881."
+      },
+      {
+        "paper_id": "51680141",
+        "markdown_evidence": "Chemical-induced disease relation extraction with dependency information and prior knowledge ... Experiments on the BioCreative V CDR dataset show that the proposed novel convolutional attention network achieves comparable performance with the state-of-the-art systems, and both dependency information and prior knowledge play important roles in CDR extraction task. ... Chemical-disease relation (CDR) extraction is significantly important to various areas of biomedical research and health care. Nowadays, many large-scale biomedical knowledge bases (KBs) containing triples about entity pairs and their relations have been built. KBs are important resources for biomedical relation extraction. However, previous research pays little attention to prior knowledge. In addition, the dependency tree contains important syntactic and semantic information, which helps to improve relation extraction. So how to effectively use it is also worth studying. In this paper, we propose a novel convolutional attention network (CAN) for CDR extraction. Firstly, we extract the shortest dependency path (SDP) between chemical and disease pairs in a sentence, which includes a sequence of words, dependency directions, and dependency relation tags. ... The shortest dependency path (SDP) between two entities in a dependency parse tree is usually used for entity relation extraction. The semantic dependency among tokens of SDP can offer more concise and effective information for CDR extraction [16,17]. Taking Sentence 1 as an example, two chemical entities are denoted by wave line and a disease entity is denoted by underline. The disease entity \"seizures\" is associated with the two chemical entities \"cocaine\" and \"benzoylecgonine\". The dependency parse tree of the example sentence. ... In this section, we introduce our CDR extraction method, which can be divided into six sequential steps. (1) Generate relation instances according to some heuristic rules and hypernym filtering method at both intraand inter-sentence levels. (2) Extract SDP between chemical-disease pairs in relation instances based on the dependency parse trees. ( (5) Merge the results of intra-and inter-sentence levels to acquire relations between entities at document level. (6) Apply some post-processing rules to pick the most likely CDR back, when no relation is found in a document by our model."
+      },
+      {
+        "paper_id": "250635245",
+        "markdown_evidence": "Global Inference with Explicit Syntactic and Discourse Structures for Dialogue-Level Relation Extraction ... A novel dialogue-level mixed dependency graph (D2G) and an argument reasoning graph (ARG) for DiaRE with a global relation reasoning mechanism is investigated, which effectively solves the long-range dependence issue, and meanwhile gives explainable predictions. ... Recent research attention for relation extraction has been paid to the dialogue scenario, i.e., dialogue-level relation extraction (DiaRE). Existing DiaRE methods either simply concatenate the utterances in a dialogue into a long piece of text, or employ naive words, sentences or entities to build dialogue graphs, while the structural characteristics in dialogues have not been fully utilized. In this work, we investigate a novel dialogue-level mixed dependency graph (D2G) and an argument reasoning graph (ARG) for DiaRE with a global relation reasoning mechanism. First, we model the entire dialogue into a unified and coherent D2G by explicitly integrating both syntactic and discourse structures, which enables richer semantic and feature learning for relation extraction. Second, we stack an ARG graph on top of D2G to further focus on argument inter-dependency learning and argument representation refinement, for sufficient argument relation inference. In our global reasoning framework, D2G and ARG work collaboratively, iteratively performing lexical, syntactic and semantic information exchange and representation learning over the entire dialogue context. On two DiaRE benchmarks, our framework shows considerable improvements over the current state-of-the-art baselines. Further analyses show that the model effectively solves the long-range dependence issue, and meanwhile gives explainable predictions."
+      },
+      {
+        "paper_id": "60822664",
+        "markdown_evidence": "Syntactic Dependency for relation extraction from Biomedical literature ... A extraction system based on syntactic dependency technique based on the output of the sentence parsing to build a classification model to separate the candidate edges into positive class and negative class is built. ... Relation extraction is important to improve complex natural language processing (NLP) applications. The Bio-Event extraction in GE shared task is important to understand biological processes. Although some progress has made in GE research, there is still much work to do to improve the performance of the extraction system. In this paper, we build a extraction system based on syntactic dependency technique. Relying on the output of the sentence parsing, we get rich features to build a classification model to separate the candidate edges into positive class and negative class. We obtain promising results on GE develop data set. Especially the results of simple events are comparable with the state-of-the-art GE extraction systems. Keywords-syntactic parsing; Dependency; Classification; extraction. ... Syntactic Dependency for relation extraction from Biomedical literature ... Relation extraction is important to improve complex natural language processing (NLP) applications. The Bio-Event extraction in GE shared task is important to understand biological processes. Although some progress has made in GE research, there is still much work to do to improve the performance of the extraction system. In this paper, we build a extraction system based on syntactic dependency technique. Relying on the output of the sentence parsing, we get rich features to build a classification model to separate the candidate edges into positive class and negative class. ... Although some progress has made in GE research, there is still much work to do to improve the performance of the extraction system. In this paper, we build a extraction system based on syntactic dependency technique. Relying on the output of the sentence parsing, we get rich features to build a classification model to separate the candidate edges into positive class and negative class. We obtain promising results on GE develop data set. Especially the results of simple events are comparable with the state-of-the-art GE extraction systems. Keywords-syntactic parsing; Dependency; Classification; extraction."
+      },
+      {
+        "paper_id": "268206815",
+        "markdown_evidence": "GREED: Graph Learning Based Relation Extraction with Entity and Dependency Relations ... GREED (Graph learning based Relation Extraction with Entity and Dependency relations) is introduced, based on graph classification using Graph Convolutional Network (GCN), which transforms each sentence into a weighted graph via dependency parsing. ... : A large number of electronic medical documents are generated by specialists, containing valuable information for various medical tasks such as medical prescriptions. Extracting this information from extensive natural language text can be challenging. Named Entity Recognition (NER) and Relation Extraction (RE) are key tasks in clinical information extraction. Systems often rely on machine learning and rule-based techniques. Modern methods involve dependency parsing and graph-based deep learning algorithms. However, the effectiveness of these techniques and certain features is not thoroughly studied. Additionally, it would be advantageous to properly integrate rules with deep learning models. In this paper, we introduce GREED (Graph learning based Relation Extraction with Entity and Dependency relations). GREED is based on graph classification using Graph Convolutional Network (GCN). ... We have syntactically parsed the sentence to get its dependency tree and define the edges between words. This parsing is very important for the relation extraction that is essentially based on the predicates (Mahendran et al., 2022;Li et al., 2022;Yuan et al., 2022). Most of the methods based on this idea use unweighted edges. Indeed, we have followed the method of Zhou et al. (2020) by adding weighted edges based on the shortest paths to enhance the dependency propagation made by the GCN layers. The method of Yuan et al. ... GREED: Graph Learning Based Relation Extraction with Entity and Dependency Relations ... GREED: Graph Learning Based Relation Extraction with Entity and Dependency Relations ... Most methods ignore the dependency types and consider that the different dependency relations are identical (Zhou et al., 2020;Li et al., 2022;Yuan et al., 2022). However, we have used a trainable embedding layer of size 10 to represent the type of the incoming dependency relation for each word. Thus, we are able to distinguish 40 types such as nominal subject, object predicate, particle, etc."
+      },
+      {
+        "paper_id": "233578260",
+        "markdown_evidence": "Biomedical cross-sentence relation extraction via multihead attention and graph convolutional networks ... A hybrid model for extracting biomedical relation in a cross-sentence which relies on the self-attention mechanism that directly draws the global dependency relation of the sentence and employs graph convolutional networks that encode the dependency structural information to guide the multihead attention to learn the dependency relation. ... Abstract Most biomedical information extraction efforts are focused on binary relations, there is a strong need to extract drug–gene–mutation n-ary relations among cross-sentences. In recent years, end-to-end biomedical relation extraction with sequence-based or dependency-based method has gained increasing attention. However, handling global dependencies and structural information remains challenges for sequence-based and dependency-based models. Joint exploitation of sequence and graph information may improve biomedical cross-sentence relation extraction. In this paper, we present a hybrid model for extracting biomedical relation in a cross-sentence which aims to address these problems. Our models rely on the self-attention mechanism that directly draws the global dependency relation of the sentence. Furthermore, to preserve the dependency structural information between the words that contain the syntactic dependency relations, we employ graph convolutional networks that encode the dependency structural information to guide the multihead attention to learn the dependency relation. Through extensive experiments on benchmark datasets, we demonstrated the effectiveness of our method."
+      },
+      {
+        "paper_id": "270013560",
+        "markdown_evidence": "Dependency-position relation graph convolutional network with hierarchical attention mechanism for relation extraction ... The Dependent-Position Relation Graph Convolutional network with Hierarchical Attention (DPR-GHA) for relation extraction is proposed, a method that integrates dependency relations and position relations into a hierarchical attention mechanism to effectively capture the relations between entities in text."
+      },
+      {
+        "paper_id": "237417517",
+        "markdown_evidence": "Enhancing Biomedical Relation Extraction with Transformer Models using Shortest Dependency Path Features and Triplet Information ... A novel approach that utilizes the Shortest Dependency Path (SDP) features for constructing data samples by pruning out noisy information and selecting the most representative samples for model learning and triplet information in model learning is proposed. ... Entity relation extraction plays an important role in the biomedical, healthcare, and clinical research areas. Recently, pre-trained models based on transformer architectures and their variants have shown remarkable performances in various natural language processing tasks. Most of these variants were based on slight modifications in the architectural components, representation schemes and augmenting data using distant supervision methods. In distantly supervised methods, one of the main challenges is pruning out noisy samples. A similar situation can arise when the training samples are not directly available but need to be constructed from the given dataset. The BioCreative V Chemical Disease Relation (CDR) task provides a dataset that does not explicitly offer mention-level gold annotations and hence replicates the above scenario. Selecting the representative sentences from the given abstract or document text that could convey a potential entity relationship becomes essential. Most of the existing methods in literature propose to either consider the entire text or all the sentences which contain the entity mentions. This could be a computationally expensive and time consuming approach. This paper presents a novel approach to handle such scenarios, specifically in biomedical relation extraction. We propose utilizing the Shortest Dependency Path (SDP) features for constructing data samples by pruning out noisy information and selecting the most representative samples for model learning. We also utilize triplet information in model learning using the biomedical variant of BERT, viz., BioBERT. The problem is represented as a sentence pair classification task using the sentence and the entity-relation pair as input. We analyze the approach on both intra-sentential and inter-sentential relations in the CDR dataset. The proposed approach that utilizes the SDP and triplet features presents promising results, specifically on the inter-sentential relation extraction task."
+      },
+      {
+        "paper_id": "252469360",
+        "markdown_evidence": "Enhancing Relation Extraction by Using Shortest Dependency Paths Between Entities with Pre-trained Language Models ... Relation Extraction (RE) is the task of finding the relation between entities in a plain text. As the length of the sentences increases, finding the relation becomes more challenging. The shortest dependency path (SDP) between two entities, obtained by traversing the terms in the dependency tree of a sentence, provides a view focused on the entities by pruning noisy words. In the supervised form of the relation extraction task, Relation Classification, the state-of-the-art methods generally integrate a pre-trained language model (PLM) into their approaches. However, none of them incorporates the shortest dependency paths to the best of our knowledge.This paper investigates the effects of using shortest dependency paths with pre-trained language models by taking the R-BERT relation classification model as the baseline and building upon it. Our novel approach enhances the baseline model by adding the sequence representation of the shortest dependency path between entities, collected from PLMs, as an additional embedding. In the experiments, we evaluated the proposed model’s performance for each combination of SDPs generated from Stanford, HPSG, and LAL dependency parsers with BERT and XLNet PLMs in two datasets, SemEval-2010 Task 8 and TACRED. We improved the baseline model by absolute 1.41% and 3.60% scores, increasing the rankings of the model from 8th to 7th and from 18th to 7th in SemEval-2010 Task 8 and TACRED, respectively."
+      },
+      {
+        "paper_id": "59449494",
+        "markdown_evidence": "Dependency for Relation Extraction from Biomedical Literature ... A extraction system based on syntactic dependency technique based on the output of the sentence parsing to build a classification model to separate the candidate edges into positive class and negative class is built."
+      },
+      {
+        "paper_id": "276436046",
+        "markdown_evidence": "An Entity-Relation Extraction Method Based on the Mixture-of-Experts Model and Dependency Parsing ... This work proposes an entity-relation extraction model that incorporates dependency parsing and a mixture-of-experts architecture that uses BERT as a character encoder, while integrating dependency syntax information as a separate encoding path. ... Entity-relation extraction (ERE) aims to identify entity types and the relationships between them from unstructured texts and is one of the key technologies for constructing knowledge graphs. However, ERE tasks face challenges such as insufficient semantic representations and the complexity of relationship types, which lead to the difficulty of triplet extraction. To address these issues, we propose an entity-relation extraction model that incorporates dependency parsing and a mixture-of-experts architecture. Specifically, we use BERT as a character encoder, while integrating dependency syntax information as a separate encoding path. We apply additive attention to fuse the two pathways of encoding, assigning different weights to each vector in the encoding layer output through a learned weighting process. This enables the model to flexibly adjust the attention given to different features, allowing for a more accurate identification and utilization of syntactic dependencies within a sentence. In the relation classification layer, we employ a mixture-of-experts architecture, allowing each expert to focus on learning different relationship labels, thereby enhancing the model’s ability to accurately identify and capture specific entity relationships. The proposed model achieves superior results to the baseline models on two public ERE datasets, providing a novel and effective solution for entity-relation extraction tasks."
+      },
+      {
+        "paper_id": "234049980",
+        "markdown_evidence": "Syntax-Informed Self-Attention Network for Span-Based Joint Entity and Relation Extraction ... This paper proposes to incorporate syntax knowledge into multi-head self-attention by employing part of heads to focus on syntactic parents of each token from pruned dependency trees, and uses it to model the global context to fuse syntactic and semantic features. ... Current state-of-the-art joint entity and relation extraction framework is based on span-level entity classification and relation identification between pairs of entity mentions. However, while maintaining an efficient exhaustive search on spans, the importance of syntactic features is not taken into consideration. It will lead to a problem that the prediction of a relation between two entities is related based on corresponding entity types, but in fact they are not related in the sentence. In addition, although previous works have proven that extract local context is beneficial for the task, it still lacks in-depth learning of contextual features in local context. ... In addition, in order to get richer contextual features from the local context, we apply local focus mechanism on entity pairs and corresponding context. Based on applying the two strategies, we perform joint entity and relation extraction on span-level. ... Syntactic features are beneficial for RE tasks because they can capture dependencies between different components in a sentence that may be ambiguous on the surface. In the past, at the core of relation extraction approaches are statistical classifiers, many of which find that syntactic features play an important role. For traditional methods, Ref. [23] proposed a tree-based kernel approach and introduced kernels defined over shallow parse representations of text. Ref. [24] introduced the simplified dependency path to tree kernels. They proved that such feature can improve the performance of extraction."
+      },
+      {
+        "paper_id": "258660886",
+        "markdown_evidence": "Biomedical Relation Extraction Using Dependency Graph and Decoder-Enhanced Transformer Model ... This study proposes BERTGAT that uses a graph attention network (GAT) to take into account the local structure of sentences and embedding features of nodes under the self-attention scheme and investigates whether incorporating syntactic structure can help relation extraction. ... The identification of drug–drug and chemical–protein interactions is essential for understanding unpredictable changes in the pharmacological effects of drugs and mechanisms of diseases and developing therapeutic drugs. In this study, we extract drug-related interactions from the DDI (Drug–Drug Interaction) Extraction-2013 Shared Task dataset and the BioCreative ChemProt (Chemical–Protein) dataset using various transfer transformers. We propose BERTGAT that uses a graph attention network (GAT) to take into account the local structure of sentences and embedding features of nodes under the self-attention scheme and investigate whether incorporating syntactic structure can help relation extraction. ... Furthermore, we evaluated the potential of biomedical relation extraction of GPT-3 (Generative Pre-trained Transformer) using GPT-3 variant models. ... In this section, we describe BERT GAT to encode the syntactic structure with graphattention network (GAT) [15]. It leverages the overall graph structure to learn complex relationships between entities, enabling the classification of various types of relationships. In general, dependency trees provide a rich structure to be exploited in relation extraction. Parse trees can have varying structures depending on the input sentences, which may differ in terms of length, complexity, and syntactic construction. Thus, organizing these trees into a fixed-size batch can be difficult. ... According to previous studies, syntactic clues such as grammatical dependencies of a sentence help relation extraction. Some studies [13] have demonstrated that removing tokens outside the subtree rooted at the lowest common ancestor of the two entities or SDP (shortest dependency path) word sequence between two entities from the parse tree can improve relation extraction performance by eliminating irrelevant information from the sentence."
+      },
+      {
+        "paper_id": "261596867",
+        "markdown_evidence": "A Biomedical Relation Extraction Method Based on Graph Convolutional Network with Dependency Information Fusion ... The proposed Dependency Information Fusion Attention Graph Convolutional Network (DIF-A-GCN) is evaluated on two biomedical datasets and shows that the proposed method outperforms current state-of-the-art biomedical relation extraction models. ... Biomedical texts are relatively obscure in describing relations between specialized entities, and the automatic extraction of drug–drug or drug–disease relations from massive biomedical texts presents a challenge faced by many researchers. To this end, this paper designs a relation extraction method based on dependency information fusion to improve the predictive power of the model for the relations between given biomedical entities. Firstly, we propose a local–global pruning strategy for the dependency syntax tree. Next, we propose the construction of a dependency type matrix for the pruned dependency tree to incorporate sentence dependency information into the model to feature extraction. We then incorporate attention mechanism into the graph convolutional model by calculating the attention weights of word–word dependencies, thus improving the traditional graph convolutional network. ... A Biomedical Relation Extraction Method Based on Graph Convolutional Network with Dependency Information Fusion ... Biomedical texts are relatively obscure in describing relations between specialized entities, and the automatic extraction of drug–drug or drug–disease relations from massive biomedical texts presents a challenge faced by many researchers. To this end, this paper designs a relation extraction method based on dependency information fusion to improve the predictive power of the model for the relations between given biomedical entities. Firstly, we propose a local–global pruning strategy for the dependency syntax tree. ... To this end, this paper designs a relation extraction method based on dependency information fusion to improve the predictive power of the model for the relations between given biomedical entities. Firstly, we propose a local–global pruning strategy for the dependency syntax tree. Next, we propose the construction of a dependency type matrix for the pruned dependency tree to incorporate sentence dependency information into the model to feature extraction."
+      },
+      {
+        "paper_id": "13880094",
+        "markdown_evidence": "Establishing a baseline for literature mining human genetic variants and their relationships to disease cohorts ... This work represents the first attempt to apply relation extraction methods to the Variome corpus and demonstrates that automated methods have good potential to structure the information expressed in the published literature related to genetic variants, connecting mutations to genes, diseases, and patient cohorts. ... BackgroundThe Variome corpus, a small collection of published articles about inherited colorectal cancer, includes annotations of 11 entity types and 13 relation types related to the curation of the relationship between genetic variation and disease. Due to the richness of these annotations, the corpus provides a good testbed for evaluation of biomedical literature information extraction systems.MethodsIn this paper, we focus on assessing performance on extracting the relations in the corpus, using gold standard entities as a starting point, to establish a baseline for extraction of relations important for extraction of genetic variant information from the literature. ... We model relations and entities as sub-graphs headed by a node in the dependency tree. The basic assumption is that each sentence is independent of each other from the perspective of entity-entity relationships, i.e. that a relation is expressed within the boundary of a sentence. Relations are denoted by specific words that introduce the relationship (their trigger words) and hence are pre-terminals in the parse tree. Entities are denoted by a parse tree-node covering a subtree that spans over the whole text of the entity. ... When determining the relation type, we further identify information helpful for the relation detection such as negation and voice. The result of syntactic dependency parsing is dependency relations among tokens (with a syntactic dependency as predicate, and tokens as arguments). This is useful information for detecting the semantic relations expressed in the sentence. PKDE4J includes a set of 19 rules that capture syntactic and lexical characteristics of sentences, which in turn are used as features for relation extraction."
+      },
+      {
+        "paper_id": "233189588",
+        "markdown_evidence": "Attention-based Relational Graph Convolutional Network for Target-Oriented Opinion Words Extraction ... A directed syntactic dependency graph based on a dependency tree to establish a path from the target to candidate opinions and a novel attention-based relational graph convolutional neural network (ARGCN) to exploit syntactic information over dependency graphs are designed. ... Target-oriented opinion words extraction (TOWE) is a subtask of aspect-based sentiment analysis (ABSA). It aims to extract the corresponding opinion words for a given opinion target in a review sentence. Intuitively, the relation between an opinion target and an opinion word mostly relies on syntactics. In this study, we design a directed syntactic dependency graph based on a dependency tree to establish a path from the target to candidate opinions. Subsequently, we propose a novel attention-based relational graph convolutional neural network (ARGCN) to exploit syntactic information over dependency graphs. Moreover, to explicitly extract the corresponding opinion words toward the given opinion target, we effectively encode target information in our model with the target-aware representation. Empirical results demonstrate that our model significantly outperforms all of the existing models on four benchmark datasets. Extensive analysis also demonstrates the effectiveness of each component of our models. Our code is available at https://github.com/wcwowwwww/towe-eacl."
+      },
+      {
+        "paper_id": "53791874",
+        "markdown_evidence": "Relation Classification via LSTMs Based on Sequence and Tree Structure ... A novel two-channel neural network architecture with attention mechanism that can make better use of the information contained in sentences and achieves impressive improvements on relation classification as compared with the existing methods is proposed. ... The goal of relation classification is to recognize the relationship between two marked entities in a sentence. It is a crucial constituent in natural language processing. Up till the present moment, most previous neural network models for this task either focus on using the handcrafted syntactic features or learning semantic representations of raw word sequences, they have no capacity for encoding the whole sentence representation including syntax and semantic information. In general, information of syntax and semantics can both have significant effect on classifying relation. Based on this idea, we propose a novel two-channel neural network architecture with attention mechanism in the paper to handle this task. First, we employ bidirectional sequence long short-term memory (LSTM) channel to capture the semantic information and acquire syntactic knowledge by utilizing tree structure LSTM channel. ... Xu et al. [10] learned features iteratively along the shortest dependency path and utilized LSTM for information integration and representation. Liu et al. [5] also proposed to classify relations between entities by modeling the augmented dependency path in neural network framework. Yang et al. [9] offered a new perspective on leveraging syntactic information and position feature based on dependency parse tree for relation classification. Wen et al. [24] learned relation representations of Chinese literature text by using the shortest dependency path generated from the structure regularized parse tree."
+      },
+      {
+        "paper_id": "268151923",
+        "markdown_evidence": "Advancing document-level relation extraction with a syntax-enhanced multi-hop reasoning network ... A syntax-enhanced multi-hop reasoning network that incorporates richer grammatical information instead of a sparse syntactic parsing matrix to build the syntactic graph and achieves a competitive F1 score compared to the current state-of-the-art methods. ... Document-level relation extraction aims to uncover relations between entities by harnessing the intricate information spread throughout a document. Previous research involved constructing discrete syntactic matrices to capture syntactic relationships within documents. However, these methods are significantly influenced by dependency parsing errors, leaving much of the latent syntactic information untapped. Moreover, prior research has mainly focused on modeling two-hop reasoning between entity pairs, which has limited applicability in scenarios requiring multi-hop reasoning. To tackle these challenges, a syntax-enhanced multi-hop reasoning network (SEMHRN) is proposed. Specifically, the approach begins by using a dependency probability matrix that incorporates richer grammatical information instead of a sparse syntactic parsing matrix to build the syntactic graph. This effectively reduces syntactic parsing errors and enhances the model’s robustness. To fully leverage dependency information, dependency-type-aware attention is introduced to refine edge weights based on connecting edge types. Additionally, a part-of-speech prediction task is included to regularize word embeddings. Unrelated entity pairs can disrupt the model’s focus, reducing its efficiency. To concentrate the model’s attention on related entity pairs, these related pairs are extracted, and a multi-hop reasoning graph attention network is employed to capture the multi-hop dependencies among them. Experimental results on three public document-level relation extraction datasets validate that SEMHRN achieves a competitive F1 score compared to the current state-of-the-art methods."
+      },
+      {
+        "paper_id": "51878680",
+        "markdown_evidence": "Biomedical Event Extraction Using Convolutional Neural Networks and Dependency Parsing ... A convolutional neural network that can be used for both event and relation extraction, and which can be easily applied to a large set of corpora from e.g. the BioNLP, DDI Extraction and BioCreative shared tasks. ... Event and relation extraction are central tasks in biomedical text mining. Where relation extraction concerns the detection of semantic connections between pairs of entities, event extraction expands this concept with the addition of trigger words, multiple arguments and nested events, in order to more accurately model the diversity of natural language. In this work we develop a convolutional neural network that can be used for both event and relation extraction. We use a linear representation of the input text, where information is encoded with various vector space embeddings. Most notably, we encode the parse graph into this linear space using dependency path embeddings. We integrate our neural network into the open source Turku Event Extraction System (TEES) framework. Using this system, our machine learning model can be easily applied to a large set of corpora from e.g. the BioNLP, DDI Extraction and BioCreative shared tasks. ... Compared to neural networks which use either only word vectors, or model parse structure at the network level (e.g. graph-LSTMs), an interesting aspect of our method is that it can function both with and without parse information. By turning dependency path features on and off we can evaluate the impact of deep parsing on the system (See Table 3). The path embeddings have the most impact on GE11 entity detection, where these paths link the entity candidate token to each other token. In GE11 event argument extraction the role of the path context embeddings is diminished. ... All of these corpora are used in the TEES XML format and are installed or generated with the TEES system. The corpora are parsed with the TEES preprocessing pipeline, which utilizes the BLLIP parser (Charniak and Johnson, 2005) with the McClosky biomodel (McClosky, 2010), followed by conversion of the constituency parses into dependency parses with the Stanford Tools (de Marneffe et al., 2006). These tools generate the deep parse graph which is used as the source for our dependency path features."
+      },
+      {
+        "paper_id": "268724462",
+        "markdown_evidence": "Triplet extraction leveraging sentence transformers and dependency parsing ... A new model is suggested: Unsupervised Dependency parsing Aided Semantic Triple Extraction ( UDASTE) that leverages sentence structure and allows defining restrictive triple relation types to generate high-quality triples while removing the need for mapping extracted triples to relation schemas. ... Knowledge Graphs are a tool to structure (entity, relation, entity) triples. One possible way to construct these knowledge graphs is by extracting triples from unstructured text. The aim when doing this is to maximise the number of useful triples while minimising the triples containing no or useless information. Most previous work in this field uses supervised learning techniques that can be expensive both computationally and in that they require labelled data. While the existing unsupervised methods often produce an excessive amount of triples with low value, base themselves on empirical rules when extracting triples or struggle with the order of the entities relative to the relation. To address these issues this paper suggests a new model: Unsupervised Dependency parsing Aided Semantic Triple Extraction ( UDASTE ) that leverages sentence structure and allows defining restrictive triple relation types to generate high-quality triples while removing the need for mapping extracted triples to relation schemas. This is done by leveraging pre-trained language models. UDASTE is compared with two baseline models on three datasets. UDASTE outperforms the baselines on all three datasets. Its limitations and possible further work are discussed in addition to the implementation of the model in a computational intelligence context."
+      },
+      {
+        "paper_id": "255994167",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267576774",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16893368",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265908917",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274896094",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "18221389",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220060172",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245501245",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260583609",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244209401",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252130221",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6607403",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272219465",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278751168",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233622849",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "15660411",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209096435",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269565762",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2010873",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "239024709",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244841530",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "9729940",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "113401765",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279603439",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251809843",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245395192",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "17001211",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248094984",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237246153",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236257481",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "10802942",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250562647",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237651933",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2074845",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "184487889",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248363119",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248470298",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266364065",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "20879172",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266927939",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "59336791",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274816192",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258333807",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256460253",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269486037",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233878062",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237319585",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266873605",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236335775",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3160937",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237550638",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274900137",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "131773936",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271497207",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "44078065",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259714840",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236469352",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250572894",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267703538",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222177188",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267068685",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233189627",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257617931",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251325466",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265437758",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270468221",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "214098786",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "198185118",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275787199",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251324352",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269950825",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "31492647",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219132490",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255664654",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219853818",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5282346",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "508653",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275439934",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "282878369",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14359949",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "464513",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14975040",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280393211",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257858717",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225007737",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53788211",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "96432854",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245935418",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "96193",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "214802826",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "239666331",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54023707",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "752623",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "4515803",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "9389034",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276926422",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250511872",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257600574",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "146023179",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "51981761",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "25169775",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268363597",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56598901",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "8836054",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56595641",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16250596",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264085329",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271908578",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275439712",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272561191",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "46918898",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "17632177",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276161153",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218613850",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277271973",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231919837",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "207853026",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202786969",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266255809",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "49653505",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "43123274",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264170823",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234308817",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53751347",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "203176183",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "4408231",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272052402",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270688707",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278310363",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "9206689",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "182616",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269950860",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248632906",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275440007",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257074463",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234474947",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "230577582",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209515730",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276317583",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268704931",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "284717609",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275439528",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "24590593",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262217343",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278937325",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274305970",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "212559238",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279267640",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260601397",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274530355",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

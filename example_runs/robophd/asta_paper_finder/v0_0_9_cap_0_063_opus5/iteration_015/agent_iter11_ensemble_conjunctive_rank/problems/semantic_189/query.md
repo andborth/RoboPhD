@@ -1,0 +1,1 @@
+papers discussing how modern language models set d_model and number of layers in transformer architecture, focusing on the effects of long narrow vs wide shallow models

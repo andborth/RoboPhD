@@ -101,7 +101,18 @@ TASK_NAME = "PaperFindingBench_test"
 # strips the provider prefix). Checked against the installed litellm before
 # any eval spend — an unpriced model would surface only after the full run
 # as `astabench score` cost=null.
-AGENT_MODELS = ["gpt-5.4-mini", "gpt-5.4-2026-03-05"]
+#
+# The union across SUBMISSIONS, not a per-submission list: the preflight is
+# a cheap all-or-nothing gate, and an agent that never calls a listed model
+# costs nothing to over-verify. v0_0_9 added the Anthropic pair — it is the
+# first submission here whose agent calls anything but OpenAI, and a model
+# absent from this list is simply never checked.
+AGENT_MODELS = [
+    "gpt-5.4-mini",
+    "gpt-5.4-2026-03-05",
+    "claude-haiku-4-5-20251001",
+    "claude-sonnet-4-6",
+]
 
 # Official-judging cost projection, printed before eval. Now calibrated on
 # two completed official runs rather than an internal capped estimate:
@@ -160,6 +171,39 @@ SUBMISSIONS = [
         # model_arg stays "none" despite the single model — the recorded
         # eval.model would otherwise claim a primary, and per-call usage
         # is already captured in stats.model_usage.
+    ),
+    Submission(
+        name="v0_0_9_cap_0_063_opus5",
+        agent_rel_path="agents/iter15_verdict_repair/agent.py",
+        model_arg="none",
+        # Run robophd-asta_paper_finder-010 (opus-5-evolved; luna no-prose
+        # training judge), winner iter15_verdict_repair (Elo 1571, 5 test
+        # rounds). Internal test 0.3839 mean F1 @ $0.0533/query on the
+        # stock GPT-4o basis with canonical ordering. Prices are quoted to
+        # three decimals throughout — the board's precision, beyond which
+        # two entries are a cost TIE decided on score alone.
+        # The $0.063 free zone is a competitor's price, not a round number:
+        # Asta Paper Finder's cheaper frontier point is $0.063. Setting the
+        # gate AT that figure buys the cost half of a Pareto-dominance
+        # claim by construction and leaves only the score half to win (the
+        # v0_0_8 $0.033 gate's logic, aimed this time at the frontier point
+        # directly above ours). At $0.053 this ties v0_0_7 on cost, so its
+        # +0.009 score displaces our own entry rather than joining it.
+        # FIRST leaderboard submission of any kind evolved by Opus 5, which
+        # spends its allowance far more readily than Opus 4.8 (cap
+        # utilisation 75% over 3 runs vs 52% over 5) — see the snapshot
+        # README; unspent free zone is forgone score.
+        # Unlike v0_0_8 this is not a new Pareto point beside v0_0_7 — at
+        # the same $0.0533 it carries +0.009 more score, so if it transfers
+        # it displaces our own entry rather than joining it.
+        # FIRST submission whose agent calls non-OpenAI models: four
+        # handles over two providers (gpt-5.4-mini, gpt-5.4-2026-03-05,
+        # claude-haiku-4-5-20251001, claude-sonnet-4-6). All four are in
+        # the litellm 1.88.1 bundled map and all four are now listed in
+        # AGENT_MODELS — the preflight only checks what it is told about.
+        # The name drops the soft_/sharp_ prefix: cost_per_error now
+        # defaults to 10% of the threshold, so the slope that prefix
+        # encoded no longer varies between submissions.
     ),
 ]
 

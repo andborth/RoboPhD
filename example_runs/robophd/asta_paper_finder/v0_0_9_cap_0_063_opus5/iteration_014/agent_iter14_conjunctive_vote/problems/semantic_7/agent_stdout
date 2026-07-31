@@ -1,0 +1,49 @@
+[semantic_7] score_type=semantic_f1 query='What is the performance of large language models in text summarization under reference-based and reference-free human ev'
+  queries=['large language model summarization reference-based reference-free human evaluation', 'LLM text summarization human evaluation reference-based reference-free', 'large language models summarization human judgments reference based reference free', 'text summarization evaluation with references and without references', 'summarization quality assessment reference-based reference-free human ratings', 'large language model generated summaries human evaluation comparison', 'reference-based versus reference-free summarization evaluation', 'human evaluation of summarization with and without references', 'survey of summarization evaluation reference-based reference-free', 'overview of large language model summarization evaluation methods', 'comparison of reference-based and reference-free summary evaluation', 'evaluation of large language model summaries by humans', 'LLM summarization human reference comparison study', 'abstractive summarization evaluation with references and no references', 'large language model summary quality human study', 'reference-aware and reference-free summary evaluation', 'generative summarization human judgment benchmark', 'document summarization manual evaluation with references', 'zero-reference and reference-based summarization assessment', 'LLM-generated abstracts human rating comparison']
+  criterion(w=0.40): 'Large language model summarization' probe='large language model summarization'
+  criterion(w=0.30): 'Human evaluation' probe='human evaluation of summaries'
+  criterion(w=0.30): 'Reference-based and reference-free' probe='reference-based reference-free evaluation'
+  year_min=None prefer_earliest=False
+  keyword runs -> [100, 100, 100, 100, 100, 100, 100, 1, 100, 100, 100, 100, 100, 2, 100, 100, 100, 100, 100, 100]
+  snippet run c-1 -> 74 papers
+  snippet run c-1 -> 72 papers
+  snippet run c-1 -> 73 papers
+  snippet run c-1 -> 79 papers
+  snippet run c0 -> 81 papers
+  snippet run c1 -> 87 papers
+  snippet run c2 -> 65 papers
+  pool: 1620 unique papers
+  more-like-this: 10 seed titles -> +152 new papers (pool 1772)
+  [tool-fail] hydrate[0]: ToolError: Paper d302efd47c9a99ae16a77caee3b37a5e4361c341 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  hydrated 0/78 abstract-less records
+  pre-ranked 390 candidates (222s elapsed)
+  criterion snippet harvest: 15 scoped calls over 100 papers
+  harvested 451 criterion-tagged passages over 382 papers (436s elapsed)
+  criterion repair: 98 single-paper probes over 90 papers (436s elapsed)
+  [tool-fail] repair:263672150:c2: TimeoutError: 
+  [tool-fail] repair:269145318:c2: TimeoutError: 
+  [tool-fail] repair:258833685:c2: TimeoutError: 
+  [tool-fail] repair:268240804:c1: TimeoutError: 
+  [tool-fail] repair:274065725:c2: TimeoutError: 
+  [tool-fail] repair:233296711:c0: TimeoutError: 
+  [tool-fail] repair:271854977:c1: TimeoutError: 
+  [tool-fail] repair:283822804:c2: TimeoutError: 
+  [tool-fail] repair:265506605:c1: TimeoutError: 
+  [tool-fail] repair:278635713:c2: TimeoutError: 
+  [tool-fail] repair:275993773:c2: TimeoutError: 
+  [tool-fail] repair:272463952:c2: TimeoutError: 
+  [tool-fail] repair:277546287:c2: TimeoutError: 
+  [tool-fail] repair:287201440:c0: TimeoutError: 
+  [tool-fail] repair:269921604:c2: TimeoutError: 
+  [tool-fail] repair:269983560:c0: TimeoutError: 
+  [tool-fail] repair:269983560:c2: TimeoutError: 
+  repair: +288 passages (669s elapsed)
+  evidence: 99/250 papers cover every criterion lexically (head60=56, mean_cov=0.75) (669s elapsed)
+  grade: 250/250 graded; predicted-strong(>=.90)=0
+  deep: 130/130 graded; predicted-strong(>=.90)=13
+  head: 44/44 graded; predicted-strong(>=.90)=5
+  ensemble: 0/250 papers at mean-vote >= 0.90
+  head predictions: [('252532176', 0.87, 3), ('263909080', 0.84, 3), ('277244552', 0.77, 3), ('265212661', 0.68, 3), ('256416014', 0.66, 3), ('274437466', 0.66, 3), ('268063532', 0.65, 3), ('276724620', 0.64, 3), ('275385218', 0.54, 3), ('270226063', 0.53, 3)]
+  conjunctive-agg: 38 of the top 60 moved >5 slots (new_pos, cid, old_pos, geo, arith): [(16, '265158165', 22, 0.46, 0.475), (17, '271310142', 23, 0.43, 0.474), (19, '273852333', 32, 0.409, 0.463), (22, '258841145', 36, 0.363, 0.447), (23, '264146949', 54, 0.355, 0.397), (24, '257952492', 70, 0.333, 0.336), (25, '282935998', 49, 0.325, 0.426), (26, '270147135', 75, 0.324, 0.33), (27, '257804696', 35, 0.304, 0.448), (28, '271197952', 34, 0.304, 0.451), (29, '275993773', 80, 0.301, 0.315), (30, '270869494', 14, 0.298, 0.536)]
+  vetting: confirmed band reaches position 130; 0 unvetted papers promoted into the top 130; digest budgets=460/500/780
+  SUBMITTED 250 papers (evidence chars avg=1938)

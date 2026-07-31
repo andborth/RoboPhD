@@ -1,0 +1,65 @@
+[semantic_205] score_type=semantic_f1 query='Can you help me find research papers that explore the use of large vision-language models as agents to automatically pla'
+  queries=['large vision-language model agents PC games', 'vision-language model agents playing PC games', 'large multimodal model agents computer games', 'vision-language agents for PC game playing', 'multimodal LLM agents automate PC games', 'vision-language model autonomous PC game play', 'vision-language model game-playing agents', 'large vision-language models as game agents', 'computer game automation with vision-language models', 'PC game agent using multimodal models', 'vision-language model control of PC games', 'agentic vision-language models for games', 'multimodal foundation models game agents', 'large multimodal agents video game control', 'vision language agents for computer game automation', 'multimodal embodied agents pc games', 'game automation with vision language models', 'multimodal llm control of pc games', 'autonomous computer game playing agents', 'video game playing multimodal agents']
+  criterion(w=0.40): 'large vision-language model' probe='large vision-language model'
+  criterion(w=0.30): 'game-playing agent' probe='acting as an agent'
+  criterion(w=0.30): 'PC game automation' probe='play PC games'
+  year_min=None prefer_earliest=False
+  keyword runs -> [100, 100, 100, 56, 99, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 34, 100, 7, 100, 100]
+  snippet run c-1 -> 78 papers
+  snippet run c-1 -> 80 papers
+  snippet run c-1 -> 80 papers
+  snippet run c0 -> 95 papers
+  snippet run c1 -> 97 papers
+  snippet run c2 -> 89 papers
+  pool: 1695 unique papers
+  more-like-this: 10 seed titles -> +204 new papers (pool 1899)
+  hydrated 98/98 abstract-less records
+  pre-ranked 390 candidates (342s elapsed)
+  criterion snippet harvest: 15 scoped calls over 100 papers
+  [tool-fail] snip:c0: TimeoutError: 
+  harvested 379 criterion-tagged passages over 485 papers (582s elapsed)
+  criterion repair: 163 single-paper probes over 102 papers (582s elapsed)
+  [tool-fail] repair:276116304:c1: TimeoutError: 
+  [tool-fail] repair:272753397:c1: TimeoutError: 
+  [tool-fail] repair:278782258:c1: TimeoutError: 
+  [tool-fail] repair:278788507:c1: TimeoutError: 
+  [tool-fail] repair:273550034:c1: TimeoutError: 
+  [tool-fail] repair:273162504:c1: TimeoutError: 
+  [tool-fail] repair:276769281:c1: TimeoutError: 
+  [tool-fail] repair:278911542:c1: TimeoutError: 
+  [tool-fail] repair:267095012:c1: TimeoutError: 
+  [tool-fail] repair:272689781:c1: TimeoutError: 
+  [tool-fail] repair:260887670:c1: TimeoutError: 
+  [tool-fail] repair:260091544:c0: TimeoutError: 
+  [tool-fail] repair:271947271:c1: TimeoutError: 
+  [tool-fail] repair:277151026:c1: TimeoutError: 
+  [tool-fail] repair:278338937:c1: TimeoutError: 
+  [tool-fail] repair:277349352:c0: TimeoutError: 
+  [tool-fail] repair:267636776:c2: TimeoutError: 
+  [tool-fail] repair:268981915:c2: TimeoutError: 
+  [tool-fail] repair:268732614:c1: TimeoutError: 
+  [tool-fail] repair:274150091:c1: TimeoutError: 
+  repair: +62 passages (648s elapsed)
+  evidence: 9/250 papers cover every criterion lexically (head60=9, mean_cov=0.41) (648s elapsed)
+  grade: 250/250 graded; predicted-strong(>=.90)=5
+  verdict repair: 44 probes over 28 near-miss papers (651s elapsed)
+  [tool-fail] vrepair:268524153:c2: TimeoutError: 
+  [tool-fail] vrepair:235743031:c0: TimeoutError: 
+  [tool-fail] vrepair:269790773:c0: TimeoutError: 
+  [tool-fail] vrepair:271973261:c0: TimeoutError: 
+  [tool-fail] vrepair:274150091:c0: TimeoutError: 
+  [tool-fail] vrepair:274150091:c2: TimeoutError: 
+  [tool-fail] vrepair:265129059:c2: TimeoutError: 
+  [tool-fail] vrepair:267637249:c1: TimeoutError: 
+  [tool-fail] vrepair:276580359:c1: TimeoutError: 
+  [tool-fail] vrepair:276580359:c2: TimeoutError: 
+  [tool-fail] vrepair:278782889:c1: TimeoutError: 
+  [tool-fail] vrepair:279076069:c2: TimeoutError: 
+  [tool-fail] vrepair:277104623:c0: TimeoutError: 
+  verdict repair: +95 passages over 19 papers (714s elapsed)
+  deep: 130/130 graded; predicted-strong(>=.90)=11
+  head: 44/44 graded; predicted-strong(>=.90)=9
+  ensemble: 5/250 papers at mean-vote >= 0.90
+  head predictions: [('277151026', 1.0, 3), ('276937777', 0.99, 3), ('277349352', 0.97, 3), ('278886118', 0.96, 3), ('271974920', 0.93, 3), ('272753397', 0.87, 3), ('267500295', 0.76, 3), ('265129059', 0.74, 3), ('274150091', 0.74, 3), ('277104623', 0.68, 3)]
+  vetting: confirmed band reaches position 130; 0 unvetted papers promoted into the top 130; digest budgets=460/500/780
+  SUBMITTED 250 papers (evidence chars avg=1874)

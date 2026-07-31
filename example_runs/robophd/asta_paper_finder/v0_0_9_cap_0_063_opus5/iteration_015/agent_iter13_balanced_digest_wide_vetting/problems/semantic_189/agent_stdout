@@ -1,0 +1,81 @@
+[semantic_189] score_type=semantic_f1 query='papers discussing how modern language models set d_model and number of layers in transformer architecture, focusing on t'
+  queries=['transformer model depth width d_model tradeoffs', 'language model architecture depth width d_model layers', 'modern language model transformer scaling depth width', 'transformer layer count hidden size tradeoff language models', 'long narrow versus wide shallow transformers', 'deep narrow versus wide shallow language models', 'transformer architecture width depth comparison survey', 'language model architecture survey depth width layers', 'd_model and layer count transformer design', 'transformer hidden size number of layers analysis', 'model depth width scaling in transformers', 'wide shallow long narrow transformer comparison', 'transformer depth width scaling laws', 'language model depth width balance', 'decoder-only transformer layer size tradeoff', 'parameter allocation transformer depth width', 'efficient transformer depth width design', 'transformer width depth ablation studies', 'architecture search transformer layers hidden size', 'large language model depth width']
+  criterion(w=0.40): 'Transformer language-model architecture' probe='transformer language model architecture'
+  criterion(w=0.35): 'd_model and layer-depth choice' probe='hidden size layer count'
+  criterion(w=0.25): 'Long narrow vs wide shallow comparison' probe='depth width tradeoff'
+  year_min=None prefer_earliest=False
+  [tool-fail] snippet:open2: TimeoutError: 
+  [tool-fail] snippet:open-1: TimeoutError: 
+  keyword runs -> [100, 100, 100, 63, 100, 100, 100, 100, 68, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100]
+  snippet run c-1 -> 90 papers
+  snippet run c-1 -> 93 papers
+  snippet run c-1 -> 0 papers
+  snippet run c0 -> 97 papers
+  snippet run c1 -> 97 papers
+  snippet run c2 -> 0 papers
+  pool: 1804 unique papers
+  more-like-this: 10 seed titles -> +314 new papers (pool 2118)
+  hydrated 77/77 abstract-less records
+  pre-ranked 390 candidates (282s elapsed)
+  criterion snippet harvest: 15 scoped calls over 100 papers
+  harvested 553 criterion-tagged passages over 399 papers (316s elapsed)
+  criterion repair: 313 single-paper probes over 170 papers (317s elapsed)
+  [tool-fail] repair:252968423:c2: TimeoutError: 
+  [tool-fail] repair:276575815:c2: TimeoutError: 
+  [tool-fail] repair:254854389:c2: TimeoutError: 
+  [tool-fail] repair:235765422:c2: TimeoutError: 
+  [tool-fail] repair:245514069:c2: TimeoutError: 
+  [tool-fail] repair:270522276:c2: TimeoutError: 
+  [tool-fail] repair:273950013:c2: TimeoutError: 
+  [tool-fail] repair:276317819:c1: TimeoutError: 
+  [tool-fail] repair:276449777:c1: TimeoutError: 
+  [tool-fail] repair:247447316:c1: TimeoutError: 
+  [tool-fail] repair:247447316:c2: TimeoutError: 
+  [tool-fail] repair:273963273:c1: TimeoutError: 
+  [tool-fail] repair:272694514:c1: TimeoutError: 
+  [tool-fail] repair:264451756:c1: TimeoutError: 
+  [tool-fail] repair:274514911:c2: TimeoutError: 
+  [tool-fail] repair:271957320:c1: TimeoutError: 
+  [tool-fail] repair:279074438:c0: TimeoutError: 
+  [tool-fail] repair:247771234:c2: TimeoutError: 
+  [tool-fail] repair:245329567:c2: TimeoutError: 
+  [tool-fail] repair:273969872:c1: TimeoutError: 
+  [tool-fail] repair:259309089:c1: TimeoutError: 
+  [tool-fail] repair:272957384:c1: TimeoutError: 
+  [tool-fail] repair:247595324:c2: TimeoutError: 
+  [tool-fail] repair:272827489:c1: TimeoutError: 
+  [tool-fail] repair:272827489:c2: TimeoutError: 
+  [tool-fail] repair:274789267:c1: TimeoutError: 
+  [tool-fail] repair:250113504:c1: TimeoutError: 
+  [tool-fail] repair:250113504:c2: TimeoutError: 
+  [tool-fail] repair:275932517:c2: TimeoutError: 
+  [tool-fail] repair:267495999:c1: TimeoutError: 
+  [tool-fail] repair:276987710:c1: TimeoutError: 
+  [tool-fail] repair:247187905:c1: TimeoutError: 
+  [tool-fail] repair:278207485:c1: TimeoutError: 
+  [tool-fail] repair:258596599:c1: TimeoutError: 
+  [tool-fail] repair:269448717:c2: TimeoutError: 
+  [tool-fail] repair:275920592:c2: TimeoutError: 
+  [tool-fail] repair:268384774:c2: TimeoutError: 
+  [tool-fail] repair:276481759:c0: TimeoutError: 
+  [tool-fail] repair:273707446:c1: TimeoutError: 
+  [tool-fail] repair:276482516:c1: TimeoutError: 
+  [tool-fail] repair:252626580:c0: TimeoutError: 
+  [tool-fail] repair:252626580:c1: TimeoutError: 
+  [tool-fail] repair:276768884:c0: TimeoutError: 
+  [tool-fail] repair:249189130:c1: TimeoutError: 
+  [tool-fail] repair:276094949:c0: TimeoutError: 
+  [tool-fail] repair:276094949:c1: TimeoutError: 
+  [tool-fail] repair:246823208:c0: TimeoutError: 
+  [tool-fail] repair:277065732:c0: TimeoutError: 
+  [tool-fail] repair:274234569:c1: TimeoutError: 
+  [tool-fail] repair:263869569:c0: TimeoutError: 
+  repair: +847 passages (874s elapsed)
+  evidence: 0/250 papers cover every criterion lexically (head60=0, mean_cov=0.27) (875s elapsed)
+  grade: 250/250 graded; predicted-strong(>=.90)=2
+  deep: 130/130 graded; predicted-strong(>=.90)=9
+  head: 44/44 graded; predicted-strong(>=.90)=7
+  ensemble: 1/250 papers at mean-vote >= 0.90
+  head predictions: [('150373667', 0.94, 3), ('258762242', 0.86, 3), ('264820247', 0.85, 3), ('234338042', 0.84, 3), ('225062299', 0.81, 3), ('252968423', 0.81, 3), ('228076344', 0.8, 3), ('278327271', 0.79, 3), ('256630716', 0.79, 3), ('276259070', 0.78, 3)]
+  vetting: confirmed band reaches position 130; 0 unvetted papers promoted into the top 130; digest budgets=460/500/780
+  SUBMITTED 250 papers (evidence chars avg=1929)

@@ -1,0 +1,66 @@
+[semantic_193] score_type=semantic_f1 query='Adaptive query expansion with LLMs, focusing on papers published on or after 2023'
+  queries=['adaptive query expansion with large language models', 'LLM-based adaptive query expansion methods', 'large language model query expansion retrieval', 'adaptive query expansion using language models', 'dynamic query expansion with LLMs for search', 'survey of adaptive query expansion with LLMs', 'overview of LLM-driven query expansion techniques', 'comparison of adaptive query expansion methods with LLMs', 'post-2023 adaptive query expansion with language models', '2023 onward adaptive query expansion LLM retrieval', 'neural adaptive query expansion for information retrieval', 'large language model assisted query reformulation retrieval', 'adaptive LLM query reformulation retrieval', 'dynamic query rewriting with transformers', 'context-aware query expansion neural retrieval', 'query-dependent expansion prompts for retrieval', 'self-adaptive retrieval augmentation with LMs', 'interactive query refinement with foundation models', 'LLM-guided retrieval query optimization', '2023 adaptive expansion retrieval models']
+  criterion(w=0.40): 'adaptive query expansion' probe='adaptive query expansion'
+  criterion(w=0.40): 'uses LLMs' probe='large language models'
+  criterion(w=0.20): 'published from 2023' probe='published in 2023'
+  year_min=2023 prefer_earliest=False
+  keyword runs -> [100, 100, 100, 100, 3, 0, 13, 0, 8, 11, 100, 100, 100, 2, 100, 100, 44, 100, 100, 100]
+  snippet run c-1 -> 76 papers
+  snippet run c-1 -> 75 papers
+  snippet run c-1 -> 77 papers
+  snippet run c-1 -> 84 papers
+  snippet run c0 -> 68 papers
+  snippet run c1 -> 98 papers
+  snippet run c2 -> 81 papers
+  pool: 1462 unique papers
+  more-like-this: 10 seed titles -> +177 new papers (pool 1639)
+  hydrated 122/122 abstract-less records
+  pre-ranked 390 candidates (222s elapsed)
+  criterion snippet harvest: 15 scoped calls over 100 papers
+  harvested 427 criterion-tagged passages over 482 papers (284s elapsed)
+  criterion repair: 212 single-paper probes over 167 papers (284s elapsed)
+  [tool-fail] repair:269804192:c2: TimeoutError: 
+  [tool-fail] repair:268297061:c2: TimeoutError: 
+  [tool-fail] repair:276452110:c2: TimeoutError: 
+  [tool-fail] repair:278614919:c2: TimeoutError: 
+  [tool-fail] repair:1050927:c2: TimeoutError: 
+  [tool-fail] repair:278782535:c2: TimeoutError: 
+  [tool-fail] repair:273950328:c2: TimeoutError: 
+  [tool-fail] repair:277780258:c0: TimeoutError: 
+  [tool-fail] repair:276621774:c2: TimeoutError: 
+  [tool-fail] repair:274789047:c2: TimeoutError: 
+  [tool-fail] repair:273993406:c2: TimeoutError: 
+  [tool-fail] repair:220871216:c2: TimeoutError: 
+  [tool-fail] repair:257495903:c2: TimeoutError: 
+  [tool-fail] repair:982854:c2: TimeoutError: 
+  [tool-fail] repair:233557580:c2: TimeoutError: 
+  [tool-fail] repair:289452422:c2: TimeoutError: 
+  [tool-fail] repair:244958856:c2: TimeoutError: 
+  [tool-fail] repair:275437711:c2: TimeoutError: 
+  [tool-fail] repair:4808574:c2: TimeoutError: 
+  [tool-fail] repair:276408650:c2: TimeoutError: 
+  [tool-fail] repair:271865382:c2: TimeoutError: 
+  [tool-fail] repair:273654355:c2: TimeoutError: 
+  [tool-fail] repair:260351198:c2: TimeoutError: 
+  [tool-fail] repair:259187509:c2: TimeoutError: 
+  [tool-fail] repair:244159018:c2: TimeoutError: 
+  [tool-fail] repair:271709437:c2: TimeoutError: 
+  [tool-fail] repair:275993523:c2: TimeoutError: 
+  [tool-fail] repair:271212541:c2: TimeoutError: 
+  [tool-fail] repair:268385048:c0: TimeoutError: 
+  [tool-fail] repair:269449435:c0: TimeoutError: 
+  [tool-fail] repair:282066265:c0: TimeoutError: 
+  [tool-fail] repair:277633933:c0: TimeoutError: 
+  [tool-fail] repair:277633933:c2: TimeoutError: 
+  [tool-fail] repair:272689550:c2: TimeoutError: 
+  [tool-fail] repair:273993423:c0: TimeoutError: 
+  repair: +611 passages (675s elapsed)
+  evidence: 6/250 papers cover every criterion lexically (head60=4, mean_cov=0.54) (676s elapsed)
+  grade: 250/250 graded; predicted-strong(>=.90)=26
+  deep: 130/130 graded; predicted-strong(>=.90)=58
+  head: 44/44 graded; predicted-strong(>=.90)=11
+  ensemble: 12/250 papers at mean-vote >= 0.90
+  head predictions: [('270379887', 0.97, 3), ('268041808', 0.96, 3), ('264806544', 0.96, 3), ('271884400', 0.96, 3), ('272694569', 0.95, 3), ('258865309', 0.94, 3), ('267751469', 0.94, 3), ('276287272', 0.93, 3), ('273404056', 0.92, 3), ('268819582', 0.92, 3)]
+  conjunctive-agg: 5 of the top 60 moved >5 slots (new_pos, cid, old_pos, geo, arith): [(38, '269762577', 47, 0.804, 0.806), (39, '275993523', 45, 0.797, 0.808), (40, '278358463', 46, 0.797, 0.808), (45, '267751221', 39, 0.797, 0.808), (57, '277999781', 65, 0.656, 0.656)]
+  vetting: confirmed band reaches position 223; 16 unvetted papers promoted into the top 130; digest budgets=460/500/780
+  SUBMITTED 250 papers (evidence chars avg=1893)

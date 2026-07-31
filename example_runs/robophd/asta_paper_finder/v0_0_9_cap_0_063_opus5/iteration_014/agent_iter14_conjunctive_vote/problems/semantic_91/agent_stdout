@@ -1,0 +1,35 @@
+[semantic_91] score_type=semantic_f1 query='Can you recommend some literature that focuses on dependency-based models for relation extraction, especially those that'
+  queries=['dependency-based relation extraction with dependency parsing', 'dependency parse models for relation extraction', 'dependency parsing for non-local relation extraction', 'syntactic dependency models for relation extraction', 'dependency-based relation extraction capturing non-local dependencies', 'relation extraction using dependency tree structures', 'dependency parse based relation extraction methods', 'dependency parsing and relation extraction overview', 'survey of dependency-based relation extraction', 'comparison of dependency parsing relation extraction models', 'dependency tree relation extraction for long-distance relations', 'non-local syntactic relation extraction with dependency parsing', 'dependency tree relation extraction methods', 'syntax-aware dependency relation extraction', 'long-distance dependency relation extraction', 'graph-based dependency relation extraction', 'dependency path relation extraction models', 'syntactic path relation extraction dependency trees', 'dependency parsing relation extraction papers', 'dependency tree models for relations']
+  criterion(w=0.40): 'relation extraction focus' probe='relation extraction'
+  criterion(w=0.40): 'dependency-based model' probe='dependency-based model'
+  criterion(w=0.20): 'dependency parsing for syntax' probe='dependency parsing'
+  year_min=None prefer_earliest=False
+  keyword runs -> [100, 100, 64, 100, 100, 100, 100, 100, 100, 100, 64, 25, 100, 100, 100, 100, 100, 100, 100, 100]
+  snippet run c-1 -> 88 papers
+  snippet run c-1 -> 87 papers
+  snippet run c-1 -> 83 papers
+  snippet run c-1 -> 86 papers
+  snippet run c0 -> 85 papers
+  snippet run c1 -> 89 papers
+  snippet run c2 -> 84 papers
+  pool: 1157 unique papers
+  more-like-this: 10 seed titles -> +65 new papers (pool 1222)
+  hydrated 164/164 abstract-less records
+  pre-ranked 390 candidates (254s elapsed)
+  criterion snippet harvest: 15 scoped calls over 100 papers
+  harvested 433 criterion-tagged passages over 433 papers (468s elapsed)
+  criterion repair: 87 single-paper probes over 86 papers (468s elapsed)
+  [tool-fail] repair:260583609:c2: TimeoutError: 
+  [tool-fail] repair:243865130:c2: TimeoutError: 
+  [tool-fail] repair:235384242:c2: TimeoutError: 
+  [tool-fail] repair:237796410:c2: TimeoutError: 
+  repair: +198 passages (651s elapsed)
+  evidence: 103/250 papers cover every criterion lexically (head60=51, mean_cov=0.79) (652s elapsed)
+  grade: 250/250 graded; predicted-strong(>=.90)=127
+  deep: 130/130 graded; predicted-strong(>=.90)=80
+  head: 44/44 graded; predicted-strong(>=.90)=38
+  ensemble: 80/250 papers at mean-vote >= 0.90
+  head predictions: [('59449494', 1.0, 2), ('85502320', 1.0, 2), ('55198959', 1.0, 2), ('259714840', 1.0, 2), ('9225214', 1.0, 2), ('263686308', 1.0, 2), ('5165854', 1.0, 2), ('270726794', 1.0, 2), ('57304052', 1.0, 2), ('276436046', 0.99, 2)]
+  conjunctive-agg: 10 of the top 60 moved >5 slots (new_pos, cid, old_pos, geo, arith): [(0, '59449494', 6, 1.0, 1.0), (1, '85502320', 7, 1.0, 1.0), (9, '276436046', 18, 0.992, 0.992), (10, '276124636', 17, 0.992, 0.992), (18, '16028836', 9, 0.992, 0.992), (21, '237651933', 13, 0.992, 0.992), (29, '218975413', 22, 0.983, 0.983), (53, '272827963', 60, 0.943, 0.944), (55, '274816192', 61, 0.943, 0.944), (58, '257858717', 51, 0.943, 0.944)]
+  vetting: confirmed band reaches position 168; 7 unvetted papers promoted into the top 130; digest budgets=460/500/780
+  SUBMITTED 250 papers (evidence chars avg=1717)

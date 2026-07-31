@@ -1,0 +1,57 @@
+[semantic_8] score_type=semantic_f1 query='What papers use decoupled workers in distributed RL system?'
+  queries=['decoupled workers distributed reinforcement learning', 'distributed RL systems with decoupled workers', 'decoupled worker architecture distributed RL', 'distributed reinforcement learning decoupled worker setup', 'actor learner decoupled workers distributed RL', 'asynchronous distributed RL decoupled workers', 'parameter server distributed RL decoupled workers', 'multi-worker distributed RL decoupled architecture', 'distributed RL with decoupled actor workers', 'distributed training decoupled workers reinforcement learning', 'survey distributed RL decoupled workers', 'overview decoupled worker distributed reinforcement learning', 'decoupled actor learner reinforcement learning', 'distributed reinforcement learning decoupled actors', 'independent workers distributed reinforcement learning', 'separate workers distributed policy optimization', 'decentralized workers distributed reinforcement learning', 'worker decoupling in distributed reinforcement learning', 'parallel actors distributed reinforcement learning', 'asynchronous actors distributed reinforcement learning']
+  criterion(w=0.40): 'distributed RL paper' probe='distributed reinforcement learning'
+  criterion(w=0.40): 'decoupled workers' probe='decoupled workers'
+  criterion(w=0.20): 'explicit linkage' probe='worker-learner decoupling'
+  year_min=None prefer_earliest=False
+  keyword runs -> [100, 53, 18, 100, 19, 9, 100, 100, 5, 100, 4, 100, 100, 100, 100, 100, 100, 100, 100, 100]
+  snippet run c-1 -> 89 papers
+  snippet run c-1 -> 81 papers
+  snippet run c-1 -> 80 papers
+  snippet run c0 -> 79 papers
+  snippet run c1 -> 92 papers
+  snippet run c2 -> 80 papers
+  pool: 1371 unique papers
+  more-like-this: 10 seed titles -> +354 new papers (pool 1725)
+  [tool-fail] hydrate[0]: ToolError: Paper 78e4942d49707434a11a6b9e1867aea2d1fca669 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  hydrated 3/103 abstract-less records
+  pre-ranked 390 candidates (379s elapsed)
+  criterion snippet harvest: 15 scoped calls over 100 papers
+  [tool-fail] snip:c1: TimeoutError: 
+  [tool-fail] snip:c1: TimeoutError: 
+  [tool-fail] snip:c2: TimeoutError: 
+  [tool-fail] snip:c2: TimeoutError: 
+  harvested 220 criterion-tagged passages over 452 papers (619s elapsed)
+  criterion repair: 246 single-paper probes over 169 papers (619s elapsed)
+  [tool-fail] repair:257560957:c2: TimeoutError: 
+  [tool-fail] repair:276491663:c2: TimeoutError: 
+  [tool-fail] repair:271406564:c2: TimeoutError: 
+  [tool-fail] repair:267312171:c2: TimeoutError: 
+  [tool-fail] repair:269967984:c2: TimeoutError: 
+  [tool-fail] repair:252907648:c2: TimeoutError: 
+  [tool-fail] repair:262099566:c2: TimeoutError: 
+  [tool-fail] repair:202232430:c2: TimeoutError: 
+  [tool-fail] repair:271936870:c2: TimeoutError: 
+  [tool-fail] repair:3595955:c2: TimeoutError: 
+  [tool-fail] repair:232222444:c2: TimeoutError: 
+  [tool-fail] repair:271936562:c2: TimeoutError: 
+  [tool-fail] repair:252719491:c1: TimeoutError: 
+  [tool-fail] repair:272284193:c2: TimeoutError: 
+  [tool-fail] repair:278001450:c1: TimeoutError: 
+  [tool-fail] repair:275459002:c1: TimeoutError: 
+  [tool-fail] repair:278646843:c2: TimeoutError: 
+  [tool-fail] repair:276621238:c2: TimeoutError: 
+  [tool-fail] repair:274656480:c2: TimeoutError: 
+  [tool-fail] repair:272281409:c2: TimeoutError: 
+  [tool-fail] repair:277594996:c2: TimeoutError: 
+  [tool-fail] repair:260735731:c1: TimeoutError: 
+  [tool-fail] repair:260735731:c2: TimeoutError: 
+  repair: +458 passages (1036s elapsed)
+  evidence: 1/250 papers cover every criterion lexically (head60=1, mean_cov=0.49) (1036s elapsed)
+  grade: 250/250 graded; predicted-strong(>=.90)=12
+  deep: 58/130 graded; predicted-strong(>=.90)=14
+  head: 44/44 graded; predicted-strong(>=.90)=4
+  ensemble: 1/250 papers at mean-vote >= 0.90
+  head predictions: [('276647593', 0.97, 2), ('277894127', 0.82, 2), ('235250903', 0.8, 2), ('7429049', 0.8, 2), ('252407752', 0.77, 2), ('235290999', 0.77, 2), ('273949999', 0.75, 2), ('258557640', 0.75, 2), ('279071008', 0.74, 3), ('214713995', 0.73, 3)]
+  vetting: confirmed band reaches position 119; 33 unvetted papers promoted into the top 130; digest budgets=460/500/780
+  SUBMITTED 250 papers (evidence chars avg=1648)
