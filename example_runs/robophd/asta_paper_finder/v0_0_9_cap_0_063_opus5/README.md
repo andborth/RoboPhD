@@ -230,9 +230,7 @@ Agent description as submitted on the form:
 > providers, with votes kept per grader so a single lenient pass cannot
 > outrank a paper two skeptical graders confirmed. It then spends free corpus
 > searches on the papers sitting one criterion short of the threshold,
-> fetching passages targeted at exactly the criterion each is missing. Same
-> RoboPhD code base as our DS-1000 submissions and as v0_0_7/v0_0_8 on this
-> task.
+> fetching passages targeted at exactly the criterion each is missing.
 
 ## Official-result risks (assessed pre-submission)
 
