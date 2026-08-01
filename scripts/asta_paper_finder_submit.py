@@ -30,19 +30,33 @@ The script does NOT submit. After a full run, one .tar.gz per selected
 submission is ready for manual upload via the HF Spaces leaderboard form.
 
 Cost / time (full test split, 267 queries). Judge spend dominates — it
-was 98.7% of the v0_0_8 bill — and it scales with how much evidence the
-agent ships, not with the agent's own price. Two measured points:
+was 98.7% of the v0_0_8 bill and 93.4% of v0_0_9's — and it scales with
+how much the agent ships, not with the agent's own price. Three measured
+points:
 
-    v0_0_7_soft_cap_0_06_fable    $192 judge + $15 agent   ~19 hr
+    v0_0_7_soft_cap_0_06_fable    $192 judge + $15 agent    ~19 hr
         976 chars/paper evidence, 250 papers/semantic query,
-        ~12 min/semantic query at --max-samples 4.
+        ~12 min/semantic query at --max-samples 4.   $0.0040/paper
     v0_0_8_soft_cap_0_033_opus    $117 judge + $1.59 agent  1h32m
         750 chars/paper, 203.5 papers/query, --max-samples 6.
+                                                     $0.0030/paper
+    v0_0_9_cap_0_063_opus5        $197 judge + $14 agent    7h18m
+        747 chars/paper, 250 papers/query, --max-samples 6.
+                                                     $0.00407/paper
 
-So a cheap agent is not merely cheap to run — its shorter evidence and
-shorter submission lists cut the judge bill too, which is the term that
-actually matters. Wall clock is unscored officially, so duration buys
-evidence quality, not points.
+So a cheap agent is not merely cheap to run — shorter submission lists
+cut the judge bill too, which is the term that actually matters. Wall
+clock is unscored officially, so duration buys evidence quality, not
+points.
+
+But note what v0_0_9 falsified: it shipped 747 chars/paper, within 3
+chars of v0_0_8's 750, and still billed at v0_0_7's $0.0040 rate rather
+than v0_0_8's $0.0030. Evidence LENGTH alone does not predict the
+per-paper rate — list length does (250 vs 203.5 papers/query is the one
+thing v0_0_9 shares with v0_0_7 and not v0_0_8), and something in the
+evidence beyond its character count moves the judge's own output tokens.
+Project from the $0.0040 ceiling below, not from a length comparison; a
+pre-run estimate of ~$145 built that way came in $52 under.
 
 Official judging is UNCAPPED (every submitted paper, no top-K cap),
 billed to OPENAI_API_KEY during the eval — internal capped+cached
@@ -114,15 +128,18 @@ AGENT_MODELS = [
     "claude-sonnet-4-6",
 ]
 
-# Official-judging cost projection, printed before eval. Now calibrated on
-# two completed official runs rather than an internal capped estimate:
+# Official-judging cost projection, printed before eval. Calibrated on
+# three completed official runs rather than an internal capped estimate:
 #   v0_0_7  $192 judge / 194 x 250 = 48.5K verdicts  ≈ $0.0040/paper (976 chars/paper)
 #   v0_0_8  $117 judge / 194 x 203.5 = 39.5K verdicts ≈ $0.0030/paper (750 chars/paper)
-# Per-verdict cost tracks evidence length, so the rate is a range, not a
-# constant. The projection uses the upper end and the 250-paper cap: it is
-# a spend ceiling to sanity-check against, and will overestimate for an
-# agent that ships short evidence or short lists (it printed ~$219 for
-# v0_0_8, which actually cost $118.68 all-in).
+#   v0_0_9  $197 judge / 194 x 250 = 48.5K verdicts  ≈ $0.00407/paper (747 chars/paper)
+# v0_0_9 rules out the obvious model: its evidence is 3 chars/paper shorter
+# than v0_0_8's and it still billed at v0_0_7's rate, so per-paper cost does
+# NOT track evidence length. Treat $0.0040 as a flat rate with the 250-paper
+# cap and use the printed figure as a ceiling to sanity-check against. It
+# over-predicts only when the agent ships SHORT LISTS (~$219 printed for
+# v0_0_8, which actually cost $118.68 all-in on 203.5 papers/query); for a
+# full-250 agent it is close (~$194 printed for v0_0_9, actual $197.32).
 JUDGE_COST_PER_PAPER_USD = 0.0040
 SEMANTIC_TEST_QUERIES = 194
 PAPERS_PER_SEMANTIC_QUERY = 250

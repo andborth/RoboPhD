@@ -397,5 +397,9 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 ## Submission status
 
 - [x] Official eval run (2026-07-31: 0.3762 @ $0.052396/query, $211.31 spend, 7.3h)
-- [ ] Tarball uploaded
-- [ ] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
+- [x] Tarball uploaded — submitted to AstaBench 2026-07-31, under official review
+- [x] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
+
+Three RoboPhD entries are on the board once this clears review: v0_0_7 (0.375 @
+$0.053, displaced by this one), v0_0_8 (0.220 @ $0.006) and this (0.376 @
+$0.052).
