@@ -126,6 +126,19 @@ So: **0–9 per criterion** (same one digit, same token cost, ~1000× resolution
 no saturation), aggregated by **weighted geometric mean** — the conjunctive
 form of the gate.
 
+**No gold criteria reach the agent.** The benchmark's `relevance_criteria` are
+gold-side, surfaced only post-hoc in a *training* problem's `gold_criteria.md`;
+at query time the solver has just `state.metadata["raw_query"]`. Every
+"criterion" above is therefore the agent's own: one planner call infers 2–4
+requirements from the request text alone (`agent.py:1677`), and the ranker, the
+evidence enrichment, and the repair targeting all score against that
+reconstruction, never against the rubric the benchmark judge uses. The
+reconstruction imitates the gold's *shape* — same fields, weights summing to
+1.0, and `_weights()` defaults to splits observed across training diagnostics —
+which is training-set calibration, not test-set access. The practical
+consequence is a real bound on the ranking signal: it is only as good as one
+`gpt-5.4-mini` call's recovery of a hidden rubric from a one-line request.
+
 Grading is a three-band ensemble across two providers, with per-grader votes
 kept separate and combined as a reliability-weighted mean; `UNVETTED_SHRINK`
 stops a single lenient pass from leapfrogging a paper two skeptical graders
@@ -206,11 +219,14 @@ Agent description as submitted on the form:
 > competitive. It came in at $0.053/query, and is the first agent we have
 > submitted that was evolved by Claude Opus 5. The
 > agent's organizing insight is that the benchmark awards recall only for
-> papers judged Perfect on essentially every criterion, so it grades each
-> candidate 0–9 per criterion and combines them geometrically rather than
-> additively — one weak criterion drags the product down the way the
-> benchmark's own gate does, where an additive score lets a strong criterion
-> mask a missing one. Ranking runs as a three-band ensemble over two model
+> papers judged Perfect on essentially every criterion. The benchmark's
+> criteria are hidden at query time — the agent sees only the
+> natural-language request — so it first infers 2–4 requirements from that
+> request alone, then grades each candidate 0–9 against its own inferred
+> requirements and combines them geometrically rather than additively: one
+> weak criterion drags the product down the way the benchmark's own gate
+> does, where an additive score lets a strong criterion mask a missing one.
+> Ranking runs as a three-band ensemble over two model
 > providers, with votes kept per grader so a single lenient pass cannot
 > outrank a paper two skeptical graders confirmed. It then spends free corpus
 > searches on the papers sitting one criterion short of the threshold,
