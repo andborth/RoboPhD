@@ -258,12 +258,108 @@ at **100% pacer utilisation** while all seven other endpoints sat idle, with
 only 3–4 concurrent workers. This agent is snippet-heavy and the official run
 uses `--max-samples 6`.
 
+## Official result (2026-07-31)
+
+| Metric | Internal | **Official** | Delta |
+| --- | --- | --- | --- |
+| Mean F1 | 0.3839 | **0.3762** ± 0.0186 | −0.0077 |
+| `semantic_f1` (194) | 0.3227 | 0.3110 | −0.0117 |
+| `specific_f1` (38) | 0.8114 | **0.8114** | **±0.0000** |
+| `metadata_f1` (35) | 0.2687 | 0.2653 | −0.0034 |
+| Agent cost | $0.0533 | **$0.0524** ± 0.0018 | −$0.0009 |
+
+**$0.052 @ 0.376 on the board.** Judge $197.32 + agent $13.99 = $211.31, 7.3 h
+at `--max-samples 6`. Per-paper judge rate $0.00407 — v0_0_7's $0.0040, not
+v0_0_8's $0.0030, despite near-identical evidence length. Evidence length alone
+does not predict the judge bill; the submit script's $0.0040 ceiling was the
+better estimator.
+
+The pre-submission risk list held up well. Risk 1 (`specific_f1` is the metric
+to watch) was the right thing to name and it came through at **zero drift** —
+the failure that cost v0_0_8 −0.250 did not recur. Risk 2 (uncapped official
+judging) cost −0.0117 on semantic, real but small.
+
+### It takes the frontier slot from v0_0_7
+
+| | score | $/prob |
+| --- | --- | --- |
+| v0_0_7 (2026-07-20) | 0.375 | 0.053 |
+| **v0_0_9** | **0.376** | **0.052** |
+
+Higher *and* cheaper, so v0_0_7 leaves the curve. It also newly dominates Ai2's
+Asta v0 (0.376 @ $0.063) — tied on score at board precision, 17% cheaper.
+v0_0_7 could not make that claim: at 0.375 it sat *below* Asta v0 on score and
+was merely cheaper, so the two were incomparable. The +0.0013 gain is small but
+it is exactly the increment that converts "incomparable" into "dominates".
+
+Frontier after this entry (You.com excluded — no cost data):
+
+| | entry | score | $/prob | tier |
+| --- | --- | --- | --- | --- |
+| 1 | RoboPhD (v0_0_8) | 0.220 | 0.006 | Standard |
+| 2 | **RoboPhD (v0_0_9)** | **0.376** | **0.052** | Standard |
+| 3 | Asta Paper Finder | 0.397 | 0.063 | Custom interface |
+| 4 | Asta Paper Finder | 0.433 | 0.355 | Custom interface |
+
+Two of four slots, both Standard tier. No Standard-tier agent on the frontier
+is anyone else's.
+
+### Twins on the outside, substantially different agents
+
+v0_0_9 edges v0_0_7 on both axes — +0.0013 score, −$0.0009 cost — so at board
+precision the two entries look like the same agent nudged. They are not. The
+headline near-identity hides a composition that differs sharply, and the
+margin comes from one category while two others move against it:
+
+| type | n | v0_0_7 | v0_0_9 | delta | effect on overall |
+| --- | --- | --- | --- | --- | --- |
+| semantic | 194 | 0.3227 | 0.3110 | −0.0117 | **−0.0085** |
+| specific | 38 | 0.7308 | **0.8114** | **+0.0806** | **+0.0115** |
+| metadata | 35 | 0.2778 | 0.2653 | −0.0125 | −0.0016 |
+
+v0_0_9 is **worse on semantic**, which is 73% of the test set, and worse on
+metadata. It wins because one 38-query category moved +0.08 — enough to cover
+both losses and leave +0.0013.
+
+The agents are near-identical in size (2,097 vs 2,349 lines, one `agent.py`
+each) and opposite in thesis:
+
+- **v0_0_7 blames retrieval.** *"The joint phrase … lives in body text that
+  keyword search never sees."* Headline change is body-conjunction retrieval —
+  more planner snippet queries, phrased as method-section statements, each with
+  its own round-robin source list.
+- **v0_0_9 blames ranking and evidence.** *"The papers are already on topic;
+  the evidence is what is thin."* It leaves retrieval alone and rebuilds the
+  ranker (conjunctive geometric aggregation) and the evidence-repair targeting.
+
+One says *we aren't finding the right papers*; the other says *we're finding
+them and can't tell them apart*. Each is measurably right about a different
+part of the benchmark, and the irony is that the agent theorising about
+semantic ranking **lost** on semantic and won on the exact-match category it
+barely discusses.
+
+The likely mechanism for that win is documented rather than accidental:
+v0_0_9's `specific` path unions two **cross-provider** title guesses (`gpt-5.4`
++ `claude-sonnet-4-6`), built after diagnosing a 1.000-vs-0.000 swing between
+agents running *identical* resolution code, traced to sampling variance in one
+parametric recall call. v0_0_7 has only single-provider alias hedging — no
+second distribution to union against. Sonnet fired lightly in the official run
+(7,971 input tokens, `specific` queries only) for +0.0806 on that category.
+Hold it as a strong hypothesis, not a settled result: it is one A/B with many
+other differences.
+
+**Implication for the next run:** our two best agents disagree about where the
+difficulty lives and each is right about a different part. Neither has both.
+v0_0_7's retrieval front-end under v0_0_9's `specific` path would score roughly
+0.3227 + 0.8114 + 0.2778 weighted ≈ **0.385** — most of the way to Asta's 0.397
+at our price, and without a new thesis.
+
 ## Reproduce
 
 ```bash
 pip install litellm==1.88.1   # submission-scoring price map
 python scripts/asta_paper_finder_submit.py --only v0_0_9_cap_0_063_opus5 --limit 3   # smoke (~$3)
-python scripts/asta_paper_finder_submit.py --only v0_0_9_cap_0_063_opus5             # full (~$160, 2-4h)
+python scripts/asta_paper_finder_submit.py --only v0_0_9_cap_0_063_opus5             # full (measured: $211, 7.3h)
 ```
 
 Push the commit **before** the full run — `astabench eval` stamps the commit
@@ -287,6 +383,6 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 
 ## Submission status
 
-- [ ] Official eval run
+- [x] Official eval run (2026-07-31: 0.3762 @ $0.052396/query, $211.31 spend, 7.3h)
 - [ ] Tarball uploaded
 - [ ] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
