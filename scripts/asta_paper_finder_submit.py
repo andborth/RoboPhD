@@ -191,7 +191,7 @@ SUBMISSIONS = [
         # +0.009 score displaces our own entry rather than joining it.
         # FIRST leaderboard submission of any kind evolved by Opus 5, which
         # spends its allowance far more readily than Opus 4.8 (cap
-        # utilisation 75% over 3 runs vs 52% over 5) — see the snapshot
+        # utilization 75% over 3 runs vs 52% over 5) — see the snapshot
         # README; unspent free zone is forgone score.
         # Unlike v0_0_8 this is not a new Pareto point beside v0_0_7 — at
         # the same $0.0533 it carries +0.009 more score, so if it transfers

@@ -6,7 +6,7 @@ cross-benchmark patch sequence; `cap_0_063` names the training-time mean-spend
 free zone ($0.063/query); `_opus5` = evolved by Claude Opus 5.
 
 The name drops the `soft_`/`sharp_` prefix carried by `v0_0_7` and `v0_0_8`.
-That prefix encoded the cost-penalty slope, which now standardises at 10% of
+That prefix encoded the cost-penalty slope, which now standardizes at 10% of
 the threshold by default, so it no longer distinguishes anything.
 
 ## Price convention
@@ -54,11 +54,11 @@ landed on it, which is what makes that price deliberate rather than a leftover.
 ## Opus 5 spends its allowance; Opus 4.8 did not
 
 This is our first leaderboard submission of any kind whose evolution model is
-Claude Opus 5, and the cost behaviour is visibly different. Cap utilisation
+Claude Opus 5, and the cost behavior is visibly different. Cap utilization
 (test-set mean agent spend as a fraction of the training free zone) across the
 paper_finder campaign:
 
-| Evolution model | runs | cap utilisation | mean |
+| Evolution model | runs | cap utilization | mean |
 | --- | --- | --- | --- |
 | opus-4.8 | 5 | 18%, 30%, 65%, 67%, 80% | **52%** |
 | **opus-5** | 3 | 59%, 81%, **85%** | **75%** |
@@ -71,7 +71,7 @@ allowance is forgone score — every dollar under the cap could have bought
 retrieval depth or evidence enrichment for free.
 
 This run is the clearest case: 85% of cap, our **highest `specific_f1` across
-ten runs** (0.8114), and the frontier point. Read it as a consistent behavioural
+ten runs** (0.8114), and the frontier point. Read it as a consistent behavioral
 difference worth planning caps around, not as a proven causal claim — the three
 Opus 5 runs sit at three different thresholds, and no controlled A/B has been
 run.
@@ -128,7 +128,7 @@ form of the gate.
 
 Grading is a three-band ensemble across two providers, with per-grader votes
 kept separate and combined as a reliability-weighted mean; `UNVETTED_SHRINK`
-stops a single lenient pass from leapfrogging a paper two sceptical graders
+stops a single lenient pass from leapfrogging a paper two skeptical graders
 confirmed, and confirmation count is a tiebreaker strictly *below* the mean so
 being looked at more often can never promote a weak paper.
 
@@ -205,14 +205,14 @@ Agent description as submitted on the form:
 > that evolution had to win on score at a price already known to be
 > competitive. It came in at $0.053/query, and is the first agent we have
 > submitted that was evolved by Claude Opus 5. The
-> agent's organising insight is that the benchmark awards recall only for
+> agent's organizing insight is that the benchmark awards recall only for
 > papers judged Perfect on essentially every criterion, so it grades each
 > candidate 0–9 per criterion and combines them geometrically rather than
 > additively — one weak criterion drags the product down the way the
 > benchmark's own gate does, where an additive score lets a strong criterion
 > mask a missing one. Ranking runs as a three-band ensemble over two model
 > providers, with votes kept per grader so a single lenient pass cannot
-> outrank a paper two sceptical graders confirmed. It then spends free corpus
+> outrank a paper two skeptical graders confirmed. It then spends free corpus
 > searches on the papers sitting one criterion short of the threshold,
 > fetching passages targeted at exactly the criterion each is missing. Same
 > RoboPhD code base as our DS-1000 submissions and as v0_0_7/v0_0_8 on this
@@ -231,7 +231,7 @@ submissions:
 
 v0_0_8's judged metric moved only −0.027. What broke was `specific` — −0.250,
 a deterministic exact-match metric with no judge in it at all — because the
-agent's title-resolution behaviour was environment-sensitive. This entry posts
+agent's title-resolution behavior was environment-sensitive. This entry posts
 our **highest ever** `specific_f1` (0.8114), so it has the most to lose there:
 a −0.250 repeat costs 38 × 0.250 / 267 = **−0.036 overall**, landing ~0.348 and
 forfeiting the frontier slot to our own v0_0_7.
@@ -254,7 +254,7 @@ gives headroom and that query may complete.
 
 **5. Tool rate limits.** `tool_pacer.py` is staged and applied via `pace_tools`
 at ~8 launches/s per endpoint. Measured during training: `snippet_search` ran
-at **100% pacer utilisation** while all seven other endpoints sat idle, with
+at **100% pacer utilization** while all seven other endpoints sat idle, with
 only 3–4 concurrent workers. This agent is snippet-heavy and the official run
 uses `--max-samples 6`.
 
@@ -334,7 +334,7 @@ each) and opposite in thesis:
 
 One says *we aren't finding the right papers*; the other says *we're finding
 them and can't tell them apart*. Each is measurably right about a different
-part of the benchmark, and the irony is that the agent theorising about
+part of the benchmark, and the irony is that the agent theorizing about
 semantic ranking **lost** on semantic and won on the exact-match category it
 barely discusses.
 
