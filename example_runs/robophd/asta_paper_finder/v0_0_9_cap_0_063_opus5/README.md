@@ -212,12 +212,11 @@ cached. Official judging is uncapped — see risks.
 
 Agent description as submitted on the form:
 
-> Evolved by RoboPhD with Claude Opus 5 as the evolution (but not a solver)
-> model, under a $0.063/query training cost cap on solver spend — set at
-> exactly the price of the frontier entry directly above ours ($0.063), so
-> that evolution had to win on score at a price already known to be
-> competitive. It came in at $0.053/query, and is the first agent we have
-> submitted that was evolved by Claude Opus 5. The
+> Evolved by RoboPhD under a $0.063/query training cost cap on solver spend
+> — set at exactly the price of the frontier entry directly above ours
+> ($0.063), so that evolution had to win on score at a price already known
+> to be competitive. It came in at $0.053/query, and is the first agent we
+> have submitted that was evolved by Claude Opus 5. The
 > agent's organizing insight is that the benchmark awards recall only for
 > papers judged Perfect on essentially every criterion. The benchmark's
 > criteria are hidden at query time — the agent sees only the
