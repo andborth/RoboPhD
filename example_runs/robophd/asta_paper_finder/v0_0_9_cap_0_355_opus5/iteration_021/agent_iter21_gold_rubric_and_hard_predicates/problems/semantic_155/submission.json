@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_155",
+    "results": [
+      {
+        "paper_id": "261043320",
+        "markdown_evidence": "OpenFlamingo: An Open-Source Framework for Training Large Autoregressive Vision-Language Models ... We introduce OpenFlamingo, a family of autoregressive vision-language models ranging from 3B to 9B parameters. OpenFlamingo is an ongoing effort to produce an open-source replication of DeepMind's Flamingo models. On seven vision-language datasets, OpenFlamingo models average between 80 - 89% of corresponding Flamingo performance. This technical report describes our models, training data, hyperparameters, and evaluation suite. We share our models and code at https://github.com/mlfoundations/open_flamingo. ... Decoding parameters. We evaluate captioning and VQA using beam search with 3 beams, stopping generation at 20 tokens for captioning, 5 tokens for VQA, or whenever the model produces an <|endofchunk|> token. For HatefulMemes, we compute the log-likelihood of completions \"yes\" and \"no\" and answer with the most likely completion. \n\nMetrics. ... We accumulate gradients over both datasets between optimizer steps. \n\nDistributed training. We train all models using 64 GPUs distributed across 8 nodes on Stabilty AI's cluster (Table 3). OpenFlamingo-4B models were trained using model sharding with Fully Sharded Data Parallel [43]; other models were trained using only data parallel. \n\nLoss curves. ... The alt-texts are used to retrieve a corresponding images from LAION-5B. Additional details of the prompting and data construction process are described in Appendix C. The median number of images per sequence is higher than in MMC4, while the median number of text tokens is lower (Table 2). We release these sequences through the OpenFlamingo repository. ... Text tokens attend to their corresponding images via dense crossattention modules, which we attach to the layers of a frozen, autoregressive language model. To embed images, we extract patch features from a frozen vision encoder and pass these through a trainable Perceiver resampler [13]. ... e., models take as input an image and some text, and produce text as output, e.g., BLIP-2 [22].The flexible format directly supports tasks like image classification and visual question answering (VQA). \n\nHowever, assuming a single image as input is limiting: autoregressive vision-language models enable new capabilities by instead mapping an arbitrarily interleaved sequence of images and  ."
+      },
+      {
+        "paper_id": "277313965",
+        "markdown_evidence": "RoboFlamingo-Plus: Fusion of Depth and RGB Perception with Vision-Language Models for Enhanced Robotic Manipulation ... As robotics advances towards complex multimodal interactions and manipulation tasks, integrating Vision-Language Models (VLMs) has become crucial. Despite progress, challenges remain in fusing depth and RGB information in 3D environments and executing language-guided tasks. To address these, we introduce RoboFlamingo-Plus, enhancing RoboFlamingo by integrating depth data into VLMs, significantly improving manipulation performance. ... Recent advancements in Vision Language Models [1]- [3] have marked significant progress, particularly in aligning visual and linguistic information, showcasing an exceptional ability to understand and process complex scenes containing both visual elements and linguistic descriptions. ... The Perceiver Resampler, utilizing an attention mechanism and a set of learnable parameters, is well-suited for this task. Moreover, the resampler's dimensionality reduction capability, compressing the sequence length from N to K, not only minimizes the data required for training but also effectively learns and retains crucial feature information. ... VLMs have attracted widespread attention in embodied intelligence, signifying a major leap in machine learning's capability to process visual data and natural language. Through pre-training on large-scale dataset, VLMs learn visual features and language patterns, enhancing robots' accuracy and flexibility in complex scenarios. \n\nFrom scratch/Fine-tuning: Initially, Jang et al. ... Through the integration of our frozen ViT [9] model and fine-tuned Perceiver Resampler [1] for RGB-D inputs, we set a new benchmark in performance, surpassing current best practices with a performance improvement of 10-20%. ... This process includes enhancements in critical areas such as cross-attention, Perceiver Resampler, and Long Short-Term Memory (LSTM) [24], propelling RoboFlamingo to the forefront of robotic manipulation technologies. While many existing robot models primarily rely on RGB data to predict robot actions, the potential of depth information has not been fully exploited in the application of existing large models."
+      },
+      {
+        "paper_id": "250390463",
+        "markdown_evidence": "MilaNLP at SemEval-2022 Task 5: Using Perceiver IO for Detecting Misogynous Memes with Text and Image Modalities ... In this paper, we describe the system proposed by the MilaNLP team for the Multimedia Automatic Misogyny Identification (MAMI) challenge. We use Perceiver IO as a multimodal late fusion over unimodal streams to address both sub-tasks A and B. We build unimodal embeddings using Vision Transformer (image) and RoBERTa (text transcript). We enrich the input representation using face and demographic recognition, image captioning, and detection of adult content and web entities. To the best of our knowledge, this work is the first to use Perceiver IO combining text and image modalities. ... , 2020). \n\nOn the other hand, multi-modal models that combine image and text are now becoming incredibly popular in Natural Language Processing (Cao et al., 2020;Lu et al., 2019;Tan and Bansal, 2019;Radford et al., 2021;Bianchi et al., 2021;Su et al., 2020, inter alia) due to their capabilities to solve zero-shot tasks. ... ) from the input. With that, we effectively solve both subtasks A and B of the challenge using a single model in a multi-task learning setting. \n\nThe system architecture is shown in Figure 2. To the best of our knowledge, this is the first attempt to use Perceiver IO as a multimodal late fusion layer for multi-task learning. ... However, they convey misogynous messages because the combination of image and text leverages a well-known stereotype about women. We argue that the correct classification of these memes must involve either a solution explicitly modeling the stereotype or sufficient training data to become aware of it. ... We derive a different input stream from each of the features of the semantically-augmented meme (Figure 2, bottom). \n\nImage We encode raw images using a pretrained Vision Transformer (Dosovitskiy et al., 2021) (ViT). In this stream, the input image is divided into patches of 16x16 pixels and fed through a stacked transformer architecture. ... g., \"internet cat meme\"). \n\nUnconditioned prediction During the postevaluation phase, we identified a potential weakness in the proposed architecture. \n\nDecoding queries in Perceiver IO are independent by design. This behavior enhances the model's generalization capabilities as it needs to learn internal representations useful for all outputs."
+      },
+      {
+        "paper_id": "258547300",
+        "markdown_evidence": "Otter: A Multi-Modal Model With In-Context Instruction Tuning ... Recent advances in Large Multimodal Models (LMMs) have unveiled great potential as visual assistants. However, most existing works focus on responding to individual instructions or using previous dialogues for contextual understanding. There is little discussion on employing both images and text as in-context examples to enhance the instruction following capability. To bridge this gap, we introduce the Otter model to leverage both textual and visual in-context examples for instruction tuning. ... The concept of instruction tuning in multi-modal models was first presented in Multi-Instruct [90], covering a broad spectrum of tasks involving visual comprehension and multi-modal reasoning, including Visual Question Answering [33], [43], [108]. ... We built Otter model based on a pretrained OpenFlamingo-9B. The crux of Otter's implementation 1 is efficiently integration of two critical components: MPT-7B language decoder [81] and CLIP VIT-L/14 vision encoder [71]. These two modules are connected via the perceiver resampler and the cross-gated attention modules as adopted in Flamingoseries models [4]. ... To ensure the quality of the generated instructionresponse pairs, our pipeline incorporates system messages, visual annotations, and in-context examples as prompts for ChatGPT. System messages define the desired tone and style of the generated instruction-response pairs, while visual annotations provide essential image information such as bounding boxes and image descriptions. ... g. OPT [100], LLaMA [83]). Flamingo's training utilizes interleaved image-text data from web sources [1], [107] and employs a perceiver resampler architecture for processing visual inputs. Despite Flamingo's unavailability, an opensourced replicate, the OpenFlamingo [7] project reproduced its architecture and training methods and provided pretrained model weights. ... These tokens are then mixed with the text modality within the language model's layers. These visual tokens condition subsequent layers via cross-gated attention modules. The training paradigm aligns with the next-token prediction objective, characteristic of the GPT series models [11], [65], with the integration of visual and textual inputs. The likelihood of a targeted generated response T r is formulated as: \n\n(1)"
+      },
+      {
+        "paper_id": "248476411",
+        "markdown_evidence": "Flamingo: a Visual Language Model for Few-Shot Learning ... Building models that can be rapidly adapted to novel tasks using only a handful of annotated examples is an open challenge for multimodal machine learning research. We introduce Flamingo, a family of Visual Language Models (VLM) with this ability. We propose key architectural innovations to: (i) bridge powerful pretrained vision-only and language-only models, (ii) handle sequences of arbitrarily interleaved visual and textual data, and (iii) seamlessly ingest images or videos as inputs. ... The primary use is research on visual language models (VLM), including: research on VLM applications like classification, captioning or visual question answering, understanding how strong VLMs can contribute to AGI, advancing fairness and safety research in the area of multimodal research, and understanding limitations of current large VLMs. ... More details on the contrastive model training and performance are given in Appendix B.1.3 and Appendix B.3.2, respectively.\n\nPerceiver Resampler: from varying-size large feature maps to few visual tokens. This module connects the vision encoder to the frozen language model as shown in Figure 3. ... At a given text token, the model attends to the visual tokens of the image that appeared just before it in the interleaved sequence, rather than to all previous images (formalized and illustrated in Appendix A.1.3). Though the model only directly attends to a single image at a time, the dependency on all previous images remains via self-attention in the LM. ... Flamingo models are also able to ingest high-resolution images or videos thanks to a Perceiver-based [48] architecture that can produce a small fixed number of visual tokens per image/video, given a large and variable number of visual input features.\n\nA crucial aspect for the performance of large LMs is that they are trained on a large amount of text data. ... We perform a thorough evaluation of our models, exploring and measuring their ability to rapidly adapt to a variety of image and video tasks. These include open-ended tasks such as visual question-answering, where the model is prompted with a question which it has to answer; captioning tasks, which evaluate the ability to describe a scene or an event; and close-ended tasks such as multiple-choice visual question-answering."
+      },
+      {
+        "paper_id": "256697441",
+        "markdown_evidence": "Re-ViLM: Retrieval-Augmented Visual Language Model for Zero and Few-Shot Image Captioning ... , 2021;Alayrac et al., 2022) directly augment pretrained LMs with visual component, achieving strong results in both zero-shot and few-shot generation. Retrieval-augmented Models Retrieval has been successfully applied in various NLP tasks, including question answering (Guu et al., 2020;Karpukhin et al., 2020), autoregressive language modeling (Borgeaud et al., 2022), and other knowledge-intensive tasks (e.g., Lewis et al. ... At pretraining, we follow Flamingo's strategy by freezing the pretrained components, including CLIP-ViT and retrievalaugmented LM, training only the perceiver resampler from scratch. At finetuning, we unfreeze all the pretrained components and increase image resolution from 224 × 224 to 480 × 480, as suggested in (Alayrac et al., 2022). This has been shown to improve overall performance. ... • Image encoder begins with a pretrained vision transformer from CLIP (Radford et al., 2021) to extract visual features from the input images. These features are subsequently fed into a trainable perceiver resampler (Jaegle et al., 2021) to unify the image features into the textual representation used in the retrieval-augmented LM. \n\n• Retrieval-augmented LM is initialized with a pretrained RETRO model (Borgeaud et al. ... , 2022), which take the output of perceiver resampler as the key and value for cross-attention. To incorporate the retrieved captions as evidence, we interleave the LM decoder layers with retrieval-augmentation layers, which take text encoder output as key and value for crossattention. Note that, the text encoder is shared across retrieval-augmentation layers. ... Prompt: A picture of ... fine-tuning for better results. We then use a perceiver resampler to obtain fixed-length hidden representations from the CLIP-ViT token embeddings. The perceiver is trainable during both the multimodal pretraining and future fine-tuning, allowing it to adapt the visual representations for the text decoder and connects the two modalities."
+      },
+      {
+        "paper_id": "272753509",
+        "markdown_evidence": "InfiMM-WebMath-40B: Advancing Multimodal Pre-Training for Enhanced Mathematical Reasoning ... Pre-training on large-scale, high-quality datasets is crucial for enhancing the reasoning capabilities of Large Language Models (LLMs), especially in specialized domains such as mathematics. Despite the recognized importance, the Multimodal LLMs (MLLMs) field currently lacks a comprehensive open-source pre-training dataset specifically designed for mathematical reasoning. To address this gap, we introduce InfiMM-WebMath-40B, a high-quality dataset of interleaved image-text documents. ... It comprises 24 million web pages, 85 million associated image URLs, and 40 billion text tokens, all meticulously extracted and filtered from CommonCrawl. We provide a detailed overview of our data collection and processing pipeline. To demonstrate the robustness of InfiMM-WebMath-40B, we conducted evaluations in both text-only and multimodal settings. ... We freeze the vision encoder and update the parameters of the Perceiver Resampler and LLMs. As in the previous stages, training is conducted using DeepSpeed Zero2 for one epoch, with the AdamW optimizer, configured with 2000 warmup steps, a maximum learning rate of 5e −6 , betas of (0.9, 0.95), a weight decay of 0.1, and cosine decay to 5e −7 . ... To balance computational efficiency with performance, we use a 3-layer Perceiver Resampler [26] with 64 latents to reduce the number of tokens/features per image to 64. These visual token/feature embeddings are then concatenated with text embeddings before being fed into the LLMs. ... We further continue pre-training our models using the InfiMM-WebMath-40B dataset to enhance the model's mathematical knowledge acquisition in a multi-modal setting. The training is conducted for During this stage, the visual encoder remains frozen, and training focuses on learning the Perceiver Resampler module (the visual-language connector) and the LLM. ... Our model underperforms in the Vision-Only section, likely due to the limitations of the vision encoder we employed, which processes input images at 384 × 384 resolution, whereas LLaVA-NeXT supports 336 × [(2, 2), (1, 2), (2, 1), (1, 3), (3, 1)] resolutions using the AnyRes techniques [42]. Additionally, our vision encoder remains frozen during training, which restricts its ability to learn and adapt."
+      },
+      {
+        "paper_id": "268531413",
+        "markdown_evidence": "LLaVA-UHD: an LMM Perceiving Any Aspect Ratio and High-Resolution Images ... Visual encoding constitutes the basis of large multimodal models (LMMs) in understanding the visual world. Conventional LMMs process images in fixed sizes and limited resolutions, while recent explorations in this direction are limited in adaptivity, efficiency, and even correctness. In this work, we first take GPT-4V and LLaVA-1.5 as representative examples and expose systematic flaws rooted in their visual encoding strategy. To address the challenges, we present LLaVA-UHD, a large multimodal model that can efficiently perceive images in any aspect ratio and high resolution. ... We also report the accumulated multimodal training data volume for reference, which includes image-text pairs used during pertaining and instruction tuning.For models post-trained on existing multimodal models as backbones, this also includes the training data of the backbones.\n\nBaselines.We compare our model with strong baselines. ... 5.We observe that perceiver resampler achieves comparable or better performance than MLP, using only 12.9% computation cost.(3) We further replace the LLaVA-UHD image partition strategy with the naive partition strategy [24] (i.e., fixed 2 × 2 slices).Results show that LLaVA-UHD can more properly divide images into slices  LLaVA-1.5 15.50 74. ... The unavoidable image resizing and padding operation might cause image deformation and waste of computation, respectively.(4) Any.Fuyu-8B [6] and Otter-HD [20] directly utilize LLMs to encode visual features instead of vision transformers.They just split images into patches and project them using linear layers before feeding into the LLM. ... Existing visual projection approaches towards LLMs can be divided into three categories.(1) Flamingo [3] proposes perceiver resampler, which utilizes a fixed number of queries to capture visual features by cross-attention operation and feeds them into LLMs for image/video understanding. ... High-resolution images require LLMs to process significantly more visual tokens, which accounts for a major part of the computation.For example, a 672 × 1008 resolution image will produce 3,456 visual tokens for LLaVA-1.5 [27].To address the issue, we compress the visual tokens of each image slice using a shared perceiver resampler layer [3]."
+      },
+      {
+        "paper_id": "258557672",
+        "markdown_evidence": "MultiModal-GPT: A Vision and Language Model for Dialogue with Humans ... We present a vision and language model named MultiModal-GPT to conduct multi-round dialogue with humans. MultiModal-GPT can follow various instructions from humans, such as generating a detailed caption, counting the number of interested objects, and answering general questions from users. MultiModal-GPT is parameter-efficiently fine-tuned from OpenFlamingo, with Low-rank Adapter (LoRA) added both in the cross-attention part and the self-attention part of the language model. ... To address these challenges, we build upon the open-source Flamingo framework [1], a multimodal pre-trained model that deploys a perceiver resampler to efficiently extract visual information from the vision encoder, while also employing gated cross-attention layers for image-text interactions. ... Note that the language decoder is conditioned on the spatial features from the perceiver resampler by cross-attention in order to encode the feature of vision into text. Please refer to [1] for more details of the model architecture. ... As a result, our goal is to fine-tune OpenFlamingo using comprehensive datasets of image and text instructions, enabling the model to conduct conversations that more closely align with human preferences. ... To train the model, we utilize 8 A100 GPUs and complete the training process within a single epoch. The batch size per GPU for both vision and language instruction following data and language-only instruction following data is set to 1. We use gradient accumulation, and update the parameters of the LoRA every 16 iterations. Each iteration encompasses one vision-language pair and one language-only instruction data. ... Write a response that appropriately completes the request ### Image: <image_token> ### Instruction: {question} ### Response: {response}<EOS> ### Instruction: {question} ### Response: {response} <EOS> Table 2: The input sequence of vision and language data used to train the model. The {question} and {response} are texts from the source data. <image_token> is a token denoting the existence of image."
+      },
+      {
+        "paper_id": "263829585",
+        "markdown_evidence": "AutoAD II: The Sequel – Who, When, and What in Movie Audio Description ... Audio Description (AD) is the task of generating descriptions of visual content, at suitable time intervals, for the benefit of visually impaired audiences. For movies, this presents notable challenges – AD must occur only during existing pauses in dialogue, should refer to characters by name, and ought to aid understanding of the storyline as a whole.To this end, we develop a new model for automatically generating movie AD, given CLIP visual features of the frames, the cast list, and the temporal locations of the speech ... ); (ii) a Perceiver resampler that models the contextual information amongst these visual features and summarizes them into a sequence of fixed-length vectors: x = P([z; x]), where x are learnable latent states of the Perceiver module P; and (iii) trainable crossattention blocks that are inserted into the frozen language model. ... Architecture details. See Table A. 4 for the details of the perceiver resampler and X-Attn blocks. Training recipe. The model is trained with a batch size of 64 context windows for 3 epochs on MAD-train movies. We use AdamW optimizer with a learning rate of 10 −4 . ... ); (ii) a Perceiver resampler that models the contextual information amongst these visual features and summarizes them into a sequence of fixed-length vectors: x = P([z; x]), where x are learnable latent states of the Perceiver module P; and (iii) trainable crossattention blocks that are inserted into the frozen language model. ... Audio Description (AD) is the task of generating descriptions of visual content, at suitable time intervals, for the benefit of visually impaired audiences. For movies, this presents notable challenges – AD must occur only during existing pauses in dialogue, should refer to characters by name, and ought to aid understanding of the storyline as a whole. ... ; addressing all three of the ‘who’, ‘when’, and ‘what’ questions: (i) who – we introduce a character bank consisting of the character’s name, the actor that played the part, and a CLIP feature of their face, for the principal cast of each movie, and demonstrate how this can be used to improve naming in the generated AD"
+      },
+      {
+        "paper_id": "272693949",
+        "markdown_evidence": "NVLM: Open Frontier-Class Multimodal LLMs ... Vision language models [120; 9; 149; 4; 146; 174; 17; 145; 169] build the connection between the visual world and open text domain. ... In this study, we utilize a pretrained Flamingo model [4] from Yang et al. [158], built on a 1.3B LLM, and fine-tune it on an internal document OCR dataset consisting of 30K samples. In Figure 9, we observe that the original Flamingo model, incorporating the perceiver resampler, struggles to overfit this OCR dataset. For instance, even after numerous epochs, the training loss remains around 0.4. ... g., CLIP [120]) to extract visual features from input images or video frames, with only a very few exceptions [3]. These vision encoders [120; 47; 19; 167; 27] are often trained on large-scale, diverse, and noisy text-image pairs sourced from the web [124; 12; 33]. This allows for large-scale training and enhances the generalization needed to effectively process visual input in unseen domains. ... The primary reason is that the cross-attention to latent array in the Perceiver [48] mixes the input image tokens, potentially disrupting the spatial relationships between image patches, which are crucial for document OCR. Based on this observation, our NVLM-X architecture does not use a perceiver resampler; instead, it relies solely on cross-attention to read image tokens directly from the vision encoder. ... For example, GPT-4o is a single neural network trained end-to-end on text and images, achieving stateof-the-art results in both text-only and vision-language tasks [110]. This unified approach simplifies deployment by eliminating the need to route different input modalities to separate LLMs, offering users a seamless experience for switching between modalities without losing text or multimodal context."
+      },
+      {
+        "paper_id": "267740125",
+        "markdown_evidence": "PaLM2-VAdapter: Progressively Aligned Language Model Makes a Strong Vision-language Adapter ... This paper demonstrates that a progressively aligned language model can effectively bridge frozen vision encoders and large language models (LLMs). While the fundamental architecture and pre-training methods of vision encoders and LLMs have been extensively studied, the architecture and training strategy of vision-language adapters vary significantly across recent works. Our research undertakes a thorough exploration of the state-of-the-art perceiver resampler architecture and builds a strong baseline. ... We use a prompt template of \"Describe the following: <visual tokens>\" for training. For detailed information, please refer to Appendix A. \n\nEvaluation. All the input resolution is the same as training (i.e., 288) with a patch size of 18. We evaluate our method on captioning tasks and Visual Question Answering (VQA) tasks for both images and videos. ... Based on our observation of our in-depth empirical study with the perceiver resampler architecture (detailed in Section 4.2), we replace the attentional pooler with a 1-layer perceiver resampler to improve cross-modal alignment and achieve better performance, shown in Table 4. ... The CoCa [42] vision encoder is pre-trained with image-text pairs and is used to convert images and video frames into a set of feature tokens. These feature tokens are projected by a lightweight visual adapter to the LLM representation space. We adopt PaLM 2 [2] series models as the LLM decoder and the training task is to generate captions based on the visual embedded prefix. ... While the fundamental architecture and pre-training methods of vision encoders and LLMs have been extensively studied, the architecture and training strategy of vision-language adapters vary significantly across recent works. Our research undertakes a thorough exploration of the state-of-the-art perceiver resampler architecture and builds a strong baseline. ... Our progressively aligned language model demonstrates faster convergence, higher performance and stronger scalability as an adapter for vision-language alignment. employ the perceiver resampler as their adapter architecture, resulting an effective way for crossmodality alignment."
+      },
+      {
+        "paper_id": "253734932",
+        "markdown_evidence": "PERCEIVER-VL: Efficient Vision-and-Language Modeling with Iterative Latent Attention ... We present PERCEIVER-VL, a vision-and-language framework that efficiently handles high-dimensional multi- modal inputs such as long videos and text. Powered by the iterative latent-cross-attention of Perceiver, our framework scales with linear complexity, in contrast to the quadratic complexity of self-attention used in many state-of-the-art transformer-based models. To further improve the efficiency of our framework, we also study applying LayerDrop on cross-attention layers and introduce a mixed- stream architecture for cross-modal retrieval. ... In Table 2, we compare PERCEIVER-VL with state-of-theart image-text models on text-to-image retrieval (Flickr30k) and 2 visual question answering (VQAv2, NLVR 2 ) benchmarks. ... To this end, we propose PERCEIVER-VL, an end-to-* equal contribution 1 Our code and checkpoints are available at: https://github. com/zinengtang/Perceiver_VL end vision-and-language architecture that efficiently handles high-dimensional multi-modal inputs. PERCEIVER-VL is built on the iterative latent cross-attention of the recently proposed PERCEIVER [28,27]. ... Note that temporal embedding is only used for videos; we do not use temporal embedding for images or text. Positional embedding is a learned embedding of 2D patches ∈ {1 · · · L P } for image/video or token indices for text ∈ {1 · · · L T }, where L P is the number of patches for images, and L T is the number of text tokens. ... PERCEIVER-IO [27] adds a decoder to PERCEIVER to allow the model to tackle various downstream tasks with structured prediction.\n\nTo our knowledge, the iterative cross-attention of PER-CEIVER for multi-modal inputs has only been studied on audio-video autoencoding task [27]. In this work, we present PERCEIVER-VL, which extends the PERCEIVER framework in vision-and-language domain. ... Masked Language Modeling (MLM) asks a model to infer masked text inputs in a given context. Following [14], we randomly mask 15% of the input text tokens. We create the MLM query by adding a positional embedding and a mask embedding (Q = L T ). The mask embedding is a learned embedding of a binary indicator variable, where 1 indicates the masked text token. Note that we do not feed the token embeddings to the decoder, i.e."
+      },
+      {
+        "paper_id": "268248439",
+        "markdown_evidence": "Adding multimodal capabilities to a text-only translation model ... While most current work in multimodal machine translation (MMT) uses the Multi30k dataset for training and evaluation, we find that the resulting models overfit to the Multi30k dataset to an extreme degree. Consequently, these models perform very badly when evaluated against typical text-only testing sets such as the newstest datasets. In order to perform well on both Multi30k and typical text-only datasets, we use a performant text-only machine translation (MT) model as the starting point of our MMT model. ... Text-only machine translation is a much larger domain than multimodal machine translation and many strong models have been developed in the field. The approach of transforming a language model into a vision-language model was successful demonstrated via Flamingo, and thus have a high probability of working well in the similar task of machine translation. ... 1). Aside from the perceiver resampler module and the gated vision-text cross attention layers used in Flamingo model, which we use to convert our model from an MT model to an MMT model, our GRAM model follows the original textonly Transformer MT model's hyper-parameters, layers, and training objectives as closely as possible. ... vast majority of the remaining examples. Fitting our expectations, we see that state-of-the-art performance on the Multi30k test sets can be achieved without making use of image information at all (Table 2, the \"Text inputs only\" rows). ... In more detail, given an input sequence of text tokens t = (t 1 , . . . , t n ) and images I = (I 1 , . . . , I l ) where n and l may vary depending on the number of input text tokens and images, the output token sequence is generated auto-regressively as follows. \n\nThe vision encoder maps the images I into vision encodings v = (v 1 , . . . , v l ) where v i ∈ R e and e is the size of the image encodings. ... The perceiver resampler, used for the Flamingo model, receives a variable number of vision embeddings and outputs a fixed number of vision tokens. This concept was initially used to map a large number of inputs to a fixed number of tokens (Jaegle et al., 2021) and for object detection, where each of the visual tokens corresponds to an object class (Carion et al., 2020). \n\nGiven the vision embeddings w, let λ = (λ 1 , . . ."
+      },
+      {
+        "paper_id": "270870444",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268532347",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267547002",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278129712",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248986901",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258615266",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270068304",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269033274",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272146105",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266436019",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274423359",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252873086",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235658331",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269294214",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905109",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275780895",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252568643",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253734782",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273186005",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270878717",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266210376",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273229395",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274514545",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276575017",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274776358",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270319618",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278960104",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269043145",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253581325",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258841642",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268820144",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261891578",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274234387",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257683248",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276775193",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265213033",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274116688",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276813667",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261101220",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268385552",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273350987",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271533475",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277272699",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276079629",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265281544",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275324083",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253254967",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263909173",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259000001",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267750682",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274131737",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273350685",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255998401",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270619467",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245219186",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272367524",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277596174",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276740970",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249282645",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276741376",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235313626",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "199453025",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276775957",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266521081",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258740697",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274656197",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265466833",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252668479",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275932607",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270215984",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274776421",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274514412",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270440391",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272689771",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269042849",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272987756",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261101015",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277999617",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276960929",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277468400",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270045537",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268357858",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "195776147",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272593492",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275921249",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270440191",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270562151",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268793433",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274305717",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258048615",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274965397",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259108631",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251719655",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277606609",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277667587",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276929100",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277113534",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275336849",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277065689",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269982976",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277741397",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274281325",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273661620",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267682100",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274763374",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271745045",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258291930",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274822212",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277622298",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275336977",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245853947",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276235455",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277321689",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278636069",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268247535",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273654124",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268793752",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271859866",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245117852",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269982215",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268531362",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277626941",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277349681",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275212235",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271924006",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274166071",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257766298",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269921913",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269502487",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276249325",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265150065",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273403725",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244527510",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271139537",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273534365",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275759867",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278052143",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278782289",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278910826",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256749031",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267112552",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277753800",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276986882",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278782889",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276440574",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278959299",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277772869",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270068069",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271534328",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276235936",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271328975",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274306342",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253237122",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269587879",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272827653",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274638641",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258588032",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268297008",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247026006",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268384843",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271270382",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250279886",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277634461",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276235424",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274762981",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886930",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263875678",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260068316",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278602448",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271329049",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268695623",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257405465",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252683285",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277104395",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270845367",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277787392",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276617565",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274656612",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274981660",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482123",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268553866",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275921777",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267094920",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271310202",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268063581",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277104177",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276725481",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268793702",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274446060",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265499116",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270562057",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274423502",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277955299",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273186435",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268532518",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247778949",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274656467",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268724012",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275342951",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268248015",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276250278",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275336723",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275570496",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277993905",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257232537",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276813300",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268358224",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276580246",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274165545",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278911956",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254227103",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277939993",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276964873",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273654137",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278602553",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254018126",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274234031",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269187746",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279449925",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281120527",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886963",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277195235",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278783173",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "238583492",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264425999",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247363011",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279075855",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278912257",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265659287",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259811780",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276902665",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277856792",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266938311",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272724853",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272724483",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272445805",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

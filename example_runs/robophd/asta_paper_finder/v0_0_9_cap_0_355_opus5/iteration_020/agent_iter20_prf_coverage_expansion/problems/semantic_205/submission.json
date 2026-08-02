@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_205",
+    "results": [
+      {
+        "paper_id": "276937777",
+        "markdown_evidence": "CombatVLA: An Efficient Vision-Language-Action Model for Combat Tasks in 3D Action Role-Playing Games ... Recent advances in Vision-Language-Action models (VLAs) have expanded the capabilities of embodied intelligence. However, significant challenges remain in real-time decision-making in complex 3D environments, which demand second-level responses, high-resolution perception, and tactical reasoning under dynamic conditions. To advance the field, we introduce CombatVLA, an efficient VLA model optimized for combat tasks in 3D action role-playing games(ARPGs). ... and for mismatched pairs (M = 0), we maximize their separation using L push con = −L pull con while enforcing action prediction accuracy through an alignment loss L align = − log p(c * ). The composite action loss is defined as: \n\nThe final objective combines language modeling L lang : \n\nwhere α is derived from action priorities using exponential weights ... We must also candidly acknowledge some limitations in our research, specifically: 1) Task Definitions: As VLM-and VLA-based agents are still evolving, the current task definitions are somewhat simplistic. 2) Game Scenarios: Our research has only been tested within the BMW and SSDT game and has not yet been extended to other scenarios. ... Experimental results demonstrate that our CombatVLA not only surpasses all existing models in combat understanding benchmarks, while maintaining generalization capability, but also achieves a 50-fold speedup in real-time combat scenarios. In the future, we will further enhance model's understanding of game scenarios, thereby expanding its application to more games. ... Thereafter, CombatVLA is trained using a progressive learning paradigm, enabling the model to learn combat techniques, from video-level AoT tuning to frame-level AoT tuning. Ultimately, CombatVLA can be seamlessly integrated into an action execution agent, enabling efficient inference through our custom truncated output strategy. As shown in Fig. ... Initially, the model undergoes coarse-grained video-level training (stage1), followed by fine-grained frame-level training (stage2), and finally truncation strategy training (stage3). During the training process, we froze the parameters of the vision encoder and fine-tuned the parameters of the language model. Stage1: Coarse-Grained Video-AoT Tuning."
+      },
+      {
+        "paper_id": "277151026",
+        "markdown_evidence": "JARVIS-VLA: Post-Training Large-Scale Vision Language Models to Play Visual Games with Keyboards and Mouse ... Recently, action-based decision-making in open-world environments has gained significant attention. Visual Language Action (VLA) models, pretrained on large-scale web datasets, have shown promise in decision-making tasks. However, previous work has primarily focused on action post-training, often neglecting enhancements to the foundational model itself. In response, we introduce a novel approach, Act from Visual Language Post-Training, which refines Visual Language Models (VLMs) through visual and linguistic guidance in a self-supervised manner. ... Recent work on large language models (LLMs) trained on vast amounts of text via next-token prediction has shown strong scaling laws (Du et al., 2024;Lin et al., 2024;Wang et al., 2024e;Wei et al., 2022). We investigate whether VLAs, obtained through post-training on VLMs, exhibit similar scaling behavior. ... , 2024b,c) to model human trajectories in Minecraft with pretrained VLMs. While these approaches optimize VLMs, they still rely on additional policies for action grounding. \n\nIn contrast, we propose a VLA-based agent model that generates actions directly from textual instructions and visual inputs, eliminating the need for extra grounding policies. ... Evaluation Environment. We use Minecraft 1.16.5 as our experimental platform (Guss et al., 2019). As an open-world game with a substantial knowledge base on platforms such as Reddit and wiki (Fan et al., 2022), Minecraft poses significant challenges to agents while simultaneously offering rich resources for research. ... JARVIS-VLA: Post-Training Large-Scale Vision Language Models to Play Visual Games with Keyboards and Mouse ... For this evaluation, we select three long-sequence atomic tasks: \"Craft the diamond sword\" ( ), \"Mine the obsidian\" ( ), and \"Cook the beef\" ( ), as downstream instruction-following tasks. \n\nThe results of our ablation studies, presented in Figure 4, demonstrate that post-training with nontrajectory vision-language tasks significantly enhances the core capabilities of the VLM across the respective benchmarks."
+      },
+      {
+        "paper_id": "268297162",
+        "markdown_evidence": "Will GPT-4 Run DOOM? ... Large language models (LLMs) such as GPT-4 [1] are able to parse input text (prompts) as instructions, and execute them to remarkable accuracy. No training or fine-tuning is required for this: instead, a few exemplars (shots) in the prompt suffice. ... The model was unable to finish the map under any of the prompts. However, it came close twice: once in the plan prompt, entering room D and immediately dying at the hands of the imp awaiting there; and once with klevels, where it got to the door of room D, backtracked, and opened a secret door leading to the courtyard, where it timed out. In all prompts, Agent performed motions and actions in line with the instructions. ... The focus of our paper is on LLM-based intelligent agents in video games. However, the idea of employing machine learning to play video games, and Doom in particular, is not new. For example, Alvernaz and Togelius [9] used autoencoders for simple pathing under a sandbox environment; and Lample and Chaplot [10] employed reinforcement learning (RL) to outmatch humans in various FPS, Doom included. ... Our experimental setup consists of two main components: a Vision component (calling GPT-4V) that takes in screenshots from the running engine, and returns structured descriptions of the game state; and an Agent model (calling GPT-4) that makes decisions based on Vision's output and the previous history. Vision and Agent's prompts has been tuned to return parseable outputs that can be used with the engine. ... More complex prompting strategies involving multiple model calls provide better results. While further work is required to enable the LLM to play the game as well as its classical, reinforcement learning-based counterparts, we note that GPT-4 required no training, leaning instead on its own reasoning and observational capabilities. We hope our work pushes the boundaries on intelligent, LLM-based agents in video games."
+      },
+      {
+        "paper_id": "272753397",
+        "markdown_evidence": "Can VLMs Play Action Role-Playing Games? Take Black Myth Wukong as a Study Case ... Recently, large language model (LLM)-based agents have made significant advances across various fields. One of the most popular research areas involves applying these agents to video games. Traditionally, these methods have relied on game APIs to access in-game environmental and action data. However, this approach is limited by the availability of APIs and does not reflect how humans play games. With the advent of vision language models (VLMs), agents now have enhanced visual understanding capabilities, enabling them to interact with games using only visual inputs. ... However, this approach is limited by the availability of APIs and does not reflect how humans play games. With the advent of vision language models (VLMs), agents now have enhanced visual understanding capabilities, enabling them to interact with games using only visual inputs. ... For LLM, Reflexion [20] enhances the decision-making ability of language agents through a framework of linguistic feedback and self-reflection, allowing agents to autonomously reflect in the face of feedback signals and maintain contextual memory during task execution and decision-making processes. ... Our method can automatically play ARPGs, which may lead to game cheating and false advertising. This can have a significant negative impact on society. Therefore, it is crucial to consider methods that can reliably distinguish between genuine and forged content. ... For VLM-based agents, the game interfaces of ARPGs provide very few textual hints, and most of the actions need to be learned through experience and self-innovation. As a result, previous agents have found it challenging to extract effective guidance information from visual inputs. \n\nIn this paper, we will select the \"Black Myth: Wukong,\" abbreviated as BMW, an AAA ARPG, as our research platform for extensive experimentation. ... We propose a novel framework named the VARP agent, which directly takes game screenshots as input. Through inference by a group of Vision-Language Models (VLMs), it ultimately generates actions in the form of Python code, which can directly operate the game character. Each action is a sequence that consists of various combinations of atomic commands."
+      },
+      {
+        "paper_id": "277349352",
+        "markdown_evidence": "Cultivating Game Sense for Yourself: Making VLMs Gaming Experts ... Developing agents capable of fluid gameplay in first/third-person games without API access remains a critical challenge in Artificial General Intelligence (AGI). Recent efforts leverage Vision Language Models (VLMs) as direct controllers, frequently pausing the game to analyze screens and plan action through language reasoning. However, this inefficient paradigm fundamentally restricts agents to basic and non-fluent interactions: relying on isolated VLM reasoning for each action makes it impossible to handle tasks requiring high reactivity (e.g., FPS shooting) or dynamic adaptability (e.g., ACT combat). ... Developing agents capable of fluid gameplay in first/third-person games without API access remains a critical challenge in Artificial General Intelligence (AGI). Recent efforts leverage Vision Language Models (VLMs) as direct controllers, frequently pausing the game to analyze screens and plan action through language reasoning. ... This paradigm shift bridges the VLM's reasoning with real-time gameplay demands, enabling more versatile game agents. \n\nBased on this new paradigm, we present Game-Sense, a framework that empowers VLMs to develop and optimize task-specific execution modules, termed Game Sense Modules (GSMs). ... 0; and in the continuous reaction game \"Flappy Bird,\" it impressively scored an average of 28.3 and a maximum of 35. In contrast, Cradle performed poorly or failed to effectively play the games at all, strongly validating Game-Sense's significant advantages in achieving authentic gameplay experiences and its versatility across different game genres. ... , 2024). Agents must navigate diverse tasks, ranging from combat encounters to environmental navigation, while executing precise real-time actions (Hu   et al., 2024). Traditional reinforcement learning (RL) approaches struggle to handle such a broad spectrum of demands due to their limited task generalization (de Woillemont et al., 2022;Justesen et al. ... g., boss fights and Flappy Bird control); (2) Rulebased GSM targets tasks with well-defined rules that demand rapid, efficient responses (e.g., mob fights and shooting in FPS games). \n\nIn each game, the tasks handled by GSMs are predefined during Agent initialization. In ACT games, GSMs handle mob fights and boss fights. In FPS games, GSMs manage shooting."
+      },
+      {
+        "paper_id": "268248691",
+        "markdown_evidence": "Cradle: Empowering Foundation Agents towards General Computer Control ... This suggests a multimodal model with powerful vision and reasoning capabilities, in addition to rich knowledge of computer UI and control, is a requirement.In this work, we leverage GPT-4V as the framework's backbone model, which is currently one of the most capable LMM models available. ... Therefore, GCC requires the agent to have long-term memory to store past experiences, such as past actions, outcomes, and the knowledge learned from the past experiences, for fast and better decision making.Fourth, GCC requires efficient exploration of the environments in a structured manner and discovering better strategies and solutions autonomously, i.e., self-improving. ... Future work in CRADLE aims to extend it to support a broader spectrum of games, such as simulation and strategy games, as well as various software applications, to demonstrate its exceptional adaptability across diverse environments. ... Achieving Artificial General Intelligence (AGI) has long been a north-star goal for the AI community [29].Recent foundation agents, i.e., agents empowered by large multimodal models (LMMs) and advanced tools, have been touted as a promising approach in pursuing AGI. ... • To demonstrate the capabilities of CRADLE, we incorporate the powerful Large Multimodal Model (LMM) GPT-4V into our framework and deploy it in the famous AAA game RDR2, serving as a preliminary attempt towards GCC.To our best knowledge, our work is the first to enable LMM-based agents to follow the main storyline and finish real missions in complex AAA games, with minimal reliance on prior knowledge."
+      },
+      {
+        "paper_id": "277627977",
+        "markdown_evidence": "V-MAGE: A Game Evaluation Framework for Assessing Visual-Centric Capabilities in Multimodal Large Language Models ... Recent advancements in Multimodal Large Language Models (MLLMs) have demonstrated impressive capabilities in visual-text processing. However, existing static image-text benchmarks are insufficient for evaluating their dynamic perception and interactive reasoning abilities. We introduce Vision-centric Multiple Abilities Game Evaluation (V-MAGE), a novel game-based evaluation framework designed to systematically assess MLLMs'visual reasoning in interactive, continuous-space environments. V-MAGE features five distinct video games comprising over 30 carefully constructed evaluation scenarios. ... V-MAGE: A Game Evaluation Framework for Assessing Visual-Centric Capabilities in Multimodal Large Language Models ... In the baseline agent strategy, we utilize historical information comprising three preceding screenshots and the model's reasoning outputs associated with these screenshots, combined with the current game screenshot, to form the <history> and <image current step> components (as shown in Sec. B.2) that are incorporated into the model's input framework. ... V-MAGE features five distinct video games comprising over 30 carefully constructed evaluation scenarios. These scenarios are set in free-form, visually complex environments that require models to interpret dynamic game states and make decisions based solely on visual input, thereby closely reflecting the conditions encountered by human players. ... Because V-MAGE may not comprehensively represent the rich video game environment, evaluations of model capabilities in this field could be biased, potentially leading to ranking errors. \n\nOur work evaluates the performance of current multimodal large models in video games. Through further game introduction and level design, our benchmark will provide a more comprehensive and objective evaluation of model capabilities. ... The result highlights that while parameter scaling improves performance in simpler tasks, it cannot bridge the inherent ability gap in more complex dynamic tasks. For more details, please refer to the Appendix A.2. mans in Complex Scenes. We invited 5 human participants to play the game in the same environment as the MLLMs and calculated their average score, which served as the baseline for human performance. Fig."
+      },
+      {
+        "paper_id": "271974920",
+        "markdown_evidence": "Atari-GPT: Benchmarking Multimodal Large Language Models as Low-Level Policies in Atari Games ... Recent advancements in large language models (LLMs) have expanded their capabilities beyond traditional text-based tasks to multimodal domains, integrating visual, auditory, and textual data. While multimodal LLMs have been extensively explored for high-level planning in domains like robotics and games, their potential as low-level controllers remains largely untapped. In this paper, we introduce a novel benchmark aimed at testing the emergent capabilities of multimodal LLMs as low-level policies in Atari games. ... 2021), which leveraged transformers to learn a common latent space for both visual and linguistic data, leading to a model that could correlate images in the context of natural language. This development led to some of the most influential Multimodal Large Language Models available today such as GPT-4 Vision (OpenAI et al. 2024), Gemini Pro 1. ... 2022), and random agents. While a pre-trained DQN model (Gogianu et al. 2022) trained for 49,750,000 steps was used for all other environments, a custom DQN model was trained from scratch for 1,000,000 timesteps for ALE/Frogger-v5 due to the lack of a pretrained model. The LLMs did not match the performance of the human players or the RL agents. ... We observed a significant performance gap between GPT-4o and Claude 3 Haiku and Gemini 1.5 Flash. In most cases, we observed that models performed better than random. Though we saw performance worse than random for Pong on all models, likely due to the speed and accuracy requirements to prop-erly play the game, and in multiple environments for Gemini 1. ... Be specific. \n\nTo quantitatively evaluate the performance of the model outputs, we created a rubric outlining the basic answers to the proposed questions, as seen in the Appendix (Table 2). \n\nGiven that there are several acceptable actions and strategies, we do not directly define a single correct action or plan for each state. ... The same model with the same weights can then play games, caption images, control robotic arms, chat, and others. CICERO ( FAIR) leveraged LLMs to combine strategic reasoning and natural language to cooperate, negotiate, and coordinate with other players to play the game Diplomacy at a human level. LLMs have also been employed to solve text-based games (Yao et al."
+      },
+      {
+        "paper_id": "276885285",
+        "markdown_evidence": "AVA: Attentive VLM Agent for Mastering StarCraft II ... Foundation Models for Multimodal Understanding Recent advances in Large Language Models such as GPT-4 [15], Claude [1], and Llama [23] have demonstrated remarkable reasoning capabilities. Building upon these foundations, Vision-Language Models [12,18] integrate visual encoders with language models, enabling simultaneous understanding of visual and textual information. ... For multi-agent coordination, we implement a dynamic role assignment framework that adapts to evolving battlefield conditions. Let N = {1, ..., N} denote the set of agents and Z = {z 1 , ..., z m } represent possible roles. The role assignment function ϕ : N → Z maps each agent to a specific role, optimized through a utility function U(ϕ, s) that evaluates role effectiveness given the current state s ∈ S. ... This work advances the field of multimodal AI decision-making through the lens of real-time strategy games. While our primary contribution is methodological, we acknowledge several potential societal implications. The development of more human-aligned AI agents could enhance human-AI collaboration and improve AI system interpretability. ... This randomization tests an agent's ability to handle arbitrary unit combinations but fails to evaluate tactical proficiency in realistic combat scenarios. \n\nFocus on MARL Rather Than StarCraft II Mastery These environments were designed specifically to advance MARL algorithms rather than to develop systems that can master StarCraft II gameplay. ... We define the three metrics used in the human evaluation of AVA and MARL agents, each rated on a 1-5 scale: \n\n• Game Bug Exploitation: Measures whether the agent exploits game bugs, particularly vulnerabilities in SMAC's built-in AI, which uses a flawed strategy of attacking only the enemy's spawn point and stopping if the enemy moves out of range or beyond attack distance (1 = frequent exploitation, 5 = no exploitation)."
+      },
+      {
+        "paper_id": "278886118",
+        "markdown_evidence": "VideoGameBench: Can Vision-Language Models complete popular video games? ... VideoGameBench is introduced, a benchmark consisting of 10 popular video games from the 1990s that VLMs directly interact with in real-time and a setting where the game pauses while waiting for the LM's next action ... Vision-language models (VLMs) have achieved strong results on coding and math benchmarks that are challenging for humans, yet their ability to perform tasks that come naturally to humans--such as perception, spatial navigation, and memory management--remains understudied. Real video games are crafted to be intuitive for humans to learn and master by leveraging innate inductive biases, making them an ideal testbed for evaluating such capabilities in VLMs. To this end, we introduce VideoGameBench, a benchmark consisting of 10 popular video games from the 1990s that VLMs directly interact with in real-time."
+      },
+      {
+        "paper_id": "270869420",
+        "markdown_evidence": "OmniJARVIS: Unified Vision-Language-Action Tokenization Enables Open-World Instruction Following Agents ... This paper presents OmniJARVIS, a novel Vision-Language-Action (VLA) model for open-world instruction-following agents in Minecraft. Compared to prior works that either emit textual goals to separate controllers or produce the control command directly, OmniJARVIS seeks a different path to ensure both strong reasoning and efficient decision-making capabilities via unified tokenization of multimodal interaction data. ... To this end, we propose OmniJARVIS, a novel VLA model that jointly models vision , language , and actions in interaction data with unified tokenization. OmniJARVIS comprises two key ideas: 1) Behavior Tokenization. We introduce a self-supervised approach to learn a behavior encoder ... Our proposed VLA model OmniJARVIS jointly models the vision (observations), language (instructions, memories, thoughts), and actions (behavior trajectories) as unified autoregressive sequence prediction. ... It's a testament to the immersive and engaging nature of video games like Minecraft.\" ... It also hinders us from leveraging the planning ability of generative models. On the other hand, language-level action tokens require significantly more supervision and cannot accurately describe all possible actions. \n\nTo this end, we propose OmniJARVIS, a novel VLA model that jointly models vision , language , and actions in interaction data with unified tokenization. ... Compared to labeling thoughts by humans [50,6], we assume that thought is an intermediate variable that can be determined by the actions taken and observations made before and after the action, which is similar to an Inverse Dynamics Model [2]. We therefore prompt an LLM into estimating the thought of decisions with in-context learning, which will then be used as the thought D tht t of the current behavior."
+      },
+      {
+        "paper_id": "263909250",
+        "markdown_evidence": "Octopus: Embodied Vision-Language Programmer from Environmental Feedback ... Large vision-language models (VLMs) have achieved substantial progress in multimodal perception and reasoning. When integrated into an embodied agent, existing embodied VLM works either output detailed action sequences at the manipulation level or only provide plans at an abstract level, leaving a gap between high-level planning and real-world manipulation. To bridge this gap, we introduce Octopus, an embodied vision-language programmer that uses executable code generation as a medium to connect planning and manipulation. ... The Octopus architecture (shown in Fig. 4 (c)) is heavily inspired by the Otter model [33], integrates the MPT-7B Language Decoder [43] and CLIP VIT-L/14 Vision Encoder [48]. Adopting design principles from Flamingo [4], Octopus employs the Perceiver Resampler and Cross-Gated Attention modules to enhance vision-language synergy. ... The full list of the functions is in the Appendix. \n\nOctoMC The OctoMC environment is built on Minecraft [2], a popular platform for reinforcement learning and game agents. We integrated 6 functional actions and crafted 40 tasks2 , each designed to facilitate comprehensive observations and executions by the agent. ... Following Fig. 3 in the main paper, we use GPT-4 to automatically collect responses using the system message and environment message shown below. ... enabling script developers to easily access and set game attributes, coordinates, and other parameters related to characters, interactable items, cameras, and other game elements. We employed SET_GAMEPLAY_CAM_RELATIVE from the CAM section and SET_ENTITY_HEADING from the ENTITY section for automatic camera rotation, combined with RGB-D image acquisition to automatically gather environmental information. ... To facilitate Octopus model development, we introduce OctoVerse: a suite of environments tailored for benchmarking vision-based code generators on a wide spectrum of tasks, ranging from mundane daily chores in simulators to sophisticated interactions in complex video games such as Grand Theft Auto (GTA) and Minecraft. To train Octopus, we leverage GPT-4 to control an explorative agent that generates training data, i.e."
+      },
+      {
+        "paper_id": "271601072",
+        "markdown_evidence": "OmniParser for Pure Vision Based GUI Agent ... The recent success of large vision language models shows great potential in driving the agent system operating on user interfaces. However, we argue that the power multimodal models like GPT-4V as a general agent on multiple operating systems across different applications is largely underestimated due to the lack of a robust screen parsing technique capable of: 1) reliably identifying interactable icons within the user interface, and 2) understanding the semantics of various elements in a screenshot and accurately associate the intended action with the corresponding region on the screen. ... Further, without using parsed HTML information, OMNIPARSER is able to outperform GPT-4's performance that uses HTML in every sub-category by a large margin, suggesting the substantial benefit of the screen parsing results provided by OMNIPARSER. Additionally, OMNIPARSER outperforms the GPT-4V+SOM by a large margin. ... Recently there has been a lot of works on designing autonomous GUI agent to perform tasks in place of human users. One line of work is to train an end-to-end model to directly predict the next action, representative works include: Pixel2Act bounding boxes on top of the screenshot then feed into the vision-language models. ... OMNIPARSER encompasses two finetuned models: an icon detection model and a functional description models. To train them, we curated an interactable region detection dataset using popular webpages, and an icon functional description dataset. We demonstrate that with the parsed results, the performance of GPT-4V is greatly improved on ScreenSpot benchmarks. ... We first curated an interactable icon detection dataset using popular webpages and an icon description dataset. These datasets were utilized to fine-tune specialized models: a detection model to parse interactable regions on the screen and a caption model to extract the functional semantics of the detected elements. ... Large language models have shown great success in their understanding and reasoning capabilities. More recent works have explored the use of large vision-language models (VLMs) as agents to perform complex tasks on the user interface (UI) with the aim of completing tedious tasks to replace human efforts [YZL + 23, YYZ + 23, DGZ + 23, ZGK + 24, HWL + 23, YZS + 24, WXJ + 24, GFH + 24, CSC + 24]."
+      },
+      {
+        "paper_id": "276766708",
+        "markdown_evidence": "Are Large Vision Language Models Good Game Players? ... Large Vision Language Models (LVLMs) have demonstrated remarkable abilities in understanding and reasoning about both visual and textual information. However, existing evaluation methods for LVLMs, primarily based on benchmarks like Visual Question Answering and image captioning, often fail to capture the full scope of LVLMs' capabilities. These benchmarks are limited by issues such as inadequate assessment of detailed visual perception, data contamination, and a lack of focus on multi-turn reasoning. ... Large Vision Language Models (LVLMs) have demonstrated remarkable abilities in understanding and reasoning about both visual and textual information. However, existing evaluation methods for LVLMs, primarily based on benchmarks like Visual Question Answering and image captioning, often fail to capture the full scope of LVLMs' capabilities. ... In competitive games like Gomoku, the model faces a search-based opponent that employs established strategies such as Minimax search, requiring the LVLMs to make strategic decisions throughout the game. In singleplayer games like Minesweeper, the model must independently navigate the game, making informed choices based on the current state and available information. ... As discussed in the main text, the model suggests the next move in alphanumeric format, which is then executed within a game simulator. For games involving an opponent, the model must respond to the adversarial actions and adapt its strategy accordingly. \n\nHere, we first provide the E2E Play task prompt for each game: ... In contrast, games with rich visual environments and complex multimodal interactions present greater challenges. Recently, LVLMs have demonstrated strong reasoning capabilities by combining visual perception with language understanding, making them well-suited to act as agents in game environments that demand both modalities for decision-making and interaction (Xu et al. ... If there is an opponent, the model must consider their responses; otherwise, it plays independently. To prevent indefinite loops, if the model generates three invalid moves per gameplay, it is automatically declared a loss. Since most LVLMs struggle to complete a full game, performance was evaluated based on the number of valid moves, partial game progression, and final outcomes."
+      },
+      {
+        "paper_id": "267636776",
+        "markdown_evidence": "ScreenAgent: A Vision Language Model-driven Computer Control Agent ... Large Language Models (LLM) can invoke a variety of tools and APIs to complete complex tasks. The computer, as the most powerful and universal tool, could potentially be controlled by a trained LLM agent. Powered by the computer, we can hopefully build a more generalized agent to assist humans in various daily digital works. In this paper, we construct an environment for a Vision Language Model (VLM) agent to interact with a real computer screen. Within this environment, the agent can observe screenshots and manipulate the Graphical User Interface (GUI) by outputting mouse and keyboard actions. ... Large Language Models (LLM) can invoke a variety of tools and APIs to complete complex tasks. The computer, as the most powerful and universal tool, could potentially be controlled by a trained LLM agent. Powered by the computer, we can hopefully build a more generalized agent to assist humans in various daily digital works. ... It autonomously assesses the execution status of the current action, providing feedback based on the ongoing state. This capability enhances its performance for subsequent actions, enabling our agent to possess the capability of a continuous thinking chain. ... 3) to construct the ScreenAgent Dataset which is collected from Linux and Windows operating systems for completing specific tasks. This dataset endeavors to cover a wide range of daily computer usage scenarios, including daily office, booking, information retrieval, card games, entertainment, programming, system operations, and so on. As illustrated in Fig. ... It outputs the next action operation, utilizes function calls to perform actions, induces changes in the computer environment, and achieves genuine real-time interaction between the agent and the environment. \n\nan AI entity with a large language model as its core computational engine. ... To evaluate our ScreenAgent model on computer control tasks, we provide two cases. In Fig. 7, we present a case illustrating the workflow of ScreenAgent executing a chain of actions. In Fig. 8, we compare different agents in executing the details of the three phases in the pipeline. Fig. 8 (a) shows the planning process of all the agents, where we find that our ScreenAgent produces the most concise and effective plan."
+      },
+      {
+        "paper_id": "273228678",
+        "markdown_evidence": "ING-VP: MLLMs cannot Play Easy Vision-based Games Yet ... As multimodal large language models (MLLMs) continue to demonstrate increasingly competitive performance across a broad spectrum of tasks, more intricate and comprehensive benchmarks have been developed to assess these cutting-edge models. These benchmarks introduce new challenges to core capabilities such as perception, reasoning, and planning. However, existing multimodal benchmarks fall short in providing a focused evaluation of multi-step planning based on spatial relationships in images. ... As multimodal large language models (MLLMs) continue to demonstrate increasingly competitive performance across a broad spectrum of tasks, more intricate and comprehensive benchmarks have been developed to assess these cutting-edge models. These benchmarks introduce new challenges to core capabilities such as perception, reasoning, and planning. ... In a deterministic environment, the outcome of every action taken by an agent is predictable and certain. Such an environment can be formally defined using a Markov Decision Process (MDP). The model employs a strategy π to determine the next action a t based on the current state s t and all previous actions a 0:t−1 , represented as: ... Figure 1 shows games, evaluation settings, and the interactive process in our ING-VP. To construct our ING-VP, we initially collect six games featuring easily understandable rules. In each game, we collect 50 levels, each comprising both an image and a text representation of the current state, providing vision and textual inputs for MLLMs, as illustrated in Figure 2. ... Evaluation. We present a systematic interactive environment for evaluating all MLLMs, where models interact with the game environment until either completing the task or exhausting the allotted steps. We constrain the model's output action instructions to JSON format through prompts and extract them using regular expressions. ... 5 Sonnet and GPT-4o, can generally identify the elements present and even count the quantity of each in the Sokoban game. However, they struggle to accurately determine precise location information, leading to very low inference accuracy and degree of task completion. \n\nMerely breaking down the steps is unhelpful and may even be counterproductive. In text-only tasks, Claude-3.5 Sonnet and GPT-4o achieve accuracy rates of 2."
+      },
+      {
+        "paper_id": "266210390",
+        "markdown_evidence": "CogAgent: A Visual Language Model for GUI Agents ... People are spending an enormous amount of time on dig-ital devices through graphical user interfaces (GUIs), e.g., computer or smartphone screens. Large language models (LLMs) such as ChatGPT can assist people in tasks like writing emails, but struggle to understand and interact with GUIs, thus limiting their potential to increase automation levels. In this paper, we introduce CogAgent, an 18-billion-parameter visual language model (VLM) specializing in GUI understanding and navigation. ... Picture this scenario: You type in a task description, then relax and enjoy a cup of coffee while watching tasks like booking tickets online, conducting web searches, managing files, and creating Pow-erPoint presentations get completed automatically. \n\nRecently, the emergence of agents based on large language models (LLMs) is bringing us closer to this dream. ... 3.2. Compared to other methods, our approach achieved significant performance improvements across all three subsets, surpassing LLaMA2-70B, which is nearly 4⇥ the scale of CogAgent, by 11.6%, 4.7%, and 6.6%, respectively. This reflects not only the capability of our model but also the advantages of employing a visual agent in computer GUI scenarios. ... Our method leads to at least \n\n256+L T ⇥ acceleration which is a stringent lower bound (refer to Appendix for detailed derivation), and reduces memory overhead at the same time. \n\n14284 Authorized licensed use limited to the terms of the applicable license agreement with IEEE. Restrictions apply. ... In this work, we present CogAgent, a visual language foundation model specializing in GUI understanding and planning while maintaining a strong ability for general cross-modality tasks. By building upon CogVLM [38]-a recent open-source VLM, CogAgent tackles the following challenges for building GUI agents: \n\n• Training Data. ... g., computer or smartphone screens. Large language models (LLMs) such as ChatGPT can assist people in tasks like writing emails, but struggle to understand and interact with GUIs, thus limiting their potential to increase automation levels. In this paper, we introduce CogAgent, an 18-billion-parameter visual language model (VLM) specializing in GUI understanding and navigation."
+      },
+      {
+        "paper_id": "274116781",
+        "markdown_evidence": "The Dawn of GUI Agent: A Preliminary Case Study with Claude 3.5 Computer Use ... The recently released model, Claude 3.5 Computer Use, stands out as the first frontier AI model to offer computer use in public beta as a graphical user interface (GUI) agent. As an early beta, its capability in the real-world complex environment remains unknown. In this case study to explore Claude 3.5 Computer Use, we curate and organize a collection of carefully designed tasks spanning a variety of domains and software. Observations from these cases demonstrate Claude 3.5 Computer Use's unprecedented ability in end-to-end language to desktop actions. ... Large Vision-Language Models Recent research has invested tremendous effort in constructing LVLMs capable of jointly processing image and text [1,2,3,4], integrating vision encoders with LLMs through connecting layers, inheriting LLMs' linguistic and reasoning skills to perform vision-language tasks. ... • Critic: Measuring the model's awareness of the changing environment, including its ability to adapt to the outcomes of its actions, such as retrying tasks if unsuccessful or terminating execution when the task is completed. \n\nTo our best knowledge, this is the first comprehensive case study on Claude 3.5 Computer Use and API-based GUI automation models. ... By examining how the model interacts with actual websites, we aim to demonstrate its proficiency in handling dynamic content, executing multi-step plans, and adjusting its strategies in response to unexpected interface behaviors. This evaluation provides insights into both the capabilities and limitations of the model within the web search domain. ... We present some representative failure cases in the evaluation, as in Section 4.2.3, 4.4.4, 4.4.7, and 4.4.9. These cases highlight specific areas where the model actions did not align with the user's intended outcomes, revealing limitations in its task comprehension and/or execution. ... To enhance the effectiveness of these GUI agents, researchers have focused on developing systems that can interpret human intentions and predict actions in the form of function calls [29,30,31,32]. Nonetheless, progress is hindered by the limited quantity and vast diversity of available agent data [33,34]."
+      },
+      {
+        "paper_id": "275515533",
+        "markdown_evidence": "Visual Language Models as Operator Agents in the Space Domain ... The results demonstrate that VLMs can effectively process visual and textual data to generate contextually appropriate actions, competing with traditional methods and non-multimodal LLMs in simulation tasks, and showing promise in real-world applications. ... This paper explores the application of Vision-Language Models (VLMs) as operator agents in the space domain, focusing on both software and hardware operational paradigms. Building on advances in Large Language Models (LLMs) and their multimodal extensions, we investigate how VLMs can enhance autonomous control and decision-making in space missions. In the software context, we employ VLMs within the Kerbal Space Program Differential Games (KSPDG) simulation environment, enabling the agent to interpret visual screenshots of the graphical user interface to perform complex orbital maneuvers. In the hardware context, we integrate VLMs with robotic systems equipped with cameras to inspect and diagnose physical space objects, such as satellites. ... Building on advances in Large Language Models (LLMs) and their multimodal extensions, we investigate how VLMs can enhance autonomous control and decision-making in space missions. In the software context, we employ VLMs within the Kerbal Space Program Differential Games (KSPDG) simulation environment, enabling the agent to interpret visual screenshots of the graphical user interface to perform complex orbital maneuvers. ... Visual Language Models as Operator Agents in the Space Domain"
+      },
+      {
+        "paper_id": "276647733",
+        "markdown_evidence": "Optimus-2 : Multimodal Minecraft Agent with Goal-Observation-Action Conditioned Policy ... Building an agent that can mimic human behavior patterns to accomplish various open-world tasks is a longterm goal. To enable agents to effectively learn behavioral patterns across diverse tasks, a key challenge lies in modeling the intricate relationships among observations, actions, and language. To this end, we propose Optimus-2, a novel Minecraft agent that incorporates a Multimodal Large Language Model (MLLM) for highlevel planning, alongside a Goal-Observation-Action Conditioned Policy (GOAP) for low-level control. ... To this end, we propose Optimus-2, a novel Minecraft agent that incorporates a Multimodal Large Language Model (MLLM) for highlevel planning, alongside a Goal-Observation-Action Conditioned Policy (GOAP) for low-level control. ... However, existing goal-conditioned policies exhibit the following limitations: (1) Existing policies neglect the modeling of the relationship between observations and actions. As shown in Figure 1, they only model the relationship between the sub-goal and the current observation by adding the sub-goal embedding to the observation features [3,25,43]. ... Experimental results demonstrate that Optimus-2 performs exceptionally well in both atomic tasks and long-horizon tasks. However, due to the lack of sufficient high-quality data for open-ended tasks (such as \"building a house\" and \"defeating the Ender Dragon\"), there remains significant room for improvement. ... To model the relationship between the sub-goal and observation-action sequence, we introduce an MLLM that takes the sub-goal g, current observation features v t , and behavior tokens B t as input to predict subsequent actions auto-regressively. To enable the MLLM backbone MLLM to predict low-level actions, we employ VPT [1] as action head AH to map output embeddings āt+1 of language model into the action space. ... Motivated by this, we propose a novel Goal-Observation-Action conditioned Policy, GOAP. As shown in Figure 2, our GOAP consists of an Action-guided Behavior Encoder that dynamically models observationaction sequences into fixed-length behavior tokens and an MLLM that aligns such behavior tokens with sub-goal for action prediction."
+      },
+      {
+        "paper_id": "278338937",
+        "markdown_evidence": "VLM Q-Learning: Aligning Vision-Language Models for Interactive Decision-Making ... Recent research looks to harness the general knowledge and reasoning of large language models (LLMs) into agents that accomplish user-specified goals in interactive environments. Vision-language models (VLMs) extend LLMs to multi-modal data and provide agents with the visual reasoning necessary for new applications in areas such as computer automation. However, agent tasks emphasize skills where accessible open-weight VLMs lag behind their LLM equivalents. For example, VLMs are less capable of following an environment's strict output syntax requirements and are more focused on open-ended question answering. ... Recent research looks to harness the general knowledge and reasoning of large language models (LLMs) into agents that accomplish user-specified goals in interactive environments. ... Because the dataset then contains some valid actions that avoid the syntax reward penalty, the AFSFT update learns to favor them over the model's own (inaccurate) outputs, leading to a spike in action accuracy. From there, the Q filter can prefer actions that lead to task success over other valid but sub-optimal decisions, and the VLM's success rate rises to nearly 100%. ... , 2024), navigating graphical interfaces, (Gao et al., 2023;Tao et al., 2023;Xie et al., 2023), ordering items from a web store (Yao et al., 2022a;Tao et al., 2023), carrying out administrative tasks in business software (Drouin et al., 2024), making PowerPoint slides based on a specific topic (Guo et al., 2023), and playing games (Chen et al., 2024a), among many others. ... We can use more capable models or other techniques to generate a diverse dataset of valid action syntax but do not need to assume those actions are high-quality semantic decisions. The token-based action format allows agents to copy syntax details from poor actions without imitating the entire semantic decision. ... Diverse training datasets give large language models (LLMs) the ability to generate knowledgeable text across a wide range of topics. LLM pre-training produces a model that outputs the most likely continuation of its input text according to a distribution of training examples sourced from across the web. However, there are many applications where we would like to direct our model to accomplish a specific objective."
+      },
+      {
+        "paper_id": "267069082",
+        "markdown_evidence": "SeeClick: Harnessing GUI Grounding for Advanced Visual GUI Agents ... Graphical User Interface (GUI) agents are designed to automate complex tasks on digital devices, such as smartphones and desktops. Most existing GUI agents interact with the environment through extracted structured data, which can be notably lengthy (e.g., HTML) and occasionally inaccessible (e.g., on desktops). To alleviate this issue, we propose a novel visual GUI agent -- SeeClick, which only relies on screenshots for task automation. ... Large Vision-Language Models Recent research has invested tremendous effort in constructing LVLMs capable of jointly processing image and text (Liu et al., 2023a;Zhu et al., 2023;Ye et al., 2023;Li et al., 2023), integrating vision encoders with LLMs through connecting layers, inheriting LLMs' linguistic and reasoning skills to perform vision-language tasks. ... It takes as input the instruction, a screenshot of the current interface and a series of (k=4 in our setting) previous actions, to predict the next action to be taken. Specifically, SeeClick uses the following prompt to execute each step of the agent: During training and testing, we organize the data by step into the format described above. ... These entrenched deficiencies in text-based approaches call for an alternative solution. \n\nIn this paper, we introduce SeeClick, a visual GUI agent built on Large Vision-Language Models (LVLMs). Inspired by human interaction with GUIs, as illustrated in Figure 1, SeeClick is designed to perform low-level actions like clicking or typing directly by observing interface screen-shots. ... Large Vision-Language Models Recent research has invested tremendous effort in constructing LVLMs capable of jointly processing image and text (Liu et al., 2023a;Zhu et al., 2023;Ye et al., 2023;Li et al., 2023), integrating vision encoders with LLMs through connecting layers, inheriting LLMs' linguistic and reasoning skills to perform vision-language tasks. ... These differences impair existing LVLMs' grounding performance in GUI contexts and limit their potential as visual GUI agents. \n\nThis paper seeks to harness LVLMs with GUI grounding skills, paving the way for a visual GUI agent that executes instructions only relying on screenshots. As presented in Figure 2, SeeClick is a foundational model for GUIs, and tailored for adaption to agent tasks."
+      },
+      {
+        "paper_id": "278768453",
+        "markdown_evidence": "G1: Bootstrapping Perception and Reasoning Abilities of Vision-Language Model via Reinforcement Learning ... Systematic analysis reveals an intriguing finding: perception and reasoning abilities mutually bootstrap each other throughout the RL training process, allowing VLMs to outperform leading proprietary models like Claude-3.7-Sonnet-Thinking. ... Vision-Language Models (VLMs) excel in many direct multimodal tasks but struggle to translate this prowess into effective decision-making within interactive, visually rich environments like games. This ``knowing-doing'' gap significantly limits their potential as autonomous agents, as leading VLMs often performing badly in simple games. To address this, we introduce VLM-Gym, a curated reinforcement learning (RL) environment featuring diverse visual games with unified interfaces and adjustable, compositional difficulty, specifically designed for scalable multi-game parallel training. Leveraging VLM-Gym, we train G0 models using pure RL-driven self-evolution, which demonstrate emergent perception and reasoning patterns. To further mitigate challenges arising from game diversity, we develop G1 models."
+      },
+      {
+        "paper_id": "263609022",
+        "markdown_evidence": "Towards End-to-End Embodied Decision Making via Multi-modal Large Language Model: Explorations with GPT4-Vision and Beyond ... In this study, we explore the potential of Multimodal Large Language Models (MLLMs) in improving embodied decision-making processes for agents. While Large Language Models (LLMs) have been widely used due to their advanced reasoning skills and vast world knowledge, MLLMs like GPT4-Vision offer enhanced visual understanding and reasoning capabilities. We investigate whether state-of-the-art MLLMs can handle embodied decision-making in an end-to-end manner and whether collaborations between LLMs and MLLMs can enhance decision-making. ... Research on embodied decision-making is an emerging trend for artificial intelligent agents to interact with their surroundings and accomplish numerous tasks. This necessitates proficiency in vision perception, world knowledge, and commonsense reasoning, areas where a large language model can provide some level of expertise. ... Action Score. The Action Score (A-Score) measures the model's ability to generate appropriate and effective responses or actions based on the perceived input data and the cognitive understanding of the context. The score is assigned a value of 1 if the agent selects the correct action; otherwise, the score is set to 0. ... (2023); Wang et al. (2023c;b). In our investigation, we employed GPT-4 to automatically evaluate perception, cognition, and action scores based on the model's outputs. Our findings underscore a significant agreement between GPT-4 annotations and human annotator results. This is substantiated by Pearson correlation coefficients of 0.8, 0.9, and 0. ... (2) The evaluation can be conducted outside complex simulation environments, simplifying the process of evaluating different agents and their performance. \n\nWith the proposed benchmark, we conduct two series of evaluation: (1) We examine multiple stateof-the-art VLLMs, like InstructBLIP (Dai et al., 2023), MMICL (Zhao et al. ... As illustrated in Figure 5, the agent is prompted to output the image description and reasoning process before giving the final action. These integrations enable the large language model to initiate a search for clues pertaining to a given question through a multi-turn conversation."
+      },
+      {
+        "paper_id": "273549911",
+        "markdown_evidence": "OSCAR: Operating System Control via State-Aware Reasoning and Re-Planning ... Large language models (LLMs) and large multimodal models (LMMs) have shown great potential in automating complex tasks like web browsing and gaming. However, their ability to generalize across diverse applications remains limited, hindering broader utility. To address this challenge, we present OSCAR: Operating System Control via state-Aware reasoning and Re-planning. OSCAR is a generalist agent designed to autonomously navigate and interact with various desktop and mobile applications through standardized controls, such as mouse and keyboard inputs, while processing screen images to fulfill user commands. ... Large Language Models (LLMs) (Ouyang et al., 2022;Achiam et al., 2023;Dubey et al., 2024) and Large Multimodal Models (LMMs) (Li et al., 2023;Team et al., 2023;Liu et al., 2024a;Reid et al., 2024) have demonstrated exceptional performance on tasks requiring complex reasoning (Liang et al., 2022;Srivastava et al. ... new executable environments (Zheng et al., 2024b;Xu et al., 2024;Xie et al., 2024b) have emerged, offering dynamic feedback and enabling agents to modify their actions on the fly, paving the way for more autonomous, adaptive agents in OS control tasks. \n\nAs depicted in Figure 1, consider an agent tasked with opening \"Report. ... Benchmarks. We evaluate OSCAR on real-world workflow automation benchmarks involving complex user requests. The first benchmark is GAIA (Mialon et al., 2023), which consists of 466 question-answering (QA) structured into three levels: Level 1 includes simple tasks requiring no more than five steps ... Others simulate GUI control in sandbox environments, such as AAA games (Tan et al., 2024) or office workflows (Wang et al., 2024c), which require internal application-specific APIs to interact with the environment. In a broader context, some agents interact with basic OS APIs but are often designed for static, pre-defined environments (Reed et al., 2022;Hong et al. ... Large language models (LLMs) and large multimodal models (LMMs) have shown great potential in automating complex tasks like web browsing and gaming. However, their ability to generalize across diverse applications remains limited, hindering broader utility."
+      },
+      {
+        "paper_id": "268510267",
+        "markdown_evidence": "A Survey on Game Playing Agents and Large Models: Methods, Applications, and Challenges ... The development of large-scale models (LMs), including both language and multi-modal models, has been a significant advancement in the fields of natural language processing and computer vision.Recent advancements in LMs have led to notable achievements across various applications, including text generation [93], image understanding [91], and robotics [16]. ... This approach combines reasoning and code generation for dynamic game state tracking and improved player interaction, ensuring narrative coherence and continuity.Through these mechanisms, large model agents can not only perform complex and diverse tasks in the game, but also engage in highly interactive dialogue exchanges with human players or other agents, while ensuring the consistency and adaptability of their actions. ... Digital games [64; 7], by integrating multiple modality perception channels, offer richer and more immersive experiences, enabling deeper engagement with the game world.However, unfortunately, not much effort in the existing literature has been dedicated to the integration Figure 2: Taxonomy of research on complex digital game playing agents and large models. ... The use of critic agents for selection and feedback [32], iterative prompting with environment feedback [64], and executable feedback for debugging [24] highlights the importance of iterative learning and feedback mechanisms in refining actions and decisions.Iterative re-planning based on real-time feedback is employed in [53; 71] while focusing on learning from mistakes to improve game strategies is adapted by [31]. ... And reflection means the process of self-improvement, where agents evaluate and adjust their strategies based on feedback [64].These components enable LMs-empowered agents to act effectively within the dynamic and evolving environments of modern digital games.\n\nAction covers the interaction back with a game environment, i.e., operations executed by the agent as response to the game state and environment feedback."
+      },
+      {
+        "paper_id": "274306375",
+        "markdown_evidence": "Large Language Model-Brained GUI Agents: A Survey ... This survey presents a comprehensive survey of LLM-brained GUI agents, exploring their historical evolution, core components, and advanced techniques, and examines emerging applications powered by these agents. ... GUIs have long been central to human-computer interaction, providing an intuitive and visually-driven way to access and interact with digital systems. The advent of LLMs, particularly multimodal models, has ushered in a new era of GUI automation. They have demonstrated exceptional capabilities in natural language understanding, code generation, and visual processing. This has paved the way for a new generation of LLM-brained GUI agents capable of interpreting complex GUI elements and autonomously executing actions based on natural language instructions. These agents represent a paradigm shift, enabling users to perform intricate, multi-step tasks through simple conversational commands. ... The advent of LLMs, particularly multimodal models, has ushered in a new era of GUI automation. They have demonstrated exceptional capabilities in natural language understanding, code generation, and visual processing. This has paved the way for a new generation of LLM-brained GUI agents capable of interpreting complex GUI elements and autonomously executing actions based on natural language instructions."
+      },
+      {
+        "paper_id": "274436539",
+        "markdown_evidence": "Ponder & Press: Advancing Visual GUI Agent towards General Computer Control ... This work introduces Ponder&Press, a divide-and-conquer framework for general computer control using only visual input, which combines an general-purpose MLLM as an 'interpreter' ... Most existing GUI agents typically depend on non-vision inputs like HTML source code or accessibility trees, limiting their flexibility across diverse software environments and platforms. Current multimodal large language models (MLLMs), which excel at using vision to ground real-world objects, offer a potential alternative. However, they often struggle with accurately localizing GUI elements -- a critical requirement for effective GUI automation -- due to the semantic gap between real-world objects and GUI elements. In this work, we introduce Ponder&Press, a divide-and-conquer framework for general computer control using only visual input. ... Current multimodal large language models (MLLMs), which excel at using vision to ground real-world objects, offer a potential alternative. However, they often struggle with accurately localizing GUI elements -- a critical requirement for effective GUI automation -- due to the semantic gap between real-world objects and GUI elements. ... Ponder & Press: Advancing Visual GUI Agent towards General Computer Control"
+      },
+      {
+        "paper_id": "274638116",
+        "markdown_evidence": "From Multimodal LLMs to Generalist Embodied Agents: Methods and Lessons ... GEA is a single unified model capable of grounding itself across these varied domains through a multi-embodiment action tokenizer and achieves strong generalization performance to unseen tasks across diverse benchmarks compared to other generalist models and ... We examine the capability of Multimodal Large Language Models (MLLMs) to tackle diverse domains that extend beyond the traditional language and vision tasks these models are typically trained on. Specifically, our focus lies in areas such as Embodied AI, Games, UI Control, and Planning. To this end, we introduce a process of adapting an MLLM to a Generalist Embodied Agent (GEA). GEA is a single unified model capable of grounding itself across these varied domains through a multi-embodiment action tokenizer. GEA is trained with supervised learning on a large dataset of embodied experiences and with online RL in interactive simulators. We explore the data and algorithmic choices necessary to develop such a model. Our findings reveal the importance of training with cross-domain data and online RL for building generalist agents."
+      },
+      {
+        "paper_id": "277104623",
+        "markdown_evidence": "Agents Play Thousands of 3D Video Games ... We present PORTAL, a novel framework for developing artificial intelligence agents capable of playing thousands of 3D video games through language-guided policy generation. By transforming decision-making problems into language modeling tasks, our approach leverages large language models (LLMs) to generate behavior trees represented in domain-specific language (DSL). This method eliminates the computational burden associated with traditional reinforcement learning approaches while preserving strategic depth and rapid adaptability. ... By transforming decision-making problems into language modeling tasks, our approach leverages large language models (LLMs) to generate behavior trees represented in domain-specific language (DSL). ... For multi-agent scenarios, we extend our DSL to incorporate joint actions and states involving multiple agents. In this extended formalism, nodes can specify coordinated behaviors such as \"agents A and B move to flanking positions while agent C provides covering fire.\" This higher-level representation captures the strategic coordination essential for effective team play. ... These results demonstrate the remarkable generalization capabilities of our hybrid policies, which successfully transfer across games with varying visual styles, mechanical implementations, and environmental configurations. We present a case study focused on team coordination optimization. We applied our iterative refinement process with specific emphasis on team coordination metrics. ... By leveraging large language models (LLMs) [1,10,[22][23][24] to generate specialized behavior trees (BTs) [3] expressed in domain-specific language (DSL), we establish a new paradigm for AI agent development that combines the strategic reasoning of LLMs with the real-time performance requirements of commercial video games. ... Our work addresses these limitations by decoupling strategic planning from execution, significantly reducing computational requirements while enhancing crossenvironment generalization. \n\nLanguage Models for Game-playing AIs: Recent research has begun exploring the potential of large language models (LLMs) for creating game-playing agents."
+      },
+      {
+        "paper_id": "277781711",
+        "markdown_evidence": "GUI-R1 : A Generalist R1-Style Vision-Language Action Model For GUI Agents ... Existing efforts in building Graphical User Interface (GUI) agents largely rely on the training paradigm of supervised fine-tuning on Large Vision-Language Models (LVLMs). However, this approach not only demands extensive amounts of training data but also struggles to effectively understand GUI screenshots and generalize to unseen interfaces. The issue significantly limits its application in real-world scenarios, especially for high-level tasks. ... Image resolution and data quality. To investigate the impact of image resolution and data quality on GUI RFT, we conduct corresponding ablation experiments, with the results shown in Figure 4. \n\nAs observed, when using the filtered GUI-R1-3K dataset, the model requires only a few updates to achieve relatively high rewards. ... Recent works have advanced this direction. For instance, UGround [14] developed a specialized GUI grounding model for precise GUI element localization. OS-Atlas [1] introduced large action models to handle general agent tasks by interpreting human intentions and predicting actions in the form of function calls. ... • We conduct a comprehensive evaluation of GUI agents, covering three distinct platforms (desktop, mobile, and web) and three levels of task granularity (low-level grounding, lowlevel tasks, and high-level tasks) across eight benchmarks. Experimental results demonstrate that our GUI-R1 is leading in multiple realistic cases. This creates a strong baseline of GUI agents for future research. ... Inspired by Reinforcement Fine-Tuning (RFT) in large reasoning models (e.g., DeepSeek-R1), which efficiently enhances the problem-solving capabilities of large language models in real-world settings, we propose \\name, the first reinforcement learning framework designed to enhance the GUI capabilities of LVLMs in high-level real-world task scenarios, through unified action space rule modeling. ... All experiments are conducted using 8×NVIDIA A100-80G GPUs. \n\nEvaluation benchmarks. We evaluate our model on eight agent benchmarks on three different platforms, including AndroidControl-Low [27], AndroidControl-High [27], GUI-Odyssey [28], ScreenSpot [3], ScreenSpot-Pro [29], GUI-Act-Web [30], OmniAct-Web [31], and OmniAct-Desktop [31]. We only use the test splits of these benchmarks for evaluation."
+      },
+      {
+        "paper_id": "276249439",
+        "markdown_evidence": "AppVLM: A Lightweight Vision Language Model for Online App Control ... The utilisation of foundation models as smartphone assistants, termed app agents, is a critical research challenge. These agents aim to execute human instructions on smartphones by interpreting textual instructions and performing actions via the device's interface. While promising, current approaches face significant limitations. Methods that use large proprietary models, such as GPT-4o, are computationally expensive, while those that use smaller fine-tuned models often lack adaptability to out-of-distribution tasks. In this work, we introduce AppVLM, a lightweight Vision-Language Model (VLM). ... AppVLM: A Lightweight Vision Language Model for Online App Control ... As a final step, all data collected throughout the entire RFT procedure is used to fine-tune the agent of the initial SFT stage, AppVLM-base, using the standard maximum likelihood objective. In Section 4.6, we present an ablation study demonstrating that this approach achieves superior performance in both online and offline settings compared to fine-tuning directly the output of the RFT pipeline. ... In this work, we introduced AppVLM, the first lightweight VLM capable of successfully solving online tasks in An-droidWorld. We present a complete pipeline for fine-tuning a pretrained VLM to efficiently tackle goal-based tasks on Android smartphones. Our results demonstrate that AppVLM-base achieves the highest AndroidControl action prediction accuracy, compared to all baselines. ... The development of smartphone assistants using foundation models is an open research challenge. These assistants, which we refer to as app agents, should be capable of executing human instructions on a smartphone, interacting with apps through the same interface as a human user. The user provides a textual description of a goal, and the app agent must take a sequence of actions to successfully complete the task. ... We then introduce a Reinforce Fine-Tuning (RFT) pipeline, consisting of data collection, utilising a distributed client-server architecture to balance resources and enable efficient data collection, followed by offline fine-tuning, where the collected data is used to refine the agent's decision-making capabilities. Using this pipeline, we iteratively fine-tune our model, which we refer to as AppVLM."
+      },
+      {
+        "paper_id": "277954889",
+        "markdown_evidence": "UFO2: The Desktop AgentOS ... Recent Computer-Using Agents (CUAs), powered by multimodal large language models (LLMs), offer a promising direction for automating complex desktop workflows through natural language. However, most existing CUAs remain conceptual prototypes, hindered by shallow OS integration, fragile screenshot-based interaction, and disruptive execution. We present UFO2, a multiagent AgentOS for Windows desktops that elevates CUAs into practical, system-level automation. ... Table 25 compares the performance of UFO 2 and UFO 2 -base across four large language models. GPT-4V and GPT-4o generate direct answers without exposing an explicit CoT, whereas Gemini 2.0 (Flash Thinking) and o1 embed reasoning steps internally before producing final outputs. ... • Private State: A local log of all executed actions, control decisions, and CoT traces. • Shared State: Updates to the system-wide blackboard, including intermediate outputs, encountered errors, and application-level insights. This dual-memory design enables AppAgents to act autonomously on behalf of HostAgent while remaining synchronized with the broader system. ... Finally, simulating mouse and keyboard events on the primary user desktop locks users out during automation, imposing a poor user experience (UX). These limitations must be resolved before CUAs can mature from intriguing prototypes into robust, scalable solutions for real-world desktop automation, and motivates our central research question: \n\nHow can we build a robust ... The core approach-leveraging accessibility frameworks like Windows UI Automation (UIA)-has direct analogs on Linux (AT-SPI [53]) and macOS (Accessibility API [54]). Consequently, the existing design principles, agent decomposition strategy, and unified GUI-API orchestration model generalize naturally, enabling rapid, platform-specific customizations. ... , [59] extended this paradigm, introducing semantic file management capabilities directly within traditional OS environments through AIOS-based agents, further demonstrating practical systemlevel integration. \n\nComplementing these high-level OS integrations, AutoOS [60] applied LLMs for automatic tuning of kernel-level parameters in Linux, achieving substantial efficiency gains through autonomous exploration and optimization."
+      },
+      {
+        "paper_id": "269790773",
+        "markdown_evidence": "Fine-Tuning Large Vision-Language Models as Decision-Making Agents via Reinforcement Learning ... Large vision-language models (VLMs) fine-tuned on specialized visual instruction-following data have exhibited impressive language reasoning capabilities across various scenarios. However, this fine-tuning paradigm may not be able to efficiently learn optimal decision-making agents in multi-step goal-directed tasks from interactive environments. To address this challenge, we propose an algorithmic framework that fine-tunes VLMs with reinforcement learning (RL). ... Large vision-language models (VLMs) fine-tuned on specialized visual instruction-following data have exhibited impressive language reasoning capabilities across various scenarios. However, this fine-tuning paradigm may not be able to efficiently learn optimal decision-making agents in multi-step goal-directed tasks from interactive environments. ... However, training a VLM policy π θ with RL presents additional challenges. First, the VLM policy π θ (o, v in ) directly generates open-ended text rather than vectorized actions in classic policy gradient-based RL methods [53][54][55]19], complicating direct interaction with the environment. ... At each state s t , only operators and numbers that appear in the cards are legal actions, and \"J\", \"Q\", or \"K\" are treated as \"10\". In particular, if the output text v out t is mapped to a legal action a t at state s t , the text version of a t will be appended to the \"formula\" in the current image of s t resulting s t+1 , otherwise s t+1 will remain the same as s t . \n\nPoints24. ... Specifically, our method improves the average performance from the initial LLaVA-sft model by Table 2: Average episode success rates (%) of different methods on gym_cards and alfworld. For all RL-based methods (CNN+RL and our method), we present the peak numbers (first 15k environment steps for the gym_cards and 5k environment steps for alfworld) from each training curve from Figure 5. ... Large vision-language models (VLMs) [7,44,18] demonstrate remarkable capabilities as generalpurpose agents in solving various tasks through language reasoning. In particular, fine-tuning VLMs with specialized visual instruction following data appears to be a key technique for improving the capabilities of VLMs [34,84,33,30]."
+      },
+      {
+        "paper_id": "276287895",
+        "markdown_evidence": "Trishul: Towards Region Identification and Screen Hierarchy Understanding for Large VLM Based GUI Agents ... Recent advancements in Large Vision Language Models (LVLMs) have led to the emergence of LVLM-based Graphical User Interface (GUI) agents developed under various paradigms. Training-based approaches, such as CogAgent and SeeClick, suffer from poor cross-dataset and crossplatform generalization due to their reliance on datasetspecific training. Generalist LVLMs, such as GPT-4V, utilize Set-of-Marks (SoM) for action grounding; however, obtaining SoM labels requires metadata like HTML source, which is not consistently available across platforms. ... Recent advancements in Large Vision Language Models (LVLMs) have led to the emergence of LVLM-based Graphical User Interface (GUI) agents developed under various paradigms. ... Recent research (Koh et al., 2024), shows that sampling and evaluating multiple potential action paths, then filtering them with a value model, improves success rates by reducing decision uncertainty. \n\nThe ToL agent has proven effective as a verification layer for mobile agents (Fan et al., 2024), accurately identifying correct and incorrect action paths. ... Experiments on ScreenSpot, VisualWebBench, AITW, Mind2Web, and ScreenPR demonstrate that TRISHUL outperforms all training-free methods and rivals training-based approaches while maintaining superior cross-task and crossplatform generalizability. ... , 2024) paper. The agent outputs ( Dc , Dl ) are fed into an auxiliary model, which is asked to complete a downstream task, with its performance indicating description quality. We benchmark our approach against baseline GPT-4o, Claude, and the ToL agent from Screen point-and-read, using GPT-4o, GPT-4V , and Claude-3.5-Sonnet as the primary models. We also compute language similarity metrics like BERT (Zhang et al. ... , 2024), unlike SeeClick, which suffers a sharp drop in accuracy on out-of-distribution data with 31% accuracy, TRISHUL maintains strong generalization, achieving a robust 68.0% accuracy with both GPT-4V and GPT-4o closely matching the performance of OmniParser which achieves 68.9%. \n\nWe further present ablations in Table 2 to assess the impact of the SEED module and GROI-based action grounding in TRISHUL."
+      },
+      {
+        "paper_id": "278534476",
+        "markdown_evidence": "OpenThinkIMG: Learning to Think with Images via Visual Tool Reinforcement Learning ... While humans can flexibly leverage interactive visual cognition for complex problem-solving, enabling Large Vision-Language Models (LVLMs) to learn similarly adaptive behaviors with visual tools remains challenging. A significant hurdle is the current lack of standardized infrastructure, which hinders integrating diverse tools, generating rich interaction data, and training robust agents effectively. To address these gaps, we introduce OpenThinkIMG, the first open-source, comprehensive end-to-end framework for tool-augmented LVLMs. ... Large Vision-Language Models (LVLMs) LVLMs have rapidly advanced multimodal understanding. Their development began with foundational pre-training on image-caption datasets [Jia et al., 2021, Lin et al., 2014], establishing initial vision-language grounding. ... Concurrently with the optimization of tool efficiency, we examined the evolution of the agent's output complexity by monitoring the average completion length during V-ToolRL training, shown in Figure 3b. This metric exhibits a clear and consistent upward trajectory. ... Figure 5 shows the prompt used for generating high-quality tool-use trajectories. ... Our approach boosts the performance of a 2B parameter base model by +29.83 accuracy points and surpasses larger 8B/13B open-source tool-augmented agents by an average of 12.7 points. Detailed experiments and qualitative studies further illustrate the learned tool-use efficiency, the development of complex reasoning narratives, and the superior interpretability of our method. ... Effectively tackling diverse visual reasoning tasks necessitates a versatile suite of tools. To address this challenge, OPENTHINKIMG provides a unified registry for the seamless integration of vision tools and backbone models, requiring minimal boilerplate. The framework, therefore, incorporates a curated selection of vision tools designed to address specific facets of visual interaction and reasoning."
+      },
+      {
+        "paper_id": "273323951",
+        "markdown_evidence": "VLM See, Robot Do: Human Demo Video to Robot Action Plan via Vision Language Model ... Large Vision Language Models (VLMs) have been adopted in robotics for their strong common sense understanding and generalization capabilities. Existing works leverage VLMs for task and motion planning based on language instructions and robot observations. In this work, we explore using VLM to interpret long-horizon human demonstration videos to generate a sequence of robot task plans in natural language. ... This paper tackles the challenge of extracting robot task plans directly from human demonstration videos using vision language models (VLMs). ... While research in imitation learning tries to close the gap, long-horizon tasks often Fig. 1: VLM See, Robot Do. We designed an agent framework centered around a large Vision Language Model to interpret longhorizon human demonstration videos into task plans in natural language, which are then executed in simulated and real-world robots via language model programs and action primitive functions. ... In vegetable organization, garment organization, and wooden block stacking, the automated script produced results identical to manual evaluation for 27/38, 6/30, and 26/39 subtasks, respectively. These results collectively demonstrate that the automated evaluation script is statistically reliable and suitable for practical use. ... Context length becomes a major constraint when VLMs process long-horizon videos. Opensource VLMs often simply sample frames uniformly [10,46], but this approach is less effective for long-horizon demonstration videos, as frames showing important actions may be missed. To overcome the context limit yet still capture critical information, we adopt a heuristic approach that selects keyframes by detecting hand speed. ... In this work, we explore using VLM to interpret long-horizon human demonstration videos to generate a sequence of robot task plans in natural language. To achieve this, we propose SeeDo, an agent that integrates keyframe selection module, visual prompting module, and a VLM interpreter into a pipeline that enables the VLM to \"see\" human demonstrations and generate step-by-step plans for robots to \"do\" them."
+      },
+      {
+        "paper_id": "277313478",
+        "markdown_evidence": "CubeRobot: Grounding Language in Rubik's Cube Manipulation via Vision-Language Model ... Proving Rubik's Cube theorems at the high level represents a notable milestone in human-level spatial imagination and logic thinking and reasoning. Traditional Rubik's Cube robots, relying on complex vision systems and fixed algorithms, often struggle to adapt to complex and dynamic scenarios. To overcome this limitation, we introduce CubeRobot, a novel vision-language model (VLM) tailored for solving 3x3 Rubik's Cubes, empowering embodied agents with multimodal understanding and execution capabilities. ... Furthermore, the release of  has enhanced visual understanding and reasoning, demonstrating superior performance after training on a vast dataset of aligned image-text pairs. Large language models (LLMs), like ChatGPT, have significantly improved the performance of vision-language tasks when combined with specialized models. ... We believe that one has to consider the problem's unique components as well as its general viewpoint in order to tackle multidimensional projects efficiently [42]. CubeRobot employs a dual-loop process chain architecture, as illustrated in Figure . ... As shown in Table . 2, the experimental results indicate that the introduction of the memory mechanism significantly improves the accuracy of the Rubik's Cube solving task compared to the Dualloop CoT-Only model. Among the memory retrieval mechanisms, the recency, importance, and relevance scores play crucial roles in enabling the model to perform complex tasks. ... 2. We concentrate on solving the 3x3 Rubik's Cube and have compiled a specialized dataset CubeCoT for this task. Additionally, we've established high, medium, and low-difficulty tasks to evaluate the model's solving capabilities. \n\n3. We present a dual-loop process chain architecture, consisting of an outer-loop and an inner-loop, to enhance efficiency in handling multidimensional tasks. \n\n4. ... To overcome this limitation, we introduce CubeRobot, a novel vision-language model (VLM) tailored for solving 3x3 Rubik's Cubes, empowering embodied agents with multimodal understanding and execution capabilities. We used the CubeCoT image dataset, which contains multiple-level tasks (43 subtasks in total) that humans are unable to handle, encompassing various cube states."
+      },
+      {
+        "paper_id": "270560958",
+        "markdown_evidence": "GUICourse: From General Vision Language Models to Versatile GUI Agents ... Utilizing Graphic User Interface (GUI) for human-computer interaction is essential for accessing a wide range of digital tools. Recent advancements in Vision Language Models (VLMs) highlight the compelling potential to develop versatile agents to help humans finish GUI navigation tasks. However, current VLMs are challenged in terms of fundamental abilities (OCR and grounding) and GUI knowledge (the functions and control methods of GUI elements), preventing them from becoming practical GUI agents. ... , 2020;Radford et al., 2021), and a language model, such as Vicuna (Touvron et al., 2023) and Qwen (Bai et al., 2023a). The bridge module maps the visual features from the vision encoder into the embedding space of the large language model with an MLP layer, exemplified by LLaVA (Liu et al., 2023b), or an attention-based resampler, such as BLIP-2 (Li et al. ... Qwen-VL-Chat gives an incorrect bounding box for \"Log in\", which means its OCR and grounding capabilities are insufficient. Also, it can't finish GUI navigation tasks such as \"find the products\" and \"accept the cookies\" because it lacks the knowledge of GUI control actions. Trained on our datasets, our GUI agent Qwen-GUI performs these tasks well. ... First, we introduce the GUIEnv dataset to strengthen the OCR and grounding capabilities of VLMs. Then, we introduce the GUIAct and GUIChat datasets to enrich their knowledge of GUI components and interactions. Experiments demonstrate that our GUI agents have better performance on common GUI tasks than their baseline VLMs. Even the small-size GUI agent (with 3. ... (3) Browsing through pages: These actions enable the agent to navigate through pages within the GUI system, including page-up and page-down functionalities. These actions include \"scroll\", \"drag\", and \"swipe\". \n\n(4) Logging information: Agents can log key information that aids in accomplishing the task, such as writing texts or copying essential paragraphs. ... Static evaluation has a drawback in that some reasonable actions may be incorrectly judged as errors, referred to as false errors. \n\n(2) Our GUI agents struggle to complete instructions when the screenshot content is complex, which can't give a correct action, referred to as true errors."
+      },
+      {
+        "paper_id": "271909276",
+        "markdown_evidence": "Kubrick: Multimodal Agent Collaborations for Synthetic Video Generation ... Text-to-video generation has been dominated by diffusion-based or autoregressive models. These novel models provide plausible versatility, but are criticized for improper physical motion, shading and illumination, camera motion, and temporal consistency. The film industry relies on manually-edited Computer-Generated Imagery (CGI) using 3D modeling software. Human-directed 3D synthetic videos address these shortcomings, but require tight collaboration between movie makers and 3D rendering experts. ... We introduce an automatic synthetic video generation pipeline based on Vision Large Language Model (VLM) agent collaborations. Given a language description of a video, multiple VLM agents direct various processes of the generation pipeline. They cooperate to create Blender scripts which render a video following the given description. ... The selection and number of agents affect the overall performance. We tried several agent configurations but found the proposed setup to be the simplest and most effective. For the LLM-Programmer, we experimented with further decomposition of this agent into specific sub-agents (e.g., Gaffer, Camera man, Scene designer). ... The Library Updating Phase automatically finds and/or updates the agent customized code libraries needed by Blender. All the agents use public tutorials and guidelines in a Retrieval Augmented Generation (RAG) [29] based framework to enhance specific knowledge. ... We introduce an automatic synthetic video generation pipeline based on Vision Large Language Model (VLM) agent collaborations. Given a language description of a video, multiple VLM agents direct various processes of the generation pipeline. They cooperate to create Blender scripts which render a video following the given description. ... Our key inspiration is to leverage LLM/VLM agents and 3D modeling engines to easily generate videos of realistic but synthetic content. While standard LLM/VLMs lack specific knowledge of the desired 2D/3D content and are missing control of complex scene dynamics and camera motions, we use multiple collaborative LLM/VLM agents in an iterative process to overcome the shortcomings of prior methods."
+      },
+      {
+        "paper_id": "277993640",
+        "markdown_evidence": "Guiding VLM Agents with Process Rewards at Inference Time for GUI Navigation ... Recent advancements in visual language models (VLMs) have notably enhanced their capabilities in handling complex Graphical User Interface (GUI) interaction tasks. Despite these improvements, current frameworks often struggle to generate correct actions in challenging GUI environments. State-of-the-art commercial VLMs are black-boxes, and fine-tuning open-source VLMs for GUI tasks requires significant resources. Additionally, existing trajectory-level evaluation and refinement techniques frequently fall short due to delayed feedback and local optimization issues. ... AppAgent (Yang et al., 2023a) employs the vision capabilities of large language models to operate smartphone applications in a human-like manner. Mobile-Agent-v2 (Wang et al., 2024) presents a multi-agent architecture for assisting mobile device operations. OS-Copilot (Wu et al. ... If unsuccessful, the agent reflects and retries, guided by GPT-4o as evaluator. \n\nDigiRL (Bai et al., 2024) is an autonomous RL approach, for training in-the-wild device control agents through fine-tuning a pre-trained VLM in two stages: offline RL to initialize the model, followed by offline-to-online RL. ... ] are stored and organized, or you can check whether an app is installed in Google Shop. \n\nYou need to generate an action based on the current situation, which will be executed automatically without user intervention. The user will not interfere with the entire operation process, such as voice input, which will be regarded as an incorrect operation. ... To address these challenges, we propose an approach that guides VLM agents with process supervision by a reward model during GUI navigation and control at inference time. This guidance allows the VLM agent to optimize actions at each inference step, thereby improving performance in both static and dynamic environments. ... To address these challenges, we propose an approach that guides VLM agents with process supervision by a reward model during GUI navigation and control at inference time. This guidance allows the VLM agent to optimize actions at each inference step, thereby improving performance in both static and dynamic environments."
+      },
+      {
+        "paper_id": "274597978",
+        "markdown_evidence": "Uni-NaVid: A Video-based Vision-Language-Action Model for Unifying Embodied Navigation Tasks ... Uni-NaVid is presented, the first video-based vision-language-action (VLA) model designed to unify diverse embodied navigation tasks and enable seamless navigation for mixed long-horizon tasks in unseen real-world environments. ... A practical navigation agent must be capable of handling a wide range of interaction demands, such as following instructions, searching objects, answering questions, tracking people, and more. Existing models for embodied navigation fall short of serving as practical generalists in the real world, as they are often constrained by specific task configurations or pre-defined maps with discretized waypoints. In this work, we present Uni-NaVid, the first video-based vision-language-action (VLA) model designed to unify diverse embodied navigation tasks and enable seamless navigation for mixed long-horizon tasks in unseen real-world environments. Uni-NaVid achieves this by harmonizing the input and output data configurations for all commonly used embodied navigation tasks and thereby integrating all tasks in one model. ... Uni-NaVid: A Video-based Vision-Language-Action Model for Unifying Embodied Navigation Tasks ... In this work, we present Uni-NaVid, the first video-based vision-language-action (VLA) model designed to unify diverse embodied navigation tasks and enable seamless navigation for mixed long-horizon tasks in unseen real-world environments. Uni-NaVid achieves this by harmonizing the input and output data configurations for all commonly used embodied navigation tasks and thereby integrating all tasks in one model."
+      },
+      {
+        "paper_id": "277321753",
+        "markdown_evidence": "MoLe-VLA: Dynamic Layer-skipping Vision Language Action Model via Mixture-of-Layers for Efficient Robot Manipulation ... Vision-Language-Action (VLA) models enable robotic systems to perform embodied tasks but face deployment challenges due to the high computational demands of the dense Large Language Models (LLMs), with existing early-exit-based sparsification methods often overlooking the critical semantic role of final layers in downstream tasks. Aligning with the recent breakthrough of the Shallow Brain Hypothesis (SBH) in neuroscience and the mixture of experts in model sparsification ... We propose a novel routing mechanism that synergistically leverages the spatial structure of visual inputs and the temporal dependencies in language inputs to select appropriate LLM layers for VLA tasks dynamically. ... Folllowing CogAct [19], our action module A takes the cognition feature e c t extracted from the output feature f t as input and predicts the final actions a * t . Our vision, language, and action modules are trained endto-end by minimizing the mean squared error between the predicted noises from the action module and the ground truth noises. ... Extensive experiments in RLBench simulations and real-world environments demonstrate the superiority of MoLe-VLA in both efficiency and performance, improving the mean success rate by 9.7% across ten simulation tasks while accelerating inference by 36.8% over OpenVLA. ... The rapid advancements in multimodal large language models (MLLMs) [2,3,17,27,32] have demonstrated their ability to integrate complex language and visual representations, inspiring the development of generalist robots and embodied agents capable of vision-language comprehension, human interaction, and flexible problem-solving in manipulation tasks. ... Simulation and real-world deployment. To evaluate our approach and demonstrate its generalization ability, we conduct experiments on both RLBench [13] in the CoppeliaSim simulator and real-world environments with : 1) RLBench includes 10 diverse tabletop tasks performed with a Franka Panda robot and a front-view camera."
+      },
+      {
+        "paper_id": "262064570",
+        "markdown_evidence": "Discuss Before Moving: Visual Language Navigation via Multi-expert Discussions ... Visual language navigation (VLN) is an embodied task demanding a wide range of skills encompassing understanding, perception, and planning. For such a multifaceted challenge, previous VLN methods totally rely on one model’s own thinking to make predictions within one round. However, existing models, even the most advanced large language model GPT4, still struggle with dealing with multiple tasks by single-round self-thinking. In this work, drawing inspiration from the expert consultation meeting, we introduce a novel zero-shot VLN framework. ... Discuss Before Moving: Visual Language Navigation via Multi-expert Discussions ... The Turtlebot 4 Lite is equipped with an OAK-D Lite camera and an RPLIDAR-A1 lidar. OAK-D Lite Camera is mounted at a 60 cm height level while the lidar is only used for local obstacle avoidance without any mapping. We deploy state-of-the-art pretraining model [10], zero-shot model [11], and DiscussNav on the Turtlebot to navigate in a semantically rich house. At every movement step, the robot will move 0. ... Implementation Details For the development of domain experts, We construct two instruction analysis experts, a completion estimation expert, and a decision testing expert by GPT4 [39] with 0 temperature and 1 output (i.e. n = 1) setting. Additionally, we build a trajectory summary expert and a thought fusion expert by ChatGPT [38] employing the same hyperparameter configuration. ... To accurately identify action sequences, we allocate action decomposition expert's role to GPT4 and define the task of detecting all actions in the given navigation instruction. The expert takes raw human instruction as input and is expected to produce decomposed actions in a sequential manner. Furthermore, we create GPT4 driven landmark extraction expert with the goal of recognizing landmarks and categorizing their types. ... At each action step, the navigation agent needs to understand all actions and landmarks specified in the instruction, observe the panoramic scene to identify crucial objects, and review the accessed position to estimate the instruction completion. Every movement decision relies on the successful execution of these sub-tasks, each of which demands different knowledge and abilities. Fig. 1."
+      },
+      {
+        "paper_id": "276482497",
+        "markdown_evidence": "Mem2Ego: Empowering Vision-Language Models with Global-to-Ego Memory for Long-Horizon Embodied Navigation ... Recent advancements in Large Language Models (LLMs) and Vision-Language Models (VLMs) have made them powerful tools in embodied navigation, enabling agents to leverage commonsense and spatial reasoning for efficient exploration in unfamiliar environments. Existing LLM-based approaches convert global memory, such as semantic or topological maps, into language descriptions to guide navigation. While this improves efficiency and reduces redundant exploration, the loss of geometric information in language-based representations hinders spatial reasoning, especially in intricate environments. ... Mem2Ego: Empowering Vision-Language Models with Global-to-Ego Memory for Long-Horizon Embodied Navigation ... In this paper, we present a novel vision-language model (VLM)-based navigation framework that addresses these challenges by adaptively retrieving task-relevant cues from a global memory module and integrating them with the agent's egocentric observations. ... The generated rationale is then automatically validated using GPT-4o, assessing both the accuracy of detected objects and the correctness of the rationale. This dual-phase prompting strategy has proven to be more reliable than a single-phase prompting approach. The prompts used for rationale generation are provided in Appendix A.2. ... They must interpret human instructions and dynamically interact with their surroundings to navigate effectively. This work focuses on Object Goal Navigation (ObjectNav), a task in which agents must locate specified objects within complex spaces (Batra et al., 2020;Majumdar et al., 2022). \n\nIn recent years, the rapid advancement of large language models (LLMs) has opened new possibilities for embodied navigation (Zeng et al. ... , 2023), and openFMNav (Kuang et al., 2024). LFG uses frontier-based exploration and large language models to score potential subgoals and guide navigation based on the robot's observations and exploration progress. VoroNav introduces Reduced Voronoi Graphs (RVGs) to optimize the robot's exploration by identifying intersections that provide the best observational opportunities, while the LLM predicts the next best waypoint."
+      },
+      {
+        "paper_id": "278502283",
+        "markdown_evidence": "UAV-CodeAgents: Scalable UAV Mission Planning via Multi-Agent ReAct and Vision-Language Reasoning ... We present UAV-CodeAgents, a scalable multi-agent framework for autonomous UAV mission generation, built on large language and vision-language models (LLMs/VLMs). The system leverages the ReAct (Reason + Act) paradigm to interpret satellite imagery, ground high-level natural language instructions, and collaboratively generate UAV trajectories with minimal human supervision. A core component is a vision-grounded, pixel-pointing mechanism that enables precise localization of semantic targets on aerial maps. ... We present UAV-CodeAgents, a scalable multi-agent framework for autonomous UAV mission generation, built on large language and vision-language models (LLMs/VLMs). ... UAV-CodeAgents is designed to operate with flexible agent counts and varying computational budgets. It supports: \n\n• Plug-and-Play Agents: New UAVs can be dynamically added or removed during missions. • Heterogeneous Models: Different agents may run different models (e.g., lightweight VLMs on drones, powerful LLMs in the AMA). ... Scalability and open-world deployment have become critical research directions. Open-source models like OpenVLA [18] and MiniVLA [19] support extensibility and community collaboration. Multi-agent coordination has also gained traction with frameworks like SwarmGPT [20] and FlockGPT [21], which demonstrate LLM-driven behavior orchestration and SDF-based spatial strategies for swarm UAVs. ... Dosovitskiy et al.'s Vision Transformer (ViT) [4] and CLIP [5] demonstrated scalable multimodal representation learning, while models like GPT-4o [6] enabled unified vision, language, and audio reasoning. These architectures inspired early UAVfocused systems such as AerialVLN [7], which enabled drones to interpret natural language instructions, and dialogbased extensions [8] that improved UAV-human interaction. ... At the core of UAV-CodeAgents is reactive thinking loop (ReAct), which enables agents to reflect on ambiguous or incomplete information, re-query the visual scene, and adjust their actions dynamically. This allows the system to generalize to diverse scenarios, adapt to mission constraints, and operate effectively in partially known environments, bridging the gap between large-scale reasoning and low-level UAV control."
+      },
+      {
+        "paper_id": "256389594",
+        "markdown_evidence": "Distilling Internet-Scale Vision-Language Models into Embodied Agents ... Instruction-following agents must ground language into their observation and action spaces. Learning to ground language is challenging, typically requiring domain-specific engineering or large quantities of human interaction data. To address this challenge, we propose using pretrained vision-language models (VLMs) to supervise embodied agents. We combine ideas from model distillation and hindsight experience replay (HER), using a VLM to retroactively generate language describing the agent's behavior. ... Alternatively, VLMs could be used directly in the agent. While large model size4 might mitigate their use for low-level motor policies, they could be used to produce language observations for input to other models (Zeng et al., 2022;Huang et al., 2022b;Dasgupta et al., 2022). ... To address this challenge, we propose using pretrained vision-language models (VLMs) to supervise embodied agents. We combine ideas from model distillation and hindsight experience replay (HER), using a VLM to retroactively generate language describing the agent's behavior. ... Evidence from psychology suggests that ad-hoc categories (Barsalou, 1983) play a crucial role in human cognition, allowing us to create new conceptual groupings on the fly. Such context-dependent categories are often based on usecases (\"things to take on a camping trip\") or affordances (\"things that can be used as firewood in an emergency\"). Can our method be used to teach such flexible category structures? ... (2020), a Unity-based environment with a continuous action space. Each episode takes place in a procedurally-generated home with multiple rooms and a wide range of everyday domestic objects (Fig. 2A). This 3D environment is challenging for RL agents and the VLM, as the agent's egocentric perspective often yields unusual or close-up perspectives on objects (Figs. S3, S4, S5). ... While large model size4 might mitigate their use for low-level motor policies, they could be used to produce language observations for input to other models (Zeng et al., 2022;Huang et al., 2022b;Dasgupta et al., 2022). \n\nOur method may also be straightforwardly applied to visionlanguage navigation, another popular testbed for embodied agents (Anderson et al., 2018)."
+      },
+      {
+        "paper_id": "277065633",
+        "markdown_evidence": "Being-0: A Humanoid Robotic Agent with Vision-Language Models and Modular Skills ... Building autonomous robotic agents capable of achieving human-level performance in real-world embodied tasks is an ultimate goal in humanoid robot research. Recent advances have made significant progress in high-level cognition with Foundation Models (FMs) and low-level skill development for humanoid robots. However, directly combining these components often results in poor robustness and efficiency due to compounding errors in long-horizon tasks and the varied latency of different modules. We introduce Being-0, a hierarchical agent framework that integrates an FM with a modular skill library. ... Vision-Language Models (VLMs) build upon the remarkable success of Large Language Models (Achiam et al., 2023) to develop capabilities in multi-modal understanding and reasoning. ... , 2024a;Fu et al., 2024a). However, building fully autonomous agents for humanoid robots remains a significant and largely unexplored challenge. \n\nAn autonomous robotic agent must solve diverse embodied tasks in the real world by grounding language instructions into feasible plans and reliably stitching skills to accomplish long-horizon tasks. Recent studies (Firoozi et al. ... Extensive experiments in large indoor environments demonstrate Being-0's effectiveness in solving complex, long-horizon tasks that require challenging navigation and manipulation subtasks. For further details and videos, visit https://beingbeyond.github.io/Being-0. ... The use of Foundation Models and skill libraries introduces the potential risks of predicting incorrect skills or executing actions in out-of-distribution scenarios. For full-sized humanoid robots, such errors could lead to damage to surroundings or harm to people. At present, these systems should be tested only in controlled, experimental environments to ensure safety. ... Vision-Language Models (VLMs) build upon the remarkable success of Large Language Models (Achiam et al., 2023) to develop capabilities in multi-modal understanding and reasoning. Recent advancements include the development of text-image VLMs (Alayrac et al., 2022;Chen et al., 2023;Li et al., 2023;Bai et al., 2023;Liu et al., 2023) and text-video VLMs (Zhang et al., 2023b;Shu et al., 2023;Maaz et al., 2024;Jin et al., 2024)."
+      },
+      {
+        "paper_id": "268385444",
+        "markdown_evidence": "3D-VLA: A 3D Vision-Language-Action Generative World Model ... Recent vision-language-action (VLA) models rely on 2D inputs, lacking integration with the broader realm of the 3D physical world. Furthermore, they perform action prediction by learning a direct mapping from perception to action, neglecting the vast dynamics of the world and the relations between actions and dynamics. In contrast, human beings are endowed with world models that depict imagination about future scenarios to plan actions accordingly. ... The point cloud generation results are presented in Table 4. 3D-VLA with intermediate predicted bounding boxes performs the best.This outcome reinforces the significance of incorporating large language models and precise object localization in the context of comprehending both the instruction and the scene.\n\nQuantitative results. ... , 2023).We implement these baselines in two ways: 1) zero-shot transfer where we test the released trained model on these new tasks; 2) held-in evaluation where we train the released model on 2D-imageaction-language pairs (i.e., , 11 datasets selected from Open- X and RoboVQA dataset).For the localization task, we compare with 2D grounding MLLM, namely Kosmos-2 (Peng et al. ... Quantitative results.In the first row of Figure 3, we visualize the generated RGB-D goal images on the test set of RT-1 (Brohan et al., 2022) and Jaco Play (Dass et al., 2023) datasets.These samples are not seen in the training process. ... , 2023b;Hong et al., 2024) develop embodied foundation models that could plan and act in the 3D environment.However, such models mainly learn a direct mapping from perception to action, devoid of a broader understanding of the dynamics of the world, and the relations between actions and world dynamics.On the other hand, human beings are blessed with world models that simulate future events based on 3D internal representations. ... For CALVIN,  we evaluate our model under the long-horizon multi-task language control setting, where the agent is required to execute 5 tasks sequentially.We train the agent on scenes A, B, C, D and test on scene D.\n\nBaselines.For RLBench, we compare our model 3D-VLA with LanCon-Learn (Silva et al., 2021), which is a multi-task approach that can predict actions based on instruction-conditioned inputs."
+      },
+      {
+        "paper_id": "276449634",
+        "markdown_evidence": "MapNav: A Novel Memory Representation via Annotated Semantic Maps for VLM-based Vision-and-Language Navigation ... Vision-and-language navigation (VLN) is a key task in Embodied AI, requiring agents to navigate diverse and unseen environments while following natural language instructions. Traditional approaches rely heavily on historical observations as spatio-temporal contexts for decision making, leading to significant storage and computational overhead. In this paper, we introduce MapNav, a novel end-to-end VLN model that leverages Annotated Semantic Map (ASM) to replace historical frames. ... , 2024) as the language model backbone, and Mask2Former (Cheng et al., 2022) for semantic segmentation during ASM generation. Furthermore, our performance is competitive with Navid (All Frames), demonstrating that ASM effectively serves as a new historical representation method for large models, replacing traditional historical frames. ... This performance across diverse scenarios validates our approach's spatial understanding capabilities, as reflected in the agent's ability to generate accurate ASMs and perform appropriate navigation actions. ... The successful generation of ASMs in these diverse real-world scenarios and the agent's ability to complete assigned tasks demonstrate our system's effective sim-to-real transfer capabilities and the practical applicability of ASM in real-world navigation. Additionally, we conducted an experiment in a living room setting to test our VLM's semantic understanding capabilities. ... Model Setting. Our model builds upon the LLaVA-Onevision (Li et al., 2024a) framework and consists of three main components: the visual encoder, projector, and large language model (LLM). For the visual encoder, we employed Google's SigLIP-so400m-patch14-384 (Zhai et al., 2023), which processes input images at a resolution of 384x384 using patches of size 14x14. ... Recent advancements in vision-language models have significantly influenced VLN development, utilizing large-scale pre-trained models (Zhang et al., 2024a;Zheng et al., 2024;Wu et al., 2025) and VLN-specific pretraining (Hao et al., 2020;Wu et al., 2022). For instance, NavGPT (Zhou et al., 2024) autonomously generates actions using GPT-4o, while DiscussNav (Long et al., 2024b) employs VLN experts to reduce human involvement."
+      },
+      {
+        "paper_id": "278237813",
+        "markdown_evidence": "Visual Test-Time Scaling for GUI Agent Grounding ... We introduce RegionFocus, a visual test-time scaling approach for Vision Language Model Agents. Understanding webpages is challenging due to the visual complexity of GUI images and the large number of interface elements, making accurate action selection difficult. Our approach dynamically zooms in on relevant regions, reducing background clutter and improving grounding accuracy. To support this process, we propose an image-as-map mechanism that visualizes key landmarks at each step, providing a transparent action record and enables the agent to effectively choose among action candidates. ... Recent advancements in Large Language Models (LLMs) and Vision Language Models (VLMs) have significantly enhanced GUI automation, enabling agents to effectively interact with diverse graphical environments through textual and visual modalities [8,11,15,21,24,27,31,33,34,38,40]. Prior studies generally adopt two distinct approaches: ... This design choice stems from the observation that agent models often struggle to accurately predict bounding boxes on their own. To validate this, we conducted an experiment in which the model was required to predict both the upper-left and bottom-right corner coordinates, which were then used to crop the UI image. ... Because ScreenSpot-Pro only provides static screenshots-without an OS environment for interaction-we employ a VLM-based judge to trigger RegionFocus. Specifi- Table 2. Comparison of various models on WebVoyager [13]. For each automatic evaluation, we run GPT evaluator three times to calculate the performance mean and standard deviation. ... When GUI agents encounter execution errors, we instruct the model to focus on a specific point of interest and extract multiple sub-regions around this focal point (1). The agent then independently generates candidate actions for each subregion. Actions that interact with a specific coordinate are marked with pink-star landmarks (e.g. ... When initial action predictions result in errors-such as clicks on noninteractive or empty regions-the model dynamically adjusts its visual attention. Specifically, it refines attention by generating bounding-box proposals around visually salient regions, leading to more precise single-step actions. \n\nTrigger Condition We define two primary types of triggering conditions."
+      },
+      {
+        "paper_id": "267750682",
+        "markdown_evidence": "DriveVLM: The Convergence of Autonomous Driving and Large Vision-Language Models ... A primary hurdle of autonomous driving in urban environments is understanding complex and long-tail scenarios, such as challenging road conditions and delicate human behaviors. We introduce DriveVLM, an autonomous driving system leveraging Vision-Language Models (VLMs) for enhanced scene understanding and planning capabilities. DriveVLM integrates a unique combination of reasoning modules for scene description, scene analysis, and hierarchical planning. ... It contains a total of 9.6 billion parameters, including a visual encoder (1.9 billion), a vision-language adapter (0.08 billion), and a large language model (Qwen, 7.7 billion). Images are resized to a resolution of 448 × 448 before being encoded by the vision encoder. ... Consequently, these sequences should not incur a penalty comparable to other meta actions such as \"Turn Left\" or \"Change Lane to the Right\". Therefore, these are designated as \"conservative actions\", and a reduced penalty is applied when they do not match during sequence evaluation. \n\nThe second consideration addresses the potential semantic equality among different meta-action sequences. ... Experiments on both the nuScenes dataset and our SUP-AD dataset demonstrate the efficacy of DriveVLM and DriveVLM-Dual in handling complex and unpredictable driving conditions. Finally, we deploy the DriveVLM-Dual on a production vehicle, verifying it is effective in real-world autonomous driving environments. ... Particular behaviors C b refer to special actions or gestures of an object that could directly influence the ego vehicle's next driving decisions. We do not require the model to analyze all three characteristics for all objects. In practice, only one or two characteristics apply to a critical object. ... To comprehensively evaluate a model's performance, we care about its interpretation of the driving scene and the decisions made. Therefore, our evaluation has two aspects: scene description/analysis evaluation and meta-action evaluation. \n\nScene Description/Analysis Evaluation. Given the subjective nature of human evaluation in scene description, we adopt a structured approach using a pre-trained LLM."
+      },
+      {
+        "paper_id": "274423241",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274981403",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275570710",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272827653",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275932066",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276422489",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276317279",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274307293",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277244471",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267751306",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273482627",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269149129",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270440391",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276903228",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262084072",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270560712",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277104488",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271162268",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905528",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275485109",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274992845",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267938332",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237371549",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "60440549",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "239024725",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271710034",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "69606981",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264445597",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267334921",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278481240",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267547704",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268856673",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277955123",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274776721",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262053313",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273162504",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272602358",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249848263",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270285746",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267627611",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265456995",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271334773",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263909534",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278782258",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274130729",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265221232",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266163155",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271328975",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276885265",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259108333",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267523393",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264306321",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274281461",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257496810",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271854813",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273532591",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267499679",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269033209",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276769281",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257632482",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278788868",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278769827",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273950195",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275358052",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276961761",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269614380",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270878724",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277993634",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268031860",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274514787",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482123",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278714954",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270095310",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276580359",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270702986",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278740010",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268856764",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277043151",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269457384",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274776498",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277994115",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266906759",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270199358",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270593284",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278534970",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "286228401",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278789482",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279070382",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277824294",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265466833",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274023112",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265067328",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268724017",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270521433",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274281325",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276580246",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277349278",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270737945",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267311517",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265499116",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258947177",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275757600",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275336454",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267750174",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269773149",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258740697",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270226026",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278959818",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278910552",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278789416",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274437489",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274024030",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276507770",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249192343",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244182350",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265551867",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222142129",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277999605",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278911542",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "214775007",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263838707",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229701747",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "15924521",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278740716",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268248196",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267538169",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260887670",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267500295",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273550034",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277633699",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277467701",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278481201",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268510077",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271947271",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277787283",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254408960",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255369872",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "21196924",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52124532",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271532975",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "34953552",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277150577",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278917298",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272987845",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278165428",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269757584",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269502377",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275921131",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278501987",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276961188",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264492161",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277435005",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278911967",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271090598",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276116304",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279618395",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266210116",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273346805",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268385551",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275405563",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271916328",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277040824",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276928292",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278207622",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278394531",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268681109",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279074780",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278904380",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278996941",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275212310",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270380128",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268554084",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274130927",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273374860",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278740870",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266690872",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14385868",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "28893153",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263609486",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259525104",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277258651",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266374709",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281669727",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274859626",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263705826",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "83458248",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278339182",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252411352",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276741160",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269387824",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273025856",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251957910",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272722258",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276661102",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281366164",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252410634",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272724417",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "26839871",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

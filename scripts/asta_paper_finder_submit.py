@@ -222,6 +222,35 @@ SUBMISSIONS = [
         # defaults to 10% of the threshold, so the slope that prefix
         # encoded no longer varies between submissions.
     ),
+    Submission(
+        name="v0_0_9_cap_0_355_opus5",
+        agent_rel_path="agents/iter21_gold_rubric_and_hard_predicates/agent.py",
+        model_arg="none",
+        # Run robophd-asta_paper_finder-011 (opus-5-evolved; luna no-prose
+        # training judge), winner iter21_gold_rubric_and_hard_predicates
+        # (Elo 1602, 3 test rounds). Internal test 0.4222 mean F1 @
+        # $0.246/query — our highest on this task and the first above Asta
+        # Paper Finder's 0.397. It opens a new region of the curve between
+        # Ai2's two entries rather than displacing anything of ours.
+        # SAME patch number as cap_0_063 on purpose: the version tracks the
+        # RoboPhD code base, which did not meaningfully change between the
+        # two runs (one engine-side elo_reachability fix, no solver
+        # change). Same code, different cap.
+        # $0.355 is Asta Paper Finder's TOP entry to three decimals — the
+        # same competitor's-price construction as the $0.033 and $0.063
+        # gates. This one left headroom: it landed at 69% of the gate,
+        # where cap_0_063 engineered to its threshold and landed on it.
+        # Models: gpt-5.4-2026-03-05, gpt-5.4-mini, claude-sonnet-4-6 —
+        # three handles over two providers, all already in AGENT_MODELS.
+        # NAME: the winner's name is the evolution model's own and is kept
+        # unedited, but it OVERSTATES the code. The agent reconstructs a
+        # rubric from the raw query; no gold reaches it (AST-verified: no
+        # id-shaped constants, no sample_id branching). Three worked
+        # examples in the planner prompt come from TRAINING gold, with zero
+        # topical overlap in the held-out 267. The snapshot README carries
+        # the full disclosure — read it before answering any reviewer
+        # question about the name.
+    ),
 ]
 
 

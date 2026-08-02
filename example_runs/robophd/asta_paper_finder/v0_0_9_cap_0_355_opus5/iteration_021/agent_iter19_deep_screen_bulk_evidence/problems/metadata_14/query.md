@@ -1,0 +1,1 @@
+NAACL 2010 or 2012 papers co-authored by one of the authors of the "BERT" paper and at least one additional author

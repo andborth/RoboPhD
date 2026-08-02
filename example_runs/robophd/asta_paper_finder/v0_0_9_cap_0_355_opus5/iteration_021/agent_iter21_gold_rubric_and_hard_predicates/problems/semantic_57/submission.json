@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_57",
+    "results": [
+      {
+        "paper_id": "276408140",
+        "markdown_evidence": "HellaSwag-Pro: A Large-Scale Bilingual Benchmark for Evaluating the Robustness of LLMs in Commonsense Reasoning ... Large language models (LLMs) have shown remarkable capabilities in commonsense reasoning; however, some variations in questions can trigger incorrect responses. Do these models truly understand commonsense knowledge, or just memorize expression patterns? To investigate this question, we present the first extensive robustness evaluation of LLMs in commonsense reasoning. We introduce HellaSwag-Pro, a large-scale bilingual benchmark consisting of 11,200 cases, by designing and compiling seven types of question variants. ... Large language models (LLMs) have shown remarkable capabilities in commonsense reasoning; however, some variations in questions can trigger incorrect responses. Do these models truly understand commonsense knowledge, or just memorize expression patterns? ... Overall Performance The results for Direct prompting on all LLMs are listed in Table 3 and Table 4 2 . The main observations are as follows. \n\nFirstly, all evaluated LLMs perform well in OA (e.g., in AVG OA, GPT-4o scores 90.00, and Claude-3.5 scores 90.24). However, all LLMs show a performance drop on variants, as evidenced by a positive AVG RLA value for all LLMs. ... To test whether the model truly understands commonsense knowledge, we create seven variants of each question. It is our view that if the model genuinely understands commonsense knowledge, it should be able to correctly respond to the same knowledge expressed in different reasoning forms. Here's how our seven variants map onto these cognitive levels: ... , 2019;Talmor et al., 2019;Mihaylov et al., 2018a), or in specific domains of commonsense knowledge (Zhou et al., 2019;Qin et al., 2021;Bisk et al., 2020). Although some efforts have considered the robustness of commonsense reasoning, they either focus on whether models can learn genuine question-answer correlations under initial questions (Jia and Liang, 2017;Branco et al. ... , 2024). Therefore, we ask the question: Does this high-level performance stem from a genuine understanding of commonsense knowledge, or is it simply a result of memorizing specific expression patterns in pre-training data? \n\nTo answer this question, an effective approach is to systematically evaluate the robustness of LLMs in answering commonsense reasoning questions."
+      },
+      {
+        "paper_id": "263830212",
+        "markdown_evidence": "BRAINTEASER: Lateral Thinking Puzzles for Large Language Models ... The success of language models has inspired the NLP community to attend to tasks that require implicit and complex reasoning, relying on human-like commonsense mechanisms. While such vertical thinking tasks have been relatively popular, lateral thinking puzzles have received little attention. To bridge this gap, we devise BRAINTEASER: a multiple-choice Question Answering task designed to test the model's ability to exhibit lateral thinking and defy default commonsense associations. ... BRAINTEASER: Lateral Thinking Puzzles for Large Language Models ... Notably, human performance only has a minimal drop on group-based metrics whereas all models suffer significant drops. Further analysis (see Appendix A.6) reveals that ChatGPT and RoBERTa-L fail to answer many (45 and 61%, respectively) of the original or semantically changed puzzles when contextually translated puzzles are solved correctly. ... To assess the consistency of lateral reasoning by models, we enrich BRAINTEASER based on a semantic and contextual reconstruction of its questions. Our experiments with state-of-the-art instruction- and commonsense language models reveal a significant gap between human and model performance, which is further widened when consistency across adversarial formats is considered. ... Robustness Studies As a novel benchmark, BRAINTEASER relates to other works that evaluate the performance of LLMs. Since these models are surpassing human performance on some existing benchmarks (Xu et al., 2022), the NLP community has shifted the focus towards robustness evaluation, i.e., whether the model can retain a similar performance to semantically perturbed or adversarially constructed questions (Abdou et al. ... The development of natural language processing (NLP) models and their evaluation has achieved much progress in vertical thinking. In particular, large language models (LLMs) (Devlin et al., 2019;Liu et al., 2019;Brown et al., 2020b) have achieved strong performance across a variety of complex reasoning tasks (Talmor et al., 2019;Bisk et al., 2020;Sap et al., 2019b), even with the complete absence (zero-shot) (Sanh et al."
+      },
+      {
+        "paper_id": "218486778",
+        "markdown_evidence": "The Sensitivity of Language Models and Humans to Winograd Schema Perturbations ... Large-scale pretrained language models are the major driving force behind recent improvements in perfromance on the Winograd Schema Challenge, a widely employed test of commonsense reasoning ability. We show, however, with a new diagnostic dataset, that these models are sensitive to linguistic perturbations of the Winograd examples that minimally affect human understanding. ... , 2019). These models are considered to be the state-of-the-art for the wide variety of natural language understanding tasks found in the GLUE (Wang et al., 2018) and SuperGLUE (Wang et al., 2019) benchmarks. We use the large pre-trained publicly available models (Wolf et al., 2019).7 \n\nFine-tuned Language Models We also examine the effect of fine-tuning language models. ... We expect that humans are robust to these perturbations because they represent naturally occurring phenomena in language; we test this hypothesis by collecting human judgements for the perturbed examples. We collect the judgments for the perturbed examples using Amazon Mechanical Turk. ... Large-scale pre-trained language models have recently led to improvements across a range of natural language understanding (NLU) tasks (Devlin et al., 2019;Radford et al., 2019;Yang et al., 2019), but there is some scepticism that benchmark leaderboards do not represent the full picture (Kaushik and Lipton, 2018;Jumelet and Hupkes, 2018;Poliak et al., 2018). ... In this paper, we conduct experiments to investigate this question. We define a set of lexical and syntactic variations and perturbations for the WSC examples and use altered examples (Figure 1b) to test models that have recently reported improved results. These variations and perturbations are designed to highlight the robustness of human linguistic and reasoning abilities and to test models under these conditions. ... (2019) report an accuracy of 70.7% without fine-tuning using the GPT-2 language model. Most recently, Sakaguchi et al. (2019) present an adversarial filtering algorithm which they use for crowd-sourcing a large corpus of WSC-like examples. Fine-tuning RoBERTa (Liu et al., 2019) on this, they achieve an accuracy of 90.1%. \n\nIn an orthogonal direction, Trichelair et al. (2018) presented a timely critical treatment of the WSC."
+      },
+      {
+        "paper_id": "253244137",
+        "markdown_evidence": "CONDAQA: A Contrastive Reading Comprehension Dataset for Reasoning about Negation ... The full power of human language-based communication cannot be realized without negation. All human languages have some form of negation. Despite this, negation remains a challenging phenomenon for current natural language understanding systems. To facilitate the future development of models that can process negation effectively, we present CONDAQA, the first English reading comprehension dataset which requires reasoning about the implications of negated statements in paragraphs. ... All models we evaluate on CONDAQA are pretrained transformer-based language models. We test them in three training settings: (ii) finetuned on the entire training data ( §C.1), (ii) finetuned on a few examples (few-shot; §C.2), and (iii) without training (zero-shot; §C.2). ... Models are most robust to paraphrase edits: if a model answers a question correctly for the original passage, it is likely to be robust to changes in how that negation is expressed. We observe that the heuristic-based baselines exhibit low consistency, suggesting the consistency metric may be a more reliable measure than accuracy to evaluate models' ability to process negation. ... , 2020), and a version of InstructGPT orig (Ouyang et al., 2022) known as text-davinci-002; henceforth referred to as InstructGPT. We additionally prompt InstructGPT with chain of thoughts (CoT; Wei et al., 2022) as this should be beneficial for reasoning tasks. We do prompt-based finetuning of UnifiedQA-v2 (i.e., change its parameters) and incontext learning of the GPT models (i. ... We split the train/test sets into five disjoint sets, sample 9 shots from each train subset, evaluate models on such five train-test splits, and report the average performance across them. On average each test split contains 1448 instances. \n\nWe evaluate heuristic baselines to measure the extent to which models can use data artifacts to answer CONDAQA questions. ... For every seed, we evaluate the model with the best validation accuracy on the entire test set. \n\nBERT (Devlin et al., 2019) BERT is pretrained with masked language modeling (MLM) and a nextsentence prediction objective. Since a majority of the questions have Yes/No/Don't know as the answer, we finetune BERT and other BERT-like models (see below) in a multi-class classification setting."
+      },
+      {
+        "paper_id": "221865854",
+        "markdown_evidence": "RICA: Evaluating Robust Inference Capabilities Based on Commonsense Axioms ... Pre-trained language models (PTLMs) have achieved impressive performance on commonsense inference benchmarks, but their ability to employ commonsense to make robust inferences, which is crucial for effective communications with humans, is debated. In the pursuit of advancing fluid human-AI communication, we propose a new challenge, RICA: Robust Inference using Commonsense Axioms, that evaluates robust commonsense inference despite textual perturbations. ... , 2019;Yu et al., 2020), dialogue systems (Cui et al., 2020), and NLI (Williams et al., 2018), that involve inferences on language. Recent work also aims to probe models in these tasks to see if reasoning is actually achieved (Richardson and Sabharwal, 2020;Richardson et al., 2020). ... Furthermore, we evaluate training data sensitivity for both the human-verified and human-curated set (Figure 4c). We vary training set size from 0 to 80k for RoBERTa-large. Our results show that performance on the human-verified set saturates around 80% accuracy after 10k instances, but human-curated accuracy remains close to 50% throughout. ... As shown in the first group of bars in Figures 4a  and 4b, the average binary accuracies of all five models (we show the large version) on both MWP and SP tasks are around 0.5, regardless of the test data. A random baseline that chooses between the two comparative words would have an accuracy of 0.5. This shows that the tested models barely beat a random guessing baseline without training. ... Unfortunately, these two capabilities have largely been overlooked by existing natural language inference (NLI) benchmarks (Williams et al., 2018) and knowledge probing studies for transformer-based PTLMs (Vaswani et al., 2017;Devlin et al., 2019;Liu et al., 2019;Clark et al., 2020;Petroni et al., 2019). Most existing commonsense reasoning-focused datasets (Zhang et al., 2017;Williams et al. ... In the pursuit of advancing fluid human-AI communication, we propose a new challenge, RICA: Robust Inference using Commonsense Axioms, that evaluates robust commonsense inference despite textual perturbations. To generate data for this challenge, we develop a systematic and scalable procedure using commonsense knowledge bases and probe PTLMs across two different evaluation settings."
+      },
+      {
+        "paper_id": "251979676",
+        "markdown_evidence": "Why Do Neural Language Models Still Need Commonsense Knowledge to Handle Semantic Variations in Question Answering? ... Many contextualized word representations are now learned by intricate neural network models, such as masked neural language models (MNLMs) which are made up of huge neural network structures and trained to restore the masked text. Such representations demonstrate superhuman performance in some reading comprehension (RC) tasks which extract a proper answer in the context given a question. However, identifying the detailed knowledge trained in MNLMs is challenging owing to numerous and intermingled model parameters. ... Finally, we empirically demonstrate that the limitations of MNLMs can be complemented by integrating a commonsense knowledge repository. To the best of our knowledge, our study is the first to report the fundamental reason why existing MNLMs do not include a large portion of commonsense knowledge yet. ... Table 13 indicates the results of the knowledge integration. The experimental results show that the performance of incorrect questions are significantly improved from all experimental models (p < 0.05) by adapting knowledge integrated text without any modifications in the model architecture on both SQuAD and ReCoRD. ... This is because not only MNLMs show substantially higher performance than GPT 1 and 2 models in natural language understanding tasks 4,53,54 , but also there is no way to finetune a GPT 3 model. Detailed analysis for the point of view of lexical overlapping ratio between question and context of each dataset and a data sampling method are described in Appendix H. ... We observe that a large proportion of commonsense knowledge is not appropriately trained in MNLMs and MNLMs do not often understand the semantic meaning of relations accurately. In addition, we find that the MNLM-based RC models are still vulnerable to semantic variations that require commonsense knowledge. ... What are the challenging RC-task questions for the MNLM-based RC models? (Section 4) \n\nTo answer Questions 1 and 2, we introduce a knowledge probing test designed to analyze whether an MNLM understands structured commonsense knowledge such as semantic triples in an external repository, specifically ConceptNet 20 . Experimental results on the knowledge probing test reveal that MNLMs understand some types of semantic knowledge."
+      },
+      {
+        "paper_id": "208310123",
+        "markdown_evidence": "Evaluating Commonsense in Pre-trained Language Models ... Contextualized representations trained over large raw text data have given remarkable improvements for NLP tasks including question answering and reading comprehension. There have been works showing that syntactic, semantic and word sense knowledge are contained in such representations, which explains why they benefit such tasks. However, relatively little work has been done investigating commonsense knowledge contained in contextualized representations, which is crucial for human question answering and reading comprehension. ... There has been work investigating the nature of syntactic (Liu et al. 2019a), semantic (Liu et al. 2019a) and word sense (Kim et al. 2019) knowledge contained in such contextualized representations, in particular BERT (Devlin et al. 2019), showing that such knowledge can be effectively learned via language model (LM) pre-training over large scale data. ... The robustness of models in commonsense reasoning is an important perspective in evaluating deep commonsense ability. Intuitively, a person can reason whether a statement makes sense or not because he has consistent knowledge. If the statement changes slightly, for example, changing a key word, that person should still make the correct judgement. ... For each test instance in SMR, there is a positive sample and two negative samples. More examples are shown in the SMR section of Table 1. This task is intuitively difficult since it requires a model to have deeper knowledge of with higher-level inference, which belongs to abductive reasoning. ... We study the commonsense ability of GPT, BERT, XLNet, and RoBERTa by testing them on seven challenging benchmarks, finding that language modeling and its variants are effective objectives for promoting models' commonsense ability while bi-directional context and larger training set are bonuses. ... Generally speaking, all of our tested models outperform the random baselines except for the ARCT task, which suggests that despite of using different modeling schemas, language modeling stands as an effective objective for extracting commonsense knowledge from large, raw texts. For each task, the overall performance increases with a larger model parameter size, a more sophisticated model design, and larger training data."
+      },
+      {
+        "paper_id": "270560449",
+        "markdown_evidence": "RUPBench: Benchmarking Reasoning Under Perturbations for Robustness Evaluation in Large Language Models ... With the increasing use of large language models (LLMs), ensuring reliable performance in diverse, real-world environments is essential. Despite their remarkable achievements, LLMs often struggle with adversarial inputs, significantly impacting their effectiveness in practical applications. To systematically understand the robustness of LLMs, we present RUPBench, a comprehensive benchmark designed to evaluate LLM robustness across diverse reasoning tasks. ... , 2024), complex reasoning (Wang et al., 2023a), and time series analysis (Zhao et al., 2021;Wang et al., 2022b).Models like GPT-3 (Brown et al., 2020), GPT-4o (gpt 4o, 2024), and Llama3 (AI@Meta, 2024) have set new benchmarks in natural language processing, pushing * Denotes equal contribution.\n\nthe boundaries of what these systems can achieve. ... To address this gap, we introduce the Reasoning Under Perturbations Benchmark (RUPBench), a comprehensive benchmark designed to evaluate the robustness of LLMs across different reasoning tasks.RUPBench includes 15 source datasets spanning four major reasoning categories: commonsense, arithmetic, logical, and knowledgeintensive. ... Motivation and Intended Uses. 1.What are the intended purposes for this benchmark?The intended purposes of RUPBench are to systematically evaluate the robustness of large language models (LLMs) across a diverse set of reasoning tasks and to provide insights into their performance under various types of textual perturbations. ... , 2023).Benchmarks such as GLUE (Wang et al., 2018) and Su-perGLUE (Wang et al., 2019) have been foundational in advancing natural language understanding tasks.More recent benchmarks, including MMLU (Hendrycks et al., 2020b), BigBench (Srivastava et al., 2023), and HellaSwag (Zellers et al., 2019), assess capabilities in knowledge understanding and complex reasoning. ... We investigate robustness across nine perturbation types within three major categories (lexical, syntactic, and semantic) and the relationship between the robustness of reasoning data types and models.Perturbation Categories Figure 2 displays the normalized PDR (measure for robustness) for nine perturbation types, averaged across datasets and models.Lexical perturbations, particularly Leetspeak (16.3%) and typos (13."
+      },
+      {
+        "paper_id": "231592613",
+        "markdown_evidence": "Improving Commonsense Causal Reasoning by Adversarial Training and Data Augmentation ... Determining the plausibility of causal relations between clauses is a commonsense reasoning task that requires complex inference ability. The general approach to this task is to train a large pretrained language model on a specific dataset. However, the available training data for the task is often scarce, which leads to instability of model training or reliance on the shallow features of the dataset. This paper presents a number of techniques for making models more robust in the domain of causal reasoning. Firstly, we perform adversarial training by generating perturbed inputs through synonym substitution. ... The (ii) overlap selection method assumes that alternatives which overlap in their content words with the premise would be semantically more similar and therefore potentially more difficult for models to solve. Finally, the (iii) GPT-2 method assumes the distinct denotations of certain discourse connectives, as discussed below. ... The aim of covering a wider range of examples is to find general patterns of causally linked clauses. \n\nIn both methods we study to what extent model performance on the task of causal inference can be improved by augmenting the training data with linguistic information. ... Knowledge graphs about entities as well as causal links between event words provide information that is relevant to the type of reasoning required for commonsense causal reasoning tasks, which is assumed to be emitted in raw text based on pragmatic rules of language. ... The general approach to this task is to train a large pretrained language model on a specific dataset. However, the available training data for the task is often scarce, which leads to instability of model training or reliance on the shallow features of the dataset. This paper presents a number of techniques for making models more robust in the domain of causal reasoning. ... 2019) is trained with this additional objective. In addition, Shwartz et al. (2020) use a self-talk method in which they use pre-trained generative language models to produce questions and answers about entities mentioned in the target sentences in a causal reasoning task. This provides the background knowledge in a novel way, as an alternative to the use of knowledge graphs mentioned at the beginning of this section."
+      },
+      {
+        "paper_id": "253244266",
+        "markdown_evidence": "A Systematic Investigation of Commonsense Knowledge in Large Language Models ... Language models (LMs) trained on large amounts of data have shown impressive performance on many NLP tasks under the zero-shot and few-shot setup. Here we aim to better understand the extent to which such models learn commonsense knowledge — a critical component of many NLP applications. We conduct a systematic and rigorous zero-shot and few-shot commonsense evaluation of large pre-trained LMs, where we: (i) carefully control for the LMs’ ability to exploit potential surface cues and annotation artefacts ... Common sense -the implicit knowledge about everyday situation that is shared by humans -is an important prerequisite for developing generalpurpose intelligent systems (McCarthy et al., 1960;Liu and Singh, 2004;Gunning, 2018). Intriguingly, recent large language models (LMs, Brown et al., 2020;Patwary et al., 2021;Rae et al. ... Finally, we ask: to what extent does the model's zero-shot performance vary depending on certain evaluation design choices, such as the format of the prompt or the score function ( §5)? We find that these design choices -though they have little to do with common sense -can result in large fluctuations in performance (up to 19%). ... , 2019;Davison et al., 2019) or manually-designed probing tasks (Weir et al., 2020;Shwartz and Choi, 2020). Zhou et al. (2020) evaluate pre-trained LMs against commonsense benchmarks and propose a new dataset requiring multi-hop reasoning. In contrast, we focus on zeroand few-shot evaluation of commonsense understanding using the existing benchmarks. ... • Lastly, we strongly encourage future work to report the variance of the observed results across different design choices. This can provide an indication of the robustness of the language models' performance on commonsense benchmarks. ... Language models (LMs) trained on large amounts of data have shown impressive performance on many NLP tasks under the zero-shot and few-shot setup. Here we aim to better understand the extent to which such models learn commonsense knowledge — a critical component of many NLP applications."
+      },
+      {
+        "paper_id": "258301085",
+        "markdown_evidence": "Dialectical language model evaluation: An initial appraisal of the commonsense spatial reasoning abilities of LLMs ... Language models have become very popular recently and many claims have been made about their abilities, including for commonsense reasoning. Given the increasingly better results of current language models on previous static benchmarks for commonsense reasoning, we explore an alternative dialectical evaluation. The goal of this kind of evaluation is not to obtain an aggregate performance value but to find failures and map the boundaries of the system. Dialoguing with the system gives the opportunity to check for consistency and get more reassurance of these boundaries beyond anecdotal evidence. ... Modern language models allow for a dialectic evaluation by the accumulation of the previous questions and answers as context. This is what we explore in a manual way here, in the tradition of other dialectic evaluation protocols (e.g., interviews or oral exams) that follow a systematic choice of questions (unlike the Turing test). ... The sensitivity of LLMs to such perturbations has already been noted in a Theory-of-Mind setting (Ullman 2023).\n\nAcknowledgments: This work was funded by EU's Horizon 2020 research and innovation programme under grant agreement No. 952215 (TAILOR), US DARPA HR00112120007 (RECoG-AI) and Spanish grant PID2021-122830OB ... Frequently, spatial reasoning requires reasoning about more than one of these aspects simultaneously.\n\nThere are certainly spatial instances in the various benchmarks purporting to test commonsense reasoning, some of them in multimodal situations (Liu, Emerson, and Collier 2022), but others in purely textual form. ... g. (Van Melle 1978)), engineering (Dimitrova et al. 2020), bioinformatics (Tunyasuvunakool et al. 2021 and even games such Go (Silver et al. 2016), there has not yet been a system which has truly displayed the commonsense reasoning abilities of a young child. However, the advent of large language models (LLMs), such as BERT (Devlin et al. ... Actually, many existing tasks and benchmarks have already been used verbatim in the training of the model 1 . We may use canaries on the training data, or build 'fresh' items for evaluation, but this is impractical, as new models appear very frequently. If we assume this contamination exists (OpenAI 2023, Ap."
+      },
+      {
+        "paper_id": "269626686",
+        "markdown_evidence": "Understanding the Capabilities and Limitations of Large Language Models for Cultural Commonsense ... Large language models (LLMs) have demonstrated substantial commonsense understanding through numerous benchmark evaluations. However, their understanding of cultural commonsense remains largely unexamined. In this paper, we conduct a comprehensive examination of the capabilities and limitations of several state-of-the-art LLMs in the context of cultural commonsense tasks. ... Large language models (LLMs) have demonstrated substantial commonsense understanding through numerous benchmark evaluations. However, their understanding of cultural commonsense remains largely unexamined. In this paper, we conduct a comprehensive examination of the capabilities and limitations of several state-of-the-art LLMs in the context of cultural commonsense tasks. ... LLMs are known to be susceptible to the influence of the choice of the prompts (Jiang et al., 2020;Si et al., 2022).To test whether our prompting is robust, we use several prompt settings, and measure the variation in performance for two of the LLMs (GPT-3.5-turboand GPT-4). ... The majority of commonsense resources, whether a benchmark or a knowledge base, consider only general commonsense and disregard the cultural aspect.\n\nEarlier work (Silva et al., 2006) collected commonsense statements from Open Mind Common Sense (Singh et al., 2002) contributors located in Brazil, Mexico and the USA, and discover the cultural differences, such as eating habits.Acharya et al. ... In this paper, we explore the capabilities and limitations of LLMs for cultural commonsense.Using several probing tasks and commonsense benchmarks, we measure whether LLMs perform equally well on different sets of culture-specific commonsense (e.g., if a LLM knows cultural commonsense specific to Iran), as well as the extent to which general commonsense is uniformly associated by LLMs with all the cultures (e.g. ... Understanding the Capabilities and Limitations of Large Language Models for Cultural Commonsense"
+      },
+      {
+        "paper_id": "270845882",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269214534",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220280994",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249017494",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274777518",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235248317",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269214040",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235293697",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273025540",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232168628",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265019468",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218486812",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252846183",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227012557",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236478307",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276259405",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259075832",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235436397",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256789134",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274165438",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237490328",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261682140",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273163710",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270380297",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269157188",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259203613",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249626098",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269240013",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237431372",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248157206",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267750721",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202789367",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258547091",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267180994",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235254600",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270380362",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257804619",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270560241",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271270736",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253080612",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253386967",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227231542",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235657379",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278636168",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222310337",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275212216",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277763926",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270560437",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231740560",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53296520",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269187664",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267301137",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276421704",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264935564",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254366640",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247702013",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269362015",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247601337",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278166745",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267547759",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261385527",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273351299",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273186060",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275993992",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52019251",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "239016123",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276450078",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248987543",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267212163",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273901496",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270285522",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256462868",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257496672",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273404037",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276575281",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258588125",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262465363",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258588121",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "198967714",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256486452",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247517043",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267740549",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258236552",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253098557",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259370560",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "207930099",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235306505",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262465318",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227230458",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "224805854",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237346776",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265157449",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244909056",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245218685",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252633429",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258841244",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268546829",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235235583",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256900835",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271534138",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226964491",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259203213",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265157830",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259370639",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251690666",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265067226",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "102491590",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254069806",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270845488",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235166616",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278904999",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257646461",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269967913",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273640613",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274187674",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804111",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246867263",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251304279",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267327908",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271761349",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233859420",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259282629",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258987325",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253236860",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235420514",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246016194",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261392381",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244119704",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258557844",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804109",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222177123",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259370667",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237417284",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259209659",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252734768",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258865393",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252330877",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252571189",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264438931",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271498686",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229339653",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266690844",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246430982",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274762903",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270123642",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268248456",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258841057",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271162255",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271910084",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258887528",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261682256",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267372092",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273969928",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258762197",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270226508",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268691560",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276095283",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273798346",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272968791",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270710702",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269790884",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259982788",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271798852",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "288716607",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264534614",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264965980",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225070241",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219708333",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "44156126",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270285718",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275745020",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264406240",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227208780",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237605111",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218674203",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277824405",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259287319",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "173990423",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247940018",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251018508",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "159043413",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266999245",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269033181",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247571112",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233189603",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259252359",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258865472",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252365201",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276941073",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53734356",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270063606",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226283660",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222290596",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236460128",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231639285",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267682284",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267750499",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257039062",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274141509",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274982553",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253447406",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272547165",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202889044",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276408119",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273549220",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886573",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275336617",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222178118",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231984371",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231798234",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267032626",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221516466",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264833120",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271909348",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227231159",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253098482",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259342896",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277452313",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235293739",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "238857304",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273707095",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268032927",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261214669",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258833400",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258958182",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231592355",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "18558421",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "21690041",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268663601",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267334947",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279002643",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "864762",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2785811",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260812695",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245764019",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263833066",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252139435",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274024182",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

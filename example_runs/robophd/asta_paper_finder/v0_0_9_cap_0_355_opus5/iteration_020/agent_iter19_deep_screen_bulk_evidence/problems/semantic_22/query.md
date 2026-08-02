@@ -1,0 +1,1 @@
+Which papers propose to mask positions to pre-train multi-modal document transformer？
