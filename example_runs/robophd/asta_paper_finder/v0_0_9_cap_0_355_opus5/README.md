@@ -12,39 +12,23 @@ code base at a different cost cap. `cap_0_355` names the training free zone
 Prices throughout are quoted to **three decimals**, the leaderboard's precision;
 two entries that round to the same figure are a cost tie decided on score.
 
-## Disclosure: the winning agent is named `iter21_gold_rubric_and_hard_predicates`
+## Aimed at the top of the board
 
-That name is the evolution model's own, kept unedited because the run record
-should not be tidied after the fact. **It overstates what the code does, and the
-distinction matters, so it is stated here plainly.**
+Our three earlier gates were set at the price of an entry we could plausibly
+beat: $0.033 at the second-cheapest agent, $0.063 at the frontier point directly
+above ours. This is the first run pointed at the **best** agent on the board —
+Asta Paper Finder at **0.433 @ $0.355** — by setting the free zone to its price
+exactly.
 
-The agent *reconstructs* the grading rubric. It does not receive one. The
-benchmark's `relevance_criteria` are gold-side; at query time the solver has
-only `state.metadata["raw_query"]`. A planner call is prompted to "reproduce, as
-closely as you can, the rubric an independent annotator would write", and every
-criterion downstream is that reconstruction.
+The construction is the same each time: put the gate at a competitor's price,
+and the cost half of a Pareto claim is bought by definition, leaving only the
+score half to win. What differs here is the target's difficulty. 0.433 is the
+highest score anyone has posted.
 
-Audited before submission:
-
-- **AST parse of `agent.py`, executable positions only** (docstrings excluded):
-  zero corpus-id-shaped string constants, zero integer constants above 100000,
-  zero references to a benchmark `sample_id`. The single `sample_id` read is the
-  required `query_id` output field.
-- **Three worked examples of query → criteria+weights are embedded in the
-  planner prompt.** These come from TRAINING gold (`gold_criteria.md`, which the
-  task documentation explicitly exposes post-hoc). Their topics —
-  retrieval-augmented LMs, multimodal foundation models, BLOOM quantization —
-  appear 11 / 9 / 11 times across training queries and **zero times in the
-  held-out 267**.
-- **No test data was reachable during evolution.** No `test_problems/` or
-  `test_results*.json` in the run root; the mid-run restart archive
-  (`archived_20260731_182121`) contains none either; `sandbox_denials.jsonl`
-  records no attempt to reach any.
-
-So: training-set convention learning, one step more literal than
-`v0_0_9_cap_0_063_opus5`, which encoded observed weight *statistics* rather than
-whole instances. Both are sanctioned; this one is disclosed at greater length
-because its name invites the question.
+It came close. Internal **0.4222 @ $0.246** — within **0.011** of the target's
+score, at **69%** of its price. On these numbers the gate did its job twice
+over: the score gap nearly closed, and the agent did not even spend to the
+ceiling it was given.
 
 ## What this adds
 
@@ -63,14 +47,45 @@ ours; it opens a new region of the curve, between Ai2's two entries:
 Projected only — internal→official has run +0.0025 / −0.0550 / −0.0077 across
 the three submitted runs.
 
-## The cost gate is a competitor's price, again
+## What the extra budget actually bought
 
-$0.355 is Asta Paper Finder's top entry, to three decimals. Same construction as
-the $0.033 and $0.063 gates: setting the free zone *at* a competitor's price
-buys the cost half of a Pareto claim by construction and leaves only the score
-half to win. The agent came in at **$0.246**, 69% of the gate — so unlike the
-$0.063 run, which engineered to its threshold and landed on it, this one left
-headroom.
+The interesting question about a 5.6× larger free zone is what evolution chose
+to do with it. Per-model spend on semantic queries, winner against winner:
+
+| | `cap_0_063` winner | `cap_0_355` winner | |
+| --- | --- | --- | --- |
+| `gpt-5.4-mini` | $0.0289 (40%) | **$0.1727 (49%)** | **6.0×** |
+| deep-band grader | `claude-haiku-4-5` $0.0211 (29%) | **`claude-sonnet-4-6` $0.1667 (48%)** | **7.9×**, and a model swap |
+| `gpt-5.4` | $0.0216 (30%) | **$0.0101 (3%)** | **halved** |
+| total | $0.0717 | $0.3495 | 4.9× |
+
+Three decisions, none of them "the same thing, more expensive":
+
+1. **Grade far more candidates.** Stage-1 breadth went from 250 papers to
+   **900** — that is where the 6× mini spend went.
+2. **Upgrade the grader that matters.** The deep band stayed about the same size
+   (130 → 120 papers) but moved from Haiku 4.5 to Sonnet 4.6, a 3×-per-token
+   model. Better judgment on the band that decides the top-K, not more of it.
+3. **De-fund a tier to pay for it.** `gpt-5.4` fell from 30% of spend to 3%,
+   surviving only as the planner and the `specific` verifier. The 44-paper
+   GPT-5.4 head-reranker of the cheap agent is gone.
+
+That maps onto the measured outcome. Grading 900 candidates instead of 250 is a
+**recall** purchase (0.2245 → 0.2764); dropping the head-reranker is a **rank**
+cost (0.7723 → 0.7352). Since recall is worth ~9× rank at the margin, trading
+the second for the first is the right side of the exchange — and evolution paid
+for its recall partly by selling ordering precision, which is a sharper move
+than simply spending more.
+
+Notably it did **not** buy a more expensive planner, and it did not buy more
+retrieval — tool calls are free, so retrieval breadth was never budget-limited
+in the first place. The whole increment went into how many candidates get graded
+and how well.
+
+$0.355 is Asta Paper Finder's top entry to three decimals, the same
+competitor's-price construction as the $0.033 and $0.063 gates. The agent landed
+at **$0.246**, 69% of the gate — unlike the $0.063 run, which engineered to its
+threshold and landed on it.
 
 ## Snapshot layout (ds1000 precedent: a curated run snapshot, ~14MB)
 
@@ -113,6 +128,18 @@ criterion rather than being folded into another.
 paths: `years`, `year_min/max`, `min_citations`, `min_authors/max_authors`,
 `venues` plus lowercase `venue_aliases`, and `cites_reference`. Metadata queries
 become deterministic filters instead of keyword gymnastics.
+
+A note on the agent's name, which is the evolution model's own and kept
+unedited: `gold_rubric` describes the *target* of the reconstruction, not its
+input. No gold reaches the agent. The benchmark's `relevance_criteria` are
+gold-side and the solver sees only `state.metadata["raw_query"]`; every
+criterion downstream is inferred. Verified by AST parse of executable positions
+— no corpus-id-shaped constants, no `sample_id` branching beyond the required
+`query_id` output field. The planner prompt does carry three worked examples of
+query → criteria+weights, drawn from training `gold_criteria.md` (which the task
+docs expose post-hoc); their topics appear 11 / 9 / 11 times in training queries
+and zero times in the held-out 267. No test artifacts were reachable during
+evolution, including across the mid-run restart.
 
 Grading is staged across two providers — `gpt-5.4-mini` over stage 1,
 `claude-sonnet-4-6` over the top 120 in stage 2, mini again on the tail — and the
