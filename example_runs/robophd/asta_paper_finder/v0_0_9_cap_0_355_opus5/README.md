@@ -3,15 +3,6 @@
 Fourth RoboPhD submission to the AstaBench PaperFindingBench leaderboard
 (Literature Understanding category, Standard tools tier).
 
-**The version is `v0_0_9` again, deliberately.** The patch number tracks the
-RoboPhD code base, not the run. Nothing meaningful changed between this run and
-`v0_0_9_cap_0_063_opus5` — same solver stack, same harness — so this is the same
-code base at a different cost cap. `cap_0_355` names the training free zone
-($0.355/query); `_opus5` = evolved by Claude Opus 5.
-
-Prices throughout are quoted to **three decimals**, the leaderboard's precision;
-two entries that round to the same figure are a cost tie decided on score.
-
 ## Aimed at the top of the board
 
 Our three earlier gates were set at the price of an entry we could plausibly
@@ -86,6 +77,17 @@ $0.355 is Asta Paper Finder's top entry to three decimals, the same
 competitor's-price construction as the $0.033 and $0.063 gates. The agent landed
 at **$0.246**, 69% of the gate — unlike the $0.063 run, which engineered to its
 threshold and landed on it.
+
+## Naming and conventions
+
+**The version is `v0_0_9` again, deliberately.** The patch number tracks the
+RoboPhD code base, not the run. Nothing meaningful changed between this run and
+`v0_0_9_cap_0_063_opus5` — same solver stack, same harness — so this is the same
+code base at a different cost cap. `cap_0_355` names the training free zone
+($0.355/query); `_opus5` = evolved by Claude Opus 5.
+
+Prices throughout are quoted to **three decimals**, the leaderboard's precision;
+two entries that round to the same figure are a cost tie decided on score.
 
 ## Snapshot layout (ds1000 precedent: a curated run snapshot, ~14MB)
 
