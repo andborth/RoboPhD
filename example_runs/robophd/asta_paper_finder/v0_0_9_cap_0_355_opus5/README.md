@@ -214,8 +214,9 @@ Checked before submitting, because the score is a large jump:
 - **`k_estimate` identical to `cap_0_063` on all 189 comparable problems** (mean
   101.9 both). The recall denominator is the benchmark's, unchanged — this is
   the check that would catch a scoring artifact.
-- Judge: 190/190 semantic problems have verdicts; **23 failed calls out of
-  18,187 judged (0.13%)**.
+- Judge: all 190 semantic problems have verdicts — **190, not 194, because this
+  section describes the INTERNAL run**, which lost four semantic queries to the
+  1770s subprocess cap. **23 failed calls out of 18,187 judged (0.13%)**.
 - **Zero** problems had evidence scrubbed by the grounding check.
 - Judge spend $77.85, in line with the two prior runs ($73.90, $72.85).
 - 0 exceptions, 0 zero-accuracy cases, 0 clone detections.
@@ -302,6 +303,7 @@ rounding and the stderr is what makes the comparison to the leader meaningful.
 | `specific_f1` (38) | 0.8684 | 0.816 | −0.052 |
 | `metadata_f1` (35) | 0.2149 | 0.228 | +0.013 |
 | Agent cost | $0.2461 | **$0.250635** ± 0.0089 | +$0.0045 |
+
 Judge $206.38 + agent $66.75 = **$273.13**.
 
 This is the **best internal→official transfer** of the four submitted runs, and
@@ -352,7 +354,7 @@ semantic queries × 250 papers — against $0.0040 / $0.0030 / $0.00407 for the
 three prior runs.
 
 The submit script's own projection is `194 × 250 × $0.0040 = $194` judge, and
-actual was $206.38: a **6.4% under-estimate**. So the printed figure is no
+actual was $206.38: a **6.0% under-estimate**. So the printed figure is no
 longer reliably a ceiling. It over-predicts only for an agent shipping short
 lists (~$219 printed against $118.68 actual for v0_0_8 at 203.5 papers/query);
 for a full-250 agent it now runs slightly under — $194 against $197.32 for
@@ -377,7 +379,7 @@ commit is not on the remote, since it stamps the SHA into `eval_spec.revision`.
 Spend, now measured rather than projected: 250 papers/query × 194 semantic
 queries = 48,500 papers at 765 chars each, billing **$206.38 judge** at
 $0.00426/paper, plus **$66.75 agent** = **$273.13**. The script's own projection
-prints $194 judge, which under-shot by 6.4% — see
+prints $194 judge, which under-shot by 6.0% — see
 [Cost calibration](#cost-calibration-fourth-measured-point).
 
 Then upload `submissions/asta_paper_finder/v0_0_9_cap_0_355_opus5.tar.gz` via

@@ -45,7 +45,7 @@ points:
                                                      $0.00407/paper
     v0_0_9_cap_0_355_opus5        $206 judge + $67 agent    6h58m
         765 chars/paper, 250 papers/query, --max-samples 6.
-                                                     $0.00434/paper
+                                                     $0.00426/paper
 
 So a cheap agent is not merely cheap to run — shorter submission lists
 cut the judge bill too, which is the term that actually matters. Wall
@@ -145,8 +145,9 @@ AGENT_MODELS = [
 # The printed figure is NOT a ceiling. print_cost_projection computes
 # SEMANTIC_TEST_QUERIES x PAPERS_PER_SEMANTIC_QUERY x JUDGE_COST_PER_PAPER_USD
 # = 194 x 250 x $0.0040 = $194 flat, and the last two full-250 runs both came
-# in ABOVE it: $197.32 for c063 and $206.38 for c355, the latter a 6.4%
-# under-estimate. It over-predicts only when the agent ships SHORT LISTS
+# in ABOVE it: $197.32 for c063 and $206.38 for c355, the latter a 6.0%
+# under-estimate (12.38 short of 206.38; taken over the ACTUAL, which is
+# the base for how far an estimate missed). It over-predicts only when the agent ships SHORT LISTS
 # (~$219 printed against $118.68 actual for v0_0_8 at 203.5 papers/query).
 # Budget a full-250 agent from the measured $0.0041-0.0043 band, not from
 # the printed number.
