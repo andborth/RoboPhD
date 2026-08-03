@@ -16,10 +16,14 @@ and the cost half of a Pareto claim is bought by definition, leaving only the
 score half to win. What differs here is the target's difficulty. 0.433 is the
 highest score anyone has posted.
 
-It came within a thousandth. **Official 0.43177 ± 0.01797 @ $0.250635/query**
-(2026-08-02, 267/267 samples, zero errors) against the target's 0.43270 @
-$0.355 — a score gap of **0.00093** on a stderr of 0.018, at **29% lower cost**.
-Full breakdown in [Official result](#official-result-2026-08-02) below.
+It came within one displayed thousandth. On the board's own three-decimal basis:
+
+> **Official 0.432 @ $0.251**, against the target's **0.433 @ $0.355**.
+
+At full precision that is 0.43177 vs 0.43270 — a gap of **0.00093** on a stderr
+of **0.018**, so the two scores are statistically indistinguishable, and ours
+costs **29% less**. 2026-08-02, 267/267 samples, zero errors; full breakdown in
+[Official result](#official-result-2026-08-02) below.
 
 Neither dominates, so both stay on the curve, and this opens a new region of it
 between Ai2's two entries:
@@ -287,6 +291,10 @@ per (paper, criterion).
 
 ## Official result (2026-08-02)
 
+**As displayed on the board: 0.432 @ $0.251.** 267/267 samples, **zero errors**,
+6h58m. Full precision below, since the deltas are smaller than the board's
+rounding and the stderr is what makes the comparison to the leader meaningful.
+
 | Metric | Internal | **Official** | Delta |
 | --- | --- | --- | --- |
 | Mean F1 | 0.4222 | **0.43177** ± 0.01797 | **+0.0096** |
@@ -294,8 +302,6 @@ per (paper, criterion).
 | `specific_f1` (38) | 0.8684 | 0.816 | −0.052 |
 | `metadata_f1` (35) | 0.2149 | 0.228 | +0.013 |
 | Agent cost | $0.2461 | **$0.250635** ± 0.0089 | +$0.0045 |
-
-**0.432 @ $0.251 on the board.** 267/267 samples, **zero errors**, 6h58m.
 Judge $206.38 + agent $66.75 = **$273.13**.
 
 This is the **best internal→official transfer** of the four submitted runs, and
