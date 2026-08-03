@@ -136,16 +136,20 @@ AGENT_MODELS = [
 #   v0_0_7  $192 judge / 194 x 250 = 48.5K verdicts  ≈ $0.0040/paper (976 chars/paper)
 #   v0_0_8  $117 judge / 194 x 203.5 = 39.5K verdicts ≈ $0.0030/paper (750 chars/paper)
 #   v0_0_9c063 $197 judge / 194 x 250 = 48.5K verdicts ≈ $0.00407/paper (747 chars)
-#   v0_0_9c355 $206 judge / 190 x 250 = 47.5K verdicts ≈ $0.00434/paper (765 chars)
+#   v0_0_9c355 $206 judge / 194 x 250 = 48.5K verdicts ≈ $0.00426/paper (765 chars)
 # v0_0_9c063 rules out the obvious model: its evidence is 3 chars/paper
 # shorter than v0_0_8's and it still billed at v0_0_7's rate, so per-paper
-# cost does NOT track evidence length. Treat $0.0040 as a flat rate with the
-# 250-paper cap and use the printed figure as a ceiling to sanity-check
-# against. It over-predicts only when the agent ships SHORT LISTS (~$219
-# printed for v0_0_8, which actually cost $118.68 all-in on 203.5
-# papers/query); for a full-250 agent it is close and can now run slightly
-# UNDER — ~$194 printed against $197.32 actual for c063, and ~$193
-# projected against $206.38 for c355, a 6% under-estimate.
+# cost does NOT track evidence length — 976, 747 and 765 chars/paper all
+# land in a $0.0040-0.0043 band.
+#
+# The printed figure is NOT a ceiling. print_cost_projection computes
+# SEMANTIC_TEST_QUERIES x PAPERS_PER_SEMANTIC_QUERY x JUDGE_COST_PER_PAPER_USD
+# = 194 x 250 x $0.0040 = $194 flat, and the last two full-250 runs both came
+# in ABOVE it: $197.32 for c063 and $206.38 for c355, the latter a 6.4%
+# under-estimate. It over-predicts only when the agent ships SHORT LISTS
+# (~$219 printed against $118.68 actual for v0_0_8 at 203.5 papers/query).
+# Budget a full-250 agent from the measured $0.0041-0.0043 band, not from
+# the printed number.
 JUDGE_COST_PER_PAPER_USD = 0.0040
 SEMANTIC_TEST_QUERIES = 194
 PAPERS_PER_SEMANTIC_QUERY = 250

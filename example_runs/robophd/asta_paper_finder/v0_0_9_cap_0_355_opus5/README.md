@@ -16,27 +16,29 @@ and the cost half of a Pareto claim is bought by definition, leaving only the
 score half to win. What differs here is the target's difficulty. 0.433 is the
 highest score anyone has posted.
 
-It came close. Internal **0.4222 @ $0.246** — within **0.011** of the target's
-score, at **69%** of its price. On these numbers the gate did its job twice
-over: the score gap nearly closed, and the agent did not even spend to the
-ceiling it was given.
+It came within a thousandth. **Official 0.43177 ± 0.01797 @ $0.250635/query**
+(2026-08-02, 267/267 samples, zero errors) against the target's 0.43270 @
+$0.355 — a score gap of **0.00093** on a stderr of 0.018, at **29% lower cost**.
+Full breakdown in [Official result](#official-result-2026-08-02) below.
 
-## What this adds
-
-Internal **0.4222 @ $0.246/query** — the highest RoboPhD score on this task, and
-the first above Asta Paper Finder's 0.397. It does not displace anything of
-ours; it opens a new region of the curve, between Ai2's two entries:
+Neither dominates, so both stay on the curve, and this opens a new region of it
+between Ai2's two entries:
 
 | | entry | score | $/prob | tier |
 | --- | --- | --- | --- | --- |
 | 1 | RoboPhD (v0_0_8) | 0.220 | 0.006 | Standard |
 | 2 | RoboPhD (v0_0_9 @ cap 0.063) | 0.376 | 0.052 | Standard |
 | 3 | Asta Paper Finder | 0.397 | 0.063 | Custom interface |
-| 4 | **this entry (projected)** | **0.422** | **0.246** | **Standard** |
+| 4 | **this entry** | **0.432** | **0.251** | **Standard** |
 | 5 | Asta Paper Finder | 0.433 | 0.355 | Custom interface |
 
-Projected only — internal→official has run +0.0025 / −0.0550 / −0.0077 across
-the three submitted runs.
+**Three of five frontier slots, all Standard tier.** (Four RoboPhD entries are
+listed once both pending clear, but `v0_0_7` is displaced by our own
+`cap_0_063`, which is higher *and* cheaper.)
+
+Internally the run scored 0.4222 @ $0.246, so official came in **+0.0096** — the
+best transfer of the four submitted runs and the first meaningfully positive
+one.
 
 ## What the extra budget actually bought
 
@@ -327,18 +329,11 @@ not the same phenomenon.
 
 ### It lands one thousandth below the board leader
 
-| | entry | score | $/prob | tier |
-| --- | --- | --- | --- | --- |
-| 1 | RoboPhD (v0_0_8) | 0.220 | 0.006 | Standard |
-| 2 | RoboPhD (v0_0_9 @ cap 0.063) | 0.376 | 0.052 | Standard |
-| 3 | Asta Paper Finder | 0.397 | 0.063 | Custom interface |
-| 4 | **this entry** | **0.432** | **0.251** | **Standard** |
-| 5 | Asta Paper Finder | 0.433 | 0.355 | Custom interface |
-
-**Three of five frontier slots, all Standard tier.** Against the leader:
-**0.43177 vs 0.43270** — a gap of **0.00093** against a stderr of 0.018, so
-statistically indistinguishable — at **29% lower cost**. Neither dominates, so
-both stay on the curve. It dominates 14 of the 28 costed entries.
+The frontier table is in [Aimed at the top of the board](#aimed-at-the-top-of-the-board)
+above. Against the leader: **0.43177 vs 0.43270** — a gap of **0.00093** against
+a stderr of 0.018, so statistically indistinguishable — at **29% lower cost**.
+Neither dominates, so both stay on the curve. It dominates 14 of the 28 costed
+entries.
 
 The gate aimed at 0.433 @ $0.355 and produced 0.432 @ $0.251. The cost half of
 the Pareto claim was bought by construction, as intended; the score half missed
@@ -346,11 +341,21 @@ by less than one part in four hundred.
 
 ### Cost calibration (fourth measured point)
 
-Judge came in at **$0.00434/paper** (190 semantic × 250 papers), against
-$0.0040 / $0.0030 / $0.00407 for the three prior runs. The projection used
-$0.00407 and estimated ~$193 judge / ~$259 total; actual was $206 / $273 — a 6%
-under-estimate, and the closest projection yet. The flat-rate-under-the-250-cap
-model continues to hold; evidence length continues not to predict it.
+Judge came in at **$0.00426/paper** — $206.38 over the official run's **194**
+semantic queries × 250 papers — against $0.0040 / $0.0030 / $0.00407 for the
+three prior runs.
+
+The submit script's own projection is `194 × 250 × $0.0040 = $194` judge, and
+actual was $206.38: a **6.4% under-estimate**. So the printed figure is no
+longer reliably a ceiling. It over-predicts only for an agent shipping short
+lists (~$219 printed against $118.68 actual for v0_0_8 at 203.5 papers/query);
+for a full-250 agent it now runs slightly under — $194 against $197.32 for
+`cap_0_063`, and $194 against $206.38 here. Budget from the measured
+$0.0041–0.0043 band rather than from the printed number.
+
+The flat-rate-under-the-250-cap model continues to hold, and evidence length
+continues not to predict it: 765 chars/paper here billed at essentially the same
+rate as 747 chars for `cap_0_063` and 976 for v0_0_7.
 
 ## Reproduce
 
@@ -363,9 +368,11 @@ python scripts/asta_paper_finder_submit.py --only v0_0_9_cap_0_355_opus5        
 Push the commit **before** the full run — `astabench eval` hard-fails if the
 commit is not on the remote, since it stamps the SHA into `eval_spec.revision`.
 
-Projected spend, measured from this run's own submissions: 250 papers/query ×
-190 semantic queries = 47,500 papers at 765 chars each. At the calibrated flat
-$0.00407/paper that is **~$193 judge**, plus ~$66 agent ≈ **$259**.
+Spend, now measured rather than projected: 250 papers/query × 194 semantic
+queries = 48,500 papers at 765 chars each, billing **$206.38 judge** at
+$0.00426/paper, plus **$66.75 agent** = **$273.13**. The script's own projection
+prints $194 judge, which under-shot by 6.4% — see
+[Cost calibration](#cost-calibration-fourth-measured-point).
 
 Then upload `submissions/asta_paper_finder/v0_0_9_cap_0_355_opus5.tar.gz` via
 the HF Spaces form (https://huggingface.co/spaces/allenai/asta-bench-leaderboard).
