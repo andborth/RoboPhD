@@ -1,0 +1,1 @@
+Journal articles by David Harel with at least 10 citations, citing papers by Gera Weiss, but not self-citations of Gera Weiss

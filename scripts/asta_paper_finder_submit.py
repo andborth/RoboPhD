@@ -262,6 +262,35 @@ SUBMISSIONS = [
         # the full disclosure — read it before answering any reviewer
         # question about the name.
     ),
+    Submission(
+        name="v0_0_9_cap_0_355_fable",
+        agent_rel_path="agents/iter18_cocite_largegold_v1/agent.py",
+        model_arg="none",
+        # Run robophd-asta_paper_finder-012 (FABLE-5-evolved; luna no-prose
+        # training judge), winner iter18_cocite_largegold_v1 (Elo 1594, 5
+        # test rounds). Internal test 0.4383 mean F1 @ $0.278/query on the
+        # stock GPT-4o basis with canonical ordering.
+        # FIRST entry that would DOMINATE the board leader rather than tie
+        # it: Asta Paper Finder's top point is 0.433 @ $0.355, and this is
+        # 0.438 @ $0.278 — higher AND 22% cheaper, so it takes rank 1 and
+        # knocks that entry off the curve. cap_0_355_opus5 landed 0.00093
+        # BELOW the leader and sat beside it; this clears it. Projected
+        # frontier: five slots, four ours.
+        # Same $0.355 competitor's-price gate as cap_0_355_opus5, and
+        # identical in every other deliberate respect — same guard, judges,
+        # budget, examples/iteration, harness. ONLY the evolution model
+        # differs, which makes the pair the cleanest evolution-model A/B in
+        # the campaign. The whole +0.016 is metadata (0.215 -> 0.342, zeros
+        # 16 -> 5) at 59% LOWER spend on that category; semantic and
+        # specific are a wash.
+        # Models: gpt-5.4-2026-03-05 + gpt-5.4-mini — two handles over ONE
+        # provider, both already in AGENT_MODELS (no preflight change). Note
+        # against cap_0_355_opus5's three handles over two providers: the
+        # higher score did not come from more model diversity.
+        # Version stays v0_0_9: the patch number tracks the code base, and
+        # only 41933a6e (a luna pricing-table update, not a solver change)
+        # landed between the two runs.
+    ),
 ]
 
 

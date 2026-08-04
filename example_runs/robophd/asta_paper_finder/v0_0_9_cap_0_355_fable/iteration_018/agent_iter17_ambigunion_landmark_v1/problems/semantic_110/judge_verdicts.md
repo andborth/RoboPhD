@@ -1,0 +1,252 @@
+1. 268512967 — Perfectly Relevant
+2. 275921561 — Perfectly Relevant
+3. 269839498 — Perfectly Relevant
+4. 274860125 — Perfectly Relevant
+5. 273901152 — Perfectly Relevant
+6. 255372747 — Perfectly Relevant
+7. 275778475 — Perfectly Relevant
+8. 271217883 — Perfectly Relevant
+9. 274597508 — Perfectly Relevant
+10. 267682299 — Perfectly Relevant
+11. 263829692 — Perfectly Relevant
+12. 269605373 — Perfectly Relevant
+13. 278912087 — Perfectly Relevant
+14. 269188009 — Highly Relevant
+15. 273963228 — Highly Relevant
+16. 267759551 — Perfectly Relevant
+17. 266551526 — Perfectly Relevant
+18. 270391791 — Perfectly Relevant
+19. 266362404 — Perfectly Relevant
+20. 275932211 — Perfectly Relevant
+21. 276259010 — Highly Relevant
+22. 274992799 — Perfectly Relevant
+23. 277626866 — Perfectly Relevant
+24. 271744772 — Perfectly Relevant
+25. 273501976 — Perfectly Relevant
+26. 276975425 — Perfectly Relevant
+27. 279070417 — Perfectly Relevant
+28. 278740759 — Highly Relevant
+29. 278338989 — Perfectly Relevant
+30. 273374936 — Perfectly Relevant
+31. 271961944 — Perfectly Relevant
+32. 272915225 — Perfectly Relevant
+33. 266573164 — Perfectly Relevant
+34. 276557680 — Perfectly Relevant
+35. 277043299 — Perfectly Relevant
+36. 276961144 — Perfectly Relevant
+37. 264439471 — Perfectly Relevant
+38. 264146174 — Perfectly Relevant
+39. 267547625 — Perfectly Relevant
+40. 278905595 — Perfectly Relevant
+41. 278341477 — Perfectly Relevant
+42. 272770793 — Perfectly Relevant
+43. 271533761 — Perfectly Relevant
+44. 268041812 — Perfectly Relevant
+45. 256662263 — Perfectly Relevant
+46. 271909582 — Perfectly Relevant
+47. 258823276 — Perfectly Relevant
+48. 278996555 — Perfectly Relevant
+49. 275570696 — Perfectly Relevant
+50. 278208127 — Perfectly Relevant
+51. 267413141 — Perfectly Relevant
+52. 276902790 — Perfectly Relevant
+53. 271051500 — Perfectly Relevant
+54. 267069084 — Highly Relevant
+55. 277787174 — Perfectly Relevant
+56. 271328221 — Perfectly Relevant
+57. 276557981 — Perfectly Relevant
+58. 268253513 — Perfectly Relevant
+59. 276884735 — Perfectly Relevant
+60. 270257857 — Perfectly Relevant
+61. 262044180 — Highly Relevant
+62. 276094940 — Perfectly Relevant
+63. 274166121 — Perfectly Relevant
+64. 272910976 — Perfectly Relevant
+65. 276409422 — Perfectly Relevant
+66. 267751181 — Perfectly Relevant
+67. 273403907 — Perfectly Relevant
+68. 275921475 — Perfectly Relevant
+69. 273532238 — Highly Relevant
+70. 270621063 — Perfectly Relevant
+71. 276576138 — Perfectly Relevant
+72. 276774084 — Perfectly Relevant
+73. 256662734 — Perfectly Relevant
+74. 263828880 — Perfectly Relevant
+75. 276617893 — Perfectly Relevant
+76. 276250081 — Perfectly Relevant
+77. 268692262 — Highly Relevant
+78. 277272730 — Perfectly Relevant
+79. 258833212 — Perfectly Relevant
+80. 268733054 — Perfectly Relevant
+81. 276617632 — Perfectly Relevant
+82. 276580837 — Perfectly Relevant
+83. 278996870 — Perfectly Relevant
+84. 267413136 — Perfectly Relevant
+85. 276482745 — Perfectly Relevant
+86. 271957102 — Perfectly Relevant
+87. 277634221 — Perfectly Relevant
+88. 270068216 — Perfectly Relevant
+89. 275906464 — Perfectly Relevant
+90. 273345395 — Highly Relevant
+91. 278959300 — Perfectly Relevant
+92. 277621577 — Perfectly Relevant
+93. 279464773 — Perfectly Relevant
+94. 273850564 — Perfectly Relevant
+95. 278768618 — Highly Relevant
+96. 275789021 — Perfectly Relevant
+97. 276903091 — Perfectly Relevant
+98. 267751193 — Highly Relevant
+99. 277622161 — Perfectly Relevant
+100. 267301573 — Perfectly Relevant
+101. 275920877 — Perfectly Relevant
+102. 275954347 — Perfectly Relevant
+103. 263830468 — Perfectly Relevant
+104. 276079889 — Highly Relevant
+105. 276903261 — Perfectly Relevant
+106. 273507514 — Highly Relevant
+107. 265050936 — Perfectly Relevant
+108. 272550518 — Perfectly Relevant
+109. 264146875 — Highly Relevant
+110. 273375561 — Perfectly Relevant
+111. 278768744 — Highly Relevant
+112. 272987828 — Perfectly Relevant
+113. 271038762 — Perfectly Relevant
+114. 266818263 — Perfectly Relevant
+115. 235253768 — Not Relevant
+116. 269791108 — Perfectly Relevant
+117. 252846445 — Perfectly Relevant
+118. 259858812 — Perfectly Relevant
+119. 271915771 — Perfectly Relevant
+120. 260682950 — Perfectly Relevant
+121. 259203115 — Perfectly Relevant
+122. 271544038 — Perfectly Relevant
+123. 273350592 — Perfectly Relevant
+124. 270559363 — Perfectly Relevant
+125. 274776787 — Highly Relevant
+126. 263830786 — Perfectly Relevant
+127. 277622258 — Perfectly Relevant
+128. 272693912 — Perfectly Relevant
+129. 264590698 — Perfectly Relevant
+130. 276482499 — Perfectly Relevant
+131. 275993741 — Highly Relevant
+132. 270560879 — Perfectly Relevant
+133. 278911584 — Perfectly Relevant
+134. 278327238 — Perfectly Relevant
+135. 270711010 — Perfectly Relevant
+136. 269149429 — Perfectly Relevant
+137. 274859662 — Highly Relevant
+138. 264904333 — Highly Relevant
+139. 279070584 — Perfectly Relevant
+140. 265220879 — Highly Relevant
+141. 276079904 — Perfectly Relevant
+142. 272770275 — Perfectly Relevant
+143. 269004480 — Perfectly Relevant
+144. 279987481 — Perfectly Relevant
+145. 277954642 — Highly Relevant
+146. 268857298 — Perfectly Relevant
+147. 237485472 — Perfectly Relevant
+148. 257404900 — Perfectly Relevant
+149. 270379842 — Perfectly Relevant
+150. 280650378 — Highly Relevant
+151. 278886821 — Highly Relevant
+152. 271212712 — Perfectly Relevant
+153. 267782440 — Perfectly Relevant
+154. 258865382 — Perfectly Relevant
+155. 273811289 — Perfectly Relevant
+156. 268536948 — Perfectly Relevant
+157. 269951018 — Perfectly Relevant
+158. 276236015 — Highly Relevant
+159. 260900101 — Highly Relevant
+160. 274997174 — Highly Relevant
+161. 277435040 — Perfectly Relevant
+162. 236386992 — Highly Relevant
+163. 279417325 — Highly Relevant
+164. 273345728 — Perfectly Relevant
+165. 248377421 — Perfectly Relevant
+166. 274776083 — Perfectly Relevant
+167. 277667093 — Highly Relevant
+168. 286223618 — Not Relevant
+169. 275342245 — Highly Relevant
+170. 276812965 — Perfectly Relevant
+171. 256503843 — Somewhat Relevant
+172. 273962638 — Perfectly Relevant
+173. 271710591 — Highly Relevant
+174. 267523162 — Perfectly Relevant
+175. 269043120 — Not Relevant
+176. 270199692 — Highly Relevant
+177. 276288500 — Perfectly Relevant
+178. 270440679 — Somewhat Relevant
+179. 246276463 — Not Relevant
+180. 270559146 — Highly Relevant
+181. 269791322 — Not Relevant
+182. 271097459 — Highly Relevant
+183. 271909626 — Perfectly Relevant
+184. 250144412 — Highly Relevant
+185. 267412953 — Highly Relevant
+186. 268032346 — Perfectly Relevant
+187. 204009154 — Perfectly Relevant
+188. 270703003 — Perfectly Relevant
+189. 273901414 — Highly Relevant
+190. 282682939 — Highly Relevant
+191. 277113579 — Highly Relevant
+192. 276482203 — Perfectly Relevant
+193. 280447676 — Somewhat Relevant
+194. 273970041 — Highly Relevant
+195. 235097467 — Perfectly Relevant
+196. 233297003 — Perfectly Relevant
+197. 268680727 — Highly Relevant
+198. 271909421 — Perfectly Relevant
+199. 278789524 — Perfectly Relevant
+200. 276161406 — Perfectly Relevant
+201. 277634019 — Highly Relevant
+202. 278327593 — Highly Relevant
+203. 269635222 — Perfectly Relevant
+204. 273501861 — Perfectly Relevant
+205. 277275922 — Highly Relevant
+206. 271962727 — Highly Relevant
+207. 258967906 — Highly Relevant
+208. 269605957 — Highly Relevant
+209. 272694272 — Highly Relevant
+210. 268856877 — Perfectly Relevant
+211. 277955463 — Perfectly Relevant
+212. 277820562 — Highly Relevant
+213. 265220901 — Highly Relevant
+214. 278501529 — Highly Relevant
+215. 276107452 — Perfectly Relevant
+216. 276161644 — Perfectly Relevant
+217. 279611170 — Somewhat Relevant
+218. 275869391 — Somewhat Relevant
+219. 245131431 — Perfectly Relevant
+220. 248986608 — Perfectly Relevant
+221. 257912489 — Perfectly Relevant
+222. 257901132 — Perfectly Relevant
+223. 274116833 — Somewhat Relevant
+224. 278959913 — Highly Relevant
+225. 274776085 — Perfectly Relevant
+226. 273228757 — Highly Relevant
+227. 275336449 — Perfectly Relevant
+228. 243938339 — Perfectly Relevant
+229. 276928323 — (beyond scored depth — not judged)
+230. 247794014 — (beyond scored depth — not judged)
+231. 226262310 — (beyond scored depth — not judged)
+232. 259203385 — (beyond scored depth — not judged)
+233. 271543978 — (beyond scored depth — not judged)
+234. 256390345 — (beyond scored depth — not judged)
+235. 274436252 — (beyond scored depth — not judged)
+236. 236965871 — (beyond scored depth — not judged)
+237. 278715162 — (beyond scored depth — not judged)
+238. 270411995 — (beyond scored depth — not judged)
+239. 270370902 — (beyond scored depth — not judged)
+240. 270214634 — (beyond scored depth — not judged)
+241. 275921378 — (beyond scored depth — not judged)
+242. 273482154 — (beyond scored depth — not judged)
+243. 259064318 — (beyond scored depth — not judged)
+244. 277368053 — (beyond scored depth — not judged)
+245. 278367758 — (beyond scored depth — not judged)
+246. 278534899 — (beyond scored depth — not judged)
+247. 267773209 — (beyond scored depth — not judged)
+248. 259267660 — (beyond scored depth — not judged)
+249. 282394258 — (beyond scored depth — not judged)
+250. 277349524 — (beyond scored depth — not judged)
+
+164 Perfect / 64 lower / 0 no verdict / 22 beyond scored depth, of 250 submitted

@@ -1,0 +1,20 @@
+[metadata_25] score_type=metadata_f1 query='Papers citing the DistilBERT paper after 2022 with more than 50 citations'
+  metadata plan: {"seed_papers": [{"reference": "the DistilBERT paper", "title_guess": "DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter"}], "seed_combine": "all", "seed_mention_terms": ["DistilBERT"], "author_source_papers": [], "reverse_keywords": ["efficient transformer language models", "compressed pretrained language models", "knowledge distillation for BERT", "lightweight NLP transformers", "model compression for natural language processing", "parameter efficient language model
+  seed resolved: [203626972] cites=10229 DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter
+  citing candidates: 1000
+  verify_batch: 1000 -> 1000 in-snapshot
+  after filters: 27 candidates
+  reverse channel: 8 kw + 1 mention queries -> 2391 candidates
+  tool call failed (_recording, {'ids': "['CorpusId:272148999', 'CorpusId:276574574', 'CorpusId:22214", 'fields': 'corpusId,title,abstract,year,venue,journal,citationCount,aut'}): ToolError: Papers 818ecf0070139c3d76edfbe98a31eb4ac57324f7, 9f979939aa2bc796e1365d91e584a7b83aad5613 are newer than the date cutoff of 2025-06-01 and are not allowed to be
+  tool call failed (_recording, {'ids': "['CorpusId:257017296', 'CorpusId:266550542', 'CorpusId:25742", 'fields': 'corpusId,title,abstract,year,venue,journal,citationCount,aut'}): ToolError: Paper 515044d74b6038618dda035b89c133dc1a545f23 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool call failed (_recording, {'ids': "['CorpusId:232257848', 'CorpusId:226267095', 'CorpusId:23396", 'fields': 'corpusId,title,abstract,year,venue,journal,citationCount,aut'}): ToolError: Paper 69e36df1cf2a011f94a6bd3a76077a63992fb6d2 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool call failed (_recording, {'ids': "['CorpusId:267590497', 'CorpusId:267186480', 'CorpusId:27899", 'fields': 'corpusId,title,abstract,year,venue,journal,citationCount,aut'}): ToolError: Papers 00b2c8c483b083eaacfaa20e4fdc191809b35a86, 10aa1d85e938dad29b214f513ff975f1f734dbd9 are newer than the date cutoff of 2025-06-01 and are not allowed to be
+  verify_batch: 2391 -> 2385 in-snapshot
+  reverse channel: 311 pass filters (ref-check cap 700)
+  ref-verify: 311 candidates -> refs fetched for 192, 25 cite >=1 seed
+  reverse channel: 25 verified citers of seed(s)
+  reverse channel: +144 unverified seed-mentioning candidates
+  reverse channel adds 168 candidates
+  large-gold padding: +55 filter-passing unverified candidates
+  never-gold id ceiling: 250 -> 245
+  submitted 245 papers

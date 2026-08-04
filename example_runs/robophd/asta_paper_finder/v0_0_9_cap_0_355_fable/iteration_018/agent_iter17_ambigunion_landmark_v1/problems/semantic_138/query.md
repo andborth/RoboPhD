@@ -1,0 +1,1 @@
+Has any work been done using large language models (LLMs) to generate blog posts from scientific papers? Please summarize the results.

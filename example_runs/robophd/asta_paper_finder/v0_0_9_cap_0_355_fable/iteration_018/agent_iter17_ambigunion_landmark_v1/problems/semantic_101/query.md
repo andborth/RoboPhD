@@ -1,0 +1,1 @@
+Interdisciplinary research usually takes extra efforts to conduct. Are there any systems or approaches to facilitate interdisciplinary research and cross-domain discovery in scientific fields?

@@ -1,0 +1,1 @@
+NeurIPS papers 2022-2023 that cite the "RoBERTa" paper that are cited by at least 30 other paper written by more than 3 authors

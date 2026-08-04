@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_152",
+    "results": [
+      {
+        "paper_id": "276250232",
+        "markdown_evidence": "VersaPRM: Multi-Domain Process Reward Model via Synthetic Reasoning Data ... Reasoning Models? Having shown that VersaPRM effectively leverages inference-time compute to enhance LLM performance, we next examine whether this benefit extends to strong reasoning models such as DeepSeek-R1 (Guo et al., 2025). Given DeepSeek-R1's extensive reasoning-focused training, one might hypothesize that reranking methods (e.g., WMV and BoN) offer minimal additional improvements. ... In this section, we introduce three reranking-based methods-Majority Voting, Weighted Majority Voting, and Best-of-N -along with two search-based methods-Beam Search and Monte Carlo Tree Search. Let a S denote the final answer in a CoT S, which in practice can be extracted using a suitable parser. Further let S N = {S 1 , S 2 , . . . , S N } denote a set of N CoTs sampled i.i.d. ... Finally, we considered an additional baseline leveraging Llama-3.1-70B-Instruct directly as a process reward model (PRM). Here, we used Llama-3.1-70B-Instruct with the ablated auto-labeling prompt (see Figure 15) to identify the earliest incorrect step in each CoT. ... Test-Time Inference Algorithms. Test-time inference algorithms enhance LLM reasoning by adding computation during inference, offering a distinct axis of scaling compared to the conventional trade-off between training larger models versus smaller, specialized architectures (Hoffmann et al., 2022). AlphaCode (Li et al., 2022) shows how test-time computing boosts competitive programming performance, while Snell et al. ... Moreover, by using additional test-time computation, the reasoning performance of LLMs can be further enhanced (Snell et al., 2024;Yao et al., 2024). An important and widely-adopted test-time computation method is using external verifiers, such as reward models Proceedings of the 42 nd International Conference on Machine Learning, Vancouver, Canada. PMLR 267, 2025. Copyright 2025 by the author(s)."
+      },
+      {
+        "paper_id": "270688459",
+        "markdown_evidence": "Inference Time Alignment with Reward-Guided Tree Search ... DARWIN is proposed, an inference-time alignment method that leverages the guidance of a reward model to achieve alignment through a reward-guided tree search and achieves performance comparable to preference-tuned models on both benchmarks. ... Inference-time computation methods enhance the performance of Large Language Models (LLMs) by leveraging additional computational resources to achieve superior results. Common techniques, such as Best-of-N sampling, Majority Voting, and variants of tree-search algorithms have proven to be effective in boosting the performance of LLMs. These approaches strategically trade increased computational resources for improved model responses. In this work, we proposed DARWIN, an inference-time alignment method that leverages the guidance of a reward model to achieve alignment through a reward-guided tree search. Empirical evidences indicates that our method outperforms other inference-time alignment methods such as Best-of-N and ARGS on two widely accepted alignment benchmarks AlpacaEval 2 and MT-Bench. Furthermore, we show that our inference-time approach achieves performance comparable to preference-tuned models on both benchmarks, highlighting the effectiveness of trading inference-time compute for enhanced performance during inference. We have released our codes at https://github.com/declare-lab/darwin. ... Inference Time Alignment with Reward-Guided Tree Search"
+      },
+      {
+        "paper_id": "247595263",
+        "markdown_evidence": "Self-Consistency Improves Chain of Thought Reasoning in Language Models ... This paper proposes a new decoding strategy, self-consistency, to replace the naive greedy decoding used in chain-of-thought prompting that first samples a diverse set of reasoning paths instead of only taking the greedy one, and then selects the most consistent answer by marginalizing out the sampled reasoning paths. ... Chain-of-thought prompting combined with pre-trained large language models has achieved encouraging results on complex reasoning tasks. In this paper, we propose a new decoding strategy, self-consistency, to replace the naive greedy decoding used in chain-of-thought prompting. It first samples a diverse set of reasoning paths instead of only taking the greedy one, and then selects the most consistent answer by marginalizing out the sampled reasoning paths. Self-consistency leverages the intuition that a complex reasoning problem typically admits multiple different ways of thinking leading to its unique correct answer. Our extensive empirical evaluation shows that self-consistency boosts the performance of chain-of-thought prompting with a striking margin on a range of popular arithmetic and commonsense reasoning benchmarks, including GSM8K (+17.9%), SVAMP (+11.0%), AQuA (+12.2%), StrategyQA (+6.4%) and ARC-challenge (+3.9%). ... So she has 9 eggs * $2 = $18.\" constitutes r i , while the answer 18 from the last sentence, \"The answer is $18\", is parsed as a i .1 After sampling multiple (r i , a i ) from the model's decoder, self-consistency applies a marginalization over r i by taking a majority vote over a i , i.e., arg max a m i=1 1(a i = a), or as we defined as the most \"consistent\" answer among the final answer set. ... We first prompt the language model with chain-of-thought prompting, then instead of greedily decoding the optimal reasoning path, we propose a \"sample-and-marginalize\" decoding procedure: we first sample from the language model's decoder to generate a diverse set of reasoning paths; each reasoning path might lead to a different final answer, so we determine the optimal answer by marginalizing out the sampled reasoning paths to find the most consistent answer in the final answer set. Such an approach is analogous to the human experience that if multiple different ways of thinking lead to the same answer, one has greater confidence that the final"
+      },
+      {
+        "paper_id": "268230683",
+        "markdown_evidence": "Self-Consistent Decoding for More Factual Open Responses ... This work extends the idea of self-consistency to open response generation, by integrating voting into the decoding method, and shows that Sample&Select improves factuality by a 30% relative margin against these decoders in NLI-based evaluation on the subsets of CNN/DM and XSum used in the FRANK benchmark. ... Self-consistency has emerged as a powerful method for improving the accuracy of short answers generated by large language models. As previously defined, it only concerns the accuracy of a final answer parsed from generated text. In this work, we extend the idea to open response generation, by integrating voting into the decoding method. Each output sentence is selected from among multiple samples, conditioning on the previous selections, based on a simple token overlap score. We compare this\"Sample&Select\"method to greedy decoding, beam search, nucleus sampling, and the recently introduced hallucination avoiding decoders of DoLA, P-CRR, and S-CRR. We show that Sample&Select improves factuality by a 30% relative margin against these decoders in NLI-based evaluation on the subsets of CNN/DM and XSum used in the FRANK benchmark, while maintaining comparable ROUGE-1 F1 scores against reference summaries. We collect human verifications of the generated summaries, confirming the factual superiority of our method. ... Given a large language model (LLM) and prompt text, generation of output text proceeds as follows. Using nucleus sampling (Holtzman et al., 2020) with p = .9, n = 5 sampled outputs are decoded from the LLM until the end of one sentence in each. We count the number of other sampled sentences from the LLM that matched each token of each sampled output, and score each sentence by the average count per token. ... Conditioning each sentence on the previously chosen sentence is essential; if further sentences are generated conditioned on an unchosen sample, factuality improves by less. Although it is beyond the scope of the current paper, Sample & Select can apply beyond summarization to other generation tasks. We hope future researchers will find this technique helpful and easy to drop into their generation pipeline."
+      },
+      {
+        "paper_id": "276960938",
+        "markdown_evidence": "\"Well, Keep Thinking\": Enhancing LLM Reasoning with Adaptive Injection Decoding ... Our approach, in contrast, requires only one pass; we adaptively intervene during decoding to extend the chain of reasoning rather than generating multiple completions. Test-Time Strategies More recent investigations have shifted attention to inference-time or postprocessing methods that address reasoning shortcomings without altering the base model or training regimen. Wang et al. ... A variety of methods have been explored to enhance the reasoning capabilities of large language models (LLMs). These techniques can be broadly categorized into tuning-based, promptbased, sampling-based, and test-time approaches. Below, we discuss how our decoding-based strategy relates to these prior efforts, especially in its ability to improve reasoning without extensive additional resources. ... Sampling-Based Methods Approaches based on sampling seek to improve reliability of reasoning in LLMs by generating multiple candidate solutions. For example, self-consistency sampling (Wang et al., 2023a) aggregates multiple outputs to select a consensus or majority-vote answer, while universal self-consistency (Chen et al., 2024) generalizes this concept to tasks where multiple lines of reasoning may converge on the correct outcome. These methods benefit from exploring diverse reasoning paths but come at the cost of multiple forward passes through the model. In many settings, this extra computational burden can be prohibitive. \n\nOur approach, in contrast, requires only one pass; we adaptively intervene during decoding to extend the chain of reasoning rather than generating multiple completions. \n\nTest-Time Strategies More recent investigations have shifted attention to inference-time or postprocessing methods that address reasoning shortcomings without altering the base model or training regimen. Wang et al. (2023b) introduces a penalty mechanism for abrupt shifts in reasoning flow, while Snell et al. (2023) proposes adaptive inference that strategically allocates resources for verification. Budget forcing (Muennighoff et al., 2025) constrains or terminates chain-of-thought decoding under a specified computational budget. Although these methods highlight the potential of inference-level interventions, many still rely on specialized heuristics or additional compute to manage extended reasoning"
+      },
+      {
+        "paper_id": "265295180",
+        "markdown_evidence": "Igniting Language Intelligence: The Hitchhiker’s Guide from Chain-of-Thought Reasoning to Language Agents ... Although recent advancements have expanded the capacity of LLMs to handle extended contexts (Xiong et al., 2023b), conducting inference based on these logs is hampered by the inherently slow speed of autoregressive LLMs. This issue is exacerbated in multi-agent interaction environments, where numerous agents generate a substantial volume of interaction logs. ... Shum et al. (2023) proposed a strategy called Automate-CoT (Automatic Prompt Augmentation and Selection with Chain-of-Thought) that automates the process of augmenting and selecting rational chains for CoT prompting. ... Self-consistency CoT first prompts the language model following the Manual-CoT (Wei et al., 2023b) and then samples a diverse set of reasoning paths from the language model's decoder. Finally, Self-consistency CoT finds the most consistent answer by taking a majority vote which was found to significantly improve the performance of the CoT. Wang et al. ... The answer with the highest score is selected as the final answer. Lightman et al. ( 2023) focused on training reward models and conducted a comparison between the outcome supervision reward model (ORM) and process supervision reward model (PRM) for LLM to solve problems from the MATH dataset (Hendrycks et al., 2021b), finding that process supervision significantly outperforms outcome supervision. ... Reasoning traces help the model make action plans and handle exceptions, while actions allow the LLM to interface with external sources, such as knowledge bases or environments, to gather additional information for knowledge support. (Xu et al., 2023b) detached the reasoning process from external observations to reduce token consumption during multiple steps of CoT."
+      },
+      {
+        "paper_id": "265158018",
+        "markdown_evidence": "Just Ask One More Time! Self-Agreement Improves Reasoning of Language Models in (Almost) All Scenarios ... Self-agreement is proposed, a generalizable ensemble-optimization method applying in almost all scenarios where the type of input questions and the answer format of reasoning paths may be known or unknown, and achieves remarkable performance on six public reasoning benchmarks and superior generalization capabilities. ... Although chain-of-thought (CoT) prompting combined with language models has achieved encouraging results on complex reasoning tasks, the naive greedy decoding used in CoT prompting usually causes the repetitiveness and local optimality. To address this shortcoming, ensemble-optimization tries to obtain multiple reasoning paths to get the final answer assembly. However, current ensemble-optimization methods either simply employ rule-based post-processing such as \\textit{self-consistency}, or train an additional model based on several task-related human annotations to select the best one among multiple reasoning paths, yet fail to generalize to realistic settings where the type of input questions is unknown or the answer format of reasoning paths is unknown. To avoid their limitations, we propose \\textbf{Self-Agreement}, a generalizable ensemble-optimization method applying in almost all scenarios where the type of input questions and the answer format of reasoning paths may be known or unknown. Self-agreement firstly samples from language model's decoder to generate a \\textit{diverse} set of reasoning paths, and subsequently prompts the language model \\textit{one more time} to determine the optimal answer by selecting the most \\textit{agreed} answer among the sampled reasoning ... Besides, there are some work investigating how to enable the LLM to run inference in batches (Cheng et al., 2023;Lin et al., 2023). As part of future work, one could mix different questions as a batch, and run inference in a batch one time. After that, self-agreement requires only two inferences, thus significantly decreasing computational cost. ... Reasoning with Language Models Reasoning, the process of making inference based on existing information or knowledge, is the core of human intelligence and essential for solving complex questions (Yu et al., 2023a). ... When making a majority vote on multiple corresponding solutions while solely relying on the"
+      },
+      {
+        "paper_id": "276094621",
+        "markdown_evidence": "ZebraLogic: On the Scaling Limits of LLMs for Logical Reasoning ... 1. Our analysis focuses on two primary types of scaling: 1) scaling model size and 2) scaling test-time compute. For test-time compute, we further explore three sub-dimensions: 1) the number of candidate samples, 2) the number of reasoning tokens (i.e., CoT tokens) generated during inference, and 3) the sample size for repeated sampling. ... To understand the theoretical upper bound of this approach, we also analyze BoN sampling with oracle selection, where we use knowledge of the correct answer to choose the best candidate from the sample poolequivalent to the pass@k metric in our evaluation (see the right-most plot in Fig. 1 and Fig. 3). GPT-4o with Best-of-N sampling and oracle selections can achieve nearly o1 performance. ... We evaluate several approaches: BoN-Oracle (selection using oracle knowledge to verify correct answers among samples), BoN-RM (selection using a reward model), Majority-Voting (selecting the most common answer across samples), and Self-Verify (using multi-turn prompting for self-reflection and correction, with and without oracle knowledge). We use to denote the use of oracle knowledge. ... • We scale the test-time compute of LLMs by increasing the number of generation samples, revealing that it has both promise and challenges. While Best-of-N sampling can improve potential performance, practical selection methods like majority voting or reward models show limited improvement. Additionally, even pass@128 cannot break the curse of complexity ( §5). ... Specifically, here we investigate how increasing the number of candidate samples influences model performance. We begin by employing Best-of-N (BoN) sampling, where we repeatedly sample N candidates from the model for each puzzle. From these candidates, we can select the best answer using various strategies, including majority voting and existing reward models."
+      },
+      {
+        "paper_id": "277467695",
+        "markdown_evidence": "When To Solve, When To Verify: Compute-Optimal Problem Solving and Generative Verification for LLM Reasoning ... This work evaluates GenRM against SC under a fixed inference budget, and derives inference scaling laws for the GenRM paradigm, revealing that compute-optimal inference favors scaling solution generation more aggressively than scaling the number of verifications. ... Scaling test-time compute has emerged as a key strategy for enhancing the reasoning capabilities of large language models (LLMs), particularly in tasks like mathematical problem-solving. A traditional approach, Self-Consistency (SC), generates multiple solutions to a problem and selects the most common answer via majority voting. Another common method involves scoring each solution with a reward model (verifier) and choosing the best one. Recent advancements in Generative Reward Models (GenRM) reframe verification as a next-token prediction task, enabling inference-time scaling along a new axis. Specifically, GenRM generates multiple verification chains-of-thought to score each solution. Under a limited inference budget, this introduces a fundamental trade-off: should you spend the budget on scaling solutions via SC or generate fewer solutions and allocate compute to verification via GenRM? To address this, we evaluate GenRM against SC under a fixed inference budget. Interestingly, we find that SC is more compute-efficient than GenRM for most practical inference budgets across diverse models and datasets. For instance, GenRM first matches SC after consuming up to 8x the inference compute and requires significantly more compute to outperform it. Furthermore, we derive inference ... Verification. Another common method to scale inference-time compute is to score candidate solutions through verification, which can be achieved via several techniques. Traditionally, discriminative models are employed, trained via binary classification (Cobbe et al., 2021;Luo et al., 2024;Yu et al., 2024) or preferences (Hosseini et al., 2024;Yuan et al., 2024). ... To address this, we derive inference scaling laws for GenRM, which describe how the optimal number of solutions and verifications scales with the total compute budget ( §3.2). We observe that while both need to be scaled in tandem, the solutions should be scaled more rapidly than verifications, by a factor of 1.5 − 2×, for optimal performance ("
+      },
+      {
+        "paper_id": "276741462",
+        "markdown_evidence": "Streaming Looking Ahead with Token-level Self-reward ... To further enhance LLM's performance, recent research proposes framing the generation process of large language models as a trajectory optimization problem, similar to reinforcement learning (RL), and optimizing it using advanced search algorithms like Monte Carlo Tree Search (MCTS) (Metropolis & Ulam, 1949;Silver et al., 2016). ... For example, in the QA scenario, the Majority-voting algorithm assumes that the more frequent answer aligns better with the grounding reward function (i.e., accuracy) and thus selects candidate trajectories following this guidance. Though this intuitive approach has been shown to be effective on tasks such as QA and math problems, it is restricted to tasks with structured output for voting. ... With that, we could sample K trajectories T K with sampling-based decoding algorithms and then use R to select the trajectory with the maximum reward: \n\nEmploying an external model to model the reward offers greater flexibility than heuristic rewards. This approach is not constrained by the structured answer format, which improves generality and adaptability in various scenarios. ... In this section, we first introduce how the LM generation process can be formulated as a token-level Markov Decision Process (MDP) and then explain how existing sampling algorithms relate to it. ... Another critical factor is how well the model could learn the token-level reward. We conduct the ablation study from two perspectives: model architecture and model capacity. Specifically, we use the widely used adapter approach as the baseline for the model architecture. This approach adds MLP on top of the policy model to learn the token-level reward."
+      },
+      {
+        "paper_id": "268385111",
+        "markdown_evidence": "Easy-to-Hard Generalization: Scalable Alignment Beyond Human Supervision ... We use full fine-tuning during the RL stage. ReST-EM Following Singh et al. [67], we sample 32 solutions for each question from the language model using top-K sampling with K=40. We also used a cut-off threshold of 10 for the maximum number of solutions per problem [89,67]. We performed iterative ReST training for two epochs, and observed performance degeneration starting from the third epoch. ... For majority voting, weighted voting, and best-of-n, we sample from the language model using top-K sampling with K=20 and temperature of 0.7. At test time, we use the ORM's prediction at the final token as the overall score for the solution, and use the PRM's prediction at each intermediate step (denoted by the new line symbol) and the final token as the process reward scores. ... We have the following findings:  et al. 32). This setup might diminish the effectiveness of the reward model, potentially leading to an over-optimization of rewards [25]. Given these insights, weighted voting is preferred as the primary re-ranking method for further discussions. Nevertheless, Best-of-n still achieves competitive performance to majority voting when producing only one full solution. ... Weighted Voting is similar to majority voting or self-consistency [76], but weights each solution according to its RM score [74]. Reinforcement Learning (RL) We consider three online/offline RL variants, Reinforced Self-Training (ReST) [28,67], Direct Policy Optimization (DPO) [56], and Proximal Policy Optimization (PPO) [62]. Due to the space limit, please find their detailed description in Appendix B. ... Our investigation includes to training policy and reward models on the easy (i.e., level 1-3) portion of the PRM800K [40] dataset, and comparing the performance of majority voting with the policy model We first train the evaluator with process supervision or outcome supervision (which simulates the process supervision) to enable easy-to-hard evaluation, and then use it to facilitate easy-to-hard generation via"
+      },
+      {
+        "paper_id": "266209760",
+        "markdown_evidence": "Math-Shepherd: Verify and Reinforce LLMs Step-by-step without Human Annotations ... We use 3D parallelism provided by hfai1 to train all models with the max sequence length of 512. Baselines and Metrics In the verification scenario, following (Lightman et al., 2023), we evaluate the performance of our reward model by comparing it against the Self-consistency (majority voting) and outcome reward model. The accuracy of the best-of-N solution is utilized as the evaluation metric. ... We evaluate the performance of the reward model in two scenarios: \n\nVerification Following (Lightman et al., 2023), we consider a best-of-N selection evaluation paradigm. Specifically, given a problem p in the testing set, we sample N candidate solutions from a generator. These candidates are then scored using a reward model, and the highest-scoring solution is selected as the final answer. ... The findings illustrate that utilizing a larger reward model to validate the output of a smaller generator significantly enhances performance. Conversely, when a smaller reward model is employed to validate the output of a larger generator, the verification process adversely impacts the model's performance compared to SC. ... The key observations are as follows: 1) PRM exhibits consistent superior performance when compared to both ORM and majority voting, with the degree of this superiority becoming more pronounced as N escalates. 2) In MATH, our automatically annotated datasets outperform the human-annotated PRM800K (Lightman et al., 2023). We ascribe this superiority to the distribution gap and the data quantity."
+      },
+      {
+        "paper_id": "271957303",
+        "markdown_evidence": "Make Every Penny Count: Difficulty-Adaptive Self-Consistency for Cost-Efficient Reasoning ... Considering the inference time is important for real world scenarios, we calculate the inference time of different methods on the MATH test set (5000 questions) with GPT-4. As shown in Table 8, for DSC, the ranking time corresponds to the time produced by step 1, while sampling time corresponds to the time generated by step 2 and step 3. ... However, it is widely applicable to common scenarios including: (1) servers (e.g., OpenAI or similar providers) managing a large number of simultaneous query requests from different users (e.g., ChatGPT receives requests from multiple users to solve multiple math problems simultaneously), and (2) cases where a user perform inference on a batch of data (E.g., Submitting multiple requests at once to efficiently ... In contrast to the standard chain-of-thought prompting which only generates the greedy one, this method samples multiple reasoning paths according to a preset sample size, and then derives the final answer through majority-voting-based scheme. Despite generally leading to improvements, SC introduces a significant overhead proportional to the number of sampled outputs. ... Lastly, we propose Sample Size Pre-Allocation algorithm to predict the sample size needed for problems belonging to hard part, which reduce the number of re-samples and save the cost of inputs. We evaluate DSC on a wide range of arithmetic, commonsense and symbolic reasoning tasks over GPT-3.5-Turbo and GPT-4 models. ... Sample Size Pre-Allocation significantly alleviates the substantial input token costs brought by multiple re-samples. We conduct an ablation study of proposed Sample Size Pre-Allocation (step 3) to validate its effectiveness."
+      },
+      {
+        "paper_id": "278740575",
+        "markdown_evidence": "Mining Intrinsic Rewards from LLM Hidden States for Efficient Best-of-N Sampling ... This work introduces SWIFT (Simple Weighted Intrinsic Feedback Technique), a novel and lightweight method that learns a reward function directly from the rich information embedded in LLM hidden states, eliminating the need for computationally intensive text-based modeling. ... Best-of-N sampling is a powerful method for improving Large Language Model (LLM) performance, but it is often limited by its dependence on massive, text-based reward models. These models are not only computationally expensive but also data-hungry, requiring extensive labeled datasets for training. This creates a significant data challenge, as they overlook a rich, readily available data source: the LLM's own internal hidden states. To address this data and efficiency gap, we introduce SWIFT (Simple Weighted Intrinsic Feedback Technique), a novel and lightweight method that learns a reward function directly from the rich information embedded in LLM hidden states. Operating at the token embedding level, SWIFT employs simple linear layers to effectively distinguish between preferred and dispreferred generations, eliminating the need for computationally intensive text-based modeling. Extensive experiments on standard benchmarks show that SWIFT outperforms existing baselines (12.7% higher accuracy than EurusRM-7B on MATH dataset) while using less than 0.005% of their parameters. Its robust scalability, compatibility with certain closed-source models via logit access, and ability to combine with traditional reward models for additional performance highlight SWIFT's practical value and"
+      },
+      {
+        "paper_id": "278739590",
+        "markdown_evidence": "ABoN: Adaptive Best-of-N Alignment ... Recent advances in test-time alignment methods, such as Best-of-N sampling, offer a simple and effective way to steer language models (LMs) toward preferred behaviors using reward models (RM). However, these approaches can be computationally expensive, especially when applied uniformly across prompts without accounting for differences in alignment difficulty. In this work, we propose a prompt-adaptive strategy for Best-of-N alignment that allocates inference-time compute more efficiently. Motivated by latency concerns, we develop a two-stage algorithm: an initial exploratory phase estimates the reward distribution for each prompt using a small exploration budget, and a second stage adaptively allocates the remaining budget using these estimates. Our method is simple, practical, and compatible with any LM-RM combination. Empirical results on prompts from the AlpacaEval, HH-RLHF, and PKU-SafeRLHF datasets for 12 LM/RM pairs and 50 different batches of prompts show that our adaptive strategy outperforms the uniform allocation with the same inference budget. Moreover, we show that our adaptive strategy remains competitive against uniform allocations with 20 percent larger inference budgets and improves in performance as the batch size grows."
+      },
+      {
+        "paper_id": "278237818",
+        "markdown_evidence": "DeepCritic: Deliberate Critique with Large Language Models ... In the main evaluations (Table 2), we use consistent sampling settings across all critique models, with temperature set to 0.6, top_p to 0.9, and max_generation_length to 32K during inference. We only sample once for each task input in this setting. We then calculate the judgment accuracy on the step index of first erroneous step in incorrect solutions and the judgment accuracy on correct solutions. ... We put the majority voting results under different numbers of sampled solutions from the generators, filtered taking the critique model as the verifier, 7 in Figure 4. The sampling temperature for generators is set to 1.0. 8 We observe that when the critique model performs poorly (e.g., Qwen2.5-7B-Instruct), using it as the verifier in majority voting can be counterproductive. ... Then, in the second stage, we perform reinforcement learning (RL) to the SFT model to further boost its deep critique ability. ... In our main evaluation, we use consistent sampling settings across all critique models, with temperature set to 0.6, top_p to 0.9, and max_generation_length to 32K during inference. We only sample once for each task input, while we explore the performance of majority voting over eight samplings in Section 5.1. The evaluation prompt is mainly based on [54], and is put in Appendix B.4. ... Here, we investigate the effectiveness of the majority voting practice [41] in enhancing the critique performance. For each critique model, the final judgment on each input is the majority voting result over eight samplings (Maj@8). We put the comparison results between Maj@8 and Pass@1 in Figure 3. As shown in Figure 3, the majority voting practice improves performance across all models."
+      },
+      {
+        "paper_id": "277621042",
+        "markdown_evidence": "Sample, Don't Search: Rethinking Test-Time Alignment for Language Models ... The introduction of QAlign, a new test-time alignment approach that enables better-aligned outputs without modifying the underlying model or even requiring logit access, and expands the limits of the capability that can be obtained from off-the-shelf language models without further training. ... Increasing test-time computation has emerged as a promising direction for improving language model performance, particularly in scenarios where model finetuning is impractical or impossible due to computational constraints or private model weights. However, existing test-time search methods using a reward model (RM) often degrade in quality as compute scales, due to the over-optimization of what are inherently imperfect reward proxies. We introduce QAlign, a new test-time alignment approach. As we scale test-time compute, QAlign converges to sampling from the optimal aligned distribution for each individual prompt. By adopting recent advances in Markov chain Monte Carlo for text generation, our method enables better-aligned outputs without modifying the underlying model or even requiring logit access. We demonstrate the effectiveness of QAlign on mathematical reasoning benchmarks (GSM8K and GSM-Symbolic) using a task-specific RM, showing consistent improvements over existing test-time compute methods like best-of-n and majority voting. Furthermore, when applied with more realistic RMs trained on the Tulu 3 preference dataset, QAlign outperforms direct preference optimization (DPO), best-of-n, majority voting, and weighted majority voting on a diverse range of datasets (GSM8K, ... In BoN sampling, given a prompt x, we generate n candidate responses y 1 , y 2 , . . . , y n independently from the base LM p LM (y | x). Each response is evaluated using the RM r(y, x), and the candidate with the highest reward is chosen as the final output: \n\nLet us assume that the reward function r(x, y) is (locally) injective, that is, each y maps to a unique reward value. Then, if we denote by p(r | x) the ... In the LM literature, this procedure, for the specific case of tasks with well-defined final answers (i.e., the utility metric u(y, y ′ ) is defined as an exact match), the MBR output is the same as weighted majority voting (WMV; Li et al., 2023). Similar to QALIGN, WMV is guaranteed to converge to the"
+      },
+      {
+        "paper_id": "274610711",
+        "markdown_evidence": "SpecFuse: Ensembling Large Language Models via Next-Segment Prediction ... During the drafting stage, in each generation round, all models are simultaneously activated to perform parallel inference based on the task query and the best candidate segment broadcast from previous rounds. Formally, let the ensemble consist of models {M i } N , where M i denotes the i-th base LLM. ... • Majority Voting [Davani et al., 2022]: each model provides a choice, and the final result is determined by the option with the most votes. • Minimum Bayes Risk (MBR) [Freitag et al., 2023]: Selects the answer with the highest lexical similarity to other candidate answers. In this paper, we use the SimCSE [Gao et al., 2022] model to calculate the similarity between candidate responses. ... Intuitively, if a model's candidate frequently outperforms others in peer evaluations, it is considered better suited to the current task. In Section 4.3, we empirically compare this reward formulation against alternative segment selection strategies. Finally, the comprehensive score for each candidate {y (k) j } N is computed as the weighted sum of its scores assigned by all validators, following Equation 4. ... To assess verification ability, we treat each of the four models as a verifier. For every input example, we sample four candidate responses from LLaMA. Each verifier independently scores all candidates using the method described in Section 3.2, and selects the one with the highest score. The selected responses are then evaluated by GPT-4 against the original single-response baseline from LLaMA. ... Since the verification stage relies on each model's scoring of candidate segments, models with weaker generation capabilities may also produce unreliable evaluations when acting as validators. We propose a core assumption: models that perform better in generation tend to offer more reliable judgments during verification. This assumption is empirically supported in Appendix A."
+      },
+      {
+        "paper_id": "278886810",
+        "markdown_evidence": "Reward Model Generalization for Compute-Aware Test-Time Reasoning ... This work establishes a theoretical framework to analyze how the generalization error of the PRM affects compute efficiency and reasoning performance, and proposes Compute-Aware Tree Search (CATS), an actor-critic framework that dynamically controls search behavior. ... External test-time reasoning enhances large language models (LLMs) by decoupling generation and selection. At inference time, the model generates multiple reasoning paths, and an auxiliary process reward model (PRM) is used to score and select the best one. A central challenge in this setting is test-time compute optimality (TCO), i.e., how to maximize answer accuracy under a fixed inference budget. In this work, we establish a theoretical framework to analyze how the generalization error of the PRM affects compute efficiency and reasoning performance. Leveraging PAC-Bayes theory, we derive generalization bounds and show that a lower generalization error of PRM leads to fewer samples required to find correct answers. Motivated by this analysis, we propose Compute-Aware Tree Search (CATS), an actor-critic framework that dynamically controls search behavior. The actor outputs sampling hyperparameters based on reward distributions and sparsity statistics, while the critic estimates their utility to guide budget allocation. Experiments on the MATH and AIME benchmarks with various LLMs and PRMs demonstrate that CATS consistently outperforms other external TTS methods, validating our theoretical predictions."
+      },
+      {
+        "paper_id": "277435597",
+        "markdown_evidence": "Is Best-of-N the Best of Them? Coverage, Scaling, and Optimality in Inference-Time Alignment ... A new algorithm is introduced which mitigates reward hacking through deliberate use of inference-time compute, implementing the principle of pessimism in the face of uncertainty via rejection sampling, and it is proved that its performance is optimal and does not degrade with $N$, meaning it is scaling-monotonic. ... Inference-time computation offers a powerful axis for scaling the performance of language models. However, naively increasing computation in techniques like Best-of-N sampling can lead to performance degradation due to reward hacking. Toward a theoretical understanding of how to best leverage additional computation, we focus on inference-time alignment, which we formalize as the problem of improving the quality of responses drawn from a pre-trained policy, given a prompt of interest and access to an imperfect reward model. We analyze the performance of inference-time alignment algorithms in terms of (i) response quality, and (ii) compute, and provide new results that highlight the importance of the pre-trained policy's coverage over high-quality responses for performance and compute scaling: 1. We show that Best-of-$N$ alignment with an ideal choice for $N$ can achieve optimal performance under stringent notions of coverage, but provably suffers from reward hacking when $N$ is large, and fails to achieve tight guarantees under more realistic coverage conditions. 2. We introduce $\\texttt{InferenceTimePessimism}$, a new algorithm which mitigates reward hacking through deliberate use of inference-time compute, implementing the principle of pessimism in the face of uncertainty via ... Is Best-of-N the Best of Them? Coverage, Scaling, and Optimality in Inference-Time Alignment"
+      },
+      {
+        "paper_id": "276421317",
+        "markdown_evidence": "Evaluation of Best-of-N Sampling Strategies for Language Model Alignment ... An extension of the RBoN framework, called Stochastic RBoN sampling (SRBoN), is proposed, which is a theoretically guaranteed approach to worst-case RBoN in proxy reward and performs an empirical evaluation using the AlpacaFarm and Anthropic datasets to evaluate which factors of the regularization strategies contribute to the improvement of the true proxy reward. ... Best-of-N (BoN) sampling with a reward model has been shown to be an effective strategy for aligning Large Language Models (LLMs) with human preferences at the time of decoding. BoN sampling is susceptible to a problem known as reward hacking. Since the reward model is an imperfect proxy for the true objective, an excessive focus on optimizing its value can lead to a compromise of its performance on the true objective. Previous work proposes Regularized BoN sampling (RBoN), a BoN sampling with regularization to the objective, and shows that it outperforms BoN sampling so that it mitigates reward hacking and empirically (Jinnai et al., 2024). However, Jinnai et al. (2024) introduce RBoN based on a heuristic and they lack the analysis of why such regularization strategy improves the performance of BoN sampling. The aim of this study is to analyze the effect of BoN sampling on regularization strategies. Using the regularization strategies corresponds to robust optimization, which maximizes the worst case over a set of possible perturbations in the proxy reward. Although the theoretical guarantees are not directly applicable to RBoN, RBoN corresponds to a practical implementation. This paper proposes an extension of the RBoN framework, called Stochastic RBoN sampling (SRBoN), which ... In contrast, fine-tuning approaches incur a one-time cost during training while eliminating overhead at inference. Another concern is that the proposed method considers a max-min problem, so if, for example, the correlation between the proxy reward and the gold reward is strong, performance is reduced due to conservative output selection. ... Evaluation of Best-of-N Sampling Strategies for Language Model Alignment ... We also use several models as proxy reward models, including OASST, SHP-Large, SHP-XL, PairRM, and RM-Mistral-7B. As a gold reward model, we use Eurus-RM-7B to evaluate the performance of the proxy models. The results are"
+      },
+      {
+        "paper_id": "268819814",
+        "markdown_evidence": "Regularized Best-of-N Sampling with Minimum Bayes Risk Objective for Language Model Alignment ... This research proposes MBR-BoN, a variant of BoN that aims to mitigate reward hacking at inference time by incorporating the Minimum Bayes Risk objective as a proximity regularization term, and shows empirically and analytically that the MBR objective quantifies the proximity of the response to the reference policy, serving as a proximity regularizer. ... Best-of-N (BoN) sampling with a reward model has been shown to be an effective strategy for aligning Large Language Models (LLMs) to human preferences at the time of decoding. BoN sampling is susceptible to a problem known as reward hacking when the accuracy of the reward model is not high enough due to the quality or the quantity of the preference dataset. Because the reward model is an imperfect proxy for the true objective, over-optimizing its value can compromise its performance on the true objective. In this research, we propose MBR-BoN, a variant of BoN that aims to mitigate reward hacking at inference time by incorporating the Minimum Bayes Risk (MBR) objective as a proximity regularization term. We show empirically and analytically that the MBR objective quantifies the proximity of the response to the reference policy, serving as a proximity regularizer. We evaluate MBR-BoN on the AlpacaFarm and Anthropic's hh-rlhf datasets and show that it outperforms both BoN sampling and MBR decoding. We also evaluate MBR-BoN to generate a pairwise preference learning dataset for Direct Preference Optimization (DPO). Empirical results show that models trained on a dataset generated with MBR-BoN outperform those with vanilla BoN. Our code is available at ... Let D be a dataset of comparisons D = {x (i) , y\n\nRLHF uses the learned reward function to train the language model.Typically, the RL process is formulated as the following optimization problem:\n\nwhere β is a hyperparameter that controls the proximity to the base reference model π ref .\n\nThe regularization term D KL is important to prevent the model from deviating too far from the base model.Since the objective is ... We perform the sampling using one of the reward models as the proxy reward model and evaluate the selected responses using the remaining reward models as the gold reference rewards.We do not use PairRM as a proxy reward model because it is a"
+      },
+      {
+        "paper_id": "278664477",
+        "markdown_evidence": "Dynamic Self-Consistency: Leveraging Reasoning Paths for Efficient LLM Sampling ... Reasoning-Aware Self-Consistency (RASC), an innovative early-stopping framework that dynamically adjusts the number of sample generations by considering both the output answer and the RPs from Chain of Thought (CoT) prompting, is proposed."
+      },
+      {
+        "paper_id": "267760094",
+        "markdown_evidence": "Bayesian Reward Models for LLM Alignment ... A Bayesian reward model is trained using Laplace approximation on LoRA weights, and it is found that the resulting uncertainty estimates can effectively mitigate reward overoptimization in BoN sampling. ... To ensure that large language model (LLM) responses are helpful and non-toxic, a reward model trained on human preference data is usually used. LLM responses with high rewards are then selected through best-of-$n$ (BoN) sampling or the LLM is further optimized to produce responses with high rewards through reinforcement learning from human feedback (RLHF). However, these processes are susceptible to reward overoptimization or `hacking', where responses receive high rewards due to imperfections in the reward model rather than true preference, particularly as prompts or responses deviate from the training data. To address these challenges, we propose to train a Bayesian reward model, which signals higher uncertainty further from the training data distribution. We trained Bayesian reward models using Laplace approximation on LoRA weights, and found that the resulting uncertainty estimates can effectively mitigate reward overoptimization in BoN sampling. ... Then we simply perform maximum log-likelihood optimization to learn the reward model given a fixed preference dataset \n\nAfter learning the reward model, we can apply BoN sampling to optimize for preference, or RLHF to fine-tune the LLM policy. ... Alternatively, Ramé et al. (2024) leveraged weight averaging, tapping into linear mode connectivity to surpass the performance of traditional ensembles with a more inferenceefficient approach (Lin et al., 2023b;a). Chen et al. (2024) introduced a novel direction by decoupling reward modeling from response length through a specialized reward head and regularization, showcasing more robust reward signals that are ... For BoN sampling, we aim to sample n responses y 1 , ...y n from the LLM, and rank using r proxy (x, y). We would like to compute the expected evaluation reward, \n\nwhere the evaluation reward model r eval (x, y) could be either the proxy reward model or the gold reward model. The simplest approach is to use a Monte-Carlo estimator for the expectation. ... With the surge of developments in generative AI, alignment with human preferences has become a crucial research topic to ensure the safety and"
+      },
+      {
+        "paper_id": "275906664",
+        "markdown_evidence": "CodeMonkeys: Scaling Test-Time Compute for Software Engineering ... The CodeMonkeys system, named CodeMonkeys, allows models to iteratively edit a codebase by jointly generating and running a testing script alongside their draft edit, and combines voting using model-generated tests with a final multi-turn trajectory dedicated to selection. ... Scaling test-time compute is a promising axis for improving LLM capabilities. However, test-time compute can be scaled in a variety of ways, and effectively combining different approaches remains an active area of research. Here, we explore this problem in the context of solving real-world GitHub issues from the SWE-bench dataset. Our system, named CodeMonkeys, allows models to iteratively edit a codebase by jointly generating and running a testing script alongside their draft edit. We sample many of these multi-turn trajectories for every issue to generate a collection of candidate edits. This approach lets us scale\"serial\"test-time compute by increasing the number of iterations per trajectory and\"parallel\"test-time compute by increasing the number of trajectories per problem. With parallel scaling, we can amortize up-front costs across multiple downstream samples, allowing us to identify relevant codebase context using the simple method of letting an LLM read every file. In order to select between candidate edits, we combine voting using model-generated tests with a final multi-turn trajectory dedicated to selection. Overall, CodeMonkeys resolves 57.4% of issues from SWE-bench Verified using a budget of approximately 2300 USD. Our selection method can also be used to combine ... Repeated sampling can be particularly effective with coding tasks since the ability to run and test model outputs can assist with selection [29,18,28]. More general approaches to selection include using outcome reward models [13], process reward models [30,55], or prompting-based verifier setups [47]. ... We also see the benefit of the initial filter with majority voting: model selection without top-3 filtering underperforms pure majority voting, while model selection with filtering outperforms it. With our chosen approach of selection state machine + top-3 filtering, CodeMonkeys achieves a final score of 57.4% on SWE-bench Verified (Table 2), closing approximately half of the gap between random and oracle selection."
+      },
+      {
+        "paper_id": "276449826",
+        "markdown_evidence": "Transferring Textual Preferences to Vision-Language Understanding through Model Merging ... We select the merging hyperparameter by using a sampled set of 400 instances from the RLAIF-V (Yu et al., 2024c) training set as our validation set. In case of a tie in scores, an additional 100 sampled instances will be used for evaluation. Results are discussed in Appendix G.3. ... We assess our reward model's effectiveness in enhancing performance through reranking using Best-of-N sampling, where N = 8 in our work. This method scores and ranks responses to check if the highest-scoring one matches the correct answer. Specifically, we use Llama-3.2-11B-Vision-Instruct to generate eight candidates for the TextVQA (Singh et al., 2019) and MMMU-Pro (Yue et al., 2024b) datasets. ... To encourage concise answers, we append \"Answer the question using a single word or phrase.\" after the generation prompt. For the MMMU-Pro dataset, we also set the temperature and top p to 1.0, with a maximum token limit of 4096, to sample 8 responses. Additionally, we apply chain-of-thought (CoT) for generating both answers and their reasoning."
+      },
+      {
+        "paper_id": "278769808",
+        "markdown_evidence": "CSC-SQL: Corrective Self-Consistency in Text-to-SQL via Reinforcement Learning ... This work proposes CSC-SQL, a novel method that integrates Self-Consistency and Self-Correction, and employs the Group Relative Policy Optimization (GRPO) algorithm to fine-tune both the SQL generation and revision models via reinforcement learning, significantly enhancing output quality. ... Large language models (LLMs) have demonstrated strong capabilities in translating natural language questions about relational databases into SQL queries. In particular, test-time scaling techniques such as Self-Consistency and Self-Correction can enhance SQL generation accuracy by increasing computational effort during inference. However, these methods have notable limitations: Self-Consistency may select suboptimal outputs despite majority votes, while Self-Correction typically addresses only syntactic errors. To leverage the strengths of both approaches, we propose CSC-SQL, a novel method that integrates Self-Consistency and Self-Correction. CSC-SQL selects the two most frequently occurring outputs from parallel sampling and feeds them into a merge revision model for correction. Additionally, we employ the Group Relative Policy Optimization (GRPO) algorithm to fine-tune both the SQL generation and revision models via reinforcement learning, significantly enhancing output quality. Experimental results confirm the effectiveness and generalizability of CSC-SQL. On the BIRD private test set, our 7B model achieves 71.72\\% execution accuracy, while the 32B model achieves 73.67\\%. The code has been open sourced at https://github.com/CycloneBoy/csc_sql."
+      },
+      {
+        "paper_id": "273233234",
+        "markdown_evidence": "Semantic Self-Consistency: Enhancing Language Model Reasoning via Semantic Weighting ... While large language models (LLMs) have rapidly improved their performance on a broad number of tasks, they still often fall short on reasoning tasks. As LLMs become more integrated in diverse real-world tasks, advancing their reasoning capabilities is crucial to their effectiveness in nuanced, complex problems. Wang et al.'s self-consistency framework reveals that sampling multiple rationales before taking a majority vote reliably improves model performance across various closed-answer reasoning tasks. Standard methods based on this framework aggregate the final decisions of these rationales but fail to utilize the semantic information detailed in the step-by-step reasoning paths. Our work introduces semantic self-consistency, enhancing this approach by incorporating and analyzing both the reasoning paths of these rationales in addition to their final decisions before taking a majority vote. These methods not only improve the reliability of reasoning paths but also cause more robust performance on complex reasoning tasks. ... We analyze three main mechanisms for weighting and categorization (CPW, sequence comparison, and filtering of anomalous points) that follow a similar operational pattern outlined below: \n\n1. Generate candidate responses: Given a query of few-shot examples, we generate n samples based on chain-of-thought prompting [28]. ... We use the configuration splits for testing as suggested by default. We employ the train and test split with 1000 samples for a less noisy assessment on SVAMP. For AQuA-RAT, our test includes the full set of 254 examples. With StrategyQA we use the full test split of 687 samples ... It is worth noting that our system uses embedding vectors to filter responses based on general reasoning accuracy, prioritizing broad similarity over subtle variations, as the benefit of choosing the numerical majority vote from self-consistency to yield correct answers still applies, especially in the limited rationale space. An additional analysis can be found in Appendix A. reasoning. ... GPT 3.5 as well as GPT-4o mini have API endpoints that are open for public use https://openai.com/blog/openai-api. Mistral 7B is available for unrestricted use under the Apache 2.0 license, while its model architecture and setup are open source:"
+      },
+      {
+        "paper_id": "275788183",
+        "markdown_evidence": "PairJudge RM: Perform Best-of-N Sampling with Knockout Tournament ... A Pairwise Judge Reward Model (PariJudge RM) combined with a knockout tournament for BoN sampling, where instead of assigning absolute scores, given one math problem, PariJudge RM judges two candidate solutions' correctness with chain-of-thought reasoning simultaneously. ... Best-of-N (BoN) sampling, a common strategy for test-time scaling of Large Language Models (LLMs), relies on reward models to select the best candidate solution from multiple generations. However, traditional reward models often assign arbitrary and inconsistent scores, limiting their effectiveness. To address this, we propose a Pairwise Judge Reward Model (PariJudge RM) combined with a knockout tournament for BoN sampling. Instead of assigning absolute scores, given one math problem, PariJudge RM judges two candidate solutions' correctness with chain-of-thought reasoning simultaneously. This approach eliminates the need for scoring and enables cross-validation of solutions through parallel judgment. In the knockout tournament, PariJudge RM conducts pairwise Judgment between candidate solutions and eliminates the incorrect ones iteratively. We construct PairJudge-432K, a large-scale dataset of 432K pairwise judgments derived from NumiaMath and annotated using \\texttt{gemini-1.5-flash}, and train the PariJudge RM via supervised fine-tuning. Experiments on MATH-500 and the Olympiad Bench demonstrate significant improvements over baseline reward models. And a 40\\% to 60\\% relative improvement is achieved on the top 50\\% challenging problems. ... PairJudge RM: Perform Best-of-N Sampling with Knockout Tournament"
+      },
+      {
+        "paper_id": "270521629",
+        "markdown_evidence": "FZI-WIM at SemEval-2024 Task 2: Self-Consistent CoT for Complex NLI in Biomedical Domain ... The inference system of FZI-WIM is described at the SemEval-2024 Task 2: Safe Biomedical Natural Language Inference for Clinical Trials to tackle this complex reasoning problem and further improve the CoT performance with self-consistency. ... This paper describes the inference system of FZI-WIM at the SemEval-2024 Task 2: Safe Biomedical Natural Language Inference for Clinical Trials. Our system utilizes the chain of thought (CoT) paradigm to tackle this complex reasoning problem and further improve the CoT performance with self-consistency. Instead of greedy decoding, we sample multiple reasoning chains with the same prompt and make thefinal verification with majority voting. The self-consistent CoT system achieves a baseline F1 score of 0.80 (1st), faithfulness score of 0.90 (3rd), and consistency score of 0.73 (12th). We release the code and data publicly. ... Compared to the other two metrics, the consistency score of our self-consistent CoT system has the worst ranking.There are 4136 samples with semantic-preserving interventions, and they can be classified into five groups: paraphrase preserving, contradiction preserving, numerical paraphrase preserving, numerical contradiction preserving, and definitions preserving.For the category of numerical paraphrasing, there are ... We use the transformers4 library to generate responses with instruction-tuned models.There are two setups for generation, greedy decoding and temperature sampling.Under temperature sampling, we set T = 0.7 and k = 50 in top-k.For each pair, we set num_return_sequence as 10.\n\nOccasionally, there are duplicates in the returned sequences.If the result is tied with majority voting, we further generate reasoning chains ... The consistency score evaluates whether the model predicts the same label when semanticpreserving interventions exist in the original statements (Jullien et al., 2024).For N statements x i in the contrast set C, their corresponding original statements y i and model prediction function f , the consistency score is calculated with:\n\nwhere\n\nThe faithfulness score evaluates whether the model can change its prediction"
+      },
+      {
+        "paper_id": "278886743",
+        "markdown_evidence": "DEL-ToM: Inference-Time Scaling for Theory-of-Mind Reasoning via Dynamic Epistemic Logic ... This work proposes DEL-ToM, a framework that improves verifiable ToM reasoning through inference-time scaling rather than architectural changes, enabling structured and verifiable dynamic logical reasoning. ... Theory-of-Mind (ToM) tasks pose a unique challenge for large language models (LLMs), which often lack the capability for dynamic logical reasoning. In this work, we propose DEL-ToM, a framework that improves verifiable ToM reasoning through inference-time scaling rather than architectural changes. Our approach decomposes ToM tasks into a sequence of belief updates grounded in Dynamic Epistemic Logic (DEL), enabling structured and verifiable dynamic logical reasoning. We use data generated automatically via a DEL simulator to train a verifier, which we call the Process Belief Model (PBM), to score each belief update step. During inference, the PBM evaluates candidate belief traces from the LLM and selects the highest-scoring one. This allows LLMs to allocate extra inference-time compute to yield more transparent reasoning. Experiments across model scales and benchmarks show that DEL-ToM consistently improves performance, demonstrating that verifiable belief supervision significantly enhances LLMs'ToM capabilities without retraining. Code is available at https://github.com/joel-wu/DEL-ToM."
+      },
+      {
+        "paper_id": "277626950",
+        "markdown_evidence": "Truthful or Fabricated? Using Causal Attribution to Mitigate Reward Hacking in Explanations ... We study two ways of leveraging a reward model to steer the LLM's outputs: (i) best-of-N decoding (BoN), as an inference-time approach (Stiennon et al., 2020;Nakano et al., 2021;Beirami et al., 2024); and (ii) direct preference optimization (Rafailov et al., 2023, DPO), an alignment method. ... For a given prompt x we sample 10 responses, and select the one with the highest reward score and that is 'valid', i.e., that successfully predicts one of the valid options, as the 'chosen' sample and the one with the lowest reward score as the 'rejected' sample. ... To measure performance under sampling, we use Majority@N: if the majority of sampled responses are correct (or exhibit the stereotype), we treat the model as correct (or stereotypical) on that instance. While this resembles self-consistency decoding (Wang et al., 2023), our use of Majority@N serves as an estimate of expected performance under sampling, rather than presuming that voting is used at inference time. ... In particular, given a prompt x i , and the LLM generated response y i , the reward model (RM) outputs a score s i , computed as s i = RM(x i , y i ). For a given reward model, this value attempts to measure how relevant the response is to the prompt, and depending on the dataset the reward model was trained on, how well it adheres to intended values, such as honesty and helpfulness (Bai et al., 2022a). ... While this resembles self-consistency decoding (Wang et al., 2023), our use of Majority@N serves as an estimate of expected performance under sampling, rather than presuming that voting is used at inference time. We repeat each experiment 3 times, with different seeds, and report average results (and their standard deviations)."
+      },
+      {
+        "paper_id": "258823191",
+        "markdown_evidence": "Let's Sample Step by Step: Adaptive-Consistency for Efficient Reasoning and Coding with LLMs ... Learning Another line of work focuses on importance-based sampling of input instances during training (Bengio and Senecal, 2008;Prabhu et al., 2019;Berger et al., 2017). In contrast to the aforementioned methods, our approach centers on adaptively sampling multiple outputs per input instance during the inference phase, without soliciting additional labels. ... On the other hand, if v = [4, 4, 2], then more samples need to be generated. Our goal is to formalize and quantify this intuition. By convention, let p 1 = max(p i ). We want to assess the stability of p 1 as the majority element.2 Specifically, we want to ask the following question: what is the probability that p 1 will be the majority element if we repeat the process of generating n samples again? ... We sample α multiple times (100), and for each sample, we run Monte-Carlo Simulation (1000 simulations) based on the CRP probability modeling. ... A popular method for achieving this goal is Self-Consistency (Wang et al., 2022b), a majority voting technique where multiple output samples are generated for a given input, and the final decision is based on the most frequently occurring output among the samples. ... The increasing adoption of large language models (LLMs) across various tasks, such as text generation and reasoning (Wei et al., 2022;Kojima et al., 2022;Wang et al., 2022a;Mishra et al., 2022), mathematical reasoning (Lewkowycz et al., 2022;Gao et al., 2022;Arora et al., 2023), and code generation (Li et al., 2022;Madaan et al., 2023b), has underscored the importance of improving the correctness of their outputs. A popular method for achieving this goal is Self-Consistency (Wang et al., 2022b), a majority voting technique where multiple output samples are generated for a given input, and the final decision is based on the most frequently occurring output among the samples. \n\nCurrent Self-Consistency methods typically employ a fixed budget approach, wherein a predetermined number of samples (e.g., 40) are generated to make a decision. However, as LLMs continue to grow in size and complexity, the sampling time and computational costs associated with majority voting become increasingly challenging. This challenge is particularly evident in high-stakes applications like competition-level code"
+      },
+      {
+        "paper_id": "276421903",
+        "markdown_evidence": "Revisiting the Test-Time Scaling of o1-like Models: Do they Truly Possess Test-Time Scaling Capabilities? ... This study found that longer CoTs of these o1-like models do not consistently enhance accuracy; in fact, correct solutions are often shorter than incorrect ones for the same questions and proposes Shortest Majority Vote, a method that combines parallel scaling strategies with CoT length characteristics, significantly improving models' test-time scalability compared to conventional majority voting approaches. ... The advent of test-time scaling in large language models (LLMs), exemplified by OpenAI's o1 series, has advanced reasoning capabilities by scaling computational resource allocation during inference. While successors like QwQ, Deepseek-R1 (R1) and LIMO replicate these advancements, whether these models truly possess test-time scaling capabilities remains underexplored. This study found that longer CoTs of these o1-like models do not consistently enhance accuracy; in fact, correct solutions are often shorter than incorrect ones for the same questions. Further investigation shows this phenomenon is closely related to models' self-revision capabilities - longer CoTs contain more self-revisions, which often lead to performance degradation. We then compare sequential and parallel scaling strategies on QwQ, R1 and LIMO, finding that parallel scaling achieves better coverage and scalability. Based on these insights, we propose Shortest Majority Vote, a method that combines parallel scaling strategies with CoT length characteristics, significantly improving models' test-time scalability compared to conventional majority voting approaches. ... Given the limitation of sequential scaling of the current o1-like models, we turn to parallel scaling techniques and incorperate it with our insight on sequential scaling. Specifically, we propose a new Parallel Scaling algorithm: Shortest Majority Vote. Shortest Majority Vote is an extension of Majority Vote, but it accounts for the length of the solutions generated by the model. ... In Section 6, we demonstrated that our proposed Shortest Majority Vote achieves superior test-time scaling performance compared to the other two methods on the AIME benchmark. In this section, we present the parallel-scaling results on GPQA in Figure 10."
+      },
+      {
+        "paper_id": "270213066",
+        "markdown_evidence": "BoNBoN Alignment for Large Language Models and the Sweetness of Best-of-n Sampling ... BoNBoN Alignment is derived, which derives BoNBoN Alignment to achieve this by exploiting the special structure of the best-of-n distribution, and yields substantial improvements in producing a model that is preferred to the base policy while minimally affecting off-target aspects. ... This paper concerns the problem of aligning samples from large language models to human preferences using best-of-$n$ sampling, where we draw $n$ samples, rank them, and return the best one. We consider two fundamental problems. First: what is the relationship between best-of-$n$ and approaches to alignment that train LLMs to output samples with a high expected reward (e.g., RLHF or DPO)? To answer this, we embed both the best-of-$n$ distribution and the sampling distributions learned by alignment procedures in a common class of tiltings of the base LLM distribution. We then show that, within this class, best-of-$n$ is essentially optimal in terms of the trade-off between win-rate against the base model vs KL distance from the base model. That is, best-of-$n$ is the best choice of alignment distribution if the goal is to maximize win rate. However, best-of-$n$ requires drawing $n$ samples for each inference, a substantial cost. To avoid this, the second problem we consider is how to fine-tune a LLM to mimic the best-of-$n$ sampling distribution. We derive BoNBoN Alignment to achieve this by exploiting the special structure of the best-of-$n$ distribution. Experiments show that BoNBoN alignment yields substantial improvements in producing a model that is preferred to the base ... Best-of-n BoN sampling is widely used for LLMs [e.g., Sti+20; Nak+21; Liu+23; Gul+23; Tou+23; GSH23]. Due to its practical importance, it has also attracted some recent theoretical attention [e.g., Mud+23; Bei+24; Yan+24; Jin+24]. Beirami et al. [Bei+24] show a closed form probability mass function of the BoN policy in discrete case and provide a new KL estimator for it. Yang et al. ... The best-of-n procedure is as follows. Given a prompt x, sample y 1 , y 2 , . . . , y n independently from the reference model π 0 ( y | x). Then, select the response with the highest reward r(x, y i ) as the final response. That is, \n\n(2.5) ... Therefore, we first score the chosen and rejected responses for each prompt using this"
+      },
+      {
+        "paper_id": "276408793",
+        "markdown_evidence": "Robust Search with Uncertainty-Aware Value Models for Language Model Reasoning ... This section describes (1) the implementation of posterior value sampling during inference and (2) uncertainty-aware selection with the accessibility to the posterior value distribution. We propose a novel algorithm, Group Thompson Sampling, to effectively and efficiently select multiple candidates. ... Then, it selects candidates with the highest predicted values from the set S (1:t) . However, the imperfect value model may misidentify and incorrectly rank promising paths, improperly pruning these promising paths, which leads to selection failures (Yu et al., 2025). ... This process can be computationally expensive. Group Thompson Sampling: An efficient algorithm for group selection based on top-1 probability Group Thompson Sampling is an extension of the Thompson sampling algorithm, designed to efficiently select a group of candidates based on their top-1 probability. ... In this section, we conduct ablation studies on the methods of uncertainty-aware selection and demonstrate the superiority of the Group Thompson Sampling algorithm in Table 4. Baselines We consider two deterministic baselines for uncertainty-aware selection: UCB ranking and the naive top-1 probability ranking."
+      },
+      {
+        "paper_id": "281705777",
+        "markdown_evidence": "Learning to Rank Chain-of-Thought: Using a Small Model ... Experiments show that EORM generalizes effectively to out-of-distribution problems and unseen models, indicating it learns fundamental principles of valid reasoning, establishing EORM as a practical tool for deploying more dependable LLMs in complex, real-world applications. ... Large Language Models (LLMs) struggle with reliable mathematical reasoning, and current verification methods are often computationally expensive. This paper introduces the Energy Outcome Reward Model (EORM), a highly efficient, lightweight post-hoc verifier designed to address this challenge. EORM uses an energy-based framework to rank Chain-of-Thought (CoT) solutions, learning to distinguish correct from incorrect reasoning using only simple outcome labels, thus eliminating the need for expensive annotations. With only 55M parameters, over 127 times smaller than typical reward models, EORM boosts the accuracy of Llama 3 8B to 90.7\\% on GSM8k and 63.7\\% on MATH. This performance is achieved by efficiently selecting the optimal reasoning path from a pool of candidates, allowing it to match or exceed the accuracy of far more resource-intensive Best-of-N sampling techniques. Crucially, our experiments show that EORM generalizes effectively to out-of-distribution problems and unseen models, indicating it learns fundamental principles of valid reasoning. This robustness, combined with its efficiency, establishes EORM as a practical tool for deploying more dependable LLMs in complex, real-world applications."
+      },
+      {
+        "paper_id": "271601023",
+        "markdown_evidence": "Inference Scaling Laws: An Empirical Analysis of Compute-Optimal Inference for LLM Problem-Solving ... Hence, it is of interest to alter the sampling distribution by designing an alternative inference strategy. Third, we design such an inference strategy-the novel REBASE tree search-and find it is Pareto optimal, in that it achieves the best performance across all tested compute budgets. ... • We formulate a new compute-optimal inference problem and propose a novel tree search algorithm, REBASE, which is compute-optimal compared to widely-used sampling and MCTS methods. Our results show benefits of using smaller models with advanced inference algorithms, and new algorithms for achieving better cost-performance tradeoffs. ... In this section, we additionally include experimental results on the majority voting method, along with its comparison with weighted majority voting (Fig. 9,10 ,11,12). The experiments show that although the gap between majority voting and weighted majority voting on sampling is huge. For the code generation task MBPP, we analyze scaling behavior and compute-optimal inference through pass rate evaluation. ... The REBASE tree search method, illustrated in Fig. 3, inherits the exploitation and pruning properties of tree search, while using a reward model alone to estimate quality of intermediate nodes. This saves inference compute compared to methods such as MCTS, since it does not involve estimate node quality with explicit rollouts. ... While the scaling laws of large language models (LLMs) training have been extensively studied, optimal inference configurations of LLMs remain underexplored. We study inference scaling laws (aka test-time scaling laws) and compute-optimal inference, focusing on the trade-offs between model sizes and generating additional tokens with different inference strategies."
+      },
+      {
+        "paper_id": "274965493",
+        "markdown_evidence": "Ensembling Large Language Models with Process Reward-Guided Tree Search for Better Complex Reasoning ... This work presents Language model Ensemble with Monte Carlo Tree Search (LE-MCTS), a novel framework for process-level ensembling of language models that outperforms both single language model decoding algorithms and language model ensemble methods. ... Despite recent advances in large language models, open-source models often struggle to consistently perform well on complex reasoning tasks. Existing ensemble methods, whether applied at the token or output levels, fail to address these challenges. In response, we present Language model Ensemble with Monte Carlo Tree Search (LE-MCTS), a novel framework for process-level ensembling of language models. LE-MCTS formulates step-by-step reasoning with an ensemble of language models as a Markov decision process. In this framework, states represent intermediate reasoning paths, while actions consist of generating the next reasoning step using one of the language models selected from a predefined pool. Guided by a process-based reward model, LE-MCTS performs a tree search over the reasoning steps generated by different language models, identifying the most accurate reasoning chain. Experimental results on five mathematical reasoning benchmarks demonstrate that our approach outperforms both single language model decoding algorithms and language model ensemble methods. Notably, LE-MCTS improves performance by 3.6% and 4.3% on the MATH and MQA datasets, respectively, highlighting its effectiveness in solving complex reasoning problems. ... During inference, N samples are drawn from the language model, and the sample with the highest reward, determined by a reward model, is returned as the final output. BoN has also been applied to math problems (Lightman et al., 2023;Yuan et al., 2023), demonstrating its effectiveness. ... Two main types of verifiers for mathematical reasoning problems are the Outcome Reward Model (ORM) and the Process Reward Model (PRM). ORM assesses the entire solution, whereas PRM evaluates individual steps, providing more granular feedback."
+      },
+      {
+        "paper_id": "267411977",
+        "markdown_evidence": "ARGS: Alignment as Reward-Guided Search ... ARGS, Alignment as Reward-Guided Search, a novel framework that integrates alignment into the decoding process, eliminating the need for expensive RL training is introduced, offering a promising and flexible solution for aligning language models. ... Aligning large language models with human objectives is paramount, yet common approaches including RLHF suffer from unstable and resource-intensive training. In response to this challenge, we introduce ARGS, Alignment as Reward-Guided Search, a novel framework that integrates alignment into the decoding process, eliminating the need for expensive RL training. By adjusting the model's probabilistic predictions using a reward signal, ARGS generates texts with semantic diversity while being aligned with human preferences, offering a promising and flexible solution for aligning language models. Notably, ARGS demonstrates consistent enhancements in average reward compared to baselines across diverse alignment tasks and various model dimensions. For example, under the same greedy-based decoding strategy, our method improves the average reward by 19.56% relative to the baseline and secures a preference or tie score of 64.33% in GPT-4 evaluation. We believe that our framework, emphasizing decoding-time alignment, paves the way for more responsive language models in the future. Code is publicly available at: \\url{https://github.com/deeplearning-wisc/args}. ... Despite the slight increase in processing time, there was a notable enhancement in reward performance by ↑6.8%, demonstrating the existence of a reasonable tradeoff between reward optimization and inference speed. The gap can be further reduced by employing a smaller reward model, or parallelizing the reward computation across k candidates. ... Our reward-guided score can be flexibly used by different token selection strategies. Here, we consider two popular selection strategies: greedy selection and stochastic sampling. We describe both variants below, dubbed ARGS-greedy and ARGS-stochastic respectively. ARGS-greedy. ... • Average Reward: This metric represents the mean of the rewards computed by the reward model across all generations from the HH-RLHF test prompts. A higher average reward indicates model continuations that are more closely aligned with the attributes represented in the reward model, such as helpfulness"
+      },
+      {
+        "paper_id": "277451641",
+        "markdown_evidence": "Crossing the Reward Bridge: Expanding RL with Verifiable Rewards Across Diverse Domains ... Besides using closed-source LLMs such as GPT-4o as verifiers (Chen et al., 2024), recent studies have also explored training reference-based reward models for mathematical reasoning (Team et al., 2025). However, these models are confined to a single domain and still require large-scale training data (e.g., 800k instances for math) even within that domain. ... Note that for each instance, we have only a single decision from GPT-4o. While it may align more closely with an individual sampled decision from the reward model than with the majority vote (when m > 1), the latter provides a more stable and deterministic outcome by reducing randomness during grading. ... Notably, our distilled 7B reward model exhibits competitive performance against its much larger predecessor, Qwen2.5-72B-Instruct. In multi-subject evaluations using REINFORCE, the model trained from RM-7B achieves 31.2% accuracy compared to the 72B model's 30.3% -a significant improvement given the substantial parameter disparity. ... When considering generative verifiers, a natural choice is to use an off-the-shelf aligned LLM as the reward model π ϕ , inspired by prior work that employs LLMs as judges (Zheng et al., 2023). However, we observe a noticeable performance gap on downstream tasks when using LLMs of different sizes. ... We begin by investigating majority voting using a strong open-source LLM, Qwen2.5-72B-Instruct (Team, 2024), as the reward model π ϕ . The evaluation process follows the prompting template provided in Table 4. Given a prompt x and a reference answer a, we generate m evaluation samples and determine the correctness of a response y via majority voting."
+      },
+      {
+        "paper_id": "271916018",
+        "markdown_evidence": "Critique-out-Loud Reward Models ... Typically, classic reward model consists of a base model and a shallow MLP reward head. Its parameters are (θ B , θ R ), where θ B and θ R are the parameters of the base model and reward head respectively. Given a user prompt x and an assistant response y, the classic reward model predicts a scalar reward score R = r θ B ,θ R (x, y). ... In RLHF, reward models have traditionally modeled human preferences after ranking models such as the Bradley-Terry (BT) model (Bradley & Terry, 1952;Ouyang et al., 2022;Bai et al., 2022b;a;Dubey et al., 2024) or the Plackett-Luce model (Plackett, 1975;Luce, 1959;Zhu et al., 2023). Recent work has showed shortcomings of these models when handling intransitive preferences (Munos et al., 2023;Swamy et al., 2024). ... In this section, we review how classic reward models that model human preferences are trained and we then extend this methodology to training CLoud reward models. We also detail how CLoud reward models are used to score samples at inference time using both standard and self-consistency decoding. Note, we will refer to the trunk of a pretrained LLM before the final language modeling layer as the base model and the linear or shallow multi-layer perceptrons (MLPs) that operate on the output of the base model as heads."
+      },
+      {
+        "paper_id": "273404003",
+        "markdown_evidence": "Generative Reward Models ... In addition to the previously discussed benefits, using LLMs as reward models also allows us to utilize additional inference time compute to improve performance. Indeed our results from the previous sections show that using COT prompt-Preprint ing to induce reasoning in the evaluator model can significantly improve performance on new prompts and tasks over the base GenRM approach (which does not use CoT). ... Next, the SFT model π SFT (y | x) is leveraged to construct a reward model that captures human preferences. Specifically, the SFT model is sampled, generating pairs of responses (y 1 , y 2 ) ∼ π SFT (y | x) for each prompt x in the dataset. Human annotators then rank the responses, producing pairs of preferences y w ≻ y l | x, where y w and y l represent the preferred and non-preferred responses, respectively. ... In the first stage, an LLM is trained to follow instructions using a dataset of prompts x and responses y using maximum likelihood estimation (MLE) over the next-token predictions. The resulting model is referred to as π SFT (y | x), where both the prompt and response strings are treated as single variables. This model is used as a base for the next stages. ... These works demonstrated that the reward model and the optimal policy can be mathematically interchanged, allowing the policy to be trained Figure 1: Methods overview. Bradley-Terry methods directly output the probability of y 1 being preferred over y 2 , while GenRM compares the LLMs next-token probabilities of answer indicator tokens (I 1 , I 2 )."
+      },
+      {
+        "paper_id": "276079693",
+        "markdown_evidence": "s1: Simple test-time scaling ... After supervised finetuning the Qwen2.5-32B-Instruct language model on s1K and equipping it with budget forcing, the model s1-32B exceeds o1-preview on competition math questions by up to 27% (MATH and AIME24). ... Test-time scaling is a promising new approach to language modeling that uses extra test-time compute to improve performance. Recently, OpenAI's o1 model showed this capability but did not publicly share its methodology, leading to many replication efforts. We seek the simplest approach to achieve test-time scaling and strong reasoning performance. First, we curate a small dataset s1K of 1,000 questions paired with reasoning traces relying on three criteria we validate through ablations: difficulty, diversity, and quality. Second, we develop budget forcing to control test-time compute by forcefully terminating the model's thinking process or lengthening it by appending\"Wait\"multiple times to the model's generation when it tries to end. This can lead the model to double-check its answer, often fixing incorrect reasoning steps. After supervised finetuning the Qwen2.5-32B-Instruct language model on s1K and equipping it with budget forcing, our model s1-32B exceeds o1-preview on competition math questions by up to 27% (MATH and AIME24). Further, scaling s1-32B with budget forcing allows extrapolating beyond its performance without test-time intervention: from 50% to 57% on AIME24. Our model, data, and code are open-source at https://github.com/simplescaling/s1 ... We group them by granularity into (a) Token-conditional control: We specify an upper bound of thinking tokens in the prompt; (b) Step-conditional control: We specify an upper bound of thinking steps, where each step is around 100 tokens; (c) Class-conditional control: We write two generic prompts that tell the model to either think for a short or long amount of time (see §E.1 for details). ... This in turn leads to a higher log probability of the answer section at any point during the generation and thus shorter reasoning traces at test time. Performance-wise, we also find that the model trained with a longer sequence length performs better. Thus we opt for the longest training sequence length as it leads to better performance and makes inference more efficient by leading to shorter reasoning traces. ... Algorithm 1 provides our algorithm for selecting data"
+      },
+      {
+        "paper_id": "275954536",
+        "markdown_evidence": "Probing LLM World Models: Enhancing Guesstimation with Wisdom of Crowds Decoding ... This work replicates WOC effects in human participants and finds that LLMs exhibit similar benefits: median aggregation across sampled responses consistently improves accuracy over greedy decoding, self-consistency decoding, and mean decoding, which suggests that LLMs encode a world model that supports approximate reasoning. ... Guesstimation -- the task of making approximate quantitative estimates about objects or events -- is a common real-world skill, yet remains underexplored in large language model (LLM) research. We introduce three guesstimation datasets: MARBLES, FUTURE, and ELECPRED, spanning physical estimation (e.g., how many marbles fit in a cup) to abstract predictions (e.g., the 2024 U.S. presidential election). Inspired by the social science concept of Wisdom of Crowds (WOC)- where the median of multiple estimates improves accuracy-we propose WOC decoding for LLMs. We replicate WOC effects in human participants and find that LLMs exhibit similar benefits: median aggregation across sampled responses consistently improves accuracy over greedy decoding, self-consistency decoding, and mean decoding. This suggests that LLMs encode a world model that supports approximate reasoning. Our results position guesstimation as a useful probe of LLM world knowledge and highlight WOC decoding as a strategy for enhancing LLM guesstimation performance on real-world tasks. ... Probing LLM World Models: Enhancing Guesstimation with Wisdom of Crowds Decoding ... The predicted vote percentage using greedy decoding. (D) The predicted vote percentage using self-consistency (majority) decoding. (E) The predicted vote percentage using mean decoding. For (B), (C), (D), and (E) the predicted vote percentage using each strategy is given, followed by the actual vote percentage in brackets. thermore, we found no consistent relationship between skewness and WOC effectiveness. ... In this study, we show that LLMs possess a world model necessary for effective guesstimation, a common yet overlooked task in the AI community. \n\nTo evaluate this, we introduce three guesstimation datasets: MARBLES, FUTURE, and ELECPRED, where one must estimate both concrete and abstract quantities based on knowledge about the world. Similar to humans, LLMs also exhibit the WOC effect, in which the median of"
+      },
+      {
+        "paper_id": "276961032",
+        "markdown_evidence": "VisualPRM: An Effective Process Reward Model for Multimodal Reasoning ... We introduce VisualPRM, an advanced multimodal Process Reward Model (PRM) with 8B parameters, which improves the reasoning abilities of existing Multimodal Large Language Models (MLLMs) across different model scales and families with Best-of-N (BoN) evaluation strategies. Specifically, our model improves the reasoning performance of three types of MLLMs and four different model scales. Even when applied to the highly capable InternVL2.5-78B, it achieves a 5.9-point improvement across seven multimodal reasoning benchmarks. Experimental results show that our model exhibits superior performance compared to Outcome Reward Models and Self-Consistency during BoN evaluation. To facilitate the training of multimodal PRMs, we construct a multimodal process supervision dataset VisualPRM400K using an automated data pipeline. For the evaluation of multimodal PRMs, we propose VisualProcessBench, a benchmark with human-annotated step-wise correctness labels, to measure the abilities of PRMs to detect erroneous steps in multimodal reasoning tasks. We hope that our work can inspire more future research and contribute to the development of MLLMs. Our model, data, and benchmark are released in https://internvl.github.io/blog/2025-03-13-VisualPRM/. ... In this section, we analyze the impact of generation temperature on the Best-of-8 evaluation. As shown in Table 8, as the temperature increases from 0.3 to 1.3, the overall performance of InternVL2.5-8B first improves and then declines. We attribute this phenomenon to the trade-off between response diversity and accuracy. When the temperature is low (e.g., set to 0.3), the generated responses lack diversity, ... MLLMs, specifically focusing on the Best-of-N evaluation to improve multimodal reasoning performance. Process Reward Models. Reward models play a crucial role in Reinforcement Learning (RL) [2,26,64,66] and TTS [20,51,68,79]. Outcome Reward Models (ORMs) [55,77,92] directly assign an overall score to the given response. ... In this work, we formulate the critic model as a Process Reward Model (PRM). To develop a multimodal PRM, we first construct VisualPRM400K, a dataset comprising about 400K multimodal process supervision data, as detailed in For value-based PRMs, the quality of a certain step is determined by its expected accuracy mci, where a"
+      },
+      {
+        "paper_id": "273963267",
+        "markdown_evidence": "Quasi-random Multi-Sample Inference for Large Language Models ... This study explores the potential of arithmetic sampling, contrasting it with ancestral sampling across two decoding tasks that employ multi-sample inference: chain-of-thought reasoning with self-consistency and machine translation with minimum Bayes risk decoding. ... Large language models (LLMs) are often equipped with multi-sample decoding strategies. An LLM implicitly defines an arithmetic code book, facilitating efficient and embarrassingly parallelizable \\textbf{arithmetic sampling} to produce multiple samples using quasi-random codes. Traditional text generation methods, such as beam search and sampling-based techniques, have notable limitations: they lack parallelizability or diversity of sampled sequences. This study explores the potential of arithmetic sampling, contrasting it with ancestral sampling across two decoding tasks that employ multi-sample inference: chain-of-thought reasoning with self-consistency and machine translation with minimum Bayes risk decoding. Our results demonstrate that arithmetic sampling produces more diverse samples, significantly improving reasoning and translation performance as the sample size increases. We observe a $\\mathbf{3\\text{-}5\\%}$ point increase in accuracy on the GSM8K dataset and a $\\mathbf{0.45\\text{-}0.89\\%}$ point increment in COMET score for WMT19 tasks using arithmetic sampling without any significant computational overhead. ... The recently proposed arithmetic sampling Vilnis et al. (2023) technique enables parallel inference with diverse samples -by interpreting the inference as sampling from code points from a unit interval, given code points generating sequences becomes embarrassingly parallel and the sample diversity is guaranteed by construction. Decoding from pre-trained LLMs requires varying strategies for different downstream tasks. ... We primarily evaluate the performance of the aforementioned sampling techniques with parameters controlled as temperature = 1, top-k = 40, and top-p = 0.95 across 40 sampled reasoning paths per question-answer pair, using the subsampling results to plot the standard deviation as the shaded region in Figures 1 and 2. We select the majority-voting accuracy for self-consistency as our performance evaluation metric. We ... (2023) is a method designed to improve the performance of chain-ofthought"
+      },
+      {
+        "paper_id": "276094612",
+        "markdown_evidence": "Scaling Flaws of Verifier-Guided Search in Mathematical Reasoning ... A critical limitation is identified: scaling flaws, prevalent across different models, benchmarks, benchmarks, and verifiers (outcome value models and process reward models), as sample size increases, verifier-guided search exhibits diminishing advantages and eventually underperforms repeated sampling. ... Large language models (LLMs) struggle with multi-step reasoning, where inference-time scaling has emerged as a promising strategy for performance improvement. Verifier-guided search outperforms repeated sampling when sample size is limited by selecting and prioritizing valid reasoning paths. However, we identify a critical limitation: scaling flaws, prevalent across different models (Mistral 7B and DeepSeekMath 7B), benchmarks (GSM8K and MATH), and verifiers (outcome value models and process reward models). As sample size increases, verifier-guided search exhibits diminishing advantages and eventually underperforms repeated sampling. Our analysis attributes this to verifier failures, where imperfect verifiers misrank candidates and erroneously prune all valid paths. These issues are further exacerbated in challenging and out-of-distribution problems, restricting search effectiveness. To mitigate verifier failures, we explore reducing reliance on verifiers and conduct preliminary investigations using two simple methods. Our findings reveal fundamental limitations in verifier-guided search and suggest future directions."
+      },
+      {
+        "paper_id": "258740716",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273025755",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274964937",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267500049",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256504063",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267060971",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271329400",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276421601",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258840955",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267617098",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273850452",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267334709",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266818435",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277468090",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269430362",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271910084",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270258258",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267750699",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277955867",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274514858",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265457038",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266903058",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278996996",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "11706155",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "63842598",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276576126",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276580569",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273501679",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270226822",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268819804",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265067048",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279594554",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278327728",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "207041598",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236965666",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886824",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277151225",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268032253",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276884790",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276647596",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886339",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267759781",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276249402",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276884594",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278339436",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273350921",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263605799",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272310241",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272368345",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278714886",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278394315",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252683303",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265213141",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273374906",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253510790",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277501721",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270370750",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263311043",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277501853",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276250126",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276813525",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274422712",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482470",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271924376",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278822683",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265498407",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273229503",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259847428",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269626329",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276575820",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272366500",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277104276",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276725221",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276903444",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273403589",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278000696",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276618155",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274281169",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269430591",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267616998",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269741048",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276249339",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "282405138",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271931247",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252439215",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272708877",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277824349",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276259248",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276409072",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277467423",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276742031",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273098836",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278714658",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271719990",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276079559",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278479534",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274965054",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273502823",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276107826",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905330",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276647485",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270391198",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278739699",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270877890",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271328406",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273996423",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281306898",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263310434",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482873",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276575612",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277501653",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276575826",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275119287",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278911448",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277150799",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278769866",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271909037",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264146589",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269762777",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275211943",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274981934",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276095138",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278996519",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274423184",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279075799",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781404",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277435585",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277244806",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278904809",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276774342",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277104404",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276574738",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278910789",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276421652",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264591415",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278739476",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274822997",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277954852",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276107088",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277313266",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269282634",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276813007",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277954745",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804242",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272910933",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278714888",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482724",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275516644",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804730",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273233593",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273234115",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277766287",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277435300",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270285630",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277510502",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264590298",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276741344",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278501620",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278910532",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277435274",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277993666",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278739492",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781064",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277349878",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273662060",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276106822",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273695243",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271571035",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276647416",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274581915",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276258898",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277452648",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277757170",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276421789",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275606433",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273850391",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277468029",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278769085",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905821",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276781923",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272880926",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270764846",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277780912",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276647786",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278996680",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886072",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278339157",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277787501",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276079888",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276813234",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278394558",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277451521",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277468344",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276422443",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273185830",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274656414",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269149545",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265351429",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277314100",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267068598",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277467322",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269983203",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

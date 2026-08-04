@@ -1,0 +1,1 @@
+Have any research efforts been made to gather dialogue data via crowdworkers to enhance conversational information retrieval systems?

@@ -1,0 +1,16 @@
+[semantic_152] score_type=semantic_f1 query='State-of-the-art papers focusing on sampling mechanisms at LLM inference time, including mechanisms like majority voting'
+  criteria: ['LLM inference-time sampling', 'sample selection methods', 'majority voting', 'reward model scoring']
+  semantic: 10 variants + 2+4 snippet queries -> 1143 unique candidates
+  overflow: graded 400/400 beyond-cap candidates, 38 strong
+  cite-expand: 6 seeds -> 142 new citers, keeping 142
+  cite-expand: graded 142/142 citers, 6 strong
+  tool call failed (_recording, {'query': 'reward model scoring for sample selection', 'paper_ids': 'CorpusId:270703266,CorpusId:276249712,CorpusId:278394558,Cor', 'limit': '50'}): TimeoutError: 
+  enrichment: 4 criteria x 8 chunks -> 725 snippets attached
+  judge-mimic: rated 250/250
+  judge-mimic blend: 6 predicted grade-3 in top 250
+  second wave: alt variants = ['self-consistency decoding', 'minimum Bayes risk decoding', 'verifier-guided search', 'process-supervised reward models', 'outcome-supervised reward models', 'preference-model reranking', 'test-time scaling', 'consensus decoding']
+  second wave: 710 new candidates, 250 graded, 48 kept (grade >= 6)
+  enrichment: 4 criteria x 2 chunks -> 185 snippets attached
+  repair: 364 weak-criterion paper slots across 4 criteria -> 283 passages attached
+  submitting 250 papers (top blend: [0.91, 0.91, 0.9, 0.9, 0.9, 0.9, 0.9, 0.86, 0.86, 0.82])
+  submitted 250 papers

@@ -1,0 +1,16 @@
+[semantic_138] score_type=semantic_f1 query='Has any work been done using large language models (LLMs) to generate blog posts from scientific papers? Please summariz'
+  criteria: ['large language models', 'generate blog posts', 'from scientific papers']
+  semantic: 10 variants + 2+3 snippet queries -> 1011 unique candidates
+  overflow: graded 400/400 beyond-cap candidates, 3 strong
+  cite-expand: 4 seeds -> 13 new citers, keeping 13
+  cite-expand: graded 13/13 citers, 1 strong
+  enrichment: 3 criteria x 8 chunks -> 477 snippets attached
+  judge-mimic: rated 250/250
+  judge-mimic blend: 2 predicted grade-3 in top 250
+  second wave: alt variants = ['lay summarization', 'plain language summarization', 'expert-lay summarization', 'audience-aware scientific summarization', 'scientific text simplification for lay audiences', 'eLife digest generation', 'PLOS author summary generation', 'press release generation from scientific articles']
+  second wave: 752 new candidates, 250 graded, 5 kept (grade >= 6)
+  enrichment: 3 criteria x 1 chunks -> 18 snippets attached
+  tool call failed (_recording, {'query': 'generate blog posts generate blog posts', 'paper_ids': 'CorpusId:276724947', 'limit': '4'}): TimeoutError: 
+  repair: 474 weak-criterion paper slots across 3 criteria -> 322 passages attached
+  submitting 250 papers (top blend: [1.0, 1.0, 0.82, 0.74, 0.63, 0.63, 0.63, 0.63, 0.63, 0.63])
+  submitted 250 papers

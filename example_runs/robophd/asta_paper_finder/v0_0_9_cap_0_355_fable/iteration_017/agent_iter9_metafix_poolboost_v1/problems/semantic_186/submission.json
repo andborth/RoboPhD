@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_186",
+    "results": [
+      {
+        "paper_id": "269009764",
+        "markdown_evidence": "LLMs' Reading Comprehension Is Affected by Parametric Knowledge and Struggles with Hypothetical Statements ... The task of reading comprehension is suggested to be used on imaginary data, entirely independent of the models' world knowledge, enabling us to evaluate LLMs'linguistic abilities without the interference of parametric knowledge. ... The task of reading comprehension (RC), often implemented as context-based question answering (QA), provides a primary means to assess language models'natural language understanding (NLU) capabilities. Yet, when applied to large language models (LLMs) with extensive built-in world knowledge, this method can be deceptive. If the context aligns with the LLMs'internal knowledge, it is hard to discern whether the models'answers stem from context comprehension or from LLMs'internal information. Conversely, using data that conflicts with the models'knowledge creates erroneous trends which distort the results. To address this issue, we suggest to use RC on imaginary data, based on fictitious facts and entities. This task is entirely independent of the models'world knowledge, enabling us to evaluate LLMs'linguistic abilities without the interference of parametric knowledge. Testing ChatGPT, GPT-4, LLaMA 2 and Mixtral on such imaginary data, we uncover a class of linguistic phenomena posing a challenge to current LLMs, involving thinking in terms of alternative, hypothetical scenarios. While all the models handle simple affirmative and negative contexts with high accuracy, they are much more prone to error when dealing with modal and conditional contexts. Crucially, these phenomena also ... Likewise, we aim to advance the study of natural language understanding in LLMs by investigating how they cope with these more complex semantic constructions. In this subsection we provide a brief overview of modal and conditional constructions expressing hypothetical situations, which are central to our work. Modality expresses the relation of the utterance to reality (Khomutova, 2014). ... Many recent studies highlight LLMs' overreliance on prior knowledge as a major source of hallucination (Shuster et al., 2021;Ji et al., 2023;Xie et al., 2023) and explore RAG as a means to reduce hallucination and improve factuality in LLMs (e.g., Shi et al., 2023;Mallen et al., 2023;Zhang et al., 2023b;Asai et al., 2023)."
+      },
+      {
+        "paper_id": "278959573",
+        "markdown_evidence": "Flying Pigs, FaR and Beyond: Evaluating LLM Reasoning in Counterfactual Worlds ... Inspired by human metacognition, a simple yet powerful intervention is proposed: Flag&Reason (FaR), where models are first prompted to flag potential knowledge conflicts before they reason, narrowing the performance gap to just 7% and increasing overall accuracy by 4%. ... A fundamental challenge in reasoning is navigating hypothetical, counterfactual worlds where logic may conflict with ingrained knowledge. We investigate this frontier for Large Language Models (LLMs) by asking: Can LLMs reason logically when the context contradicts their parametric knowledge? To facilitate a systematic analysis, we first introduce CounterLogic, a benchmark specifically designed to disentangle logical validity from knowledge alignment. Evaluation of 11 LLMs across six diverse reasoning datasets reveals a consistent failure: model accuracy plummets by an average of 14% in counterfactual scenarios compared to knowledge-aligned ones. We hypothesize that this gap stems not from a flaw in logical processing, but from an inability to manage the cognitive conflict between context and knowledge. Inspired by human metacognition, we propose a simple yet powerful intervention: Flag&Reason (FaR), where models are first prompted to flag potential knowledge conflicts before they reason. This metacognitive step is highly effective, narrowing the performance gap to just 7% and increasing overall accuracy by 4%. Our findings diagnose and study a critical limitation in modern LLMs'reasoning and demonstrate how metacognitive awareness can make them more robust and reliable thinkers."
+      },
+      {
+        "paper_id": "267320929",
+        "markdown_evidence": "Conditional and Modal Reasoning in Large Language Models ... The extent to which twenty-nine LLMs are able to distinguish logically correct inferences from logically fallacious ones is probed, highlighting gaps in basic logical reasoning in today’s LLMs. ... The reasoning abilities of large language models (LLMs) are the topic of a growing body of research in AI and cognitive science. In this paper, we probe the extent to which twenty-nine LLMs are able to distinguish logically correct inferences from logically fallacious ones. We focus on inference patterns involving conditionals (e.g., '*If* Ann has a queen, *then* Bob has a jack’) and epistemic modals (e.g., ‘Ann *might* have an ace’, ‘Bob *must* have a king’). These inferences have been of special interest to logicians, philosophers, and linguists, since they play a central role in the fundamental human ability to reason about distal possibilities. Assessing LLMs on these inferences is thus highly relevant to the question of how much the reasoning abilities of LLMs match those of humans. All the LLMs we tested make some basic mistakes with conditionals or modals, though zero-shot chain-of-thought prompting helps them make fewer mistakes. Even the best performing LLMs make basic errors in modal reasoning, display logically inconsistent judgments across inference patterns involving epistemic modals and conditionals, and give answers about complex conditional inferences that do not match reported human judgments. These results highlight gaps in basic logical reasoning in today’s ... Our task format and evaluation method is similar to the one used in the natural language inference (NLI) paradigm (Bowman et al., 2015;Williams et al., 2018;Nie et al., 2019), which has a rich and long tradition (Katz, 1972;Condoravdi et al., 2003;van Benthem, 2008;MacCartney and Manning, 2009;Dagan et al., 2010). There, a problem comes with a premise P and a hypothesis H, and the goal is to decide whether the ... In this Appendix, we display the zero-shot performance of the LLMs on the inferences shown in ... Conditional and Modal Reasoning in Large Language Models ... To position our logical reasoning tasks with respect to the broad landscape of LLM evaluations, we  compare the models' performance on our benchmark (uncontroversial inferences) to that of Chatbot Arena (general assistance, Chiang et al., 2024), MMLU (domain"
+      },
+      {
+        "paper_id": "245385766",
+        "markdown_evidence": "CRASS: A Novel Data Set and Benchmark to Test Counterfactual Reasoning of Large Language Models ... The CRASS data set and benchmark utilizing questionized counterfactual conditionals is introduced as a novel and powerful tool to evaluate large language models and poses a valid challenge for these models and opens up considerable room for their improvement. ... We introduce the CRASS (counterfactual reasoning assessment) data set and benchmark utilizing questionized counterfactual conditionals as a novel and powerful tool to evaluate large language models. We present the data set design and benchmark. We test six state-of-the-art models against our benchmark. Our results show that it poses a valid challenge for these models and opens up considerable room for their improvement. ... As we believe that LLMs trained on gigantic text corpora like Common Crawl or The Pile (Gao et al., 2021) should be sufficient to acquire language understanding without the need of elaborated fine tuning, we decided to employ zero-shot classification models (Yin et al., 2019) and selected multi-purpose models. ... Thus in the example of 2), the conditional only makes sense if you are willing to accept the implicit knowledge of the tree having not fallen onto the car. The most basic premises will have the following abstract form where B  , B  , ..., B n are primitive nouns, v a verb and r a preposition within the semantic realm of the verb connecting the two nouns resulting in the following structure. ... Different accounts have been developed how to formalize causality. There is a scholarly debate (Collins et al., 2004;Beebee et al., 2017) regarding the workings of functional causal models (FCM) or structural equation models (SEM) respectively. Authors working on FCMs mostly defend an interventionist theory of causality (Briggs, 2012). In line with our agnostic approach, for this work we assume that there is a ... Our contribution with this paper is threefold: First, we presented and explained the CRASS data set, a novel basis to test reasoning and natural language understanding of LLMs. Second, we benchmarked various state-of-the-art models and carefully analyzed their challenges. Third, we established a human baseline with an extensive crowd worker study. Our results show large margins for future improvements of LLMs. ... Contrary to a simple conditional (as presented above),"
+      },
+      {
+        "paper_id": "279243165",
+        "markdown_evidence": "Let's CONFER: A Dataset for Evaluating Natural Language Inference Models on CONditional InFERence and Presupposition ... It is indicated that NLI models struggle with presuppositional reasoning in conditionals, and fine-tuning on existing NLI datasets does not necessarily improve their performance. ... Natural Language Inference (NLI) is the task of determining whether a sentence pair represents entailment, contradiction, or a neutral relationship. While NLI models perform well on many inference tasks, their ability to handle fine-grained pragmatic inferences, particularly presupposition in conditionals, remains underexplored. In this study, we introduce CONFER, a novel dataset designed to evaluate how NLI models process inference in conditional sentences. We assess the performance of four NLI models, including two pre-trained models, to examine their generalization to conditional reasoning. Additionally, we evaluate Large Language Models (LLMs), including GPT-4o, LLaMA, Gemma, and DeepSeek-R1, in zero-shot and few-shot prompting settings to analyze their ability to infer presuppositions with and without prior context. Our findings indicate that NLI models struggle with presuppositional reasoning in conditionals, and fine-tuning on existing NLI datasets does not necessarily improve their performance."
+      },
+      {
+        "paper_id": "267035047",
+        "markdown_evidence": "Code Prompting Elicits Conditional Reasoning Abilities in Text+Code LLMs ... This paper proposes code prompting, a methodology that operates as a chain of prompts that transforms a natural language problem into code and directly prompts the LLM using the generated code without resorting to external code execution, and finds that code prompting exhibits a high-performance boost for multiple LLMs. ... Reasoning is a fundamental component of language understanding. Recent prompting techniques, such as chain of thought, have consistently improved LLMs’ performance on various reasoning tasks. Nevertheless, there is still little understanding of what triggers reasoning abilities in LLMs in the inference stage. In this paper, we investigate the effect of the input representation on the reasoning abilities of LLMs. We hypothesize that representing natural language tasks as code can enhance specific reasoning abilities such as entity tracking or logical reasoning. To study this, we propose code prompting, a methodology we operationalize as a chain of prompts that transforms a natural language problem into code and directly prompts the LLM using the generated code without resorting to external code execution. We find that code prompting exhibits a high-performance boost for multiple LLMs (up to 22.52 percentage points on GPT 3.5, 7.75 on Mixtral, and 16.78 on Mistral) across multiple conditional reasoning datasets. We then conduct comprehensive experiments to understand how the code representation triggers reasoning abilities and which capabilities are elicited in the underlying models. Our analysis on GPT 3.5 reveals that the code formatting of the input problem is essential for ... We perform our study using text+code LLMs because of their ability to process text and code interchangeably. We do not employ code-only LLMs because their intended use does not include solving natural language tasks (Roziere et al  (Jiang et al., 2024), and Mistral 7B (Jiang et al., 2023). The use of these models allows us to investigate whether our hypothesis holds across all available sizes of text+code LLMs. ... (Liu et al., 2020(Liu et al., , 2023a;;Sinha et al., 2019), and commonsense-focused reasoning (Madaan et al., 2022;Liu et al., 2022a,b;Wang et al., 2023). Conditional reasoning, a primary yet complex reasoning ability that draws alternative conclusions depending on the"
+      },
+      {
+        "paper_id": "275505755",
+        "markdown_evidence": "Eliciting and Improving the Causal Reasoning Abilities of Large Language Models with Conditional Statements ... Compared to general-purpose LLMs like Llama-2 and GPT-3, Code-LLMs like CodeLlama and Codex are significantly better in causal reasoning, and finetune LLMs on code corpus, and find their performance improves when prompted with either code prompts or text prompts. ... Causal reasoning, the ability to identify cause-and-effect relationships, is crucial in human thinking. Although large language models (LLMs) succeed in many NLP tasks, it is still challenging for them to conduct complex causal reasoning like abductive reasoning and counterfactual reasoning. Complex causal structures are rarely expressed explicitly in the text, which could make learning them challenging for LLMs. Given the fact that programming code may express causal relations more often and explicitly with conditional statements like if, we want to explore whether large language models of code (Code-LLMs) acquire better causal reasoning abilities, and whether code prompts better describe the causal structure than text prompts. Our experiments show that compared to general-purpose LLMs like Llama-2 and GPT-3, Code-LLMs like CodeLlama and Codex are significantly better in causal reasoning. Code prompts not only work well for Code-LLMs, but also help improve the performance of most general-purpose LLMs. To understand why code prompts are effective, we intervene on the prompts from different aspects, and discover that the programming structure is crucial in code prompt design, while models are more robust towards format perturbations.We further explore whether exposing models with ... Among open-source models, we use the 7B-chat version of Llama-2, QWEN1.5, and DEEPSEEK-LLM, and the 8×7B-instruct-v0.1 version of MIXTRAL. Among closed-source models, we use the APIs of Gemini-Pro and the textdavinci-002 version of GPT-3. For Code-LLMs, we experiment with two open-source models, CODELLAMA (Roziere et al. 2023) and CODEQWEN1.5 (Bai et al. 2023), and a closed-source model, CODEX (Chen et al. 2021). ... It is worth noting that the code corpus concentrates on code generation and code editing, and is not directly related to causal reasoning. To filter data with conditional statements, we ask ChatGPT to determine if the output code of each instance contains conditional statements. The prompt we"
+      },
+      {
+        "paper_id": "258968140",
+        "markdown_evidence": "The Magic of IF: Investigating Causal Reasoning Abilities in Large Language Models of Code ... The experiments show that compared to text-only LLMs, Code-LLMs with code prompts are significantly better in causal reasoning, and that the programming structure is crucial in code prompt design, while Code- LLMs are robust towards format perturbations. ... Causal reasoning, the ability to identify cause-and-effect relationship, is crucial in human thinking. Although large language models (LLMs) succeed in many NLP tasks, it is still challenging for them to conduct complex causal reasoning like abductive reasoning and counterfactual reasoning. Given the fact that programming code may express causal relations more often and explicitly with conditional statements like ``if``, we want to explore whether Code-LLMs acquire better causal reasoning abilities. Our experiments show that compared to text-only LLMs, Code-LLMs with code prompts are significantly better in causal reasoning. We further intervene on the prompts from different aspects, and discover that the programming structure is crucial in code prompt design, while Code-LLMs are robust towards format perturbations. ... We find that Code-LLMs are very sensitive to the programming structure (specifically, the conditional statements), while being robust towards format perturbations and programming language changes. Our main contributions are as follows: 1) We design code prompts to tackle causal reasoning tasks, by leveraging conditional statements in code to represent causal structures. ... We compare with previous unsupervised methods on the two tasks, including DELOREAN (Qin et al., 2020), COLD (Qin et al., 2022), and DIFFU-SION (Li et al., 2022) on abductive reasoning; and CGMH (Miao et al., 2019), EDUCAT (Chen et al., 2022a), DELOREAN, and COLD on counterfactual reasoning. Among them, DELOREAN and COLD are constraint-based models. They regard the task requirements as constraints (for example, the ... The first requirement is addressed with conditional statements. However, for the second, the target prediction is not always the last part of the conditional statements, e.g., in abductive reasoning we want to predict the hypothesis, which is the condition in the if structure. To address this, we uniformly use functions to represent events. As shown in Figure 2, the causal structure is described in the main"
+      },
+      {
+        "paper_id": "258947371",
+        "markdown_evidence": "Counterfactual reasoning: Testing language models’ understanding of hypothetical scenarios ... It is found that models are consistently able to override real-world knowledge in counterfactual scenarios, and that this effect is more robust in case of stronger baseline world knowledge—however, it is also found that for most models this effect appears largely to be driven by simple lexical cues. ... Current pre-trained language models have enabled remarkable improvements in downstream tasks, but it remains difficult to distinguish effects of statistical correlation from more systematic logical reasoning grounded on the understanding of real world. We tease these factors apart by leveraging counterfactual conditionals, which force language models to predict unusual consequences based on hypothetical propositions. We introduce a set of tests from psycholinguistic experiments, as well as larger-scale controlled datasets, to probe counterfactual predictions from five pre-trained language models. We find that models are consistently able to override real-world knowledge in counterfactual scenarios, and that this effect is more robust in case of stronger baseline world knowledge—however, we also find that for most models this effect appears largely to be driven by simple lexical cues. When we mitigate effects of both world knowledge and lexical cues to test knowledge of linguistic nuances of counterfactuals, we find that only GPT-3 shows sensitivity to these nuances, though this sensitivity is also non-trivially impacted by lexical associative factors. ... We match target nouns and syntactic constructions across conditions in order to control lexical properties that influence language models' predictions. Table 1 shows example items from the synthetic large-scale dataset (see Section A.1 for example items from the small-scale dataset). ... In this paper we leverage counterfactual conditionals to investigate the capacity of pre-trained LMs (PLMs) to distinguish hypothetical scenarios from reality, and to examine how this interacts with models' use of existing real world knowledge as well as shallower associative cues. ... Table 13: Distance dataset: Example items and percentage of preference for CWC-congruent completion (e.g., \"fish\"). \n\nOther linguistic markers Finally, we use the Marker dataset to probe how other fine-grained linguistic markers affect the accuracy"
+      },
+      {
+        "paper_id": "268987468",
+        "markdown_evidence": "GroundCocoa: A Benchmark for Evaluating Compositional & Conditional Reasoning in Language Models ... This work chooses to study compositional and conditional reasoning, two aspects that are central to human cognition, and introduces GroundCocoa - a lexically diverse benchmark connecting these reasoning skills to the real-world problem of flight booking. ... The rapid progress of large language models (LLMs) has seen them excel and frequently surpass human performance on standard benchmarks. This has enabled many downstream applications, such as LLM agents, to rely on their reasoning to address complex task requirements. However, LLMs are known to unexpectedly falter in simple tasks and under seemingly straightforward circumstances - underscoring the need for better and more diverse evaluation setups to measure their true capabilities. To this end, we choose to study compositional and conditional reasoning, two aspects that are central to human cognition, and introduce GroundCocoa - a lexically diverse benchmark connecting these reasoning skills to the real-world problem of flight booking. Our task involves aligning detailed user preferences with available flight options presented in a multiple-choice format. Results indicate a significant disparity in performance among current state-of-the-art LLMs with even the best performing model, GPT-4 Turbo, not exceeding 67% accuracy despite advanced prompting techniques. ... We aim to evaluate the intrinsic reasoning ability of current LLMs and, thus, exclude methods such as Program of Thoughts (Chen et al., 2023) and Program-aided Language Models (Gao et al., 2023) that offload the critical reasoning component to an external engine such as a Python interpreter. ... Different from these benchmarks, GroundCocoa introduces a unique and substantial challenge for LLMs in the form of conditional and compositional reasoning. Among these, ConditionalQA (Sun et al., 2022) is arguably the most comparable to GroundCocoa in terms of the skills it assesses. ... This metric effectively reflects the breadth of parallel computation or reasoning width required to accurately infer the given user criteria. Since increased branching in the dependency graph suggests a greater conditional complexity in user criteria, we also analyze model performance with increasing maximum degree of the dependency graph. This gives us the extent of"
+      },
+      {
+        "paper_id": "273662478",
+        "markdown_evidence": "Leveraging LLMs for Hypothetical Deduction in Logical Inference: A Neuro-Symbolic Approach ... By enabling an LLM to autonomously perform the transition from propositional logic extraction to sophisticated logical reasoning, LINA not only bolsters the resilience of the reasoning process but also eliminates the dependency on external solvers. ... Large Language Models (LLMs) have exhibited remarkable potential across a wide array of reasoning tasks, including logical reasoning. Although massive efforts have been made to empower the logical reasoning ability of LLMs via external logical symbolic solvers, crucial challenges of the poor generalization ability to questions with different features and inevitable question information loss of symbolic solver-driven approaches remain unresolved. To mitigate these issues, we introduce LINA, a LLM-driven neuro-symbolic approach for faithful logical reasoning. By enabling an LLM to autonomously perform the transition from propositional logic extraction to sophisticated logical reasoning, LINA not only bolsters the resilience of the reasoning process but also eliminates the dependency on external solvers. Additionally, through its adoption of a hypothetical-deductive reasoning paradigm, LINA effectively circumvents the expansive search space challenge that plagues traditional forward reasoning methods. Empirical evaluations demonstrate that LINA substantially outperforms both established propositional logic frameworks and conventional prompting techniques across a spectrum of five logical reasoning tasks. Specifically, LINA achieves an improvement of 24.34% over LINC on the FOLIO ... While LINA demonstrates strong accuracy across various datasets, logical reasoning based on large language models (LLMs) remains a significant research problem. One key limitation of this work is the expressive capacity of first-order logic (FOL). ... Leveraging LLMs for Hypothetical Deduction in Logical Inference: A Neuro-Symbolic Approach ... To address the challenge of huge search spaces of step-by-step reasoning, Kazemi et al. (2023) proposed a backward chaining algorithm that decomposes reasoning into sub-modules that are easier for LLMs to solve. Despite their success in enhancing the reasoning ability of LLMs in specific tasks, existing prompting-based algorithms confront with problems of expensive costs and unstable reasoning"
+      },
+      {
+        "paper_id": "276557738",
+        "markdown_evidence": "Empowering LLMs with Logical Reasoning: A Comprehensive Survey ... Large language models (LLMs) have demonstrated remarkable performance in a broad range of natural language tasks including language generation, classification and translation. * Haoxuan Li and Zhouchen Lin are the corresponding authors. However, recent studies have found that there are still significant challenges to the logical reasoning abilities of LLMs. ... A relevant survey work [Zong and Lin, 2024] focuses on categorical syllogisms, as a specific logical reasoning paradigm, but ignores other complex logic inference rules. In addition, another survey [Lam et al., 2024] only discuss the methods based on external tools such as logical solvers. ... Specifically, LoGiPT [Feng et al., 2024] empowers LLMs by directly learning the reasoning process of logical solvers, avoiding the risk of no answer to the logical questions when facing parsing errors for the solver-based methods. ... Negation consistency, as the basis of logical consistency, requires that p and ¬p cannot hold simultaneously while one of them is true p ⊕ ¬p, i.e., (p ∨ ¬p) ∧ ¬(¬p ∧ p) [Kassner et al., 2023]. In NL, there are two forms of negation consistency: the first is to directly add not to the statement, and the second is to replace the original adjective in the statement with its antonym [Asai and Hajishirzi, 2020], e.g., ... Empirically, recent studies found that LLMs are prone to producing responses that contradict themselves across different questions [Kassner et al., 2023;Ghosh et al., 2025]. For example, LLaMA-2-70B answers true to both questions Is an albatross an organism? and Is an albatross not an organism?."
+      },
+      {
+        "paper_id": "270562070",
+        "markdown_evidence": "Liar, Liar, Logical Mire: A Benchmark for Suppositional Reasoning in Large Language Models ... This paper introduces $\\textit{TruthQuest}$, a benchmark for suppositional reasoning based on the principles of knights and knaves puzzles, and shows that large language models like Llama 3 and Mixtral-8x7B exhibit significant difficulties solving these tasks. ... Knights and knaves problems represent a classic genre of logical puzzles where characters either tell the truth or lie. The objective is to logically deduce each character's identity based on their statements. The challenge arises from the truth-telling or lying behavior, which influences the logical implications of each statement. Solving these puzzles requires not only direct deductions from individual statements, but the ability to assess the truthfulness of statements by reasoning through various hypothetical scenarios. As such, knights and knaves puzzles serve as compelling examples of suppositional reasoning. In this paper, we introduce $\\textit{TruthQuest}$, a benchmark for suppositional reasoning based on the principles of knights and knaves puzzles. Our benchmark presents problems of varying complexity, considering both the number of characters and the types of logical statements involved. Evaluations on $\\textit{TruthQuest}$ show that large language models like Llama 3 and Mixtral-8x7B exhibit significant difficulties solving these tasks. A detailed error analysis of the models' output reveals that lower-performing models exhibit a diverse range of reasoning errors, frequently failing to grasp the concept of truth and lies. In comparison, more proficient models ... Language Models. We assess a total of six LLMs from three prominent open-access model families: Llama 2 (7B, 13B and 70B), Llama 3 (8B and 70B), and Mixtral-8x7B. The publicly accessible weights are obtained from the Hugging Face platform, specifically Llama-2-chat-hf,3 Meta-Llama-3-Instruct, 3 and Mixtral-8x7B-Instruct-v0.1. 4 For further details about the models and prompts we employ, please refer to Appendix A.1."
+      },
+      {
+        "paper_id": "277743451",
+        "markdown_evidence": "RMath: A Logic Reasoning-Focused Datasets Toward Mathematical Multistep Reasoning Tasks ... A dataset specifically for multiple step reasoning tasks: Reasoning-Math (RMath), which focuses on evaluating logical reasoning abilities with mathematical reasoning problems, covering typical problem types, including direct reasoning problems, hypothetical reasoning problems, and nested reasoning problems. ... Mathematical reasoning ability objectively reflects a language model's understanding of implicit knowledge in contexts, with logic being a prerequisite for exploring, articulating and establishing effective reasoning. Large language models (LLMs) have shown great potential in complex reasoning tasks represented by mathematical reasoning. However, existing mathematical datasets either focus on commonsense reasoning, assessing the model's knowledge application ability, or arithmetic problems with fixed calculation rules, evaluating the model's rapid learning capability. There is a lack of datasets that require solving problems solely through logical reasoning. As a result, the performance of LLMs in accurately understanding the implicit logical relationships in problems and deriving conclusions based solely on given conditions is hindered. To address this challenge, we construct a dataset specifically for multiple step reasoning tasks: Reasoning-Math (RMath). This dataset focuses on evaluating logical reasoning abilities with mathematical reasoning problems, covering typical problem types, including direct reasoning problems, hypothetical reasoning problems, and nested reasoning problems. Additionally, we design a standardized annotation scheme that transforms natural language"
+      },
+      {
+        "paper_id": "276318032",
+        "markdown_evidence": "Logical forms complement probability in understanding language model (and human) performance ... This work conducts a systematic investigation of LLMs' ability to perform logical reasoning in natural language using a controlled dataset of hypothetical and disjunctive syllogisms in propositional and modal logic as the testbed for understanding LLM performance. ... With the increasing interest in using large language models (LLMs) for planning in natural language, understanding their behaviors becomes an important research question. This work conducts a systematic investigation of LLMs' ability to perform logical reasoning in natural language. We introduce a controlled dataset of hypothetical and disjunctive syllogisms in propositional and modal logic and use it as the testbed for understanding LLM performance. Our results lead to novel insights in predicting LLM behaviors: in addition to the probability of input (Gonen et al., 2023; McCoy et al., 2024), logical forms should be considered as important factors. In addition, we show similarities and discrepancies between the logical reasoning performances of humans and LLMs by collecting and comparing behavioral data from both. ... In addition, we compare the behaviors of LLMs and humans using the same data through human behavioral experiments. We discuss the implications of our results as follows. Probability in language models. Probability and, relatedly, perplexity are often used as intrinsic evaluation metrics for language models. While Gonen et al. ( 2023) and McCoy et al. ... Consider the statement Alice is not eating., while it is true in a world where Alice is not eating, it may become false in a hypothetical possible world where Alice is indeed eating. This idea, known as possible world semantics (Kripke, 1959), provides a framework for expressing more nuanced statements about event possibilities, such as Alice may be eating and Alice must be eating. ... p-value propositional < may < 0.001 must < propositional < 0.001 must < may < 0.001 disjunctive < modus ponens < 0.001 modus tollens < modus ponens < 0.001 modus tollens < disjunctive < 0.001 \n\nTable 2: Hypothesis testing results on the effect of logical form factors on soft accuracy (Figure 3). logical forms, \n\nwith the linear fixed effects of (i.) modality, (ii.) argument form, and (iii.) input perplexity. ... ( 2), we use hypothetical and"
+      },
+      {
+        "paper_id": "276818010",
+        "markdown_evidence": "Competency of Large Language Models in Evaluating Appropriate Responses to Suicidal Ideation: Comparative Study ... Background With suicide rates in the United States at an all-time high, individuals experiencing suicidal ideation are increasingly turning to large language models (LLMs) for guidance and support. Objective The objective of this study was to assess the competency of 3 widely used LLMs to distinguish appropriate versus inappropriate responses when engaging individuals who exhibit suicidal ideation. Methods This observational, cross-sectional study evaluated responses to the revised Suicidal Ideation Response Inventory (SIRI-2) generated by ChatGPT-4o, Claude 3.5 Sonnet, and Gemini 1.5 Pro. Data collection and analyses were conducted in July 2024. A common training module for mental health professionals, SIRI-2 provides 24 hypothetical scenarios in which a patient exhibits depressive symptoms and suicidal ideation, followed by two clinician responses. Clinician responses were scored from –3 (highly inappropriate) to +3 (highly appropriate). All 3 LLMs were provided with a standardized set of instructions to rate clinician responses. We compared LLM responses to those of expert suicidologists, conducting linear regression analyses and converting LLM responses to z scores to identify outliers (z score>1.96 or <–1.96; P<0.05). Furthermore, we compared final SIRI-2 scores to those ... In our regression, LLMs assigned significantly higher scores to hypothetical responses, compared to expert suicidologists, indicating LLMs perceived responses as more appropriate than experts did (see Table 2) with the mean difference in item-level scores being 0.865 (95% CI 0.613-1.118; P<.001) for ChatGPT-4o, 0.608 (95% CI 0.408-0.809; P<.001) for Claude 3.5 Sonnet, and 0.733 (95% CI 0.352-1.114; P<.001) for"
+      },
+      {
+        "paper_id": "276401574",
+        "markdown_evidence": "Enhancing participatory planning with ChatGPT-assisted planning support systems: a hypothetical case study in Seoul ... This new PPSS platform enhances usefulness by improving stakeholder communication and empowering the public to contribute comprehensive, inclusive, and creative solutions for sustainable urban development. ... ABSTRACT Recent advancements in technology for planning support have led to increased interest in participatory planning support systems (PPSSs). However, existing PPSSs often struggle to facilitate higher levels of public participation due to limitations in their practical usefulness. Emerging large language models (LLMs) like ChatGPT, along with artificial intelligence (AI) technologies such as deep generative methods, offer new opportunities to enhance PPSS, though this potential has yet to be fully explored. This study aims to address these gaps by integrating LLMs, specifically ChatGPT, into a new web-based PPSS platform. The platform operates as a multi-agent system with five key components: users, process, agents, knowledge, and tools. Stakeholders engage with ChatGPT-enabled personalized agents that are supported by a project-specific knowledge base. These agents understand user preferences, concerns, and needs, and call upon task agents, also powered by ChatGPT, to execute tasks, including applying deep generative tools that enable stakeholders to create their own designs. A workflow agent coordinates the overall process, facilitating the sharing of information, data, opinions, and designs to promote communication and build consensus among stakeholders. The platform was"
+      },
+      {
+        "paper_id": "268296910",
+        "markdown_evidence": "Evaluation of LLMs on Syntax-Aware Code Fill-in-the-Middle Tasks ... This comprehensive evaluation of 15 LLMs shows that FIM pretraining not only enhances FIM proficiency but also improves Left-to-Right (L2R) inference using LLMs, suggesting that pretraining methods and data quality have more impact than model size. ... We introduce Syntax-Aware Fill-In-the-Middle (SAFIM), a new benchmark for evaluating Large Language Models (LLMs) on the code Fill-in-the-Middle (FIM) task. This benchmark focuses on syntax-aware completions of program structures such as code blocks and conditional expressions, and includes 17,720 examples from multiple programming languages, sourced from recent code submissions after April 2022 to minimize data contamination. SAFIM provides a robust framework with various prompt designs and novel syntax-aware post-processing techniques, facilitating accurate and fair comparisons across LLMs. Our comprehensive evaluation of 15 LLMs shows that FIM pretraining not only enhances FIM proficiency but also improves Left-to-Right (L2R) inference using LLMs. Our findings challenge conventional beliefs and suggest that pretraining methods and data quality have more impact than model size. SAFIM thus serves as a foundational platform for future research in effective pretraining strategies for code LLMs. The evaluation toolkit and dataset are available at https://github.com/gonglinyuan/safim, and the leaderboard is available at https://safimbenchmark.com. ... Large Language Models for Code. The emergence of Large Language Models (LLMs) like GPT-3 (Brown et al., 2020) in natural language processing has led to the understanding that merely increasing the number of parameters in pretrained language models will ensure superior performance on unseen tasks. This has led to the application of LLMs to code-related tasks, particularly in code generation. ... For coding tasks, InCoder (Fried et al., 2023) shows the effectiveness of FIM as a pretraining objective for decoderonly models. Fried et al. (2023) further establishes the HumanEval-Infilling benchmark, further explored by Bavarian et al. (2022) in evaluating GPT-3/Codex variants, showing that a pretraining mix with a 90% FIM ratio does not harm Left-to-Right (L2R) generation performance. CodeL-LaMa's evaluations ... Table 1 shows the implementations used for evaluating each LLM, including additional"
+      },
+      {
+        "paper_id": "254366369",
+        "markdown_evidence": "Counterfactual reasoning: Do language models need world knowledge for causal understanding? ... It is found that models are consistently able to override real-world knowledge in counterfactual scenarios, and that this effect is more robust in case of stronger baseline world knowledge -- however, it is also found that for most models this effect appears largely to be driven by simple lexical cues. ... Current pre-trained language models have enabled remarkable improvements in downstream tasks, but it remains difficult to distinguish effects of statistical correlation from more systematic logical reasoning grounded on understanding of the real world. In this paper we tease these factors apart by leveraging counterfactual conditionals, which force language models to predict unusual consequences based on hypothetical propositions. We introduce a set of tests drawn from psycholinguistic experiments, as well as larger-scale controlled datasets, to probe counterfactual predictions from a variety of popular pre-trained language models. We find that models are consistently able to override real-world knowledge in counterfactual scenarios, and that this effect is more robust in case of stronger baseline world knowledge -- however, we also find that for most models this effect appears largely to be driven by simple lexical cues. When we mitigate effects of both world knowledge and lexical cues to test knowledge of linguistic nuances of counterfactuals, we find that only GPT-3 shows sensitivity to these nuances, though this sensitivity is also non-trivially impacted by lexical associative factors. ... An example is shown in Table 1. Experiments We investigate the counterfactual reasoning ability in five pre-trained language models. We include autoregressive transformers in the GPT family (GPT-2 [11] and GPT-3 [1]) and masked language models in the BERT family (BERT [2], RoBERTa [6] and MPNet [13]). ... In this paper we leverage counterfactual conditionals to investigate the capacity of pre-trained LMs (PLMs) to distinguish hypothetical scenarios from reality, and to examine how this interacts with models' use of existing real world knowledge as well as shallower associative cues. ... Experiments As above, we calculate percentage of items in which models prefer the counterfactual over factual continuations. Models that are relying on linguistic information beyond simple"
+      },
+      {
+        "paper_id": "276235499",
+        "markdown_evidence": "Investigating the Robustness of Deductive Reasoning with Large Language Models ... This work proposes the first study of the robustness of formal and informal LLM-based deductive reasoning methods with a framework with two families of perturbations: adversarial noise and counterfactual statements, which jointly generate seven perturbed datasets. ... Large Language Models (LLMs) have been shown to achieve impressive results for many reasoning-based NLP tasks, suggesting a degree of deductive reasoning capability. However, it remains unclear to which extent LLMs, in both informal and autoformalisation methods, are robust on logical deduction tasks. Moreover, while many LLM-based deduction methods have been proposed, a systematic study that analyses the impact of their design components is lacking. Addressing these two challenges, we propose the first study of the robustness of formal and informal LLM-based deductive reasoning methods. We devise a framework with two families of perturbations: adversarial noise and counterfactual statements, which jointly generate seven perturbed datasets. We organize the landscape of LLM reasoners according to their reasoning format, formalisation syntax, and feedback for error recovery. The results show that adversarial noise affects autoformalisation, while counterfactual statements influence all approaches. Detailed feedback does not improve overall accuracy despite reducing syntax errors, pointing to the challenge of LLM-based methods to self-correct effectively. ... Metrics. We use accuracy as a standard metric for classification tasks. We report execution rate as the fraction of parsable texts and valid accuracy as the accuracy on these parsable samples in the Appendix A due to space limitations. LLMs. We test GPT 4o-mini, as well as a smaller and a larger variant for the three open-source LLM families: Gemma-2 (9b and 27b), Mistral (7b and Small), and Llama 3.1 (8b and 70b). ... Formalisation. We consider common-sense contradictions by altering original statements in c into counterfactual ones. The inclusion of counterfactual statements is motivated by the requirement for faithful reasoning. Namely, the validity of a deduction depends only on the structure of the logical form, which in turn should follow the original task description in the context and the question. ... Many works try to generate adversarial examples to"
+      },
+      {
+        "paper_id": "268041909",
+        "markdown_evidence": "Cause and Effect: Can Large Language Models Truly Understand Causality? ... This research proposes a novel architecture called Context-Aware Reasoning Enhancement with Counterfactual Analysis (CARE-CA) to enhance causal reasoning and explainability and presents CausalNet, a novel dataset specifically curated to benchmark and enhance the causal reasoning capabilities of LLMs. ... With the rise of Large Language Models (LLMs), it has become crucial to understand their capabilities and limitations in deciphering and explaining the complex web of causal relationships that language entails. Current methods use either explicit or implicit causal reasoning, yet there is a strong need for a unified approach combining both to tackle a wide array of causal relationships more effectively. This research proposes a novel architecture called Context-Aware Reasoning Enhancement with Counterfactual Analysis (CARE-CA) to enhance causal reasoning and explainability. The proposed framework incorporates an explicit causal detection module with ConceptNet and counterfactual statements, as well as implicit causal detection through LLMs. Our framework goes one step further with a layer of counterfactual explanations to accentuate LLMs' understanding of causality. The knowledge from ConceptNet enhances the performance of multiple causal reasoning tasks such as causal discovery, causal identification, and counterfactual reasoning. The counterfactual sentences add explicit knowledge of `not caused by' scenarios. By combining these powerful modules, our model aims to provide a deeper understanding of causal relationships, enabling enhanced interpretability. \nEvaluation of ... Counterfactual Questions: Counterfactual questions explore how changes in the scenario's main cause might impact the outcome. Models are evaluated based on their capacity to predict the consequences of hypothetical alterations to the causal factor. Choices and Answers: Each question is accompanied by a set of choices, one designated as the correct answer. ... Here we test CARE-CA's ability to reason with hypothetical scenarios and their implications for understanding potential outcomes. The timetravel dataset (Qin et al. 2019), focused on counterfactual reasoning, highlighted models' challenges in understanding hypothetical scenarios."
+      },
+      {
+        "paper_id": "253181032",
+        "markdown_evidence": "Counterfactual reasoning: Do Language Models need world knowledge for causal inference? ... It is found that models are consistently able to override real-world knowledge in counterfactual scenarios, and that this effect is more robust in case of stronger baseline world knowledge—however, it is also found that for most models this effect appears largely to be driven by simple lexical cues."
+      },
+      {
+        "paper_id": "278327979",
+        "markdown_evidence": "$\\textit{New News}$: System-2 Fine-tuning for Robust Integration of New Knowledge ... The results demonstrate that the Self-QA protocol of Sys2-FT significantly improves models'in-weight learning of the news while preserving general capabilities, and discover the contextual shadowing effect. ... Humans and intelligent animals can internalize new information and accurately internalize their implications to perform downstream tasks. While large language models (LLMs) can achieve this through in-context learning (ICL) when the information (news) is explicitly given as context, adequately integrating the information into model weights via fine-tuning remains challenging. In this paper, we introduce New News, a dataset composed of hypothetical yet plausible news spanning multiple domains (mathematics, coding, discoveries, leaderboards, events), accompanied by downstream evaluation questions whose correct answers critically depend on understanding and internalizing the news. First, we demonstrate a substantial gap between naive fine-tuning and in-context learning (FT-ICL gap) on our dataset. To address this gap, we explore a suite of self-play data generation protocols -- paraphrases, implications, and Self-QA -- designed to distill the knowledge processed by the model with context into the weights of the model, which we term System-2 Fine-tuning (Sys2-FT). We systematically evaluate ICL and Sys2-FT performance across data domains and model scales with the Qwen 2.5 family of models. Our results demonstrate that the Self-QA protocol of Sys2-FT significantly improves"
+      },
+      {
+        "paper_id": "277150543",
+        "markdown_evidence": "MathFusion: Enhancing Mathematic Problem-solving of LLM through Instruction Fusion ... Experimental results demonstrate that MathFusion achieves substantial improvements in mathematical reasoning while maintaining high data efficiency, boosting performance by 18.0 points in accuracy across diverse benchmarks while requiring only 45K additional synthetic instructions, representing a substantial improvement over traditional single-instruction approaches. ... Large Language Models (LLMs) have shown impressive progress in mathematical reasoning. While data augmentation is promising to enhance mathematical problem-solving ability, current approaches are predominantly limited to instance-level modifications-such as rephrasing or generating syntactic variations-which fail to capture and leverage the intrinsic relational structures inherent in mathematical knowledge. Inspired by human learning processes, where mathematical proficiency develops through systematic exposure to interconnected concepts, we introduce MathFusion, a novel framework that enhances mathematical reasoning through cross-problem instruction synthesis. MathFusion implements this through three fusion strategies: (1) sequential fusion, which chains related problems to model solution dependencies; (2) parallel fusion, which combines analogous problems to reinforce conceptual understanding; and (3) conditional fusion, which creates context-aware selective problems to enhance reasoning flexibility. By applying these strategies, we generate a new dataset, \\textbf{MathFusionQA}, followed by fine-tuning models (DeepSeekMath-7B, Mistral-7B, Llama3-8B) on it. Experimental results demonstrate that MathFusion achieves substantial improvements in mathematical reasoning while ... Context-aware reasoning necessitates the dynamic selection or comparison of solutions based on conditional constraints. Conditional fusion synthesizes P cond F by integrating P A and P B into a cohesive real-world scenario, where the final solution is derived through contextual comparison or selection of outcomes from P A and P B . ... Existing mathematical data augmentation methods primarily focus on two aspects: enhancing existing data and generating new data. Enhancing existing data typically involves modifying the problem or solution. For the problem, strategies include altering the level of complexity/difficulty (Luo et al.,"
+      },
+      {
+        "paper_id": "265305917",
+        "markdown_evidence": "Evaluating the Efficacy of ChatGPT in Navigating the Spanish Medical Residency Entrance Examination (MIR): Promising Horizons for AI in Clinical Medicine ... GPT-4 performs robustly on the Spanish MIR examination, with varying capabilities to discriminate knowledge across specialties, especially when considering AI’s potential role in real-world medical practice and its implications for patient safety. ... The rapid progress in artificial intelligence, machine learning, and natural language processing has led to increasingly sophisticated large language models (LLMs) for use in healthcare. This study assesses the performance of two LLMs, the GPT-3.5 and GPT-4 models, in passing the MIR medical examination for access to medical specialist training in Spain. Our objectives included gauging the model’s overall performance, analyzing discrepancies across different medical specialties, discerning between theoretical and practical questions, estimating error proportions, and assessing the hypothetical severity of errors committed by a physician. Material and methods: We studied the 2022 Spanish MIR examination results after excluding those questions requiring image evaluations or having acknowledged errors. The remaining 182 questions were presented to the LLM GPT-4 and GPT-3.5 in Spanish and English. Logistic regression models analyzed the relationships between question length, sequence, and performance. We also analyzed the 23 questions with images, using GPT-4’s new image analysis capability. Results: GPT-4 outperformed GPT-3.5, scoring 86.81% in Spanish (p < 0.001). English translations had a slightly enhanced performance. GPT-4 scored 26.1% of the questions with images in English. ... The agreement between the two submissions, as measured by Cohen's Kappa interrater, was substantial, with a value of 0.7418 (95% CI: 0.5973-0.8863), suggesting consistent performance across both trials. Moreover, the McNemar's test revealed no statistically significant differences between the two attempts (p = 0.344). We observed consistency in evaluating GPT-4's performance on the Spanish MIR examination across two ... A testament to the vast and ever-growing body of medical information is a recent search by the authors on PubMed on 19 August 2023, which yielded a staggering 387,974 papers related to COVID-19 alone. With search terms like \"coronavirus\", \"COVID\", \"COVID-19\","
+      },
+      {
+        "paper_id": "252355490",
+        "markdown_evidence": "Possible Stories: Evaluating Situated Commonsense Reasoning under Multiple Possible Scenarios ... For modern pretrained language models, we use BERT (base and large; Devlin et al., 2019), RoBERTa (base and large; Liu et al., 2019b), and DeBERTa (base and large of v3; He et al., 2021). ... Researchers have coined the term counterfactual reasoning to refer to the property of reasoning over hypothetical events and have proposed benchmarks to evaluate the counterfactual reasoning ability of machines. Tandon et al. (2019) collect questions that explicitly ask what if, based on procedural texts. Qin et al. ... Our work is motivated by recent efforts to create evaluation frameworks for commonsense reasoning situated in extra-linguistic contexts. ... In our experiments, we use RACE for fine-tuning our pretrained language models to adapt them to the multiple-choice task. This is because we observe that RoBERTa-large and DeBERTa-large finetuned on RACE show higher performance than the corresponding models fine-tuned on CosmosQA (Table 8) in both unsupervised and supervised settings. among the models we use in our experiments. ... The possible consequences for the same context may vary depending on the situation we refer to. However, current studies in natural language processing do not focus on situated commonsense reasoning under multiple possible scenarios. This study frames this task by asking multiple questions with the same set of possible endings as candidate answers, given a short story text. Our resulting dataset, Possible Stories, consists of more than 4.5K questions over 1.3K story texts in English. We discover that even current strong pretrained language models struggle to answer the questions consistently, highlighting that the highest accuracy in an unsupervised setting (60.2%) is far behind human accuracy (92.5%). Through a comparison with existing datasets, we observe that the questions in our dataset contain minimal annotation artifacts in the answer options. In addition, our dataset includes examples that require counterfactual reasoning, as well as those requiring readers’ reactions and fictional information, suggesting that our dataset can serve as a challenging testbed for future studies on situated commonsense reasoning."
+      },
+      {
+        "paper_id": "258426662",
+        "markdown_evidence": "Causal Reasoning and Large Language Models: Opening a New Frontier for Causality ... Across a wide range of tasks, it is found that LLMs can generate text corresponding to correct causal arguments with high probability, surpassing the best-performing existing methods. ... The causal capabilities of large language models (LLMs) are a matter of significant debate, with critical implications for the use of LLMs in societally impactful domains such as medicine, science, law, and policy. We conduct a\"behavorial\"study of LLMs to benchmark their capability in generating causal arguments. Across a wide range of tasks, we find that LLMs can generate text corresponding to correct causal arguments with high probability, surpassing the best-performing existing methods. Algorithms based on GPT-3.5 and 4 outperform existing algorithms on a pairwise causal discovery task (97%, 13 points gain), counterfactual reasoning task (92%, 20 points gain) and event causality (86% accuracy in determining necessary and sufficient causes in vignettes). We perform robustness checks across tasks and show that the capabilities cannot be explained by dataset memorization alone, especially since LLMs generalize to novel datasets that were created after the training cutoff date. That said, LLMs exhibit unpredictable failure modes, and we discuss the kinds of errors that may be improved and what are the fundamental limits of LLM-based answers. Overall, by operating on the text metadata, LLMs bring capabilities so far understood to be restricted to humans, such as using collected ... A large language model is a particular kind of machine learning model, built using transformers, a class of deep neural network architectures (Devlin et al., 2019). The primary task of LLMs is next-word completion. Initially, next-word prediction is based primarily on word distribution probabilities. ... In this section, we first review the concept of counterfactual reasoning and show that LLMs can answer counterfactual questions about an event with accuracy close to that of humans on a benchmark task. We then present an example scenario to illustrate the challenges of modeling real-world events using actual causality and introduce the two key counterfactual concepts used in formal models of actual causality: ... and GPT-4. For example, on this vignette, both LLMs correctly answer that Alice is not a necessary"
+      },
+      {
+        "paper_id": "278740758",
+        "markdown_evidence": "Mitigating Content Effects on Reasoning in Language Models through Fine-Grained Activation Steering ... It is demonstrated that activation-level interventions offer a scalable inference-time strategy for enhancing the robustness of LLMs, contributing towards more systematic and unbiased reasoning capabilities. ... Large language models (LLMs) exhibit reasoning biases, often conflating content plausibility with formal logical validity. This can lead to wrong inferences in critical domains, where plausible arguments are incorrectly deemed logically valid or vice versa. This paper investigates how content biases on reasoning can be mitigated through activation steering, an inference-time technique that modulates internal activations. Specifically, after localising the layers responsible for formal and plausible inference, we investigate activation steering on a controlled syllogistic reasoning task, designed to disentangle formal validity from content plausibility. An extensive empirical analysis reveals that contrastive steering methods consistently support linear control over content biases. However, a static approach is insufficient to debias all the tested models. We then investigate how to control content effects by dynamically determining the steering parameters through fine-grained conditional methods. By introducing a novel kNN-based conditional approach (K-CAST), we demonstrate that conditional steering can effectively reduce biases on unresponsive models, achieving up to 15% absolute improvement in formal reasoning accuracy. Finally, we found that steering for content effects is"
+      },
+      {
+        "paper_id": "275133569",
+        "markdown_evidence": "Counterfactual Samples Constructing and Training for Commonsense Statements Estimation ... By training PE models with CCSG, this work encourages them to focus on critical words, thereby enhancing both their language-explainable and commonsense-sensitive capabilities, and demonstrates the effectiveness of CCSG in addressing commonsense reasoning challenges. ... Plausibility Estimation (PE) plays a crucial role for enabling language models to objectively comprehend the real world. While large language models (LLMs) demonstrate remarkable capabilities in PE tasks but sometimes produce trivial commonsense errors due to the complexity of commonsense knowledge. They lack two key traits of an ideal PE model: a) Language-explainable: relying on critical word segments for decisions, and b) Commonsense-sensitive: detecting subtle linguistic variations in commonsense. To address these issues, we propose a novel model-agnostic method, referred to as Commonsense Counterfactual Samples Generating (CCSG). By training PE models with CCSG, we encourage them to focus on critical words, thereby enhancing both their language-explainable and commonsense-sensitive capabilities. Specifically, CCSG generates counterfactual samples by strategically replacing key words and introducing low-level dropout within sentences. These counterfactual samples are then incorporated into a sentence-level contrastive training framework to further enhance the model's learning process. Experimental results across nine diverse datasets demonstrate the effectiveness of CCSG in addressing commonsense reasoning challenges, with our CCSG method showing 3.07% improvement against ... Counterfactual Samples Constructing and Training for Commonsense Statements Estimation"
+      },
+      {
+        "paper_id": "266756533",
+        "markdown_evidence": "Catalyst for Common Law Evolution: Experiment with ChatGPT and a Hypothetical Common Law Jurisdiction ... ChatGPT’s capability to embrace the essence of the common law system, namely the doctrine of stare decisis, is assessed and it is observed that ChatGPT mimic the functions of a common law court by citing, following, and distinguishing its own precedents, but it accomplishes this with significantly fewer resources and in less time. ... Abstract This paper aims to carry out empirical analysis of the viability of large language models (LLMs), specifically ChatGPT, in simulating the common law system and facilitating its evolutionary processes. Drawing on the Theory of Rules Evolution, it is understood that common law generates efficient rules by natural selection through constant litigation. Nonetheless, this evolutionary mechanism faces several hindrances. The process of change is typically slow and incremental. Courts often have to wait for a case that’s deemed ‘appropriate’ before they can change the law, leading to extended delays. Additionally, courts frequently struggle to make efficient decisions due to limited information. Other factors that decelerate the creation of efficient rules include judicial bias, unequal distribution of resources among litigating parties, and the diminishing presence of a competitive legal order. This study first assesses ChatGPT’s capability to embrace the essence of the common law system, namely the doctrine of stare decisis. We then assess its potential to overcome the hindrances in common law development and promote efficient rules. Through a series of meticulously designed hypothetical cases set in a virtual jurisdiction called the “Matrix Kingdom,” we observed that"
+      },
+      {
+        "paper_id": "278905571",
+        "markdown_evidence": "Business as Rulesual: A Benchmark and Framework for Business Rule Flow Modeling with LLMs ... BESTX, a carefully curated benchmark comprising 409 real-world business documents and 2,855 expert-annotated rules, and ExIde, a structure-aware reasoning framework that investigates five distinct prompting strategies, revealing that executable grounding serves as a superior inductive bias, significantly outperforming standard prompts in rule extraction. ... Extracting structured procedural knowledge from unstructured business documents is a critical yet unresolved bottleneck in process automation. While prior work has focused on extracting linear action flows from instructional texts, such as recipes, it has insufficiently addressed the complex logical structures, including conditional branching and parallel execution, that are pervasive in real-world regulatory and administrative documents. Furthermore, existing benchmarks are limited by simplistic schemas and shallow logical dependencies, restricting progress toward logic-aware large language models.To bridge this Logic Gap, we introduce BREX, a carefully curated benchmark comprising 409 real-world business documents and 2,855 expert-annotated rules. Unlike prior datasets centered on narrow service scenarios, BREX spans over 30 vertical domains, covering scientific, industrial, administrative, and financial regulations. We further propose ExIde, a structure-aware reasoning framework that investigates five distinct prompting strategies, ranging from implicit semantic alignment to executable grounding via pseudo-code generation. This enables explicit modeling of rule dependencies and provides an out-of-the-box framework for different business customers without finetuning their own"
+      },
+      {
+        "paper_id": "270710993",
+        "markdown_evidence": "Multi-LogiEval: Towards Evaluating Multi-Step Logical Reasoning Ability of Large Language Models ... This work proposes Multi-LogiEval, a comprehensive evaluation dataset encompassing multi-step logical reasoning with various inference rules and depths consisting of more than 30 inference rules and more than 60 of their combinations with various depths, and conducts evaluations on a range of LLMs. ... As Large Language Models (LLMs) continue to exhibit remarkable performance in natural language understanding tasks, there is a crucial need to measure their ability for human-like multi-step logical reasoning. Existing logical reasoning evaluation benchmarks often focus primarily on simplistic single-step or multi-step reasoning with a limited set of inference rules. Furthermore, the lack of datasets for evaluating non-monotonic reasoning represents a crucial gap since it aligns more closely with human-like reasoning. To address these limitations, we propose Multi-LogiEval, a comprehensive evaluation dataset encompassing multi-step logical reasoning with various inference rules and depths. Multi-LogiEval covers three logic types — propositional, first-order, and non-monotonic consisting of more than 30 inference rules and more than 60 of their combinations with various depths. Leveraging this dataset, we conduct evaluations on a range of LLMs such as GPT-4, ChatGPT, Gemini-Pro, Orca, and Mistral, employing a zero-shot chain-of-thought. Experimental results show that there is a significant drop in the performance of LLMs as the reasoning steps/depth increases (average accuracy of ~68% at depth-1 to ~43% at depth-5). We further conduct a thorough investigation of reasoning chains ... In the end, we perform human validation of each generated instance to ensure the quality. We evaluate a range of LLMs, including GPT-4, ChatGPT, Gemini-Pro, Yi-34B (Young et al., 2024), Orca-2-13B (Mitra et al., 2023), and Mistral-7B (Wei et al., 2021) on Multi-LogiEval using Zeroshot Chain-of-Thought (Zero-shot-CoT) prompting (Wei et al., 2022). ... In this section, we illustrate multi-step reasoning for PL and FOL using natural language examples for depths 2 through 5. Table 12 provides examples in natural language for PL. We provide one example of rule combinations for each depth. For each example, we provide the inference rules and propositions, as well as the respective context"
+      },
+      {
+        "paper_id": "227231526",
+        "markdown_evidence": "Lee at SemEval-2020 Task 5: ALBERT Model Based on the Maximum Ensemble Strategy and Different Data Sampling Methods for Detecting Counterfactual Statements ... This article describes the system submitted to SemEval 2020 Task 5: Modelling Causal Reasoning in Language: Detecting Counterfactuals, which uses the ALBERT model and the maximum ensemble method based on the ALberT model to solve this sub-task. ... This article describes the system submitted to SemEval 2020 Task 5: Modelling Causal Reasoning in Language: Detecting Counterfactuals. In this task, we only participate in the subtask A which is detecting counterfactual statements. In order to solve this sub-task, first of all, because of the problem of data balance, we use the undersampling and oversampling methods to process the data set. Second, we used the ALBERT model and the maximum ensemble method based on the ALBERT model. Our methods achieved a F1 score of 0.85 in subtask A. ... In the field of natural language processing, common sense problems and natural inference problems are relevant to our task. These two problems have large data sets. By describing the data set, we can show the development of these two fields from the content of the data set. Meanwhile, the enlightenment of related solutions can also be obtained. In the field of common sense, this question has some data sets. ... Unlike other language representation models, BERT is designed to pre-train deep bidirectional representations from unlabeled text by jointly conditioning on both left and right context in all layers. However, the large-scale parameters of the BERT model cause the exponential growth of training time and the shortage of computing resources."
+      },
+      {
+        "paper_id": "257900969",
+        "markdown_evidence": "A Survey of Large Language Models ... This survey systematically reviews recent advancements in LLM techniques across four key dimensions, encompassing benchmarks for key ability dimensions such as core language capabilities, reasoning, and safety, which support comprehensive and reliable assessment of model performance. ... The rapid evolution of large language models (LLMs) has driven a transformative shift in artificial intelligence (AI), reshaping both research paradigms and practical applications. Distinguished from their predecessors by unprecedented scale and advanced capabilities, LLMs necessitate new frameworks for understanding their development, behavior, and societal impact. This survey systematically reviews recent advancements in LLM techniques across four key dimensions: (1)\n pre-training\n methodologies, which establish core model capabilities through large-scale self-supervised training, architectural innovations, and data curation strategies; (2)\n post-training\n techniques, including supervised fine-tuning and reinforcement learning, which adapt foundational models to downstream tasks and enhance their alignment and safety; (3)\n utilization\n strategies, such as in-context learning, prompt engineering, and agentic reasoning, that optimize real-world deployment and enable effective interaction with external environments; and (4)\n evaluation\n methods, encompassing benchmarks for key ability dimensions such as core language capabilities, reasoning, and safety, which support comprehensive and reliable assessment of model performance. Additionally, we identify critical research issues, ... A Survey of Large Language Models"
+      },
+      {
+        "paper_id": "277272275",
+        "markdown_evidence": "A Survey on Mathematical Reasoning and Optimization with Large Language Models ... This survey explores the evolution of mathematical problem-solving in AI, from early statistical learning approaches to modern deep learning and transformer-based methodologies, and the capabilities of pretrained language models and LLMs in performing arithmetic operations, complex reasoning, theorem proving, and structured symbolic computation. ... Mathematical reasoning and optimization are fundamental to artificial intelligence and computational problem-solving. Recent advancements in Large Language Models (LLMs) have significantly improved AI-driven mathematical reasoning, theorem proving, and optimization techniques. This survey explores the evolution of mathematical problem-solving in AI, from early statistical learning approaches to modern deep learning and transformer-based methodologies. We review the capabilities of pretrained language models and LLMs in performing arithmetic operations, complex reasoning, theorem proving, and structured symbolic computation. A key focus is on how LLMs integrate with optimization and control frameworks, including mixed-integer programming, linear quadratic control, and multi-agent optimization strategies. We examine how LLMs assist in problem formulation, constraint generation, and heuristic search, bridging theoretical reasoning with practical applications. We also discuss enhancement techniques such as Chain-of-Thought reasoning, instruction tuning, and tool-augmented methods that improve LLM's problem-solving performance. Despite their progress, LLMs face challenges in numerical precision, logical consistency, and proof verification. Emerging trends such as hybrid ... LLMs have evolved significantly, with various models offering different strengths and weaknesses. In this section we compare some famous LLMs including GPT-4 Turbo, LLaMA3, DeepSeek-R1, Mixtral, Claude3, and Gemini1.5. These models differ in terms of architecture, training data, computational efficiency, response accuracy, and suitability for specific applications. ... Their ability to automate certain aspects of model formulation, constraint generation, and heuristic search makes them valuable tools for decision-making in complex systems. Future research should focus on refining their numerical precision, enhancing symbolic computation capabilities, and improving"
+      },
+      {
+        "paper_id": "276079569",
+        "markdown_evidence": "Large Language Models with Temporal Reasoning for Longitudinal Clinical Summarization and Prediction ... It is indicated that long context windows improve input integration but do not consistently enhance clinical reasoning, and LLMs are still struggling with temporal progression and rare disease prediction, and RAG shows improvements in hallucination in some cases, but does not fully address these limitations. ... Recent advances in large language models (LLMs) have shown potential in clinical text summarization, but their ability to handle long patient trajectories with multi-modal data spread across time remains underexplored. This study systematically evaluates several state-of-the-art open-source LLMs, their Retrieval Augmented Generation (RAG) variants and chain-of-thought (CoT) prompting on long-context clinical summarization and prediction. We examine their ability to synthesize structured and unstructured Electronic Health Records (EHR) data while reasoning over temporal coherence, by re-engineering existing tasks, including discharge summarization and diagnosis prediction from two publicly available EHR datasets. Our results indicate that long context windows improve input integration but do not consistently enhance clinical reasoning, and LLMs are still struggling with temporal progression and rare disease prediction. While RAG shows improvements in hallucination in some cases, it does not fully address these limitations. Our work fills the gap in long clinical text summarization, establishing a foundation for evaluating LLMs with multi-modal data and temporal reasoning.1 ... We evaluate five LLMs with varying context capacities. LLaMA2-13B and Mistral-7B support up to 4K tokens, while LLaMA3-8B allows for 8K. To test long-context capabilities, we include Qwen2.5-7B and DeepSeek-R1 (32B), both of which support input lengths up to 128K tokens. ... EHRShot (Wornow et al., 2023) is a longitudinal dataset comprising fully structured EHR data from 6,739 patients at Stanford Medicine, with over 41 million clinical events. In contrast to MIMIC-III, which contains a mix of structured and unstructured data, EHRShot offers a clean, structured-only setting, allowing for controlled evaluation of temporal reasoning in longitudinal patient records. \n\nWe include EHRShot to"
+      },
+      {
+        "paper_id": "259879569",
+        "markdown_evidence": "Several categories of Large Language Models (LLMs): A Short Survey ... Several categories of Large Language Models (LLMs): A Short Survey ... In this study, the most recent advances in large language models (LLMs) were showcased and the key concepts, findings, and strategies for understanding and exploiting LLMs were presented. A wide range of issues are covered in this study, including model features, datasets, transformer models, and LLM performance benchmarks."
+      },
+      {
+        "paper_id": "276575281",
+        "markdown_evidence": "Zero-Shot Commonsense Validation and Reasoning with Large Language Models: An Evaluation on SemEval-2020 Task 4 Dataset ... Evaluating the performance of Large Language Models on SemEval-2020 Task 4 dataset indicates that larger models outperform previous models and perform closely to human evaluation for Task A, with LLaMA3-70B achieving the highest accuracy. ... This study evaluates the performance of Large Language Models (LLMs) on SemEval-2020 Task 4 dataset, focusing on commonsense validation and explanation. Our methodology involves evaluating multiple LLMs, including LLaMA3-70B, Gemma2-9B, and Mixtral-8x7B, using zero-shot prompting techniques. The models are tested on two tasks: Task A (Commonsense Validation), where models determine whether a statement aligns with commonsense knowledge, and Task B (Commonsense Explanation), where models identify the reasoning behind implausible statements. Performance is assessed based on accuracy, and results are compared to fine-tuned transformer-based models. The results indicate that larger models outperform previous models and perform closely to human evaluation for Task A, with LLaMA3-70B achieving the highest accuracy of 98.40% in Task A whereas, lagging behind previous models with 93.40% in Task B. However, while models effectively identify implausible statements, they face challenges in selecting the most relevant explanation, highlighting limitations in causal and inferential reasoning. ... Our study aims at evaluating the performance of multiple Large Language Models (LLMs) for commonsense validation and reasoning using zero-shot prompting. This approach leverages pre-trained LLMs without task-specific fine-tuning, relying solely on their inherent reasoning capabilities. ... The models demonstrated difficulty in selecting the most appropriate explanation for an implausible statement in Task B, even though they performed well in identifying implausible statements in Task A. This suggests that while the models recognize commonsense inconsistencies, they may struggle to justify their choices accurately. ... This study demonstrates that large-scale LLMs, particularly LLaMA3-70B and Gemma2-9B, exhibit strong commonsense reasoning capabilities even in a zero-shot setting. These models outperform stateof-the-art fine-tuned transformer-based models, indicating that LLMs can generalize well across commonsense"
+      },
+      {
+        "paper_id": "266359151",
+        "markdown_evidence": "Retrieval-Augmented Generation for Large Language Models: A Survey ... This comprehensive review paper offers a detailed examination of the progression of RAG paradigms, encompassing the Naive RAG, the Advanced RAG, and the Modular RAG, and meticulously scrutinizes the tripartite foundation of RAG frameworks, which includes the retrieval, the generation and the augmentation techniques. ... Large Language Models (LLMs) showcase impressive capabilities but encounter challenges like hallucination, outdated knowledge, and non-transparent, untraceable reasoning processes. Retrieval-Augmented Generation (RAG) has emerged as a promising solution by incorporating knowledge from external databases. This enhances the accuracy and credibility of the generation, particularly for knowledge-intensive tasks, and allows for continuous knowledge updates and integration of domain-specific information. RAG synergistically merges LLMs' intrinsic knowledge with the vast, dynamic repositories of external databases. This comprehensive review paper offers a detailed examination of the progression of RAG paradigms, encompassing the Naive RAG, the Advanced RAG, and the Modular RAG. It meticulously scrutinizes the tripartite foundation of RAG frameworks, which includes the retrieval, the generation and the augmentation techniques. The paper highlights the state-of-the-art technologies embedded in each of these critical components, providing a profound understanding of the advancements in RAG systems. Furthermore, this paper introduces up-to-date evaluation framework and benchmark. At the end, this article delineates the challenges currently faced and points out prospective avenues for ... A typical application of RAG is illustrated in Figure 2. Here, a user poses a question to ChatGPT about a recent, widely discussed news. Given ChatGPT's reliance on pretraining data, it initially lacks the capacity to provide updates on recent developments. RAG bridges this information gap by sourcing and incorporating knowledge from external databases. ... L ARGE language models (LLMs) have achieved remark- able success, though they still face significant limitations, especially in domain-specific or knowledge-intensive tasks [1], notably producing \"hallucinations\" [2] when handling queries beyond their training data or requiring current information. ... Despite the considerable progress in RAG"
+      },
+      {
+        "paper_id": "276450659",
+        "markdown_evidence": "Risk-Averse Fine-tuning of Large Language Models ... This work proposes integrating risk-averse principles into LLM fine-tuning to minimize the occurrence of harmful outputs, particularly rare but significant events by optimizing the risk measure of Conditional Value at Risk (CVaR). ... We consider the challenge of mitigating the generation of negative or toxic content by the Large Language Models (LLMs) in response to certain prompts. We propose integrating risk-averse principles into LLM fine-tuning to minimize the occurrence of harmful outputs, particularly rare but significant events. By optimizing the risk measure of Conditional Value at Risk (CVaR), our methodology trains LLMs to exhibit superior performance in avoiding toxic outputs while maintaining effectiveness in generative tasks. Empirical evaluations on sentiment modification and toxicity mitigation tasks demonstrate the efficacy of risk-averse reinforcement learning with human feedback (RLHF) in promoting a safer and more constructive online discourse environment. ... Specialized techniques such as retrieval augmented generation (RAG) [Lewis et al., 2020], supervised fine-tuning (SFT) [Howard and Ruder, 2018], and fine-tuning via human feedback (RLHF) [Christiano et al., 2017, Ziegler et al., 2019, Stiennon et al., 2020, Ouyang et al., 2022] or AI feedback (RLAIF) [Lee et al., 2023] represent pivotal methods for enhancing downstream task performance in large language models. ... Question: For each theoretical result, does the paper provide the full set of assumptions and a complete (and correct) proof? \n\nAnswer: [NA] Justification: The paper presents an empirical approach to inducing risk-averseness in LLMs. ... The work by Liang et al. [2021] introduces Autoregressive INLP (A-INLP), for post-hoc debiasing of large pretrained language models. This method dynamically identifies bias-sensitive tokens and effectively mitigates bias while preserving contextual information in text generation. While it effectively mitigates bias in language models, the approach may not entirely eliminate biases. ... Recent works have tackled safe generation by means of learning appropriate preference models [Bai et al., 2022a, Ganguli et al., 2022, Dai et al., 2023], finetuning on curated data [Solaiman andDennison, 2021, Lu et al., 2022], and expert assisted or rule based decoding [Krause et al., 2020, Liu et al.,"
+      },
+      {
+        "paper_id": "266998862",
+        "markdown_evidence": "EHRAgent: Code Empowers Large Language Models for Few-shot Complex Tabular Reasoning on Electronic Health Records ... This work proposes EHRAgent, a large language model (LLM) agent empowered with accumulative domain knowledge and robust coding capability that enables autonomous code generation and execution to facilitate clinicians in directly interacting with EHRs using natural language. ... Clinicians often rely on data engineers to retrieve complex patient information from electronic health record (EHR) systems, a process that is both inefficient and time-consuming. We propose EHRAgent, a large language model (LLM) agent empowered with accumulative domain knowledge and robust coding capability. EHRAgent enables autonomous code generation and execution to facilitate clinicians in directly interacting with EHRs using natural language. Specifically, we formulate a multi-tabular reasoning task based on EHRs as a tool-use planning process, efficiently decomposing a complex task into a sequence of manageable actions with external toolsets. We first inject relevant medical information to enable EHRAgent to effectively reason about the given query, identifying and extracting the required records from the appropriate tables. By integrating interactive coding and execution feedback, EHRAgent then effectively learns from error messages and iteratively improves its originally generated code. Experiments on three real-world EHR datasets show that EHRAgent outperforms the strongest baseline by up to 29.6% in success rate, verifying its strong capacity to tackle complex clinical tasks with minimal demonstrations."
+      },
+      {
+        "paper_id": "258967540",
+        "markdown_evidence": "Encouraging Divergent Thinking in Large Language Models through Multi-Agent Debate ... A Multi-Agent Debate (MAD) framework is proposed, in which multiple agents express their arguments in the state of “tit for tat” and a judge manages the debate process to obtain a final solution. ... Modern large language models (LLMs) like ChatGPT have shown remarkable performance on general language tasks but still struggle on complex reasoning tasks, which drives the research on cognitive behaviors of LLMs to explore human-like problem-solving strategies. Along this direction, one representative strategy is self-reflection, which asks an LLM to refine the solution with the feedback generated by itself iteratively. However, our study shows that such reflection-style methods suffer from the Degeneration-of-Thought (DoT) problem: once the LLM has established confidence in its solutions, it is unable to generate novel thoughts later through reflection even if its initial stance is incorrect. To address the DoT problem, we propose a Multi-Agent Debate (MAD) framework, in which multiple agents express their arguments in the state of “tit for tat” and a judge manages the debate process to obtain a final solution. Clearly, our MAD framework encourages divergent thinking in LLMs which would be helpful for tasks that require deep levels of contemplation. Experiment results on two challenging datasets, commonsense machine translation and counter-intuitive arithmetic reasoning, demonstrate the effectiveness of our MAD framework. Extensive analyses suggest that the adaptive break of ... Moreover, current LLM-based agents may struggle to maintain coherence and relevance in long context scenarios, leading to potential misunderstandings and loss of context. Enhancing long-text modeling capability of large language models remains a future challenge. LLM-based judge may have a preference for outputs generated by itself. ... It's not necessary to fully agree with each other's perspectives, as our objective is to find the correct answer. \n\n3 Both sides must disagree with each other on every point of the debate. There should be no consensus whatsoever. We measure the inference cost by the number of generated tokens. As listed in Table 12, the selfreflection cost is 1.83 times that of the baseline COT method. Meanwhile, our MAD approach ... Input Format. Our experiments are performed in"
+      },
+      {
+        "paper_id": "246411621",
+        "markdown_evidence": "Chain of Thought Prompting Elicits Reasoning in Large Language Models ... Experiments on three large language models show that chain of thought prompting improves performance on a range of arithmetic, commonsense, and symbolic reasoning tasks. ... We explore how generating a chain of thought -- a series of intermediate reasoning steps -- significantly improves the ability of large language models to perform complex reasoning. In particular, we show how such reasoning abilities emerge naturally in sufficiently large language models via a simple method called chain of thought prompting, where a few chain of thought demonstrations are provided as exemplars in prompting. Experiments on three large language models show that chain of thought prompting improves performance on a range of arithmetic, commonsense, and symbolic reasoning tasks. The empirical gains can be striking. For instance, prompting a 540B-parameter language model with just eight chain of thought exemplars achieves state of the art accuracy on the GSM8K benchmark of math word problems, surpassing even finetuned GPT-3 with a verifier. ... As our results make use of two sets of large language models that is not publicly available, we take the following actions to facilitate reproducibility. First, we provide the exact input prompts for all tasks in Table 20-Table 27 in Appendix G (and emphasize that we do not perform any finetuning and only apply prompting to off-the-shelf language models). ... The other 49 had correct logic and math, with examples shown in Table 8. Five had minor imperfections while maintaining coherent and understandable logic: \n\n• One had underspecified statements (shown in Table 9: \"correct but underspecified statements\"). • One made an unrelated but correct statement (shown in Table 9: \"correct but unrelated statement\"). ... As mentioned in the main text, we analyze 50 chains of thought from LaMDA 137B that led to correct answers in the GSM8K dataset. Of these 50, only one arrived at the correct answer through incorrect reasoning (shown in Table 9: \"correct by chance\"). The other 49 had correct logic and math, with examples shown in Table 8. Five had minor imperfections while maintaining coherent and understandable logic: \n\n• One had ... Almost all cases here involved some error in semantic understanding (see Table 11: \"semantic understanding error\"), and 8 of the 27 also had"
+      },
+      {
+        "paper_id": "220830688",
+        "markdown_evidence": "BUT-FIT at SemEval-2020 Task 5: Automatic Detection of Counterfactual Statements with Deep Pre-trained Language Representation Models ... But-FIT’s submission at SemEval-2020 Task 5: Modelling Causal Reasoning in Language: Detecting Counterfactuals is described, which focused on detecting whether a given statement contains a counterfactual and extracting both antecedent and consequent parts of thecounterfactual from the text. ... This paper describes BUT-FIT’s submission at SemEval-2020 Task 5: Modelling Causal Reasoning in Language: Detecting Counterfactuals. The challenge focused on detecting whether a given statement contains a counterfactual (Subtask 1) and extracting both antecedent and consequent parts of the counterfactual from the text (Subtask 2). We experimented with various state-of-the-art language representation models (LRMs). We found RoBERTa LRM to perform the best in both subtasks. We achieved the first place in both exact match and F1 for Subtask 2 and ranked second for Subtask 1. ... We implemented our neural network models in PyTorch (Paszke et al., 2019) using transformers (Wolf et al., 2019) library. In particular, we experimented with roberta-large and albert-xxlarge-v2 in Subtask 1 and with bertbase-uncased, bert-large-uncased, roberta-large and albert-xxlarge-v1 models in Subtask 2. We used hyperopt (Bergstra et al., 2013) to tune model hyperparameters. ... One of the concerns of SemEval-2020 Task 5: Modelling Causal Reasoning in Language: Detecting Counterfactuals (Yang et al., 2020) is to research the extent to which current state-of-the-art systems can detect counterfactual statements. A counterfactual statement, as defined in this competition, is a conditional composed of two parts. The former part is the antecedent -a statement that is contradictory to known facts. ... We examined the performance of current state-of-the-art language representation models on both subtasks and we found yet another NLP task benefits from unsupervised pre-training. In both cases, we found RoBERTa model to perform slightly better than other LRMs, while its results also being more stable. We have ended up first in both EM and F1 on Subtask 2 and second in Subtask 1. ... For instance, logicians and philosophers focus on logical rules between parts of counterfactual and its outcome (Goodman, 1947). Political scientists conducted counterfactual thought"
+      },
+      {
+        "paper_id": "197707686",
+        "markdown_evidence": "Does acquisition of hypothetical conditional sentences contribute to understanding the principles of scientific enquiry? ... Abstract Principles of scientific investigation are often described using hypothetical “if” sentences. The current study explored whether the acquisition of such language is related to earlier understanding of scientific principles, specifically hypothesis testing and control of variables strategy. 98 children 8–9 years of age were tested individually on conditional sentence comprehension, repetition and scientific reasoning. Reasoning ability was tested with groups of children. Children who failed the scientific reasoning tests were re-administered the test/s they failed and grammar tests two years later (age 10–11). Good understanding of hypothetical conditional sentences at age 8–9 predicted showing understanding of hypothesis testing early (age 8–9) rather than late (age 10–11) and predicted passing control of variables strategy test by age 10–11, controlling for non-verbal and verbal reasoning ability. Comprehension of complex conditional sentences might be helping children with understanding the underlying principles of scientific investigation."
+      },
+      {
+        "paper_id": "59369576",
+        "markdown_evidence": "Conditional antecedents containing the German discourse particle denn: a corpus study ... We discuss the semantic contribution and distribution of conditional antecedents containing the discourse particle denn (“antecedents with denn”, abbreviated as AWD). We propose that AWDs occur only in contexts where (i) the speaker does not believe the antecedent proposition p to hold, and (ii) the truth of p has been nonexplicitly (= tacitly) proposed. To gain a better understanding of (ii), we conduct two corpus studies. The first study investigates the relative location of AWDs with respect to their consequents. We find that unlike antecedents of regular hypothetical conditionals, AWDs occur significantly more often after the material in the consequent and parenthetically inside this material than before it. In a second study, we investigate the position of the tacit proposal relative to the AWD. We find that it typically precedes the AWD. Both results are in accordance with (ii). We then present a classification of the types of tacit proposals that we find with AWDs: speakers use AWDs to qualify their own statements or to doubt proposals of others, in both cases managing potential updates to the common ground. ... The frequencies of the four levels of POSITION OF ANTECEDENT found in the sample are given in Table 1; the relative frequencies are illustrated in Figure 1. The frequencies of the four levels differ significantly (χ 2 = 81.42, df = 3, p < 0.05); the direct comparison of the levels \"Vorfeld\" and \"Nachfeld\" also reveals a statistically significant difference (χ 2 = 9.53, df = 1, p < 0.05). Hence, the data support our ... POSITION OF PROPOSAL when we formulated the hypothesis in Section 3.2.1. To stay conservative with respect to our hypothesis, we grouped these two levels with \"indeterminable\" and \"after\" for the statistical tests. A χ²-test on this grouping showed that the difference between the level \"before\" (168 items) and the group containing all other levels (92 items) is statistically significant (χ² = 22.22, df = 1, p <"
+      },
+      {
+        "paper_id": "182141101",
+        "markdown_evidence": "Conditionals and inferential connections: toward a new semantics* ... Abstract In previous published research (“Conditionals and Inferential Connections: A Hypothetical Inferential Theory,” Cognitive Psychology, 2018), we investigated experimentally what role the presence and strength of an inferential connection between a conditional’s antecedent and consequent plays in how people process that conditional. Our analysis showed the strength of that connection to be strongly predictive of whether participants evaluated the conditional as true, false, or neither true nor false. In this article, we re-analyse the data from our previous research, now focussing on the semantics of conditionals rather than on how they are processed. Specifically, we use those data to compare the main extant semantics with each other and with inferentialism, a semantics according to which the truth of a conditional requires the presence of an inferential connection between the conditional’s component parts."
+      },
+      {
+        "paper_id": "274975890",
+        "markdown_evidence": "THE CATEGORY OF CAUSATIVITY AND HYPOTHETICAL CLAUSES INTRODUCED BY SI IN THE FRENCH LANGUAGE ... The paper aims to study the category of causativity (la catégorie de la causalité) in the French language, within the hypothetical clauses introduced by si (conj.). The research is intended for teachers and students of the French language, as the author attempts to present results of contemporary research in the field. As Patrick Charaudeau points out, there are different approaches to the study of languages, one of which is a semantic approach to grammar, which is characterized by a dominant logical-linguistic system. The basis of this system is the concept of logical operations that refers to connecting two statements whose existence is inter-dependant. It should be noted that the relationship established between the two statements is not a formal one, but conceptual, and is the result of mind operations and hence the name - logical. The author also addresses the problem of translating conditional-causal structures from French into Montenegrin and Serbian."
+      },
+      {
+        "paper_id": "267396333",
+        "markdown_evidence": "Performance of large language models on advocating the management of meningitis: a comparative qualitative study ... Large language models provide valuable advice on differential diagnosis and diagnostic procedures but significantly vary in treatment-specific information for bacterial meningitis when introduced to a realistic clinical scenario, highlighting their utility and limitations in healthcare. ... Objectives We aimed to examine the adherence of large language models (LLMs) to bacterial meningitis guidelines using a hypothetical medical case, highlighting their utility and limitations in healthcare. Methods A simulated clinical scenario of a patient with bacterial meningitis secondary to mastoiditis was presented in three independent sessions to seven publicly accessible LLMs (Bard, Bing, Claude-2, GTP-3.5, GTP-4, Llama, PaLM). Responses were evaluated for adherence to good clinical practice and two international meningitis guidelines. Results A central nervous system infection was identified in 90% of LLM sessions. All recommended imaging, while 81% suggested lumbar puncture. Blood cultures and specific mastoiditis work-up were proposed in only 62% and 38% sessions, respectively. Only 38% of sessions provided the correct empirical antibiotic treatment, while antiviral treatment and dexamethasone were advised in 33% and 24%, respectively. Misleading statements were generated in 52%. No significant correlation was found between LLMs’ text length and performance (r=0.29, p=0.20). Among all LLMs, GTP-4 demonstrated the best performance. Discussion Latest LLMs provide valuable advice on differential diagnosis and diagnostic procedures but significantly vary in"
+      },
+      {
+        "paper_id": "278789642",
+        "markdown_evidence": "Extracting Probabilistic Knowledge from Large Language Models for Bayesian Network Parameterization ... This work introduces a promising strategy for automatically constructing Bayesian Networks by combining probabilistic knowledge extracted from LLMs with real-world data, and establishes the first comprehensive baseline for assessing LLM performance in extracting probabilistic knowledge. ... In this work, we evaluate the potential of Large Language Models (LLMs) in building Bayesian Networks (BNs) by approximating domain expert priors. LLMs have demonstrated potential as factual knowledge bases; however, their capability to generate probabilistic knowledge about real-world events remains understudied. We explore utilizing the probabilistic knowledge inherent in LLMs to derive probability estimates for statements regarding events and their relationships within a BN. Using LLMs in this context allows for the parameterization of BNs, enabling probabilistic modeling within specific domains. Our experiments on eighty publicly available Bayesian Networks, from healthcare to finance, demonstrate that querying LLMs about the conditional probabilities of events provides meaningful results when compared to baselines, including random and uniform distributions, as well as approaches based on next-token generation probabilities. We explore how these LLM-derived distributions can serve as expert priors to refine distributions extracted from data, especially when data is scarce. Overall, this work introduces a promising strategy for automatically constructing Bayesian Networks by combining probabilistic knowledge extracted from LLMs with real-world data. Additionally, we"
+      },
+      {
+        "paper_id": "271064189",
+        "markdown_evidence": "Hypothetical Minds: Scaffolding Theory of Mind for Multi-Agent Tasks with Large Language Models ... This work introduces the Theory of Mind module, a cognitively-inspired architecture, featuring modular components for perception, memory, and hierarchical planning over two levels of abstraction, that scaffolds the high-level planning process by generating hypotheses about other agents' strategies in natural language. ... Multi-agent reinforcement learning (MARL) methods struggle with the non-stationarity of multi-agent systems and fail to adaptively learn online when tested with novel agents. Here, we leverage large language models (LLMs) to create an autonomous agent that can handle these challenges. Our agent, Hypothetical Minds, consists of a cognitively-inspired architecture, featuring modular components for perception, memory, and hierarchical planning over two levels of abstraction. We introduce the Theory of Mind module that scaffolds the high-level planning process by generating hypotheses about other agents' strategies in natural language. It then evaluates and iteratively refines these hypotheses by reinforcing hypotheses that make correct predictions about the other agents' behavior. Hypothetical Minds significantly improves performance over previous LLM-agent and RL baselines on a range of competitive, mixed motive, and collaborative domains in the Melting Pot benchmark, including both dyadic and population-based environments. Additionally, comparisons against LLM-agent baselines and ablations reveal the importance of hypothesis evaluation and refinement for succeeding on complex scenarios. ... LLMs have shown impressive reasoning abilities, augmented by Chain-of-Thought methods that scaffold the thought process [Wei et al., 2022, Zhang et al., 2023c].[Wang et al., 2023c] investigates LLMs' inductive reasoning by generating and evaluating hypotheses on the Abstraction and Reasoning Corpus (ARC), while [Qiu et al., 2023] refines LLM-generated hypotheses using task-specific symbolic interpreters.Similarly, ... Collaborative Cooking Asymmetric requires effective coordination and division of labor among agents.Running With Scissors necessitates strategic reasoning about opponents' policies and the ability to exploit predictable patterns in a competitive setting, with the eight-player version offering a unique challenge to the model's"
+      },
+      {
+        "paper_id": "278636168",
+        "markdown_evidence": "A large-scale evaluation of commonsense knowledge in humans and large language models ... A method for assessing commonsense knowledge in AI, specifically in large language models (LLMs) that incorporates empirically observed heterogeneity among humans by measuring the correspondence between a model’s judgment and that of a human population is proposed. ... Abstract Commonsense knowledge, a major constituent of AI, is primarily evaluated in practice by human-prescribed ground-truth labels. An important, albeit implicit, assumption of these labels is that they accurately capture what any human would think, effectively treating human common sense as homogeneous. However, recent empirical work has shown that humans vary enormously in what they consider commonsensical; thus what appears self-evident to one benchmark designer may not be so to another. Here, we propose a method for assessing commonsense knowledge in AI, specifically in large language models (LLMs) that incorporates empirically observed heterogeneity among humans by measuring the correspondence between a model’s judgment and that of a human population. We first find that, when treated as independent survey respondents, most LLMs remain below the human median in their individual commonsense competence. Second, when used as simulators of a hypothetical population, LLMs correlate with real humans only modestly in the extent to which they agree on the same set of statements. In both cases, smaller, open-weight models are surprisingly more competitive than larger, proprietary frontier models. Our evaluation framework, which ties commonsense knowledge to its cultural basis, ... We make use of 35 widely used instruction-finetuned large language models. These include open-weight models (i.e. those whose weights are openly accessible) and closed-source models. The full list can be found in SI Appendix, Table S3. All open-weight models are loaded via the Hugging Face library in Python. For closed-source models, we directly use the APIs provided by their creators. ... The silicon samples simulated by Falcon-180B are also similar to humans except along two dimensions. First, this population displays no significant preference between statements that use literal language (eg \"A cat doesn't want to get wet\") and those employing a figure of speech (eg \"Rudeness is the weak man's imitation of strength\") (MD =0.03,"
+      },
+      {
+        "paper_id": "278996215",
+        "markdown_evidence": "A Tool for Generating Exceptional Behavior Tests With Large Language Models ... Ex long leverages a large language model (LLM) fine-tuned from CodeLlama and incorporates reasoning about exception-throwing traces, conditional expressions that guard throw statements, and non-exceptional behavior tests that execute similar traces. ... Exceptional behavior tests (EBTs) are crucial in software development for verifying that code correctly handles unwanted events and throws appropriate exceptions. However, prior research has shown that developers often prioritize testing \"happy paths\", i.e., paths without unwanted events, over exceptional scenarios. We present exLong, a tool that automatically generates EBTs to address this gap. exLong leverages a large language model (LLM) fine-tuned from CodeLlama and incorporates reasoning about exception-throwing traces, conditional expressions that guard throw statements, and non-exceptional behavior tests that execute similar traces. Our demonstration video illustrates how exLong can effectively assist developers in creating comprehensive EBTs for their project (available at https://youtu.be/Jro8kMgplZk)."
+      },
+      {
+        "paper_id": "270380449",
+        "markdown_evidence": "Large Language Models for Constrained-Based Causal Discovery ... This work explores the capabilities of Large Language Models as an alternative to domain experts for causal graph generation and shows evidence that knowledge-based CIT could eventually become a complementary tool for data-driven causal discovery. ... Causality is essential for understanding complex systems, such as the economy, the brain, and the climate. Constructing causal graphs often relies on either data-driven or expert-driven approaches, both fraught with challenges. The former methods, like the celebrated PC algorithm, face issues with data requirements and assumptions of causal sufficiency, while the latter demand substantial time and domain knowledge. This work explores the capabilities of Large Language Models (LLMs) as an alternative to domain experts for causal graph generation. We frame conditional independence queries as prompts to LLMs and employ the PC algorithm with the answers. The performance of the LLM-based conditional independence oracle on systems with known causal graphs shows a high degree of variability. We improve the performance through a proposed statistical-inspired voting schema that allows some control over false-positive and false-negative rates. Inspecting the chain-of-thought argumentation, we find causal reasoning to justify its answer to a probabilistic query. We show evidence that knowledge-based CIT could eventually become a complementary tool for data-driven causal discovery. ... 4) suggests that GPT-4 assumes more dependencies and finds a denser graph.The context of burglary contains mostly all information on how the variables are connected.The language models still need to perform the task of extracting valid CI statements from there.GPT-4 clearly outperforms GPT-3.5 in this regard.This suggests that given access to the relevant information, GPT-4 mostly makes correct statements about ... (2023) proposed an approach using the topological order over graph variables, showcasing the potential of LLMs in obtaining causal order and enhancing causal inference in diverse fields.3 Conditional Independence Queries via LLM\n\nWe start by describing and evaluating conditional independence (CI) queries with LLMs.Specifically, we are interested in estimating the validity of conditional independence statements of ... We evaluate the performance for CI testing on"
+      },
+      {
+        "paper_id": "271963189",
+        "markdown_evidence": "Using LLMs for Explaining Sets of Counterfactual Examples to Final Users ... A novel multi-step pipeline that uses counterfactuals to generate natural language explanations of actions that will lead to a change in outcome in classifiers of tabular data using LLMs is proposed, designed to guide the LLM through smaller tasks that mimic human reasoning when explaining a decision based on counterfactual cases. ... Causality is vital for understanding true cause-and-effect relationships between variables within predictive models, rather than relying on mere correlations, making it highly relevant in the field of Explainable AI. In an automated decision-making scenario, causal inference methods can analyze the underlying data-generation process, enabling explanations of a model's decision by manipulating features and creating counterfactual examples. These counterfactuals explore hypothetical scenarios where a minimal number of factors are altered, providing end-users with valuable information on how to change their situation. However, interpreting a set of multiple counterfactuals can be challenging for end-users who are not used to analyzing raw data records. In our work, we propose a novel multi-step pipeline that uses counterfactuals to generate natural language explanations of actions that will lead to a change in outcome in classifiers of tabular data using LLMs. This pipeline is designed to guide the LLM through smaller tasks that mimic human reasoning when explaining a decision based on counterfactual cases. We conducted various experiments using a public dataset and proposed a method of closed-loop evaluation to assess the coherence of the final explanation with the ... Using LLMs for Explaining Sets of Counterfactual Examples to Final Users ... One of the most natural approaches to answering a \"why\" question is to use a contrastive explanation. Humans generate a contrastive explanation by comparing the actual outcome with a hypothetical alternative scenario. The process begins with understanding the event or decision that occurred within a causal context. ... We ask it to generate a final explanation in plain language that emphasizes actions that can be taken by the user in order to change to the desired class. This is were the LLM is most useful, since we assume that in its training it will have captured the correct form of human interaction, and that"
+      },
+      {
+        "paper_id": "275118713",
+        "markdown_evidence": "exLong: Generating Exceptional Behavior Tests with Large Language Models ... ExLONG is a large language model instruction fine-tuned from CodeLlama and embeds reasoning about traces that lead to throw statements, conditional expressions that guard throw statements, and non-exceptional behavior tests that execute similar traces, which shows that ExLONG outperforms existing models and tools. ... Many popular programming languages, including C#, Java, and Python, support exceptions. Exceptions are thrown during program execution if an unwanted event happens, e.g., a method is invoked with an illegal argument value. Software developers write exceptional behavior tests (EBTs) to check that their code detects unwanted events and throws appropriate exceptions. Prior research studies have shown the importance of EBTs, but those studies also highlighted that developers put most of their efforts on “happy paths”, e.g., paths without unwanted events. To help developers fill the gap, we present the first framework, dubbed ExLoNG, that automatically generates EBTs. ExLONG is a large language model instruction fine-tuned from CodeLlama and embeds reasoning about traces that lead to throw statements, conditional expressions that guard throw statements, and non-exceptional behavior tests that execute similar traces. We compare ExLONG with the state-of-the-art models for test generation (CAT-LM) and one of the strongest foundation models (GPT-4o), as well as with analysis-based tools for test generation (Randoop and EvoSuite). Our results show that ExLONG outperforms existing models and tools. Furthermore, we contributed several pull requests to open-source projects and 23 EBTs ... AST nodes entailing condition expressions within the 'for' loop (lines 10 to 11), 'if' statement (lines 12 to 16), 'while' loop and 'switch' statement will be added to N. We also collect the assignment statements, method call expressions, and method declarations. Some of these are omitted from Algorithm 2 to keep it simple."
+      },
+      {
+        "paper_id": "257495903",
+        "markdown_evidence": "Large Language Models Know Your Contextual Search Intent: A Prompting Framework for Conversational Search ... This work presents a simple yet effective prompting framework, called LLM4CS, to leverage LLMs as a text-based search intent interpreter to help conversational search. ... Precisely understanding users' contextual search intent has been an important challenge for conversational search. As conversational search sessions are much more diverse and long-tailed, existing methods trained on limited data still show unsatisfactory effectiveness and robustness to handle real conversational search scenarios. Recently, large language models (LLMs) have demonstrated amazing capabilities for text generation and conversation understanding. In this work, we present a simple yet effective prompting framework, called LLM4CS, to leverage LLMs as a text-based search intent interpreter to help conversational search. Under this framework, we explore three prompting methods to generate multiple query rewrites and hypothetical responses, and propose to aggregate them into an integrated representation that can robustly represent the user's real contextual search intent. Extensive automatic evaluations and human evaluations on three widely used conversational search benchmarks, including CAsT-19, CAsT-20, and CAsT-21, demonstrate the remarkable performance of our simple LLM4CS framework compared with existing methods and even using human rewrites. Our findings provide important evidence to better understand and leverage LLMs for conversational search. ... In particular, even compared to using human rewrites, our LLM4CS can still achieve better results on most metrics, except for the Recall@100 of CAsT-19 and NDCG@3 of CAsT-21. These significant improvements, which are unprecedented in prior research, demonstrate the strong superiority of our LLM4CS over existing methods and underscore the vast potential of using large language models for conversational search. ... It appears that the introduction of multiple hypothetical responses diminishes the impact of the chain-ofthought. This could be attributed to the fact that including multiple hypothetical responses significantly boosts the quality and robustness of the final search intent vector, thereby reducing the prominence of the chain-of-thought in enhancing search performance. ... The overall performance comparisons are"
+      },
+      {
+        "paper_id": "279597348",
+        "markdown_evidence": "Template-Guided Program Repair in the Era of Large Language Models ... Recent advancements in automated program repair (APR) have been significantly driven by the application of Large Language Models (LLMs). In particular, the integration of LLMs with traditional template-based repair methods has demonstrated effective outcomes. Despite this, the synergy between the strengths of traditional methods and LLMs remains underexploited. This oversight originates from the indiscriminate use of templates and their insufficient coverage. Also, using small-scale LLMs within the zero-shot learning context proves to be suboptimal. To alleviate the limitations, we propose NTR (Neural Template Repair), a two-stage repair framework including template selection and patch generation, both of which are under the fine-tuning paradigm. In the template selection phase, we formulate it as a multiclass classification problem and fine-tune million-level LLMs for better selecting possible templates. During the patch generation phase, we leverage the chosen templates as probable directions (e.g., ‘Mutate Conditional Expression’) to guide the fine-tuning process of LLMs at the billion-level scale for precise patch creation. Moreover, we incorporate a unique template to signify the absence of a suitable template and employ a probability-based prioritization of templates,"
+      },
+      {
+        "paper_id": "276340845",
+        "markdown_evidence": "What can large language models do for sustainable food? ... This work defines a typology of design and prediction tasks based on the sustainable food literature and collaboration with domain experts, and proposes a general framework for integrating LLMs with combinatorial optimization to improve reasoning capabilities. ... Food systems are responsible for a third of human-caused greenhouse gas emissions. We investigate what Large Language Models (LLMs) can contribute to reducing the environmental impacts of food production. We define a typology of design and prediction tasks based on the sustainable food literature and collaboration with domain experts, and evaluate six LLMs on four tasks in our typology. For example, for a sustainable protein design task, food science experts estimated that collaboration with an LLM can reduce time spent by 45% on average, compared to 22% for collaboration with another expert human food scientist. However, for a sustainable menu design task, LLMs produce suboptimal solutions when instructed to consider both human satisfaction and climate impacts. We propose a general framework for integrating LLMs with combinatorial optimization to improve reasoning capabilities. Our approach decreases emissions of food choices by 79% in a hypothetical restaurant while maintaining participants'satisfaction with their set of choices. Our results demonstrate LLMs'potential, supported by optimization techniques, to accelerate sustainable food development and adoption. ... Guha et al. (2024) identified six types of legal reasoning tasks and evaluated 20 models on them. In chemistry, Guo et al. (2023) identified three types of capabilities, established a benchmark of eight tasks, and evaluated five LLMs. However, no work, to our knowledge, has formalized key tasks and evaluated LLMs in the sustainable food domain. Large Language Models for Scientific Discovery. In chemistry, Boiko et ... Starting from this general typology, we then selected four tasks to address in the context of both sustainable protein and traditional foods. These tasks include two design tasks (experimental design and menu design) and two prediction tasks (sensory profile prediction and recipe preference prediction). The four tasks were selected based on interviews with food scientists and chefs. \n\nExperimental Design. Taste is a ... For example, a recent life cycle"
+      },
+      {
+        "paper_id": "276781733",
+        "markdown_evidence": "Leveraging Large Language Models to Estimate Clinically Relevant Psychological Constructs in Psychotherapy Transcripts ... Developing precise, innocuous markers of psychopathology and the processes that foster effective treatment would greatly advance the field's ability to detect and intervene on psychopathology. However, a central challenge in this area is that both assessment and treatment are conducted primarily in natural language, a medium that makes quantitative measurement difficult. Although recent advances have been made, much existing research in this area has been limited by reliance on previous-generation psycholinguistic tools. Here we build on previous work that identified a linguistic measure of ``psychological distancing\" (that is, viewing a negative situation as separated from oneself) in client language, which was associated with improved emotion regulation in laboratory settings and treatment progress in real-world therapeutic transcripts (Nook et al., 2017, 2022). However, this formulation was based on context-insensitive word count-based measures of distancing (pronoun person and verb tense), which limits the ability to detect more abstract expressions of psychological distance, such as counterfactual or conditional statements. This approach also leaves open many questions about how therapists' --- likely subtler --- language can effectively guide clients toward increased"
+      },
+      {
+        "paper_id": "272827946",
+        "markdown_evidence": "Creative Writers' Attitudes on Writing as Training Data for Large Language Models ... The use of creative writing as training data for large language models (LLMs) is highly contentious and many writers have expressed outrage at the use of their work without consent or compensation. In this paper, we seek to understand how creative writers reason about the real or hypothetical use of their writing as training data. We interviewed 33 writers with variation across genre, method of publishing, degree of professionalization, and attitudes toward and engagement with LLMs. We report on core principles that writers express (support of the creative chain, respect for writers and writing, and the human element of creativity) and how these principles can be at odds with their realistic expectations of the world (a lack of control, industry-scale impacts, and interpretation of scale). Collectively these findings demonstrate that writers have a nuanced understanding of LLMs and are more concerned with power imbalances than the technology itself."
+      },
+      {
+        "paper_id": "270044797",
+        "markdown_evidence": "Reliability of large language models for advanced head and neck malignancies management: a comparison between ChatGPT 4 and Gemini Advanced ... While both LLMs demonstrated the potential to aid in the multidisciplinary management of head and neck oncology, discrepancies in certain critical areas highlight the need for further refinement and the growing role of AI in enhancing clinical decision-making. ... This study evaluates the efficacy of two advanced Large Language Models (LLMs), OpenAI’s ChatGPT 4 and Google’s Gemini Advanced, in providing treatment recommendations for head and neck oncology cases. The aim is to assess their utility in supporting multidisciplinary oncological evaluations and decision-making processes. This comparative analysis examined the responses of ChatGPT 4 and Gemini Advanced to five hypothetical cases of head and neck cancer, each representing a different anatomical subsite. The responses were evaluated against the latest National Comprehensive Cancer Network (NCCN) guidelines by two blinded panels using the total disagreement score (TDS) and the artificial intelligence performance instrument (AIPI). Statistical assessments were performed using the Wilcoxon signed-rank test and the Friedman test. Both LLMs produced relevant treatment recommendations with ChatGPT 4 generally outperforming Gemini Advanced regarding adherence to guidelines and comprehensive treatment planning. ChatGPT 4 showed higher AIPI scores (median 3 [2–4]) compared to Gemini Advanced (median 2 [2–3]), indicating better overall performance. Notably, inconsistencies were observed in the management of induction chemotherapy and surgical decisions, such as neck dissection. While both ... The evolving role of LLMs in the medical field has generated increasing interest within the scientific community, making the exploration of their potential applications and limitations crucial [1,8]. \n\nAlthough many studies on the application of AI in the field of otolaryngology are already present in the literature [4,9,10], it is only recently that a limited number of articles have begun to emerge, comparing the ... The AIPI-based comparison between the two LLM performances showed overall better results across all domains for ChatGPT (QAMAI 3 [2][3][4] vs QAMAI 2 [2,3] for Gemini, Wilcoxon test p 0.004). Using references emerged as the lowest-scoring domain for both LLMs,"
+      },
+      {
+        "paper_id": "267411853",
+        "markdown_evidence": "Solution-oriented Agent-based Models Generation with Verifier-assisted Iterative In-context Learning ... In SAGE, a general solution-oriented ABM generation framework designed for automatic modeling and generating solutions for targeted problems, an semi-structured conceptual representation expliciting the intricate structures of ABMs and an objective representation to guide LLMs in modeling scenarios and proposing hypothetical solutions through in-context learning are introduced. ... Agent-based models (ABMs) stand as an essential paradigm for proposing and validating hypothetical solutions or policies aimed at addressing challenges posed by complex systems and achieving various objectives. This process demands labor-intensive endeavors and multidisciplinary expertise. Large language models (LLMs) encapsulating cross-domain knowledge and programming proficiency could potentially alleviate the difficulty of this process. However, LLMs excel in handling sequential information, making it challenging for analyzing the intricate interactions and nonlinear dynamics inherent in ABMs. Additionally, due to the lack of self-evaluation capability of LLMs, relying solely on LLMs is insufficient to effectively accomplish this process. In this paper, we present SAGE, a general solution-oriented ABM generation framework designed for automatic modeling and generating solutions for targeted problems. Unlike approaches reliant on expert handcrafting or resource-intensive neural network training, SAGE establishes a verifier-assisted iterative in-context learning process employing large language models (LLMs) to leverages their inherent cross-domain knowledge for tackling intricate demands from diverse domain scenarios. In SAGE, we introduce an semi-structured conceptual ... There are modifying solutions. Please modify the original program according to these solutions. verification functions generated by the LLM are written in generalpurpose programming languages, enhancing their versatility and comprehensiveness in comparison to combinatorial arrangements of pre-defined criteria implementation. Solution generation with CoT prompt. Verifier-level2 utilizes the simulation results that"
+      },
+      {
+        "paper_id": "276850979",
+        "markdown_evidence": "Chatbots in the ICU: Unveiling the Accuracy and Limitations of AI in Critical Care Knowledge Assessment ... The AI model failed in basic management of certain clinical scenarios which can jeopardise the safety of the patient, and LLM struggled with answering rare hypothetical critical care scenarios but provided adequate responses regarding ethics and communication, including conflict management. ... Introduction The emergence of AI-based language learner models (LLMs) has revolutionized various fields, including healthcare. LLMs have demonstrated exceptional abilities in processing and understanding vast amounts of text data, raising the question of their potential in medical education and knowledge assessment. This study aims to explore the efficacy of LLMs in the critical care medicine domain, a complex and dynamic field requiring rapid decision-making and deep clinical understanding. Aims and objectives Evaluate the ability of LLMs to accurately answer multiple-choice questions (MCQs) and open-ended questions related to critical care medicine scenarios. Analyze the strengths and limitations of LLM responses in terms of reasoning, precision, and knowledge application. Compare the performance of LLMs with established benchmarks, such as medical textbooks or expert opinions, to assess their potential as a learning and assessment tool in critical care medicine. Methods: Scenario selection A diverse set of 39 clinical scenarios spanning various critical care subspecialties were carefully chosen to represent the complexities and challenges encountered in real-world practice. These scenarios were presented in a mix of MCQs with single-best answer choices and open-ended"
+      },
+      {
+        "paper_id": "276813724",
+        "markdown_evidence": "Chart-HQA: A Benchmark for Hypothetical Question Answering in Charts ... A novel Chart Hypothetical Question Answering (HQA) task is introduced, which imposes assumptions on the same question to compel models to engage in counterfactual reasoning based on the chart content, and HAI, a human-AI interactive data synthesis approach that leverages the efficient text-editing capabilities of LLMs alongside human expert knowledge to generate diverse and high-quality HQA data at a low cost. ... Multimodal Large Language Models (MLLMs) have garnered significant attention for their strong visual-semantic understanding. Most existing chart benchmarks evaluate MLLMs' ability to parse information from charts to answer questions. However, they overlook the inherent output biases of MLLMs, where models rely on their parametric memory to answer questions rather than genuinely understanding the chart content. To address this limitation, we introduce a novel Chart Hypothetical Question Answering (HQA) task, which imposes assumptions on the same question to compel models to engage in counterfactual reasoning based on the chart content. Furthermore, we introduce HAI, a human-AI interactive data synthesis approach that leverages the efficient text-editing capabilities of LLMs alongside human expert knowledge to generate diverse and high-quality HQA data at a low cost. Using HAI, we construct Chart-HQA, a challenging benchmark synthesized from publicly available data sources. Evaluation results on 18 MLLMs of varying model sizes reveal that current models face significant generalization challenges and exhibit imbalanced reasoning performance on the HQA task. Our codebase and newly generated datasets are available at https://github.com/chenxn2020/Chart-HQA. ... Multimodal Large Language Models (MLLMs) (Li et al., 2023a;Liu et al., 2023e) have demonstrated exceptional performance in visual-semantic understanding (OpenAI, 2023;Wang et al., 2023). Despite their success, existing MLLMs still face significant challenges in reading, understanding, and summarizing visual charts (Masry et al., 2022;Li and Tajbakhsh, 2023). ... To better illustrate the challenge of the proposed chart-based hypothetical question answering task, we conduct a specific case study on Chart-HQA using the powerful reasoning models GPT-4o, Gemini-2.0 (Team et al., 2023), Qwen-VL-Max, and InternVL2.5-78B (Chen et"
+      },
+      {
+        "paper_id": "269456918",
+        "markdown_evidence": "Assessing LLMs in Malicious Code Deobfuscation of Real-world Malware Campaigns ... Evaluating four LLMs with real-world malicious scripts used in the notorious Emotet malware campaign indicates that some LLMs can efficiently deobfuscate such payloads, suggesting that fine-tuning LLMs for this task can be a viable potential for future AI-powered threat intelligence pipelines in the fight against obfuscated malware. ... The integration of large language models (LLMs) into various pipelines is increasingly widespread, effectively automating many manual tasks and often surpassing human capabilities. Cybersecurity researchers and practitioners have recognised this potential. Thus, they are actively exploring its applications, given the vast volume of heterogeneous data that requires processing to identify anomalies, potential bypasses, attacks, and fraudulent incidents. On top of this, LLMs' advanced capabilities in generating functional code, comprehending code context, and summarising its operations can also be leveraged for reverse engineering and malware deobfuscation. To this end, we delve into the deobfuscation capabilities of state-of-the-art LLMs. Beyond merely discussing a hypothetical scenario, we evaluate four LLMs with real-world malicious scripts used in the notorious Emotet malware campaign. Our results indicate that while not absolutely accurate yet, some LLMs can efficiently deobfuscate such payloads. Thus, fine-tuning LLMs for this task can be a viable potential for future AI-powered threat intelligence pipelines in the fight against obfuscated malware. ... While artificial intelligence and machine learning have long been cornerstones of computer science, it is only in recent years that we have fully harnessed their capabilities and translated them into practical applications, realising their true potential.This remarkable transformation cannot be solely attributed to the field's maturity but rather a convergence of several enabling factors.One pivotal factor is the"
+      },
+      {
+        "paper_id": "259937819",
+        "markdown_evidence": "The Potential and Pitfalls of using a Large Language Model such as ChatGPT or GPT-4 as a Clinical Assistant ... This work performed two analyses using ChatGPT and GPT-4, one to identify patients with specific medical diagnoses using a real-world large electronic health record database and the other, in providing diagnostic assistance to healthcare workers in the prospective evaluation of hypothetical patients. ... Recent studies have demonstrated promising performance of ChatGPT and GPT-4 on several medical domain tasks. However, none have assessed its performance using a large-scale real-world electronic health record database, nor have evaluated its utility in providing clinical diagnostic assistance for patients across a full range of disease presentation. We performed two analyses using ChatGPT and GPT-4, one to identify patients with specific medical diagnoses using a real-world large electronic health record database and the other, in providing diagnostic assistance to healthcare workers in the prospective evaluation of hypothetical patients. Our results show that GPT-4 across disease classification tasks with chain of thought and few-shot prompting can achieve performance as high as 96% F1 scores. For patient assessment, GPT-4 can accurately diagnose three out of four times. However, there were mentions of factually incorrect statements, overlooking crucial medical findings, recommendations for unnecessary investigations and overtreatment. These issues coupled with privacy concerns, make these models currently inadequate for real world clinical use. However, limited data and time needed for prompt engineering in comparison to configuration of conventional machine learning workflows ... The baseline clinical guideline was a type of zero-shot prompting, as it contained no examples. The elaborate clinical guideline prompt was a type of few-shot prompting, as it contained a few examples (2 to 3) of an excerpt of a hypothetical medical record and expected score, for each of the disease classes. These examples were contrived and not based on any actual medical record in the MIMIC-III dataset. ... Choice of GPT model: GPT-4 is the latest LLM (released March 14th, 2023) said to supersede its predecessor ChatGPT (GPT-3.5-turbo) in its advanced reasoning capabilities. To assess this, we compare their performance across the disease use-cases, and questions that"
+      },
+      {
+        "paper_id": "259342279",
+        "markdown_evidence": "ProPILE: Probing Privacy Leakage in Large Language Models ... ProPILE lets data subjects formulate prompts based on their own PII to evaluate the level of privacy intrusion in LLMs, and can be leveraged by LLM service providers to effectively evaluate their own levels of PII leakage with more powerful prompts specifically tuned for their in-house models. ... The rapid advancement and widespread use of large language models (LLMs) have raised significant concerns regarding the potential leakage of personally identifiable information (PII). These models are often trained on vast quantities of web-collected data, which may inadvertently include sensitive personal data. This paper presents ProPILE, a novel probing tool designed to empower data subjects, or the owners of the PII, with awareness of potential PII leakage in LLM-based services. ProPILE lets data subjects formulate prompts based on their own PII to evaluate the level of privacy intrusion in LLMs. We demonstrate its application on the OPT-1.3B model trained on the publicly available Pile dataset. We show how hypothetical data subjects may assess the likelihood of their PII being included in the Pile dataset being revealed. ProPILE can also be leveraged by LLM service providers to effectively evaluate their own levels of PII leakage with more powerful prompts specifically tuned for their in-house models. This tool represents a pioneering step towards empowering the data subjects for their awareness and control over their own data on the web. ... Figure 6 displays the kernel estimation density plots of normalized likelihood results of various types of PII. Blue and orange colors denote target and null PII, respectively, and dashed lines denote the mean value of normalized log-likelihoods. The plots provided correspond to Figure 3 in the main manuscript, OPT-1.3B probing results. For all types of PII, the distribution plots shift to the right, which indicates"
+      },
+      {
+        "paper_id": "276314808",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281420611",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261822519",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279070891",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277999825",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227230645",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273970213",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268364016",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274351674",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277673807",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "238744031",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271804776",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249525458",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276409219",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905765",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258678540",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249017743",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276422207",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275400478",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276574801",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276928474",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886178",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270063548",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259360395",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281890783",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "51627065",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265516139",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277319959",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258686540",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269302888",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "15231112",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277150783",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482296",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278535474",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268531982",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278327416",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275427710",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272130531",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271974388",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261193894",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277501748",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278740632",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278739754",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276408666",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263829199",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267657710",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269982298",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267617032",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278769498",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276421577",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277151037",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276107612",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261697015",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277066119",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276647196",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277940593",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265128820",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781064",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276094446",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273482369",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264128081",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271892136",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270615909",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274326044",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905660",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264974135",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "198526426",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254479350",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "210695778",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231677360",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5697885",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263607013",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5833633",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "242919096",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265018965",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227230794",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2406324",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "230435766",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "144108415",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265067266",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276235362",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "150755221",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277244909",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52831898",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259991608",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273649738",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277955738",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255124952",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "55541561",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270620647",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266176891",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249751748",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258762525",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275337005",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276775936",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266741474",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233231501",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270711541",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268715250",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276580654",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268876220",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251406206",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271430946",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277321766",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273798036",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252440552",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886877",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "37888087",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265493260",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250579144",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "12794202",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "121253023",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "206863483",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254877558",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272884674",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281616825",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275416806",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247627806",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2244960",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269447109",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248987381",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274532392",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274422322",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268157336",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275993739",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886740",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275358284",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274776210",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279501169",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278788837",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257632259",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248476186",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16619681",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54582388",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781124",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276903748",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276884585",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233189590",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267547793",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "149479294",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275606521",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269171591",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267365459",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275795792",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266364268",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273098400",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270071487",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258547250",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277271673",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277768115",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233393629",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253537865",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269605890",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278340169",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265067168",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275570610",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276286737",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275506743",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277667246",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276885338",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270710901",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277634561",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "12991573",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265033755",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277745695",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278367862",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248006125",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276617871",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235422368",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259847451",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260329301",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267759726",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268889777",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886070",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278318038",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269246480",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271955700",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267938621",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271213281",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279125220",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277667268",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268553791",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

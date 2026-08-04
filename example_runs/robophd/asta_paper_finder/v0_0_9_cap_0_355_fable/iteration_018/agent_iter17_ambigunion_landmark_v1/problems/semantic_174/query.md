@@ -1,0 +1,1 @@
+Are there generative retrieval methods that can handle new documents and add them to the trained retrieval model?
