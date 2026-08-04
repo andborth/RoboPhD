@@ -265,7 +265,7 @@ uncapped — see risks.
 | URL (form) | https://github.com/andborth/RoboPhD |
 | Leaderboard | [AstaBench PaperFindingBench leaderboard](https://allenai-asta-bench-leaderboard.hf.space/literature-understanding#h-paperfindingbench-leaderboard) |
 
-Agent description as submitted on the form:
+Agent description as submitted on the form (entered 2026-08-04):
 
 > Evolved by RoboPhD with Claude Fable 5 as the evolution (but not a solver)
 > model, under a $0.355/query training cost cap on solver spend — set at exactly
@@ -438,5 +438,5 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 ## Submission status
 
 - [x] Official eval run (2026-08-04: 0.44025 @ $0.278579/query, $277.99 spend, 7h14m, 267/267 no errors)
-- [ ] Tarball uploaded
-- [ ] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
+- [x] Tarball uploaded (2026-08-04, `v0_0_9_cap_0_355_fable.tar.gz`, 251.4 MB — pending review)
+- [x] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
