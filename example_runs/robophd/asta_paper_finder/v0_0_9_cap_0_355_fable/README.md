@@ -271,17 +271,26 @@ Agent description as submitted on the form:
 > model, under a $0.355/query training cost cap on solver spend — set at exactly
 > the price of the most capable entry on the board, so that evolution had to win
 > on score at a price already known to be competitive. It came in at
-> $0.278/query. The agent runs on a hard two-tier budget: one capable model
-> handles planning, ranking and the judge-mimic rating, and every increase in
-> capacity after that is bought on a cheap model rather than by spending more on
-> the expensive one. That let it grade candidates its predecessors were
-> discarding unseen — several hundred retrieved papers per query were being
-> dropped before any grading, on exactly the queries where recall was starving.
+> $0.278/query.
+>
+> Its evolutionary predecessors were discarding the papers they needed. On the
+> queries whose recall was starving, 150 to 640 retrieved candidates per query
+> were being cut by an internal cap before anything graded them. This agent
+> grades that overflow instead, and affords it with a strict two-tier rule: one
+> capable model handles planning, ranking and a judge-mimic rating, and every
+> later increase in capacity is bought on a cheap model rather than by spending
+> more on the expensive one.
+>
 > On author, venue and year requests it derives how many results to submit from
 > the scoring formula itself: because F1 divides by the gold-set size, a
 > speculative candidate pays for itself once its chance of being correct exceeds
 > half the current score, so broad requests against large answer sets are filled
 > out while narrow ones are kept tight.
+>
+> It uses two OpenAI models and nothing else. Our sibling entry at the same cost
+> cap uses three models across two providers and was evolved from an otherwise
+> identical configuration by Claude Opus 5 — the higher score here did not come
+> from more model diversity.
 
 ## Official-result risks (assessed pre-submission)
 
