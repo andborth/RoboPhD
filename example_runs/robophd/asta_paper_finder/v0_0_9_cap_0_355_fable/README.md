@@ -5,7 +5,7 @@ Fifth RoboPhD submission to the AstaBench PaperFindingBench leaderboard
 
 ## It would take the top of the board
 
-The previous submission, `v0_0_9_cap_0_355_opus5`, came within 0.00093 of Asta
+The previous submission, `v0_0_9_cap_0_355_opus5`, came within 0.001 of Asta
 Paper Finder's best entry and sat *beside* it on the curve. This one clears it.
 On the board's three-decimal basis:
 
