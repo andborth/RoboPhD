@@ -48,7 +48,8 @@ point directly above our own, and the lineage did not undershoot: the winning
 agent's docstring projects
 "~$0.071/semantic query, ~$0.053 batch mean against the $0.063 free-zone
 threshold"; the observed training batch mean was $0.054 and the 267-query test
-mean $0.0533 — **$0.053** on the board. It engineered to the threshold and
+mean $0.0533, with the official run landing at **$0.052** on the board. It
+engineered to the threshold and
 landed on it, which is what makes that price deliberate rather than a leftover.
 
 ## Opus 5 spends its allowance; Opus 4.8 did not
@@ -183,7 +184,7 @@ priced in the litellm 1.88.1 bundled map (`AGENT_MODELS` preflight).
 | `semantic_f1` (194) | 0.3227 |
 | `specific_f1` (38) | **0.8114** — our best on this metric across ten runs |
 | `metadata_f1` (35) | 0.2687 |
-| Agent cost | $0.0533/query — **$0.053** on the board ($14.23 total) |
+| Agent cost | $0.0533/query ($14.23 total) — the board shows **$0.052**, from the official run |
 | Judge cost (internal, capped + cached) | $72.85 |
 | Timeouts | 1 query (scored 0; would read 0.3852 at the semantic mean) |
 

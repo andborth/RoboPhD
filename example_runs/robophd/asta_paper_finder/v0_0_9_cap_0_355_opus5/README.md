@@ -174,7 +174,7 @@ All three are priced in the litellm 1.88.1 bundled map (`AGENT_MODELS` preflight
 | `semantic_f1` (190 scored) | 0.3800 |
 | `specific_f1` (38) | **0.8684** — best across eleven runs |
 | `metadata_f1` (35) | **0.2149** — see below |
-| Agent cost | $0.2461/query — **$0.246** on the board ($65.70 total) |
+| Agent cost | $0.2461/query ($65.70 total) — the board shows **$0.251**, from the official run |
 | Judge cost (internal, capped + cached) | $77.85 |
 | Timeouts | **4** queries, all semantic, at the 1770s internal cap |
 
