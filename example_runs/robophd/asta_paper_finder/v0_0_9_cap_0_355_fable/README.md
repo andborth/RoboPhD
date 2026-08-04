@@ -3,19 +3,18 @@
 Fifth RoboPhD submission to the AstaBench PaperFindingBench leaderboard
 (Literature Understanding category, Standard tools tier).
 
-## It would take the top of the board
+## It takes the top of the board
 
 The previous submission, `v0_0_9_cap_0_355_opus5`, came within 0.001 of Asta
 Paper Finder's best entry and sat *beside* it on the curve. This one clears it.
 On the board's three-decimal basis:
 
-> **Internal 0.438 @ $0.278**, against the leader's **0.433 @ $0.355**.
+> **Official 0.440 @ $0.279**, against the former leader's **0.433 @ $0.355**.
 
-Higher score **and** 22% cheaper — domination on both axes, not a tie. At full
-precision, 0.4383 against 0.4327 and $0.2780 against $0.3548.
-
-Projected frontier if it transfers (You.com omitted — no cost shown on the
-board):
+Higher score **and** 21% cheaper — domination on both axes, not a tie, so Asta's
+top entry leaves the curve entirely. At full precision, 0.44025 ± 0.01790 against
+0.43270, and $0.278579 ± 0.009930 against $0.3548. Full breakdown in
+[Official result](#official-result-2026-08-04) below.
 
 | | entry | score | $/prob | tier |
 | --- | --- | --- | --- | --- |
@@ -23,15 +22,14 @@ board):
 | 2 | RoboPhD (v0_0_9 @ cap 0.063) | 0.376 | 0.052 | Standard |
 | 3 | Asta Paper Finder | 0.397 | 0.063 | Custom interface |
 | 4 | RoboPhD (v0_0_9 @ cap 0.355, opus5) | 0.432 | 0.251 | Standard |
-| 5 | **this entry** | **0.438** | **0.278** | **Standard** |
+| 5 | **this entry** | **0.440** | **0.279** | **Standard** |
 
-**Five slots, four ours**, all Standard tier, with Ai2's top entry displaced
-entirely and only 0.397 @ $0.063 remaining to them.
+**Rank 1, and five slots with four ours** — all Standard tier, against Ai2's
+Custom interface. They retain a single slot, at 0.397 @ $0.063.
 
-**Projected, not banked.** These are internal numbers; internal→official has run
-+0.0025 / −0.0550 / −0.0077 / +0.0096 across the four submitted runs. A −0.006
-outcome puts this level with the leader rather than above it — the difference
-between rank 1 and a shared frontier.
+The +0.0076 margin over the former leader is outside the ±0.006 that was flagged
+as the risk on this claim pre-submission, but still inside the 0.018 stderr: it
+dominates on the recorded numbers rather than being significantly better.
 
 ## The cleanest evolution-model A/B in the campaign
 
@@ -40,24 +38,37 @@ same $0.355 gate, same reachability guard, same luna/no-prose training judge,
 same stock-4o test judge, same 600 budget, same 14 examples/iteration, same
 harness. **Only the evolution model differs**: fable-5 here, opus-5 there.
 
-And the entire +0.016 comes from **one category**:
+Both entries are now official, so the comparison below uses official numbers.
+**On the official basis the margin is +0.0085, not the +0.0161 the internal
+figures showed** — and it is a three-way trade rather than a single category:
 
-| category | opus-5 | **fable-5** | points to fable |
-| --- | --- | --- | --- |
-| metadata (n=35) | 0.215 | **0.342** | **+4.46** |
-| semantic (n=190/194) | 0.380 | 0.372 | −0.12 |
-| specific (n=38) | 0.868 | 0.868 | −0.03 |
-| | | **total** | **+4.31** |
+| category | n | opus-5 | **fable-5** | delta | points to fable |
+| --- | --- | --- | --- | --- | --- |
+| metadata | 35 | 0.2281 | **0.3483** | +0.1202 | **+4.21** |
+| semantic | 194 | **0.3933** | 0.3749 | −0.0184 | **−3.58** |
+| specific | 38 | 0.8158 | **0.8588** | +0.0430 | +1.63 |
+| | | | | **total** | **+2.27** → +0.0085 |
 
-Semantic and specific are a **wash** — 0.15 points across 232 queries. The whole
-gap is 35 metadata questions, where zeros fell from **16 to 5**.
+Metadata is where fable-5 wins, decisively: **+0.120**, with zeros falling from
+16 of 35 to 5. It got there while spending *less* on that category —
+$0.0056/query against opus-5's $0.0136, a **59% reduction** — so the gain is
+structural rather than bought, and it comes from the F1-denominator padding rule
+described under Architecture below.
 
-It did that while spending *less* there: metadata cost $0.0056/query against
-opus-5's $0.0136, a **59% reduction**. The gain is structural, not bought.
+But roughly **85% of that gain is handed back on semantic**, where opus-5's
+deeper Sonnet-graded band wins by 0.018 over 194 queries. Specific returns about
+a third of it.
 
-So the honest reading is not "fable-5 builds better agents." It is that fable-5
-found the metadata failure and opus-5 did not; on the 87% of the benchmark that
-is not metadata, the two runs are indistinguishable.
+**This is worth stating because the internal comparison told a cleaner story than
+survived.** Internally the split read metadata +4.46, semantic −0.12, specific
+−0.03 — an apparently pure one-category result. Officially, semantic and specific
+both move by more than a point, in opposite directions. The internal wash on
+those two categories was the artifact; the official three-way trade is the
+result. Neither agent dominates the other by category, and the total margin is
+about half what internal suggested.
+
+So the honest reading is not "fable-5 builds better agents." Each found something
+the other did not: fable-5 the metadata failure, opus-5 a better semantic ranker.
 
 ## Naming and conventions
 
@@ -259,23 +270,78 @@ per endpoint. `snippet_search` was measured at 100% pacer utilization during
 training with only 3–4 concurrent workers; the official run uses
 `--max-samples 6`.
 
+## Official result (2026-08-04)
+
+**As displayed on the board: 0.440 @ $0.279.** 267/267 samples, **zero errors**,
+7h14m. Judge $203.61 + agent $74.38 = **$277.99**. Full precision below, since
+the transfer delta is smaller than the board's rounding step.
+
+| Metric | Internal | **Official** | Delta |
+| --- | --- | --- | --- |
+| Mean F1 | 0.4383 | **0.44025** ± 0.01790 | **+0.0020** |
+| `semantic_f1` (194) | 0.3715 | **0.3749** | +0.0033 |
+| `specific_f1` (38) | 0.8675 | 0.8588 | −0.0088 |
+| `metadata_f1` (35) | 0.3423 | **0.3483** | +0.0060 |
+| Agent cost | $0.2780 | $0.278579 ± 0.0099 | +$0.0006 |
+
+Fifth calibration point, and the third positive: **+0.0025 / −0.0550 / −0.0077 /
++0.0096 / +0.0020**. Four of the five now sit within ±0.010, leaving `v0_0_8`'s
+−0.0550 as the lone outlier rather than the pattern.
+
+`specific_f1` moved −0.0088. That category carries roughly 0.058 SD across 38
+all-or-nothing queries, so this is about a fifth of a standard deviation — the
+quietest that metric has been across the five submissions, and not a signal.
+
+### Uncapped official judging helped, as it did for the opus-5 entry
+
+Internal judging is capped to the top-K estimate; official judging grades every
+submitted paper. Matched on identical query IDs:
+
+| run | n | internal | official | delta | t |
+| --- | --- | --- | --- | --- | --- |
+| `cap_0_063` (opus5) | 193 | 0.3227 | 0.3095 | **−0.0131** | −2.01 |
+| `cap_0_355` (opus5) | 190 | 0.3800 | 0.3946 | **+0.0146** | +2.03 |
+| **`cap_0_355` (fable)** | 194 | 0.3715 | 0.3749 | **+0.0033** | +0.51 |
+
+Both $0.355-gate runs move up on semantic; the $0.063 run moves down. That fits
+the strategy difference — the 0.355 agents grade far deeper (900 stage-1
+candidates for opus-5, mini overflow grading out to 800 here), so papers never
+judged internally get graded officially and mostly help, whereas a shallower
+curated list gains only tail papers that dilute the rank term.
+
+Read as suggestive rather than established: n=3, and these are three different
+agents whose cost, strategy and evolution model all co-vary with the gate. This
+entry's own +0.0033 is at t = 0.51, indistinguishable from zero on its own; the
+opus-5 entry carries the weight of the observation. Isolating it would need one
+stored submission re-scored uncapped internally — same agent, same submissions,
+only the cap changing.
+
+### Cost calibration (fifth measured point)
+
+Judge came in at **$0.00420/paper** — $203.61 over 194 semantic queries × 250
+papers — against $0.0040 / $0.0030 / $0.00407 / $0.00426 for the four prior runs.
+
+Total $277.99 against a **$268–283** pre-run estimate: inside the range, and the
+first projection this campaign that did not miss low. The script's own printed
+figure remains unreliable for a full-250 agent — it computes `194 × 250 ×
+$0.0040 = $194` judge plus a hardcoded ~$15 agent, and both halves were wrong
+here. Budget from the measured $0.0041–0.0043/paper band and from the agent's own
+internal cost.
+
 ## Reproduce
 
 ```bash
 pip install litellm==1.88.1   # submission-scoring price map
 python scripts/asta_paper_finder_submit.py --only v0_0_9_cap_0_355_fable --limit 3   # smoke (~$3)
-python scripts/asta_paper_finder_submit.py --only v0_0_9_cap_0_355_fable             # full (~$268-283)
+python scripts/asta_paper_finder_submit.py --only v0_0_9_cap_0_355_fable             # full (measured: $277.99, 7h14m)
 ```
 
 Push the commit **before** the full run — `astabench eval` hard-fails if the
 commit is not on the remote, since it stamps the SHA into `eval_spec.revision`.
 
-Projected spend, measured from this run's own submissions: 249.1 papers/query ×
-194 semantic queries at 704 chars each. The script prints `194 × 250 × $0.0040 =
-$194` judge, but **that figure is not a ceiling** — the last two full-250 runs
-came in above it ($197.32 and $206.38). Budget from the measured
-$0.0041–0.0043/paper band: **~$194–209 judge plus ~$74 agent, so ~$268–283**.
-Expect ~7h at `--max-samples 6`.
+Spend, now measured rather than projected: **$203.61 judge + $74.38 agent =
+$277.99**, at $0.00420/paper over 194 semantic queries × 250 papers, in 7h14m at
+`--max-samples 6`. See [Cost calibration](#cost-calibration-fifth-measured-point).
 
 Then upload `submissions/asta_paper_finder/v0_0_9_cap_0_355_fable.tar.gz` via
 the HF Spaces form (https://huggingface.co/spaces/allenai/asta-bench-leaderboard).
@@ -283,6 +349,6 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 
 ## Submission status
 
-- [ ] Official eval run
+- [x] Official eval run (2026-08-04: 0.44025 @ $0.278579/query, $277.99 spend, 7h14m, 267/267 no errors)
 - [ ] Tarball uploaded
 - [ ] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
