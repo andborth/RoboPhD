@@ -30,13 +30,6 @@ Custom interface. They retain a single slot, at 0.397 @ $0.063.
 By the leaderboard's rules this **dominates** the incumbent: strictly better on
 score and strictly cheaper, so the incumbent is no longer Pareto-optimal.
 
-Two separate evaluations of this agent cleared 0.4327 — internal at **0.4383**
-and official at **0.44025**, by +0.0056 and +0.0076. They share the test set and
-the judge model, so they are not independent estimates, but they differ in the
-agent's own sampling and in judging depth (internal capped to top-K, official
-uncapped). Clearing the bar twice under both conditions is better evidence than
-one run clearing it once.
-
 ## The cleanest evolution-model A/B in the campaign
 
 This run is identical to `v0_0_9_cap_0_355_opus5` in every deliberate respect —
@@ -313,6 +306,14 @@ statistically distinguishable on score from single measurements. What is not in
 doubt is the cost axis — **21% cheaper**, with cost stderr of $0.0099 against a
 $0.076 gap — so the domination claim rests on a firm cost advantage plus a score
 lead that is real in the recorded numbers but modest against the noise.
+
+**Two separate evaluations of this agent cleared 0.4327**, though — internal at
+0.4383 and official at 0.44025, by +0.0056 and +0.0076. They share the test set
+and the judge model, so they are not independent estimates, but they differ in
+the agent's own sampling and in judging depth (internal capped to top-K, official
+uncapped). Clearing the bar under both conditions is better evidence than one run
+clearing it once, and it addresses the obvious worry that a single lucky draw
+crossed the line.
 
 For context, the score margin was flagged pre-submission as needing ~0.006 of
 headroom to hold; it came in at 0.0076.
