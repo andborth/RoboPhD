@@ -3,6 +3,10 @@
 Fifth RoboPhD submission to the AstaBench PaperFindingBench leaderboard
 (Literature Understanding category, Standard tools tier).
 
+> **The submitted agent is [`agents/iter18_cocite_largegold_v1/agent.py`](agents/iter18_cocite_largegold_v1/agent.py)**
+> — iteration-18 winner of run `robophd-asta_paper_finder-012`, 2,781 lines,
+> two OpenAI model handles. Everything below describes that file.
+
 ## It takes the top of the board
 
 The previous submission, `v0_0_9_cap_0_355_opus5`, came within 0.001 of Asta
@@ -66,18 +70,7 @@ described under Architecture below.
 
 Roughly **85% of that is handed back on semantic**, where opus-5's deeper
 Sonnet-graded band wins by 0.018 across 194 queries. Specific returns about a
-third of it. Neither agent dominates the other by category: fable-5 has the
-metadata mechanism, opus-5 the stronger semantic ranker.
-
-**Internal scoring understates the difference between these two agents**, so it
-is the wrong basis for this particular comparison. Internally the split reads
-metadata +4.46, semantic −0.12, specific −0.03 — an apparently pure
-one-category result at +0.0161. The reason is the top-K cap: these agents diverge
-mainly in how deep they grade, and capped judging cannot see past the cap, so it
-compresses exactly the axis on which they differ. Uncapped, the semantic gap
-opens to −0.018 and specific to +0.043, halving the total margin to +0.0085. Read
-the internal figures as a lower bound on how differently the two agents behave,
-not as a measure of it.
+third of it.
 
 ## Naming and conventions
 
@@ -116,7 +109,7 @@ embedded here have **zero** overlap with all 267 held-out test IDs.
   clean outcomes.
 - **Zero test-set timeouts**, against four for the opus-5 run at the same gate.
 
-## Architecture (2,781 lines, single `agent.py`)
+## Architecture of `iter18_cocite_largegold_v1` (2,781 lines, single `agent.py`)
 
 The organizing discipline is a hard two-tier cost split, stated in the agent's
 own docstring:
@@ -164,21 +157,74 @@ from more model diversity.
 
 ### Tool-contract workarounds
 
-Two undocumented Asta MCP behaviours this agent discovered and encodes. Recorded
+Two undocumented Asta MCP behaviours evolution discovered and this agent encodes. Recorded
 because they are load-bearing and because their coverage is finite:
 
-- **`get_citations` rejects `tldr`.** The agent found its citation-expansion
+- **`get_citations` rejects `tldr`.** Evolution found the citation-expansion
   channel had "been dead in every agent since iteration 6", returning zero citers
   on 25 of 27 measured agent × query pairs — silently, because the per-call
   failure was caught and logged as an ordinary tool error. Fixed with a
   probe-verified narrower field list. Four independent lineages in this campaign
-  rediscovered this same defect.
+  rediscovered this same defect. **How it was found is worth as much as the fix
+  — see [Diagnostics](#the-diagnostics-are-part-of-what-evolved) below.**
 - **`venues=` normalises some acronyms but not all.** Worked around with a
   26-entry `_VENUE_ALIASES` table sending both the acronym and the expanded
   official name. **The table is finite and ML/NLP-weighted**, so the metadata fix
   is partial exactly in the venues it omits — `metadata_8` (PADL 2012) recovered
   to 1.000, but `metadata_18` (POPL) only to 0.154 and `metadata_38` (CHI 2001)
   to 0.069.
+
+### The diagnostics are part of what evolved
+
+Whatever a solver prints while answering a query is captured and handed back to
+the evolution model before the next round. That makes logging a design decision,
+and this lineage treated it as one: the seed agent carried **5 `print()` calls
+across 121 lines**, the submitted agent **80 across 2,781**. What grew was a
+funnel — a counter at each retrieval stage reporting how many candidates entered
+and how many survived.
+
+That instrumentation is what exposed the `get_citations` defect, and the route
+matters. The broken channel did not look broken from any single query: it
+reported zero new papers, which is an ordinary result when a search genuinely
+finds nothing, and three consecutive evolution sessions read the logs that way
+and moved on. The session that caught it compared the same counter across all
+three competing agents and every query at once — zero in 25 of the 27 pairs
+where the channel ran. **An outcome that never varies across agents or inputs is
+a defect signature, not a measurement.** Only then did the failure log supply the
+cause, because it records the arguments that produced the error alongside it.
+
+The counters pay again as verification. Each round evaluates a small sample of
+queries, so a newly added channel may go several rounds without meeting a query
+it applies to, and scores cannot confirm the change did anything at all. A
+distinctive log line can: two channels here were confirmed live two iterations
+after they were written, at no evaluation cost.
+
+The guard that made the failure silent — returning an empty result on any
+exception — is also what recorded it. The channel was quiet in its behaviour and
+loud in its logs for five iterations, and closing that gap took a change in how
+the evidence was read rather than any new evidence.
+
+The residual gap is that this remains a manual sweep performed by the evolution
+agent, re-derived from scratch each round. Iteration 12 asked for it to be
+automated — a "zero across all queries" audit in the harness's
+`error_analysis_report.md`, flagging any log marker reading `-> 0` on ≥80% of
+queries — noting it "would have caught the dead channel six iterations ago, and
+the class recurs": a cap set below the number of results required struck twice,
+a batch-level crash three times.
+
+Requests of this kind are common in `evolution_reflection.md` across the
+campaign. In this run alone, one report change was asked for in seven
+consecutive sessions, each recomputing the same aggregate by hand first. They go
+unanswered because `error_analysis_report.md` is a generic report spanning all
+tasks, so a diagnostic specific to one lineage is not something an evolution
+session can add. Building such tooling is a Meta-evolution function, and
+Meta-evolution was not enabled for this experimental campaign.
+
+The residual gap is that this remains a manual sweep. Iteration 12 asked for a
+"zero across all queries" audit in `error_analysis_report.md` — flag any stdout
+marker matching `-> 0` on ≥80% of queries — noting it "would have caught the dead
+channel six iterations ago, and the class recurs" (caps-below-K twice, the
+references batch crash three times).
 
 ## Internal results (basis: stock GPT-4o judge, canonical ordering)
 
@@ -324,9 +370,6 @@ the agent's own sampling and in judging depth (internal capped to top-K, officia
 uncapped). Clearing the bar under both conditions is better evidence than one run
 clearing it once, and it addresses the obvious worry that a single lucky draw
 crossed the line.
-
-For context, the score margin was flagged pre-submission as needing ~0.006 of
-headroom to hold; it came in at 0.0076.
 
 ### Uncapped official judging helped, as it did for the opus-5 entry
 
