@@ -234,7 +234,7 @@ references batch crash three times).
 | `semantic_f1` (194) | 0.3715 |
 | `specific_f1` (38) | 0.8675 |
 | `metadata_f1` (35) | **0.3423** — best across twelve runs |
-| Agent cost | $0.2780/query — **$0.278** on the board ($74.22 total) |
+| Agent cost | $0.2780/query ($74.22 total) — the board shows **$0.279**, from the official run |
 | Judge cost (internal, capped + cached) | $70.36 |
 | Timeouts | **0** |
 
@@ -271,7 +271,7 @@ Agent description as submitted on the form:
 > model, under a $0.355/query training cost cap on solver spend — set at exactly
 > the price of the most capable entry on the board, so that evolution had to win
 > on score at a price already known to be competitive. It came in at
-> $0.278/query.
+> $0.279/query.
 >
 > Its evolutionary predecessors were discarding the papers they needed. On the
 > queries whose recall was starving, 150 to 640 retrieved candidates per query
