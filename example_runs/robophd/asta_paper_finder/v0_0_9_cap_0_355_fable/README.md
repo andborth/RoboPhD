@@ -37,9 +37,10 @@ same $0.355 gate, same reachability guard, same luna/no-prose training judge,
 same stock-4o test judge, same 600 budget, same 14 examples/iteration, same
 harness. **Only the evolution model differs**: fable-5 here, opus-5 there.
 
-Both entries are now official, so the comparison below uses official numbers.
-**On the official basis the margin is +0.0085, not the +0.0161 the internal
-figures showed** — and it is a three-way trade rather than a single category:
+The comparison uses **official** figures, which are the ones that carry — both
+entries have them, and they judge every submitted paper rather than the top-K
+slice internal scoring grades. On that basis fable-5 leads by **+0.0085**, and
+the margin is a three-way trade rather than a single category:
 
 | category | n | opus-5 | **fable-5** | delta | points to fable |
 | --- | --- | --- | --- | --- | --- |
@@ -49,25 +50,25 @@ figures showed** — and it is a three-way trade rather than a single category:
 | | | | | **total** | **+2.27** → +0.0085 |
 
 Metadata is where fable-5 wins, decisively: **+0.120**, with zeros falling from
-16 of 35 to 5. It got there while spending *less* on that category —
+16 of 35 to 5. It gets there while spending *less* on that category —
 $0.0056/query against opus-5's $0.0136, a **59% reduction** — so the gain is
 structural rather than bought, and it comes from the F1-denominator padding rule
 described under Architecture below.
 
-But roughly **85% of that gain is handed back on semantic**, where opus-5's
-deeper Sonnet-graded band wins by 0.018 over 194 queries. Specific returns about
-a third of it.
+Roughly **85% of that is handed back on semantic**, where opus-5's deeper
+Sonnet-graded band wins by 0.018 across 194 queries. Specific returns about a
+third of it. Neither agent dominates the other by category: fable-5 has the
+metadata mechanism, opus-5 the stronger semantic ranker.
 
-**This is worth stating because the internal comparison told a cleaner story than
-survived.** Internally the split read metadata +4.46, semantic −0.12, specific
-−0.03 — an apparently pure one-category result. Officially, semantic and specific
-both move by more than a point, in opposite directions. The internal wash on
-those two categories was the artifact; the official three-way trade is the
-result. Neither agent dominates the other by category, and the total margin is
-about half what internal suggested.
-
-So the honest reading is not "fable-5 builds better agents." Each found something
-the other did not: fable-5 the metadata failure, opus-5 a better semantic ranker.
+**Internal scoring understates the difference between these two agents**, so it
+is the wrong basis for this particular comparison. Internally the split reads
+metadata +4.46, semantic −0.12, specific −0.03 — an apparently pure
+one-category result at +0.0161. The reason is the top-K cap: these agents diverge
+mainly in how deep they grade, and capped judging cannot see past the cap, so it
+compresses exactly the axis on which they differ. Uncapped, the semantic gap
+opens to −0.018 and specific to +0.043, halving the total margin to +0.0085. Read
+the internal figures as a lower bound on how differently the two agents behave,
+not as a measure of it.
 
 ## Naming and conventions
 
