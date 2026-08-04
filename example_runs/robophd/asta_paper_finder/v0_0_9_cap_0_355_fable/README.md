@@ -42,12 +42,21 @@ entries have them, and they judge every submitted paper rather than the top-K
 slice internal scoring grades. On that basis fable-5 leads by **+0.0085**, and
 the margin is a three-way trade rather than a single category:
 
-| category | n | opus-5 | **fable-5** | delta | points to fable |
+| category | n | opus-5 | **fable-5** | delta | score points (n × delta) |
 | --- | --- | --- | --- | --- | --- |
 | metadata | 35 | 0.2281 | **0.3483** | +0.1202 | **+4.21** |
 | semantic | 194 | **0.3933** | 0.3749 | −0.0184 | **−3.58** |
 | specific | 38 | 0.8158 | **0.8588** | +0.0430 | +1.63 |
-| | | | | **total** | **+2.27** → +0.0085 |
+| **all** | **267** | 0.43177 | **0.44025** | | **+2.27** |
+
+The benchmark score is a plain mean over all 267 queries, so a category's
+influence on the headline is its per-query delta multiplied by how many queries
+it has — the last column. Those sum to +2.27 score points, and +2.27 / 267 =
+**+0.0085**, the difference between the two entries' totals.
+
+That weighting is why the last column matters more than the delta beside it.
+Metadata has by far the largest rate difference at +0.120, but it applies to only
+35 queries; semantic's −0.018 looks negligible until multiplied by 194.
 
 Metadata is where fable-5 wins, decisively: **+0.120**, with zeros falling from
 16 of 35 to 5. It gets there while spending *less* on that category —
