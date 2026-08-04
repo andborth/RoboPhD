@@ -27,9 +27,15 @@ top entry leaves the curve entirely. At full precision, 0.44025 ± 0.01790 again
 **Rank 1, and five slots with four ours** — all Standard tier, against Ai2's
 Custom interface. They retain a single slot, at 0.397 @ $0.063.
 
-The +0.0076 margin over the former leader is outside the ±0.006 that was flagged
-as the risk on this claim pre-submission, but still inside the 0.018 stderr: it
-dominates on the recorded numbers rather than being significantly better.
+By the leaderboard's rules this **dominates** the incumbent: strictly better on
+score and strictly cheaper, so the incumbent is no longer Pareto-optimal.
+
+Two separate evaluations of this agent cleared 0.4327 — internal at **0.4383**
+and official at **0.44025**, by +0.0056 and +0.0076. They share the test set and
+the judge model, so they are not independent estimates, but they differ in the
+agent's own sampling and in judging depth (internal capped to top-K, official
+uncapped). Clearing the bar twice under both conditions is better evidence than
+one run clearing it once.
 
 ## The cleanest evolution-model A/B in the campaign
 
@@ -291,6 +297,25 @@ Fifth calibration point, and the third positive: **+0.0025 / −0.0550 / −0.00
 `specific_f1` moved −0.0088. That category carries roughly 0.058 SD across 38
 all-or-nothing queries, so this is about a fifth of a standard deviation — the
 quietest that metric has been across the five submissions, and not a signal.
+
+### How strong is the margin over the incumbent?
+
+The board ranks on point estimates, and on those this dominates. On the
+statistics it is a lead, not a separation:
+
+| | score | stderr | $/prob |
+| --- | --- | --- | --- |
+| this entry | **0.44025** | 0.01790 | **0.27858** |
+| former leader (Asta Paper Finder) | 0.43270 | 0.01650 | 0.35480 |
+
+The **+0.0076** score gap is well inside either interval, so the two are not
+statistically distinguishable on score from single measurements. What is not in
+doubt is the cost axis — **21% cheaper**, with cost stderr of $0.0099 against a
+$0.076 gap — so the domination claim rests on a firm cost advantage plus a score
+lead that is real in the recorded numbers but modest against the noise.
+
+For context, the score margin was flagged pre-submission as needing ~0.006 of
+headroom to hold; it came in at 0.0076.
 
 ### Uncapped official judging helped, as it did for the opus-5 entry
 
