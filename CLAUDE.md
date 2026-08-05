@@ -248,6 +248,8 @@ python examples/asta_paper_finder/main.py \
 
 **King-of-the-Hill runs are exempt** (`agents_per_iteration: 2` with `oldest_agent_wins_ties: true`). A KotH run's result is whichever agent won the last round, not the Elo leader (`runner_utils.find_last_winner`), so a new agent becomes the output by winning one round whatever its rating and nothing is ever dead weight. ~20% of archived runs are this shape, so the exemption is load-bearing rather than an edge case.
 
+**Resume respects the stored value, on or off.** A default flip changes new runs only: a checkpoint stores both the defaults snapshot in force when it was written and its resolved iteration-1 config, and either alone is enough to carry the old value forward — so an in-flight campaign resumed after a flip keeps whatever it was running under, and a run that explicitly disabled the guard stays disabled. No example packs this key into `engine_overrides` (which *is* re-applied as a delta on resume), so a flagless resume adds nothing.
+
 The two halves of that differ deliberately. An **explicit** `elo_reachability_guard: true` on a KotH config raises at startup — you asked for something incoherent and should hear about it. The **default** being on merely leaves the guard inert there, at both the config layer and in `researcher._apply_reachability_guard`; failing a run that never mentioned the guard would quote a flag its operator never passed.
 
 Replay it against a finished run before enabling it on a real one — free, and it refuses KotH runs the same way:

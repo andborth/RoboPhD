@@ -1296,3 +1296,106 @@ def test_guard_still_acts_on_two_agents_without_koth_tie_handling():
         stub, iteration=5, agents_per_iteration=2, oldest_agent_wins_ties=False,
     )
     assert changed is True
+
+
+# --- resume must respect the stored value, on or off --------------------------
+#
+# A default flip is a change to NEW runs. An in-flight campaign resumed after
+# the flip must keep whatever it was running under, or the scoring behaviour
+# changes mid-run — the same concern that made the judge-default flip
+# (13706a15) engineer stored-value-wins semantics.
+#
+# The shielding is doubly redundant, which is worth knowing before anyone
+# "simplifies" either half. A checkpoint stores BOTH iteration_configs[0] (the
+# defaults snapshot as of the run's start, read by _resolve_base_config in
+# preference to live get_defaults()) and resolved_configs[1] (which the N>=2
+# inheritance chain terminates on). Measured: dropping either one alone still
+# resolves the old value; only dropping both lets the live default through.
+#
+# It is also why no example packs this key into engine_overrides — that is
+# re-applied as a delta on resume, so it would override the stored value. The
+# guard arrives only from a user's own --engine-config, so a flagless resume
+# adds nothing.
+
+
+def _resume(initial_config, *, stored_defaults=None):
+    """Round-trip a ConfigManager through a checkpoint and resolve ahead.
+
+    `stored_defaults` overwrites the iteration-0 snapshot, which is how a
+    checkpoint written under different code defaults actually looks.
+    """
+    import json
+
+    from RoboPhD.config_manager import ConfigManager, ConfigSource
+
+    cm = ConfigManager()
+    cm.set_initial_config(dict(initial_config), ConfigSource.CLI)
+    for key, value in (stored_defaults or {}).items():
+        cm.iteration_configs[0][key] = value
+        cm.resolved_configs[0][key] = value
+        if key not in initial_config:
+            cm.resolved_configs[1][key] = value
+    revived = ConfigManager.from_checkpoint(
+        json.loads(json.dumps(cm.to_checkpoint()))
+    )
+    revived.set_current_iteration(9)
+    return revived.get_config(9)
+
+
+def test_resume_keeps_an_explicit_enable():
+    assert _resume({"elo_reachability_guard": True})["elo_reachability_guard"] is True
+
+
+def test_resume_keeps_an_explicit_disable():
+    """The case that would silently change a run's behaviour if the flip
+    leaked through: someone turned the guard OFF, then resumed."""
+    assert _resume({"elo_reachability_guard": False})["elo_reachability_guard"] is False
+
+
+def test_resume_of_a_pre_flip_run_does_not_gain_the_guard():
+    """A campaign started while the default was False, resumed afterwards,
+    must not silently acquire the guard for its remaining iterations."""
+    cfg = _resume({}, stored_defaults={"elo_reachability_guard": False})
+    assert cfg["elo_reachability_guard"] is False, (
+        "an in-flight run gained the guard mid-campaign; the checkpoint's "
+        "stored iteration_configs[0] / resolved_configs[1] are what shield it "
+        "from a default flip, and something has stopped reading them"
+    )
+
+
+def test_resume_of_a_run_predating_the_key_leaves_it_absent():
+    """Checkpoints written before the key existed have no entry at all. The
+    guard reads it with .get(), so absent means off — which is the correct
+    reading of 'this run never had the feature'."""
+    import json
+
+    from RoboPhD.config_manager import ConfigManager, ConfigSource
+
+    cm = ConfigManager()
+    cm.set_initial_config({}, ConfigSource.CLI)
+    for d in (cm.iteration_configs[0], cm.resolved_configs[0],
+              cm.resolved_configs[1]):
+        d.pop("elo_reachability_guard", None)
+    revived = ConfigManager.from_checkpoint(
+        json.loads(json.dumps(cm.to_checkpoint()))
+    )
+    revived.set_current_iteration(9)
+    assert revived.get_config(9).get("elo_reachability_guard") in (None, False)
+
+
+def test_no_example_packs_the_guard_into_engine_overrides():
+    """engine_overrides is re-applied as a delta on resume, so anything an
+    example packs there unconditionally would override the stored value.
+    The guard must arrive only from a user's own --engine-config."""
+    import pathlib
+
+    root = pathlib.Path(__file__).resolve().parents[2] / "examples"
+    offenders = [
+        str(p.relative_to(root.parent))
+        for p in root.glob("*/main.py")
+        if "elo_reachability" in p.read_text()
+    ]
+    assert not offenders, (
+        f"these examples would push the guard through engine_overrides and "
+        f"clobber a resumed run's stored value: {offenders}"
+    )
