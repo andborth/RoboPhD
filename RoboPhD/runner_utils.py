@@ -12,7 +12,7 @@ import threading
 import types
 import typing
 from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from RoboPhD.debug_logging import maybe_debug_log
 from RoboPhD.config import SUPPORTED_MODELS
@@ -510,6 +510,69 @@ def parse_dollars_or_percent(value, *, of: float, flag: str) -> float:
             f"number followed by '%', e.g. 10% or 7.5%"
         )
     return round(of * percent / 100.0, 12)
+
+
+def validate_cost_threshold(cost_threshold: float, fmt=str) -> None:
+    """Reject a negative free zone.
+
+    Checked at the CLI boundary rather than left to an evaluator's
+    constructor so a relative slope derivation downstream never has a
+    nonsense width to scale against, and so the failure names the flag that
+    is actually wrong instead of surfacing as a ValueError traceback several
+    steps later.
+    """
+    if cost_threshold < 0:
+        raise SystemExit(
+            f"--cost-threshold must be >= 0 (0 means no free zone at all); "
+            f"got {fmt(cost_threshold)}"
+        )
+
+
+def validate_cost_slope(
+    cost_per_error: float,
+    cost_threshold: float,
+    slope_spec: Optional[str],
+    *,
+    fraction: float,
+    suggested_slope: float,
+    fmt=str,
+) -> None:
+    """Reject a non-positive penalty slope, blaming the right flag.
+
+    ``slope_spec`` is the raw --cost-per-error string (None when the user
+    passed nothing) and is needed only to tell apart the two ways the slope
+    can reach zero. A dollar amount is the user's own number, so say so
+    plainly. A percentage — including the default one, which nobody typed —
+    is a consequence of the threshold it multiplied, and pointing at
+    --cost-per-error there sends the reader to the wrong flag.
+
+    A zero threshold ("no free zone, penalize from the first cent") stays
+    reachable; once the default slope is a fraction of the threshold it just
+    has to state its own slope in dollars, where a flat default supplied one.
+
+    ``fraction`` and ``suggested_slope`` are the calling task's
+    COST_PER_ERROR_FRACTION and its default slope at its default threshold —
+    the latter only ever appears in the suggested fix, and deriving it from
+    the task's own constants keeps the advice from drifting away from them.
+    """
+    if cost_per_error > 0:
+        return
+    came_from_percent = slope_spec is None or "%" in str(slope_spec)
+    if came_from_percent and cost_threshold <= 0:
+        source = (f"the default ({fraction:.0%})"
+                  if slope_spec is None else repr(slope_spec))
+        raise SystemExit(
+            f"--cost-per-error is {source} of --cost-threshold, which is "
+            f"{fmt(cost_threshold)} — a percentage of that is "
+            f"{fmt(cost_per_error)}, and the penalty slope must be > 0. "
+            f"A threshold with no free zone has no width to scale against, so "
+            f"state the slope in dollars instead: "
+            f"--cost-per-error {suggested_slope:g}"
+        )
+    raise SystemExit(
+        f"--cost-per-error must be > 0; got {slope_spec!r} "
+        f"(= {fmt(cost_per_error)})"
+    )
 
 
 def resolve_run_immutable(cli_value, stored_value, default_value, flag: str, *,

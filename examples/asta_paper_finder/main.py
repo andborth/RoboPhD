@@ -56,6 +56,8 @@ from RoboPhD.runner_utils import (
     parse_dollars_or_percent,
     read_task_config_extras,
     resolve_run_immutable,
+    validate_cost_slope,
+    validate_cost_threshold,
 )
 
 logging.basicConfig(
@@ -157,58 +159,6 @@ def _enforce_immutable_on_resume(
     return resolve_run_immutable(
         cli_value, stored_value, default_value, name,
         on_resume=on_resume, fmt=fmt, missing_note=_ALL_FLAGS_NOTE,
-    )
-
-
-def _validate_cost_threshold(cost_threshold: float) -> None:
-    """Reject a negative free zone.
-
-    Checked here rather than left to the evaluator's constructor so the
-    slope derivation downstream never has a nonsense width to scale
-    against, and so the failure names the flag that is actually wrong.
-    """
-    from evaluator import _fmt_cost
-
-    if cost_threshold < 0:
-        raise SystemExit(
-            f"--cost-threshold must be >= 0 (0 means no free zone at all); "
-            f"got {_fmt_cost(cost_threshold)}"
-        )
-
-
-def _validate_cost_slope(cost_per_error: float, cost_threshold: float,
-                         slope_spec: str | None) -> None:
-    """Reject a non-positive penalty slope, blaming the right flag.
-
-    ``slope_spec`` is the raw --cost-per-error string (None when the user
-    passed nothing) and is needed only to tell apart the two ways the
-    slope can reach zero. A dollar amount is the user's own number, so say
-    so plainly. A percentage — including the default one, which nobody
-    typed — is a consequence of the threshold it multiplied, and pointing
-    at --cost-per-error there sends the reader to the wrong flag.
-
-    A zero threshold ("no free zone, penalize from the first cent") stays
-    reachable; since the default slope became relative it just has to
-    state its own slope in dollars, where the old flat $0.02 supplied one.
-    """
-    from evaluator import COST_PER_ERROR_FRACTION, _fmt_cost
-
-    if cost_per_error > 0:
-        return
-    came_from_percent = slope_spec is None or "%" in str(slope_spec)
-    if came_from_percent and cost_threshold <= 0:
-        source = (f"the default ({COST_PER_ERROR_FRACTION:.0%})"
-                  if slope_spec is None else repr(slope_spec))
-        raise SystemExit(
-            f"--cost-per-error is {source} of --cost-threshold, which is "
-            f"{_fmt_cost(cost_threshold)} — a percentage of that is "
-            f"{_fmt_cost(cost_per_error)}, and the penalty slope must be > 0. "
-            f"A threshold with no free zone has no width to scale against, so "
-            f"state the slope in dollars instead: --cost-per-error 0.006"
-        )
-    raise SystemExit(
-        f"--cost-per-error must be > 0; got {slope_spec!r} "
-        f"(= {_fmt_cost(cost_per_error)})"
     )
 
 
@@ -799,6 +749,7 @@ def main():
     from evaluator import (
         CACHE_PATH_ENV,
         CAP_JUDGE_ENV,
+        COST_PER_ERROR_FRACTION,
         EVIDENCE_CAP_ENV,
         MIN_COST_THRESHOLD,
         PaperFinderEvaluator,
@@ -893,7 +844,7 @@ def main():
         on_resume=on_resume,
         fmt=_fmt_cost,
     )
-    _validate_cost_threshold(cost_threshold)
+    validate_cost_threshold(cost_threshold, _fmt_cost)
     # --cost-per-error resolves against the threshold above, so it is parsed
     # only after cost_threshold is final — a percentage is meaningless until
     # then, and on --resume the threshold in force may be the stored one
@@ -913,7 +864,12 @@ def main():
         on_resume=on_resume,
         fmt=_fmt_cost,
     )
-    _validate_cost_slope(cost_per_error, cost_threshold, args.cost_per_error)
+    validate_cost_slope(
+        cost_per_error, cost_threshold, args.cost_per_error,
+        fraction=COST_PER_ERROR_FRACTION,
+        suggested_slope=default_cost_per_error(MIN_COST_THRESHOLD),
+        fmt=_fmt_cost,
+    )
     # The top-estimate judging cap changes the training scoring basis (how many
     # papers the rank term sees), so like the cost knobs it must be immutable
     # across a run — a mid-run flip would make later iterations' Elo

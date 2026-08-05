@@ -1271,67 +1271,31 @@ def test_help_never_prints_default_none(ds_main):
     )
 
 
-# --- cost-knob validation -----------------------------------------------------
+# --- cost-knob validation is routed, not reimplemented ------------------------
 #
-# Making the default slope relative introduced one input it cannot serve:
-# --cost-threshold 0 ("no free zone, penalize from the first cent"), which
-# the evaluator accepts and which worked before because the flat $0.01
-# supplied a slope. 10% of nothing is nothing, so the run must stop — but it
-# must stop naming the threshold, not a flag the user never passed.
+# The blame logic lives in runner_utils and is tested once in
+# RoboPhD/unit_tests/test_cost_knob_validation.py. What is example-specific,
+# and therefore tested here, is that main.py calls it at all and hands it
+# THIS example's constants.
 
 
-def test_zero_threshold_with_the_default_slope_blames_the_threshold(ds_main):
-    with pytest.raises(SystemExit) as exc:
-        ds_main._validate_cost_slope(0.0, 0.0, None)
-    msg = str(exc.value)
-    assert "--cost-threshold" in msg, (
-        "the zero threshold is the cause; a message that only names "
-        "--cost-per-error sends the reader to a flag they did not pass"
+def test_main_routes_both_knobs_through_the_shared_validators():
+    assert "validate_cost_threshold(cost_threshold, _fmt_cost)" in _MAIN_SRC
+    assert "validate_cost_slope(" in _MAIN_SRC
+    assert "args.cost_per_error," in _MAIN_SRC, (
+        "the slope validator needs the RAW spec to tell a percentage from "
+        "dollars"
     )
-    assert "the default" in msg
-    assert "--cost-per-error 0.005" in msg, "no actionable way out"
+    assert "fraction=COST_PER_ERROR_FRACTION" in _MAIN_SRC
+    assert "suggested_slope=default_cost_per_error(MIN_COST_THRESHOLD)" in _MAIN_SRC, (
+        "the suggested fix must derive from this example's own default "
+        "threshold rather than being a literal that can drift from it"
+    )
 
 
-def test_zero_threshold_with_an_explicit_percentage_blames_the_threshold(ds_main):
-    with pytest.raises(SystemExit) as exc:
-        ds_main._validate_cost_slope(0.0, 0.0, "10%")
-    assert "--cost-threshold" in str(exc.value)
-    assert "'10%'" in str(exc.value)
-
-
-def test_zero_threshold_stays_reachable_with_an_explicit_dollar_slope(ds_main):
-    """The configuration must not become unusable — only under-specified."""
-    ds_main._validate_cost_threshold(0.0)
-    ds_main._validate_cost_slope(0.005, 0.0, "0.005")
-
-
-@pytest.mark.parametrize("resolved,spec", [
-    (0.0, "0"), (0.0, "0%"), (-0.5, "-0.5"),
-])
-def test_a_typed_zero_slope_is_not_blamed_on_the_threshold(ds_main, resolved, spec):
-    """At a healthy threshold the user asked for a non-positive slope; the
-    threshold is innocent and the message must not implicate it."""
-    with pytest.raises(SystemExit) as exc:
-        ds_main._validate_cost_slope(resolved, 0.05, spec)
-    msg = str(exc.value)
-    assert "--cost-per-error must be > 0" in msg
-    assert "no free zone" not in msg
-
-
-def test_negative_threshold_is_rejected_by_name(ds_main):
-    with pytest.raises(SystemExit, match="--cost-threshold"):
-        ds_main._validate_cost_threshold(-1.0)
-
-
-def test_valid_knobs_pass(ds_main):
-    ds_main._validate_cost_threshold(0.05)
-    ds_main._validate_cost_slope(0.005, 0.05, None)
-    ds_main._validate_cost_slope(0.01, 0.05, "0.01")
-
-
-def test_main_routes_both_knobs_through_the_validators():
-    assert "_validate_cost_threshold(cost_threshold)" in _MAIN_SRC
-    assert (
-        "_validate_cost_slope(cost_per_error, cost_threshold, args.cost_per_error)"
-        in _MAIN_SRC
-    ), "the slope validator needs the RAW spec to tell a percentage from dollars"
+def test_validators_are_not_reimplemented_locally():
+    """The sibling-drift guard. These were copy-ported between the two
+    AstaBench examples once; fifty lines of carefully-worded blame logic in
+    two places means a message fix in one silently misses the other."""
+    assert "def _validate_cost_slope(" not in _MAIN_SRC
+    assert "def _validate_cost_threshold(" not in _MAIN_SRC
