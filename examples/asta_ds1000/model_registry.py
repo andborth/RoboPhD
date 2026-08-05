@@ -115,8 +115,9 @@ GEMINI_3_FLASH_PREVIEW = GEMINI_3_5_FLASH
 # Strong-tier handles. Cost rates are ~5-40× the cheap tier; the
 # cost-penalty in the training scorer disciplines overuse (see
 # background.md). Raise --cost-threshold (e.g. 0.08) for a more
-# generous free zone when relying on these, or raise --cost-per-error
-# to soften the per-call penalty.
+# generous free zone when relying on these — the default slope is 10% of
+# the threshold, so it widens with it — or raise --cost-per-error
+# (dollars, or a percentage like 20%) to soften the per-call penalty.
 _GPT_5_5_ID = "openai/gpt-5.5"
 _CLAUDE_OPUS_4_8_ID = "anthropic/claude-opus-4-8"
 _GEMINI_3_1_PRO_PREVIEW_ID = "google/gemini-3.1-pro-preview"

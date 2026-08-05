@@ -46,6 +46,7 @@ from RoboPhD import (
 )
 from RoboPhD.runner_utils import (
     apply_engine_config,
+    parse_dollars_or_percent,
     read_task_config_extras,
     resolve_run_immutable,
 )
@@ -298,6 +299,58 @@ def _enforce_immutable_on_resume(
     )
 
 
+def _validate_cost_threshold(cost_threshold: float) -> None:
+    """Reject a negative free zone.
+
+    Checked here rather than left to the evaluator's constructor so the
+    slope derivation downstream never has a nonsense width to scale
+    against, and so the failure names the flag that is actually wrong.
+    """
+    from evaluator import _fmt_cost
+
+    if cost_threshold < 0:
+        raise SystemExit(
+            f"--cost-threshold must be >= 0 (0 means no free zone at all); "
+            f"got {_fmt_cost(cost_threshold)}"
+        )
+
+
+def _validate_cost_slope(cost_per_error: float, cost_threshold: float,
+                         slope_spec: str | None) -> None:
+    """Reject a non-positive penalty slope, blaming the right flag.
+
+    ``slope_spec`` is the raw --cost-per-error string (None when the user
+    passed nothing) and is needed only to tell apart the two ways the
+    slope can reach zero. A dollar amount is the user's own number, so say
+    so plainly. A percentage — including the default one, which nobody
+    typed — is a consequence of the threshold it multiplied, and pointing
+    at --cost-per-error there sends the reader to the wrong flag.
+
+    A zero threshold ("no free zone, penalize from the first cent") stays
+    reachable; since the default slope became relative it just has to
+    state its own slope in dollars, where the old flat $0.01 supplied one.
+    """
+    from evaluator import COST_PER_ERROR_FRACTION, _fmt_cost
+
+    if cost_per_error > 0:
+        return
+    came_from_percent = slope_spec is None or "%" in str(slope_spec)
+    if came_from_percent and cost_threshold <= 0:
+        source = (f"the default ({COST_PER_ERROR_FRACTION:.0%})"
+                  if slope_spec is None else repr(slope_spec))
+        raise SystemExit(
+            f"--cost-per-error is {source} of --cost-threshold, which is "
+            f"{_fmt_cost(cost_threshold)} — a percentage of that is "
+            f"{_fmt_cost(cost_per_error)}, and the penalty slope must be > 0. "
+            f"A threshold with no free zone has no width to scale against, so "
+            f"state the slope in dollars instead: --cost-per-error 0.005"
+        )
+    raise SystemExit(
+        f"--cost-per-error must be > 0; got {slope_spec!r} "
+        f"(= {_fmt_cost(cost_per_error)})"
+    )
+
+
 def _resume_enforces_cost_knobs(engine: str, resume: bool, eval_only: bool) -> bool:
     """Validate --resume usage and report whether the run-immutable cost
     knobs (cost-threshold / cost-per-error) must be enforced on this run.
@@ -357,18 +410,48 @@ def _test_rounds_framing(rounds: int) -> str:
     )
 
 
+class _DefaultsHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
+    """ArgumentDefaultsHelpFormatter without the useless "(default: None)".
+
+    Several flags default to None deliberately: None is how the resume path
+    tells "user passed nothing" from "user passed X", so the real default
+    is resolved afterwards and stated in the help prose. Letting argparse
+    append "(default: None)" then prints a flat contradiction next to those
+    sentences — in the one place a user goes to decide what to pass.
+    """
+
+    def _get_help_string(self, action):
+        if action.default is None:
+            return action.help
+        return super()._get_help_string(action)
+
+
 def parse_args():
+    # Pull the resolved defaults from the evaluator so --help never drifts
+    # from the actual constants (MIN_COST_THRESHOLD / COST_PER_ERROR_FRACTION).
+    from evaluator import (
+        COST_PER_ERROR_FRACTION,
+        MIN_COST_THRESHOLD,
+        _fmt_cost,
+        default_cost_per_error,
+    )
+
     # ArgumentDefaultsHelpFormatter auto-appends "(default: <value>)" to
     # any flag whose help string does not already contain "%(default)".
-    # For most flags this is what we want. To opt OUT for a specific flag
-    # (e.g. when default=None is an implementation detail and the
-    # behavioral default is described inline), append "%(default).0s" to
-    # the help string — the .0s precision truncates the rendered value to
-    # empty so nothing extra appears in --help. See --new-agent-test-rounds
-    # below for the canonical example.
+    # For most flags this is what we want. Two ways to opt out, and they
+    # cover different cases:
+    #
+    #  - _DefaultsHelpFormatter (below) suppresses it for EVERY flag whose
+    #    default is None, since "(default: None)" is a contradiction rather
+    #    than information — the real default is resolved after argparse and
+    #    stated in the help prose.
+    #  - Appending "%(default).0s" to one flag's help string opts that flag
+    #    out individually; the .0s precision truncates the rendered value to
+    #    empty. Still needed for a flag with a real, non-None default whose
+    #    help already explains it. See --new-agent-test-rounds below.
     p = argparse.ArgumentParser(
         description="Evolve DS-1000 agents on AstaBench (Standard tools, Docker sandbox)",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=_DefaultsHelpFormatter,
     )
     p.add_argument("--phase", choices=["experiment", "final"], default="final",
                    help="final (default): all 900 ds1000_test samples (leaderboard "
@@ -409,13 +492,21 @@ def parse_args():
 
     p.add_argument("--cost-threshold", type=float, default=None,
                    help="Mean cost across an iteration's batch below this "
-                        "is in the free zone (no penalty). Default $0.05."
-                        "%(default).0s")
-    p.add_argument("--cost-per-error", type=float, default=None,
-                   help="Dollars of mean batch spend (over --cost-threshold) "
-                        "that equals one wrong answer of penalty. Default "
-                        "$0.01. See README 'Cost-penalty math' for regimes."
-                        "%(default).0s")
+                        "is in the free zone (no penalty). Default "
+                        f"{_fmt_cost(MIN_COST_THRESHOLD)}.")
+    # argparse %-expands help strings, so every literal % must be doubled —
+    # including the one the format spec produces.
+    _pct_default = f"{COST_PER_ERROR_FRACTION:.0%}".replace("%", "%%")
+    p.add_argument("--cost-per-error", type=str, default=None, metavar="AMOUNT",
+                   help="Mean batch spend (over --cost-threshold) that equals "
+                        "one wrong answer of penalty. Accepts dollars (0.005) "
+                        "or a percentage of --cost-threshold (10%%) — the "
+                        "percentage form keeps the penalty's character fixed "
+                        "when the threshold moves. Default "
+                        f"{_pct_default} "
+                        f"({_fmt_cost(default_cost_per_error(MIN_COST_THRESHOLD))} "
+                        f"at the default threshold). See README "
+                        "'Cost-penalty math' for regimes.")
 
     p.add_argument("--max-workers", type=int, default=None,
                    help=f"Parallel eval workers (default: {DEFAULT_MAX_WORKERS}; "
@@ -447,7 +538,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    from evaluator import MIN_COST_THRESHOLD, COST_PER_ERROR, _fmt_cost
+    from evaluator import MIN_COST_THRESHOLD, _fmt_cost, default_cost_per_error
 
     # Read task-specific sidecar (--cost-threshold / --cost-per-error)
     # on --resume. These knobs aren't known to the framework's
@@ -470,14 +561,27 @@ def main():
         on_resume=on_resume,
         fmt=_fmt_cost,
     )
+    _validate_cost_threshold(cost_threshold)
+    # --cost-per-error resolves against the threshold above, so it is parsed
+    # only after cost_threshold is final — a percentage is meaningless until
+    # then, and on --resume the threshold in force may be the stored one
+    # rather than this invocation's default. Both the CLI value and the
+    # default become dollars here: the string form never leaves the front
+    # end, so scoring, checkpoints and the interpolated docs are unchanged.
     cost_per_error = _enforce_immutable_on_resume(
-        cli_value=args.cost_per_error,
+        cli_value=(
+            None if args.cost_per_error is None
+            else parse_dollars_or_percent(
+                args.cost_per_error, of=cost_threshold, flag="cost-per-error"
+            )
+        ),
         stored_value=checkpoint_ds1000.get("cost_per_error"),
-        default_value=COST_PER_ERROR,
+        default_value=default_cost_per_error(cost_threshold),
         name="cost-per-error",
         on_resume=on_resume,
         fmt=_fmt_cost,
     )
+    _validate_cost_slope(cost_per_error, cost_threshold, args.cost_per_error)
 
     resolved_runtime = {
         "cost_threshold": cost_threshold,

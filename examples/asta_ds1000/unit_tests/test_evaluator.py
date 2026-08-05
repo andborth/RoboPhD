@@ -937,3 +937,76 @@ def test_v0_0_6_official_cost_regression(bundled_fixture_map):
     }
     total = sum(_est(mod, m, **c) for m, c in usage.items())
     assert total / 900 == pytest.approx(0.004280335, abs=1e-6)
+
+
+# --- relative default penalty slope -------------------------------------------
+#
+# cost_per_error's default is a FRACTION of the free zone, not a dollar
+# figure, because the dollars that make a sensible slope scale with the
+# threshold they sit beside. This example is why: the threshold moved
+# repeatedly across archived runs while the flat $0.01 slope stayed put, so
+# the effective ratio wandered to 20% / 33% / 12% without anyone choosing it.
+
+
+@pytest.fixture(scope="module")
+def ev_mod():
+    """Import evaluator once per module (same pattern as the file's others)."""
+    sys.path.insert(0, str(ASTA_DS1000_DIR))
+    try:
+        import evaluator
+        return evaluator
+    finally:
+        sys.path.remove(str(ASTA_DS1000_DIR))
+
+
+def _keys(monkeypatch):
+    for k in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY"):
+        monkeypatch.setenv(k, "sk-test")
+
+
+def test_default_cost_per_error_scales_with_the_threshold(ev_mod):
+    frac = ev_mod.COST_PER_ERROR_FRACTION
+    for threshold in (0.05, 0.08, 0.003, 0.16):
+        assert ev_mod.default_cost_per_error(threshold) == pytest.approx(
+            threshold * frac
+        )
+
+
+def test_default_cost_per_error_is_rounded_clean(ev_mod):
+    """0.10 * 0.003 carries binary float noise; a stored checkpoint value
+    would then compare unequal on --resume."""
+    assert repr(ev_mod.default_cost_per_error(0.003)) == "0.0003"
+    assert repr(ev_mod.default_cost_per_error(0.05)) == "0.005"
+
+
+def test_constructor_default_slope_tracks_a_moved_threshold(ev_mod, monkeypatch):
+    """A caller that moves min_cost_threshold and leaves cost_per_error alone
+    must get the slope for the threshold it actually asked for. A signature
+    default would have frozen it at MIN_COST_THRESHOLD's."""
+    _keys(monkeypatch)
+    ev = ev_mod.Ds1000Evaluator(skip_docker_check=True, min_cost_threshold=0.003)
+    assert ev.cost_per_error == ev_mod.default_cost_per_error(0.003)
+    assert ev.cost_per_error != ev_mod.default_cost_per_error(
+        ev_mod.MIN_COST_THRESHOLD
+    )
+
+
+def test_explicit_cost_per_error_still_wins(ev_mod, monkeypatch):
+    _keys(monkeypatch)
+    ev = ev_mod.Ds1000Evaluator(
+        skip_docker_check=True, min_cost_threshold=0.003, cost_per_error=0.01
+    )
+    assert ev.cost_per_error == 0.01
+
+
+def test_with_overrides_carries_the_resolved_slope(ev_mod, monkeypatch):
+    """The test evaluator is derived from the training one. It must inherit
+    the resolved dollars, not re-default — otherwise a run with an explicit
+    --cost-per-error would score its two paths differently."""
+    _keys(monkeypatch)
+    ev = ev_mod.Ds1000Evaluator(
+        skip_docker_check=True, min_cost_threshold=0.003, cost_per_error=0.01
+    )
+    sibling = ev.with_overrides(apply_cost_penalty=False)
+    assert sibling.cost_per_error == 0.01
+    assert sibling.min_cost_threshold == 0.003

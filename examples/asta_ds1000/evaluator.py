@@ -132,7 +132,7 @@ def _head_tail_truncate(s: str, head: int = 200, tail: int = 1500) -> str:
 # Iteration-level score during training (apply_cost_penalty=True), via
 # Ds1000Evaluator.aggregate:
 #   score = SCORE_SCALE * mean_raw - penalty_pts
-#   errors_equivalent = max(0, mean_cost - MIN_COST_THRESHOLD) / COST_PER_ERROR
+#   errors_equivalent = max(0, mean_cost - min_cost_threshold) / cost_per_error
 #   penalty_pts = errors_equivalent * (SCORE_SCALE / n)
 # mean_raw is mean of binary per-example scores (1.0 for "C" / 0.0 for "I").
 # n is the batch size. The penalty applies to the MEAN cost across the
@@ -152,15 +152,46 @@ SCORE_SCALE = 100.0
 # over threshold — the buffer mainly protects against sample-mean noise
 # at small batch sizes.
 MIN_COST_THRESHOLD = 0.05
-# Dollars of mean batch spend (over threshold) that equals one wrong
-# answer of penalty. Default $0.01 puts cost in "active pull" territory:
-# every $0.01 over threshold subtracts one error's worth of score
-# (SCORE_SCALE/n points = 5 pts at n=20). Set this large (e.g. $1, $10)
-# to recover pure-tiebreaker semantics where the penalty sorts within
-# accuracy ties but never overrides a 1-problem accuracy gap. Score is
-# unbounded below — catastrophically expensive agents land well negative,
-# which is intentional.
-COST_PER_ERROR = 0.01
+# Default cost_per_error, expressed as a FRACTION of the free zone rather
+# than in dollars: the dollars that make a sensible penalty slope scale
+# with the threshold they sit beside. A slope that is a mild tiebreaker
+# against a $0.08 free zone is a wall against a $0.003 one.
+#
+# This example has the drift on record. Across the archived runs the
+# threshold moved repeatedly while cost_per_error stayed at its old flat
+# $0.01, so the ratio wandered without anyone choosing it: 20% on 14 runs
+# (the default), 33% on 3 (threshold cut to $0.003, slope left at $0.001),
+# 12% on 1 (threshold raised to $0.08, slope left at $0.01). Only
+# v0_0_7_sharp's 10% was deliberate — and its two-arm result argued that
+# at the softer ratio "a rational optimizer buys through the cap".
+#
+# 10% therefore matches both asta_paper_finder's default and the one ratio
+# here that was actually chosen. It is a real sharpening of the old flat
+# $0.01: at the $0.05 threshold the slope goes $0.01 -> $0.005, 2x
+# steeper. v0_0_7_sharp measured a 3.33x sharpening as ~-3.9pp accuracy
+# for 51% cheaper inference, so expect evolution to retreat further under
+# the cap rather than buy through it.
+#
+# Sizing, in the units the penalty is denominated in: at the default
+# threshold every $0.005 of mean spend over it subtracts one wrong
+# answer's worth of score (SCORE_SCALE/n points = 5 pts at n=20). Set
+# cost_per_error large (e.g. $1, $10) to recover pure-tiebreaker semantics
+# where the penalty sorts within accuracy ties but never overrides a
+# 1-problem accuracy gap. Score is unbounded below — catastrophically
+# expensive agents land well negative, which is intentional.
+COST_PER_ERROR_FRACTION = 0.10
+
+
+def default_cost_per_error(min_cost_threshold: float) -> float:
+    """The default penalty slope for a given free-zone width.
+
+    Single source for both the evaluator's own default and main.py's
+    --cost-per-error default, so the two can never drift into an
+    explicit-default-is-not-default trap. Rounded for the same reason as
+    runner_utils.parse_dollars_or_percent: float noise in the product
+    would compare unequal to a stored value on --resume.
+    """
+    return round(min_cost_threshold * COST_PER_ERROR_FRACTION, 12)
 
 
 def _fmt_cost(x: float) -> str:
@@ -549,7 +580,7 @@ class Ds1000Evaluator:
         eval_timeout: int = 600,
         apply_cost_penalty: bool = True,
         min_cost_threshold: float = MIN_COST_THRESHOLD,
-        cost_per_error: float = COST_PER_ERROR,
+        cost_per_error: float | None = None,
         fallback_candidate: dict[str, str] | None = None,
     ):
         # Hard requirement: every provider key the registry references
@@ -609,6 +640,13 @@ class Ds1000Evaluator:
             raise ValueError(
                 f"min_cost_threshold must be >= 0; got {min_cost_threshold}"
             )
+        # Defaulted here rather than in the signature because it is
+        # relative to another argument (COST_PER_ERROR_FRACTION of the
+        # free zone) — a signature default would freeze it at the
+        # MIN_COST_THRESHOLD constant and silently mis-scale any caller
+        # that moved the threshold.
+        if cost_per_error is None:
+            cost_per_error = default_cost_per_error(min_cost_threshold)
         if cost_per_error <= 0:
             raise ValueError(
                 f"cost_per_error must be > 0; got {cost_per_error}"

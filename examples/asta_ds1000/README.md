@@ -133,8 +133,11 @@ Default models: nine handles in `model_registry.py`, grouped by family into mini
 
 ```bash
 # Tighten the cost-penalty endpoints (ablation): cheaper free zone +
-# half-cent dollars-per-error makes each extra cent equal two errors.
+# an explicit dollar slope, so the two move independently.
 python examples/asta_ds1000/main.py --cost-threshold 0.005 --cost-per-error 0.005
+
+# Sharpen the penalty relative to whatever free zone is in force:
+python examples/asta_ds1000/main.py --cost-threshold 0.08 --cost-per-error 5%
 
 # Recover pure-tiebreaker semantics (cost sorts within accuracy ties
 # but never overrides a one-problem accuracy gap):
@@ -188,19 +191,29 @@ This is deliberate — we enforce the no-leakage invariant in code rather than r
 The iteration-aggregate score during training is:
 
 ```
-errors_equivalent = max(0, mean_cost − $0.05) / $0.01
+errors_equivalent = max(0, mean_cost − $0.05) / $0.005
 score = 100 · mean_accuracy − errors_equivalent · (100 / n)
 ```
 
 where `mean_cost` is the batch's mean agent spend and `n` is the iteration batch size. One error-equivalent of penalty costs exactly one wrong answer of raw score, so the penalty lives in the agent's own currency (errors), not dollars. The free-zone width ($0.05) gives typical "cheap" leaderboard entries (~$0.02/problem) headroom to stay fully inside the free zone. Above the threshold, the penalty is **unbounded** — a catastrophically expensive agent can score well negative, which is intentional.
 
-The two knobs are independently tunable. `--cost-threshold` widens the free zone; `--cost-per-error` chooses the regime:
+`--cost-threshold` widens the free zone; `--cost-per-error` chooses the regime:
 
 | `--cost-per-error` | At iter7 mean cost ($0.13, $0.08 excess) | Crosses 1 error of penalty at | Behavior |
 | --- | --- | --- | --- |
-| $10 (≈ legacy default) | 0.04 pts | mean $10.05 | Pure tiebreaker — sorts ties, never overrides |
+| $10 | 0.04 pts | mean $10.05 | Pure tiebreaker — sorts ties, never overrides |
 | $1 | 0.40 pts | mean $1.05 | Pure tiebreaker (slightly stronger sort) |
-| $0.01 (default) | 40 pts | mean $0.06 | Active pull — penalty trades off against accuracy |
+| $0.005 (default, = 10% of the threshold) | 80 pts | mean $0.055 | Active pull — penalty trades off against accuracy |
+
+### Writing `--cost-per-error` as a percentage
+
+`--cost-per-error` accepts either dollars (`0.005`) or a **percentage of `--cost-threshold`** (`10%`), and its default is `10%` — not a fixed dollar figure. The reason is that the dollars which make a sensible penalty slope scale with the free zone they sit beside, and this task has the drift on record: across the archived runs the threshold moved repeatedly while the slope stayed at its old flat `$0.01`, so the ratio wandered to 20% (14 runs), 33% (3), and 12% (1) without anyone choosing it. Only `v0_0_7_sharp`'s 10% was deliberate — and its two-arm result argued that at the softer ratio a rational optimizer simply *buys through* the cap.
+
+Conversion happens once, at the CLI boundary, against the *resolved* threshold — so on `--resume` a percentage is measured against the run's stored threshold, not this invocation's default. Everything downstream (the scoring function, `ds1000_runtime` in `checkpoint.json`, the `${COST_PER_ERROR}` figure interpolated into the agent-facing docs) sees dollars only.
+
+One input the relative default cannot serve: `--cost-threshold 0` (a legal threshold meaning "no free zone, penalize from the first cent") has no width to take a percentage of, so it must state its slope in dollars — `--cost-threshold 0 --cost-per-error 0.005`. The run stops with a message naming the threshold rather than the flag you did not pass.
+
+Note this **sharpened the default** relative to the old flat `$0.01`: at the default threshold the slope is now `$0.005`, 2× steeper. `v0_0_7_sharp` measured a 3.33× sharpening (at a fixed threshold) as costing ~3.9pp of accuracy for 51% cheaper inference, with evolution retreating under the cap rather than buying through it — expect the same direction here. In-flight and archived runs are unaffected: the knob is run-immutable and stored in dollars.
 
 The per-iteration `aggregate_explanation` (in `evaluation.json`) carries the resolved excess and error-count so failure analysis can read "correct but expensive" off the page without back-deriving the formula.
 
@@ -218,7 +231,7 @@ Nine pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside 
 
 Evolved agents `from model_registry import` whichever handles they want and call `.generate()`. The model strings live outside the evolvable artifact (`agent.py`), so evolution can't substitute an arbitrary provider/model. All three provider keys are required at startup — see "Credentials" above.
 
-Strong-tier handles cost ~5–40× the cheap tier, so a single naive call can blow past the default $0.05 cost threshold and rack up many error-equivalents at the default `--cost-per-error 0.01`. That's the point: evolution must buy extra correctness with each expensive call. Raise `--cost-threshold` (e.g. `0.08`) for a wider free zone, or `--cost-per-error` to make the penalty a tiebreaker rather than an active pull. All three Gemini handles ship pinned to `reasoning_effort="low"` (the provider can't disable thinking), with `"high"` as the only opt-up.
+Strong-tier handles cost ~5–40× the cheap tier, so a single naive call can blow past the default $0.05 cost threshold and rack up many error-equivalents at the default `--cost-per-error 10%` ($0.005 there). That's the point: evolution must buy extra correctness with each expensive call. Raise `--cost-threshold` (e.g. `0.08`) for a wider free zone, or `--cost-per-error` to make the penalty a tiebreaker rather than an active pull. All three Gemini handles ship pinned to `reasoning_effort="low"` (the provider can't disable thinking), with `"high"` as the only opt-up.
 
 Provider-prefix translation: Inspect-AI requires `google/...` to route Google models, but litellm prices them under `gemini/...`. `evaluator.py:_estimate_cost` normalizes at the cost-pricing boundary (translates `google/` → `gemini/`) so cost tracking works for the Gemini handles. Without this, Gemini calls would silently price as $0 — the once-per-process "model priced at $0 despite tokens" warning would fire as the symptom.
 

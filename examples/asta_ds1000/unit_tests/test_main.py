@@ -23,6 +23,7 @@ Currently covers three bug classes:
 """
 import ast
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -1121,3 +1122,216 @@ def test_background_md_prices_match_litellm_registry():
             "registry (stale bundled map or offline; not table drift): "
             + ", ".join(unverifiable)
         )
+
+
+# --- --cost-per-error: dollars or percent-of-threshold ------------------------
+#
+# The percentage form is a front-end convenience only. These guard the ways
+# it could stop being one: argparse coercing the string away before the
+# parser sees it, the conversion binding to the wrong threshold, or the raw
+# string leaking into a checkpoint. The parser itself is covered by
+# RoboPhD/unit_tests/test_parse_dollars_or_percent.py — not duplicated here.
+
+_MAIN_SRC = (ASTA_DS1000_DIR / "main.py").read_text()
+_MAIN_TREE = ast.parse(_MAIN_SRC)
+
+
+@pytest.fixture(scope="module")
+def ds_main():
+    """Import main.py once per module."""
+    sys.path.insert(0, str(ASTA_DS1000_DIR))
+    sys.path.insert(0, str(REPO_ROOT))
+    try:
+        import main as asta_main
+        return asta_main
+    finally:
+        sys.path.remove(str(ASTA_DS1000_DIR))
+        sys.path.remove(str(REPO_ROOT))
+
+
+def test_cost_per_error_is_not_coerced_to_float_by_argparse():
+    """type=float would reject "10%" at the argparse layer, before
+    parse_dollars_or_percent ever runs — the percentage form would be dead
+    on arrival with an argparse-generated error."""
+    for node in ast.walk(_MAIN_TREE):
+        if (
+            isinstance(node, ast.Call)
+            and getattr(node.func, "attr", None) == "add_argument"
+            and node.args
+            and getattr(node.args[0], "value", None) == "--cost-per-error"
+        ):
+            types = [kw.value for kw in node.keywords if kw.arg == "type"]
+            assert types, "--cost-per-error declares no type"
+            assert getattr(types[0], "id", None) == "str", (
+                "--cost-per-error must take a str so a percentage survives "
+                "argparse; got type=" + ast.unparse(types[0])
+            )
+            return
+    raise AssertionError("--cost-per-error not found in main.py")
+
+
+def test_percentage_resolves_against_the_resolved_threshold():
+    """`of=` must be the resolved cost_threshold, not MIN_COST_THRESHOLD.
+
+    On --resume the threshold in force is the stored one, so binding the
+    percentage to the module constant would silently mis-scale the penalty
+    for every run that moved --cost-threshold.
+    """
+    assert "of=cost_threshold" in _MAIN_SRC
+    assert "of=MIN_COST_THRESHOLD" not in _MAIN_SRC
+
+
+def test_default_slope_is_derived_from_the_resolved_threshold():
+    assert "default_value=default_cost_per_error(cost_threshold)" in _MAIN_SRC
+
+
+def test_only_dollars_are_persisted_and_interpolated():
+    """The percentage never reaches a checkpoint or an agent-facing doc."""
+    assert '"cost_per_error": cost_per_error' in _MAIN_SRC
+    assert '.replace("${COST_PER_ERROR}", _fmt_cost(cost_per_error))' in _MAIN_SRC
+    tail = _MAIN_SRC.split("resolved_runtime = {")[1]
+    assert "args.cost_per_error" not in tail, (
+        "the raw CLI string leaks past the resolution point"
+    )
+
+
+def test_threshold_resolves_before_the_slope():
+    """Ordering is load-bearing once the slope is relative: a percentage is
+    meaningless until the threshold is final."""
+    assert _MAIN_SRC.index('name="cost-threshold"') < _MAIN_SRC.index(
+        'name="cost-per-error"'
+    ), "cost-threshold must resolve first"
+
+
+def test_cli_default_matches_the_evaluator_default():
+    """Guards the explicit-default-is-not-default trap: passing the default
+    value by hand must be indistinguishable from omitting it."""
+    sys.path.insert(0, str(ASTA_DS1000_DIR))
+    try:
+        import evaluator
+    finally:
+        sys.path.remove(str(ASTA_DS1000_DIR))
+    from RoboPhD.runner_utils import parse_dollars_or_percent
+
+    for threshold in (0.05, 0.003):
+        omitted = evaluator.default_cost_per_error(threshold)
+        spelled_out = parse_dollars_or_percent(
+            f"{evaluator.COST_PER_ERROR_FRACTION:.0%}",
+            of=threshold, flag="cost-per-error",
+        )
+        assert omitted == spelled_out, (
+            f"at threshold {threshold}, omitting --cost-per-error gives "
+            f"{omitted} but passing its documented default gives {spelled_out}"
+        )
+
+
+# --- rendered help ------------------------------------------------------------
+
+
+def _rendered_help(ds_main) -> str:
+    import contextlib, io
+
+    argv = sys.argv
+    sys.argv = ["main.py", "--help"]
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            ds_main.parse_args()
+    except SystemExit:
+        pass
+    finally:
+        sys.argv = argv
+    return buf.getvalue()
+
+
+def test_cost_per_error_help_documents_both_forms(ds_main):
+    """A user cannot discover the percentage form from anywhere else."""
+    help_text = _rendered_help(ds_main)
+    options = help_text[help_text.index("\noptions:"):]
+    flag_help = options[options.index("--cost-per-error AMOUNT"):
+                        options.index("--max-workers")]
+    assert "%" in flag_help, "help never mentions the percentage form"
+    assert "--cost-threshold" in flag_help, (
+        "help must say what the percentage is a percentage OF"
+    )
+
+
+def test_help_never_prints_default_none(ds_main):
+    """"(default: None)" is a contradiction, not information — several flags
+    default to None so the resume path can tell "user passed nothing" from
+    "user passed X", and the real default is stated in prose."""
+    rendered = re.findall(r"\(default: ([^)]*)\)", _rendered_help(ds_main))
+    assert "None" not in rendered, (
+        "a flag's default rendered as None; the real default is resolved "
+        "after argparse and stated in prose, so printing None contradicts it"
+    )
+    assert rendered, (
+        "no defaults rendered at all — the formatter suppressed every "
+        "default, not just the None ones"
+    )
+
+
+# --- cost-knob validation -----------------------------------------------------
+#
+# Making the default slope relative introduced one input it cannot serve:
+# --cost-threshold 0 ("no free zone, penalize from the first cent"), which
+# the evaluator accepts and which worked before because the flat $0.01
+# supplied a slope. 10% of nothing is nothing, so the run must stop — but it
+# must stop naming the threshold, not a flag the user never passed.
+
+
+def test_zero_threshold_with_the_default_slope_blames_the_threshold(ds_main):
+    with pytest.raises(SystemExit) as exc:
+        ds_main._validate_cost_slope(0.0, 0.0, None)
+    msg = str(exc.value)
+    assert "--cost-threshold" in msg, (
+        "the zero threshold is the cause; a message that only names "
+        "--cost-per-error sends the reader to a flag they did not pass"
+    )
+    assert "the default" in msg
+    assert "--cost-per-error 0.005" in msg, "no actionable way out"
+
+
+def test_zero_threshold_with_an_explicit_percentage_blames_the_threshold(ds_main):
+    with pytest.raises(SystemExit) as exc:
+        ds_main._validate_cost_slope(0.0, 0.0, "10%")
+    assert "--cost-threshold" in str(exc.value)
+    assert "'10%'" in str(exc.value)
+
+
+def test_zero_threshold_stays_reachable_with_an_explicit_dollar_slope(ds_main):
+    """The configuration must not become unusable — only under-specified."""
+    ds_main._validate_cost_threshold(0.0)
+    ds_main._validate_cost_slope(0.005, 0.0, "0.005")
+
+
+@pytest.mark.parametrize("resolved,spec", [
+    (0.0, "0"), (0.0, "0%"), (-0.5, "-0.5"),
+])
+def test_a_typed_zero_slope_is_not_blamed_on_the_threshold(ds_main, resolved, spec):
+    """At a healthy threshold the user asked for a non-positive slope; the
+    threshold is innocent and the message must not implicate it."""
+    with pytest.raises(SystemExit) as exc:
+        ds_main._validate_cost_slope(resolved, 0.05, spec)
+    msg = str(exc.value)
+    assert "--cost-per-error must be > 0" in msg
+    assert "no free zone" not in msg
+
+
+def test_negative_threshold_is_rejected_by_name(ds_main):
+    with pytest.raises(SystemExit, match="--cost-threshold"):
+        ds_main._validate_cost_threshold(-1.0)
+
+
+def test_valid_knobs_pass(ds_main):
+    ds_main._validate_cost_threshold(0.05)
+    ds_main._validate_cost_slope(0.005, 0.05, None)
+    ds_main._validate_cost_slope(0.01, 0.05, "0.01")
+
+
+def test_main_routes_both_knobs_through_the_validators():
+    assert "_validate_cost_threshold(cost_threshold)" in _MAIN_SRC
+    assert (
+        "_validate_cost_slope(cost_per_error, cost_threshold, args.cost_per_error)"
+        in _MAIN_SRC
+    ), "the slope validator needs the RAW spec to tell a percentage from dollars"
