@@ -14,7 +14,7 @@ The `0_0_3` patch bump from `v0_0_2_soft_cap_0_08` reflects code-state changes s
 | Per-problem cost | **$0.05194** | $0.0462 |
 | At the board's 3-decimal comparison basis | **0.853 @ $0.052** | — |
 | Submission name | `v0_0_3_soft_cap_0_06` / form: `RoboPhD` | — |
-| Pareto position | **On the frontier.** Ties `v0_0_4_soft_cap_0_08` exactly on score — at 1/900 granularity only 768/900 rounds to 0.853, so both are 768/900. The leaderboard treats a 3-decimal tie as a tie for domination purposes, so v0_0_4 being cheaper ($0.037) does not displace this entry; both carry frontier trophies. | — |
+| Pareto position | **On the frontier** (board-confirmed 2026-08-05). Ties `v0_0_4_soft_cap_0_08` exactly on score — at 1/900 granularity only 768/900 rounds to 0.853, so both are 768/900. Under the standard definition of dominance v0_0_4 *should* displace this entry (same score, $0.037 vs $0.052), yet the board awards both a frontier trophy. Unexplained — treat the board as the authority on frontier status rather than computing it. | — |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | — |
 
 Transfer: **+0.0022** (0.8511 → 0.8533), within noise.
