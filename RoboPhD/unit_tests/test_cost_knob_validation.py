@@ -100,9 +100,17 @@ def test_a_typed_non_positive_slope_is_not_blamed_on_the_threshold(resolved, spe
 def test_a_positive_slope_passes():
     validate_cost_slope(0.006, 0.06, None, **_TASK)
     validate_cost_slope(0.02, 0.06, "0.02", **_TASK)
-    validate_cost_slope(0.006, 0.0, "0.006", **_TASK), (
-        "a zero threshold stays reachable when the slope is stated in dollars"
-    )
+
+
+def test_a_zero_threshold_stays_reachable_with_an_explicit_dollar_slope():
+    """The escape hatch the rejection message points at.
+
+    A zero free zone is a legitimate configuration ("penalize from the
+    first cent"), so the validator must only reject the case where the
+    slope was *derived* from that zero — not the case where the user
+    supplied one. Otherwise the advice it prints would be a dead end.
+    """
+    validate_cost_slope(0.006, 0.0, "0.006", **_TASK)
 
 
 # --- the per-task parameters actually reach the message -----------------------
