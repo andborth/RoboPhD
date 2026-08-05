@@ -12,9 +12,9 @@ The `soft_cap_0_05` tail names the per-iteration mean-spend free-zone the run wa
 
 ## Leaderboard score
 
-**Submitted as `RoboPhD`.** Leaderboard-verified numbers will be filled once processed. As-submitted (`astabench score`) and internal-dev numbers:
+**Posted 2026-06-20; board-confirmed 2026-08-05**, displayed as **0.830 @ $0.02** ($0.017 at the board's 3-decimal comparison basis). The posted row matches the `astabench score` below exactly on both axes.
 
-| | As scored (`astabench score`) | Internal dev eval |
+| | Official (posted) | Internal dev eval |
 |---|---|---|
 | Accuracy (DS-1000 test, 900 samples) | **0.83** (747/900) | 0.8378 (754/900) |
 | Per-problem cost | **$0.017** | $0.0173 |

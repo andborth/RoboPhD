@@ -6,15 +6,18 @@ The `0_0_3` patch bump from `v0_0_2_soft_cap_0_08` reflects code-state changes s
 
 ## Leaderboard verified score
 
-**Pending — submission in progress.** This section will be updated with the leaderboard-verified numbers once the AstaBench submission is processed. Internal expectation below.
+**Posted 2026-06-10; board-confirmed 2026-08-05.** Displayed as **0.853 @ $0.05**.
 
-| | Internal value (pre-submission) |
-|---|---|
-| Accuracy (RoboPhD-internal eval, full 900-sample test) | **85.1%** (0.8511, 766/900) |
-| Per-problem inference cost | **$0.046** |
-| Submission name | `v0_0_3_soft_cap_0_06` |
-| Expected Pareto position | On the frontier: more accurate than every sub-$0.13 entry, ~3x cheaper than the 86.2% accuracy leader |
-| Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) |
+| | Official | Internal dev eval |
+|---|---|---|
+| Accuracy (DS-1000 test, 900 samples) | **0.8533** ± 0.0118 (768/900) | 0.8511 (766/900) |
+| Per-problem cost | **$0.05194** | $0.0462 |
+| At the board's 3-decimal comparison basis | **0.853 @ $0.052** | — |
+| Submission name | `v0_0_3_soft_cap_0_06` / form: `RoboPhD` | — |
+| Pareto position | **On the frontier.** Ties `v0_0_4_soft_cap_0_08` exactly on score — at 1/900 granularity only 768/900 rounds to 0.853, so both are 768/900. The leaderboard treats a 3-decimal tie as a tie for domination purposes, so v0_0_4 being cheaper ($0.037) does not displace this entry; both carry frontier trophies. | — |
+| Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | — |
+
+Transfer: **+0.0022** (0.8511 → 0.8533), within noise.
 
 Calibration: for `v0_0_1_soft_cap_0_16` the leaderboard's single batched `astabench eval` measured +2.3pp above the internal number (0.862 vs 0.8389); `v0_0_2_soft_cap_0_08` landed at parity (0.809 vs 0.8044).
 

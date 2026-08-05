@@ -7,14 +7,14 @@ RoboPhD evolution run on AstaBench's DS-1000 task. Headline submitted agent: **`
 What's distinctive about this submission:
 
 - **Our cheapest and shortest submission.** The primary solver is **GPT-5.4-mini** (a 3-perspective ensemble), with GPT-5.4 invoked only to escalate no-consensus cases. At **$0.0069/problem** it's the cheapest of our six submissions (next: v0_0_2 $0.01), and at **354 lines** the shortest agent we've submitted (next: v0_0_4 500, v0_0_5 525, v0_0_2 561, v0_0_1 1214, v0_0_3 1614) — far under its $0.05 cap.
-- **First submission with Deep Focus on — still under evaluation for DS-1000.** Every prior submission ran with Deep Focus off. This is one run, and we draw no conclusion from it: the immediately prior (unsubmitted) Deep-Focus run `robophd-asta_ds1000-031` produced a *typical* agent (0.84 @ $0.031, 1026 lines), so the cheap/short character here is not attributable to Deep Focus — it's run-to-run variance pending a controlled comparison.
+- **First submission with Deep Focus on.** Every prior submission ran with Deep Focus off. This is one run, and we draw no conclusion from it: the immediately prior (unsubmitted) Deep-Focus run `robophd-asta_ds1000-031` produced a *typical* agent (0.84 @ $0.031, 1026 lines), so the cheap/short character here is not attributable to Deep Focus — it's run-to-run variance pending a controlled comparison.
 - **A new low-cost frontier point.** At its scored **0.751 @ $0.0069** it occupies the cheap end of the Pareto curve that the prior RoboPhD entries (all ~0.83+) did not. It is **marginally better on accuracy** than ReAct o3 (0.749 @ $0.01) and Asta v0 (0.748 @ $0.01) and **significantly improved on cost** (~31% cheaper, $0.0069 vs $0.01), so it **Pareto-dominates** both and takes their place on the frontier. (The accuracy edge is within run-to-run noise, so cost is the decisive axis.) It does NOT dominate the cheaper ReAct GPT-5 Mini (0.710 @ $0.003 — cheaper but lower) nor our own sonnet entry (0.809 @ ~$0.01 — higher tier); it slots between them.
 
 The `soft_cap_0_05` tail names the per-iteration mean-spend free-zone the run was trained under (`cost_threshold=0.05`, `cost_per_error=0.01`); the `deep_focus` tail marks `new_agent_test_rounds=1`.
 
 ## Leaderboard score
 
-**Submitted as `RoboPhD`.** Ai2 leaderboard-verified row pending. The official `astabench score` and the internal-dev numbers:
+**Posted 2026-06-22; board-confirmed 2026-08-05**, displayed as **0.751 @ $0.01** ($0.007 at the board's 3-decimal comparison basis). The official `astabench score` and the internal-dev numbers:
 
 | | Official (`astabench score`) | Internal dev eval |
 |---|---|---|
