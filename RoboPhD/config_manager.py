@@ -86,10 +86,18 @@ class ConfigManager:
             # if it provably could not, that iteration switches to "greedy"
             # (no evolution, deterministic top-k by Elo) so the remaining
             # budget re-tests real contenders instead of a dead-weight agent.
-            # Off by default: it ends evolution early, which is a real change
-            # to how a run spends its tail, so it should be opted into rather
-            # than silently applied to every existing configuration.
-            "elo_reachability_guard": False,
+            #
+            # On by default since 2026-08-05, after replaying it over the 121
+            # eligible archived runs: it fires in 66% of them and in no case
+            # would it have suppressed the run's own winning agent. It buys
+            # back roughly one evolution session per run plus the round-robin
+            # slots that session would have occupied — which matters most at
+            # the end, when those slots are what separate the contenders.
+            #
+            # King-of-the-Hill runs (agents_per_iteration=2 with
+            # oldest_agent_wins_ties) are exempt rather than rejected while
+            # this is merely the default: see _validate_resolved_semantics.
+            "elo_reachability_guard": True,
             # Completed iterations required before the guard will fire at all.
             # Defaults to the trailing window the horizon is averaged over
             # rather than its own literal, so tuning one moves the other —
@@ -177,7 +185,8 @@ class ConfigManager:
         # Built inline rather than via _resolve_config, so the combination
         # check has to be invoked here too — this is the path that catches a
         # bad CLI invocation at startup.
-        self._validate_resolved_semantics(resolved, 1)
+        self._validate_resolved_semantics(
+            resolved, 1, guard_explicit="elo_reachability_guard" in user_config)
         self.resolved_configs[1] = resolved
 
         # Record in history
@@ -679,11 +688,25 @@ class ConfigManager:
                     "rationale": f"Weighted random selection from pool of {len(pool)} configs (selected with {selected_weight}% probability)"
                 })
 
-        self._validate_resolved_semantics(config, iteration)
+        self._validate_resolved_semantics(
+            config, iteration, guard_explicit=self._guard_was_requested())
         return config
 
+    def _guard_was_requested(self) -> bool:
+        """Did a user/schedule/meta delta name elo_reachability_guard?
+
+        Iteration 0 holds the defaults; everything above it is something
+        somebody asked for. The distinction decides whether a KotH conflict
+        is an error or just a reason to stay out of the way.
+        """
+        return any(
+            "elo_reachability_guard" in delta
+            for i, delta in self.iteration_configs.items() if i >= 1
+        )
+
     @staticmethod
-    def _validate_resolved_semantics(config: Dict[str, Any], iteration: int) -> None:
+    def _validate_resolved_semantics(config: Dict[str, Any], iteration: int,
+                                     guard_explicit: bool = True) -> None:
         """Reject parameter COMBINATIONS that are individually valid but
         incoherent together.
 
@@ -710,8 +733,15 @@ class ConfigManager:
         # round is exactly champion vs challenger, so a new agent plays one
         # game per iteration instead of two and its rating climbs at half
         # speed. But that is a secondary point -- the premise fails first.)
+        # Only an EXPLICIT enable is an error. Since the guard became the
+        # default, a KotH run that never mentioned it would otherwise fail at
+        # startup quoting a flag its operator never passed — the exact
+        # misdirection this validator's message exists to avoid. When the
+        # guard is merely defaulted on, the runtime check in
+        # researcher._apply_reachability_guard leaves it inert instead.
         if (
-            config.get("elo_reachability_guard")
+            guard_explicit
+            and config.get("elo_reachability_guard")
             and config.get("agents_per_iteration") == 2
             and config.get("oldest_agent_wins_ties")
         ):

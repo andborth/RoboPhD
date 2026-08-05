@@ -2417,6 +2417,16 @@ class ParallelAgentResearcher:
         """
         if not config.get("elo_reachability_guard"):
             return False
+        # King of the Hill: the guard's QUESTION is wrong here, not just its
+        # answer — a KotH run's result is whichever agent won the LAST ROUND
+        # (runner_utils.find_last_winner), so a new agent becomes the output
+        # by winning once whatever its rating and nothing is ever dead weight.
+        # ConfigManager rejects an EXPLICIT enable on this shape; since the
+        # guard became the default it also has to fall silent when nobody
+        # asked for it, which is what this does.
+        if (config.get("agents_per_iteration") == 2
+                and config.get("oldest_agent_wins_ties")):
+            return False
         # Iteration 1 has no evolution step to displace.
         if iteration <= 1:
             return False

@@ -742,13 +742,13 @@ def test_greedy_is_schedulable_from_meta_evolution():
         assert name in builtin
 
 
-def test_guard_is_off_by_default():
-    """It ends evolution early, so it must be opted into rather than
-    silently applied to every existing run configuration."""
+def test_guard_is_on_by_default():
+    """Flipped 2026-08-05 on the strength of the 121-run replay: fires in
+    66% of eligible runs, never suppressing a run's own winning agent."""
     from RoboPhD.config_manager import ConfigManager
 
     defaults = ConfigManager().get_defaults()
-    assert defaults["elo_reachability_guard"] is False
+    assert defaults["elo_reachability_guard"] is True
 
 
 # --- the guard's own wiring ---------------------------------------------------
@@ -1232,3 +1232,67 @@ def test_short_rounds_when_the_pool_is_smaller_than_the_round_robin():
         )
         assert complete, f"search failed to terminate with {n_rivals} rival(s)"
         assert reachable, f"a level field with {n_rivals} rival(s) must be reachable"
+
+
+# --- default-on must not conscript King-of-the-Hill runs ----------------------
+#
+# The guard being the default changes what a KotH conflict means. An explicit
+# enable is still an error worth stopping for; a run that never mentioned the
+# guard must not fail at startup quoting a flag its operator never passed —
+# that is the misdirection the validator's own message exists to avoid. 20% of
+# archived runs are this shape.
+
+
+def test_default_on_does_not_reject_a_koth_run(tmp_path):
+    from RoboPhD.config_manager import ConfigManager, ConfigSource
+
+    ConfigManager().set_initial_config(
+        {"agents_per_iteration": 2, "oldest_agent_wins_ties": True},
+        ConfigSource.CLI,
+    )   # must not raise
+
+
+def test_explicit_enable_on_koth_is_still_an_error():
+    from RoboPhD.config_manager import ConfigManager, ConfigSource
+
+    with pytest.raises(ValueError, match="King-of-the-Hill"):
+        ConfigManager().set_initial_config(
+            {"agents_per_iteration": 2, "oldest_agent_wins_ties": True,
+             "elo_reachability_guard": True},
+            ConfigSource.CLI,
+        )
+
+
+def test_explicit_enable_across_deltas_on_koth_is_still_an_error():
+    """The conflict can be assembled without any single delta being wrong,
+    which is why this is validated on the resolved config."""
+    from RoboPhD.config_manager import ConfigManager, ConfigSource
+
+    cm = ConfigManager()
+    cm.set_initial_config(
+        {"elo_reachability_guard": True, "agents_per_iteration": 2},
+        ConfigSource.CLI,
+    )
+    cm.set_current_iteration(3)
+    with pytest.raises(ValueError, match="King-of-the-Hill"):
+        cm.apply_delta(3, {"oldest_agent_wins_ties": True}, ConfigSource.SCHEDULE)
+
+
+def test_guard_is_inert_at_runtime_on_a_koth_run():
+    """Not rejecting is not enough — the guard must actually decline to act,
+    or a defaulted-on KotH run would still lose its evolution rounds."""
+    stub = _guard_stub()
+    changed, resolved = _run_guard(
+        stub, iteration=5, agents_per_iteration=2, oldest_agent_wins_ties=True,
+    )
+    assert changed is False
+    assert resolved["evolution_strategy"] == "use_your_judgment"
+
+
+def test_guard_still_acts_on_two_agents_without_koth_tie_handling():
+    """The exemption is the FORMAT, not the round-robin size."""
+    stub = _guard_stub()
+    changed, _ = _run_guard(
+        stub, iteration=5, agents_per_iteration=2, oldest_agent_wins_ties=False,
+    )
+    assert changed is True
