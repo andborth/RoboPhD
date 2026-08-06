@@ -24,8 +24,20 @@ so a later live eval with the new judge starts warm.
 
 Usage:
     python rejudge_test.py <run_dir> --judge openai/gpt-5.6-luna
-        [--no-baseline] [--limit N] [--uncapped] [--concurrency 4]
-        [--retries 1] [--no-cache-write] [--dry-run] [--force]
+        [--from-eval-log PATH] [--no-baseline] [--limit N] [--uncapped]
+        [--concurrency 4] [--retries 1] [--no-cache-write] [--dry-run]
+        [--force]
+
+--from-eval-log replays an OFFICIAL astabench .eval log instead of the run's
+own test_problems/. That is the only stored source of an UNCAPPED,
+leaderboard-basis submission set for runs completed before 2026-08-06, since
+submission.json omitted beyond-cap evidence until then — and it is the more
+useful basis regardless, being the submissions and depth that actually
+reached the board. run_dir is still required: it supplies k_estimate per
+query (a property of the query, not the agent) and hosts the diagnostics.
+The stock-4o A/B arm is skipped in this mode — it would be a full cold pass
+(~$186 on a 250-deep agent) and the log already carries official 4o scores.
+Measured on -012: 48,255 scoreable docs, ~$14 on luna.
 
 By default the replay stops at the stored scored_depth_cap, matching how the
 eval judged. --uncapped judges the whole submission instead — the basis
@@ -204,6 +216,92 @@ def load_run(run_dir: Path, limit: int | None = None) -> list[Sample]:
     if limit is not None:
         semantic = [s for s in samples if not s.carry][:limit]
         samples = semantic  # smoke mode: aggregate over the selected subset only
+    return samples
+
+
+def load_eval_log(eval_path: Path, run_dir: Path, limit: int | None = None):
+    """Load samples from an OFFICIAL astabench .eval log instead of a RoboPhD
+    run's test_problems/.
+
+    Why this exists: official runs judge the FULL submission, and their logs
+    keep the real evidence for every result (our own submission.json omitted
+    beyond-cap evidence until 2026-08-06). So an official log is the only
+    place a stored, uncapped, leaderboard-basis submission set can be found
+    for runs already completed — which makes it the right place to measure a
+    judge-basis change against the numbers that actually reached the board.
+
+    run_dir supplies the scaffolding the log lacks:
+      * k_estimate per query, from test_problems/<sid>/score_meta.json. K is
+        a property of the QUERY (the benchmark's recall denominator), not of
+        the agent — verified: -012 and -013 have byte-identical cap totals
+        (19,860 each) — so any completed run of the same test split serves.
+      * a home for the per-problem verdict diagnostics.
+    Samples carry cap=None: official judging is uncapped by construction.
+    """
+    from inspect_ai.log import read_eval_log
+
+    log = read_eval_log(str(eval_path))
+    if not log.samples:
+        raise SystemExit(f"{eval_path}: no samples in log")
+    tp = run_dir / "test_problems"
+    if not tp.is_dir():
+        raise SystemExit(
+            f"{tp} not found — --from-eval-log still needs a completed run dir "
+            f"of the same test split for k_estimate and diagnostics"
+        )
+    samples: list[Sample] = []
+    for x in log.samples:
+        sid = str(x.id)
+        score_type = (x.metadata or {}).get("score_type") or ""
+        score_obj = next(iter((x.scores or {}).values()), None)
+        stored = float(getattr(score_obj, "value", 0.0) or 0.0)
+        s = Sample(
+            sid=sid, score_type=score_type, stored_score=stored,
+            problem_dir=tp / sid,
+        )
+        if not sid.startswith("semantic"):
+            s.carry, s.carried_reason = True, "exact_match"
+            samples.append(s)
+            continue
+        completion = (getattr(x.output, "completion", "") or "") if x.output else ""
+        try:
+            results = (json.loads(completion).get("output") or {}).get("results") or []
+            results = [r for r in results if isinstance(r, dict)]
+        except (json.JSONDecodeError, AttributeError):
+            results = _extract_results_lenient(completion)
+        pairs = [
+            (str(r.get("paper_id", "")).strip(), r.get("markdown_evidence") or "")
+            for r in results
+            if str(r.get("paper_id", "")).strip()
+        ]
+        if not pairs:
+            s.carry, s.carried_reason = True, "no_submission"
+            samples.append(s)
+            continue
+        target = x.target if isinstance(x.target, str) else (x.target or [""])[0]
+        try:
+            gold = json.loads(target)
+        except (json.JSONDecodeError, TypeError):
+            raise SystemExit(f"{sid}: unparseable target in {eval_path.name}")
+        s.known_good = {str(v) for v in (gold.get("known_to_be_good") or [])}
+        s.criteria = gold.get("relevance_criteria") or []
+        try:
+            s.k_estimate = json.loads(
+                (tp / sid / "score_meta.json").read_text()
+            ).get("k_estimate")
+        except (OSError, json.JSONDecodeError):
+            s.k_estimate = None
+        if s.k_estimate is None:
+            raise SystemExit(
+                f"{sid}: no k_estimate at {tp / sid / 'score_meta.json'} — "
+                f"cannot compute recall. Point run_dir at a completed run of "
+                f"the same test split."
+            )
+        s.cap = None  # official judging is uncapped
+        s.results = pairs[:MAX_RESULTS_TO_CONSIDER]
+        samples.append(s)
+    if limit is not None:
+        samples = [s for s in samples if not s.carry][:limit]
     return samples
 
 
@@ -430,6 +528,7 @@ async def _process_sample(sample, cache, cache_path, sem, args, progress):
     # able to resume, and a same-basis rerun replays identical cached
     # verdicts anyway; different bases write different filenames.
     _tag = ".uncapped" if getattr(args, "uncapped", False) else ""
+    _tag += ".officiallog" if getattr(args, "from_eval_log", None) else ""
     verdict_path = (
         sample.problem_dir / f"judge_verdicts.rejudge_{args.basis}{_tag}.json"
     )
@@ -583,6 +682,17 @@ def main() -> int:
     )
     ap.add_argument("--limit", type=int, help="first N semantic queries (smoke)")
     ap.add_argument(
+        "--from-eval-log", type=Path, metavar="PATH",
+        help="rejudge an OFFICIAL astabench .eval log instead of the run's "
+             "own test_problems/. Official logs keep full evidence for every "
+             "result and were judged UNCAPPED, so this measures a judge-basis "
+             "change against the submissions and depth that actually reached "
+             "the leaderboard. run_dir is still required: it supplies "
+             "k_estimate per query and hosts the diagnostics. The stock-4o "
+             "A/B arm is skipped here (it would be a full cold pass, ~$190); "
+             "the log's own official scores are the 4o reference.",
+    )
+    ap.add_argument(
         "--uncapped", action="store_true",
         help="judge EVERY submitted paper instead of stopping at the stored "
              "scored_depth_cap — the basis official astabench scoring uses. "
@@ -618,7 +728,16 @@ def main() -> int:
     target_cache = cache_dir / f"shared_test_{args.basis}.json"
     stock_cache = cache_dir / f"shared_test_{stock_basis}.json"
 
-    samples = load_run(run_dir, args.limit)
+    if args.from_eval_log:
+        if not args.from_eval_log.is_file():
+            raise SystemExit(f"{args.from_eval_log}: not a file")
+        samples = load_eval_log(args.from_eval_log, run_dir, args.limit)
+        args.baseline = False  # see --from-eval-log help
+        print(f"--from-eval-log: {args.from_eval_log.name} "
+              f"(uncapped official submissions; stock-4o arm skipped, "
+              f"comparison is against the log's official scores)")
+    else:
+        samples = load_run(run_dir, args.limit)
     if args.uncapped:
         # AFTER load_run: k_estimate falls back to cap when score_meta lacks
         # it (load_run:188), so clearing cap earlier would break the recall
@@ -687,6 +806,7 @@ def main() -> int:
     # keyed by (query, paper, evidence) and is identical whether or not the
     # paper fell beyond the cap, so an uncapped pass warms the same cache.
     suffix = ".uncapped" + suffix if args.uncapped else suffix
+    suffix = ".officiallog" + suffix if args.from_eval_log else suffix
     out_summary = run_dir / f"test_results.rejudge_{args.basis}{suffix}.json"
     out_per_problem = (
         run_dir / f"test_results.rejudge_{args.basis}{suffix}.per_problem.json"
@@ -744,6 +864,7 @@ def main() -> int:
 
     summary = {
         "source_run": str(run_dir),
+        "source_eval_log": str(args.from_eval_log) if args.from_eval_log else None,
         "judge": args.judge,
         "judge_prompt": args.judge_prompt,
         "scored_depth": "uncapped (full submission)" if args.uncapped
