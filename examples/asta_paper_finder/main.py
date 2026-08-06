@@ -1099,7 +1099,14 @@ def main():
         min_cost_threshold=cost_threshold,
         cost_per_error=cost_per_error,
     )
-    test_evaluator = evaluator.with_overrides(apply_cost_penalty=False)
+    # persist_full_evidence is TEST-ONLY on purpose: it keeps beyond-cap
+    # evidence in submission.json so a stored test eval stays rejudgeable at
+    # any depth (rejudge_test.py --uncapped / --from-eval-log). Training
+    # keeps the trimming, because evolution reads those diagnostics and
+    # background.md states the omission-marker contract to it.
+    test_evaluator = evaluator.with_overrides(
+        apply_cost_penalty=False, persist_full_evidence=True
+    )
 
     # Resolve --max-workers once, applied to BOTH the training engine
     # config and the test eval config so --eval-only --resume honors the

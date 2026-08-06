@@ -761,10 +761,14 @@ def main() -> int:
             raise SystemExit(
                 f"--uncapped: {omitted:,} submitted papers beyond the judging "
                 f"cap have no persisted evidence (EVIDENCE_OMITTED_MARKER in "
-                f"submission.json), so they cannot be judged offline. An "
-                f"uncapped basis requires a LIVE eval with "
-                f"--no-cap-judge-to-estimate, or an eval that persists full "
-                f"evidence. Re-run without --uncapped for the capped basis."
+                f"submission.json), so they cannot be judged offline.\n"
+                f"  * Test evals run after 2026-08-06 keep that evidence "
+                f"(PaperFinderEvaluator persist_full_evidence, which main.py "
+                f"sets on the TEST evaluator only) and do support --uncapped.\n"
+                f"  * For an older run, --from-eval-log <official .eval> "
+                f"replays the official submissions, which were never trimmed "
+                f"and were judged uncapped.\n"
+                f"  * Or drop --uncapped for the capped basis."
             )
         for s in samples:
             s.cap = None

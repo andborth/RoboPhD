@@ -49,12 +49,15 @@ def ev_mod():
 
 
 def _bare_evaluator(ev_mod, *, apply_cost_penalty=True,
-                    min_cost_threshold=0.10, cost_per_error=0.02):
+                    min_cost_threshold=0.10, cost_per_error=0.02,
+                    persist_full_evidence=False):
     """Instance without running __init__ (no provider keys needed)."""
     ev = object.__new__(ev_mod.PaperFinderEvaluator)
     ev.apply_cost_penalty = apply_cost_penalty
     ev.min_cost_threshold = min_cost_threshold
     ev.cost_per_error = cost_per_error
+    # Default False mirrors the constructor: the frozen TRAINING behaviour.
+    ev.persist_full_evidence = persist_full_evidence
     ev.total_eval_cost = 0.0
     ev.total_judge_cost = 0.0
     ev._cost_lock = threading.Lock()
@@ -803,6 +806,40 @@ def test_submission_json_semantic_trims_beyond_cap(ev_mod):
     assert results[2]["markdown_evidence"] == ev_mod.EVIDENCE_OMITTED_MARKER
     assert results[3]["markdown_evidence"] == ev_mod.EVIDENCE_OMITTED_MARKER
     assert out.count("\n") > 4  # pretty-printed, grep-able
+
+
+def test_submission_json_persist_full_evidence_keeps_beyond_cap(ev_mod):
+    """TEST-ONLY flag: nothing is trimmed, so the eval stays rejudgeable at
+    any depth (rejudge_test.py --uncapped). Training must NOT set this."""
+    import json as _json
+    out = ev_mod._submission_json(
+        _submission_payload(4), "semantic_f1", 2, persist_full_evidence=True
+    )
+    results = _json.loads(out)["output"]["results"]
+    assert [r["paper_id"] for r in results] == ["100", "101", "102", "103"]
+    assert all(r["markdown_evidence"] == "some verbatim passage" for r in results)
+    assert ev_mod.EVIDENCE_OMITTED_MARKER not in out
+
+
+def test_submission_json_defaults_to_trimming(ev_mod):
+    """The default is the frozen training contract background.md states to
+    evolution. A signature change that flipped this default would silently
+    alter what evolution sees."""
+    import inspect
+    sig = inspect.signature(ev_mod._submission_json)
+    assert sig.parameters["persist_full_evidence"].default is False
+
+
+def test_persist_full_evidence_rides_with_overrides(ev_mod):
+    """with_overrides' docstring requires every constructor field be carried;
+    main.py derives the TEST evaluator through it."""
+    ev = _bare_evaluator(ev_mod)
+    ev.eval_timeout, ev.subprocess_isolation = 600, False
+    assert ev.persist_full_evidence is False
+    derived = ev.with_overrides(persist_full_evidence=True)
+    assert derived.persist_full_evidence is True
+    # ...and is not silently sticky in the other direction.
+    assert ev.with_overrides(apply_cost_penalty=False).persist_full_evidence is False
 
 
 def test_submission_json_uncapped_and_nonsemantic_kept_whole(ev_mod):

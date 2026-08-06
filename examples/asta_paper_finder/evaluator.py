@@ -578,27 +578,15 @@ def _elapsed_seconds(t0: float) -> float:
 # Stands in for markdown_evidence in submission.json on results beyond the
 # judging cap. Public: _check_judge_calibration.py imports it to skip these
 # entries when re-judging (the text must never be scored as real evidence).
-# NO LONGER WRITTEN by default (see PERSIST_FULL_EVIDENCE) — retained because
-# every run recorded before 2026-08-06 contains it and all readers must keep
-# handling it.
 EVIDENCE_OMITTED_MARKER = "(evidence omitted — beyond scored depth, never judged)"
 
-# Persist markdown_evidence for EVERY submitted result, including those beyond
-# the judging cap. Costs disk (~55MB/run at 250 results x ~1.9k chars over the
-# ~30k beyond-cap papers a deep agent submits) and buys the ability to rejudge
-# a stored run at ANY depth later — including the uncapped basis official
-# astabench scoring uses, which capped judging misestimates by +/-0.015 with
-# the sign depending on agent strategy (-010 -0.0131, -011 +0.0146, -012
-# +0.0033 on matched query IDs).
-#
-# THIS DOES NOT CHANGE JUDGING. What gets judged is governed by
-# cap_judge_to_estimate and the scored-depth cap, untouched here; this only
-# controls what the submission.json DIAGNOSTIC retains. Set False to restore
-# the pre-2026-08-06 space-saving behaviour.
-PERSIST_FULL_EVIDENCE = True
 
-
-def _submission_json(completion: str, score_type: str, judge_cap: int | None) -> str | None:
+def _submission_json(
+    completion: str,
+    score_type: str,
+    judge_cap: int | None,
+    persist_full_evidence: bool = False,
+) -> str | None:
     """The agent's full submitted payload, for the submission.json diagnostic.
 
     Replaces the old 1000-char agent_output preview, which forced evolution
@@ -609,13 +597,18 @@ def _submission_json(completion: str, score_type: str, judge_cap: int | None) ->
     Content-faithful, with size bounded by structure rather than a byte cap:
     - a parseable payload is stored pretty-printed, results in submitted
       order;
-    - evidence for results beyond the scored depth is kept when
-      PERSIST_FULL_EVIDENCE (the default since 2026-08-06), so the run can
-      be rejudged offline at any depth later; with it False, that evidence
-      is replaced by EVIDENCE_OMITTED_MARKER, keeping paper_id and position
-      so "gold was buried at position N" stays diagnosable but making an
-      uncapped rejudge impossible (rejudge_test.py --uncapped refuses on
-      such runs);
+    - on semantic queries judged under a cap, results beyond the scored
+      depth are never judged and affect neither rank nor recall, so their
+      markdown_evidence (the bulk of the bytes) is replaced with
+      EVIDENCE_OMITTED_MARKER — paper_id and position are kept, so
+      "gold was buried at position N" stays diagnosable. This is the
+      TRAINING behaviour and is deliberately frozen: it is the contract
+      background.md states to evolution sessions, and evolution reads
+      these files. persist_full_evidence=True suppresses the trimming and
+      is set ONLY on the test evaluator (main.py's with_overrides), where
+      nothing evolution sees is affected — it makes a test eval
+      rejudgeable offline at any depth, including the uncapped basis
+      official astabench scoring uses;
     - specific/metadata payloads are kept whole (the scorer never reads
       evidence there, and agents submit "" for it; the ids are the whole
       object of study);
@@ -632,7 +625,7 @@ def _submission_json(completion: str, score_type: str, judge_cap: int | None) ->
     if not isinstance(results, list):
         return completion
     if (
-        not PERSIST_FULL_EVIDENCE
+        not persist_full_evidence
         and judge_cap is not None
         and str(score_type).startswith("semantic")
     ):
@@ -1212,6 +1205,7 @@ class PaperFinderEvaluator:
         apply_cost_penalty: bool = True,
         min_cost_threshold: float = MIN_COST_THRESHOLD,
         cost_per_error: float | None = None,
+        persist_full_evidence: bool = False,
     ):
         # Hard requirement: every provider key the registry references
         # must be set, even if the seed only uses one. Evolution can
@@ -1307,6 +1301,12 @@ class PaperFinderEvaluator:
         self.total_eval_cost = 0.0     # agent spend only (penalized bucket)
         self.total_judge_cost = 0.0    # relevance-judge spend (audit only)
         self._cost_lock = threading.Lock()
+        # Test-only. Keeps evidence for results beyond the judging cap so a
+        # stored test eval can be rejudged offline at any depth later.
+        # Default False = the frozen TRAINING behaviour that background.md
+        # describes to evolution sessions; main.py flips it on the test
+        # evaluator alone, where evolution never reads the output.
+        self.persist_full_evidence = persist_full_evidence
 
     # -- Construction helpers -------------------------------------------------
 
@@ -1323,6 +1323,7 @@ class PaperFinderEvaluator:
             "min_cost_threshold": self.min_cost_threshold,
             "cost_per_error": self.cost_per_error,
             "subprocess_isolation": self.subprocess_isolation,
+            "persist_full_evidence": self.persist_full_evidence,
         }
         base.update(overrides)
         return PaperFinderEvaluator(**base)
@@ -1808,6 +1809,7 @@ class PaperFinderEvaluator:
             submission = _submission_json(
                 completion, score_type,
                 grounding.last_cap() if score_type.startswith("semantic") else None,
+                persist_full_evidence=self.persist_full_evidence,
             )
             if submission:
                 diagnostics["submission.json"] = submission
