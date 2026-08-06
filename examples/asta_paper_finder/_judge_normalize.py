@@ -163,9 +163,9 @@ def install() -> None:
 # impossible by construction in main.py, where the profile is DERIVED from
 # the judge (_prompt_for_judge) rather than chosen, and refused outright in
 # _apply_training_grader (a prompt profile without a judge override is a
-# hard error). rejudge_test.py keeps an explicit --judge-prompt because it
-# re-judges stored submissions on arbitrary bases; it validates the same
-# pairing itself. The shape normalizer backfills the pydantic-required
+# hard error). rejudge_test.py derives it the same way, from the judge alone
+# (its --judge-prompt flag is gone), so a rejudge predicts what a live eval
+# on that judge would score. The shape normalizer backfills the pydantic-required
 # snippet/summary fields as nulls, so astabench's parsing is untouched.
 NO_PROSE_JUDGE_TEMPLATE = """
 Judge how relevant the following paper is to each of the provided criteria. For each criterion, consider its entire description when making your judgement.
