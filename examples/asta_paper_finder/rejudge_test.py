@@ -24,8 +24,15 @@ so a later live eval with the new judge starts warm.
 
 Usage:
     python rejudge_test.py <run_dir> --judge openai/gpt-5.6-luna
-        [--no-baseline] [--limit N] [--concurrency 4] [--retries 1]
-        [--no-cache-write] [--dry-run] [--force]
+        [--no-baseline] [--limit N] [--uncapped] [--concurrency 4]
+        [--retries 1] [--no-cache-write] [--dry-run] [--force]
+
+By default the replay stops at the stored scored_depth_cap, matching how the
+eval judged. --uncapped judges the whole submission instead — the basis
+official astabench scoring uses. k_estimate still governs the recall window,
+so the extra verdicts reach only the rank term. Outputs carry an .uncapped
+tag; the verdict cache is shared with the capped pass, since a verdict is
+keyed by (query, paper, evidence) and does not depend on judging depth.
 
 --dry-run reports, per basis, how much of this run's judging the cache
 already covers and what the remainder would cost. A cold target cache is
@@ -422,7 +429,10 @@ async def _process_sample(sample, cache, cache_path, sem, args, progress):
     # Overwritten (not --force-gated) by design: an interrupted run must be
     # able to resume, and a same-basis rerun replays identical cached
     # verdicts anyway; different bases write different filenames.
-    verdict_path = sample.problem_dir / f"judge_verdicts.rejudge_{args.basis}.json"
+    _tag = ".uncapped" if getattr(args, "uncapped", False) else ""
+    verdict_path = (
+        sample.problem_dir / f"judge_verdicts.rejudge_{args.basis}{_tag}.json"
+    )
     verdict_path.write_text(
         json.dumps({"scored_depth_cap": sample.cap, "papers": papers}, indent=2)
     )
@@ -572,6 +582,17 @@ def main() -> int:
         help="skip the canonical stock-GPT-4o A/B pass",
     )
     ap.add_argument("--limit", type=int, help="first N semantic queries (smoke)")
+    ap.add_argument(
+        "--uncapped", action="store_true",
+        help="judge EVERY submitted paper instead of stopping at the stored "
+             "scored_depth_cap — the basis official astabench scoring uses. "
+             "k_estimate still governs the recall window, so only the rank "
+             "term sees the extra verdicts. Costs ~2.6x the capped pass "
+             "(measured on -013: 18,574 in-cap vs 48,500 submitted). Outputs "
+             "carry an .uncapped tag so they never clobber a capped pass; the "
+             "verdict CACHE is shared, since a verdict is keyed by "
+             "(query, paper, evidence) and does not depend on depth.",
+    )
     ap.add_argument("--concurrency", type=int, default=4,
                     help="queries judged in flight (each judges all its docs at once)")
     ap.add_argument("--retries", type=int, default=1,
@@ -598,6 +619,37 @@ def main() -> int:
     stock_cache = cache_dir / f"shared_test_{stock_basis}.json"
 
     samples = load_run(run_dir, args.limit)
+    if args.uncapped:
+        # AFTER load_run: k_estimate falls back to cap when score_meta lacks
+        # it (load_run:188), so clearing cap earlier would break the recall
+        # window. Clearing it here leaves k_estimate resolved and only widens
+        # judging depth — exactly the official split.
+        # A rejudge cannot go deeper than the eval persisted. _submission_json
+        # replaces markdown_evidence with EVIDENCE_OMITTED_MARKER on every
+        # result beyond the judging cap, so the text those papers would be
+        # judged on does not exist on disk. Clearing s.cap alone would sail
+        # past the depth check at plan_sample and then be caught by the marker
+        # check immediately below it — a silent no-op that still reported
+        # "uncapped". Refuse instead.
+        omitted = sum(
+            1
+            for s in samples
+            if not s.carry
+            for _pid, ev in s.results
+            if ev == EVIDENCE_OMITTED_MARKER
+        )
+        if omitted:
+            raise SystemExit(
+                f"--uncapped: {omitted:,} submitted papers beyond the judging "
+                f"cap have no persisted evidence (EVIDENCE_OMITTED_MARKER in "
+                f"submission.json), so they cannot be judged offline. An "
+                f"uncapped basis requires a LIVE eval with "
+                f"--no-cap-judge-to-estimate, or an eval that persists full "
+                f"evidence. Re-run without --uncapped for the capped basis."
+            )
+        for s in samples:
+            s.cap = None
+        print("--uncapped: full evidence present; judging whole submissions")
     semantic = [s for s in samples if not s.carry]
     carried = [s for s in samples if s.carry]
     print(f"Loaded {len(samples)} problems: {len(semantic)} semantic to rejudge, "
@@ -631,6 +683,10 @@ def main() -> int:
         raise SystemExit("OPENAI_API_KEY is required (both judges are OpenAI)")
 
     suffix = f".limit{args.limit}" if args.limit is not None else ""
+    # Output tag only. The verdict cache stays basis-keyed: a verdict is
+    # keyed by (query, paper, evidence) and is identical whether or not the
+    # paper fell beyond the cap, so an uncapped pass warms the same cache.
+    suffix = ".uncapped" + suffix if args.uncapped else suffix
     out_summary = run_dir / f"test_results.rejudge_{args.basis}{suffix}.json"
     out_per_problem = (
         run_dir / f"test_results.rejudge_{args.basis}{suffix}.per_problem.json"
@@ -690,6 +746,8 @@ def main() -> int:
         "source_run": str(run_dir),
         "judge": args.judge,
         "judge_prompt": args.judge_prompt,
+        "scored_depth": "uncapped (full submission)" if args.uncapped
+                        else "capped at stored scored_depth_cap",
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "aggregate": target_agg,
         "n_problems": len(samples),
