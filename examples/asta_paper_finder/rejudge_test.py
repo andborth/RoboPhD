@@ -27,6 +27,12 @@ Usage:
         [--no-baseline] [--limit N] [--concurrency 4] [--retries 1]
         [--no-cache-write] [--dry-run] [--force]
 
+--dry-run reports, per basis, how much of this run's judging the cache
+already covers and what the remainder would cost. A cold target cache is
+normal — cache keys include an evidence hash, so a new agent lineage shares
+almost nothing with earlier work — and the cost is what decides whether to
+proceed.
+
 The judge-prompt profile is a property of the judge (main._prompt_for_judge:
 gpt-4o -> stock, luna -> no-prose), matching what a live --training-judge /
 --test-judge eval would run — a rejudge exists to predict those. Outputs
@@ -479,6 +485,53 @@ async def run_pass(samples, judge, judge_prompt, cache_path, args):
     }
 
 
+# Judge-call token model, for the --dry-run cost estimate only. Nothing here
+# feeds a recorded number; the real cost comes from the eval's own usage.
+#
+# Calibrated against the one fully-measured official run, v0_0_7: the upstream
+# report puts it at ~1,000 input / 165 output tokens per verdict on 976
+# chars/paper of evidence, and the submit script records $192 of judge spend
+# over 194 x 250 = 48,500 verdicts. A 700-token scaffold (instructions +
+# criteria, everything that is not the evidence itself) reproduces that $192
+# to within 1%; 750 overshoots by 4%.
+_JUDGE_SCAFFOLD_TOKENS = 700
+_CHARS_PER_TOKEN = 4
+# Output is near-constant per verdict: 165 measured on the stock prose prompt,
+# and no-prose cut output tokens 65% (2026-07-23 study).
+_JUDGE_OUTPUT_TOKENS = {"stock": 165, "no-prose": round(165 * 0.35)}
+
+
+def _estimate_judge_cost(to_judge_evidence, judge: str, judge_prompt: str) -> float:
+    """Rough dollar cost of judging these documents fresh.
+
+    Priced through PaperFinderEvaluator._estimate_cost so the estimate uses
+    the same rate table (and the same JUDGE_PRICE_OVERRIDES entries) the real
+    eval bills against — a second pricing implementation here could disagree
+    with the run it is predicting.
+    """
+    n = len(to_judge_evidence)
+    if not n:
+        return 0.0
+    evidence_tokens = sum(len(ev) for ev in to_judge_evidence) / _CHARS_PER_TOKEN
+    tin = n * _JUDGE_SCAFFOLD_TOKENS + evidence_tokens
+    tout = n * _JUDGE_OUTPUT_TOKENS.get(judge_prompt, 165)
+    return PaperFinderEvaluator._estimate_cost(
+        judge, {"input_tokens": tin, "output_tokens": tout,
+                "total_tokens": tin + tout}
+    )
+
+
+def _fresh_evidence(samples, cache) -> list[str]:
+    """Evidence text for every doc this basis would have to judge fresh."""
+    out: list[str] = []
+    for s in samples:
+        if s.carry:
+            continue
+        _order, _preset, to_judge, _statuses = plan_sample(s, cache.get(s.sid) or {})
+        out.extend(ev for _pid, ev, _ckey in to_judge)
+    return out
+
+
 def _coverage(samples, cache) -> tuple[int, int]:
     """(cache hits, total scoreable docs) for this run's submissions."""
     hits = total = 0
@@ -556,10 +609,22 @@ def main() -> int:
         # With an empty cache every scoreable doc plans as a judge call.
         n_docs = sum(len(plan_sample(s, {})[2]) for s in semantic)
         print(f"Judge-scoreable docs (excl. known-good/empty): {n_docs}")
-        for label, path in (("target", target_cache), ("stock", stock_cache)):
-            hits, total = _coverage(samples, _load_cache(path))
+        for label, path, model, profile in (
+            ("target", target_cache, args.judge, args.judge_prompt),
+            ("stock", stock_cache, STOCK, "stock"),
+        ):
+            cache = _load_cache(path)
+            hits, total = _coverage(samples, cache)
             pct = hits / total * 100 if total else 0.0
+            fresh = _fresh_evidence(samples, cache)
+            cost = _estimate_judge_cost(fresh, model, profile)
             print(f"  {label:6} cache {path.name}: {hits}/{total} ({pct:.1f}%)")
+            print(f"         {len(fresh):,} fresh call(s) -> ~${cost:.2f}")
+        if not args.baseline:
+            print("  (--no-baseline: the stock arm will not run)")
+        print("  Estimates, not quotes: token counts are modelled from evidence "
+              "length (see _JUDGE_SCAFFOLD_TOKENS), priced on the same rate "
+              "table the eval bills against.")
         return 0
 
     if not os.environ.get("OPENAI_API_KEY"):

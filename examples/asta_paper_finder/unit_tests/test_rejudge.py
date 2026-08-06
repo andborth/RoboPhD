@@ -389,3 +389,64 @@ def test_basis_slug_matches_main():
     from main import _judge_basis_slug
     assert _judge_basis_slug("openai/gpt-5.6-luna", "no-prose").endswith("_noprose")
     assert _judge_basis_slug(rt.STOCK, "stock") == "openai_gpt-4o-2024-11-20"
+
+
+# --- --dry-run cost estimate --------------------------------------------------
+#
+# A 0.2% cache hit rate means ~18.5k fresh judge calls, which is the number a
+# dry run exists to surface BEFORE you commit. Reporting only the hit rate
+# left the reader to price it themselves.
+
+
+def test_cost_scales_with_the_number_of_calls():
+    a = rt._estimate_judge_cost(["x" * 1000], "openai/gpt-5.6-luna", "no-prose")
+    b = rt._estimate_judge_cost(["x" * 1000] * 10, "openai/gpt-5.6-luna", "no-prose")
+    assert b == pytest.approx(a * 10)
+
+
+def test_cost_scales_with_evidence_length():
+    short = rt._estimate_judge_cost(["x" * 500], "openai/gpt-5.6-luna", "no-prose")
+    long = rt._estimate_judge_cost(["x" * 5000], "openai/gpt-5.6-luna", "no-prose")
+    assert long > short, "longer evidence must cost more — it is input tokens"
+
+
+def test_no_prose_is_cheaper_than_stock_on_identical_evidence():
+    """The whole point of the profile: it drops output tokens the scorer
+    never reads."""
+    ev = ["x" * 2000] * 50
+    assert (rt._estimate_judge_cost(ev, "openai/gpt-5.6-luna", "no-prose")
+            < rt._estimate_judge_cost(ev, "openai/gpt-5.6-luna", "stock"))
+
+
+def test_nothing_to_judge_costs_nothing():
+    assert rt._estimate_judge_cost([], "openai/gpt-5.6-luna", "no-prose") == 0.0
+
+
+def test_the_token_model_reproduces_the_one_measured_official_run():
+    """Calibration guard. The scaffold constant was fitted to v0_0_7: $192 of
+    judge spend over 194 x 250 verdicts at 976 chars/paper, per the submit
+    script's cost table and the upstream report's token counts. If a later
+    edit moves _JUDGE_SCAFFOLD_TOKENS or the chars-per-token ratio, this is
+    what says the estimate no longer matches reality.
+    """
+    evidence = ["x" * 976] * (194 * 250)
+    cost = rt._estimate_judge_cost(evidence, "openai/gpt-4o-2024-11-20", "stock")
+    assert cost == pytest.approx(192.0, rel=0.05), (
+        f"model predicts ${cost:.0f} against the measured $192 for v0_0_7; "
+        f"the token model has drifted from the run it was calibrated on"
+    )
+
+
+def test_pricing_goes_through_the_evaluator_not_a_second_table():
+    """A local rate table here could disagree with the eval it is predicting —
+    and would have missed the 2026-07-31 luna reprice."""
+    import ast
+
+    src = (Path(__file__).resolve().parent.parent / "rejudge_test.py").read_text()
+    fn = next(n for n in ast.walk(ast.parse(src))
+              if isinstance(n, ast.FunctionDef) and n.name == "_estimate_judge_cost")
+    body = ast.unparse(fn)
+    assert "_estimate_cost" in body, "must reuse the evaluator's pricing path"
+    assert "e-6" not in body and "0.20" not in body, (
+        "per-token rates hardcoded here would drift from JUDGE_PRICE_OVERRIDES"
+    )
