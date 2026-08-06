@@ -450,3 +450,154 @@ def test_pricing_goes_through_the_evaluator_not_a_second_table():
     assert "e-6" not in body and "0.20" not in body, (
         "per-token rates hardcoded here would drift from JUDGE_PRICE_OVERRIDES"
     )
+
+
+# --- load_eval_log (official astabench .eval logs) ---------------------------
+#
+# This loader parses an EXTERNAL log format across several branches, so each
+# branch is pinned: an upstream shape change must fail here rather than
+# silently produce a short or mis-scored sample set.
+
+def _log_sample(sid, *, results=None, score=0.5, target=None, completion=None):
+    """One inspect_ai EvalSample, shaped as load_eval_log reads it."""
+    if completion is None:
+        completion = json.dumps({"output": {"query_id": sid, "results": [
+            {"paper_id": p, "markdown_evidence": e} for p, e in (results or [])
+        ]}})
+    if target is None:
+        target = json.dumps({
+            "known_to_be_good": ["777"], "known_to_be_bad": [],
+            "relevance_criteria": [
+                {"name": "Relevance Criterion", "description": "d", "weight": 1.0}
+            ],
+        })
+    return SimpleNamespace(
+        id=sid,
+        metadata={"score_type": sid.split("_")[0] + "_f1"},
+        scores={"score_paper_finder": SimpleNamespace(value=score, metadata={})},
+        output=SimpleNamespace(completion=completion),
+        target=target,
+    )
+
+
+@pytest.fixture
+def fake_eval_log(monkeypatch):
+    """Patch inspect_ai.log.read_eval_log; load_eval_log imports it at call
+    time, so the patch lands regardless of import order."""
+    import inspect_ai.log as ial
+
+    def _install(samples):
+        monkeypatch.setattr(
+            ial, "read_eval_log", lambda _p: SimpleNamespace(samples=samples)
+        )
+    return _install
+
+
+def _eval_log_run(tmp_path, sids=("semantic_1",), k=2, cap=5):
+    """Minimal run_dir scaffolding: load_eval_log needs only score_meta.json."""
+    tp = tmp_path / "run" / "test_problems"
+    for sid in sids:
+        _mk_problem(tp, sid, [("X", "ev")] if sid.startswith("semantic") else None,
+                    cap=cap, k=k)
+    log = tmp_path / "official.eval"
+    log.write_text("")
+    return tmp_path / "run", log
+
+
+def test_load_eval_log_semantic_and_carry(tmp_path, fake_eval_log):
+    run_dir, log = _eval_log_run(tmp_path, ("semantic_1", "metadata_1"))
+    fake_eval_log([
+        _log_sample("semantic_1", results=[("A", "ev-a"), ("B", "ev-b")], score=0.4),
+        _log_sample("metadata_1", score=0.9),
+    ])
+    by_sid = {s.sid: s for s in rt.load_eval_log(log, run_dir)}
+    m = by_sid["metadata_1"]
+    assert m.carry and m.carried_reason == "exact_match" and m.stored_score == 0.9
+    s = by_sid["semantic_1"]
+    assert not s.carry
+    assert s.results == [("A", "ev-a"), ("B", "ev-b")]
+    assert s.stored_score == 0.4                     # the OFFICIAL score
+    assert s.known_good == {"777"}                   # from the log's target
+    assert s.criteria[0]["name"] == "Relevance Criterion"
+    assert s.k_estimate == 2                         # from run_dir score_meta
+    assert s.problem_dir == run_dir / "test_problems" / "semantic_1"
+
+
+def test_load_eval_log_is_uncapped_even_when_the_run_had_a_cap(tmp_path, fake_eval_log):
+    """Load-bearing: official judging is uncapped, so plan_sample must not
+    stop at the internal run's scored_depth_cap."""
+    run_dir, log = _eval_log_run(tmp_path, ("semantic_1",), cap=1)
+    fake_eval_log([_log_sample("semantic_1", results=[("A", "a"), ("B", "b")])])
+    s = rt.load_eval_log(log, run_dir)[0]
+    assert s.cap is None
+    _order, _preset, to_judge, statuses = rt.plan_sample(s, {})
+    assert len(to_judge) == 2
+    assert not any(st == "beyond_scored_depth" for _p, st in statuses)
+
+
+def test_load_eval_log_empty_log_and_missing_scaffolding(tmp_path, fake_eval_log):
+    run_dir, log = _eval_log_run(tmp_path)
+    fake_eval_log([])
+    with pytest.raises(SystemExit, match="no samples"):
+        rt.load_eval_log(log, run_dir)
+    fake_eval_log([_log_sample("semantic_1", results=[("A", "a")])])
+    with pytest.raises(SystemExit, match="test_problems"):
+        rt.load_eval_log(log, tmp_path / "nonexistent_run")
+
+
+def test_load_eval_log_missing_k_estimate_is_fatal(tmp_path, fake_eval_log):
+    """K is the recall denominator; guessing it would silently mis-score."""
+    tp = tmp_path / "run" / "test_problems"
+    _mk_problem(tp, "semantic_1", [("X", "ev")], cap=None, write_score_meta=False)
+    log = tmp_path / "official.eval"; log.write_text("")
+    fake_eval_log([_log_sample("semantic_1", results=[("A", "a")])])
+    with pytest.raises(SystemExit, match="k_estimate"):
+        rt.load_eval_log(log, tmp_path / "run")
+
+
+def test_load_eval_log_unparseable_target_is_fatal(tmp_path, fake_eval_log):
+    run_dir, log = _eval_log_run(tmp_path)
+    fake_eval_log([_log_sample("semantic_1", results=[("A", "a")], target="not json")])
+    with pytest.raises(SystemExit, match="target"):
+        rt.load_eval_log(log, run_dir)
+
+
+def test_load_eval_log_empty_submission_carries(tmp_path, fake_eval_log):
+    run_dir, log = _eval_log_run(tmp_path)
+    fake_eval_log([_log_sample("semantic_1", results=[])])
+    s = rt.load_eval_log(log, run_dir)[0]
+    assert s.carry and s.carried_reason == "no_submission"
+
+
+def test_load_eval_log_falls_back_to_lenient_extraction(tmp_path, fake_eval_log,
+                                                        monkeypatch):
+    """A completion the strict parse rejects must reach the lenient
+    extractor rather than silently becoming an empty submission."""
+    run_dir, log = _eval_log_run(tmp_path)
+    called = {}
+    def _lenient(text):
+        called["text"] = text
+        return [{"paper_id": "Z", "markdown_evidence": "salvaged"}]
+    monkeypatch.setattr(rt, "_extract_results_lenient", _lenient)
+    fake_eval_log([_log_sample("semantic_1", completion="{truncated json...")])
+    s = rt.load_eval_log(log, run_dir)[0]
+    assert called["text"].startswith("{truncated")
+    assert s.results == [("Z", "salvaged")]
+
+
+def test_load_eval_log_limit_and_max_results(tmp_path, fake_eval_log):
+    run_dir, log = _eval_log_run(tmp_path, ("semantic_1", "semantic_2", "metadata_1"))
+    # carry FIRST, so a plain samples[:limit] would wrongly return it
+    fake_eval_log([
+        _log_sample("metadata_1"),
+        _log_sample("semantic_1", results=[("A", "a")]),
+        _log_sample("semantic_2", results=[("B", "b")]),
+    ])
+    limited = rt.load_eval_log(log, run_dir, limit=1)
+    assert [s.sid for s in limited] == ["semantic_1"]   # semantic only, carries dropped
+    over = rt.MAX_RESULTS_TO_CONSIDER + 5
+    fake_eval_log([_log_sample(
+        "semantic_1", results=[(f"p{i}", "e") for i in range(over)]
+    )])
+    s = rt.load_eval_log(log, run_dir)[0]
+    assert len(s.results) == rt.MAX_RESULTS_TO_CONSIDER
