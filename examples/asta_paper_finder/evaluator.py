@@ -578,7 +578,24 @@ def _elapsed_seconds(t0: float) -> float:
 # Stands in for markdown_evidence in submission.json on results beyond the
 # judging cap. Public: _check_judge_calibration.py imports it to skip these
 # entries when re-judging (the text must never be scored as real evidence).
+# NO LONGER WRITTEN by default (see PERSIST_FULL_EVIDENCE) — retained because
+# every run recorded before 2026-08-06 contains it and all readers must keep
+# handling it.
 EVIDENCE_OMITTED_MARKER = "(evidence omitted — beyond scored depth, never judged)"
+
+# Persist markdown_evidence for EVERY submitted result, including those beyond
+# the judging cap. Costs disk (~55MB/run at 250 results x ~1.9k chars over the
+# ~30k beyond-cap papers a deep agent submits) and buys the ability to rejudge
+# a stored run at ANY depth later — including the uncapped basis official
+# astabench scoring uses, which capped judging misestimates by +/-0.015 with
+# the sign depending on agent strategy (-010 -0.0131, -011 +0.0146, -012
+# +0.0033 on matched query IDs).
+#
+# THIS DOES NOT CHANGE JUDGING. What gets judged is governed by
+# cap_judge_to_estimate and the scored-depth cap, untouched here; this only
+# controls what the submission.json DIAGNOSTIC retains. Set False to restore
+# the pre-2026-08-06 space-saving behaviour.
+PERSIST_FULL_EVIDENCE = True
 
 
 def _submission_json(completion: str, score_type: str, judge_cap: int | None) -> str | None:
@@ -592,11 +609,13 @@ def _submission_json(completion: str, score_type: str, judge_cap: int | None) ->
     Content-faithful, with size bounded by structure rather than a byte cap:
     - a parseable payload is stored pretty-printed, results in submitted
       order;
-    - on semantic queries judged under a cap, results beyond the scored
-      depth are never judged and affect neither rank nor recall, so their
-      markdown_evidence (the bulk of the bytes) is replaced with
-      EVIDENCE_OMITTED_MARKER — paper_id and position are kept, so
-      "gold was buried at position N" stays diagnosable;
+    - evidence for results beyond the scored depth is kept when
+      PERSIST_FULL_EVIDENCE (the default since 2026-08-06), so the run can
+      be rejudged offline at any depth later; with it False, that evidence
+      is replaced by EVIDENCE_OMITTED_MARKER, keeping paper_id and position
+      so "gold was buried at position N" stays diagnosable but making an
+      uncapped rejudge impossible (rejudge_test.py --uncapped refuses on
+      such runs);
     - specific/metadata payloads are kept whole (the scorer never reads
       evidence there, and agents submit "" for it; the ids are the whole
       object of study);
@@ -612,7 +631,11 @@ def _submission_json(completion: str, score_type: str, judge_cap: int | None) ->
         return completion
     if not isinstance(results, list):
         return completion
-    if judge_cap is not None and str(score_type).startswith("semantic"):
+    if (
+        not PERSIST_FULL_EVIDENCE
+        and judge_cap is not None
+        and str(score_type).startswith("semantic")
+    ):
         for r in results[judge_cap:]:
             if isinstance(r, dict) and r.get("markdown_evidence"):
                 r["markdown_evidence"] = EVIDENCE_OMITTED_MARKER
