@@ -1,0 +1,1 @@
+research on generative document retrieval models that allow for quick addition of new documents as they become available

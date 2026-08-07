@@ -1,0 +1,20 @@
+[semantic_224] score_type=semantic_f1 query='List all papers that use autoregressive transformer to generate videos.'
+  [t+6s] plan: 12 kw queries, 3 criteria, oldest_first=False; kw=['autoregressive transformer video generation', 'video synthesis autoregressive transformer', 'transformer autoregressive video prediction', 'visual autoregressive modeling videos', 'next frame generation transformer', 'text to video autoregressive transformer', 'video GPT transformer generation', 'discrete token video transformer', 'spatiotemporal autoregressive transformer', 'masked vs autoregressive video transformer', 'video language autoregressive transformer', 'video tokenizer autoregressive decoding']
+  criteria: ['The paper must be about generating, synthesizing, or predicting video outputs rather than only analyzing, classifying, or understanding videos.', 'The paper must use a transformer-based autoregressive model as the generation mechanism, such as sequential token, frame, or latent prediction with a transformer.', 'The paper must specifically apply the autoregressive transformer to produce videos, not merely use transformers in a non-autoregressive way or generate only images, text, or other modalities.'] weights=[0.4, 0.3, 0.3]
+  [t+162s] pooled 846 unique candidates
+  backfilled abstracts for 48 of 48 candidates
+  [t+231s] grade histogram: {3: 33, 2: 24, 1: 57, 0: 226}
+  citer channel: 105 citing-paper ids pooled
+  [t+389s] expansion r1: +120 graded {3: 4, 1: 27, 0: 89}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 12 ids (corpusId,citations,references)
+  tool call failed (): ToolError: Paper 03b6cb3e889925dee99ed9ef7d1220b0e0f53580 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 7 of 180 ids (title,abstract,corpusId,tldr,year,venue)
+  [t+788s] expansion r2: +50 graded {3: 1, 2: 1, 1: 19, 0: 29}
+  [t+944s] criterion mining: 367 passages across 158 of 200 papers
+  [t+944s] evidence chars: median=2044 min=58 >=2200=104/250
+  [t+947s] judge-sim rerank scored 100/100; predicted grade-3: 40
+  tool call failed (The paper must be about generating, synthesizing, or predicting video outputs rather than only analyzing, classifying, or understanding videos.): TimeoutError: 
+  [t+1194s] weak-criterion patch: 223 papers, 50 scoped calls, criteria {0: 173, 1: 209, 2: 202}
+  [t+1348s] patch wave 2: 210 paper-criteria retried with alternate wording
+  [t+1348s] submitted 250 papers

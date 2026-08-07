@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_220",
+    "results": [
+      {
+        "paper_id": "275336281",
+        "markdown_evidence": "GS-DiT: Advancing Video Generation with Pseudo 4D Gaussian Fields through Efficient Dense 3D Point Tracking ... GS-DiT demonstrates strong generalization capabilities and extends the 4D controllability of Gaussian splatting to video generation beyond just camera poses and supports advanced cinematic effects through the manipulation of the Gaussian field and camera intrinsics, making it a powerful tool for cre ... 4D video control is essential in video generation as it enables the use of sophisticated lens techniques, such as multi-camera shooting and dolly zoom, which are currently unsupported by existing methods. Training a video Diffusion Transformer (DiT) directly to control 4D content requires expensive multi-view videos. Inspired by Monocular Dynamic novel View Synthesis (MDVS) that optimizes a 4D representation and renders videos according to different 4D elements, such as camera pose and object motion editing, we bring pseudo 4D Gaussian fields to video generation. Specifically, we propose a novel framework that constructs a pseudo 4D Gaussian field with dense 3D point tracking and renders the Gaussian field for all video frames. Then we finetune a pretrained DiT to generate videos following the guidance of the rendered video, dubbed as GS-DiT. To boost the training of the GS-DiT, we also  ... Fine-tuning video generation models with these videos will inevitably degrade the video quality. ... Initial video diffusion models [7,14,21,25,26,42] are often based on off-the-shelf image diffusion models [40], augmented with temporal layers to capture the relationships among frames. Since Sora [8], video generation models have begun to shift to the transformer architectures, such as CogVideoX series [55]. ... Inspired by Monocular Dynamic novel View Synthesis (MDVS) that optimizes a 4D representation and renders videos according to different 4D elements, such as camera pose and object motion editing, we bring pseudo 4D Gaussian fields to video generation. ... Achieving precise control over 4D content in video generation is essential for integrating this technology into film production. To better accommodate video generation in cinematic studios, we tackle the 4D video control problem. \n\nInspired by classical Monocular Dynamic Video Synthesis (MDVS) methods [15,16,50] that render novel view videos by obtaining a 4D representation, we"
+      },
+      {
+        "paper_id": "266435546",
+        "markdown_evidence": "Align Your Gaussians: Text-to-4D with Dynamic 3D Gaussians and Composed Diffusion Models ... This work pursues a novel compositional generation-based approach, and combines text-to-image, text-to-video, and 3D-aware multiview diffusion models to provide feedback during 4D object optimization, thereby si-multaneously enforcing temporal consistency, high-quality visual appearance and realisti ... Text-guided diffusion models have revolutionized image and video generation and have also been successfully used for optimization-based 3D object synthesis. Here, we in-stead focus on the underexplored text-to-4D setting and syn-thesize dynamic, animated 3D objects using score distillation methods with an additional temporal dimension. compared to previous work, we pursue a novel compositional generation-based approach, and combine text-to-image, text-to-video, and 3D-aware multiview diffusion models to provide feedback during 4D object optimization, thereby si-multaneously enforcing temporal consistency, high-quality visual appearance and realistic geometry. Our method, called Align Your Gaussians (A YG), leverages dynamic 3D Gaussian Splatting with deformation fields as 4D represen-tation. Crucial to AYG is a novel method to regularize the distribution of the moving 3D Gaussians and th ... While image diffusion models have been successfully extended to video generation [1,7,22,28,78,90,91,107], there is little research on similarly extending 3D synthesis to 4D generation with an additional temporal dimension. ... In Sec. 3.1, we present AYG's 4D representation, and in Sec. 3.2, we introduce its compositional generation framework with multiple DMs. In Sec. 3.3, we lay out AYG's score distillation framework in practice, and in Sec. 3.4, we discuss several novel methods and extensions to scale AYG. ... Text-to-4D synthesis with AYG. We generate dynamic 4D scenes via score distillation. We initialize the 4D sequence from a static 3D scene (generated first, Fig. ... Generative modeling of dynamic 3D scenes has the potential to revolutionize how we create games, movies, simu-Figure 2. Text-to-4D synthesis with AYG. We generate dynamic 4D scenes via score distillation. We initialize the 4D sequence from a static 3D scene (generated first, Fig. 3), which is represented by 3D Gaussians with means µi, scales σi, opacities ηi and colors ℓi. Cons"
+      },
+      {
+        "paper_id": "271244756",
+        "markdown_evidence": "VD3D: Taming Large Video Diffusion Transformers for 3D Camera Control ... This work proposes to tame video transformers for 3D camera control using a ControlNet-like conditioning mechanism that incorporates spatiotemporal camera embeddings based on Pl\\\"ucker coordinates, and is the first to enable camera control for transformer-based video diffusion models. ... Modern text-to-video synthesis models demonstrate coherent, photorealistic generation of complex videos from a text description. However, most existing models lack fine-grained control over camera movement, which is critical for downstream applications related to content creation, visual effects, and 3D vision. Recently, new methods demonstrate the ability to generate videos with controllable camera poses these techniques leverage pre-trained U-Net-based diffusion models that explicitly disentangle spatial and temporal generation. Still, no existing approach enables camera control for new, transformer-based video diffusion models that process spatial and temporal information jointly. Here, we propose to tame video transformers for 3D camera control using a ControlNet-like conditioning mechanism that incorporates spatiotemporal camera embeddings based on Pl\\\"ucker coordinates. The approac ... (middle) Methods for text-to-video generation (Menapace et al., 2024) create realistic videos but do not provide explicit control over the viewpoint. ... While another concurrent work (Watson et al., 2024) uses a transformer-based architecture for space and time, it does not tackle text-based generation for dynamic scenes but focuses on novel view synthesis from an input image. ... Previous methods also tackle the problem of 4D generation, i.e., generating videos of dynamic 3D scenes from controllable viewpoints, usually from an input text prompt or image. ... Our method is connected to techniques related to text-to-video, text-to-3D, and text-to-4D generation. \n\nAs this is a popular and fast-moving field, this section provides only a partial overview with a focus on the most relevant techniques; we refer readers to Po et al. (2023) and Yunus et al. (2024) for a more thorough review of related techniques. \n\nText-to-video generation. "
+      },
+      {
+        "paper_id": "274423482",
+        "markdown_evidence": "AC3D: Analyzing and Improving 3D Camera Control in Video Diffusion Transformers ... This work analyzes camera motion from a first principles perspective, uncovering insights that enable precise 3D camera manipulation without compromising synthesis quality, and designs the Advanced 3D Camera Control (AC3D) architecture, the new state-of-the-art model for generative video modeling wi ... Numerous works have recently integrated 3D camera control into foundational text-to-video models, but the resulting camera control is often imprecise, and video generation quality suffers. In this work, we analyze camera motion from a first principles perspective, uncovering insights that enable precise 3D camera manipulation without compromising synthesis quality. First, we determine that motion induced by camera movements in videos is low-frequency in nature. This motivates us to adjust train and test pose conditioning schedules, accelerating training convergence while improving visual and motion quality. Then, by probing the representations of an unconditional video diffusion transformer, we observe that they implicitly perform camera pose estimation under the hood, and only a sub-portion of their layers contain the camera information. This suggested us to limit the injection of camer ... Advancing our technical understanding of how camera motion affects visual perception and generation, contributing to fundamental research in computer vision, graphics, and human visual processing. ... While these methods use the U-Net architecture, more recent ones [12,94,95,170] have been adapting transformer-based architectures for more scalable, realistic, and highly dynamic scene generation. ... We investigate dynamic 3D scene generation from a different perspective by extending pre-trained video diffusion models with 3D camera control. ... Our approach lies at the intersection of text-to-video, textto-3D, and text-to-4D generation approaches. We refer to recent state-of-the-reports [103,182] for a more thorough analysis of previous work. \n\nText-to-video generation. Our approach builds on recent advancements in 2D video diffusion models. One prominent technique in this area enhances text-to-image models by adding  ... Due to space constraints, we summarize related 3D and an extended list of 4D works in the appendix. 3D generation. Early efforts in 3D generation focused on training models for single object categories, extending GANs to"
+      },
+      {
+        "paper_id": "272831774",
+        "markdown_evidence": "360-degree Human Video Generation with 4D Diffusion Transformer ... We present a novel approach for generating 360-degree high-quality, spatiotemporally coherent human videos from a single image. Our framework combines the strengths of diffusion transformers for capturing global correlations across viewpoints and time, and CNNs for accurate condition injection. The core is a hierarchical 4D transformer architecture that factorizes self-attention across views, time steps, and spatial dimensions, enabling efficient modeling of the 4D space. Precise conditioning is achieved by injecting human identity, camera parameters, and temporal signals into the respective transformers. To train this model, we collect a multi-dimensional dataset spanning images, videos, multi-view data, and limited 4D footage, along with a tailored multi-dimensional training strategy. Our approach overcomes the limitations of previous methods based on generative adversarial networks or ... Instead of generating an explicit 4D models, our method directly synthesizes 2D videos from the given viewpoints, and the 4D scene structure are implicitly encoded through the attention mechanism. ... This architectural shift offers enhanced scalability compared to U-Net-based models, enabling the seamless expansion of model parameters. Recently, the transformer architecture is also integrated into text-to-video models [Lu et al. ... We have presented a novel method for human video generation, which takes as input only a single image and produces spatio-temporally coherent video of dynamic human motions under 360-degree viewpoints. Our approach employs an efficient 4D transformer architecture to model the correlations across multiple domains, including view, time and poses. ... Conclusion. We have presented a novel method for human video generation, which takes as input only a single image and produces spatio-temporally coherent video of dynamic human motions under 360-degree viewpoints. Our approach employs an efficient 4D transformer architecture to model the correlations across multiple domains, including view, time and poses. Combining with UNets  ... To validate the effectiveness of introducing the fourth view dimension and the view transformer in our 4D transformer, we conduct ablation studies for multi-view video, 3D static video, and 360-degree video generation tasks. Specifically, we disable the view and rely solely on the temporal transformer "
+      },
+      {
+        "paper_id": "270062471",
+        "markdown_evidence": "Human4DiT: Free-view Human Video Generation with 4D Diffusion Transformer ... A novel approach for generating high-quality, spatio-temporally coherent human videos from a single image under arbitrary viewpoints that overcomes the limitations of previous methods based on GAN or UNet-based diffusion models, enabling efficient modeling of the 4D space."
+      },
+      {
+        "paper_id": "274465284",
+        "markdown_evidence": "Seeing Beyond Views: Multi-View Driving Scene Video Generation with Holistic Attention ... CogDriving is presented, a novel network designed for synthesizing high-quality multi-view driving videos that leverages a Diffusion Transformer architecture with holistic-4D attention modules, enabling simultaneous associations across the spatial, temporal, and viewpoint dimensions. ... Generating multi-view videos for autonomous driving training has recently gained much attention, with the challenge of addressing both cross-view and cross-frame consistency. Existing methods typically apply decoupled attention mechanisms for spatial, temporal, and view dimensions. However, these approaches often struggle to maintain consistency across dimensions, particularly when handling fast-moving objects that appear at different times and viewpoints. In this paper, we present CogDriving, a novel network designed for synthesizing high-quality multi-view driving videos. CogDriving leverages a Diffusion Transformer architecture with holistic-4D attention modules, enabling simultaneous associations across the spatial, temporal, and viewpoint dimensions. We also propose a lightweight controller tailored for CogDriving, i.e., Micro-Controller, which uses only 1.1% of the parameters of th ... Video generation has consistently attracted attention in the field of computer vision. ... These decoupled-based methods may face significant limitations in addressing the coupled challenges of crossframe and cross-view consistency. To tackle these issues, we propose a novel diffusion transformer network with holistic-4D attention to simultaneously model spatial, temporal, and view dimensions. ... The performance evaluation of multiview video generation is conducted from two key aspects: generation quality and controllability. ... Video generation has consistently attracted attention in the field of computer vision. Early studies primarily relied on autoregressive models [10,18,35]. In recent years, diffusion models [9,26] have emerged as a powerful alternative in generative tasks. Building on the success of diffusion models in image synthesis, multiple attempts have been made to develop large-scale vide"
+      },
+      {
+        "paper_id": "278165869",
+        "markdown_evidence": "DiVE: Efficient Multi-View Driving Scenes Generation Based on Video Diffusion Transformer ... This work proposes DiVE, a diffusion transformer-based generative framework meticulously engineered to produce high-fidelity, temporally coherent, and cross-view consistent multi-view videos, aligning seamlessly with bird's-eye view layouts and textual descriptions. ... Collecting multi-view driving scenario videos to enhance the performance of 3D visual perception tasks presents significant challenges and incurs substantial costs, making generative models for realistic data an appealing alternative. Yet, the videos generated by recent works suffer from poor quality and spatiotemporal consistency, undermining their utility in advancing perception tasks under driving scenarios. To address this gap, we propose DiVE, a diffusion transformer-based generative framework meticulously engineered to produce high-fidelity, temporally coherent, and cross-view consistent multi-view videos, aligning seamlessly with bird's-eye view layouts and textual descriptions. DiVE leverages a unified cross-attention and a SketchFormer to exert precise control over multimodal data, while incorporating a view-inflated attention mechanism that adds no extra parameters, thereby gua ... Motivated by these advancements, this paper focuses on the generation of controllable synthetic multi-view videos, designed to augment the training of 3D perception models in autonomous driving. \n\nThe fidelity of synthetic video data for autonomous driving perception hinges on three critical dimensions: annotation alignment, spatiotemporal consistency and spatial resolution. ... This symbiotic relationship culminates in the MAD architecture, which harmonizes efficiency and performance. ... In this paper, we propose DiVE (DiT-based Video Generation with Enhanced Multi-Modal Control), a novel framework that integrates DiT with multi-modal conditioning for controllable generation of multi-view driving scene videos."
+      },
+      {
+        "paper_id": "265445614",
+        "markdown_evidence": "Animate124: Animating One Image to 4D Dynamic Scene ... We introduce Animate124 (Animate-one-image-to-4D), the first work to animate a single in-the-wild image into 3D video through textual motion descriptions, an underexplored problem with significant applications. Our 4D generation leverages an advanced 4D grid dynamic Neural Radiance Field (NeRF) model, optimized in three distinct stages using multiple diffusion priors. Initially, a static model is optimized using the reference image, guided by 2D and 3D diffusion priors, which serves as the initialization for the dynamic NeRF. Subsequently, a video diffusion model is employed to learn the motion specific to the subject. However, the object in the 3D videos tends to drift away from the reference image over time. This drift is mainly due to the misalignment between the text prompt and the reference image in the video diffusion model. In the final stage, a personalized diffusion prior is the ... Despite its importance, 3D video generation remains relatively unexplored partly due to the underdevelopment in video generation models. MAV3D [41] represents a pioneering effort in generating 3D videos from text prompts. ... Another prevailing method decomposes the spatio-temporal dimension into multiple planes [4,8,38], but this plane-based approach tends to result in the Janus problem when generating 3D video from a single reference image. ... In contrast, dynamic 3D scenes (or 3D videos) more effectively represent the richly informative 3D world, offering significant applications in video games, augmented reality, and virtual reality. Despite its importance, 3D video generation remains relatively unexplored partly due to the underdevelopment in video generation models. ... Dynamic Neural Rendering. In our framework, we employ Neural Radiance Fields (NeRFs) [26] to represent the 4D spatio-temporal scenes. NeRFs [26] enable the rendering of images from diverse target viewpoints by modeling a 3D scene through a neural network that interprets spatial coordinates. The architecture of neural network varies, extending from basic MLPs (Multilayer Percept ... Generative models have recently achieved significant advancements in producing 2D images [34,35,37] and videos [23,39,51]. The creation of 3D content [30,31,33], a critical representation of the real world, has garnered increasing attention and has shown rapid development. Empowered by robust priors from both 2D an"
+      },
+      {
+        "paper_id": "277435410",
+        "markdown_evidence": "CoGen: 3D Consistent Video Generation via Adaptive Conditioning for Autonomous Driving ... A novel spatial adaptive generation framework, CoGen, which leverages advances in 3D generation to improve performance in two key aspects and excels in preserving geometric fidelity and visual realism, offering a reliable video generation solution for autonomous driving. ... Recent progress in driving video generation has shown significant potential for enhancing self-driving systems by providing scalable and controllable training data. Although pretrained state-of-the-art generation models, guided by 2D layout conditions (e.g., HD maps and bounding boxes), can produce photorealistic driving videos, achieving controllable multi-view videos with high 3D consistency remains a major challenge. To tackle this, we introduce a novel spatial adaptive generation framework, CoGen, which leverages advances in 3D generation to improve performance in two key aspects: (i) To ensure 3D consistency, we first generate high-quality, controllable 3D conditions that capture the geometry of driving scenes. By replacing coarse 2D conditions with these fine-grained 3D representations, our approach significantly enhances the spatial consistency of the generated videos. (ii) Additi ... 3.2) to generate controllable, 3D-consistent driving videos. ... Diffusion Transformer Architecture. Our video generation model is built upon the Diffusion Transformer (DiT)based framework for temporally and multi-view consistent video synthesis. ... This work offers a robust, controllable framework for synthesizing high-quality driving scene videos, enhancing the capabilities of autonomous driving simulation. Our contributions can be summarized as follows: \n\n• We systematically investigate four 3D-semantics-derived guidance projections, validating their ability to enhance geometric fidelity and visual realism in video gene ... As shown in Fig. 1, we propose a transformer-based diffusion model and a control encoder for 3D conditions (detailed in Sec. 3.2) to generate controllable, 3D-consistent driving videos. The architecture of our transformer and control encoder is described below. Diffusion Transformer Architecture. Our video generation model is built upon the Diffusion Transformer (DiT)based fram"
+      },
+      {
+        "paper_id": "274437385",
+        "markdown_evidence": "Hallo3: Highly Dynamic and Realistic Portrait Image Animation with Video Diffusion Transformer ... This paper introduces the first application of a pretrained transformer-based video generative model that demonstrates strong generalization capabilities and generates highly dynamic, realistic videos for portrait animation, effectively addressing these challenges. ... Existing methodologies for animating portrait images face significant challenges, particularly in handling non-frontal perspectives, rendering dynamic objects around the portrait, and generating immersive, realistic backgrounds. In this paper, we introduce the first application of a pretrained transformer-based video generative model that demonstrates strong generalization capabilities and generates highly dynamic, realistic videos for portrait animation, effectively addressing these challenges. The adoption of a new video backbone model makes previous U-Net-Based methods for identity maintenance, audio conditioning, and video extrapolation inapplicable. To address this limitation, we design an identity reference network consisting of a causal 3D VAE combined with a stacked series of transformer layers, ensuring consistent facial identity across video sequences. Additionally, we investig ... In the present study, we adopt the DiT diffusion formulation to optimize the generalization capabilities of the generated video. ... Section 3.1 describes the baseline transformer diffusion network, detailing its architecture and functionality. ... Additionally, Video-Composer [30] enhances the controllability of video synthesis by incorporating spatial, temporal, and textual conditions, which facilitates improved inter-frame consistency. ... Nevertheless, existing facial animation techniques still encounter limitations in addressing extreme facial poses, accommodating background motion in dynamic environments, and incorporating camera movements dictated by textual prompts. Diffusion-Based Video Generation. ... This reliance presents challenges in handling profile, overhead, or low-angle perspectives for portrait animation. Secondly, accounting for significant accessories, such as holding a smartphone, microphone, or wearing closely fitted objects, presents challenges in generating realistic motion for the associated objects within video sequences. Third, existing methods often assume"
+      },
+      {
+        "paper_id": "275219425",
+        "markdown_evidence": "Novel View Synthesis with Depth Priors Using Neural Radiance Fields and CycleGAN with Attention Transformer ... An improved sparse view NeRF model is proposed, ATGANNeRF, which integrates an enhanced U-Net generator with a dual-discriminator framework, CBAM, and Multi-Head Self-Attention mechanisms, and the symmetric design enhances the model’s ability to capture and preserve spatial relationships, ensuring a ... Novel view synthesis aims to generate new perspectives from a limited number of input views. Neural Radiance Field (NeRF) is a key method for this task, and it produces high-fidelity images from a comprehensive set of inputs. However, a NeRF’s performance drops significantly with sparse views. To mitigate this, depth information can be used to guide training, with coarse depth maps often readily available in practical settings. We propose an improved sparse view NeRF model, ATGANNeRF, which integrates an enhanced U-Net generator with a dual-discriminator framework, CBAM, and Multi-Head Self-Attention mechanisms. The symmetric design enhances the model’s ability to capture and preserve spatial relationships, ensuring a more consistent generation of novel views. Additionally, local depth ranking is employed to ensure depth consistency with coarse maps, and spatial continuity constraints are introduced to synthesize novel views from sparse samples. SSIM loss is also added to preserve local structural details like edges and textures. Evaluation on LLFF, DTU, and our own datasets shows that ATGANNeRF significantly outperforms state-of-the-art methods, both quantitatively and qualitatively."
+      },
+      {
+        "paper_id": "271088895",
+        "markdown_evidence": "Controlling Space and Time with Diffusion Models ... 4DiM is the first-ever NVS method with intuitive metric-scale camera pose control enabled by the authors' novel calibration pipeline for structure-from-motion-posed data, and outperforms prior 3D NVS models both in terms of image fidelity and pose alignment, while also enabling the generation of sce ... We present 4DiM, a cascaded diffusion model for 4D novel view synthesis (NVS), supporting generation with arbitrary camera trajectories and timestamps, in natural scenes, conditioned on one or more images. With a novel architecture and sampling procedure, we enable training on a mixture of 3D (with camera pose), 4D (pose+time) and video (time but no pose) data, which greatly improves generalization to unseen images and camera pose trajectories over prior works that focus on limited domains (e.g., object centric). 4DiM is the first-ever NVS method with intuitive metric-scale camera pose control enabled by our novel calibration pipeline for structure-from-motion-posed data. Experiments demonstrate that 4DiM outperforms prior 3D NVS models both in terms of image fidelity and pose alignment, while also enabling the generation of scene dynamics. 4DiM provides a general framework for a variety ... Early in our experiments, we observed that video from a single image can often yield samples with little motion. ... Compared to the commonly employed UNet architecture (Ronneberger et al., 2015), UViT uses a transformer backbone at the bottleneck resolution with no convolutions, leading to improved accelerator utilization. ... 4D generative models cast novel view synthesis (NVS) as a form of image-conditioned multi-view generation with control of camera pose and time. They extend the impressive capabilities of generative image and video models, leveraging large-scale learning to enable image generation with consistent 3D scene geometry and dynamics."
+      },
+      {
+        "paper_id": "276961453",
+        "markdown_evidence": "Long Context Tuning for Video Generation ... This work introduces Long Context Tuning (LCT), a training paradigm that expands the context window of pre-trained single-shot video diffusion models to learn scene-level consistency directly from data, enabling both joint and auto-regressive shot generation without additional parameters. ... Recent advances in video generation can produce realistic, minute-long single-shot videos with scalable diffusion transformers. However, real-world narrative videos require multi-shot scenes with visual and dynamic consistency across shots. In this work, we introduce Long Context Tuning (LCT), a training paradigm that expands the context window of pre-trained single-shot video diffusion models to learn scene-level consistency directly from data. Our method expands full attention mechanisms from individual shots to encompass all shots within a scene, incorporating interleaved 3D position embedding and an asynchronous noise strategy, enabling both joint and auto-regressive shot generation without additional parameters. Models with bidirectional attention after LCT can further be fine-tuned with context-causal attention, facilitating auto-regressive generation with efficient KV-cache. Exper ... In this section, we discuss several emerging model capabilities after Long Context Tuning (LCT). \n\nConditional and Compositional Generation. Our model inherently supports diverse conditioning with images and videos. ... We detail the core components of LCT for scene-level video generation in this section, including data preparation (Sec. 3.2.1) and architecture design (Sec. 3.2.2). We further unify conditioning inputs and diffusion samples via an asynchronous training timesteps strategy (Sec. 3.2.3). ... We propose Long Context Tuning (LCT) to adapt singleshot video models for scene-level generation. By expanding context window to the entire scene, implementing interleaved 3D position embeddings, and employing asynchronous training timesteps, we enable flexible scene synthesis without additional parameters. ... To bridge this gap, video generation research may need † Corresponding Author. \n\nto evolve from single-shot synthesis to scene-level generation. In this higher-level paradigm, a scene is defined as a series of single-shot videos capturing coherent events unfolding over time [9,42,43]. ... Shot-level Video Generation. Previous literature has extensively explored single-shot video g"
+      },
+      {
+        "paper_id": "261758315",
+        "markdown_evidence": "3D Facial Expression Generator Based on Transformer VAE ... We present a generative model for the 3D facial expression mesh sequences, from onset to the termination of a desired expression. We tailor a Transformer VAE architecture: The encoder compresses a sequence of facial landmarks into an expression-aware regularized latent space, while the decoder generates a new sequence from the sampled latent variable, conditioned on a desired expression. After a landmark-guided mesh deformation, a given 3D neutral face is driven to an animated mesh sequence with the expected expression. The generated sequences are consistent, of quality, and exhibit a good level of diversity, improving over state-of-the-art methods. We validate our model by conducting extensive experiments on two representative datasets. The supplementary video and code are available on a GitHub page (https://github.com/ZOUKaifeng/FacialExpressionGeneration)."
+      },
+      {
+        "paper_id": "277151053",
+        "markdown_evidence": "SV4D 2.0: Enhancing Spatio-Temporal Consistency in Multi-View Video Diffusion for High-Quality 4D Generation ... SV4D 2.0 is more robust to occlusions and large motion, generalizes better to realworld videos, and produces higher-quality outputs in terms of detail sharpness and spatio-temporal consistency. ... We present Stable Video 4D 2.0 (SV4D 2.0), a multi-view video diffusion model for dynamic 3D asset generation. Compared to its predecessor SV4D [69], SV4D 2.0 is more robust to occlusions and large motion, generalizes better to realworld videos, and produces higher-quality outputs in terms of detail sharpness and spatio-temporal consistency. We achieve this by introducing key improvements in multiple aspects: 1) network architecture: eliminating the dependency of reference multi-views and designing blending mechanism for 3D and frame attention, 2) data: enhancing quality and quantity of training data, 3) training strategy: adopting progressive 3D-4D training for better generalization, and 4) 4D optimization: handling 3D inconsistency and large motion via 2-stage refinement and progressive frame sampling. Extensive experiments demonstrate significant performance gain by SV4D 2.0 both visu ... Multi-view Video Synthesis via SV4D 2.0 SV4D 2.0 generates dynamic 3D content by first synthesizing multiple novel-view videos given a monocular video as input then optimizing a 4D representation via photogrammetry. ... Building upon the SV4D framework, we make several key improvements to the network architecture, training strategy, data curation, and 4D optimization. ... Several recent works [57,72,73] have shown that reconstruction from synthesized videos is sufficient to produce high-quality 4D assets without SDS loss, by sampling videos of the subject at novel viewpoints via novel-view video synthesis (NVVS) techniques and using them as photogrammetry pseudo-ground truths. ... In this supplemental document, we include the implementation details in Sec. 7, ablative analyses in Sec. 8, and additional results in Sec. 9. We also attach a teaser video (SV4D_2.0_video.mp4) to summarize the SV4D 2.0 framework and show more visual results. ... 3D Generation. The SDS-based methods [8,15,28,30,38,42,50,53,56,59,68,70,75,85] propose to distill priors from the 2D generative model via SDS loss to optimize the 3D content from text or image. Another line of works [19,20,61,67,69,87] directly predict the 3D model of an static "
+      },
+      {
+        "paper_id": "273877525",
+        "markdown_evidence": "DimensionX: Create Any 3D and 4D Scenes from a Single Image with Controllable Video Diffusion ... ST-Director is proposed, which decouples spatial and temporal factors in video diffusion by learning dimension-aware LoRAs from dimension-variant data, and achieves superior results in controllable video generation, as well as in 3D and 4D scene generation, compared with previous methods. ... In this paper, we introduce \\textbf{DimensionX}, a framework designed to generate photorealistic 3D and 4D scenes from just a single image with video diffusion. Our approach begins with the insight that both the spatial structure of a 3D scene and the temporal evolution of a 4D scene can be effectively represented through sequences of video frames. While recent video diffusion models have shown remarkable success in producing vivid visuals, they face limitations in directly recovering 3D/4D scenes due to limited spatial and temporal controllability during generation. To overcome this, we propose ST-Director, which decouples spatial and temporal factors in video diffusion by learning dimension-aware LoRAs from dimension-variant data. This controllable video diffusion approach enables precise manipulation of spatial structure and temporal dynamics, allowing us to reconstruct both 3D and 4D ... Specifically, with S-Director, the attention maps reveal that the structural outlines of the final video appear much earlier than with temporal control. ... Trajectory-aware mechanism for 3D generation. In sparse view 3D generation, we leverage S-Director to guide video interpolation model. As illustrated in Fig. 7, when handling the large-angle sparse view, the absence of S-Director often results in the \"Janus problem\", where multiple heads are generated, significantly degrading reconstruction quality. \n\nIdentity-preserving denois ... For the generation of 4D scenes, the lack of sufficient data poses significant challenges in producing multi-view videos that are utilized to reconstruct the whole scene. More recently, 4Real [60] firstly proposes distilling the pre-trained video diffusion prior with the SDS loss to produce a photorealistic dynamic scene. ... Based on these dynamic meshes, a large number of multi-view videos are rendered to train a multi-view video diffusion model. ... Similar techniques have been further applied in the scene-level generation [38]. More recent approaches leverage video diffusion models to generate novel "
+      },
+      {
+        "paper_id": "276938107",
+        "markdown_evidence": "Reangle-A-Video: 4D Video Generation as Video-to-Video Translation ... Reangle-A-Video is introduced, a unified framework for generating synchronized multi-view videos from a single input video, leveraging publicly available image and video diffusion priors to reframe the multi-view video generation task as video-to-videos translation. ... We introduce Reangle-A-Video, a unified framework for generating synchronized multi-view videos from a single input video. Unlike mainstream approaches that train multiview video diffusion models on large-scale 4D datasets, our method reframes the multi-view video generation task as video-to-videos translation, leveraging publicly available image and video diffusion priors. In essence, Reangle-A-Video operates in two stages. (1) Multi-View Motion Learning: An image-to-video diffusion transformer is synchronously fine-tuned in a self-supervised manner to distill view-invariant motion from a set of warped videos. (2) Multi-View Consistent Image-to-Images Translation: The first frame of the input video is warped and inpainted into various camera perspectives under an inference-time crossview consistency guidance using DUSt3R, generating multiview consistent starting images. Extensive experi ... More importantly, most existing methods generate multi-view videos from image or text inputs, rather than from user-input videos. \n\nTo address this, here we present Reangle-A-Video, an alternative solution for synchronized multi-view video generation that does not require specialized multi-view generative priors. ... The introduction of Diffusion Transformers (DiT) [57] revolutionized image and video generation by replacing the traditional U-Net with a transformer-based backbone. ... As a result, these methods are limited to objectlevel 4D synthesis and fail to generalize to real-world scenes. Recent studies have addressed this limitation by training foundational multi-view video diffusion models [4,64,68,70,72,76,78] on hybrid datasets combining indoor/outdoor static scenes [20,53,96], general single-view videos, and realistic scenes rendered by simulation ... Denoising-based Image and Video Generation. The introduction of Diffusion Transformers (DiT) [57] revolutionized image and video generation by replacing the traditional U-Net with a transformer-based backbone. Combined with larger-scale, high-quality, curated datasets, this shift enabled more efficient and scalable diffusion ge"
+      },
+      {
+        "paper_id": "278783081",
+        "markdown_evidence": "Interspatial Attention for Efficient 4D Human Video Generation ... This paper introduces a new interspatial attention (ISA) mechanism as a scalable building block for modern diffusion transformer (DiT)-based video generation models and achieves state-of-the-art performance for 4D human video synthesis. ... Generating photorealistic videos of digital humans in a controllable manner is crucial for a plethora of applications. Existing approaches either build on methods that employ template-based 3D representations or emerging video generation models but suffer from poor quality or limited consistency and identity preservation when generating individual or multiple digital humans. In this paper, we introduce a new interspatial attention (ISA) mechanism as a scalable building block for modern diffusion transformer (DiT)-based video generation models. ISA is a new type of cross attention that uses relative positional encodings tailored for the generation of human videos. Leveraging a custom-developed video variation autoencoder, we train a latent ISA-based diffusion model on a large corpus of video data. Our model achieves state-of-the-art performance for 4D human video synthesis, demonstrating remarkable motion consistency and identity preservation while providing precise control of the camera and body poses. Our code and model are publicly released at https://dsaurus.github.io/isa4d/."
+      },
+      {
+        "paper_id": "277787175",
+        "markdown_evidence": "UniAnimate-DiT: Human Image Animation with Large-Scale Video Diffusion Transformer ... To preserve the robust generative capabilities of the original Wan2.1 model, Low-Rank Adaptation (LoRA) technique is implemented to fine-tune a minimal set of parameters, significantly reducing training memory overhead. ... This report presents UniAnimate-DiT, an advanced project that leverages the cutting-edge and powerful capabilities of the open-source Wan2.1 model for consistent human image animation. Specifically, to preserve the robust generative capabilities of the original Wan2.1 model, we implement Low-Rank Adaptation (LoRA) technique to fine-tune a minimal set of parameters, significantly reducing training memory overhead. A lightweight pose encoder consisting of multiple stacked 3D convolutional layers is designed to encode motion information of driving poses. Furthermore, we adopt a simple concatenation operation to integrate the reference appearance into the model and incorporate the pose information of the reference image for enhanced pose alignment. Experimental results show that our approach achieves visually appearing and temporally consistent high-fidelity animations. Trained on 480p (832x ... Long video generation. ... The transition to a more advanced Diffu-sion Transformer (DIT)-based model, such as Wan2.1 [10], provides a potential direction to enhance the quality of generated videos. ... This task aims to enable the transformation of a static reference image into dynamic video sequences that depict lifelike, temporally consistent movements that adhere to the guidance of driving poses. \n\nTraditional methods [4,9,12,13] in this domain often leverage a 3D-UNet base model to generate videos, struggling with temporal coherence and realism. ... The overall architecture of UniAnimate-DiT is displayed in Fig. 2, which is designed to adapt the human image animation task by incorporating the advanced video DiT model. The framework comprises several key components: 1) Video Diffusion Transformer Model (Wan2.1): \n\nThe video DiT model serves as the primary generative engine, providing a robust mechanism for high-quality outp"
+      },
+      {
+        "paper_id": "266359409",
+        "markdown_evidence": "AE-NeRF: Audio Enhanced Neural Radiance Field for Few Shot Talking Head Synthesis ... Audio Enhanced Neural Radiance Field (AE-NeRF) is presented, which can generate realistic portraits of a new speaker with few-shot dataset and surpasses the state-of-the-art on image fidelity, audio-lip synchronization, and generalization ability, even in limited training set or training iterations. ... Audio-driven talking head synthesis is a promising topic with wide applications in digital human, film making and virtual reality. Recent NeRF-based approaches have shown superiority in quality and fidelity compared to previous studies. However, when it comes to few-shot talking head generation, a practical scenario where only few seconds of talking video is available for one identity, two limitations emerge: 1) they either have no base model, which serves as a facial prior for fast convergence, or ignore the importance of audio when building the prior; 2) most of them overlook the degree of correlation between different face regions and audio, e.g., mouth is audio related, while ear is audio independent. In this paper, we present Audio Enhanced Neural Radiance Field (AE-NeRF) to tackle the above issues, which can generate realistic portraits of a new speaker with few-shot dataset. Speci ... Videos are all resampled to 25 fps and resized to a resolution of 512 × 512. For each video, the first half of it is used for training and the second half is used for inference. ... Let a, a ref 1...L and f ref 1...L be target audio feature, reference audio feature and reference image feature respectively, then we have \n\nThe Thirty-Eighth AAAI Conference on Artificial Intelligence (AAAI-24) \n\nThe Audio Aware Aggregation module utilizes a transformer structure with cross attention blocks to fuse the audio and the visual information. ... The original NeRF encodes a static scene as a continuous volumetric radiance field F , which is modeled by an MLP. It takes a 3D query point x and its view direction d as input, and outputs the corresponding density σ and color c: \n\nWhen applying NeRF to talking head, one will take the audio feature as an additional input, and the rendering process can be written as F (x, d, a)"
+      },
+      {
+        "paper_id": "268691972",
+        "markdown_evidence": "TC4D: Trajectory-Conditioned Text-to-4D Generation ... This work proposes TC4D: trajectory-conditioned text-to-4D generation, which factors motion into global and local components, and enables the synthesis of scenes animated along arbitrary trajectories, compositional scene generation, and significant improvements to the realism and amount of generated ... Recent techniques for text-to-4D generation synthesize dynamic 3D scenes using supervision from pre-trained text-to-video models. However, existing representations for motion, such as deformation models or time-dependent neural representations, are limited in the amount of motion they can generate-they cannot synthesize motion extending far beyond the bounding box used for volume rendering. The lack of a more flexible motion model contributes to the gap in realism between 4D generation methods and recent, near-photorealistic video generation models. Here, we propose TC4D: trajectory-conditioned text-to-4D generation, which factors motion into global and local components. We represent the global motion of a scene's bounding box using rigid transformation along a trajectory parameterized by a spline. We learn local deformations that conform to the global trajectory using supervision from a ... Although the recent open-source method Stable Video Diffusion [9] can synthesize high-quality videos from an input image, we use VideoCrafter2 [14] for our experiments due to its support for text conditioning. ... The emergence of transformer-based autoregressive models provides a leap forward, enabling the creation of videos of arbitrary lengths [11,54,56,83]. ... Recent advances in video generation models [9-11, 31, 74, 90, 91, 95] enable the synthesis of dynamic visual content with unprecedented fidelity. These advances have prompted the rapid development of techniques for 3D video generation (see Fig. 1), which use supervision from video generation models to produce animated 3D scenes, conditioned on an input video [37], image [68], o ... Early work on 3D generation leveraged the development of GAN algorithms to create realistic 3D objects of single categories, e.g., human or animal faces, cars, etc. These 3D GAN approaches [3,12,19,59,71], however, were limited in the class of scenes they could generate and thus were not suitable for text-based generation. Initial attempts at data-driven, textconditioned method"
+      },
+      {
+        "paper_id": "276961694",
+        "markdown_evidence": "Cosh-DiT: Co-Speech Gesture Video Synthesis via Hybrid Audio-Visual Diffusion Transformers ... Cosh-DiT, a Co-speech gesture video system with hybrid Diffusion Transformers that perform audio-to-motion and motion-to-video synthesis using discrete and continuous diffusion modeling, respectively, and designs a visual Diffusion Transformer that effectively integrates spatial and temporal context ... Co-speech gesture video synthesis is a challenging task that requires both probabilistic modeling of human gestures and the synthesis of realistic images that align with the rhythmic nuances of speech. To address these challenges, we propose Cosh-DiT, a Co-speech gesture video system with hybrid Diffusion Transformers that perform audio-to-motion and motion-to-video synthesis using discrete and continuous diffusion modeling, respectively. First, we introduce an audio Diffusion Transformer (Cosh-DiT-A) to synthesize expressive gesture dynamics synchronized with speech rhythms. To capture upper body, facial, and hand movement priors, we employ vector-quantized variational autoencoders (VQ-VAEs) to jointly learn their dependencies within a discrete latent space. Then, for realistic video synthesis conditioned on the generated speech-driven motion, we design a visual Diffusion Transformer (C ... Participants rated each video on a scale of 1 to 5. ... The model is based on a Transformer architecture Vaswani (2017), with attention mechanisms applied across the temporal dimension to effectively capture temporal dependencies. ... The performance of our model is hindered by unstable backgrounds. Moreover, our model cannot handle results with cross fingers, which might cause difficulties in the 3D representations. Extending the capabilities of co-speech gesture video generation to diverse, real-world scenes remains a challenging open problem. Larger-scale pre-trained DiT models might be able to tackle the ... As a result, previous gesture representations are not suitable off-the-shelf preliminary tools for the co-speech gesture video synthesis task. While researchers also explored directly generating cospeech gesture videos Liu et al. ... Datasets. \n\nWe Implementation Details. \n\nAll the videos are processed at 25 fps, resized with a height of 768 pixels while maintaining the original aspect ratio, and the audio is pre-processed to 16kHz. \n\nCosh-DiT-A. In the first stage, the constructed codebook contains 128 entries, making "
+      },
+      {
+        "paper_id": "278501597",
+        "markdown_evidence": "Generative Pre-trained Autoregressive Diffusion Transformer ... In this work, we present GPDiT, a Generative Pre-trained Autoregressive Diffusion Transformer that unifies the strengths of diffusion and autoregressive modeling for long-range video synthesis, within a continuous latent space. Instead of predicting discrete tokens, GPDiT autoregressively predicts future latent frames using a diffusion loss, enabling natural modeling of motion dynamics and semantic consistency across frames. This continuous autoregressive framework not only enhances generation quality but also endows the model with representation capabilities. Additionally, we introduce a lightweight causal attention variant and a parameter-free rotation-based time-conditioning mechanism, improving both the training and inference efficiency. Extensive experiments demonstrate that GPDiT achieves strong performance in video generation quality, video representation ability, and few-shot lea ... Recent works [10,25,43,61], inspired by Diffusion Forcing [5], allow each video frame to be processed with distinct noise levels, enabling the generation of videos with variable lengths. ... A key characteristic of this approach is that the model predicts future videos based on previously generated content. ... Video Diffusion models. Diffusion and flow-based generative models [13,23,24,41,46,54] have demonstrated unprecedented ability to capture visual concepts and produce high-quality images. Video Diffusion Models [14] is the first work to introduce diffusion models for video generation. However, the expense associated with pixel space diffusion and denoising is nontrivial, requiri"
+      },
+      {
+        "paper_id": "273345615",
+        "markdown_evidence": "Boosting Camera Motion Control for Video Diffusion Transformers ... Recent advancements in diffusion models have significantly enhanced the quality of video generation. However, fine-grained control over camera pose remains a challenge. While U-Net-based models have shown promising results for camera control, transformer-based diffusion models (DiT)-the preferred architecture for large-scale video generation - suffer from severe degradation in camera motion accuracy. In this paper, we investigate the underlying causes of this issue and propose solutions tailored to DiT architectures. Our study reveals that camera control performance depends heavily on the choice of conditioning methods rather than camera pose representations that is commonly believed. To address the persistent motion degradation in DiT, we introduce Camera Motion Guidance (CMG), based on classifier-free guidance, which boosts camera control by over 400%. Additionally, we present a sparse ... Additionally, we present a sparse camera control pipeline, significantly simplifying the process of specifying camera poses for long videos. Our method universally applies to both U-Net and DiT models, offering improved camera control for video generation tasks. ... Recently, transformer-based diffusion models (DiT) (Peebles & Xie (2022)) have emerged as the preferred architecture for large-scale video generation models (Ma et al. ... As video generation emerged as active research, attention has been focused on controlling camera motion for video. ... The OpenSora 1.0 we use was pre-trained on 400K video clips-a much smaller dataset than the 10M videos used by MotionCtrl. ... Recent advances in text-to-video (T2V) generation have significantly improved video quality, with diffusion models playing a key role in producing coherent and visually appealing outputs. While these models effectively translate text prompts into dynamic videos, they often lack fine-grained control over aspects like camera pose. To address this, methods such as Wang et al. (202 ... Video Diffusion Models. Diffusion models (Ho et al., 2020;Rombach et al., 2022;Stability.ai, 2023;Podell et al., 2023) have achieved remarkable success in image generation, leading to advancements in video diffusion models that build upon this foundation. The video diffusion models (Ho et al., 2022;Blattmann et al., 2023) first process individual frames by applying 2D latent en"
+      },
+      {
+        "paper_id": "273377371",
+        "markdown_evidence": "Ray-Transformer Neural Radiance Field for Novel 3D View Synthesis from Single Image ... The 3D reconstruction field using a neural network to synthesize a novel view and then reconstruct the 3D object is an effective method. With the development of the novel view synthesis (NVS) technology is possible to use a single image to synthesize images from many view directions, and further reconstruct complex 3D scenes. Among them, the method using the Neural Radiance Fields (NeRF) achieved good performance in this task. This paper inspires by the pixelNeRF. The Ray-Transformer architecture to achieve the model to use ray-wise local sampling point features, adopt the ResNeXt as a feature extractor and adjust the backbone network architecture, expecting better performance in single-view NVS tasks."
+      },
+      {
+        "paper_id": "276249717",
+        "markdown_evidence": "CustomVideoX: 3D Reference Attention Driven Dynamic Adaptation for Zero-Shot Customized Video Diffusion Transformers ... This paper introduces CustomVideoX, an innovative framework leveraging the video diffusion transformer for personalized video generation from a reference image that significantly outperforms existing methods in terms of video consistency and quality. ... Customized generation has achieved significant progress in image synthesis, yet personalized video generation remains challenging due to temporal inconsistencies and quality degradation. In this paper, we introduce CustomVideoX, an innovative framework leveraging the video diffusion transformer for personalized video generation from a reference image. CustomVideoX capitalizes on pre-trained video networks by exclusively training the LoRA parameters to extract reference features, ensuring both efficiency and adaptability. To facilitate seamless interaction between the reference image and video content, we propose 3D Reference Attention, which enables direct and simultaneous engagement of reference image features with all video frames across spatial and temporal dimensions. To mitigate the excessive influence of reference image features and textual guidance on generated video content durin ... This paper presents work that aims to advance the field of Machine Learning and Video Generation. There are many potential societal consequences of our work, none of which we feel must be specifically highlighted here. ... • The integration of 3D Reference Attention and Time-Aware Attention Bias within CustomVideoX facilitates a more effective learning process between reference images and video generation, resulting in high-quality customized videos. ... Zero-shot methods, such as IP-Adapter (Ye et al., 2023) and SubjectDiffusion (Ma et al., 2024), incorporate novel concepts or styles into the generation process without additional model training. In the realm of customized video generation, these methodologies have been extended along similar lines. Fine-tuning approaches, including models like Still-Moving (Chefer et al., 2024 ... sion transformer for personalized video generation from a reference image. CustomVideoX capitalizes on pre-trained video networks by exclusively training the LoRA parameters to extract reference features, ensuring both efficiency and adaptability. To facilitate seamless interaction between the reference image and video cont"
+      },
+      {
+        "paper_id": "277314083",
+        "markdown_evidence": "Mask2DiT: Dual Mask-based Diffusion Transformer for Multi-Scene Long Video Generation ... Mask2DiT is proposed, a novel approach that establishes fine-grained, one-to-one alignment between video segments and their corresponding text annotations, and incorporates a segment-level conditional mask, which conditions each newly generated segment on the preceding video segments, thereby enabli ... Sora has unveiled the immense potential of the Diffusion Transformer (DiT) architecture in single-scene video generation. However, the more challenging task of multi-scene video generation, which offers broader applications, remains relatively underexplored. To bridge this gap, we propose Mask2DiT, a novel approach that establishes fine-grained, one-to-one alignment between video segments and their corresponding text annotations. Specifically, we introduce a symmetric binary mask at each attention layer within the DiT architecture, ensuring that each text annotation applies exclusively to its respective video segment while preserving temporal coherence across visual tokens. This attention mechanism enables precise segment-level textual-to-visual alignment, allowing the DiT architecture to effectively handle video generation tasks with a fixed number of scenes. To further equip the DiT ar ... For CogVideoX [38], we leverage its single-scene video generation capability by generating multiple shots using distinct prompts and concatenating them to form a multi-scene video. ... More recent approaches adapt T2I models for T2V generation, as demonstrated by AnimateDiff [14] and VideoCrafter [7,8], though these models remain limited by the U-Net architecture. In contrast, transformer-based models such as DiT [27], Sora [6], and VideoPoet [19] overcome U-Net's limitations, offering greater scalability and improved generation quality. ... This dataset, comprising 5,371 multi-scene videos, serves as a standardized test set for assessing the performance of video generation models in multi-scene scenarios. ... T2V generation poses challenges in achieving both visual realism and semantic alignment with text prompts. Early methods such as Imagen Video [16], Make-A-Video [33], \n\nand Lumiere [3] produce low-resolution videos, which are subsequently enhanced by spatial and temporal superresolution. However, these multi-stage pipelines often incur substantial computational overhead and req"
+      },
+      {
+        "paper_id": "271245083",
+        "markdown_evidence": "4Dynamic: Text-to-4D Generation with Hybrid Priors ... This paper proposes a novel method for text-to-4D generation, which ensures the dynamic amplitude and authenticity through direct supervision provided by a video prior, and divides 4D generation into two stages: static generation and dynamic generation. ... Due to the fascinating generative performance of text-to-image diffusion models, growing text-to-3D generation works explore distilling the 2D generative priors into 3D, using the score distillation sampling (SDS) loss, to bypass the data scarcity problem. The existing text-to-3D methods have achieved promising results in realism and 3D consistency, but text-to-4D generation still faces challenges, including lack of realism and insufficient dynamic motions. In this paper, we propose a novel method for text-to-4D generation, which ensures the dynamic amplitude and authenticity through direct supervision provided by a video prior. Specifically, we adopt a text-to-video diffusion model to generate a reference video and divide 4D generation into two stages: static generation and dynamic generation. The static 3D generation is achieved under the guidance of the input text and the first frame  ... We propose a novel text-to-4D generation method with a prior-switching training strategy that not only exploits the text-to-video diffusion model for SDS supervision but also builds additional supervision from the pre-generated reference video to ensure generation quality and dynamic effects. ... To verify the effectiveness of the dynamic representation, 4D generation pipeline, and training strategy used in our method, we perform multiple ablation experiments.The qualitative and quantitative results are shown in Fig. ... We will first introduce our 4D NeRF representation, where the dynamic modeling part is crucial (Sec.3.1).Then we will introduce our text-to-4D process, where we not only perform two-stage generation but also introduce additional supervision from the pre-generated reference video to each stage (Sec.3.2).Finally, we will introduce the training strategy which ensures the final gen ... Neural Radiance Field (NeRF) [7] has become a popular 3D implicit representation in recent times.Due to its fascinating results in novel view synthesis and 3D reconstruction [27], it has been further extended for digital human modeling [28], [29], [30], [31], [32], [33], better rendering effects [34], [35], generalizat"
+      },
+      {
+        "paper_id": "277322748",
+        "markdown_evidence": "FB-4D: Spatial-Temporal Coherent Dynamic 3D Content Generation with Feature Banks ... FB-4D, a novel 4D generation framework that integrates a Feature Bank mechanism to enhance both spatial and temporal consistency in generated frames, surpasses all multi-view generation tuning-free approaches by a large margin and achieves performance on par with training-based methods. ... With the rapid advancements in diffusion models and 3D generation techniques, dynamic 3D content generation has become a crucial research area. However, achieving high-fidelity 4D (dynamic 3D) generation with strong spatial-temporal consistency remains a challenging task. Inspired by recent findings that pretrained diffusion features capture rich correspondences, we propose FB-4D, a novel 4D generation framework that integrates a Feature Bank mechanism to enhance both spatial and temporal consistency in generated frames. In FB-4D, we store features extracted from previous frames and fuse them into the process of generating subsequent frames, ensuring consistent characteristics across both time and multiple views. To ensure a compact representation, the Feature Bank is updated by a proposed dynamic merging mechanism. Leveraging this Feature Bank, we demonstrate for the first time that gen ... Our research adheres to this paradigm, but extends it by generating consistent multi-view videos (instead of images) and subsequently reconstructing the 4D object. For video generation, thanks to the powerful generative modeling ability of diffusion [5,8,11,26,32,43,46,72,82,84], video diffusion models have shown exceptional performance with consistent geometry and realistic mo ... Specifically, the feature bank update procedure is outlined as follows: (illustrated in Fig. 4) 1. We merge the current frame's S i with S fb i from the feature bank in the token dimension to form S merge i , and then randomly split it into two subsets, src and dst, to maintain diversity without clustering's high cost. 2. For each feature src p in src, we find the most similar  ... 3D Generation and Video Generation. The domain of static 3D generation has drawed significant attention due to the advancements in 3D representation learning methods [12,25,35,42,69,71,75,80]. Despite that various research endeavors aim to enhance score distillation loss [9,13,30,33,47,50,53,55,63,66,77,87] and facilitate generation in a feed-forward manner [19,21,57,62,65,88],"
+      },
+      {
+        "paper_id": "256503775",
+        "markdown_evidence": "SceneScape: Text-Driven Consistent Scene Generation ... A novel framework that generates long-term videos of various scenes solely, given an input text prompt describing the scene and camera poses is introduced, by combining the generative power of a pre-trained text-to-image model with the geometric priors learned by aPre-trained monocular depth predict ... We present a method for text-driven perpetual view generation -- synthesizing long-term videos of various scenes solely, given an input text prompt describing the scene and camera poses. We introduce a novel framework that generates such videos in an online fashion by combining the generative power of a pre-trained text-to-image model with the geometric priors learned by a pre-trained monocular depth prediction model. To tackle the pivotal challenge of achieving 3D consistency, i.e., synthesizing videos that depict geometrically-plausible scenes, we deploy an online test-time training to encourage the predicted depth map of the current frame to be geometrically consistent with the synthesized scene. The depth maps are used to construct a unified mesh representation of the scene, which is progressively constructed along the video generation process. In contrast to previous works, which ar ... On the other side of the spectrum, a surge of methods proposes to tune or directly leverage a 2D text-image model for video editing tasks [e.g., 3,6,37,56,62]. We also follow this approach in conjunction with generating an explicit 3D scene representation. ... For example, CLIP-based losses have been used for the text-driven stylization of a given surface mesh [31] or for synthesizing a NeRF from an input text [21]. ... We aim for a much more diverse, flexible, and lightweight generation of arbitrary scenes. \n\nText-to-video generation and editing. Our work follows a broad line of works in the field of text-tovideo synthesis and editing. ... [22], which proposed an image retrieval-based method to create a 2D landscape that follows a desired camera path. ... Related to our task is 3D-aware image synthesize, which typically involves incorporating a 3D representation explicitly into a generative model, e.g., a NeRF representation [8,9,14,33,47], or neural surface renderer [35]. These methods have shown impressive results on structured domains (e.g., cars or faces), but deploying them for diverse scenes is extremely challenging and of"
+      },
+      {
+        "paper_id": "271218464",
+        "markdown_evidence": "Animate3D: Animating Any 3D Model with Multi-view Video Diffusion ... A novel multi-view video diffusion model (MV-VDM) conditioned on multi-view renderings of the static 3D object, which is trained on the authors' presented large-scale multi-view video dataset (MV-Video) and a framework combining reconstruction and 4D Score Distillation Sampling (4D-SDS) to leverage  ... Recent advances in 4D generation mainly focus on generating 4D content by distilling pre-trained text or single-view image-conditioned models. It is inconvenient for them to take advantage of various off-the-shelf 3D assets with multi-view attributes, and their results suffer from spatiotemporal inconsistency owing to the inherent ambiguity in the supervision signals. In this work, we present Animate3D, a novel framework for animating any static 3D model. The core idea is two-fold: 1) We propose a novel multi-view video diffusion model (MV-VDM) conditioned on multi-view renderings of the static 3D object, which is trained on our presented large-scale multi-view video dataset (MV-Video). 2) Based on MV-VDM, we introduce a framework combining reconstruction and 4D Score Distillation Sampling (4D-SDS) to leverage the multi-view video diffusion priors for animating 3D objects. Specifically,  ... 12, we showcase more examples of our multi-view video dataset (MV-Video). ... Different from above optimization-based methods, L4GM [41] proposes to generate per-frame 3D Gaussian in feed-forward way, based on large 3D reconstruction model [50]. Our method has three advantages over them: 1) We advocate the animation of any 3D model, thus directly benefiting from high-quality 3D data and advanced 3D generation works. ... To this end, we propose a novel 4D generation framework called Animate3D in this paper, which can be divided into a foundational 4D generation model and a joint 4D Gaussian Splatting (4DGS) optimization. Formally, the foundational 4D model is a Multi-View Video Diffusion Model (MV-VDM) built upon the 3D generation model, MVDream [44], which can synchronously synthesize multi-vi ... Although 3D consistency was improved, these optimization-based methods still required a relatively long time to optimize a 3D object. ... Video generation works started with text-to-video (T2V) generation [20,45,2,18,6,19,7,10], subsequently followed by image-to-video (I2V) approaches [68,17,61,6]. Previous T2V works usually built upon T2I diffusion models [2"
+      },
+      {
+        "paper_id": "267035033",
+        "markdown_evidence": "WorldDreamer: Towards General World Models for Video Generation via Predicting Masked Tokens ... This work introduces WorldDreamer, a pioneering world model to foster a comprehensive comprehension of general world physics and motions, which significantly enhances the capabilities of video generation and showcases versatility in executing tasks such as text-to-video conversion, image-tovideo syn ... World models play a crucial role in understanding and predicting the dynamics of the world, which is essential for video generation. However, existing world models are confined to specific scenarios such as gaming or driving, limiting their ability to capture the complexity of general world dynamic environments. Therefore, we introduce WorldDreamer, a pioneering world model to foster a comprehensive comprehension of general world physics and motions, which significantly enhances the capabilities of video generation. Drawing inspiration from the success of large language models, WorldDreamer frames world modeling as an unsupervised visual sequence modeling challenge. This is achieved by mapping visual inputs to discrete tokens and predicting the masked ones. During this process, we incorporate multi-modal prompts to facilitate interaction within the world model. Our experiments show that  ... DiffT [25] and W.A.L.T [18] improve the video generation by utilizing a Transformer-based Diffusion network. ... Transformer-based methods. ... In conclusion, WorldDreamer marks a notable advancement in world modeling for video generation. Unlike traditional models constrained to specific scenarios, World-Dreamer capture the complexity of general world dynamic environments. ... Currently, state-of-the-art video generation models are primarily classified into two categories: Transformer-based methods and diffusion-based methods. \n\nTransformer-based methods. The Transformer-based video generation methods are derived from the general family of LLMs [5,12,37,38]. Typically, these methods employ autoregressive prediction of the next token or parallel decod ... WorldDreamer is constructed on the Transformer architecture [46]. Regarding the spatial-temporal priority inherent in video signals, we propose the Spatial Temporal Patchwise Transformer (STPT), which enables attention to focus on localized patches within a temporal-spatial window, facilitating the learning of visual signal dynamics and accelerating the convergence of the tr"
+      },
+      {
+        "paper_id": "270559202",
+        "markdown_evidence": "L4GM: Large 4D Gaussian Reconstruction Model ... We present L4GM, the first 4D Large Reconstruction Model that produces animated objects from a single-view video input -- in a single feed-forward pass that takes only a second. Key to our success is a novel dataset of multiview videos containing curated, rendered animated objects from Objaverse. This dataset depicts 44K diverse objects with 110K animations rendered in 48 viewpoints, resulting in 12M videos with a total of 300M frames. We keep our L4GM simple for scalability and build directly on top of LGM, a pretrained 3D Large Reconstruction Model that outputs 3D Gaussian ellipsoids from multiview image input. L4GM outputs a per-frame 3D Gaussian Splatting representation from video frames sampled at a low fps and then upsamples the representation to a higher fps to achieve temporal smoothness. We add temporal self-attention layers to the base LGM to help it learn consistency across ti ... We compare our visual results to DG4D [39], STAG4D [67], and OpenLRM [19].DG4D and STAG4D are optimization-based approaches that take 10 minutes and 2 hours on 64-frame videos, respectively.OpenLRM is an opensource work reproducing LRM [20] that reconstructs 3D shapes from single-view images. ... Reconstructing 3D representations from posed images typically requires a lengthy optimization process.Some works have proposed to greatly speed this up by training neural networks to directly learn the full reconstruction task in a way that generalizes to novel scenes [65,55,54,57].Recently, LRM [20] was among the first to utilize large-scale multiview datasets including Objave ... Recent works have made impressive progress in reconstructing dynamic 3D representations from multiview video inputs [28,29].However, for single-view video inputs, the problem of dynamic reconstruction becomes ill-posed and requires hand-crafted or data-driven priors.Good results have been achieved when targetting specific domains using shape templates [62].Template-free methods ... Animated 3D assets are essential in bringing 3D virtual worlds to life.However, these animations are time consuming to create as the procedure involves rigging and skinning of objects, and crafting keyframes of the animation -all with minimal automation in tooling.The ability to generate animated 3D assets from widely available monocular videos or simply from text would be a de"
+      },
+      {
+        "paper_id": "269982139",
+        "markdown_evidence": "MagicPose4D: Crafting Articulated Models with Appearance and Motion Control ... Through extensive experiments, it is demonstrated that MagicPose4D significantly improves the accuracy and consistency of 4D content generation, outperforming existing methods in various benchmarks. ... With the success of 2D and 3D visual generative models, there is growing interest in generating 4D content. Existing methods primarily rely on text prompts to produce 4D content, but they often fall short of accurately defining complex or rare motions. To address this limitation, we propose MagicPose4D, a novel framework for refined control over both appearance and motion in 4D generation. Unlike current 4D generation methods, MagicPose4D accepts monocular videos or mesh sequences as motion prompts, enabling precise and customizable motion control. MagicPose4D comprises two key modules: (i) Dual-Phase 4D Reconstruction Module, which operates in two phases. The first phase focuses on capturing the model's shape using accurate 2D supervision and less accurate but geometrically informative 3D pseudo-supervision without imposing skeleton constraints. The second phase extracts the 3D motion ( ... (ii) Limited to common motions: Current video generation models perform well in generating simple, subtle, and common actions, such as walking or small motions like shaking, but they struggle to satisfactorily generate more complex motions, e.g., involving large or uncommon movements such as \"King Kong dancing Hip-Hop\" and \"pig running like a rabbit\" as shown in Fig. ... The 4D generation task involves creating a temporal sequence of 3D models of moving objects. Given the difficulty of the general problem, recent approaches have made use of pre-trained models, using prompts to convey the user's intentions. Recently, there has been a significant focus on the use of text/image-prompts to describe appearance and motion Ling et al. (2023); Ren et a ... The main issues with current methods are the following: (i) Temporal inconsistency in 3D geometry: Most current video generation models fail to ensure temporal consistency of 3D geometry. ... Recent neural implicit-based methods Palafox et al. ... More video comparisons are in the supplementary material and on our web page. MagicPose4D provides more temporally consistent and smooth generation with the learning of motion deformation. Since there are no ground truth mesh sequences to evaluate the gen"
+      },
+      {
+        "paper_id": "270123194",
+        "markdown_evidence": "MotionDreamer: Zero-Shot 3D Mesh Animation from Video Diffusion Models ... This work proposes a technique for automatic re-animation of arbitrary 3D shapes based on a motion prior extracted from a video diffusion model that focuses solely on the motion, and leverages an explicit mesh-based representation compatible with existing computer-graphics pipelines."
+      },
+      {
+        "paper_id": "270062775",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269588164",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270380056",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270869452",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274992610",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258832473",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254563906",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273345947",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275212649",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276782107",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271571158",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272396605",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256274791",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267782739",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273798141",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272367525",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270560075",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277435349",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271855655",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275133943",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276249189",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "286255402",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278788826",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248006334",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265466231",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265609797",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280692564",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277787521",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268510616",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258999666",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277824064",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271404474",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886863",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274515089",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277955723",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266818269",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482962",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276318453",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264172328",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272911238",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272550532",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278768594",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268451680",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247618711",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277667585",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268281273",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257786701",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268536756",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277502068",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277066568",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271904010",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272366673",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268819312",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277313238",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263908793",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277349534",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250113638",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276287785",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266903029",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258179422",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267412749",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275336232",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274437436",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268681023",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278207581",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272464144",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274859639",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270440881",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268857272",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278960105",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270063355",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265696111",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261582503",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261395233",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235363992",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277321624",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270123462",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261030923",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274776696",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273346783",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273233487",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270123721",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275342307",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277103601",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266573581",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274581599",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274763106",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271406889",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251104701",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268513074",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277859847",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272842396",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274515018",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247518928",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268667543",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269899564",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268856890",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256451357",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277780977",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268532245",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276258665",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277627093",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278911695",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237513692",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269293361",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277271589",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275458430",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267301200",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273993682",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271710434",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265258679",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278912095",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267095068",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276116419",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274597270",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270521761",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276161426",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274130976",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258212663",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248006185",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258187553",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252715883",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259501509",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252595919",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264803867",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259075720",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273878003",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276394774",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905832",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277740785",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275405829",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270371649",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262823915",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233476314",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274446282",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273234079",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258762479",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253735209",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280150794",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269983459",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273403698",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270217339",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269982403",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257631738",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265506421",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266933008",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251903251",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270199562",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271051072",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "283104003",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277113299",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276574660",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276884590",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274789623",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268513075",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278537626",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258888194",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276079628",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276408945",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276798782",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52186816",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274422283",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270123070",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255994503",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277221901",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278911138",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269983229",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276969697",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275119309",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268545569",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276902632",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249395332",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278530351",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271601181",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274470313",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236034465",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265506207",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273532769",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277218533",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269982821",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268531375",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270845441",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274235051",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273001056",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280705268",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272524273",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259777127",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278602448",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276741036",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261562494",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251402907",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278214413",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262465310",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270896123",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247012073",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267782595",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274981664",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247593860",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271218623",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274638513",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268052504",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236428544",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269923391",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265149798",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271078074",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249674654",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277452144",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276647885",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278269682",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235187065",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235390605",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275324277",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263671844",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232417496",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

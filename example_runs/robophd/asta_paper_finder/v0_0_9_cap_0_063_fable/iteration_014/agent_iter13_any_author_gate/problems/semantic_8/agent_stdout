@@ -1,0 +1,30 @@
+[semantic_8] score_type=semantic_f1 query='What papers use decoupled workers in distributed RL system?'
+  [t+8s] plan: 12 kw queries, 3 criteria, oldest_first=False; kw=['distributed reinforcement learning decoupled workers', 'actor learner architecture distributed RL', 'asynchronous RL separate actors learners', 'decoupled acting learning reinforcement learning', 'IMPALA distributed actor learner', 'SEED RL centralized inference actors', 'Ape-X distributed prioritized replay actors', 'R2D2 distributed recurrent experience actors', 'Gorila massively parallel reinforcement learning', 'RLlib architecture rollout workers learner', 'distributed training inference decoupling RL', 'scalable deep RL actor collector learner']
+  criteria: ['The paper must be about reinforcement learning in a distributed or large-scale multi-worker system setting.', 'The paper must use or describe decoupled workers, such as separate actor, learner, rollout, inference, or data-collection worker roles.', 'The paper must itself employ this decoupled-worker design in the RL system, not merely mention distributed training in general.'] weights=[0.4, 0.3, 0.3]
+  [t+74s] pooled 746 unique candidates
+  backfilled abstracts for 115 of 115 candidates
+  [t+200s] grade histogram: {3: 58, 2: 1, 1: 45, 0: 236}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 6 of 16 ids (corpusId,citations,references)
+  tool call failed (): TimeoutError: 
+  citer channel: 312 citing-paper ids pooled
+  [t+571s] expansion r1: +120 graded {3: 9, 2: 1, 1: 7, 0: 103}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 6 of 12 ids (corpusId,citations,references)
+  tool call failed (): ToolError: Paper 3eb116c1934dcff731a6d68a8e64115f6c00b369 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 25 of 180 ids (title,abstract,corpusId,tldr,year,venue)
+  [t+906s] expansion r2: +50 graded {3: 4, 2: 2, 1: 3, 0: 41}
+  [t+906s] mining depth reduced to 120 (deadline)
+  [t+972s] criterion mining: 177 passages across 72 of 120 papers
+  [t+972s] evidence chars: median=1637 min=89 >=2200=63/250
+  [t+974s] judge-sim rerank scored 100/100; predicted grade-3: 58
+  tool call failed (The paper must use or describe decoupled workers, such as separate actor, learner, rollout, inference, or data-collection worker roles.): RuntimeError: tool call failed: ToolError: Error executing tool snippet_search:
+  tool call failed (The paper must be about reinforcement learning in a distributed or large-scale multi-worker system setting.): TimeoutError: 
+  tool call failed (The paper must be about reinforcement learning in a distributed or large-scale multi-worker system setting.): TimeoutError: 
+  tool call failed (The paper must itself employ this decoupled-worker design in the RL system, not merely mention distributed training in general.): TimeoutError: 
+  [t+1250s] weak-criterion patch: 218 papers, 53 scoped calls, criteria {0: 204, 1: 207, 2: 211}
+  [t+1435s] patch wave 2: 362 paper-criteria retried with alternate wording
+  [t+1435s] submitted 250 papers

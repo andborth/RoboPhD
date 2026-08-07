@@ -291,6 +291,40 @@ SUBMISSIONS = [
         # only 41933a6e (a luna pricing-table update, not a solver change)
         # landed between the two runs.
     ),
+    Submission(
+        name="v0_0_9_cap_0_063_fable",
+        agent_rel_path="agents/iter14_title_channel/agent.py",
+        model_arg="none",
+        # Run robophd-asta_paper_finder-013 (FABLE-5-evolved; luna no-prose
+        # training judge), winner iter14_title_channel (Elo 1607 on 8 test
+        # rounds — the best-measured winner in the campaign). Internal test
+        # 0.38738 mean F1 @ $0.05828/query, stock GPT-4o basis, canonical
+        # ordering, ZERO test-set timeouts.
+        # COMPLETES THE 2x2 of {opus-5, fable-5} x {$0.063, $0.355}. This is
+        # the missing $0.063 x fable-5 cell; all four now sit on one frozen
+        # stack (zero commits to examples/asta_paper_finder/ between -012
+        # and this run). fable-5 leads opus-5 by +0.0034 here against -010's
+        # 0.38394 — same direction as the $0.355 cell's +0.0085, at ~40% the
+        # size. n=1 per cell, and note the $0.355 comparison is
+        # official-basis while this one is internal-basis.
+        # The CATEGORY SHAPE replicates: vs -010 on matched IDs, metadata
+        # +0.0262, specific +0.0351, semantic -0.0101 — the same three signs
+        # as the $0.355 cell (+0.1202 / +0.0430 / -0.0184). fable-5 trades
+        # semantic for the other two at BOTH gates, so the headline is a
+        # trade rather than a uniform gain.
+        # Same $0.063 competitor's-price gate as cap_0_063_opus5 — Asta
+        # Paper Finder's 0.397 @ $0.063, the one non-RoboPhD entry still
+        # holding a frontier slot. Second attempt at that target, with the
+        # evolution model as the only deliberate change.
+        # Cap-hugging replicates too: $0.0583 is 93% of the $0.063 cap
+        # against opus-5's 85% at the same gate (78% vs 71% at $0.355).
+        # Models: gpt-5.4-2026-03-05 + gpt-5.4-mini — two handles over ONE
+        # provider, both already in AGENT_MODELS (no preflight change).
+        # Version stays v0_0_9: this run executed 2026-08-04 on a stack
+        # byte-identical to -012's. The 2026-08-06 commits (rejudge_test
+        # --uncapped / --from-eval-log, evaluator persist_full_evidence) are
+        # test/offline tooling and touch neither solver nor training.
+    ),
 ]
 
 

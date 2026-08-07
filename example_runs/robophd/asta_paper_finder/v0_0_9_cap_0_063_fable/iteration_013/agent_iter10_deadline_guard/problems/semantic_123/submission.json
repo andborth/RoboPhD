@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_123",
+    "results": [
+      {
+        "paper_id": "273026334",
+        "markdown_evidence": "RATIONALYST: Pre-training Process-Supervision for Improving Reasoning ... While it has been demonstrated that training on data with robust reasoning signals can enhance reasoning capabilities on its own (Gunasekar et al., 2023;Jiang et al., 2024a), we believe our method offers additional performance benefits for two reasons. First, many language models have already been trained on datasets like The Pile. ... Pre-training on these rationales enhances reasoning more effectively than focusing on the whole document. ... 2 : As a result, existing LLMs pre-trained to replicate their pretraining data tend to omit these logical steps as well. 3 : However, RATIONALYST learns to generate these rationales at inference time to supervise the chain-of-thought process for more accurate reasoning. ... Rationales play a crucial role in human reasoning and its accuracy (Rips, 1994;Mercier and Sperber, 2011). In reasoning problems, having accurate rationales often correlates with accurate outcomes (Tversky et al., 1982;Davis, 1984). This importance of rationales extends to Large Language Models (LLMs) as well. Wei et al. (2022) were among the first to show that generating chain"
+      },
+      {
+        "paper_id": "278339069",
+        "markdown_evidence": "Recall with Reasoning: Chain-of-Thought Distillation for Mamba's Long-Context Memory and Extrapolation ... This work explores unlocking Mamba's long-context memory ability by a simple-yet-effective method, Recall with Reasoning (RwR), by distilling chain-of-thought (CoT) summarization from a teacher model. ... Mamba's theoretical infinite-context potential is limited in practice when sequences far exceed training lengths. This work explores unlocking Mamba's long-context memory ability by a simple-yet-effective method, Recall with Reasoning (RwR), by distilling chain-of-thought (CoT) summarization from a teacher model. Specifically, RwR prepends these summarization as CoT prompts during fine-tuning, teaching Mamba to actively recall and reason over long contexts. Experiments on LONGMEMEVAL and HELMET show RwR boosts Mamba's long-context performance against comparable Transformer/hybrid baselines under similar pretraining conditions, while preserving short-context capabilities, all without architectural changes. ... The distillation-based transfer of CoT ability to small language models (SLMs) has emerged as a prominent research direction."
+      },
+      {
+        "paper_id": "276725161",
+        "markdown_evidence": "Chain-of-Thought Matters: Improving Long-Context Language Models with Reasoning Path Supervision ... This work proposes LongRePS, a process-supervised framework that teaches models to generate high-quality reasoning paths for enhanced long-context performance, which incorporates a self-sampling mechanism to bootstrap reasoning paths and a novel quality assessment protocol specifically designed for  ... Recent advances in Large Language Models (LLMs) have highlighted the challenge of handling long-context tasks, where models need to reason over extensive input contexts to aggregate target information. While Chain-of-Thought (CoT) prompting has shown promise for multi-step reasoning, its effectiveness for long-context scenarios remains underexplored. Through systematic investigation across diverse tasks, we demonstrate that CoT's benefits generalize across most long-context scenarios and amplify with increasing context length. Motivated by this critical observation, we propose LongRePS, a process-supervised framework that teaches models to generate high-quality reasoning paths for enhanced long-context performance. Our framework incorporates a self-sampling mechanism to bootstrap reasoning paths and a novel quality assessment protocol specifically designed for long-context scenarios. Exp ... Our experiments underscore the critical role of processsupervised reasoning paths in enhancing longcontext language models, enabling them to navigate and reason over extensive textual information with greater accuracy and reliability. By reducing the reliance on human annotations and leveraging self-sampled data, our approach offers a scalable solution for enhancing LLMs' reaso ... First, we collect diverse reasoning paths through self-sampling on the training dataset. ... Specifically, for each training example, we generate a diverse collection of N reasoning paths to encourage exploration of various reasoning strategies."
+      },
+      {
+        "paper_id": "273507667",
+        "markdown_evidence": "ToW: Thoughts of Words Improve Reasoning in Large Language Models ... This work introduces thoughts of words (ToW), a novel training-time data-augmentation method for next-word prediction that effectively improves models' reasoning performances by 7% to 9% on average and reduces model hallucination by up to 10%. ... We introduce thoughts of words (ToW), a novel training-time data-augmentation method for next-word prediction. ToW views next-word prediction as a core reasoning task and injects fine-grained thoughts explaining what the next word should be and how it is related to the previous contexts in pre-training texts. Our formulation addresses two fundamental drawbacks of existing next-word prediction learning schemes: they induce factual hallucination and are inefficient for models to learn the implicit reasoning processes in raw texts. While there are many ways to acquire such thoughts of words, we explore the first step of acquiring ToW annotations through distilling from larger models. After continual pre-training with only 70K ToW annotations, we effectively improve models' reasoning performances by 7% to 9% on average and reduce model hallucination by up to 10%. At the same time, ToW is ent ... Incorporating TOW into language models enhances their reasoning abilities and reduces hallucinations, leading to more accurate and coherent text generation across various tasks and datasets. ... We randomly select words from raw documents of these pre-training corpora and give GPT-4o the contexts before the selected words. ... Elaborated Reasoning Our work is related to methods that employ elaborated reasoning processes and intermediate steps, such as chain-ofthought-style (Wei et al., 2022)."
+      },
+      {
+        "paper_id": "276422029",
+        "markdown_evidence": "Facilitating Long Context Understanding via Supervised Chain-of-Thought Reasoning ... This study introduces LongFinanceQA, a synthetic dataset in the financial domain designed to improve long-context reasoning and proposes Property-based Agentic Inference (PAI), an agentic framework that simulates human-like reasoning steps, including property extraction, retrieval, and summarization ... Recent advances in Large Language Models (LLMs) have enabled them to process increasingly longer sequences, ranging from 2K to 2M tokens and even beyond. However, simply extending the input sequence length does not necessarily lead to effective long-context understanding. In this study, we integrate Chain-of-Thought (CoT) reasoning into LLMs in a supervised manner to facilitate effective long-context understanding. To achieve this, we introduce LongFinanceQA, a synthetic dataset in the financial domain designed to improve long-context reasoning. Unlike existing long-context synthetic data, LongFinanceQA includes intermediate CoT reasoning before the final conclusion, which encourages LLMs to perform explicit reasoning, improving accuracy and interpretability in long-context understanding. To generate synthetic CoT reasoning, we propose Property-based Agentic Inference (PAI), an agentic f ... This approach enables the augmented data to explicitly supervise language models in reasoning skills. ... Compared to traditional QA tasks, practical longcontext QA tasks often require intermediate reasoning steps to analyze multiple pieces of evidence across long documents, and then derive the final answer."
+      },
+      {
+        "paper_id": "258841149",
+        "markdown_evidence": "The CoT Collection: Improving Zero-shot and Few-shot Learning of Language Models via Chain-of-Thought Fine-Tuning ... This work introduces a new instruction-tuning dataset called the CoT Collection, which augments the existing Flan Collection with additional 1.84 million rationales across 1,060 tasks, and shows that instruction tuning with coT Collection allows LMs to possess stronger few-shot learning capabilities ... Language models (LMs) with less than 100B parameters are known to perform poorly on chain-of-thought (CoT) reasoning in contrast to large LMs when solving unseen tasks. In this work, we aim to equip smaller LMs with the step-by-step reasoning capability by instruction tuning with CoT rationales. In order to achieve this goal, we first introduce a new instruction-tuning dataset called the CoT Collection, which augments the existing Flan Collection (including only 9 CoT tasks) with additional 1.84 million rationales across 1,060 tasks. We show that CoT fine-tuning Flan-T5 (3B&11B) with CoT Collection enables smaller LMs to have better CoT capabilities on unseen tasks. On the BIG-Bench-Hard (BBH) benchmark, we report an average improvement of +4.34% (Flan-T5 3B) and +2.60% (Flan-T5 11B), in terms of zero-shot task accuracy. Furthermore, we show that instruction tuning with CoT Collection al ... However, we also found that in some tasks such as arithmetic reasoning, large LMs fail to generate good-quality rationales. ... One approach that has been particularly effective in enabling LMs to excel at a multitude of tasks is Chain-of-Thought (CoT) prompting, making LMs generate a rationale to derive its final prediction in a sequential manner (Wei et al., 2022b;Kojima et al., 2022;Zhou et al., 2022;Zhang et al., 2022;Yao et al., 2023). ... By generating a rationale, large LMs show improved reasoning abilities when solving challenging tasks. ... Language models (LMs) pre-trained on massive text corpora can adapt to downstream tasks in both zero-shot and few-shot learning settings by incorporating task instructions and demonstrations (Brown et al., 2020;Wei et al., 2021;Sanh et al., 2021;Mishra et al., 2022;Wang et al., 2022b;Iyer et al., 2022;Liu et al., 2022b;Chung et al., 2022;Longpre et al., 2023;Ye et al., 2023). O"
+      },
+      {
+        "paper_id": "254823156",
+        "markdown_evidence": "Teaching Small Language Models to Reason ... This paper finetune a student model on the chain of thought outputs generated by a larger teacher model, and shows that the proposed method improves task performance across arithmetic, commonsense and symbolic reasoning datasets. ... Chain of thought prompting successfully improves the reasoning capabilities of large language models, achieving state of the art results on a range of datasets. However, these reasoning capabilities only appear to emerge in models with at least tens of billions of parameters. In this paper, we explore the transfer of such reasoning capabilities to smaller models via knowledge distillation, also investigating model and dataset size trade-off. Specifically, we finetune a student model on the chain of thought outputs generated by a larger teacher model. Our experiments show that the proposed method improves task performance across arithmetic, commonsense and symbolic reasoning datasets. For example, the accuracy of T5 XXL on GSM8K improves from 8.11% to 21.99% and 18.42% when finetuned on PaLM 540B and GPT-3 175B generated chains of thought, respectively. ... Chain of thought (CoT) prompting encourages language models (LMs) to break down a reasoning task into a series of intermediate steps (Wei et al., 2022). ... Furthermore, in order to replicate the results access to none public models is required and inference must be performed on large amounts of data. Another limitation of our work is that it only explores the original CoT prompting approach, but we do not explore subsequent improvements, such a self-consistency (Wang et al., 2022). ... Specifically, we finetune a student model on the chain of thought outputs generated by a larger teacher model. Our experiments show that the proposed method improves task performance across arithmetic, commonsense and symbolic reasoning datasets. ... This work is inspired by the seminal work of Wei et al. (2022) on CoT prompting. They demonstrate that prefixing an input with 2-8 exemplars of CoT reasoning encourages LMs to do the same, reaching state-of-the-art performance on datasets such as GSM8K (Cobbe et al., 2021). Wang et al. (2022) show that task accuracy can be further improved by using self-consistency in CoT promp"
+      },
+      {
+        "paper_id": "281893895",
+        "markdown_evidence": "Automated Chain-of-Thought Data Generation for Meteorological Reasoning: A Study Based on WeatherQA ... High-quality Chain-of-Thought (CoT) data plays a critical role in enhancing model reasoning in vertical domains. In meteorology, constructing such data is valuable yet difficult due to the complexity of visual data and the reliance on expert annotations. To address this, we propose an automated CoT data generation method based on a three-stage modality bridging pipeline: image description generation, pseudo-CoT generation, and final reasoning chain construction. Using the WeatherQA dataset, we build CoT data under single-image and three-image configurations and fine-tune Qwen2.5-VL-7B on two key tasks. Experimental results show that our CoT-trained model achieves comparable performance to expert-annotated baselines (such as 64.21% vs. 64.29% accuracy in Area Affected accuracy), demonstrating the effectiveness of automated CoT construction for meteorological reasoning."
+      },
+      {
+        "paper_id": "259251773",
+        "markdown_evidence": "Symbolic Chain-of-Thought Distillation: Small Models Can Also “Think” Step-by-Step ... Symbolic Chain-of-Thought Distillation (SCoTD) is introduced, a method to train a smaller student model on rationalizations sampled from a significantly larger teacher model that enhances the performance of the student model in both supervised and few-shot settings and especially for challenge sets. ... Chain-of-thought prompting (e.g., “Let’s think step-by-ste”) primes large language models to verbalize rationalization for their predictions. While chain-of-thought can lead to dramatic performance gains, benefits appear to emerge only for sufficiently large models (beyond 50B parameters). We show that orders-of-magnitude smaller models (125M—1.3B parameters) can still benefit from chain-of-thought prompting. To achieve this, we introduce Symbolic Chain-of-Thought Distillation (SCoTD), a method to train a smaller student model on rationalizations sampled from a significantly larger teacher model. Experiments across several commonsense benchmarks show that: 1) SCoTD enhances the performance of the student model in both supervised and few-shot settings, and especially for challenge sets; 2) sampling many reasoning chains per instance from the teacher is paramount; and 3) after distillation ... We find that through SCoTD, smaller language models learn to self-rationalize and perform significantly better on 3 commonsense QA tasks compared to learning without rationalizations. ... Beyond these training-time improvements, however, an inference-time strategy dubbed \"chain-ofthought\" (CoT) prompting, 1 i.e., eliciting verbalizations of predictive processes via key-phrases like \"Let's think step-by-step\" (Kojima et al., 2022), can *Work done during an internship at AI2. ... (2022b) find that, for chain-of-thought prompted models, taking a majority vote over a large set of sample of predicted labels (resulting from a diverse range of CoTs) can improve performance. Our results regarding the effectiveness of sampling N = 30 rationales from the teacher during SCoTD are similar-in-spirit: i.e., we also show performance gains from sampling multiple rati ... Our primary goal is to improve the accuracy of a (relatively small) student language model S on a target classification2 task D Test = {(x i , y i )}. 3 e assume access to 1) (an unlabeled) training set D Train = {(x i )}; and 2) a large teacher language model T (e.g., GPT-3 (Brown et"
+      },
+      {
+        "paper_id": "258461606",
+        "markdown_evidence": "Distilling Step-by-Step! Outperforming Larger Language Models with Less Training Data and Smaller Model Sizes ... Distilling step-by-step is introduced, a new mechanism that trains smaller models that outperform LLMs, and achieves so by leveraging less training data needed by finetuning or distillation. ... Deploying large language models (LLMs) is challenging because they are memory inefficient and compute-intensive for practical applications. In reaction, researchers train smaller task-specific models by either finetuning with human labels or distilling using LLM-generated labels. However, finetuning and distillation require large amounts of training data to achieve comparable performance to LLMs. We introduce Distilling step-by-step, a new mechanism that (a) trains smaller models that outperform LLMs, and (b) achieves so by leveraging less training data needed by finetuning or distillation. Our method extracts LLM rationales as additional supervision for training small models within a multi-task framework. We present three findings across 4 NLP benchmarks: First, compared to both finetuning and distillation, our mechanism achieves better performance with much fewer labeled/unlabeled trai ... These reasoning steps have been used to augment input prompts to LLMs, improving their few-shot or zeroshot performance (Wei et al., 2022;Kojima et al., 2022;Wang et al., 2022b); reasoning steps have also been used as additional finetuning data \"selfimprove\" LLMs (Zelikman et al., 2022;Huang et al., 2022). ... For CoT prompting, we follow Wei et al. ... 1 and L rationale is the rationale generation loss: \n\nThe rationale generation loss enables the model to learn to generate the intermediate reasoning steps for the prediction, and could therefore guide the model in better predicting the resultant label. ... For instance, human rationales can be used to regularize model behavior (Ross et al., 2017); it can be used as additional inputs to guide a model's predictions (Rajani et al., 2019); it can be used to improve overall model performance (Zaidan et al., 2007;Zhang et al., 2016;Camburu et al., 2018; Figure 2: Overview on Distilling step-by-step. We first utilize CoT prompting to ex ... Recent studies observe one intriguing emerging property of LLMs: their ability to generate rationales that support their predictions (Wei et al., 2022;Kojima et al., 2022). While the studies have largely focused on how to elicit such rea"
+      },
+      {
+        "paper_id": "269302914",
+        "markdown_evidence": "NExT: Teaching Large Language Models to Reason about Code Execution ... NExT is proposed, a method to teach LLMs to inspect the execution traces of programs and reason about their run-time behavior through chain-of-thought (CoT) rationales that lead to correct task solutions without laborious manual annotation. ... A fundamental skill among human developers is the ability to understand and reason about program execution. As an example, a programmer can mentally simulate code execution in natural language to debug and repair code (aka. rubber duck debugging). However, large language models (LLMs) of code are typically trained on the surface textual form of programs, thus may lack a semantic understanding of how programs execute at run-time. To address this issue, we propose NExT, a method to teach LLMs to inspect the execution traces of programs (variable states of executed lines) and reason about their run-time behavior through chain-of-thought (CoT) rationales. Specifically, NExT uses self-training to bootstrap a synthetic training set of execution-aware rationales that lead to correct task solutions (e.g., fixed programs) without laborious manual annotation. Experiments on program repair tasks ba ... Before introducing NExT, we first conduct a preliminary study to explore whether LLMs could reason with execution traces in natural language out-of-box without additional training.Answering this question will motivate our finetuning approach to improve such reasoning skills.Specifically, we follow the trace representation in §2 and few-shot prompt an LLM to solve program repair ... Here we show the learning curve of NExT and all its ablations in Fig. 6.We also show the full results for Mbpp-R and H e F i x + in Tab. 8 and Tab. 9, respectively.\n\nLearning CoT rationales further improves pas s@25.From §5.1, we mention that learning to reason in natural language improves sample diversity, registering higher pass@10 than the baseline of finetuning for generati ... LLMs can solve problems more accurately when instructed to work out the answer step by step in a chain of thought or a scratchpad (Nye et al., 2021;Rajani et al., 2019;Shwartz et al., 2020;Wei et al., 2022a).Improvements on this approach involve finetuning LLMs on chain-of-thought reasoning data.Such CoT data is either manually curated (Chung et al., 2022;Lightman et al., 2023;"
+      },
+      {
+        "paper_id": "262084051",
+        "markdown_evidence": "MetaMath: Bootstrap Your Own Mathematical Questions for Large Language Models ... Experimental results on two popular benchmarks for mathematical reasoning demonstrate that MetaMath outperforms a suite of open-source LLMs by a significant margin. ... Large language models (LLMs) have pushed the limits of natural language understanding and exhibited excellent problem-solving ability. Despite the great success, most existing open-source LLMs (e.g., LLaMA-2) are still far away from satisfactory for solving mathematical problem due to the complex reasoning procedures. To bridge this gap, we propose MetaMath, a fine-tuned language model that specializes in mathematical reasoning. Specifically, we start by bootstrapping mathematical questions by rewriting the question from multiple perspectives without extra knowledge, which results in a new dataset called MetaMathQA. Then we fine-tune the LLaMA-2 models on MetaMathQA. Experimental results on two popular benchmarks (i.e., GSM8K and MATH) for mathematical reasoning demonstrate that MetaMath outperforms a suite of open-source LLMs by a significant margin. Our MetaMath-7B model achieves 66.4% ... Knowledge Distillation [21,24] transfers knowledge from a larger teacher model to a smaller student model, achieving promising performance in many applications [22,48,56,63], Recently, [19, 25-27, 37, 45, 64] propose to transfer reasoning abilities from LLMs (e.g., GPT-3.5 [52], PaLM [12]) to small language models (e.g., T5 [60], GPT-2 [59]). ... Generating more reasoning paths is a simple but effective way to augment the training set. For a question q i , we use few-shot chain-of-thought prompting with temperature sampling to generate K AnsAug more reasoning paths {(r \n\ni ) : j = 1, . ... For a question q i , we use few-shot chain-of-thought prompting with temperature sampling to generate K AnsAug more reasoning paths {(r \n\ni ) : j = 1, . ... Yuan et al. [79] proposes to apply rejection sampling finetuning (RFT) to improve mathematical reasoning performance. WizardMath [43] proposes a reinforced evol-instruct method to enhance reasoning abilities by supervised fine-tuning and PPO training [62]. MAmmoTH [80] combines CoT and Program-of-Thought [9] rationales for teaching LLMs to use external tools (e.g., Python inter"
+      },
+      {
+        "paper_id": "278960265",
+        "markdown_evidence": "Learning Composable Chains-of-Thought ... It is found that simply training models on CoT data of atomic tasks leads to limited generalization, but minimally modifying CoT formats of constituent atomic tasks to be composable can lead to improvements. ... A common approach for teaching large language models (LLMs) to reason is to train on chain-of-thought (CoT) traces of in-distribution reasoning problems, but such annotated data is costly to obtain for every problem of interest. We want reasoning models to generalize beyond their training distribution, and ideally to generalize compositionally: combine atomic reasoning skills to solve harder, unseen reasoning tasks. We take a step towards compositional generalization of reasoning skills when addressing a target compositional task that has no labeled CoT data. We find that simply training models on CoT data of atomic tasks leads to limited generalization, but minimally modifying CoT formats of constituent atomic tasks to be composable can lead to improvements. We can train\"atomic CoT\"models on the atomic tasks with Composable CoT data and combine them with multitask learning or model merging for better zero-shot performance on the target compositional task. Such a combined model can be further bootstrapped on a small amount of compositional data using rejection sampling fine-tuning (RFT). Results on string operations and natural language skill compositions show that training LLMs on Composable CoT outperforms multitask learning and continued fine-tuning baselines within a given training data budget."
+      },
+      {
+        "paper_id": "278905005",
+        "markdown_evidence": "The Quest for Efficient Reasoning: A Data-Centric Benchmark to CoT Distillation ... DC-CoT is introduced, the first data-centric benchmark that investigates data manipulation in chain-of-thought (CoT) distillation from method, model and data perspectives, and facilitates the development of more accessible and capable reasoning models. ... Data-centric distillation, including data augmentation, selection, and mixing, offers a promising path to creating smaller, more efficient student Large Language Models (LLMs) that retain strong reasoning abilities. However, there still lacks a comprehensive benchmark to systematically assess the effect of each distillation approach. This paper introduces DC-CoT, the first data-centric benchmark that investigates data manipulation in chain-of-thought (CoT) distillation from method, model and data perspectives. Utilizing various teacher models (e.g., o4-mini, Gemini-Pro, Claude-3.5) and student architectures (e.g., 3B, 7B parameters), we rigorously evaluate the impact of these data manipulations on student model performance across multiple reasoning datasets, with a focus on in-distribution (IID) and out-of-distribution (OOD) generalization, and cross-domain transfer. Our findings aim to provide actionable insights and establish best practices for optimizing CoT distillation through data-centric techniques, ultimately facilitating the development of more accessible and capable reasoning models. The codebase can be accessed at https://github.com/UNITES-Lab/Distillation-Bench"
+      },
+      {
+        "paper_id": "278789123",
+        "markdown_evidence": "VLM-R3: Region Recognition, Reasoning, and Refinement for Enhanced Multimodal Chain-of-Thought ... A training paradigm that rewards the model for selecting informative regions, formulating appropriate transformations, and integrating the resulting visual context into subsequent reasoning steps, and to bootstrap this policy, a modest but carefully curated Visuo-Lingual Interleaved Rationale corpus ... Recently, reasoning-based MLLMs have achieved a degree of success in generating long-form textual reasoning chains. However, they still struggle with complex tasks that necessitate dynamic and iterative focusing on and revisiting of visual regions to achieve precise grounding of textual reasoning in visual evidence. We introduce \\textbf{VLM-R$^3$} (\\textbf{V}isual \\textbf{L}anguage \\textbf{M}odel with \\textbf{R}egion \\textbf{R}ecognition and \\textbf{R}easoning), a framework that equips an MLLM with the ability to (i) decide \\emph{when} additional visual evidence is needed, (ii) determine \\emph{where} to ground within the image, and (iii) seamlessly weave the relevant sub-image content back into an interleaved chain-of-thought. The core of our method is \\textbf{Region-Conditioned Reinforcement Policy Optimization (R-GRPO)}, a training paradigm that rewards the model for selecting informative regions, formulating appropriate transformations (e.g.\\ crop, zoom), and integrating the resulting visual context into subsequent reasoning steps. To bootstrap this policy, we compile a modest but carefully curated Visuo-Lingual Interleaved Rationale (VLIR) corpus that provides step-level supervision on region selection and textual justification. Extensive experiments on MathVista, ScienceQA, and other benchmarks show that VLM-R$^3$ sets a new state of the art in zero-shot and few-shot settings, with the largest gains appearing on questions"
+      },
+      {
+        "paper_id": "278905712",
+        "markdown_evidence": "Efficient Long CoT Reasoning in Small Language Models ... A simple-yet-effective method to prune unnecessary steps in long CoT, and then employ an on-policy method for the SLM itself to curate valid and useful long CoT training data is proposed to ensure SLMs can effectively learn efficient long CoT reasoning and preserve competitive performance at the sam ... Recent large reasoning models such as DeepSeek-R1 exhibit strong complex problems solving abilities by generating long chain-of-thought (CoT) reasoning steps. It is challenging to directly train small language models (SLMs) to emerge long CoT. Thus, distillation becomes a practical method to enable SLMs for such reasoning ability. However, the long CoT often contains a lot of redundant contents (e.g., overthinking steps) which may make SLMs hard to learn considering their relatively poor capacity and generalization. To address this issue, we propose a simple-yet-effective method to prune unnecessary steps in long CoT, and then employ an on-policy method for the SLM itself to curate valid and useful long CoT training data. In this way, SLMs can effectively learn efficient long CoT reasoning and preserve competitive performance at the same time. Experimental results across a series of mathematical reasoning benchmarks demonstrate the effectiveness of the proposed method in distilling long CoT reasoning ability into SLMs which maintains the competitive performance but significantly reduces generating redundant reasoning steps."
+      },
+      {
+        "paper_id": "274131813",
+        "markdown_evidence": "PSPO*: An Effective Process-supervised Policy Optimization for Reasoning Alignment ... The PSPO-WRS is developed, which considers the number of reasoning steps in determining reward scores and utilizes an adjusted Weibull distribution for nonlinear reward shaping and consistently outperforms current mainstream models. ... Process supervision enhances the performance of large language models in reasoning tasks by providing feedback at each step of chain-of-thought reasoning. However, due to the lack of effective process supervision methods, even advanced large language models are prone to logical errors and redundant reasoning. We claim that the effectiveness of process supervision significantly depends on both the accuracy and the length of reasoning chains. Moreover, we identify that these factors exhibit a nonlinear relationship with the overall reward score of the reasoning process. Inspired by these insights, we propose a novel process supervision paradigm, PSPO*, which systematically outlines the workflow from reward model training to policy optimization, and highlights the importance of nonlinear rewards in process supervision. Based on PSPO*, we develop the PSPO-WRS, which considers the number of r ... Solving tasks that require complex reasoning, such as mathematical problems, remains a significant challenge for large language models (LLMs). Chain-of-Thought (CoT) has shown potential in significantly improving the performance of models on complex reasoning tasks by guiding them to break down and solve problems step by step (Wei et al. ... (2023) employed manual annotation to obtain 800K aligned data for training the PRMs. ... In process supervision, each step receives precise supervision. It provides feedback for each individual step in a chain-of-thought and rewards the Figure 1: An example from QQA dataset. The reasoning error solution has an error in step [2] where the model confuses the concept of time period and time point, resulting in a wrong answer. ... However, due to the lack of effective process supervision methods, even advanced large language models are prone to logical errors and redundant reasoning."
+      },
+      {
+        "paper_id": "276774014",
+        "markdown_evidence": "An Efficient and Precise Training Data Construction Framework for Process-supervised Reward Model in Mathematical Reasoning ... This paper introduces a framework called EpicPRM, which annotates each intermediate reasoning step based on its quantified contribution and uses an adaptive binary search algorithm to enhance both annotation precision and efficiency. ... Enhancing the mathematical reasoning capabilities of Large Language Models (LLMs) is of great scientific and practical significance. Researchers typically employ process-supervised reward models (PRMs) to guide the reasoning process, effectively improving the models'reasoning abilities. However, existing methods for constructing process supervision training data, such as manual annotation and per-step Monte Carlo estimation, are often costly or suffer from poor quality. To address these challenges, this paper introduces a framework called EpicPRM, which annotates each intermediate reasoning step based on its quantified contribution and uses an adaptive binary search algorithm to enhance both annotation precision and efficiency. Using this approach, we efficiently construct a high-quality process supervision training dataset named Epic50k, consisting of 50k annotated intermediate steps. C ... Using this approach, we efficiently construct a high-quality process supervision training dataset named Epic50k, consisting of 50k annotated intermediate steps. ... Improving the mathematical reasoning ability of Large Language Models (LLMs) can significantly accelerate advancements in artificial intelligence across various scientific domains. To enhance the mathematical reasoning capability of LLMs, several studies (Yu et al., 2023a;Cobbe et al., 2021;Shao et al., 2024;Chen et al., 2025a) employ Outcome-supervised Reward Models (ORMs) to "
+      },
+      {
+        "paper_id": "269033203",
+        "markdown_evidence": "Improving Language Model Reasoning with Self-motivated Learning ... Self-motivated Learning framework motivates the model itself to automatically generate rationales on existing datasets, and trains a reward model with the rank to evaluate the quality of rationales, and improves the performance of reasoning through reinforcement learning. ... Large-scale high-quality training data is important for improving the performance of models. After trained with data that has rationales (reasoning steps), models gain reasoning capability. However, the dataset with high-quality rationales is relatively scarce due to the high annotation cost. To address this issue, we propose Self-motivated Learning framework. The framework motivates the model itself to automatically generate rationales on existing datasets. Based on the inherent rank from correctness across multiple rationales, the model learns to generate better rationales, leading to higher reasoning capability. Specifically, we train a reward model with the rank to evaluate the quality of rationales, and improve the performance of reasoning through reinforcement learning. Experiment results of Llama2 7B on multiple reasoning datasets show that our method significantly improves the re ... Reasoning Skills.Researchers in the literature have proposed many benchmarks requiring various reasoning skills, including commonsense reasoning (Zellers et al., 2018;Talmor et al., 2019;Bhagavatula et al., 2019;Geva et al., 2021b) numerical reasoning (Dua et al., 2019), multi-hop reasoning (Yang et al., 2018), arithmetic reasoning (Koncel-Kedziorski et al., 2015b;Roy and Roth, ... After collecting the rationale data, we fine-tune the model in the assembled high-quality rationales to get a SFT model M sft .The training objective employed for this fine-tuning remains consistent with the pre-training phase, specifically utilizing the autoregressive language modeling objective or next-token prediction (Radford et al., 2018).Mathematically, the objective is t ... Large Language Models (LLMs) that are pretrained on extensive text corpora have exhibited profound capability across a diverse array of downstream tasks.Particularly, their adaptability in both few-shot and zero-shot learning contexts, achieved by assimilating task-specific instructions and demonstrations, has garnered significant attention (Raffel et al., 2020;Brown et al., 20"
+      },
+      {
+        "paper_id": "273532188",
+        "markdown_evidence": "Markov Chain of Thought for Efficient Mathematical Reasoning ... This work conceptualizes the standard multi-step CoT as a novel Markov Chain of Thought (MCoT), defining each reasoning step as text accompanied by a Python code snippet, and the empirical results indicate that MCoT not only significantly enhances efficiency but also maintains comparable accuracy. ... Chain of Thought (CoT) of multi-step benefits from the logical structure of the reasoning steps and task-specific actions, significantly enhancing the mathematical reasoning capabilities of large language models. As the prevalence of long CoT, the number of reasoning steps exceeds manageable token limits and leads to higher computational demands. Inspired by the fundamental logic of human cognition,\"derive, then reduce\", we conceptualize the standard multi-step CoT as a novel Markov Chain of Thought (MCoT). In this study, we consider the mathematical reasoning task, defining each reasoning step as text accompanied by a Python code snippet. To facilitate a longer reasoning path, self-correction is enabled through interactions with the code interpreter. Our MCoT aims to compress previous reasoning steps into a simplified question, enabling efficient next-step inference without relying on a ... With the rapid advancement of large language models (LLMs), these models have demonstrated remarkable progress in a wide range of language tasks (Brown et al., 2020;Ouyang et al., 2022;Taori et al., 2023;Yang and Klein, 2021). However, they still face significant challenges when engaging in complex and symbolic reasoning tasks, particularly in mathematical reasoning (Cobbe et a ... Unlike previous works (Yue et al., 2023;Gou et al., 2023;Wang et al., 2023a;Liao et al., 2024), our approach relies solely on GPT-4 for generating a new question, typically a single sentence, instead of crafting a complete solution that includes text analysis and code snippets. ... Furthermore, multi-step reasoning involving processing long CoT demands greater computational resources, which renders the inference process practically inefficient. \n\nTo address the inefficiency inherent in multi-step reasoning, our approach is deeply influenced by understanding how humans navigate complex rea-"
+      },
+      {
+        "paper_id": "278886833",
+        "markdown_evidence": "Select2Reason: Efficient Instruction-Tuning Data Selection for Long-CoT Reasoning ... This work proposes Select2Reason, a novel and efficient instruction-tuning data selection framework for long-CoT reasoning that leverages a quantifier to estimate difficulty of question and jointly incorporates a reasoning trace length-based heuristic through a weighted scheme for ranking to priorit ... A practical approach to activate long chain-of-thoughts reasoning ability in pre-trained large language models is to perform supervised fine-tuning on instruction datasets synthesized by strong Large Reasoning Models such as DeepSeek-R1, offering a cost-effective alternative to reinforcement learning. However, large-scale instruction sets with more than 100k samples incur significant training overhead, while effective strategies for automatic long-CoT instruction selection still remain unexplored. In this work, we propose Select2Reason, a novel and efficient instruction-tuning data selection framework for long-CoT reasoning. From the perspective of emergence of rethinking behaviors like self-correction and backtracking, we investigate common metrics that may determine the quality of long-CoT reasoning instructions. Select2Reason leverages a quantifier to estimate difficulty of question and jointly incorporates a reasoning trace length-based heuristic through a weighted scheme for ranking to prioritize high-utility examples. Empirical results on OpenR1-Math-220k demonstrate that fine-tuning LLM on only 10% of the data selected by Select2Reason achieves performance competitive with or superior to full-data tuning and open-source baseline OpenR1-Qwen-7B across three competition-level and six comprehensive mathematical benchmarks. Further experiments highlight the scalability in varying data size, efficiency during inference, and "
+      },
+      {
+        "paper_id": "274638079",
+        "markdown_evidence": "TinyThinker: Distilling Reasoning through Coarse-to-Fine Knowledge Internalization with Self-Reflection ... TinyThinker is a framework introducing a three-stage process that incrementally guides the student model through the reasoning process, progressively refining knowledge from coarse to fine granularity, offering an alternative strategy for developing effective reasoning capabilities in smaller langua ... Large Language Models exhibit impressive reasoning capabilities across diverse tasks, motivating efforts to distill these capabilities into smaller models through generated reasoning data. However, direct training on such synthesized reasoning data may lead to superficial imitation of reasoning process, rather than fostering a genuine integration of reasoning capabilities with underlying knowledge. To address this, we propose TinyThinker, a framework introducing two novel approaches. First, we introduce a three-stage process that incrementally guides the student model through the reasoning process, progressively refining knowledge from coarse to fine granularity. Second, we develop a two-phase training framework comprising an initial reasoning acquisition phase followed by a self-reflection phase utilizing self-generated data. Experiments on commonsense reasoning benchmarks demonstrate t ... To address these limitations, prior works (Hsieh et al., 2023;Ho et al., 2023;Magister et al., 2023) have explored leveraging LLMs to generate reasoning data for knowledge distillation, thereby strengthening the reasoning capabilities of smaller language models (LMs)1 . ... Although these methods have yielded promising results, it remains uncertain whether the student model genuinely develops reasoning capabilities. A recent study attributes the success of CoT prompting to its decomposition of compositional functions during in-context learning, enabling the model to focus on relevant data at each step and learn single-step composition functions in ... In the self-reflection phase, the student revisits previous training data and generates new reasoning data through the same threestage process. ... Large language models (LLMs) demonstrate impressive reasoning capabilities across a wide range of tasks (Kaplan et al., 2020;Wei et al., 2022a), largely facilitated by in-context learning (Brown et al., 2020) and Chain-of-Thought (CoT) prompting (Wei et al., 2022b). These methods enable LLMs to generalize from examples of "
+      },
+      {
+        "paper_id": "276421726",
+        "markdown_evidence": "Self-Enhanced Reasoning Training: Activating Latent Reasoning in Small Models for Enhanced Reasoning Distillation ... This work proposes SERT, which activates and leverages latent reasoning capabilities in small models through self-training on filtered, self-generated reasoning paths under zero-shot conditions, and demonstrates that SERT enhances the reasoning abilities of small models, improving their performance  ... The rapid advancement of large language models (LLMs) has significantly enhanced their reasoning abilities, enabling increasingly complex tasks. However, these capabilities often diminish in smaller, more computationally efficient models like GPT-2. Recent research shows that reasoning distillation can help small models acquire reasoning capabilities, but most existing methods focus primarily on improving teacher-generated reasoning paths. Our observations reveal that small models can generate high-quality reasoning paths during sampling, even without chain-of-thought prompting, though these paths are often latent due to their low probability under standard decoding strategies. To address this, we propose Self-Enhanced Reasoning Training (SERT), which activates and leverages latent reasoning capabilities in small models through self-training on filtered, self-generated reasoning paths un ... While much focus has been on improving medium-sized models (e.g., LLaMA-7B) to match the performance of larger models (e.g., LLaMA-65B, GPT-4) [13]- [16], there is growing interest in distilling these capabilities into smaller models (e.g., GPT-2), which typically struggle with reasoning tasks. ... 1) Construction of Teacher Reasoning Data: Following [17], reasoning chains are generated from the large model using a zero-shot chain-of-thought (CoT) prompting technique [6]. ... In the final stage, we apply reasoning distillation, where the activated small model learns from the reasoning paths generated by a larger teacher model. \n\n1) Construction of Teacher Reasoning Data: Following [17], reasoning chains are generated from the large model using a zero-shot chain-of-thought (CoT) prompting technique [6]. For each QA instance, we use a structured promp"
+      },
+      {
+        "paper_id": "271431928",
+        "markdown_evidence": "Self-Training with Direct Preference Optimization Improves Chain-of-Thought Reasoning ... This work demonstrates that the reasoning abilities of small-scale LMs can be enhanced through self-training, a process where models learn from their own outputs, and shows that the conventional self-training can be further augmented by a preference learning algorithm called Direct Preference Optimi ... Effective training of language models (LMs) for mathematical reasoning tasks demands high-quality supervised fine-tuning data. Besides obtaining annotations from human experts, a common alternative is sampling from larger and more powerful LMs. However, this knowledge distillation approach can be costly and unstable, particularly when relying on closed-source, proprietary LMs like GPT-4, whose behaviors are often unpredictable. In this work, we demonstrate that the reasoning abilities of small-scale LMs can be enhanced through self-training, a process where models learn from their own outputs. We also show that the conventional self-training can be further augmented by a preference learning algorithm called Direct Preference Optimization (DPO). By integrating DPO into self-training, we leverage preference data to guide LMs towards more accurate and diverse chain-of-thought reasoning. We  ... Making language models (LMs) perform mathematical reasoning is a valuable, yet challenging research objective (Hendrycks et al., 2021;Cobbe et al., 2021).Recent efforts have focused on enhancing large-scale LMs' reasoning abilities through various methods, including chain-ofthought prompting (Wei et al., 2022b;Kojima et al., 2022), continual pretraining (Azerbayev et al., 2024)"
+      },
+      {
+        "paper_id": "265659062",
+        "markdown_evidence": "Training Chain-of-Thought via Latent-Variable Inference ... A fine-tuning strategy that tries to maximize the \\emph{marginal} log-likelihood of generating a correct answer using CoT prompting, approximately averaging over all possible rationales. ... Large language models (LLMs) solve problems more accurately and interpretably when instructed to work out the answer step by step using a ``chain-of-thought'' (CoT) prompt. One can also improve LLMs' performance on a specific task by supervised fine-tuning, i.e., by using gradient ascent on some tunable parameters to maximize the average log-likelihood of correct answers from a labeled training set. Naively combining CoT with supervised tuning requires supervision not just of the correct answers, but also of detailed rationales that lead to those answers; these rationales are expensive to produce by hand. Instead, we propose a fine-tuning strategy that tries to maximize the \\emph{marginal} log-likelihood of generating a correct answer using CoT prompting, approximately averaging over all possible rationales. The core challenge is sampling from the posterior over rationales conditioned on ... For many mathematical, logical, and common-sense reasoning problems, large language models solve problems more accurately when instructed to work out the answer step by step in a chain of thought or a scratchpad (Wei et al., 2022;Nye et al., 2021;Kojima et al., 2022;Rajani et al., 2019;Shwartz et al., 2020). ... One way to improve these methods is to fine-tune models to generate better rationales. ... Because of the striking performance of chain-of-thought methods, many variants have been proposed (Wang et al., 2022b;Zhou et al., 2022;Creswell et al., 2022;Ye & Durrett, 2023), but there are still many cases in which the rationales are incorrect. ... A number of methods have proposed rationale generation for problem-solving tasks in neural sequence models, including both fully supervised and few-shot approaches (Wei et al., 2022;Nye et al., 2021;Kojima et al., 2022;Rajani et al., 2019;Shwartz et al., 2020;Wang et al., 2022b;Zhou et al., 2022;Creswell et al., 2022;Ye & Durrett, 2023). Particularly relevant to our approach is"
+      },
+      {
+        "paper_id": "267411178",
+        "markdown_evidence": "Improving Small Language Models' Mathematical Reasoning via Equation-of-Thought Distillation ... Equation-of-Thought Distillation (EoTD) is introduced, a novel technique that encapsulates the reasoning process into equation-based representations to construct an EoTD dataset for fine-tuning SLMs and is proposed to enhance the reasoning performance of SLMs."
+      },
+      {
+        "paper_id": "266051661",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273323573",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267412607",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278789552",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258762841",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278394315",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804416",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278911793",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270371635",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278327406",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276116855",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259089125",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276079350",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267617275",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256390607",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276903314",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264935229",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247762790",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278636457",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278367648",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278237594",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277451642",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277104162",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254017497",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260438790",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267499906",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886776",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258426780",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278208145",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278535411",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276647376",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278339126",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254854559",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274141509",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276107612",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276781867",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277066387",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277271746",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258676557",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264172303",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273098454",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273345869",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279070809",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276885298",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278769921",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277451641",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269605484",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905339",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886432",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278000402",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276617501",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270440239",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278782548",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273098893",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270063532",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276107551",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260499357",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258832540",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278715381",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277510502",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277955355",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259075316",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268091260",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278207693",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276094291",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270285630",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263310590",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258865812",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250144408",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278782199",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278770036",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278739577",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277451595",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276116814",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278959202",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278910575",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52822214",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905337",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278740868",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276775767",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279070490",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278769932",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278769001",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278739729",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781494",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886663",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266163375",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281681928",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278959345",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276938276",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276249629",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274514981",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264813981",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278912224",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277595998",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244773644",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258865711",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276580366",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276781977",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252734984",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269293079",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276966674",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278959260",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275357763",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269982298",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280641983",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269457557",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277150647",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277824207",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "286224949",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278822635",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268385093",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272146356",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272330306",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276106948",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235421949",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482170",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276450266",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277104373",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276937782",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278789265",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276903246",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258865330",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276079693",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259375870",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278740632",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278739699",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277452634",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886376",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "560565",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268667323",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268041342",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277667305",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249538396",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278782149",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237513831",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270380160",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252762102",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247595263",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278715317",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270702477",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276902576",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278995840",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278782937",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278171513",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278788797",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218470125",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268531869",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276421921",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276409219",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278996600",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281420611",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276647059",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256486452",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253801709",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252917648",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232223322",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278912115",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "286171760",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905898",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905535",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278789048",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278911191",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258740735",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278995780",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268290124",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271461507",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268032255",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259267499",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275324096",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273374930",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265043634",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279403293",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247957917",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274656265",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266209760",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254877399",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258461058",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278740760",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279067957",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886563",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252668917",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278789345",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275133286",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246411621",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272880910",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264305676",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265308678",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251719655",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274423106",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247793456",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271745085",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281710883",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232290669",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249282645",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258833130",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272600317",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271432486",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270560836",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269804425",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247951931",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256631096",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277628069",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255186100",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276937570",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277502095",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202719139",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253265114",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253553165",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265456229",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268819808",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270199509",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274281225",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259937558",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275570199",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279071277",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258902254",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250264890",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276575039",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276317282",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278129896",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278715104",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279618395",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273023082",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

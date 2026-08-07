@@ -1,0 +1,19 @@
+[semantic_220] score_type=semantic_f1 query='What papers discuss the use of transformer architecture in 3d video generation'
+  [t+7s] plan: 10 kw queries, 3 criteria, oldest_first=False; kw=['transformer 3D video generation', 'spatiotemporal transformer novel view synthesis', 'video transformer dynamic scene generation', '3D-aware video synthesis transformer', 'neural radiance fields video transformer', '4D scene generation attention models', 'text-to-3D video diffusion transformer', 'view-consistent video generation transformer', 'dynamic NeRF transformer video synthesis', 'multiview video generation attention architecture']
+  criteria: ['The paper must be about generating, synthesizing, or rendering video with an explicit 3D, multiview, dynamic scene, or view-consistent component.', 'The paper must use, analyze, or discuss transformer-based architecture or attention-centric transformer variants as a central method.', 'The paper must specifically discuss the application or role of transformer architecture in the 3D video generation setting, not merely mention transformers in passing.'] weights=[0.4, 0.3, 0.3]
+  [t+136s] pooled 967 unique candidates
+  backfilled abstracts for 72 of 72 candidates
+  [t+294s] grade histogram: {3: 32, 2: 13, 1: 188, 0: 107}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 3 of 16 ids (corpusId,citations,references)
+  citer channel: 221 citing-paper ids pooled
+  tool call failed (): ToolError: Paper cc08e072ce806ecc84d8bb6e65f896134306d8d1 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool call failed (): ToolError: Paper 5410086e3c7cb4cc48f73f75e843b4109befe092 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 2 of 200 ids (title,abstract,corpusId,tldr,year,venue)
+  expansion r1: +120 graded {3: 4, 2: 1, 1: 55, 0: 60}
+  [t+1121s] mining depth reduced to 72 (deadline)
+  [t+1273s] criterion mining: 142 passages across 61 of 72 papers
+  [t+1273s] evidence chars: median=1711 min=52 >=2200=22/250
+  [t+1279s] judge-sim rerank scored 80/80; predicted grade-3: 28
+  weak-criterion patch failed: TimeoutError: deadline: patch window closed
+  [t+1279s] submitted 250 papers

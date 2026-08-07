@@ -1,0 +1,21 @@
+[semantic_220] score_type=semantic_f1 query='What papers discuss the use of transformer architecture in 3d video generation'
+  [t+7s] plan: 10 kw queries, 3 criteria, oldest_first=False; kw=['transformer 3D video generation', 'video transformer dynamic 3D scene synthesis', 'spatiotemporal transformer novel view video', '4D scene generation transformer', 'transformer neural radiance field video', 'autoregressive transformer 3D-aware video', 'diffusion transformer 3D video synthesis', 'egocentric scene video generation transformer', 'HumanRF transformer 4D generation', 'dynamic NeRF transformer video']
+  criteria: ['The paper must discuss generating or synthesizing video rather than only analyzing, classifying, or understanding videos.', 'The paper must use, study, or explicitly discuss transformer-based architecture as a central method.', 'The paper must involve 3D video generation, such as videos of 3D scenes, dynamic 3D representations, novel-view video, or 4D scene synthesis.'] weights=[0.4, 0.3, 0.3]
+  [t+131s] pooled 909 unique candidates
+  backfilled abstracts for 78 of 78 candidates
+  [t+227s] grade histogram: {3: 17, 2: 87, 1: 137, 0: 99}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 16 ids (corpusId,citations,references)
+  citer channel: 156 citing-paper ids pooled
+  tool call failed (): ToolError: Paper cc08e072ce806ecc84d8bb6e65f896134306d8d1 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 4 of 200 ids (title,abstract,corpusId,tldr,year,venue)
+  [t+633s] expansion r1: +120 graded {2: 11, 1: 43, 0: 66}
+  [t+633s] expansion r2 skipped (r1 grade-3 yield 0 < 4)
+  [t+848s] criterion mining: 344 passages across 162 of 200 papers
+  [t+848s] evidence chars: median=2142 min=52 >=2200=114/250
+  [t+852s] judge-sim rerank scored 100/100; predicted grade-3: 18
+  tool call failed (The paper must discuss generating or synthesizing video rather than only analyzing, classifying, or understanding videos.): TimeoutError: 
+  tool call failed (The paper must discuss generating or synthesizing video rather than only analyzing, classifying, or understanding videos.): TimeoutError: 
+  [t+1128s] weak-criterion patch: 244 papers, 47 scoped calls, criteria {0: 140, 1: 215, 2: 200}
+  [t+1250s] patch wave 2: 230 paper-criteria retried with alternate wording
+  [t+1250s] submitted 250 papers

@@ -1,0 +1,23 @@
+[semantic_137] score_type=semantic_f1 query='Are language models better at discriminating among previously generated alternatives compared to gen'
+  [t+7s] plan: 10 kw queries, 3 criteria, oldest_first=False; kw=['language model generation reranking', 'discriminative versus generative language models', 'response candidate selection language models', 'best-of-n sampling language models', 'preference ranking over model outputs', 'answer selection from generated candidates', 'verification and selection LLM reasoning', 'self-consistency answer choice transformers', 'pairwise ranking of completions', 'generate then rank text generation']
+  criteria: ['The paper must study language models, especially large language models or closely related neural text generation systems.', 'The paper must address both initial response generation and discrimination-style tasks such as ranking, selecting, verifying, or choosing among previously generated candidate responses.', 'The paper must provide evidence about the comparison between these two abilities, specifically whether models perform better at discriminating among alternatives than at generating the original response.'] weights=[0.4, 0.3, 0.3]
+  [t+108s] pooled 1123 unique candidates
+  backfilled abstracts for 113 of 113 candidates
+  [t+177s] grade histogram: {3: 7, 2: 67, 1: 120, 0: 146}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 16 ids (corpusId,citations,references)
+  citer channel: 63 citing-paper ids pooled
+  expansion r1: +120 graded {3: 2, 2: 11, 1: 20, 0: 87}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 12 ids (corpusId,citations,references)
+  expansion r2: +100 graded {3: 2, 2: 29, 1: 38, 0: 31}
+  [t+732s] mining depth reduced to 120 (deadline)
+  [t+825s] criterion mining: 222 passages across 98 of 120 papers
+  [t+825s] evidence chars: median=1825 min=63 >=2200=66/250
+  [t+830s] judge-sim rerank scored 80/80; predicted grade-3: 2
+  tool call failed (The paper must provide evidence about the comparison between these two abilities, specifically whether models perform better at discriminating among alternatives than at generating the original response.): TimeoutError: 
+  [t+1166s] weak-criterion patch: 249 papers, 54 scoped calls, criteria {0: 181, 1: 200, 2: 247}
+  tool call failed (Generation and Discrimination Tasks: Are language models better at discriminating among previously generated alternatives compared to generating initial responses? What evidence exists about their relative performance in generation vs discrimination tasks?): TimeoutError: 
+  tool call failed (Generation and Discrimination Tasks: Are language models better at discriminating among previously generated alternatives compared to generating initial responses? What evidence exists about their relative performance in generation vs discrimination tasks?): TimeoutError: 
+  [t+1410s] patch wave 2: 232 paper-criteria retried with alternate wording
+  [t+1410s] submitted 250 papers

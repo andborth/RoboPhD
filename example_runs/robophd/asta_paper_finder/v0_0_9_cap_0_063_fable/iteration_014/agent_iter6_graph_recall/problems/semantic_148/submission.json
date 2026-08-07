@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_148",
+    "results": [
+      {
+        "paper_id": "261277063",
+        "markdown_evidence": "Continual Learning for Generative Retrieval over Dynamic Corpora ... A novel Continual-LEarner for generatiVE Retrieval (CLEVER) model is put forward and two major contributions to continual learning for GR are made: to encode new documents into docids with low computational cost, and to memorize new documents for querying without forgetting previous knowledge. ... Generative retrieval (GR) directly predicts the identifiers of relevant documents (i.e., docids) based on a parametric model. It has achieved solid performance on many ad-hoc retrieval tasks. So far, these tasks have assumed a static document collection. In many practical scenarios, however, document collections are dynamic, where new documents are continuously added to the corpus. The ability to incrementally index new documents while preserving the ability to answer queries with both previously and newly indexed relevant documents is vital to applying GR models. In this paper, we address this practical continual learning problem for GR. We put forward a novel Continual-LEarner for generatiVE Retrieval (CLEVER) model and make two major contributions to continual learning for GR: (i) To encode new documents into docids with low computational cost, we present Incremental Product Quantization, which updates a partial quantization codebook according to two adaptive thresholds; and (ii) To memorize new documents for querying without forgetting previous knowledge, we propose a memory-augmented learning mechanism, to form meaningful connections between old and new documents. Empirical results demonstrate the effectiveness and efficiency of the proposed model. ... Recently, generative retrieval (GR) has been proposed as an alternative paradigm [34] for IR. Unlike the traditional \"index-then-rank\" paradigm [14-16, 21, 28, 29, 31, 41, 51], a single seq2seq model is used to directly map a query to a relevant docid. ... To add new documents to the internal index (i.e., model parameters), the GR model must be re-trained from scratch every time the underlying corpus is updated. Clearly, due to the high computational costs, this is not a feasible way of handling a dynamically evolving document collection. \n\nA document-incremental retriever. ... Generative retrieval. Recently, generative retrieval (GR) has been proposed as an alternative paradigm [34] for IR. Unlike the traditional \"index-then-rank\" paradigm [14-16, 21, 28, 29, 31, 41, 51], a single seq2seq mod"
+      },
+      {
+        "paper_id": "278032939",
+        "markdown_evidence": "Replication and Exploration of Generative Retrieval over Dynamic Corpora ... A novel multi-docid design is proposed that leverages both the efficiency of numeric-based docids and the effectiveness of text-based docids, achieving improved performance in dynamic corpus without requiring additional retraining. ... Generative retrieval (GR) has emerged as a promising paradigm in information retrieval (IR). However, most existing GR models are developed and evaluated using a static document collection, and their performance in dynamic corpora where document collections evolve continuously is rarely studied. In this paper, we first reproduce and systematically evaluate various representative GR approaches over dynamic corpora. Through extensive experiments, we reveal that existing GR models with text-based docids show superior generalization to unseen documents. We observe that the more fine-grained the docid design in the GR model, the better its performance over dynamic corpora, surpassing BM25 and even being comparable to dense retrieval methods. While GR models with numeric-based docids show high efficiency, their performance drops significantly over dynamic corpora. Furthermore, our experiments find that the underperformance of numeric-based docids is partly due to their excessive tendency toward the initial document set, which likely results from overfitting on the training set. We then conduct an in-depth analysis of the best-performing GR methods. We identify three critical advantages of text-based docids in dynamic corpora: (i) Semantic alignment with language models' pretrained knowledge (ii) Fine-grained docid design, and (iii) High lexical diversity. Building on these insights, we finally propose a novel multi-docid design that ... It integrates in-batch negatives, top-K retrieved negatives from dense retrievers, and BM25 hard negatives. Generative retrieval. (i) DSI-SE [30], which uses the hierarchical k-means clustering results of document embeddings as docids and trains the model to memorize the documents in parameters. ... where  ,0 represents the retrieval performance (e.g., Hit@10) of queries in D 0 after indexing corpus D  . \n\nRetrieve newly added documents. ... When retrieving newly added documents from a dynamically expanding document collection, both BM25 and DPR demonstrate stable generalization performance (  ) when retrieving newly added documents, as measured by their ability to adapt to"
+      },
+      {
+        "paper_id": "259991824",
+        "markdown_evidence": "IncDSI: Incrementally Updatable Document Retrieval ... Although orders of magnitude faster, this approach is competitive with re-training the model on the whole dataset and enables the development of document retrieval systems that can be updated with new information in real-time. ... Differentiable Search Index is a recently proposed paradigm for document retrieval, that encodes information about a corpus of documents within the parameters of a neural network and directly maps queries to corresponding documents. These models have achieved state-of-the-art performances for document retrieval across many benchmarks. These kinds of models have a significant limitation: it is not easy to add new documents after a model is trained. We propose IncDSI, a method to add documents in real time (about 20-50ms per document), without retraining the model on the entire dataset (or even parts thereof). Instead we formulate the addition of documents as a constrained optimization problem that makes minimal changes to the network parameters. Although orders of magnitude faster, our approach is competitive with re-training the model on the whole dataset and enables the development of document retrieval systems that can be updated with new information in real-time. Our code for IncDSI is available at https://github.com/varshakishore/IncDSI. ... Sparse and Dense retrieval methods. Document retrieval comprises of two main tasks-1) Indexing, during which document representations are learned and 2) retrieval, during which the right document is found for a given query. ... Because the the original document set is generally much larger than the set of new documents, we set β = 5 to emphasize the preservation of the retrieval performance for the existing documents (this choice is ablated in the next section). The target objective can be modified to include time or hits@k information depending on the specific use case. ... For instance, when a new paper is uploaded to arXiv, human queries corresponding to that paper might not be available. \n\nIn this scenario, we can add documents by using only generated queries. ... Consider a search engine for arXiv papers or social media, for instance. As new documents are uploaded, they should become available as soon as possible-ideally in real time. Figure 1 illustrates the setting where a document retrieval model is first trained on an initial set of documents, after which new documents arrive "
+      },
+      {
+        "paper_id": "258967398",
+        "markdown_evidence": "Exploring the Practicality of Generative Retrieval on Dynamic Corpora ... The results on the StreamingQA benchmark demonstrate that GR is more adaptable to evolving knowledge, robust in learning knowledge with temporal information, and efficient in terms of inference FLOPs, indexing time, and storage footprint compared to Dual Encoders, which are commonly used in retrieva ... Benchmarking the performance of information retrieval (IR) is mostly conducted with a fixed set of documents (static corpora). However, in realistic scenarios, this is rarely the case and the documents to be retrieved are constantly updated and added. In this paper, we focus on Generative Retrievals (GR), which apply autoregressive language models to IR problems, and explore their adaptability and robustness in dynamic scenarios. We also conduct an extensive evaluation of computational and memory efficiency, crucial factors for real-world deployment of IR systems handling vast and ever-changing document collections. Our results on the StreamingQA benchmark demonstrate that GR is more adaptable to evolving knowledge (4–11%), robust in learning knowledge with temporal information, and efficient in terms of inference FLOPs (x2), indexing time (x6), and storage footprint (x4) compared to Dual Encoders (DE), which are commonly used in retrieval systems. Our paper highlights the potential of GR for future use in practical IR systems within dynamic environments. ... In this paper, we focus on Generative Retrievals (GR), which apply autoregressive language models to IR problems, and explore their adaptability and robustness in dynamic scenarios. We also conduct an extensive evaluation of computational and memory efficiency, crucial factors for real-world deployment of IR systems handling vast and ever-changing document collections. ... For retrieval performance, we use Hits@5, which measures whether the gold-standard passages is included in the top 5 retrieved passages. Most document search systems do not limit results to one or provide too many; we consider 5 to be a reasonable number for assessment. ... As depicted in Figure 1, our experimental setup includes three approaches: \n\n(1) StaticIR, where the retriever is trained on the initial corpus, (2) Indexing-based updates, incorporating the index of newly arrived documents into the existing index without further training on the new corpus; and (3) Training-based updates, where the retriever "
+      },
+      {
+        "paper_id": "280147891",
+        "markdown_evidence": "PromptDSI: Prompt-Based Rehearsal-Free Continual Learning for Document Retrieval ... Differentiable Search Index (DSI) utilizes pre-trained language models to perform indexing and document retrieval via end-to-end learning without relying on external indexes. However, DSI requires full re-training to index new documents, causing significant computational inefficiencies. Continual learning (CL) offers a solution by enabling the model to incrementally update without full re-training. Existing CL solutions in document retrieval rely on memory buffers or generative models for rehearsal, which is infeasible when accessing previous training data is restricted due to privacy concerns. To this end, we introduce PromptDSI, a prompt-based, rehearsal-free continual learning approach for document retrieval. PromptDSI follows the Prompt-based Continual Learning (PCL) framework, using learnable prompts to efficiently index new documents without accessing previous documents or queries. To improve retrieval latency, we remove the initial forward pass of PCL, which otherwise greatly increases training and inference time, with a negligible trade-off in performance. Additionally, we introduce a novel topic-aware prompt pool that employs neural topic embeddings as fixed keys, eliminating the instability of prompt key optimization while maintaining competitive performance with existing PCL prompt pools. In a challenging rehearsal-free continual learning setup, we demonstrate that PromptDSI variants outperform rehearsal-based basel"
+      },
+      {
+        "paper_id": "279595044",
+        "markdown_evidence": "MoM: Continual Generative Retrieval via Mixture of Memories ... Generative Retrieval aims to predict the identifiers of relevant documents for a given query using a parametric model. Prior research predominantly examines static document collections, neglecting the continuous integration of new data in real-world settings. To index these newly added collections, the parameters corresponding to the original documents in the model may be disrupted during continued training, leading to catastrophic forgetting. In this paper, based on the relationship between documents and parameters, we introduce the Mixture-of-Experts(MoE) structure into incremental generative retrieval scenarios, namely Mixture of Memories for Continual Generative Retrieval(MoM). Our method dynamically expands generative models via MoE-adapters for adapting to new document collections. To mitigate the impact of irrelevant document-specific parameters during the retrieval phase on docid generation, which is typically caused by queries that do not specify a target collection, we further introduce Reference Contrastive Decoding(RCD). It achieves denoising the irrelevant collections without explicitly specifying the target collection by introducing a gating with random weights as a reference for unrelated collections. The experimental results demonstrate the effectiveness and efficiency of the proposed model."
+      },
+      {
+        "paper_id": "265382507",
+        "markdown_evidence": "Recent Advances in Generative Information Retrieval ... This tutorial offers an introduction to the core concepts of the GR paradigm and a comprehensive overview of recent advances in its foundations and applications, as well as outlining challenges and issuing a call for future GR research. ... Generative retrieval (GR) has witnessed significant growth recently in the area of information retrieval. Compared to the traditional \"index-retrieve-then-rank'' pipeline, the GR paradigm aims to consolidate all information within a corpus into a single model. Typically, a sequence-to-sequence model is trained to directly map a query to its relevant document identifiers (i.e., docids). This tutorial offers an introduction to the core concepts of the GR paradigm and a comprehensive overview of recent advances in its foundations and applications. We start by providing preliminary information covering foundational aspects and problem formulations of GR. Then, our focus shifts towards recent progress in docid design, training approaches, inference strategies, and applications of GR. We end by outlining challenges and issuing a call for future GR research.This tutorial is intended to be beneficial to both researchers and industry practitioners interested in developing novel GR solutions or applying them in real-world scenarios. ... (iii) How can we achieve controllability over the black-box integrated generative retrieval process to enhance interpretability and trustworthiness? (iv) How can we integrate GR models for document retrieval with large language models for answer generation? ... It is crucial to store document information as comprehensively as possible during the indexing process, thus ensuring that the subsequent retrieval process is not hindered by information loss [8]. Using these two operations, a GR model can be trained to index a corpus of documents and optionally fine-tune with an available set of labeled query-document pairs. ... The first, a more straightforward one, assumes a stationary learning scenario where the document collection is fixed and no longer updates. The second, a more practical scenario, is a dynamic corpora setting where information changes and new documents emerge incrementally over time. ... During inference, when given a new query, we can easily employ the learned GR model to provide relevant documents through autoregressive generation. In cases where a single docid represents a do"
+      },
+      {
+        "paper_id": "271710011",
+        "markdown_evidence": "Generative Retrieval with Few-shot Indexing ... This work proposes a few-shot indexing-based generative retrieval framework (Few-Shot GR), which has a few-shot indexing process without any training, and achieves superior performance to state-of-the-art GR methods requiring heavy training. ... Existing generative retrieval (GR) methods rely on training-based indexing, which fine-tunes a model to memorise associations between queries and the document identifiers (docids) of relevant documents. Training-based indexing suffers from high training costs, under-utilisation of pre-trained knowledge in large language models (LLMs), and limited adaptability to dynamic document corpora. To address the issues, we propose a few-shot indexing-based GR framework (Few-Shot GR). It has a few-shot indexing process without any training, where we prompt an LLM to generate docids for all documents in a corpus, ultimately creating a docid bank for the entire corpus. During retrieval, we feed a query to the same LLM and constrain it to generate a docid within the docid bank created during indexing, and then map the generated docid back to its corresponding document. Moreover, we devise few-shot indexing with one-to-many mapping to further enhance Few-Shot GR. Experiments show that Few-Shot GR achieves superior performance to state-of-the-art GR methods requiring heavy training. ... Generative retrieval (GR) [5,3,36,35,11,16,15] is a new paradigm in information retrieval (IR). Unlike traditional IR that decouples indexing and retrieval, GR unifies both processes into a single model [31]. ... Training-based indexing struggles with dynamic corpora, as training on new documents often causes forgetting of old ones [15]. Although several studies attempt to mitigate this issue [17,10,4,8], it remains inherent to training-based methods. Few-Shot GR alleviates this challenge by enabling easy addition or removal of docids in the few-shot indexing docid bank, thus avoiding c ... indexing has two main limitations: (i) The approach has a high training overhead [16]. Existing studies typically use an LLM [13,14] as the backbone and then fine-tune it with a new learning objective: mapping query text to docids. Finetuning an LLM with a new objective demands large-scale query-docid pairs, considerable time, and numerous GPUs. (ii) The approach does not make  ... Existing generative retrieval (GR) methods rely on training-based indexing, which fin"
+      },
+      {
+        "paper_id": "264305656",
+        "markdown_evidence": "Auto Search Indexer for End-to-End Document Retrieval ... A novel fully end-to-end retrieval paradigm that can not only end- to-end learn the best docids for existing and new documents automatically via a semantic indexing module, but also perform end-To-end document retrieval via an encoder-decoder-based generative model, namely Auto Search Indexer (ASI). ... Generative retrieval, which is a new advanced paradigm for document retrieval, has recently attracted research interests, since it encodes all documents into the model and directly generates the retrieved documents. However, its power is still underutilized since it heavily relies on the\"preprocessed\"document identifiers (docids), thus limiting its retrieval performance and ability to retrieve new documents. In this paper, we propose a novel fully end-to-end retrieval paradigm. It can not only end-to-end learn the best docids for existing and new documents automatically via a semantic indexing module, but also perform end-to-end document retrieval via an encoder-decoder-based generative model, namely Auto Search Indexer (ASI). Besides, we design a reparameterization mechanism to combine the above two modules into a joint optimization framework. Extensive experimental results demonstrate the superiority of our model over advanced baselines on both public and industrial datasets and also verify the ability to deal with new documents. ... Studies about document retrieval can be roughly divided into three categories: sparse retrieval, dense retrieval and generative retrieval, which are briefly introduced as follows. ... Given a user query, search engines usually first retrieve candidate documents from a huge document collection and then rank them to return a ranking list. Consequently, the performance and efficiency of document retrieval are essential to the final search quality. ... As mentioned before, thanks to the semantic indexing module with two semantic-oriented losses, ASI can better deal with the new documents. Specifically, there are two possible results when dealing with new texts. ... Search engines are widely deployed on web applications to meet users' daily information requirements (Wang et al., 2022). Given a user query, search engines usually first retrieve candidate documents from a huge document collection and then rank them to return a ranking list. Consequently, the performance and efficiency of document retrieval are essential to the "
+      },
+      {
+        "paper_id": "258714822",
+        "markdown_evidence": "Large Language Models are Built-in Autoregressive Search Engines ... This paper finds that large language models (LLMs) can follow human instructions to directly generate URLs for document retrieval, and can be thought of as built-in search engines, since they have not been explicitly trained to map questions to document identifiers. ... Document retrieval is a key stage of standard Web search engines. Existing dual-encoder dense retrievers obtain representations for questions and documents independently, allowing for only shallow interactions between them. To overcome this limitation, recent autoregressive search engines replace the dual-encoder architecture by directly generating identifiers for relevant documents in the candidate pool. However, the training cost of such autoregressive search engines rises sharply as the number of candidate documents increases. In this paper, we find that large language models (LLMs) can follow human instructions to directly generate URLs for document retrieval. Surprisingly, when providing a few {Query-URL} pairs as in-context demonstrations, LLMs can generate Web URLs where nearly 90\\% of the corresponding documents contain correct answers to open-domain questions. In this way, LLMs can be thought of as built-in search engines, since they have not been explicitly trained to map questions to document identifiers. Experiments demonstrate that our method can consistently achieve better retrieval performance than existing retrieval approaches by a significant margin on three open-domain question answering benchmarks, under both zero and few-shot settings. The code for this work can be found at \\url{https://github.com/Ziems/llm-url}. ... By forcing the generation model to explain every token in the question and document using cross-attention, the generation abilities of the model significantly improve. \n\nOur work is closely related to these works, showing experimentally that properly prompting pretrained large language models can achieve better performance than traditional dense retrieval models (Ouyang et al., ... While LLM-URL is not constrained by which URLs can be generated for document retrieval, we restrict all generations to Wikipedia URLs only for fair comparison, as discussed in Section 3 All baseline models also use Wikipedia for retrieval, with some fetching documents in real time and others fetching from an offline corpus."
+      },
+      {
+        "paper_id": "255879096",
+        "markdown_evidence": "DynamicRetriever: A Pre-trained Model-based IR System Without an Explicit Index ... This paper proposes a pre-trained model-based information retrieval (IR) system called DynamicRetriever, which directly returns document identifiers for a given query, and parameterizes the traditional static index with aPre-training model, which converts the document semantic mapping into a dynamic"
+      },
+      {
+        "paper_id": "276963528",
+        "markdown_evidence": "Translational Generative Retrieval via Potential Query Generation ... Document retrieval aims to find documents related to the query from all candidate documents. Existing studies develop the Generative Retrieval approach, which assigns a unique DocID to each document, and then measures document-query relevance based on the probability of generating the expected DocID for the given query. However, the generated DocID can have expressive limitation of different semantic topics, leading to semantic gaps in document retrieval. Besides, existing GR models usually suffer from the catastrophic forgetting when memorizing new documents incrementally, which makes real-world application impractical. To overcome these issues, we propose Translational Generative Retrieval, which translates each document into potential queries reflecting different topics, specifically by a sequence of token probability distributions. To better model the semantics of potential queries and effectively decode the target query from the distributions, we propose DirEcted Acyclic Graph Retrieval (DEAR) model, which reforms the distributions from a non-autoregressive generative model into a Directed Acyclic Graph. Experimental results demonstrate that DEAR outperforms existing retrieval models, setting a new state-of-the-art in generative retrieval."
+      },
+      {
+        "paper_id": "270562446",
+        "markdown_evidence": "PromptDSI: Prompt-based Rehearsal-free Instance-wise Incremental Learning for Document Retrieval ... This work introduces PromptDSI, a rehearsal-free, prompt-based approach for instance-wise incremental learning in document retrieval, and pro-poses a topic-aware prompt pool that employs neural topic embeddings as fixed keys."
+      },
+      {
+        "paper_id": "259949921",
+        "markdown_evidence": "PersonalTM: Transformer Memory for Personalized Retrieval ... Experiments show that PersonalTM outperforms the DSI baseline, BM25, fine-tuned dual-encoder, and other personalized models in terms of precision at top 1st and 10th positions and Mean Reciprocal Rank (MRR). ... The Transformer Memory as a Differentiable Search Index (DSI) has been proposed as a new information retrieval paradigm, which aims to address the limitations of dual-encoder retrieval framework based on the similarity score. The DSI framework outperforms strong baselines by directly generating relevant document identifiers from queries without relying on an explicit index. The memorization power of DSI framework makes it suitable for personalized retrieval tasks. Therefore, we propose a Personal Transformer Memory (PersonalTM) architecture for personalized text retrieval. PersonalTM incorporates user-specific profiles and contextual user click behaviors, and introduces hierarchical loss in the decoding process to align with the hierarchical assignment of document identifier. Additionally, PersonalTM also employs an adapter architecture to improve the scalability for index updates and reduce computation costs, compared to the vanilla DSI. Experiments show that PersonalTM outperforms the DSI baseline, BM25, fine-tuned dual-encoder, and other personalized models in terms of precision at top 1st and 10th positions and Mean Reciprocal Rank (MRR). Specifically, PersonalTM improves p@1 by 58%, 49%, and 12% compared to BM25, Dual-encoder, and DSI, respectively."
+      },
+      {
+        "paper_id": "270214302",
+        "markdown_evidence": "A Survey of Generative Information Retrieval ... This survey provides a comprehensive overview of GR, highlighting key developments, indexing and retrieval strategies, and challenges, and discusses various document identifier strategies, including numerical and string-based identifiers, and explore different document representation methods. ... Generative Retrieval (GR) is an emerging paradigm in information retrieval that leverages generative models to directly map queries to relevant document identifiers (DocIDs) without the need for traditional query processing or document reranking. This survey provides a comprehensive overview of GR, highlighting key developments, indexing and retrieval strategies, and challenges. We discuss various document identifier strategies, including numerical and string-based identifiers, and explore different document representation methods. Our primary contribution lies in outlining future research directions that could profoundly impact the field: improving the quality of query generation, exploring learnable document identifiers, enhancing scalability, and integrating GR with multi-task learning frameworks. By examining state-of-the-art GR techniques and their applications, this survey aims to provide a foundational understanding of GR and inspire further innovations in this transformative approach to information retrieval. We also make the complementary materials such as paper collection publicly available at https://github.com/MiuLab/GenIR-Survey/ ... The preceding section demonstrates the application of generative models at various IR stages to facilitate task execution.In this survey paper, we aim to define \"generative retrieval\" (GR) in the context of the Differentiable Search Index architecture (Tay et al., 2022), wherein a query is directly mapped to its relevant document(s) through a seq2seq model without the need for  ... (2022) used a conditioned generative model to generate n-grams that exist in the documents to retrieve the relevant document.Zhang et al. ... Unlike dense retrieval, which allows for fast indexing of new documents using a pre-trained encoder, generative retrieval faces a significant challenge in this regard.In generative retrieval, indexing a new document often necessitates retraining the entire model, a process that is both time-consuming and resource-intensive.This bottleneck in the indexing process can hinder the "
+      },
+      {
+        "paper_id": "276618151",
+        "markdown_evidence": "Hierarchical corpus encoder: Fusing generative retrieval and dense indices ... This work identifies the performance of generative retrieval lies in contrastive training between sibling nodes in a document hierarchy, and proposes the hierarchical corpus encoder (HCE), which can be supported by traditional dense encoders. ... Generative retrieval employs sequence models for conditional generation of document IDs based on a query (DSI (Tay et al., 2022); NCI (Wang et al., 2022); inter alia). While this has led to improved performance in zero-shot retrieval, it is a challenge to support documents not seen during training. We identify the performance of generative retrieval lies in contrastive training between sibling nodes in a document hierarchy. This motivates our proposal, the hierarchical corpus encoder (HCE), which can be supported by traditional dense encoders. Our experiments show that HCE achieves superior results than generative retrieval models under both unsupervised zero-shot and supervised settings, while also allowing the easy addition and removal of documents to the index. ... Generative retrieval (Tay et al., 2022;Wang et al., 2022, i.a.) takes a different approach: directly outputting the identifier of the document with an encoder-decoder sequence model without an explicit vector representation for each document. ... While this has led to improved performance in zero-shot retrieval, it is a challenge to support documents not seen during training. We identify the performance of generative retrieval lies in contrastive training between sibling nodes in a document hierarchy. This motivates our proposal, the hierarchical corpus encoder (HCE), which can be supported by traditional dense encoders ... However, if too many documents are added to the extent that the corpus distribution is distorted, a re-training and re-indexing might be needed. ... Recent work on neural information retrieval (IR) has broadly fallen into two categories: dense encoders, and generative retrieval. For dense retrieval (Lee et al., 2019;Karpukhin et al., 2020;Izacard et al., 2022, i.a.), a fixed-dimension vector representation is created for each document by an encoder, and searching is performed with techniques such as approximate nearest neig ... Specifically, one first assigns a unique string-valued identifier to each document, and when decoding, constrain the decoding process so that its output falls within the set of un"
+      },
+      {
+        "paper_id": "265212781",
+        "markdown_evidence": "Summarization-Based Document IDs for Generative Retrieval with Language Models ... This work finds that abstractive, content-based IDs (ACID) and an ID based on the first 30 tokens are very effective in direct comparisons with previous approaches to ID creation and observes that extractive IDs outperformed abstractive IDs on Wikipedia articles in NQ but not the snippets in MSMARCO ... Generative retrieval (Wang et al., 2022; Tay et al., 2022) is a popular approach for end-to-end document retrieval that directly generates document identifiers given an input query. We introduce summarization-based document IDs, in which each document's ID is composed of an extractive summary or abstractive keyphrases generated by a language model, rather than an integer ID sequence or bags of n-grams as proposed in past work. We find that abstractive, content-based IDs (ACID) and an ID based on the first 30 tokens are very effective in direct comparisons with previous approaches to ID creation. We show that using ACID improves top-10 and top-20 recall by 15.6% and 14.4% (relative) respectively versus the cluster-based integer ID baseline on the MSMARCO 100k retrieval task, and 9.8% and 9.9% respectively on the Wikipedia-based NQ 100k retrieval task. Our results demonstrate the effectiveness of human-readable, natural-language IDs created through summarization for generative retrieval. We also observed that extractive IDs outperformed abstractive IDs on Wikipedia articles in NQ but not the snippets in MSMARCO, which suggests that document characteristics affect generative retrieval performance. ... (This is in contrast our approach, which seeks to associate a unique ID to each document for generative retrieval.) The authors propose several methods for reranking based on n-gram scores produced by the LM. However, the n-gram generation and reranking approach does not always outperform the dense retrieval baseline. ... At inference time, the LM generates a document ID via beam search, given a user-generated query from the test set. We use a constrained decoder at inference time, which is constrained by a prefix tree such that it can only generate document IDs that exist in the corpus. ... Figure 1: Generative retrieval vs. dense retrieval. In dense retrieval (right), both the query and the documents are encoded into dense vectors (i.e., embeddings). Nearest-neighbor search is then applied to find the most relevant documents. Gene"
+      },
+      {
+        "paper_id": "269921995",
+        "markdown_evidence": "Bottleneck-Minimal Indexing for Generative Document Retrieval ... This work applies an information-theoretic perspective to reconsider generative document retrieval, and empirically quantify the bottleneck underlying GDR, and evaluates the proposed bottleneck-minimal indexing method in comparison with various previous indexing methods, and shows that it outperform ... We apply an information-theoretic perspective to reconsider generative document retrieval (GDR), in which a document $x \\in X$ is indexed by $t \\in T$, and a neural autoregressive model is trained to map queries $Q$ to $T$. GDR can be considered to involve information transmission from documents $X$ to queries $Q$, with the requirement to transmit more bits via the indexes $T$. By applying Shannon's rate-distortion theory, the optimality of indexing can be analyzed in terms of the mutual information, and the design of the indexes $T$ can then be regarded as a {\\em bottleneck} in GDR. After reformulating GDR from this perspective, we empirically quantify the bottleneck underlying GDR. Finally, using the NQ320K and MARCO datasets, we evaluate our proposed bottleneck-minimal indexing method in comparison with various previous indexing methods, and we show that it outperforms those methods. ... This reformulation naturally suggested a new document indexing method to design GDR by using Q.Our method, which applies the hierarchical k-means algorithm to queries instead of document vectors, achieved a significant improvement on two datasets in terms of the recall and MRR scores. ... The importance of accurate document retrieval is increasing, especially with the limitation of recent large language models.Generative document retrieval (GDR) is a new, promising framework for information retrieval.First, every document x ∈ X (a document set) is represented by a short, distinct identifier string t ∈ T (the identifier set).Then, an autoregressive model, typical ... We introduced a new way to formulate generative document retrieval (GDR) by applying the information bottleneck theory.In GDR, a document x ∈ X is indexed by t ∈ T , and queries Q are trained by neural autoregressive models for mapping to indexes T .GDR can thus be treated as the transmission of information from documents X to queries Q, with the requirement to transmit more bi"
+      },
+      {
+        "paper_id": "271217999",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268032853",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277349460",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276580584",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264451831",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277780185",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265213270",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249395549",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258822999",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275757527",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253581551",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246863488",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258461097",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258865792",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262466132",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274596688",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265033969",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248366293",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275119098",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267320756",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267060861",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258048596",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268532051",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269302879",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277620854",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266359654",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268819685",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273950431",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270380194",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276258678",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273232666",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261531457",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277766897",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248118757",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272574202",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222125277",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253628240",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270240445",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277780286",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259202862",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271916387",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261824851",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265050661",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249890267",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13063777",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272968770",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254564214",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "208112371",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260915014",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267028564",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259949633",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16166806",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258865354",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258762633",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277468408",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278002064",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266176106",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279993286",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259187509",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3331356",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245837873",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273850475",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "7827987",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247996381",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270805092",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235259418",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3236988",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "10132225",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220047513",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279076056",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "286961890",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262465393",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275336185",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "41806238",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "49416503",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52054464",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278327110",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271779774",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272656235",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52166272",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270870444",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269091909",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277787257",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270870353",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278328059",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278960155",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254877046",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279595513",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246528251",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5324169",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220302524",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "67474090",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225621536",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13735819",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237581550",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271961833",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3318669",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "119314259",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259610618",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220729669",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275357670",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269430314",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269303210",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258564854",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274423313",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251259527",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258676297",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258960507",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247187834",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270130274",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237601878",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781671",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269137640",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258676372",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272372774",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279075449",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278064217",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "238207590",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274822530",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781183",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254685940",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276576103",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279126385",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259096118",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266573365",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278789107",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272911258",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277857396",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273877376",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267410949",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278788810",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236428949",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264099345",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275405290",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277066612",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271478872",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276647492",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276581018",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260926463",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272723770",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276725045",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276576201",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270870462",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273403956",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "51939932",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273233795",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276408421",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202784478",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273842691",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275570331",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231603106",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3917857",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "17863375",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258750461",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267308609",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271693752",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276574609",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258714744",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278670622",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "181844767",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273901468",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258355611",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270605638",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "18916895",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258841762",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53430643",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245406012",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274630309",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272535537",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267301416",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267783055",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278207528",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905384",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281708799",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258298975",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273500072",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271709366",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233557580",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219452155",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276613384",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251761096",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245131215",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218821051",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276580230",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269813177",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248620462",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "201102748",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273476343",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271114548",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257972083",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252625927",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "224803983",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "20432939",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276095244",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277134801",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16737989",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235381569",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257664875",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482449",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262204143",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "41585775",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "71145392",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268692452",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271938110",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277007245",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254625706",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256461410",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "290629413",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278715441",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "21012910",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274822286",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269272963",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56895403",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278394798",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52229883",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267499891",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276193216",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3445615",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247752122",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268230579",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273532096",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276964011",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "196184038",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54453758",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280697461",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "65149930",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270516563",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280651700",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266903053",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272723028",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52979321",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278672544",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

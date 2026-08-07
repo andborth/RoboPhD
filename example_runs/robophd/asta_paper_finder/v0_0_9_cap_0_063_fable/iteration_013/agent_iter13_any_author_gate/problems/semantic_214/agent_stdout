@@ -1,0 +1,24 @@
+[semantic_214] score_type=semantic_f1 query='Search for papers related to large language models that demonstrate how the same prompt with differe'
+  [t+7s] plan: 12 kw queries, 3 criteria, oldest_first=False; kw=['SFT multiple completions same prompt', 'supervised fine-tuning diverse responses', 'one prompt many answers LLM training', 'multi-response instruction tuning', 'prompt completion diversity for alignment', 'response variation supervised instruction tuning', 'self-consistency data augmentation SFT', 'multiple reference answers language models', 'preference data to SFT conversion', 'instruction datasets with multiple outputs', 'best-of-n sampling for fine-tuning', 'same instruction different completions']
+  criteria: ['The paper must be about large language models trained or adapted with supervised fine-tuning or instruction tuning.', 'The paper must involve the same prompt or instruction being paired with multiple different responses, completions, or reference answers in the training data or training procedure.', 'The paper must demonstrate or report that using different responses for the same prompt improves the performance of the supervised fine-tuned model relative to a single-response or comparable baseline.'] weights=[0.4, 0.3, 0.3]
+  [t+162s] pooled 1236 unique candidates
+  tool call failed (): ToolError: Paper f886c44f2815f15eab2e01d4d12b3b6d5caf95a1 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool call failed (): ToolError: Paper 3a63f3e16f3403c0621c96e6fb1254f4fb8aadbd is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 2 of 109 ids (title,abstract,tldr,corpusId,year,venue)
+  backfilled abstracts for 107 of 109 candidates
+  [t+507s] grade histogram: {3: 24, 2: 14, 1: 62, 0: 240}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 4 of 16 ids (corpusId,citations,references)
+  citer channel: 29 citing-paper ids pooled
+  [t+874s] expansion r1: +50 graded {3: 6, 2: 6, 1: 6, 0: 32}
+  [t+874s] expansion r2 skipped (r1 grade-3 yield 6 < 4)
+  [t+874s] mining depth reduced to 120 (deadline)
+  tool call failed (Search for papers related to large language models that demonstrate how the same prompt with different responses can improve the performance of the SFT model.): TimeoutError: 
+  [t+1116s] criterion mining: 241 passages across 100 of 120 papers
+  [t+1116s] evidence chars: median=1827 min=77 >=2200=71/250
+  [t+1122s] judge-sim rerank scored 100/100; predicted grade-3: 1
+  [t+1122s] promoting 1 predicted grade-3 papers
+  tool call failed (The paper must demonstrate or report that using different responses for the same prompt improves the performance of the supervised fine-tuned model relative to a single-response or comparable baseline.): TimeoutError: 
+  tool call failed (The paper must demonstrate or report that using different responses for the same prompt improves the performance of the supervised fine-tuned model relative to a single-response or comparable baseline.): TimeoutError: 
+  [t+1455s] DEADLINE: solver timed out; submitting checkpoint snapshot (250 entries)
+  [t+1455s] submitted 250 papers

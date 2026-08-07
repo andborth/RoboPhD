@@ -220,12 +220,6 @@ tasks, so a diagnostic specific to one lineage is not something an evolution
 session can add. Building such tooling is a Meta-evolution function, and
 Meta-evolution was not enabled for this experimental campaign.
 
-The residual gap is that this remains a manual sweep. Iteration 12 asked for a
-"zero across all queries" audit in `error_analysis_report.md` — flag any stdout
-marker matching `-> 0` on ≥80% of queries — noting it "would have caught the dead
-channel six iterations ago, and the class recurs" (caps-below-K twice, the
-references batch crash three times).
-
 ## Internal results (basis: stock GPT-4o judge, canonical ordering)
 
 | Metric | Value |

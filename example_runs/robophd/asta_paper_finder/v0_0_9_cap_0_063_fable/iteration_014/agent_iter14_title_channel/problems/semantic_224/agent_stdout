@@ -1,0 +1,22 @@
+[semantic_224] score_type=semantic_f1 query='List all papers that use autoregressive transformer to generate videos.'
+  [t+6s] plan: 14 kw queries, 3 criteria, oldest_first=False; kw=['autoregressive transformer video generation', 'video generation transformer autoregressive', 'causal transformer for video synthesis', 'GPT-style video generation', 'next-frame prediction transformer video', 'discrete token video transformer', 'video language modeling generation', 'spatiotemporal autoregressive transformers', 'video autoregressive foundation model', 'masked vs autoregressive video transformer', 'video token generation transformer', 'transformer decoders for video synthesis', 'text-to-video autoregressive transformer', 'video GPT transformer synthesis']
+  criteria: ['The paper must be about generating or synthesizing video outputs, rather than only understanding, classifying, captioning, or editing videos.', 'The paper must use a transformer architecture with autoregressive or causal generation, such as sequential prediction of frames, patches, or discrete video tokens.', 'The autoregressive transformer must be the model used to generate the video, not merely an auxiliary module, baseline, or component for a different primary task.'] weights=[0.4, 0.3, 0.3]
+  [t+131s] pooled 940 unique candidates
+  backfilled abstracts for 75 of 75 candidates
+  [t+257s] grade histogram: {3: 26, 2: 4, 1: 85, 0: 225}
+  tool call failed (): TimeoutError: 
+  citer channel: 306 citing-paper ids pooled
+  [t+443s] expansion r1: +120 graded {3: 11, 1: 57, 0: 52}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 6 of 12 ids (corpusId,citations,references)
+  tool call failed (): ToolError: Papers 13bd881530d003403325cd2de57d8af42acd0d81, cfee1826dd4743eab44c6e27a0cc5970effa4d80 are newer than the date cutoff of 2025-06-01 and are not all
+  robust batch: dropped 25 of 180 ids (title,abstract,corpusId,tldr,year,venue)
+  [t+871s] expansion r2: +50 graded {1: 8, 0: 42}
+  [t+871s] mining depth reduced to 120 (deadline)
+  [t+995s] criterion mining: 222 passages across 93 of 120 papers
+  [t+995s] evidence chars: median=1810 min=40 >=2200=72/250
+  [t+1000s] judge-sim rerank scored 100/100; predicted grade-3: 36
+  [t+1247s] weak-criterion patch: 227 papers, 54 scoped calls, criteria {0: 200, 1: 212, 2: 219}
+  [t+1400s] patch wave 2: 186 paper-criteria retried with alternate wording
+  [t+1400s] submitted 250 papers

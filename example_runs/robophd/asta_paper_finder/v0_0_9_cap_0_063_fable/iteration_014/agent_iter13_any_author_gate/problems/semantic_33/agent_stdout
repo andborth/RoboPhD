@@ -1,0 +1,22 @@
+[semantic_33] score_type=semantic_f1 query='Could you suggest a study that explores employing a beta distribution to sample span sizes within un'
+  [t+8s] plan: 12 kw queries, 3 criteria, oldest_first=False; kw=['beta distribution span sampling', 'unsupervised text representation spans', 'span masking beta distribution NLP', 'self-supervised language modeling span length', 'beta-binomial span corruption text', 'contiguous span sampling representation learning', 'text infilling span length distribution', 'denoising autoencoder span masking', 'random span lengths unsupervised NLP', 'latent text representation span corruption', 'SpanBERT masking length distribution', 'T5 text infilling beta distribution']
+  criteria: ['The paper must address learning representations for text in an unsupervised or self-supervised setting.', 'The paper must use a beta distribution, or explicitly beta-distributed sampling, as part of its method.', 'The paper must apply that beta-distributed sampling to determine span sizes or span lengths in the text.'] weights=[0.4, 0.3, 0.3]
+  [t+159s] pooled 979 unique candidates
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: RetryError[<Future at 0x7f46a765a9d0 state=finished raised ConnectionRefusedError>]
+  backfilled abstracts for 148 of 148 candidates
+  [t+499s] grade histogram: {2: 1, 1: 124, 0: 215}
+  [t+536s] thin-pool round (strong=1, g3=0): 6 alt queries, +280 new candidates graded
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 4 of 16 ids (corpusId,citations,references)
+  citer channel: 527 citing-paper ids pooled
+  [t+787s] expansion r1: +50 graded {1: 3, 0: 47}
+  [t+787s] expansion r2 skipped (r1 grade-3 yield 0 < 4)
+  [t+912s] criterion mining: 322 passages across 155 of 200 papers
+  [t+912s] evidence chars: median=1969 min=49 >=2200=95/250
+  [t+917s] judge-sim rerank scored 100/100; predicted grade-3: 1
+  [t+917s] promoting 1 predicted grade-3 papers
+  tool call failed (The paper must use a beta distribution, or explicitly beta-distributed sampling, as part of its method.): RuntimeError: tool call failed: ToolError: Error executing tool snippet_search:
+  tool call failed (The paper must use a beta distribution, or explicitly beta-distributed sampling, as part of its method.): TimeoutError: 
+  tool call failed (The paper must apply that beta-distributed sampling to determine span sizes or span lengths in the text.): TimeoutError: 
+  [t+1315s] weak-criterion patch: 249 papers, 56 scoped calls, criteria {0: 159, 1: 245, 2: 249}
+  [t+1315s] submitted 250 papers

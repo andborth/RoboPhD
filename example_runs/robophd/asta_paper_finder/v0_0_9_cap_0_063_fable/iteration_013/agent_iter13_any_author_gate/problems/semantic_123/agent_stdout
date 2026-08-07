@@ -1,0 +1,23 @@
+[semantic_123] score_type=semantic_f1 query='What are some pretraining techniques to improve language model reasoning abilities, especially focus'
+  [t+7s] plan: 12 kw queries, 3 criteria, oldest_first=False; kw=['chain of thought pretraining', 'reasoning-oriented language model pretraining', 'process supervision pretraining LLMs', 'rationale-augmented pretraining', 'scratchpad pretraining language models', 'step-by-step reasoning data pretraining', 'latent chain of thought training', 'deductive pretraining for language models', 'mathematical reasoning pretraining corpora', 'program-of-thought pretraining', 'self-explaining language model pretraining', 'reasoning traces in pretraining']
+  criteria: ['The paper must focus on improving reasoning abilities or reasoning performance in language models.', 'The paper must study a pretraining method, objective, corpus, or training setup rather than only inference-time prompting or purely post-training fine-tuning.', 'The paper must especially involve chain-of-thought, rationales, scratchpads, reasoning traces, or other step-by-step intermediate reasoning during pretraining.'] weights=[0.4, 0.3, 0.3]
+  [t+133s] pooled 980 unique candidates
+  tool call failed (): ToolError: Paper 16e2c1e988b13329e3b7fc2dbbf854f9414721d7 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 1 of 83 ids (title,abstract,tldr,corpusId,year,venue)
+  backfilled abstracts for 82 of 83 candidates
+  [t+510s] grade histogram: {3: 13, 2: 42, 1: 91, 0: 194}
+  tool call failed (): ToolError: Paper 16e2c1e988b13329e3b7fc2dbbf854f9414721d7 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 1 of 16 ids (corpusId,citations,references)
+  tool call failed (): TimeoutError: 
+  citer channel: 26 citing-paper ids pooled
+  [t+875s] expansion r1: +50 graded {3: 7, 2: 5, 1: 18, 0: 20}
+  [t+875s] expansion r2 skipped (r1 grade-3 yield 7 < 4)
+  [t+875s] mining depth reduced to 120 (deadline)
+  tool call failed (The paper must especially involve chain-of-thought, rationales, scratchpads, reasoning traces, or other step-by-step intermediate reasoning during pretraining.): TimeoutError: 
+  [t+1120s] criterion mining: 219 passages across 95 of 120 papers
+  [t+1120s] evidence chars: median=1816 min=315 >=2200=65/250
+  [t+1121s] judge-sim rerank scored 100/100; predicted grade-3: 16
+  tool call failed (The paper must focus on improving reasoning abilities or reasoning performance in language models.): TimeoutError: 
+  tool call failed (The paper must focus on improving reasoning abilities or reasoning performance in language models.): TimeoutError: 
+  [t+1455s] DEADLINE: solver timed out; submitting checkpoint snapshot (250 entries)
+  [t+1455s] submitted 250 papers

@@ -1,0 +1,21 @@
+[semantic_222] score_type=semantic_f1 query='I am looking for research papers on the construction of multimodal foundation models that support bo'
+  [t+7s] plan: 10 kw queries, 3 criteria, oldest_first=False; kw=['multimodal foundation models audio vision', 'audio-visual pretraining large-scale datasets', 'vision language audio foundation model', 'generalist multimodal model visual acoustic', 'audio visual representation learning foundation', 'multisensory transformers image video audio', 'audio visual self-supervised pretraining', 'large-scale audiovisual and visual corpora', 'vision sound unified encoder pretraining', 'image video audio multimodal backbone']
+  criteria: ['The paper must present or study the construction of a foundation model or large-scale general-purpose multimodal model rather than a survey.', 'The paper must involve models that support both visual input and audio input as core modalities.', 'The paper must use pre-training on large-scale datasets that include visual data, audio data, and audio-visual data.'] weights=[0.4, 0.3, 0.3]
+  [t+164s] pooled 1079 unique candidates
+  backfilled abstracts for 87 of 87 candidates
+  [t+232s] grade histogram: {3: 5, 2: 16, 1: 90, 0: 229}
+  [t+255s] thin-pool round (strong=21): 6 alt queries, +280 new candidates graded
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 16 ids (corpusId,citations,references)
+  citer channel: 450 citing-paper ids pooled
+  expansion r1: +120 graded {3: 4, 2: 1, 1: 12, 0: 103}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 12 ids (corpusId,citations,references)
+  expansion r2: +100 graded {3: 2, 2: 1, 1: 15, 0: 82}
+  [t+876s] mining depth reduced to 120 (deadline)
+  [t+1028s] criterion mining: 206 passages across 95 of 120 papers
+  [t+1028s] evidence chars: median=1792 min=33 >=2200=66/250
+  [t+1034s] judge-sim rerank scored 80/80; predicted grade-3: 9
+  tool call failed (The paper must use pre-training on large-scale datasets that include visual data, audio data, and audio-visual data.): TimeoutError: 
+  [t+1371s] weak-criterion patch: 245 papers, 57 scoped calls, criteria {0: 206, 1: 205, 2: 242}
+  [t+1371s] submitted 250 papers

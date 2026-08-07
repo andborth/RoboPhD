@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_33",
+    "results": [
+      {
+        "paper_id": "219530980",
+        "markdown_evidence": "DeCLUTR: Deep Contrastive Learning for Unsupervised Textual Representations ... Inspired by recent advances in deep metric learning (DML), this work carefully design a self-supervised objective for learning universal sentence embeddings that does not require labelled training data and closes the performance gap between unsupervised and supervised pretraining for universal sente ... Sentence embeddings are an important component of many natural language processing (NLP) systems. Like word embeddings, sentence embeddings are typically learned on large text corpora and then transferred to various downstream tasks, such as clustering and retrieval. Unlike word embeddings, the highest performing solutions for learning sentence embeddings require labelled data, limiting their usefulness to languages and domains where labelled data is abundant. In this paper, we present DeCLUTR: Deep Contrastive Learning for Unsupervised Textual Representations. Inspired by recent advances in deep metric learning (DML), we carefully design a self-supervised objective for learning universal sentence embeddings that does not require labelled training data. When used to extend the pretraining of transformer-based language models, our approach closes the performance gap between unsupervised a ... Our primary contributions are: \n\n• We propose a self-supervised sentence-level objective that can be used alongside MLM to pretrain transformer-based language models, inducing generalized embeddings for sentence-and paragraph-length text without any labelled data (subsection 5.1). \n\n• We perform extensive ablations to determine which factors are important for learning highquali ... To sample an anchor span s i from x d , we first sample its length anchor from a beta distribution and then randomly (uniformly) sample its starting position \n\nWe then sample p ∈ {1 . ... (C) The length of anchors and positives are randomly sampled from beta distributions, skewed toward longer and shorter spans, respectively. ... AN } be the index of an arbitrary anchor span. ... We start by choosing a minimum and maximum span length; in this paper, min = 32 and max = 512, the maximum input size for many pretrained transformers. Next, a document d is tokenized to produce a sequence of n tokens x d = (x 1 , x 2 . . . x n ). To sample an anchor span s i from x d , we first sample its length anchor from a beta distribution and then randomly (uniformly) sam"
+      },
+      {
+        "paper_id": "248366563",
+        "markdown_evidence": "Pre-train a Discriminative Text Encoder for Dense Retrieval via Contrastive Span Prediction ... This work introduces a novel contrastive span prediction task to pre-train the encoder alone, but still retain the bottleneck ability of the autoencoder, and shows that this approach can outperform existing pre-training methods for dense retrieval significantly. ... Dense retrieval has shown promising results in many information retrieval (IR) related tasks, whose foundation is high-quality text representation learning for effective search. Some recent studies have shown that autoencoder-based language models are able to boost the dense retrieval performance using a weak decoder. However, we argue that 1) it is not discriminative to decode all the input texts and, 2) even a weak decoder has the bypass effect on the encoder. Therefore, in this work, we introduce a novel contrastive span prediction task to pre-train the encoder alone, but still retain the bottleneck ability of the autoencoder. In this way, we can 1) learn discriminative text representations efficiently with the group-wise contrastive learning over spans and, 2) avoid the bypass effect of the decoder thoroughly. Comprehensive experiments over publicly available retrieval benchmark data ... Finally, we train the Transformer-based encoder via a group-wise contrastive loss to force the representation of the text close to that of its spans in a group, while far away from other groups. ... All reported results in this section are based on the MS MARCO passage ranking development set trained with only BM25 negatives. ... (1) For each level of granularity, we first sample the span length from a beta distribution following [15], i.e., \n\nwhere ℓ  and ℓ  denote the minimum length and maximum span length of each level of granularity. ... Given a mini-batch of input texts, we first sample a set of multigranularity spans for each text and encode the whole texts and spans into semantic representations. A group-wise contrastive loss is then applied to force the whole text representation close to its own random spans while far away from other groups in the same mini-batch. The detailed pre-training procedures are as"
+      },
+      {
+        "paper_id": "226283526",
+        "markdown_evidence": "Tri-Train: Automatic Pre-Fine Tuning between Pre-Training and Fine-Tuning for SciNER ... A novel framework is proposed to introduce a “pre-fine tuning” step between pre-training and fine-tuning that constructs a corpus by selecting sentences from unlabeled documents that are the most relevant with the labelled training data. ... The training process of scientific NER models is commonly performed in two steps: i) Pre-training a language model by self-supervised tasks on huge data and ii) fine-tune training with small labelled data. The success of the strategy depends on the relevance between the data domains and between the tasks. However, gaps are found in practice when the target domains are specific and small. We propose a novel framework to introduce a “pre-fine tuning” step between pre-training and fine-tuning. It constructs a corpus by selecting sentences from unlabeled documents that are the most relevant with the labelled training data. Instead of predicting tokens in random spans, the pre-fine tuning task is to predict tokens in entity candidates identified by text mining methods. Pre-fine tuning is automatic and light-weight because the corpus size can be much smaller than pre-training data to achieve a ... When applied the proposed framework to scientific NER, as described in Figure 1 and the introduction section, we are interested in the questions such as what, where, and which. We have various options of using pre-fine-tuning for the task.\n\nSentence content selection Intuitively, if the PFT corpus is strongly related to the SciNER dataset, the domain relevance can support a goo ... Pre-training models require large pre-training corpora D PT . Span masking iteratively samples spans of text. In each iteration, it randomly selects a starting point for a span to be masked and the length of span is determined by a geometric distribution l ⇠ Geo(p). ... Input Given a SciNER corpus D FT , we derive a set of word sequence spans (up to length L) in the corpus S. D FT was labelled by a schema of entity types Y. And suppose we have an auxiliary corpus D AUX which is much bigger than D FT .\n\nOutput Predict whether a span S 2 S is an entity, and if it is, predict the entity type y 2 Y."
+      },
+      {
+        "paper_id": "195069387",
+        "markdown_evidence": "XLNet: Generalized Autoregressive Pretraining for Language Understanding ... XLNet is proposed, a generalized autoregressive pretraining method that enables learning bidirectional contexts by maximizing the expected likelihood over all permutations of the factorization order and overcomes the limitations of BERT thanks to its autore progressive formulation. ... With the capability of modeling bidirectional contexts, denoising autoencoding based pretraining like BERT achieves better performance than pretraining approaches based on autoregressive language modeling. However, relying on corrupting the input with masks, BERT neglects dependency between the masked positions and suffers from a pretrain-finetune discrepancy. In light of these pros and cons, we propose XLNet, a generalized autoregressive pretraining method that (1) enables learning bidirectional contexts by maximizing the expected likelihood over all permutations of the factorization order and (2) overcomes the limitations of BERT thanks to its autoregressive formulation. Furthermore, XLNet integrates ideas from Transformer-XL, the state-of-the-art autoregressive model, into pretraining. Empirically, under comparable experiment settings, XLNet outperforms BERT on 20 tasks, often by a la ... Unsupervised representation learning has been highly successful in the domain of natural language processing [7,22,27,28,10]. Typically, these methods first pretrain neural networks on large-scale unlabeled text corpora, and then finetune the models or representations on downstream tasks. Under this shared high-level idea, different unsupervised pretraining objectives have been ... According to the comparison above, AR language modeling and BERT possess their unique advantages over the other. A natural question to ask is whether there exists a pretraining objective that brings the advantages of both while avoiding their weaknesses. \n\nBorrowing ideas from orderless NADE [32], we propose the permutation language modeling objective that not only retains the  ... We employ an idea of span-based prediction, where we first sample a length L ∈ [1, • • • , 5], and then randomly select a consecutive span of L tokens as prediction targets within a context of (KL) tokens. ... Our finetuning procedure follows BERT [10] except otherwise specified 3 . We employ an idea of span-based prediction, where we first sample a length L ∈ [1, • • • , 5], and then randomly select a conse"
+      },
+      {
+        "paper_id": "221103669",
+        "markdown_evidence": "Variance-reduced Language Pretraining via a Mask Proposal Network ... A principled gradient variance decomposition theorem is proposed, which shows that the variance of the stochastic gradient of the language pretraining can be naturally decomposed into two terms: the sample of data in a batch, and the variance that arises from the sampling of the mask. ... Self-supervised learning, a.k.a., pretraining, is important in natural language processing. Most of the pretraining methods first randomly mask some positions in a sentence and then train a model to recover the tokens at the masked positions. In such a way, the model can be trained without human labeling, and the massive data can be used with billion parameters. Therefore, the optimization efficiency becomes critical. In this paper, we tackle the problem from the view of gradient variance reduction. In particular, we first propose a principled gradient variance decomposition theorem, which shows that the variance of the stochastic gradient of the language pretraining can be naturally decomposed into two terms: the variance that arises from the sample of data in a batch, and the variance that arises from the sampling of the mask. The second term is the key difference between selfsupervise ... Self-supervised learning, a.k.a., pretraining, is important in natural language processing. ... Theorem 1 Denote Var(g(θ enc ; x M , x)) as the variance of the stochastic gradient g(θ enc ; x M , x). \n\nIt can be decomposed by the following formulation. \n\nThe theorem above can be directly obtained by the law of total variance [5]. From the theorem, we can see that the variance of the stochastic gradient is naturally decomposed into two terms. The first term characterizes t ... Importance sampling is a standard way for variance reduction, which suggests that we can sample the masks using a proposal distribution instead of the uniform distribution. ... Please note that it is costly to find the optimal PropMask(x) during training. We can see that the optimal PropMask(x) adaptively changes as θ enc updates. More importantly, at each iteration, we require the value of g(θ enc ; x M , x) 2 for each possible x M to determine the optimal PropMask(x)."
+      },
+      {
+        "paper_id": "222134068",
+        "markdown_evidence": "PMI-Masking: Principled masking of correlated spans ... PMI-Masking motivates, unifies, and improves upon prior more heuristic approaches that attempt to address the drawback of random uniform token masking, such as whole-word masks, entity/phrase masksing, and random-span masking. ... Masking tokens uniformly at random constitutes a common flaw in the pretraining of Masked Language Models (MLMs) such as BERT. We show that such uniform masking allows an MLM to minimize its training objective by latching onto shallow local signals, leading to pretraining inefficiency and suboptimal downstream performance. To address this flaw, we propose PMI-Masking, a principled masking strategy based on the concept of Pointwise Mutual Information (PMI), which jointly masks a token n-gram if it exhibits high collocation over the corpus. PMI-Masking motivates, unifies, and improves upon prior more heuristic approaches that attempt to address the drawback of random uniform token masking, such as whole-word masking, entity/phrase masking, and random-span masking. Specifically, we show experimentally that PMI-Masking reaches the performance of prior masking approaches in half the training  ... For pretraining, after a warmup of 10, 000 steps we used a linear learning rate decay, therefore models that ran for a different overall amount of steps are not precisely comparable after a given amount of steps. ... The PMI n measure, defined in eq. 3, provides an n-gram ranking function that is intended to rank an n-gram higher if its components are more indicative of one another. However, this measure alone is not enough for composing a masking vocabulary: we need to decide on its size M (the masking vocabulary will be composed of the top-M ranked n-grams). One could advocate for an abla ... (2020) introduced Random-Span Masking, which masks word spans of lengths sampled from a geometric distribution at random positions in the text. ... While extending the scope of Whole-Word Masking, the restriction to specific types of correlated n-grams, along with the reliance on imperfect tools for their identification, has limited the gains achievable by this approach. With a similar motivation in mind, SpanBERT of Joshi et al. (2020) introduced Random-Span Masking, which masks word spans of lengths sampled from a geomet ... We now more formally present the MLM setup as well as existing masking approaches, which we implement as baselines. Given t"
+      },
+      {
+        "paper_id": "94984",
+        "markdown_evidence": "Priors in Bayesian Learning of Phonological Rules ... This paper describes a Bayesian procedure for unsupervised learning of phonological rules from an unlabeled corpus of training data, whose output is taken as the starting point of this procedure, and which returns a grammar that consists of a set of signatures. ... In this paper, we compare the results of using two different prior distributions for an unsupervised learning task in the domain of morpho-phonology. Our goal is to learn transformation rules of the form x → y / C, where x and y are individual characters (or the empty character ) and C is some representation of the context licensing the transformation. ... where Pr(H) is the prior probability of the hypothesized model H, and Pr(D|H) is the likelihood of the data D given that model. ... While calculating the likelihood of the data given a particular hypothesis is generally straightforward, the more difficult question in Bayesian learning is how to determine the prior probabilities of various hypotheses. ... Cartwright, 1996), morphological 1 Since we use ordinary text, rather than phonological transcriptions, as input, the rules we learn are really spelling rules, not phonological rules. We believe that the work discussed here would be equally applicable, and possibly more successful, with phonological transcriptions. However, since we wish to have an entirely unsupervised system "
+      },
+      {
+        "paper_id": "258823219",
+        "markdown_evidence": "Cross-Lingual Supervision improves Large Language Models Pre-training ... It is demonstrated that pre-training Large Language Models on a mixture of a self-supervised Language Modeling objective and the supervised Machine Translation objective, therefore including cross-lingual parallel data during pre- training, yields models with better in-context learning abilities. ... The recent rapid progress in pre-training Large Language Models has relied on using self-supervised language modeling objectives like next token prediction or span corruption. On the other hand, Machine Translation Systems are mostly trained using cross-lingual supervision that requires aligned data between source and target languages. We demonstrate that pre-training Large Language Models on a mixture of a self-supervised Language Modeling objective and the supervised Machine Translation objective, therefore including cross-lingual parallel data during pre-training, yields models with better in-context learning abilities. As pre-training is a very resource-intensive process and a grid search on the best mixing ratio between the two objectives is prohibitively expensive, we propose a simple yet effective strategy to learn it during pre-training. ... Examples of self-supervised (LM) Language Modeling objectives are next token prediction, where the task is to predict the next token given the previous ones, or span-corruption where the task is to fill-in a portion of missing text given its surroundings. ... The value λ = 0.4 was chosen by inspecting the rewards of each task at the beginning of training. ... We therefore propose to measure rewards intrinsically on the (pre)-training data itself. ... The first baseline we consider is training on just the LM data (LM (100%)); as a grid search on a static mixing ratio λ between the LM and MT tasks is prohibitively expensive, we consider the two values of λ from (Kale et al., 2021): λ = 0.5 (LM (50%) -MT (50%)) and λ = 0.1 (LM (90%) -MT (10%)). To create an intermediate behavior between λ = 0.5, which samples the MT objective "
+      },
+      {
+        "paper_id": "259370809",
+        "markdown_evidence": "PairSpanBERT: An Enhanced Language Model for Bridging Resolution ... This work designs a novel pre-training objective that aims to learn the contexts in which two mentions are implicitly linked to each other from a large amount of data automatically generated either heuristically or via distance supervision with a knowledge graph. ... We present PairSpanBERT, a SpanBERT-based pre-trained model specialized for bridging resolution. To this end, we design a novel pre-training objective that aims to learn the contexts in which two mentions are implicitly linked to each other from a large amount of data automatically generated either heuristically or via distance supervision with a knowledge graph. Despite the noise inherent in the automatically generated data, we achieve the best results reported to date on three evaluation datasets for bridging resolution when replacing SpanBERT with PairSpanBERT in a state-of-the-art resolver that jointly performs entity coreference resolution and bridging resolution. ... Note that an important factor that contributes to the success of pre-training is the sheer amount of data on which the model is pre-trained: since pretraining tasks are designed to be self-supervised learning tasks, a very large amount of annotated training data can be automatically generated, thus allowing the model to potentially acquire a lot of linguistic and commonsense kn ... We thank the three anonymous reviewers for their insightful comments on an earlier draft of the paper. This work was supported in part by NSF Grants IIS-1528037 and CCF-1848608. Any opinions, findings, conclusions or recommendations expressed in this paper are those of the authors and do not necessarily reflect the views or official policies, either expressed or implied, of the ... SPANBERT employs two pre-training objectives:\n\nMasked Language Modeling (MLM) Given a masked span consisting of contiguous tokens (t s , ..., t e ), the model is asked to predict for each masked token t i in the span the original token using t i . ... The SPANBERT pre-trained model is an extension of BERT aimed at better learning of the representations of text spans. 1 Like BERT, SPAN-BERT takes as input a sequence of subword tokens T = [t 1 , ..., t n ] and produces a sequence of contextualized vector representations T = [t 1 , ..., t n ]. Unlike BERT, which randomly selects individual tokens for masking (where each token s"
+      },
+      {
+        "paper_id": "237386541",
+        "markdown_evidence": "CodeT5: Identifier-aware Unified Pre-trained Encoder-Decoder Models for Code Understanding and Generation ... Comprehensive experiments show that CodeT5 significantly outperforms prior methods on understanding tasks such as code defect detection and clone detection, and generation tasks across various directions including PL-NL, NL-PL, and PL-PL. ... Pre-trained models for Natural Languages (NL) like BERT and GPT have been recently shown to transfer well to Programming Languages (PL) and largely benefit a broad set of code-related tasks. Despite their success, most current methods either rely on an encoder-only (or decoder-only) pre-training that is suboptimal for generation (resp. understanding) tasks or process the code snippet in the same way as NL, neglecting the special characteristics of PL such as token types. We present CodeT5, a unified pre-trained encoder-decoder Transformer model that better leverages the code semantics conveyed from the developer-assigned identifiers. Our model employs a unified framework to seamlessly support both code understanding and generation tasks and allows for multi-task learning. Besides, we propose a novel identifier-aware pre-training task that enables the model to distinguish which code tokens are identifiers and to recover them when they are masked. Furthermore, we propose to exploit the user-written code comments with a bimodal dual gene ... Transcoder (Rozière et al., 2020) explores programming language translation in an unsupervised setting. ... Specifically, we employ the same 15% corruption rate as T5 and ensure the average span length to be 3 by uniformly sampling spans of from 1 to 5 tokens. ... We now introduce our proposed pre-training tasks that enable CodeT5 to learn useful patterns from either PL-only or NL-PL bimodal data. \n\nIdentifier-aware Denoising Pre-training. Denoising Sequence-to-Sequence (Seq2Seq) pretraining has been shown to be quite effective in a broad set of NLP tasks (Song et al., 2019;Raffel et al., 2020;Lewis et al., 2020). This denoising objectiv"
+      },
+      {
+        "paper_id": "198229624",
+        "markdown_evidence": "SpanBERT: Improving Pre-training by Representing and Predicting Spans ... The approach extends BERT by masking contiguous random spans, rather than random tokens, and training the span boundary representations to predict the entire content of the masked span, without relying on the individual token representations within it. ... We present SpanBERT, a pre-training method that is designed to better represent and predict spans of text. Our approach extends BERT by (1) masking contiguous random spans, rather than random tokens, and (2) training the span boundary representations to predict the entire content of the masked span, without relying on the individual token representations within it. SpanBERT consistently outperforms BERT and our better-tuned baselines, with substantial gains on span selection tasks such as question answering and coreference resolution. In particular, with the same training data and model size as BERTlarge, our single model obtains 94.6% and 88.7% F1 on SQuAD 1.1 and 2.0 respectively. We also achieve a new state of the art on the OntoNotes coreference resolution task (79.6% F1), strong performance on the TACRED relation extraction benchmark, and even gains on GLUE.1 ... We present SpanBERT, a self-supervised pretraining method designed to better represent and predict spans of text. ... Figure 2 shows the distribution of span mask lengths. ... , x n ), we select a subset of tokens Y ⊆ X by iteratively sampling spans of text until the masking budget (e.g. 15% of X) has been spent. At each iteration, we first sample a span length (number of words) from a geometric distribution ∼ Geo(p), which is skewed towards shorter spans. ... Given a sequence of tokens X = (x 1 , x 2 , . . . , x n ), we select a subset of tokens Y ⊆ X by iteratively sampling spans of text until the masking budget (e.g. 15% of X) has been spent. At each iteration, we first sample a span length (number of words) from a geometric distribution ∼ Geo(p), which is skewed towards shorter spans. We then randomly (uniformly) select the start ... Pre-training methods like BERT (Devlin et al., 2019) have shown strong performance gains using self-supervised training that masks individual words or subword units. However, many NLP tasks involve reasoning about relationships between two or more spans of text. For example, in extractive question answering (Rajpurkar et al., 2016), determining that the \"Denver Broncos\" is a ty"
+      },
+      {
+        "paper_id": "247187477",
+        "markdown_evidence": "Fast-R2D2: A Pretrained Recursive Neural Network based on Pruned CKY for Grammar Induction and Text Representation ... This paper uses a top-down unsupervised parser as a model-guided pruning method, which also enables parallel encoding during inference and significantly improves the grammar induction quality and achieves competitive results in downstream tasks. ... Chart-based models have shown great potential in unsupervised grammar induction, running recursively and hierarchically, but requiring O(n³) time-complexity. The Recursive Transformer based on Differentiable Trees (R2D2) makes it possible to scale to large language model pretraining even with a complex tree encoder, by introducing a heuristic pruning method.However, its rule-based pruning process suffers from local optima and slow inference. In this paper, we propose a unified R2D2 method that overcomes these issues. We use a top-down unsupervised parser as a model-guided pruning method, which also enables parallel encoding during inference. Our parser casts parsing as a split point scoring task by first scoring all split points for a given sentence and then using the highest-scoring one to recursively split a span into two parts. The reverse order of the splits is considered as the orde ... (2013) showed the effectiveness of RvNNs with gold trees for sentiment analysis.In this work, we focus on models that are capable of learning meaningful structures in an unsupervised way and encoding text over the induced tree hierarchically.\n\nIn the line of work on learning a sentence representation with structures, Yogatama et al. ... We denote the tree probabilities estimated by the top-down parser and R2D2 as p θ (z|S), q ϕ (z|S), respectively.The difficulty here is that while q ϕ (z|S) may be optimized by the objective defined in Equation 6, there is no gradient feedback for p θ (z|S).To make p θ (z|S) learnable, an intuitive solution is to fit p θ (z|S) to q ϕ (z|S) by minimizing their Kullback-Leibler d ... At each time step, we remove a t from P t when a t is selected, then sample the next split point until the set of remaining split points is empty.Formally, we have:\n\nwhere v t is concatenation of v i in P t .As the Gumbel-Max trick (E.J."
+      },
+      {
+        "paper_id": "235651933",
+        "markdown_evidence": "DeltaLM: Encoder-Decoder Pre-training for Language Generation and Translation by Augmenting Pretrained Multilingual Encoders ... DeltaLM is introduced, a pretrained multilingual encoder-decoder model that regards the decoder as the task layer of off-the-shelf pretrained encoders and outperforms various strong baselines on both natural language generation and translation tasks. ... While pretrained encoders have achieved success in various natural language understanding (NLU) tasks, there is a gap between these pretrained encoders and natural language generation (NLG). NLG tasks are often based on the encoder-decoder framework, where the pretrained encoders can only benefit part of it. To reduce this gap, we introduce DeltaLM, a pretrained multilingual encoder-decoder model that regards the decoder as the task layer of off-the-shelf pretrained encoders. Specifically, we augment the pretrained multilingual encoder with a decoder and pre-train it in a self-supervised way. To take advantage of both the large-scale monolingual data and bilingual data, we adopt the span corruption and translation span corruption as the pre-training tasks. Experiments show that DeltaLM outperforms various strong baselines on both natural language generation and translation tasks, including machine translation, abstractive text summarization, data-to-text, and question generation. The code and pretrained models are available at \\url{ht ... Specifically, we augment the pretrained multilingual encoder with a decoder and pre-train it in a self-supervised way. ... For the translation span corruption, the probability of corrupted tokens is 0.50 and the span length is 3. ... We pre-train ∆LM with 6TB multilingual data, which is a combination of CC100, CC-Net, and Wikipedia, covering 100 languages. We also use 88GB of bilingual data from CCAligned and OPUS, which has 77 languages. In the experiments, we consider the base-size Transformer model, with 768 hidden size, 3, 072 FFN dimension, 12 attention heads, and 12 encoder/de-coder layers. The model "
+      },
+      {
+        "paper_id": "235097282",
+        "markdown_evidence": "Unsupervised Concept Representation Learning for Length-Varying Text Similarity ... A novel Concept Generation Network (CGNet) is proposed to learn concept representations from the perspective of the entire text corpus to address the information gap caused by context and vocabulary mismatches when comparing varying-length texts. ... Measuring document similarity plays an important role in natural language processing tasks. Most existing document similarity approaches suffer from the information gap caused by context and vocabulary mismatches when comparing varying-length texts. In this paper, we propose an unsupervised concept representation learning approach to address the above issues. Specifically, we propose a novel Concept Generation Network (CGNet) to learn concept representations from the perspective of the entire text corpus. Moreover, a concept-based document matching method is proposed to leverage advances in the recognition of local phrase features and corpus-level concept features. Extensive experiments on real-world data sets demonstrate that new method can achieve a considerable improvement in comparing length-varying texts. In particular, our model achieved 6.5% better F1 Score compared to the best of ... A comparably long text may lose its local information after being encoded as a fix-length representation due to the informative contexts. Word Mover's Distance (WMD) approaches (Yokoi et al., 2020;Wang et al., 2019) can partially solve the problem since they focus on local feature matching. ... The parameter α can control the degrees of freedom of Student's t-distribution. Since our unsupervised setting, we let α = 1 for all experiments. \n\nBased on the phrase assignment on each concept, the concept representation for document d j can be represented as: \n\nwhere C (j) is the set of concept centroid embeddings for document d j and γ is a threshold to assign concepts for  ... In this section, we evaluate the performance of the model described in Section 3 on document matching task for length-varying texts. ... Some approaches can be used to match document in unsupervised manners, including traditional statistical approaches (Metzler et al., 2007;Pincombe, 2004;Hua et al., 2016;Zhang et al., 2017). In past few years, neural-network-based methods have been used for document representation, which includes Doc2Vec (Conneau et al., 2017b), Skip-Thought vectors (Kiros et al., 2015). More r"
+      },
+      {
+        "paper_id": "285819065",
+        "markdown_evidence": "Self-Supervised Code-Mixed Representation Learning for Multi-Label Emoji, Sentiment, and Emotion Prediction ... Self-supervised code-mixed pretraining improves robustness to spelling variants and code-switching patterns, and better captures the interaction between emojis, sentiment, and emotion, in a domain-specialized self-supervised transformer model specialized for Hinglish code-mixed text. ... Emoji usage and code-mixed language have become central to informal online communication, especially in multilingual communities. Predicting suitable emojis and inferring sentiment and emotion from noisy, code-mixed social media text is challenging due to non-standard spelling, cross-script mixing, and strong pragmatic effects. Prior work has proposed specialized encoders and multi-task frameworks for joint prediction of multi-label emojis, sentiment, and emotion on English–Hindi code-mixed tweets. However, these approaches are built on relatively shallow architectures and do not fully exploit recent advances in self-supervised and large language model (LLM) based representation learning. In this paper, we introduce CodeMixLM, a self-supervised transformer model specialized for Hinglish code-mixed text. Starting from a multilingual transformer backbone, we continue pretraining on large-scale unlabeled code-mixed social media data with three auxiliary objectives: masked span denoising, script-aware language identification, and emoji-aware contrastive learning. We then fine-tune CodeMixLM in a multi-task setting for (i) multi-label emoji prediction, (ii) three-way sentiment classification, and (iii) seven-way emotion classification on the SENTIMOJI dataset of English–Hindi code-mixed tweets. Across all tasks, CodeMixLM substantially outperforms prior task-specific architectures and strong multilingual transformer baselines, impr"
+      },
+      {
+        "paper_id": "233289620",
+        "markdown_evidence": "Fast, Effective, and Self-Supervised: Transforming Masked Language Models into Universal Lexical and Sentence Encoders ... This work demonstrates that it is possible to turn MLMs into effective lexical and sentence encoders even without any additional data, relying simply on self-supervision, and proposes an extremely simple, fast, and effective contrastive learning technique, termed Mirror-BERT. ... Previous work has indicated that pretrained Masked Language Models (MLMs) are not effective as universal lexical and sentence encoders off-the-shelf, i.e., without further task-specific fine-tuning on NLI, sentence similarity, or paraphrasing tasks using annotated task data. In this work, we demonstrate that it is possible to turn MLMs into effective lexical and sentence encoders even without any additional data, relying simply on self-supervision. We propose an extremely simple, fast, and effective contrastive learning technique, termed Mirror-BERT, which converts MLMs (e.g., BERT and RoBERTa) into such encoders in 20-30 seconds with no access to additional external knowledge. Mirror-BERT relies on identical and slightly modified string pairs as positive (i.e., synonymous) fine-tuning examples, and aims to maximise their similarity during “identity fine-tuning”. We report huge gains ove ... ( 2020) explore input augmentation techniques for sentence representation learning with contrastive objectives. However, they use it as an auxiliary loss during full-fledged MLM pretraining from scratch (Rethmeier and Augenstein, 2021). In contrast, our post-hoc approach offers a lightweight and fast self-supervised transformation from any pretrained MLM to a universal language ... However, data augmentation in the feature space based on dropout, as introduced below, can be applied to any input text. ... Self-supervised text representations have a large body of literature. Here, due to space constraints, we provide a highly condensed summary of the most related work. Even prior to the emergence of large pretrained LMs (PLMs), most representation models followed the distributional hypothesis (Harris, 1954) and exploited the co-occurrence statistics of words/phrases/sentences in  ... We hypothesise that applying certain 'corruption' techniques to (i) parts of input text sequences or (ii) to their representations, or even (iii) doing both in combination, does not change their (captured) meaning. We present two 'corruption' tec"
+      },
+      {
+        "paper_id": "204960716",
+        "markdown_evidence": "BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension ... BART is presented, a denoising autoencoder for pretraining sequence-to-sequence models, which matches the performance of RoBERTa on GLUE and SQuAD, and achieves new state-of-the-art results on a range of abstractive dialogue, question answering, and summarization tasks. ... We present BART, a denoising autoencoder for pretraining sequence-to-sequence models. BART is trained by (1) corrupting text with an arbitrary noising function, and (2) learning a model to reconstruct the original text. It uses a standard Tranformer-based neural machine translation architecture which, despite its simplicity, can be seen as generalizing BERT (due to the bidirectional encoder), GPT (with the left-to-right decoder), and other recent pretraining schemes. We evaluate a number of noising approaches, finding the best performance by both randomly shuffling the order of sentences and using a novel in-filling scheme, where spans of text are replaced with a single mask token. BART is particularly effective when fine tuned for text generation but also works well for comprehension tasks. It matches the performance of RoBERTa on GLUE and SQuAD, and achieves new state-of-the-art result ... Self-supervised methods have achieved remarkable success in a wide range of NLP tasks (Mikolov et al., 2013;Peters et al., 2018;Devlin et al., 2019;Joshi et al., 2019;Yang et al., 2019;Liu et al., 2019). The most successful approaches have been variants of masked language models, which are denoising autoencoders that are trained to reconstruct text where a random subset of the  ... BART shows large improvements on summarization metrics, of up to 6 points over the prior state-of-the-art. ... Text Infilling A number of text spans are sampled, with span lengths drawn from a Poisson distribution (λ = 3). ... BART is trained by corrupting documents and then optimizing a reconstruction loss-the cross-entropy between the decoder's output and the original document. Unlike existing denoising autoencoders, which are tailored to specific noising schemes, BART allows us to apply any type of document corruption. In the extreme case, where all information about the source is lost, BART is eq"
+      },
+      {
+        "paper_id": "252185412",
+        "markdown_evidence": "Ranking-Enhanced Unsupervised Sentence Representation Learning ... It is shown that the semantic meaning of a sentence is also determined by nearest-neighbor sentences that are similar to the input sentence, and a novel unsupervised sentence encoder is proposed, RankEncoder. ... Unsupervised sentence representation learning has progressed through contrastive learning and data augmentation methods such as dropout masking. Despite this progress, sentence encoders are still limited to using only an input sentence when predicting its semantic vector. In this work, we show that the semantic meaning of a sentence is also determined by nearest-neighbor sentences that are similar to the input sentence. Based on this finding, we propose a novel unsupervised sentence encoder, RankEncoder. RankEncoder predicts the semantic vector of an input sentence by leveraging its relationship with other sentences in an external corpus, as well as the input sentence itself. We evaluate RankEncoder on semantic textual benchmark datasets. From the experimental results, we verify that 1) RankEncoder achieves 80.07% Spearman’s correlation, a 1.1% absolute improvement compared to the previo ... Trans-Encoder solves a slightly different problem from ours. They aim to solve an unsupervised sentence pair modeling problem, not unsupervised sentence embedding; although this work does not require any humanannotated similarity scores of sentence pairs for training, they need the sentence pairs of the STS datasets, which are not allowed to be used for training in unsupervised ... By applying this function to rank vectors, the inner product of two normalized rank vectors becomes equivalent to Spearman's rank correlation, and the similarity is scaled between -1 and 1. ... RankEncoder E -retrain is the model with re-training (Eq. ... This work has been studied on the Wikipedia corpus, following the standard experimental setting used in previous unsupervised sentence representation learning studies. We expect to see many important findings by investigating sentence representation learning on various corpora in different domains such as Bookcorpus (Zhu et al., 2015) and the C4 corpus (Raffel et al., 2019). ... To verify whether this pattern comes from unsupervised training, we show the loss curve of the supervised sentence encoder, SimCSE-sup, in Figure 8. In this experiment, we measure the same contrastive loss used in unsupervised sentence encode"
+      },
+      {
+        "paper_id": "248006342",
+        "markdown_evidence": "Pretraining Text Encoders with Adversarial Mixture of Training Signal Generators ... A new framework AMOS that pretrains text encoders with an Adversarial learning curriculum via a Mixture Of Signals from multiple auxiliary generators outperforms ELECTRA and recent state-of-the-art pretrained models by about 1 point on the GLUE benchmark for BERT base-sized models. ... We present a new framework AMOS that pretrains text encoders with an Adversarial learning curriculum via a Mixture Of Signals from multiple auxiliary generators. Following ELECTRA-style pretraining, the main encoder is trained as a discriminator to detect replaced tokens generated by auxiliary masked language models (MLMs). Different from ELECTRA which trains one MLM as the generator, we jointly train multiple MLMs of different sizes to provide training signals at various levels of difficulty. To push the discriminator to learn better with challenging replaced tokens, we learn mixture weights over the auxiliary MLMs' outputs to maximize the discriminator loss by backpropagating the gradient from the discriminator via Gumbel-Softmax. For better pretraining efficiency, we propose a way to assemble multiple MLMs into one unified auxiliary model. AMOS outperforms ELECTRA and recent state-of-the-art pretrained models by about 1 point on the GLUE benchmark for BERT base-sized models. ... These new selfsupervised frameworks significantly improve the efficiency and effectiveness of pretraining and lead to strong results in various downstream tasks with fine-tuning (Clark et al., 2020), prompt-based learning (Meng et al., 2021), and zero-shot cross-lingual representations (Chi et al., 2021). ... More specifically, it is unclear how to choose the size of the generator network and how to control the training dynamics of the generator and discriminator. ... This leads to significantly improved sample efficiency and effectiveness of ELECTRA-style pretrained models (Clark et al., 2020;Chi et al., 2021;Meng et al., 2021). \n\nOn the other hand, such a training dynamic also introduced new challenges in search of the optimal pretraining setting. ... Instead of pretraining encoders on texts with random noise (e.g., randomly masked tokens in BERT (Devlin et al., 2019)), ELECTRA-style frameworks employ an auxiliary model to corrupt the original text sequence using its language modeling outputs, and pretrain the main Transformer to detect (Clark et al., 2020) or co"
+      },
+      {
+        "paper_id": "258686192",
+        "markdown_evidence": "Unsupervised Sentence Representation Learning with Frequency-induced Adversarial Tuning and Incomplete Sentence Filtering ... This work fine-tune PLMs by leveraging the frequency information of words and proposes a novel USRL framework, namely Sentence Representation Learning with Frequency-induced Adversarial tuning and Incomplete sentence filtering (Slt-fai), which is a flexible and plug-and-play framework that can be in ... Pre-trained Language Model (PLM) is nowadays the mainstay of Unsupervised Sentence Representation Learning (USRL). However, PLMs are sensitive to the frequency information of words from their pre-training corpora, resulting in anisotropic embedding space, where the embeddings of high-frequency words are clustered but those of low-frequency words disperse sparsely. This anisotropic phenomenon results in two problems of similarity bias and information bias, lowering the quality of sentence embeddings. To solve the problems, we fine-tune PLMs by leveraging the frequency information of words and propose a novel USRL framework, namely Sentence Representation Learning with Frequency-induced Adversarial tuning and Incomplete sentence filtering (Slt-fai). We calculate the word frequencies over the pre-training corpora of PLMs and assign words thresholding frequency labels. With them, (1) we inco ... These PLMs [46] can be divided into two categories: \n\n(1) text representation with Transformer encoder-only models, pre-trained with the self-supervised objectives such as masked language modeling and next sentence prediction [16,33]; and (2) text generation with encoder-decoder or decoder-only modules, pre-trained in an auto-regressive manner [40,41]. ... The parameter λ is used as a thresholding value to assign frequency labels to words. \n\nWe analyze its sensitivity by varying its values over the set {10%, 30%, • • • , 90%}. The empirical results are presented in Fig. 4. It can be seen that SLT-FAI performs better when λ is around 30% ∼ 50%, and both the best average scores and scores of STSb are happening when λ = 50%. This im ... In this work, we concentrate on BERT [16], and we collect its per-training corpus BookCorpus, 3 which contains 74M sentences and 1.1B tokens [57]. ... Sentence Representation Learning (SRL) technically aims to map sentences into fixed-length embeddings with rich semantic and syntactic properties of sentences [27,24,13]. It is a cornerstone task in natural language pro"
+      },
+      {
+        "paper_id": "196185937",
+        "markdown_evidence": "Unsupervised Learning of Discourse-Aware Text Representation for Essay Scoring ... An unsupervised approach to capture discourse structure in terms of coherence and cohesion for document embedding that does not require any expensive parser or annotation is proposed. ... Existing document embedding approaches mainly focus on capturing sequences of words in documents. However, some document classification and regression tasks such as essay scoring need to consider discourse structure of documents. Although some prior approaches consider this issue and utilize discourse structure of text for document classification, these approaches are dependent on computationally expensive parsers. In this paper, we propose an unsupervised approach to capture discourse structure in terms of coherence and cohesion for document embedding that does not require any expensive parser or annotation. Extrinsic evaluation results show that the document representation obtained from our approach improves the performance of essay Organization scoring and Argument Strength scoring. ... The focus of this study is the unsupervised encapsulation of discourse structure (coherence and cohesion) into document representation for essay scoring. ... Our base model consists of (i) a base document encoder, (ii) auxiliary encoders, and (iii) a scoring function. The base document encoder produces a vector representation h base by capturing a sequence of words in each essay. The auxiliary encoders capture additional essay-related information that is useful for essay scoring and produce a vector representation h aux . By taking  ... Previous studies have modeled text coherence (Li and Jurafsky, 2016;Joty et al., 2018;Mesgar and Strube, 2018). ... ………… \n\nPrompt: Some people say that in our modern world , dominated by science, technology and industrialization, there is no longer a place for dreaming and imagination. What is your opinion? be included in text embedding without an expensive parser and how document embeddings affect essay scoring tasks. \n\nIn this paper, we propose an unsupervised method to capture discourse s ... Document embedding is important for many NLP tasks such as document classification (e.g., essay scoring and sentiment classification) (Le and Mikolov, 2014;Liu et al., 2017;Wu et al., 2018;Tang et al., 2015) and summarization. While embedding approaches can be supervised, semi-supervised and unsupervised, recent studies have largely"
+      },
+      {
+        "paper_id": "261057338",
+        "markdown_evidence": "POSPAN: Position-Constrained Span Masking for Language Model Pre-training ... PosPAN is presented, a general framework to allow diverse position-constrained span masking strategies via the combination of span length distribution and position constraint distribution, which unifies all existing span-level masking methods. ... Span-level masked language modeling (MLM) has shown to be advantageous to pre-trained language models over the original single-token MLM, as entities/phrases and their dependencies are critical to language understanding. Previous works only consider span length with some discrete distributions, while the dependencies among spans are ignored, i.e., assuming that the positions of masked spans are uniformly distributed. In this paper, we present POSPAN, a general framework to allow diverse position-constrained span masking strategies via the combination of span length distribution and position constraint distribution, which unifies all existing span-level masking methods. To verify the effectiveness of POSPAN in pre-training, we evaluate it on the datasets from several NLU benchmarks. Experimental results indicate that the position constraint is capable of enhancing span-level masking broadly, and our best POSPAN setting consistently outperforms its span-length-only counterparts and vanilla MLM. We also conduct theoretical analysis for the position constraint in masked language models to shed light on the reason why POSPAN works well, demonstrating the rationality and necessity of POSPAN."
+      },
+      {
+        "paper_id": "273500859",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269757786",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "198994956",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258947412",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263334563",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250340279",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "208158216",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275458187",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273403582",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16108144",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248299679",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246473169",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267200249",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244478674",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266166156",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209405420",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277765525",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277065987",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "487442",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258236418",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6694822",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270064259",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218974395",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245329821",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232185434",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "11120294",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247793456",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257532624",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263887657",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269832907",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259281103",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252752705",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253882785",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253018999",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264405606",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263834982",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259370776",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258833507",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258741377",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253420730",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247158698",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226262227",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "67855945",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "222346669",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "9126867",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233296292",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3525802",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2937095",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53245704",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "28971531",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235422673",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235187266",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229924304",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248496439",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237453590",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232404000",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "147704286",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267750231",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254125095",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "125977708",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237940779",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219531210",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202888986",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264172756",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262063825",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259108245",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260847602",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236460287",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275820173",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231942621",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "243865399",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271874454",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270440890",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266818081",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263909146",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260125724",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248665546",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248426912",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246867373",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247519084",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273662048",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274328561",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255847087",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "33222507",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262013732",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252780443",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "240288739",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245123905",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227230254",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247519241",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259980652",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247315276",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276985688",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266174294",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268681102",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275544523",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237491044",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261945180",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226964491",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264350504",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264935129",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "57730082",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258048539",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275212665",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280084538",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266844632",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272565437",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269502487",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253734375",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5757459",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "49313245",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52967399",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "198953378",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "160025533",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266486232",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263835346",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "214693230",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274043417",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257687447",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268433673",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266176991",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229924110",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270357611",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235463411",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267104248",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256389874",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221836078",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247084198",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276421317",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270562618",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272832065",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253553494",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267897954",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252818984",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232404108",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271432232",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251953252",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "4502223",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245005710",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "201646309",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250334476",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16052179",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273098139",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264145794",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249840771",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52198143",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249954026",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234741794",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "212747830",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "195767214",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271768692",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248078748",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277857372",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "282084216",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "213005726",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273877511",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266899691",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269719856",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "10217539",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221655313",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271014402",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265629619",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248227557",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248665955",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235097413",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260704700",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14047736",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237420548",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219531032",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246634534",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248157108",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235829632",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267199767",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249594813",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273374871",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270688201",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6373989",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53250548",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14178169",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "201125201",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277095891",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277043939",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266902520",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266999476",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267187803",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276007757",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258841314",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279812423",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266055411",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258461229",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216080982",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "7826531",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262053463",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278288707",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274373917",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268205606",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270141091",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "123857713",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264808521",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270514443",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268264196",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277123942",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274233919",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274973529",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234762899",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "240068971",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271139776",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272723150",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276804811",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781037",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270391318",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269762480",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279703037",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255522525",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236459882",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247362818",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257313600",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245144488",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "216625471",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280001774",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258048884",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273544065",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265212912",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253384678",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251258155",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274065372",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235363741",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278327925",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

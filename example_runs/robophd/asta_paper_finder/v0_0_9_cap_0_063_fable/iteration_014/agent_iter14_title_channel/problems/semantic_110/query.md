@@ -1,0 +1,1 @@
+Pruning is a means of model compression that can improve model efficiency in NLP. What are some recent general, task-agnostic pruning methods for large language methods that have worked well?

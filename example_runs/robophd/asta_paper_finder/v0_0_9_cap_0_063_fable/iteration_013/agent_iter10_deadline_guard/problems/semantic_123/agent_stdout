@@ -1,0 +1,24 @@
+[semantic_123] score_type=semantic_f1 query='What are some pretraining techniques to improve language model reasoning abilities, especially focus'
+  [t+6s] plan: 10 kw queries, 3 criteria, oldest_first=False; kw=['chain-of-thought pretraining language models', 'reasoning-oriented pretraining large language models', 'scratchpad pretraining neural language models', 'rationale-augmented pretraining for reasoning', 'process-supervised pretraining language reasoning', 'deliberate reasoning pretraining transformers', 'mathematical reasoning pretraining chain of thought', 'commonsense reasoning pretraining rationales', 'self-improvement pretraining with traces', 'instruction pretraining reasoning traces']
+  criteria: ['The paper must address improving reasoning abilities or reasoning performance in language models.', 'The paper must focus on a pretraining approach, objective, corpus, or setup rather than only inference-time prompting or post-training methods.', 'The paper must specifically involve pretraining with chain-of-thought, rationales, scratchpads, intermediate reasoning steps, or equivalent process traces.'] weights=[0.4, 0.3, 0.3]
+  [t+222s] pooled 930 unique candidates
+  tool call failed (): ToolError: Paper 16e2c1e988b13329e3b7fc2dbbf854f9414721d7 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 1 of 95 ids (title,abstract,tldr,corpusId,year,venue)
+  backfilled abstracts for 94 of 95 candidates
+  [t+566s] grade histogram: {3: 26, 2: 25, 1: 88, 0: 201}
+  tool call failed (): ToolError: Paper 16e2c1e988b13329e3b7fc2dbbf854f9414721d7 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 1 of 16 ids (corpusId,citations,references)
+  citer channel: 311 citing-paper ids pooled
+  expansion r1: +120 graded {3: 19, 2: 6, 1: 22, 0: 73}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 12 ids (corpusId,citations,references)
+  expansion r2: +100 graded {3: 1, 2: 6, 1: 34, 0: 59}
+  [t+946s] mining depth reduced to 120 (deadline)
+  [t+1070s] criterion mining: 218 passages across 84 of 120 papers
+  [t+1070s] evidence chars: median=1805 min=63 >=2200=52/250
+  [t+1076s] judge-sim rerank scored 80/80; predicted grade-3: 27
+  tool call failed (The paper must address improving reasoning abilities or reasoning performance in language models.): TimeoutError: 
+  tool call failed (The paper must specifically involve pretraining with chain-of-thought, rationales, scratchpads, intermediate reasoning steps, or equivalent process traces.): TimeoutError: 
+  tool call failed (The paper must specifically involve pretraining with chain-of-thought, rationales, scratchpads, intermediate reasoning steps, or equivalent process traces.): TimeoutError: 
+  [t+1350s] weak-criterion patch: 235 papers, 53 scoped calls, criteria {0: 179, 1: 226, 2: 218}
+  [t+1350s] submitted 250 papers

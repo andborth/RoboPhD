@@ -1,0 +1,18 @@
+[semantic_222] score_type=semantic_f1 query='I am looking for research papers on the construction of multimodal foundation models that support bo'
+  [t+7s] plan: 10 kw queries, 3 criteria, oldest_first=False; kw=['multimodal foundation models vision audio', 'audio-visual pretraining large-scale datasets', 'vision-language-audio foundation model', 'unified image speech video pretraining', 'audio visual representation learning transformer', 'cross-modal foundation model visual acoustic', 'multisensory foundation model image audio video', 'ImageBind AudioCLIP CLIP-style multimodal', 'video audio image self-supervised pretraining', 'generalist multimodal model visual speech sound']
+  criteria: ['The paper must focus on the construction of a foundation model or general-purpose multimodal model rather than a survey or a narrowly task-specific system.', 'The paper must support both visual input and audio input, such as images or video together with sound, speech, or acoustic signals.', 'The paper must involve pre-training on large-scale datasets that include visual data, audio data, and audio-visual paired data.'] weights=[0.4, 0.3, 0.3]
+  [t+102s] pooled 992 unique candidates
+  backfilled abstracts for 73 of 73 candidates
+  [t+107s] grade histogram: {3: 8, 2: 20, 1: 125, 0: 187}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 2 of 16 ids (corpusId,citations,references)
+  citer channel: 416 citing-paper ids pooled
+  [t+568s] expansion r1: +120 graded {3: 1, 2: 8, 1: 37, 0: 74}
+  [t+568s] expansion r2 skipped (r1 grade-3 yield 1 < 4)
+  [t+723s] criterion mining: 338 passages across 153 of 200 papers
+  [t+723s] evidence chars: median=1965 min=285 >=2200=91/250
+  [t+728s] judge-sim rerank scored 100/100; predicted grade-3: 5
+  [t+728s] promoting 5 predicted grade-3 papers
+  [t+948s] weak-criterion patch: 246 papers, 52 scoped calls, criteria {0: 201, 1: 159, 2: 243}
+  [t+1102s] patch wave 2: 213 paper-criteria retried with alternate wording
+  [t+1102s] submitted 250 papers

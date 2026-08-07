@@ -1,0 +1,21 @@
+[semantic_193] score_type=semantic_f1 query='Adaptive query expansion with LLMs, focusing on papers published on or after 2023'
+  [t+8s] plan: 14 kw queries, 3 criteria, oldest_first=False; kw=['LLM-based query expansion 2023', 'generative retrieval query expansion', 'large language models information retrieval reformulation', 'retrieval-augmented generation query rewriting', 'conversational search query expansion LLM', 'neural query reformulation large language models', 'zero-shot query expansion with GPT', 'LLM pseudo-relevance feedback expansion', 'dense retrieval query rewriting LLM', 'web search query reformulation generative models', 'document retrieval prompt-based query expansion', 'BEIR query expansion large language models', 'TREC Deep Learning query rewriting', 'search augmentation with foundation models']
+  criteria: ['The paper must focus on query expansion or closely related query reformulation that is adaptive or dynamic rather than generic static expansion.', 'The paper must use large language models or foundation models as the main method for performing the query expansion or reformulation.', 'The paper must be published on or after 2023.'] weights=[0.4, 0.3, 0.3]
+  [t+193s] pooled 1251 unique candidates
+  backfilled abstracts for 91 of 91 candidates
+  [t+292s] grade histogram: {3: 43, 2: 30, 1: 150, 0: 117}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 5 of 16 ids (corpusId,citations,references)
+  citer channel: 42 citing-paper ids pooled
+  [t+783s] expansion r1: +120 graded {3: 4, 2: 8, 1: 19, 0: 89}
+  [t+783s] expansion r2 skipped (deadline: 777s left)
+  [t+1088s] criterion mining: 316 passages across 133 of 200 papers
+  [t+1088s] evidence chars: median=1850 min=50 >=2200=93/250
+  [t+1091s] judge-sim rerank scored 100/100; predicted grade-3: 28
+  tool call failed (The paper must focus on query expansion or closely related query reformulation that is adaptive or dynamic rather than generic static expansion.): TimeoutError: 
+  tool call failed (The paper must use large language models or foundation models as the main method for performing the query expansion or reformulation.): TimeoutError: 
+  [t+1334s] weak-criterion patch: 235 papers, 51 scoped calls, criteria {0: 202, 1: 212, 2: 181}
+  [t+1334s] submitted 250 papers

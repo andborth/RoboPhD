@@ -1,0 +1,26 @@
+[semantic_137] score_type=semantic_f1 query='Are language models better at discriminating among previously generated alternatives compared to gen'
+  [t+7s] plan: 12 kw queries, 3 criteria, oldest_first=False; kw=['LLM generation versus reranking', 'response selection language models', 'discriminative versus generative evaluation', 'best-of-N decoding preference model', 'answer reranking large language models', 'candidate ranking versus direct generation', 'multiple choice versus free generation', 'self-consistency answer selection transformers', 'pairwise preference judgment language models', 'discriminator generator comparison NLP', 'response ranking benchmark GPT', 'selection inference scaling laws']
+  criteria: ['The paper must address both initial response generation and discrimination among candidate alternatives, such as selection, reranking, ranking, or preference judgment.', 'The paper must study language models, especially large language models or closely related neural text models, rather than unrelated classifiers or non-language-model systems.', 'The paper must provide evidence about the relative performance of generation versus discrimination tasks, including whether models are better at choosing among prior outputs than producing the initial response directly.'] weights=[0.4, 0.3, 0.3]
+  [t+135s] pooled 1441 unique candidates
+  backfilled abstracts for 105 of 105 candidates
+  [t+234s] grade histogram: {3: 44, 2: 9, 1: 74, 0: 213}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 16 ids (corpusId,citations,references)
+  citer channel: 45 citing-paper ids pooled
+  [t+454s] expansion r1: +120 graded {3: 17, 2: 12, 1: 18, 0: 73}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 12 ids (corpusId,citations,references)
+  tool call failed (): ToolError: Papers 2ff02f446eb61b74fad0925b6482125368b2cbfe, de8ba9b01c9ab7cbabf5c33b80b7bbc618857627 are newer than the date cutoff of 2025-06-01 and are not all
+  robust batch: dropped 19 of 180 ids (title,abstract,corpusId,tldr,year,venue)
+  [t+705s] expansion r2: +100 graded {3: 9, 2: 2, 1: 24, 0: 65}
+  [t+889s] criterion mining: 380 passages across 169 of 200 papers
+  [t+889s] evidence chars: median=2008 min=41 >=2200=101/250
+  [t+892s] judge-sim rerank scored 100/100; predicted grade-3: 24
+  tool call failed (The paper must study language models, especially large language models or closely related neural text models, rather than unrelated classifiers or non-language-model systems.): TimeoutError: 
+  tool call failed (The paper must address both initial response generation and discrimination among candidate alternatives, such as selection, reranking, ranking, or preference judgment.): TimeoutError: 
+  tool call failed (The paper must address both initial response generation and discrimination among candidate alternatives, such as selection, reranking, ranking, or preference judgment.): TimeoutError: 
+  tool call failed (The paper must address both initial response generation and discrimination among candidate alternatives, such as selection, reranking, ranking, or preference judgment.): TimeoutError: 
+  tool call failed (The paper must address both initial response generation and discrimination among candidate alternatives, such as selection, reranking, ranking, or preference judgment.): TimeoutError: 
+  [t+1171s] weak-criterion patch: 237 papers, 54 scoped calls, criteria {0: 222, 1: 172, 2: 232}
+  [t+1295s] patch wave 2: 208 paper-criteria retried with alternate wording
+  [t+1295s] submitted 250 papers

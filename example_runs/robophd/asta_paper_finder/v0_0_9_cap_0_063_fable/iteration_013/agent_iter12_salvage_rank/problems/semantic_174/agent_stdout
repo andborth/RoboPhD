@@ -1,0 +1,22 @@
+[semantic_174] score_type=semantic_f1 query='Are there generative retrieval methods that can handle new documents and add them to the trained ret'
+  [t+8s] plan: 10 kw queries, 3 criteria, oldest_first=False; kw=['generative retrieval dynamic index updates', 'incremental generative document retrieval', 'corpus expansion sequence to sequence retrieval', 'docid generation new documents retrieval', 'indexless retrieval continual learning', 'parametric retrieval corpus updates', 'neural corpus indexing append-only updates', 'generative search online document insertion', 'entity retrieval incremental catalog growth', 'memory-augmented generative retriever updates']
+  criteria: ['The paper must be about generative retrieval, such as parametric, sequence-to-sequence, or identifier-generating retrieval models rather than only standard dense or sparse indexing.', 'The paper must address adding or incorporating new, unseen documents into the retrieval system or corpus after the base model has been trained.', 'The paper must discuss or evaluate a mechanism for updating the trained retrieval model to support those new documents, such as incremental, continual, online, or efficient corpus-update methods.'] weights=[0.4, 0.3, 0.3]
+  [t+137s] pooled 829 unique candidates
+  backfilled abstracts for 78 of 78 candidates
+  [t+323s] grade histogram: {3: 7, 1: 53, 0: 280}
+  [t+375s] thin-pool round (strong=7): 6 alt queries, +280 new candidates graded
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 16 ids (corpusId,citations,references)
+  citer channel: 42 citing-paper ids pooled
+  tool call failed (): ToolError: Paper c3df8f8b7f1ed68f0ffeef6afcf60039f955b397 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 25 of 200 ids (title,abstract,corpusId,tldr,year,venue)
+  [t+775s] expansion r1: +50 graded {1: 7, 0: 43}
+  [t+775s] expansion r2 skipped (r1 grade-3 yield 0 < 4)
+  [t+961s] criterion mining: 283 passages across 111 of 200 papers
+  [t+961s] evidence chars: median=1817 min=12 >=2200=76/250
+  [t+962s] judge-sim rerank scored 100/100; predicted grade-3: 13
+  [t+962s] promoting 13 predicted grade-3 papers
+  tool call failed (The paper must address adding or incorporating new, unseen documents into the retrieval system or corpus after the base model has been trained.): TimeoutError: 
+  [t+1210s] weak-criterion patch: 242 papers, 58 scoped calls, criteria {0: 198, 1: 238, 2: 241}
+  [t+1455s] DEADLINE: solver timed out; submitting checkpoint snapshot (250 entries)
+  [t+1455s] submitted 250 papers

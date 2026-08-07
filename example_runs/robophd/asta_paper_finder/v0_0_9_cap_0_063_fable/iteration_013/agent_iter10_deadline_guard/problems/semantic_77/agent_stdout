@@ -1,0 +1,20 @@
+[semantic_77] score_type=semantic_f1 query='Could you recommend research that evaluates the performance decline in various language models, like'
+  [t+7s] plan: 10 kw queries, 3 criteria, oldest_first=False; kw=['BLOOM 4-bit weight-only quantization', 'LLM INT4 column-wise quantization accuracy', 'large language model weight-only PTQ', 'post-training quantization BLOOM perplexity', 'AWQ GPTQ LLM evaluation', 'columnar integer quantization transformer weights', '4-bit compressed inference language models', 'OPT LLaMA BLOOM quantization benchmarks', 'weight-only low-bit LLM degradation', 'INT4 group-wise transformer quantization']
+  criteria: ['The paper must evaluate language models, preferably large autoregressive models such as BLOOM or closely related transformer LLMs.', 'The paper must study 4-bit integer weight-only quantization, including columnar, column-wise, or group-wise formulations of low-bit weight quantization.', 'The paper must report the effect of that quantization on model quality, such as accuracy, perplexity, benchmark scores, or explicit degradation relative to full-precision baselines.'] weights=[0.4, 0.3, 0.3]
+  [t+99s] pooled 561 unique candidates
+  backfilled abstracts for 69 of 69 candidates
+  [t+226s] grade histogram: {3: 80, 2: 36, 1: 85, 0: 139}
+  citer channel: 154 citing-paper ids pooled
+  expansion r1: +120 graded {3: 11, 1: 18, 0: 91}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 12 ids (corpusId,citations,references)
+  expansion r2: +79 graded {3: 1, 1: 15, 0: 63}
+  tool call failed (Could you recommend research that evaluates the performance decline in various language models, like BLOOM, under 4-bit integer columnar weight-only quantization?): TimeoutError: 
+  [t+999s] criterion mining: 433 passages across 168 of 200 papers
+  [t+999s] evidence chars: median=2217 min=44 >=2200=127/250
+  [t+1004s] judge-sim rerank scored 80/80; predicted grade-3: 29
+  tool call failed (The paper must evaluate language models, preferably large autoregressive models such as BLOOM or closely related transformer LLMs.): TimeoutError: 
+  tool call failed (The paper must report the effect of that quantization on model quality, such as accuracy, perplexity, benchmark scores, or explicit degradation relative to full-precision baselines.): TimeoutError: 
+  [t+1250s] weak-criterion patch: 226 papers, 42 scoped calls, criteria {0: 106, 1: 208, 2: 175}
+  [t+1344s] patch wave 2: 172 paper-criteria retried with alternate wording
+  [t+1344s] submitted 250 papers

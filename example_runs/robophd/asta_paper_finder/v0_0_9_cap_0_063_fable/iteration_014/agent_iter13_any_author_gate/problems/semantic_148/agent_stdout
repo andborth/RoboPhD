@@ -1,0 +1,20 @@
+[semantic_148] score_type=semantic_f1 query='research on generative document retrieval models that allow for quick addition of new documents as t'
+  [t+9s] plan: 12 kw queries, 3 criteria, oldest_first=False; kw=['generative document retrieval incremental indexing', 'dynamic corpus generative retriever', 'entity retrieval by seq2seq corpus updates', 'document identifier generation online updates', 'corpus expansion autoregressive retrieval', 'non-parametric memory generative retriever', 'retrieval augmented generation document insertion', 'neural corpus indexing without retraining', 'continual document retrieval generative models', 'fresh document addition generative search', 'DSI incremental document addition', 'updatable generative retrievers knowledge bases']
+  criteria: ['The paper must study document retrieval using a generative model, such as sequence-to-sequence, autoregressive, or identifier-generating retrieval rather than only dense or sparse nearest-neighbor retrieval.', 'The paper must address retrieval over a document corpus or knowledge base where documents are the retrievable units, not only passage ranking, query generation, or general language modeling.', 'The paper must discuss, evaluate, or enable quick incorporation of newly available documents, such as incremental indexing, online updates, dynamic corpus expansion, or adding documents without full retraining.'] weights=[0.4, 0.3, 0.3]
+  [t+162s] pooled 977 unique candidates
+  backfilled abstracts for 108 of 108 candidates
+  [t+235s] grade histogram: {3: 9, 2: 42, 1: 16, 0: 273}
+  [t+244s] thin-pool round (strong=51, g3=9): 6 alt queries, +280 new candidates graded
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 16 ids (corpusId,citations,references)
+  citer channel: 45 citing-paper ids pooled
+  [t+644s] expansion r1: +119 graded {3: 3, 2: 8, 1: 2, 0: 106}
+  [t+644s] expansion r2 skipped (r1 grade-3 yield 3 < 4)
+  [t+771s] criterion mining: 305 passages across 118 of 200 papers
+  [t+771s] evidence chars: median=1820 min=57 >=2200=89/250
+  [t+772s] judge-sim rerank scored 100/100; predicted grade-3: 13
+  [t+772s] promoting 13 predicted grade-3 papers
+  tool call failed (The paper must discuss, evaluate, or enable quick incorporation of newly available documents, such as incremental indexing, online updates, dynamic corpus expansion, or adding documents without full retraining.): TimeoutError: 
+  [t+1079s] weak-criterion patch: 241 papers, 54 scoped calls, criteria {0: 202, 1: 199, 2: 238}
+  [t+1233s] patch wave 2: 327 paper-criteria retried with alternate wording
+  [t+1233s] submitted 250 papers

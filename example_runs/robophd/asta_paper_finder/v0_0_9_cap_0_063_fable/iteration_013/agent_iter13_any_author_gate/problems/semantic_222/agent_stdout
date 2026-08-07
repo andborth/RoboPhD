@@ -1,0 +1,19 @@
+[semantic_222] score_type=semantic_f1 query='I am looking for research papers on the construction of multimodal foundation models that support bo'
+  [t+7s] plan: 12 kw queries, 3 criteria, oldest_first=False; kw=['multimodal foundation model vision audio', 'audio visual foundation models pretraining', 'vision language audio foundation model', 'large scale audiovisual pretraining transformers', 'audio visual self supervised pretraining', 'multimodal encoder visual audio data', 'audiovisual representation learning large scale', 'CLIP style audio visual pretraining', 'image audio video foundation model', 'multisensory foundation model audio vision', 'AudioSet VGGSound audiovisual pretraining', 'VALOR video audio language pretraining']
+  criteria: ['The paper must be about the construction of a multimodal foundation model rather than a survey or unrelated multimodal system.', 'The paper must describe a model that supports both visual inputs and audio inputs as core modalities.', 'The paper must involve pre-training on large-scale datasets that include visual data, audio data, and audio-visual data.'] weights=[0.4, 0.3, 0.3]
+  [t+131s] pooled 1085 unique candidates
+  backfilled abstracts for 75 of 75 candidates
+  [t+227s] grade histogram: {3: 10, 2: 14, 1: 54, 0: 262}
+  [t+294s] thin-pool round (strong=24, g3=10): 6 alt queries, +280 new candidates graded
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 16 ids (corpusId,citations,references)
+  citer channel: 219 citing-paper ids pooled
+  [t+723s] expansion r1: +50 graded {2: 1, 1: 5, 0: 44}
+  [t+723s] expansion r2 skipped (r1 grade-3 yield 0 < 4)
+  tool call failed (I am looking for research papers on the construction of multimodal foundation models that support both visual and audio inputs. These models should be pre-trained on large-scale datasets, including visual, audio, and audio-visual data. Please exclude survey papers.): TimeoutError: 
+  [t+1091s] criterion mining: 320 passages across 137 of 200 papers
+  [t+1091s] evidence chars: median=1863 min=55 >=2200=90/250
+  [t+1097s] judge-sim rerank scored 100/100; predicted grade-3: 7
+  [t+1097s] promoting 7 predicted grade-3 papers
+  [t+1410s] weak-criterion patch: 244 papers, 57 scoped calls, criteria {0: 230, 1: 202, 2: 240}
+  [t+1410s] submitted 250 papers

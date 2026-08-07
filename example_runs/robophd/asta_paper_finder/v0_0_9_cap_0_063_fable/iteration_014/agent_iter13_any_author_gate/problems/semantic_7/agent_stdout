@@ -1,0 +1,20 @@
+[semantic_7] score_type=semantic_f1 query='What is the performance of large language models in text summarization under reference-based and ref'
+  [t+6s] plan: 12 kw queries, 3 criteria, oldest_first=False; kw=['large language models summarization evaluation', 'LLM text summarization human evaluation', 'reference-based summarization metrics human judgment', 'reference-free summarization evaluation LLMs', 'abstractive summarization GPT human assessment', 'summary quality faithfulness coherence human ratings', 'SummEval large language model summarizers', 'CNN DailyMail LLM summarization evaluation', 'human preference summarization without references', 'automatic versus human summary evaluation LLMs', 'instruction tuned models summarization benchmarks', 'G-Eval reference free summary assessment']
+  criteria: ['The paper must focus on large language models performing text summarization.', 'The paper must include human evaluation of summarization quality rather than only automatic metric-based evaluation.', 'The paper must address performance under reference-based and reference-free evaluation, or directly compare these two evaluation settings.'] weights=[0.4, 0.3, 0.3]
+  [t+159s] pooled 1137 unique candidates
+  backfilled abstracts for 48 of 48 candidates
+  [t+195s] grade histogram: {3: 2, 2: 21, 1: 75, 0: 242}
+  [t+293s] thin-pool round (strong=23, g3=2): 6 alt queries, +280 new candidates graded
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 3 of 16 ids (corpusId,citations,references)
+  citer channel: 147 citing-paper ids pooled
+  [t+603s] expansion r1: +120 graded {2: 3, 1: 8, 0: 109}
+  [t+603s] expansion r2 skipped (r1 grade-3 yield 0 < 4)
+  [t+788s] criterion mining: 336 passages across 147 of 200 papers
+  [t+788s] evidence chars: median=1891 min=129 >=2200=97/250
+  [t+791s] judge-sim rerank scored 100/100; predicted grade-3: 5
+  [t+791s] promoting 5 predicted grade-3 papers
+  tool call failed (The paper must address performance under reference-based and reference-free evaluation, or directly compare these two evaluation settings.): TimeoutError: 
+  [t+1077s] weak-criterion patch: 245 papers, 58 scoped calls, criteria {0: 207, 1: 230, 2: 229}
+  [t+1261s] patch wave 2: 253 paper-criteria retried with alternate wording
+  [t+1261s] submitted 250 papers

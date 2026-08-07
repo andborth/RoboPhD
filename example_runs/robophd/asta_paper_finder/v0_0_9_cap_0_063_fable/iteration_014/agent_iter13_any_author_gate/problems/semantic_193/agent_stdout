@@ -1,0 +1,22 @@
+[semantic_193] score_type=semantic_f1 query='Adaptive query expansion with LLMs, focusing on papers published on or after 2023'
+  [t+8s] plan: 12 kw queries, 3 criteria, oldest_first=False; kw=['LLM-based query expansion retrieval', 'large language models query reformulation', 'retrieval augmentation query expansion', 'generative retrieval query rewriting', 'conversational search LLM query reformulation', 'information retrieval pseudo relevance feedback LLM', 'RAG query expansion large language models', 'search query rewriting with GPT', 'dense retrieval LLM query expansion', 'hybrid search LLM reformulation', 'multi-query retrieval language models', '2023 2024 2025 LLM query expansion']
+  criteria: ['The paper must focus on query expansion, query reformulation, or closely related retrieval-time query adaptation rather than unrelated uses of language models.', 'The paper must use large language models as the main method for producing or guiding the query expansion or reformulation.', 'The paper must be published on or after 2023.'] weights=[0.4, 0.3, 0.3]
+  [t+222s] pooled 1015 unique candidates
+  tool call failed (): ToolError: Paper d4b02a2ce5b07f99290d7aa157df3df2b8e07b93 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool call failed (): ToolError: Paper 3cdf1b2b39cbbe7b014797a09c454dbaadfb036a is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 2 of 87 ids (title,abstract,tldr,corpusId,year,venue)
+  backfilled abstracts for 85 of 87 candidates
+  [t+838s] grade histogram: {3: 41, 2: 32, 1: 153, 0: 114}
+  [t+838s] expansion skipped (deadline)
+  [t+838s] mining depth reduced to 120 (deadline)
+  [t+1021s] criterion mining: 193 passages across 79 of 120 papers
+  [t+1021s] evidence chars: median=1769 min=50 >=2200=55/250
+  [t+1022s] judge-sim rerank scored 100/100; predicted grade-3: 13
+  [t+1022s] promoting 13 predicted grade-3 papers
+  tool call failed (The paper must use large language models as the main method for producing or guiding the query expansion or reformulation.): TimeoutError: 
+  tool call failed (The paper must use large language models as the main method for producing or guiding the query expansion or reformulation.): TimeoutError: 
+  tool call failed (The paper must use large language models as the main method for producing or guiding the query expansion or reformulation.): TimeoutError: 
+  tool call failed (The paper must be published on or after 2023.): TimeoutError: 
+  tool call failed (The paper must be published on or after 2023.): TimeoutError: 
+  [t+1388s] weak-criterion patch: 244 papers, 56 scoped calls, criteria {0: 199, 1: 223, 2: 236}
+  [t+1388s] submitted 250 papers

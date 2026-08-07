@@ -1,0 +1,21 @@
+[semantic_226] score_type=semantic_f1 query='Show me research on the long video description. Here, long videos are defined as those with a durati'
+  [t+7s] plan: 10 kw queries, 3 criteria, oldest_first=False; kw=['long video captioning', 'dense video captioning long-form videos', 'movie description video captioning', 'narrative video description minutes-long', 'video paragraph captioning', 'long-form temporal video captioning', 'egocentric long video captioning', 'instructional video description captioning', 'TV show video description dataset', 'minutes-long video language description']
+  criteria: ['The paper must study automatic generation of natural-language descriptions, captions, or narrative summaries for video.', 'The paper must focus on long-duration videos, defined here as videos lasting at least several minutes rather than short clips.', 'The paper must specifically address the description or captioning of long videos, not merely general video understanding, retrieval, or question answering on long videos.'] weights=[0.4, 0.3, 0.3]
+  [t+102s] pooled 818 unique candidates
+  backfilled abstracts for 92 of 92 candidates
+  [t+171s] grade histogram: {3: 40, 2: 12, 1: 156, 0: 132}
+  citer channel: 99 citing-paper ids pooled
+  tool call failed (): ToolError: Paper 52dfa20f6fdfcda8c11034e3d819f4bd47e6207d is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 1 of 200 ids (title,abstract,corpusId,tldr,year,venue)
+  [t+546s] expansion r1: +120 graded {3: 6, 1: 26, 0: 88}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 3 of 12 ids (corpusId,citations,references)
+  [t+673s] expansion r2: +100 graded {3: 5, 2: 2, 1: 23, 0: 70}
+  [t+830s] criterion mining: 310 passages across 118 of 200 papers
+  [t+830s] evidence chars: median=1739 min=42 >=2200=80/250
+  [t+833s] judge-sim rerank scored 100/100; predicted grade-3: 32
+  [t+1084s] weak-criterion patch: 236 papers, 51 scoped calls, criteria {0: 146, 1: 228, 2: 221}
+  tool call failed (Video Description Task: Show me research on the long video description. Here, long videos are defined as those with a duration of at least several minutes.): TimeoutError: 
+  tool call failed (Video Description Task: Show me research on the long video description. Here, long videos are defined as those with a duration of at least several minutes.): TimeoutError: 
+  [t+1264s] patch wave 2: 296 paper-criteria retried with alternate wording
+  [t+1264s] submitted 250 papers

@@ -1,0 +1,25 @@
+[semantic_174] score_type=semantic_f1 query='Are there generative retrieval methods that can handle new documents and add them to the trained ret'
+  [t+8s] plan: 12 kw queries, 3 criteria, oldest_first=False; kw=['generative retrieval incremental indexing', 'updatable generative document retrieval', 'dynamic corpus generative retriever', 'continual learning neural information retrieval', 'entity retrieval storage less models', 'document expansion autoregressive retrieval', 'memory augmented generative retrievers', 'streaming document collections retrieval models', 'indexless retrieval corpus updates', 'sequence to sequence dense retrieval updates', 'generative search mutable knowledge base', 'nearest neighbor replacement generative retrieval']
+  criteria: ['The paper must be about generative retrieval methods, such as retrieval models that generate document identifiers, document representations, or retrieval outputs rather than relying only on conventional sparse or dense indexed retrieval.', 'The paper must address adding previously unseen or newly arriving documents to the retrieval system or corpus.', 'The paper must specifically examine whether the trained generative retrieval model can handle corpus updates without full retraining, or provide a mechanism for incremental, continual, dynamic, or mutable updates.'] weights=[0.4, 0.3, 0.3]
+  [t+196s] pooled 1152 unique candidates
+  backfilled abstracts for 60 of 60 candidates
+  [t+442s] grade histogram: {3: 8, 2: 2, 1: 45, 0: 285}
+  [t+483s] thin-pool round (strong=10, g3=8): 6 alt queries, +280 new candidates graded
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 3 of 16 ids (corpusId,citations,references)
+  citer channel: 44 citing-paper ids pooled
+  tool call failed (): ToolError: Paper 223af46e6193561b406dd4956b6df3087c502349 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool call failed (): ToolError: Papers 2dcdd58ded6a3624345acc2a7980b6bf5af8bb78, 68a5fc1e00beeaf0ccc24747ab7fe68525bdbc2f, 84519cf5181b2c59b22f21b72f645b6eb41722be are newer than the
+  robust batch: dropped 50 of 200 ids (title,abstract,corpusId,tldr,year,venue)
+  [t+764s] expansion r1: +50 graded {3: 2, 2: 1, 1: 9, 0: 38}
+  [t+764s] expansion r2 skipped (r1 grade-3 yield 2 < 4)
+  tool call failed (The paper must address adding previously unseen or newly arriving documents to the retrieval system or corpus.): TimeoutError: 
+  [t+1041s] criterion mining: 271 passages across 112 of 200 papers
+  [t+1041s] evidence chars: median=1798 min=47 >=2200=82/250
+  [t+1042s] judge-sim rerank scored 100/100; predicted grade-3: 12
+  [t+1042s] promoting 12 predicted grade-3 papers
+  tool call failed (The paper must specifically examine whether the trained generative retrieval model can handle corpus updates without full retraining, or provide a mechanism for incremental, continual, dynamic, or mutable updates.): TimeoutError: 
+  tool call failed (The paper must specifically examine whether the trained generative retrieval model can handle corpus updates without full retraining, or provide a mechanism for incremental, continual, dynamic, or mutable updates.): TimeoutError: 
+  tool call failed (The paper must be about generative retrieval methods, such as retrieval models that generate document identifiers, document representations, or retrieval outputs rather than relying only on conventional sparse or dense indexed retrieval.): TimeoutError: 
+  [t+1314s] weak-criterion patch: 242 papers, 58 scoped calls, criteria {0: 204, 1: 237, 2: 241}
+  [t+1314s] submitted 250 papers

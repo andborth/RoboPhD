@@ -1,0 +1,24 @@
+[semantic_148] score_type=semantic_f1 query='research on generative document retrieval models that allow for quick addition of new documents as t'
+  [t+10s] plan: 14 kw queries, 3 criteria, oldest_first=False; kw=['generative document retrieval incremental indexing', 'corpus expansion autoregressive retrieval', 'updateable generative retrievers new documents', 'dynamic corpus generative retrieval models', 'index-free document retrieval online updates', 'neural corpus indexing continual retrieval', 'sequence-to-sequence document retrieval corpus updates', 'document identifier generation incremental addition', 'memory-augmented generative retrieval document insertion', 'continual learning generative information retrieval', 'DSI dynamic index updates', 'GENRE entity retrieval incremental knowledge base', 'catalog retrieval language models fresh items', 'streaming document collections generative retrievers']
+  criteria: ['The paper must study document retrieval using a generative model, such as sequence generation, identifier generation, or autoregressive retrieval, rather than only conventional sparse or dense retrieval.', 'The paper must focus on retrieving documents or document identifiers from a corpus, rather than only passage ranking, query generation, or non-retrieval generation tasks.', 'The paper must address the ability to add newly available documents quickly, such as through incremental updates, dynamic indexing, online corpus expansion, or avoiding full retraining when the corpus changes.'] weights=[0.4, 0.3, 0.3]
+  [t+229s] pooled 1249 unique candidates
+  backfilled abstracts for 74 of 74 candidates
+  [t+236s] grade histogram: {3: 9, 2: 41, 1: 13, 0: 277}
+  [t+303s] thin-pool round (strong=50, g3=9): 6 alt queries, 6 title guesses (0 resolved), +280 new candidates graded
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 1 of 16 ids (corpusId,citations,references)
+  citer channel: 93 citing-paper ids pooled
+  tool call failed (): ToolError: Paper 223af46e6193561b406dd4956b6df3087c502349 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool call failed (): ToolError: Papers 2dcdd58ded6a3624345acc2a7980b6bf5af8bb78, 68a5fc1e00beeaf0ccc24747ab7fe68525bdbc2f, 84519cf5181b2c59b22f21b72f645b6eb41722be are newer than the
+  robust batch: dropped 38 of 200 ids (title,abstract,corpusId,tldr,year,venue)
+  [t+766s] expansion r1: +97 graded {2: 7, 1: 2, 0: 88}
+  [t+766s] expansion r2 skipped (r1 grade-3 yield 0 < 4)
+  [t+1133s] criterion mining: 271 passages across 107 of 200 papers
+  [t+1133s] evidence chars: median=1785 min=43 >=2200=70/250
+  [t+1135s] judge-sim rerank scored 100/100; predicted grade-3: 12
+  [t+1135s] promoting 12 predicted grade-3 papers
+  tool call failed (The paper must study document retrieval using a generative model, such as sequence generation, identifier generation, or autoregressive retrieval, rather than only conventional sparse or dense retrieval.): TimeoutError: 
+  tool call failed (The paper must focus on retrieving documents or document identifiers from a corpus, rather than only passage ranking, query generation, or non-retrieval generation tasks.): TimeoutError: 
+  tool call failed (The paper must focus on retrieving documents or document identifiers from a corpus, rather than only passage ranking, query generation, or non-retrieval generation tasks.): TimeoutError: 
+  [t+1438s] weak-criterion patch: 242 papers, 55 scoped calls, criteria {0: 204, 1: 208, 2: 237}
+  [t+1438s] submitted 250 papers

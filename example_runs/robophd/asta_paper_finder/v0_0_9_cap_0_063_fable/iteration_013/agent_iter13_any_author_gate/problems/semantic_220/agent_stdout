@@ -1,0 +1,24 @@
+[semantic_220] score_type=semantic_f1 query='What papers discuss the use of transformer architecture in 3d video generation'
+  [t+6s] plan: 12 kw queries, 3 criteria, oldest_first=False; kw=['transformer 3D video generation', 'spatiotemporal transformer dynamic scene synthesis', 'video transformer novel view synthesis', '3D-aware video generation transformer', '4D generative transformer scene modeling', 'neural radiance fields video transformer', 'dynamic NeRF transformer generation', 'multi-view video synthesis transformer', 'text-to-4D transformer generation', '3D scene video diffusion transformer', 'volumetric video generation attention', 'dynamic human generation transformer 4D']
+  criteria: ['The paper must address video generation or synthesis rather than only analysis, recognition, or reconstruction.', 'The paper must discuss the use of a transformer-based architecture, attention-based generative backbone, or closely related transformer formulation.', 'The paper must involve 3D video generation, such as dynamic 3D scenes, 4D content, volumetric video, multi-view temporal generation, or video with explicit 3D structure.'] weights=[0.4, 0.3, 0.3]
+  [t+253s] pooled 1035 unique candidates
+  backfilled abstracts for 68 of 68 candidates
+  [t+290s] grade histogram: {3: 14, 2: 90, 1: 121, 0: 115}
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 4 of 16 ids (corpusId,citations,references)
+  citer channel: 104 citing-paper ids pooled
+  tool call failed (): ToolError: Paper cc08e072ce806ecc84d8bb6e65f896134306d8d1 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool call failed (): ToolError: Paper 8ae86095f53d2a5735c59d3e6b1b7b0090c88e7f is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 23 of 200 ids (title,abstract,corpusId,tldr,year,venue)
+  [t+722s] expansion r1: +109 graded {2: 17, 1: 37, 0: 55}
+  [t+722s] expansion r2 skipped (r1 grade-3 yield 0 < 4)
+  tool call failed (The paper must involve 3D video generation, such as dynamic 3D scenes, 4D content, volumetric video, multi-view temporal generation, or video with explicit 3D structure.): TimeoutError: 
+  tool call failed (What papers discuss the use of transformer architecture in 3d video generation): TimeoutError: 
+  [t+995s] criterion mining: 362 passages across 159 of 200 papers
+  [t+995s] evidence chars: median=2036 min=52 >=2200=101/250
+  [t+1001s] judge-sim rerank scored 100/100; predicted grade-3: 32
+  tool call failed (The paper must discuss the use of a transformer-based architecture, attention-based generative backbone, or closely related transformer formulation.): TimeoutError: 
+  tool call failed (The paper must discuss the use of a transformer-based architecture, attention-based generative backbone, or closely related transformer formulation.): TimeoutError: 
+  tool call failed (The paper must address video generation or synthesis rather than only analysis, recognition, or reconstruction.): TimeoutError: 
+  [t+1276s] weak-criterion patch: 232 papers, 43 scoped calls, criteria {0: 128, 1: 192, 2: 189}
+  [t+1276s] submitted 250 papers

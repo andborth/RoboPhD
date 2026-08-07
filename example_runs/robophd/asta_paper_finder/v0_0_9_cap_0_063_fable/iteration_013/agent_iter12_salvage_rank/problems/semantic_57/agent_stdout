@@ -1,0 +1,28 @@
+[semantic_57] score_type=semantic_f1 query='Could you recommend a study that explores how language models are not robust to the surface form edi'
+  [t+8s] plan: 10 kw queries, 3 criteria, oldest_first=False; kw=['commonsense QA paraphrase robustness', 'surface form variation language models', 'adversarial rephrasing commonsense reasoning', 'input perturbation robustness commonsense benchmarks', 'semantics altering modifications COM2SENSE', 'MRC-style perturbations commonsense knowledge', 'lexical variation sensitivity pretrained LMs', 'consistency under rewording commonsense inference', 'surface edits Winograd commonsense models', 'robustness to paraphrases natural language inference']
+  criteria: ['The paper must study language models on a task or benchmark intended to test commonsense knowledge or commonsense reasoning.', 'The paper must evaluate model behavior under surface-form changes such as paraphrasing, rewording, lexical substitution, or other superficial input edits.', 'The paper must specifically show or argue that language models are not robust, consistent, or stable when commonsense knowledge is tested through these surface-form edits.'] weights=[0.4, 0.3, 0.3]
+  [t+134s] pooled 642 unique candidates
+  backfilled abstracts for 147 of 147 candidates
+  [t+232s] grade histogram: {3: 4, 2: 4, 1: 84, 0: 248}
+  [t+330s] thin-pool round (strong=8): 6 alt queries, +280 new candidates graded
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  tool call failed (): RuntimeError: tool call failed: ToolError: Error executing tool get_paper_batch: 'NoneType' object is not iterable
+  robust batch: dropped 9 of 16 ids (corpusId,citations,references)
+  citer channel: 123 citing-paper ids pooled
+  tool call failed (): ToolError: Paper 37bfc8ff47f07c78dfa65880d574c28ec1de5138 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  robust batch: dropped 13 of 200 ids (title,abstract,corpusId,tldr,year,venue)
+  [t+704s] expansion r1: +120 graded {1: 25, 0: 95}
+  [t+704s] expansion r2 skipped (r1 grade-3 yield 0 < 4)
+  [t+891s] criterion mining: 349 passages across 149 of 200 papers
+  [t+891s] evidence chars: median=1914 min=57 >=2200=98/250
+  [t+894s] judge-sim rerank scored 100/100; predicted grade-3: 7
+  [t+894s] promoting 7 predicted grade-3 papers
+  tool call failed (The paper must evaluate model behavior under surface-form changes such as paraphrasing, rewording, lexical substitution, or other superficial input edits.): TimeoutError: 
+  tool call failed (The paper must evaluate model behavior under surface-form changes such as paraphrasing, rewording, lexical substitution, or other superficial input edits.): TimeoutError: 
+  tool call failed (The paper must evaluate model behavior under surface-form changes such as paraphrasing, rewording, lexical substitution, or other superficial input edits.): TimeoutError: 
+  [t+1200s] weak-criterion patch: 245 papers, 55 scoped calls, criteria {0: 161, 1: 236, 2: 243}
+  tool call failed (Surface Form Editing Setting: Could you recommend a study that explores how language models are not robust to the surface form editing when testing commonsense knowledge?): TimeoutError: 
+  [t+1383s] patch wave 2: 240 paper-criteria retried with alternate wording
+  [t+1383s] submitted 250 papers
