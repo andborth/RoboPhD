@@ -1255,3 +1255,64 @@ def test_background_md_prices_match_litellm_registry():
             "rows unverifiable — models absent from litellm's price "
             "registry (staleness, not drift): " + ", ".join(unverifiable)
         )
+
+
+def test_write_test_results_records_per_model_tokens(main_mod, tmp_path):
+    """Test evals must record TOKENS, not just dollars. Costs alone cannot
+    separate "the agent did less work" from "it was billed on a different
+    price map" — exactly the question v0_0_9_cap_0_063_fable's official run
+    raised (17% under its internal agent cost) and could not answer."""
+    import json as _json
+    from types import SimpleNamespace
+    def _u(i, o, r=0):
+        return {"input_tokens": i, "output_tokens": o, "total_tokens": i + o,
+                "reasoning_tokens": r, "input_tokens_cache_read": 0,
+                "input_tokens_cache_write": 0}
+    eval_result = SimpleNamespace(
+        per_example_diagnostics=[
+            {"sample_id": "semantic_1", "score_type": "semantic_f1",
+             "agent_cost_usd": 0.05, "other_cost_usd": 0.10,
+             "usage": {"openai/gpt-5.4-mini": _u(100, 10),
+                       "openai/gpt-4o-2024-11-20": _u(1000, 200)}},
+            {"sample_id": "semantic_2", "score_type": "semantic_f1",
+             "agent_cost_usd": 0.05, "other_cost_usd": 0.10,
+             "usage": {"openai/gpt-5.4-mini": _u(50, 5)}},
+        ],
+        per_example_scores=[0.5, 0.5], num_examples=2,
+        mean_score=0.5, total_score=1.0, aggregate_explanation="",
+    )
+    summary_path, per_problem_path = main_mod._write_test_results(
+        eval_result, SimpleNamespace(total_eval_cost=0.10), tmp_path, "best",
+        "test_results.json", scoring_mode={},
+    )
+    summary = _json.loads(summary_path.read_text())
+    # Summed across problems, per model.
+    assert summary["test_eval_usage"]["openai/gpt-5.4-mini"]["input_tokens"] == 150
+    assert summary["test_eval_usage"]["openai/gpt-5.4-mini"]["total_tokens"] == 165
+    assert summary["test_eval_usage"]["openai/gpt-4o-2024-11-20"]["total_tokens"] == 1200
+    # Agent/judge split mirrors the cost fields — never entangled.
+    assert summary["test_eval_agent_tokens"] == 165
+    assert summary["test_eval_judge_tokens"] == 1200
+    # And retained per problem, so a single query can be traced.
+    rows = _json.loads(per_problem_path.read_text())
+    assert rows[0]["usage"]["openai/gpt-5.4-mini"]["input_tokens"] == 100
+    assert rows[1]["usage"]["openai/gpt-5.4-mini"]["input_tokens"] == 50
+
+
+def test_write_test_results_tolerates_missing_usage(main_mod, tmp_path):
+    """Older diagnostics carry no usage key; the writer must not crash and
+    must leave the token fields empty rather than zero-filled-and-wrong."""
+    import json as _json
+    from types import SimpleNamespace
+    eval_result = SimpleNamespace(
+        per_example_diagnostics=[{"sample_id": "specific_1", "score_type": "specific_f1",
+                                  "agent_cost_usd": 0.01, "other_cost_usd": 0.0}],
+        per_example_scores=[1.0], num_examples=1,
+        mean_score=1.0, total_score=1.0, aggregate_explanation="",
+    )
+    summary_path, per_problem_path = main_mod._write_test_results(
+        eval_result, SimpleNamespace(total_eval_cost=0.01), tmp_path, "best",
+        "test_results.json", scoring_mode={},
+    )
+    assert _json.loads(summary_path.read_text())["test_eval_usage"] == {}
+    assert _json.loads(per_problem_path.read_text())[0]["usage"] is None

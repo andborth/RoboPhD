@@ -242,7 +242,7 @@ def _write_test_results(
     """
     # Head+tail truncation so the tail (where tracebacks carry the real
     # failure line) survives.
-    from evaluator import _head_tail_truncate
+    from evaluator import JUDGE_MODEL_IDS, _head_tail_truncate
 
     def _trunc(s):
         return _head_tail_truncate(s, head=100, tail=400) if s else None
@@ -250,6 +250,13 @@ def _write_test_results(
     per_problem = []
     total_agent_cost = 0.0
     total_judge_cost = 0.0
+    # Per-model TOKEN totals, not just dollars. Costs alone cannot answer
+    # "did the agent do less work, or was it billed on a different price
+    # map?" — v0_0_9_cap_0_063_fable's official run came in 17% under its
+    # internal agent cost and the question was unanswerable, because this
+    # file recorded dollars only. Tokens are basis-independent, so an
+    # internal-vs-official comparison separates behaviour from pricing.
+    usage_totals: dict[str, dict[str, int]] = {}
     diagnostics_list = eval_result.per_example_diagnostics or []
     scores_list = eval_result.per_example_scores or []
     for i, diag in enumerate(diagnostics_list):
@@ -263,6 +270,11 @@ def _write_test_results(
         # framework's failure-detection key), but framework-level test-path
         # timeouts (RoboPhD/eval_utils.py) still emit bare "error".
         err = diag.get("error.md") or diag.get("error")
+        usage = diag.get("usage") or {}
+        for model_name, counts in usage.items():
+            acc = usage_totals.setdefault(model_name, {})
+            for field, value in (counts or {}).items():
+                acc[field] = acc.get(field, 0) + (value or 0)
         per_problem.append({
             "sample_id": diag.get("sample_id"),
             "score": score,
@@ -270,6 +282,7 @@ def _write_test_results(
             "agent_cost_usd": agent_c,
             "other_cost_usd": judge_c,
             "eval_wall_clock_seconds": diag.get("eval_wall_clock_seconds"),
+            "usage": usage or None,
             "error": _trunc(err),
         })
 
@@ -314,6 +327,17 @@ def _write_test_results(
             "test_eval_agent_cost_usd": total_agent_cost,
             "test_eval_judge_cost_usd": total_judge_cost,
             "mean_test_agent_cost_usd": mean_agent_cost,
+            # Same agent/judge split as the cost fields above, so a token
+            # total is never silently entangled across the two.
+            "test_eval_usage": usage_totals,
+            "test_eval_agent_tokens": sum(
+                c.get("total_tokens", 0) for m, c in usage_totals.items()
+                if m not in JUDGE_MODEL_IDS
+            ),
+            "test_eval_judge_tokens": sum(
+                c.get("total_tokens", 0) for m, c in usage_totals.items()
+                if m in JUDGE_MODEL_IDS
+            ),
             # Empty for the default test path (apply_cost_penalty=False,
             # aggregator returns mean_raw with no annotation). Populated
             # if a future test mode opts into a non-default aggregator.
