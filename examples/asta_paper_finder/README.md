@@ -8,14 +8,30 @@ Reference points (Standard-tools tier, the one we compete on): generic ReAct spa
 
 Snapshots live in `example_runs/robophd/asta_paper_finder/<name>/`; the pipeline is `scripts/asta_paper_finder_submit.py` (official `astabench eval` + `score` + tarball for manual HF-form upload — see the script docstring for cost/prereqs). Patch numbers continue the cross-benchmark sequence shared with DS-1000.
 
-| Submission | Agent (run) | Internal test | Official |
-| --- | --- | --- | --- |
-| `v0_0_7_soft_cap_0_06_fable` | `iter12_body_conjunction` (`robophd-asta_paper_finder-003`, fable-5-evolved) | 0.3724 @ $0.0556/query | **0.3749 @ $0.0533/query** (under review) |
-| `v0_0_8_soft_cap_0_033_opus` | `iter9_rerank_rich_v1` (`robophd-asta_paper_finder-006`, opus-4.8-evolved) | 0.2754 @ $0.006/query | **0.2205 @ $0.0059/query** (under review) |
+| Submission | Agent (run) | Gate | Internal test | Official |
+| --- | --- | --- | --- | --- |
+| `v0_0_7_soft_cap_0_06_fable` | `iter12_body_conjunction` (`-003`, fable-5) | $0.06 | 0.3724 @ $0.0556 | **0.3749 @ $0.0533** |
+| `v0_0_8_soft_cap_0_033_opus` | `iter9_rerank_rich_v1` (`-006`, opus-4.8) | $0.033 | 0.2754 @ $0.0060 | **0.2205 @ $0.0059** |
+| `v0_0_9_cap_0_063_opus5` | `iter15_verdict_repair` (`-010`, opus-5) | $0.063 | 0.3839 @ $0.0533 | **0.3762 @ $0.0524** |
+| `v0_0_9_cap_0_355_opus5` | `iter21_gold_rubric_and_hard_predicates` (`-011`, opus-5) | $0.355 | 0.4222 @ $0.2461 | **0.4318 @ $0.2506** |
+| `v0_0_9_cap_0_355_fable` | `iter18_cocite_largegold_v1` (`-012`, fable-5) | $0.355 | 0.4383 @ $0.2780 | **0.4403 @ $0.2786** |
+| `v0_0_9_cap_0_063_fable` | `iter14_title_channel` (`-013`, fable-5) | $0.063 | 0.3874 @ $0.0583 | **0.3638 @ $0.0481** |
 
-v0_0_8's internal-to-official transfer was **not** clean, unlike v0_0_7's: −0.055 overall, of which `specific_f1` contributes −0.036 (65%) and `semantic_f1` −0.020 (36%). `specific` is the part needing explanation — it's the larger share, and it's a metric the judge never touches, so no judging-basis story is available; three runs of the same agent show it's systematic rather than variance (snapshot README has the analysis). `semantic`'s share is real but confounded with the capped→uncapped judging change. Don't read v0_0_7's clean transfer as a general guarantee that internal predicts official.
+Five of the six hold frontier slots; `v0_0_7` is displaced by `cap_0_063_opus5`,
+which is both higher-scoring and cheaper. Asta Paper Finder's 0.397 @ $0.063 is
+the one non-RoboPhD entry still on the curve.
 
-The two are distinct Pareto points, not successive attempts: v0_0_7 buys score, v0_0_8 buys price. v0_0_8's $0.033 training cost gate is, to the cent, the price of the **second**-cheapest point on the board's frontier (Smolagents Coder GPT-5 Mini, 0.172 @ $0.033 — the board rounds the display to $0.03). That was the harder target of the two cheap-end points, since the cheapest (Llama 4 Scout 17B, 0.070 @ $0.013) sets a lower score bar but a tighter cost one. Pinning the free zone at a competitor's exact price buys the cost half of a dominance claim by construction; evolution then came in 5.5× under the gate at $0.0059, which cleared $0.013 as well, so it dominates both.
+**The four `v0_0_9` entries form a completed 2×2** of {opus-5, fable-5} ×
+{$0.063, $0.355} on one frozen stack. The evolution-model delta to fable-5 is
+**+0.0085** at $0.355 but **−0.0124** at $0.063 — opposite signs, so the
+"fable-5 builds better agents" reading that the $0.355 A/B supported does not
+survive the cheap cell. Two of three category signs do replicate: fable-5 up on
+metadata and down on semantic at both gates. See
+`example_runs/robophd/asta_paper_finder/v0_0_9_cap_0_063_fable/README.md`.
+
+Of the first two entries, v0_0_8's internal-to-official transfer was **not** clean, unlike v0_0_7's: −0.055 overall, of which `specific_f1` contributes −0.036 (65%) and `semantic_f1` −0.020 (36%). `specific` is the part needing explanation — it's the larger share, and it's a metric the judge never touches, so no judging-basis story is available; three runs of the same agent show it's systematic rather than variance (snapshot README has the analysis). `semantic`'s share is real but confounded with the capped→uncapped judging change. Don't read v0_0_7's clean transfer as a general guarantee that internal predicts official.
+
+Those first two are distinct Pareto points, not successive attempts: v0_0_7 buys score, v0_0_8 buys price. v0_0_8's $0.033 training cost gate is, to the cent, the price of the **second**-cheapest point on the board's frontier (Smolagents Coder GPT-5 Mini, 0.172 @ $0.033 — the board rounds the display to $0.03). That was the harder target of the two cheap-end points, since the cheapest (Llama 4 Scout 17B, 0.070 @ $0.013) sets a lower score bar but a tighter cost one. Pinning the free zone at a competitor's exact price buys the cost half of a dominance claim by construction; evolution then came in 5.5× under the gate at $0.0059, which cleared $0.013 as well, so it dominates both.
 
 ```bash
 pip install litellm==1.88.1
