@@ -128,11 +128,11 @@ claim in this document that the completed 2×2 leaves fully intact.
 
 A caution on which number to quote. This agent's cost differs across all three
 bases — train $0.058, internal test $0.0583, **official $0.0481 (76% of cap)** —
-and only the first says anything about evolution's behaviour. The official
-figure is depressed by the wall-clock truncation described under
-[Official result](#the-wall-clock-risk-fired-in-the-direction-opposite-to-the-one-predicted);
-reading cap utilisation off it would invert the finding for reasons that have
-nothing to do with what evolution built.
+and only the first says anything about evolution's behaviour, because the free
+zone is a *training* signal and the training mean is what evolution optimised
+against. Reading cap utilisation off the official figure would invert the
+finding at this gate, and the reason that figure came in low is itself
+[not established](#two-things-this-run-does-not-explain).
 
 ## Naming and conventions
 
@@ -424,35 +424,92 @@ is strictly below our own `cap_0_063` on score while being $0.004 cheaper.
 this entry and it returned 0.364. The gate has now been aimed at that entry
 twice and cleared neither time. Asta keeps its slot.
 
-### The wall-clock risk fired, in the direction opposite to the one predicted
+### The 14h33m is the agent, not the venue
 
-[Risk 5](#official-result-risks-assessed-pre-submission) said wall-clock
-pressure would cost score silently, and that `--max-samples 6` should see *less*
-contention than training's 8 workers — making the internal score "a conservative
-floor for this agent specifically". The floor claim was wrong:
+The run's length invites a latency story. It does not survive measurement.
 
-| | max | p95 | median | ≥1500s |
-| --- | --- | --- | --- | --- |
-| internal (`max_workers=8`, 1800s cap) | 1590s | 1531s | 1318s | 32 / 194 |
-| **official (`--max-samples 6`)** | **1668s** | **1632s** | **1529s** | **183 / 194** |
-| `-011` official, for reference | 1042s | — | 651s | — |
+**This agent is the slowest in the campaign by construction.** Comparing
+semantic samples only, on each run's own internal evaluation:
 
-The official run was **slower per query**, not faster — median +16%, and 94% of
-semantic queries above 1500s against 17% internally. The `-011` precedent did
-not transfer.
+| run | internal median | official median | official ÷ internal |
+| --- | --- | --- | --- |
+| `-012` ($0.355, fable) | 814s | 709s | **0.87×** |
+| **`-013` (this entry)** | **1378s** | **1529s** | **1.11×** |
 
-Three measurements move together and point one way: wall clock up, **agent
-spend down 17%** ($0.0583 → $0.0481), and the judge seeing **7% fewer input
-tokens** than `-012` did over the same 48,500 papers. This agent's expansion
-rounds are time-boxed to *return* whatever arrived rather than fail, so under
-pressure it grades fewer candidates, bills less, submits thinner evidence, and
-scores lower — without producing a single error. 267/267 completed cleanly.
-That is the silent-degradation mode risk 5 named; only the sign of the
-prediction was inverted.
+`-013` is **1.69× slower than `-012` before either agent ever ran officially**.
+The title-guess channel, the extra reformulation probes and the deeper expansion
+all cost round-trips. 267 samples at ~1500s over 6 concurrent slots is 14 hours
+whatever the backend does.
 
-What is **not** established is *why* the official run was slower. Worker count
-went down, so contention on our side is not the explanation; tool-backend
-latency is the obvious candidate and is not measured here.
+**The official-side slowdown is real but small: 11%.** `-012` ran 13% *faster*
+officially, so `-013` did lose something at the venue that `-012` gained — but
+an 11% shift, not a collapse.
+
+Three checks constrain what it can be:
+
+- **No drift across the run.** Median agent-phase span by start-time quartile:
+  1238s / 1305s / 1291s / 1229s, Pearson *r* = **+0.063** against elapsed hours.
+  A degrading backend would show a trend; this is flat from first sample to last.
+- **The task is retrieval-bound, and always has been.** Merging every model
+  call's interval per sample, the share of agent wall time *not* inside any LLM
+  call is **98.2% / 95.0% / 93.9% / 97.6%** for `-010` / `-011` / `-012` /
+  `-013`. Model latency is a rounding error in all four; agent speed is tool
+  round-trips. So a slow agent here means *more* round-trips, which is a design
+  property, not a venue property.
+- **Model-call latency was normal** (median 2.3s against 1.2–1.7s elsewhere) —
+  OpenAI was not the bottleneck either.
+
+**A correction to an earlier draft of this section.** It reported the official
+run as 16% slower with "94% of queries above 1500s against 17%". Both figures
+were wrong: the internal median was taken over all 267 samples (including the
+fast `specific`/`metadata` ones) and compared against an official median over
+the 194 `semantic` ones. Like-for-like the shift is 11%, and the ≥1500s counts
+(29 → 183) exaggerate it further because the median sits just below the
+threshold internally and just above it officially — an 11% shift drags most of
+the distribution across the line.
+
+**So risk 5 is not the explanation for the score.** Wall-clock pressure moved
+by 11%, in a run whose agent was always going to be slow. The transfer needs a
+different cause, and [risk 2](#official-result-risks-assessed-pre-submission)
+supplies it.
+
+### Uncapped judging, which is now 2-for-2 in each direction
+
+Internally only the top-K estimate is judged; officially all 250 submitted
+papers are. Semantic is the only category that judging basis can touch, and it
+is where the loss is: **−0.0271, which is 83% of the total score points lost.**
+
+| run | gate | semantic, internal → official | delta |
+| --- | --- | --- | --- |
+| `-010` | $0.063 | 0.3227 → 0.3110 | **−0.0117** |
+| **`-013`** | **$0.063** | 0.3141 → 0.2870 | **−0.0271** |
+| `-011` | $0.355 | 0.3800 → 0.3930 | **+0.0130** |
+| `-012` | $0.355 | 0.3715 → 0.3749 | **+0.0033** |
+
+**Both cheap-gate agents lose on semantic when judged uncapped; both
+expensive-gate agents gain.** That is the pattern `-012`'s README could only
+call "suggestive at n=3" — it is now 2-for-2 in each direction, and it is the
+sign that was predictable from the gate. An agent that fills all 250 slots on a
+$0.063 budget cannot grade the tail it submits, so papers it never validated get
+graded officially and dilute the rank term. The $0.355 agents grade far deeper,
+so their tail survives official scrutiny and adds recall instead.
+
+This is a **gate-dependent property, not an agent defect**, and it was risk 2's
+stated exposure: "this agent fills all 250 slots on every one of its 194
+semantic queries, so it is exposed either way."
+
+### Two things this run does not explain
+
+**Why agent spend fell 17%** ($0.0583 → $0.0481). Prior runs' internal-to-
+official cost agreement was within ±$0.005; this is double the widest previous
+move. The internal evaluator records only dollars, not tokens, so there is no
+way here to separate "did less work" from "billed on a different price map".
+Persisting per-model token counts on internal test evals would close this, and
+is cheap.
+
+**Judge-side dropouts are ruled out** as a factor: 51 documents skipped for
+missing judgements across ~48,500 (**0.11%**), against `-011`'s recorded 0.13%.
+Normal rate, no effect on the comparison.
 
 Judge-side dropouts were normal and are not a factor: 51 documents skipped for
 missing judgements across ~48,500 (**0.11%**), against `-011`'s recorded 0.13%.
@@ -461,15 +518,16 @@ missing judgements across ~48,500 (**0.11%**), against `-011`'s recorded 0.13%.
 
 Judge came in at **$0.00386/paper** — $187.38 over 194 semantic queries × 250
 papers — against $0.0040 / $0.0030 / $0.00407 / $0.00426 / $0.00420 for the five
-prior runs. **The lowest of any full-250 agent**, and consistent with the
-truncation story rather than with a pricing change: judge input tokens were
-42.3M here against `-012`'s 45.5M for the same paper count.
+prior runs. **The lowest of any full-250 agent.** Judge input tokens were 42.3M here
+against `-012`'s 45.5M for the same paper count, so this agent submits ~7% less
+evidence text per paper — a property of what it writes, not of what the venue
+charged.
 
 Total $200.23 against a **$213–226** pre-run estimate — **the first projection
-this campaign to miss high**, and it missed for the same reason the score did.
-The method (measured $/paper band × 48,500 + the agent's own internal cost) is
-sound; it just cannot anticipate an agent that does less work than it did
-internally.
+this campaign to miss high**. The method (measured $/paper band × 48,500 plus
+the agent's own internal cost) is sound in shape; both of its inputs simply came
+in low, the judge rate because this agent writes shorter evidence and the agent
+term for reasons not established (see above).
 
 Recomputing prior judge bills from logged tokens at gpt-4o list rates reproduces
 `$203.61` and `$197.32` exactly, so the $187.38 is on the same basis as the
