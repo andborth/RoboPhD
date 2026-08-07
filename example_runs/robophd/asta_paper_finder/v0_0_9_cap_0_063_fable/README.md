@@ -29,8 +29,7 @@ the guard, the judges, the budget and the harness are all held fixed, and
 
 Read down the last three rows and the design is visible: the $0.355 gate has
 already been run under both evolution models, and this entry supplies the
-missing fable-5 arm at $0.063. That is the point of the run — the two attempts
-at Asta's price are a controlled pair, not a retry.
+missing fable-5 arm at $0.063. 
 
 The board as it stands, before this entry:
 
@@ -51,35 +50,31 @@ $0.05828, but internal is not banked — see
 frontier table with this entry inserted, and the outcome against the target,
 are filled in under [Official result](#official-result) after the run.
 
-## What this run is for: the 2×2 is now complete
+## What this run is for: completing the 2×2
 
-`-013` is the missing **fable-5 × $0.063** cell. All four cells sit on one
-frozen stack — zero commits to `examples/asta_paper_finder/` between `-012` and
-this run:
+`-013` is the missing **fable-5 × $0.063** cell. All four runs sit on one frozen
+stack — zero commits to `examples/asta_paper_finder/` between `-012` and this
+run.
 
-| | **$0.063 gate** | **$0.355 gate** |
+Scored on the leaderboard's own basis, so all four cells are comparable:
+
+| official mean F1 | **$0.063 gate** | **$0.355 gate** |
 | --- | --- | --- |
-| **opus-5** | `-010` 0.38394 | `-011` 0.43177 (official) |
-| **fable-5** | **`-013` 0.38738** | `-012` 0.44025 (official) |
-| | **+0.0012** to fable-5 | **+0.0085** to fable-5 |
+| **opus-5** | `-010` 0.37620 | `-011` 0.43177 |
+| **fable-5** | `-013` *pending* | `-012` 0.44025 |
+| **delta to fable-5** | *pending* | **+0.0085** |
 
-Same direction at both gates, roughly a seventh the size at the cheap one.
-
-**Read the $0.063 delta as +0.0012, not +0.0034.** The raw 267-vs-267 means
-differ by +0.0034, but `-010` carries one row with `sample_id: "None"` — a query
-lost to its 1770s subprocess timeout, scored 0.0, identity unrecoverable
-(by elimination, `semantic_242`). On the **266 matched query IDs** the gap is
-**+0.0012**. Two-thirds of the raw headline is that timeout, which `-011`'s
-official run already established is local contention rather than an agent
-property. `-013` had **zero** test-set timeouts.
-
-Two further caveats, both load-bearing: **n = 1 per cell**, and the $0.063
-comparison is internal-basis while the $0.355 one is official-basis, where
-uncapped judging grades every submitted paper rather than the top-K slice.
+The $0.063 cell fills in from [Official result](#official-result) after the run;
+until then the 2×2 has one open corner. **n = 1 per cell** either way, so a
+consistent sign across both gates is the most this design can show — not an
+effect size.
 
 ## The category shape replicates at both gates
 
-Against `-010` on the 266 matched IDs:
+*Preliminary, on internal figures; recomputed on the official basis once the
+run lands.* Against `-010` on the **266** query IDs the two runs share — `-010`
+lost one to a subprocess timeout, which its per-problem file records as
+`sample_id: "None"` scored 0.0:
 
 | category | n | opus-5 (`-010`) | **fable-5 (`-013`)** | delta | score points (n × delta) |
 | --- | --- | --- | --- | --- | --- |
@@ -360,10 +355,17 @@ check.
 
 ## Official result
 
-*Pending — filled in after the official run. Board position, the frontier table
-with this entry inserted, the Internal/Official/Delta table, the sixth transfer
-calibration point, the wall-clock comparison against risk 5, and the sixth
-cost-calibration point all land here.*
+*Pending — filled in after the official run:* board position and the frontier
+table with this entry inserted; the Internal/Official/Delta table; the sixth
+transfer calibration point; the wall-clock comparison against risk 5; and the
+sixth cost-calibration point.
+
+*Two sections above also close out from here:* the open corner of the
+[2×2](#what-this-run-is-for-completing-the-2×2) takes this run's official mean
+F1 and the $0.063 delta, and the
+[category comparison](#the-category-shape-replicates-at-both-gates) is
+recomputed official-against-official — which retires its 266-matched-ID
+qualifier along with `-010`'s timed-out query.
 
 ## Reproduce
 
