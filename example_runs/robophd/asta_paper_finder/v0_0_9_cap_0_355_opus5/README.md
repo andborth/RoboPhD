@@ -6,9 +6,9 @@ Fourth RoboPhD submission to the AstaBench PaperFindingBench leaderboard
 ## Aimed at the top of the board
 
 Our three earlier gates were set at the price of an entry we could plausibly
-beat: $0.033 at the second-cheapest agent, $0.063 at the frontier point directly
+beat: \$0.033 at the second-cheapest agent, \$0.063 at the frontier point directly
 above ours. This is the first run pointed at the **best** agent on the board —
-Asta Paper Finder at **0.433 @ $0.355** — by setting the free zone to its price
+Asta Paper Finder at **0.433 @ \$0.355** — by setting the free zone to its price
 exactly.
 
 The construction is the same each time: put the gate at a competitor's price,
@@ -18,7 +18,7 @@ highest score anyone has posted.
 
 It came within one displayed thousandth. On the board's own three-decimal basis:
 
-> **Official 0.432 @ $0.251**, against the target's **0.433 @ $0.355**.
+> **Official 0.432 @ \$0.251**, against the target's **0.433 @ \$0.355**.
 
 At full precision that is 0.43177 vs 0.43270 — a gap of **0.00093** on a stderr
 of **0.018**, so the two scores are statistically indistinguishable, and ours
@@ -40,7 +40,7 @@ between Ai2's two entries:
 listed once both pending clear, but `v0_0_7` is displaced by our own
 `cap_0_063`, which is higher *and* cheaper.)
 
-Internally the run scored 0.4222 @ $0.246, so official came in **+0.0096** — the
+Internally the run scored 0.4222 @ \$0.246, so official came in **+0.0096** — the
 best transfer of the four submitted runs and the first meaningfully positive
 one.
 
@@ -79,9 +79,9 @@ retrieval — tool calls are free, so retrieval breadth was never budget-limited
 in the first place. The whole increment went into how many candidates get graded
 and how well.
 
-$0.355 is Asta Paper Finder's top entry to three decimals, the same
-competitor's-price construction as the $0.033 and $0.063 gates. The agent landed
-at **$0.246**, 69% of the gate — unlike the $0.063 run, which engineered to its
+\$0.355 is Asta Paper Finder's top entry to three decimals, the same
+competitor's-price construction as the \$0.033 and \$0.063 gates. The agent landed
+at **\$0.246**, 69% of the gate — unlike the \$0.063 run, which engineered to its
 threshold and landed on it.
 
 ## Naming and conventions
@@ -90,7 +90,7 @@ threshold and landed on it.
 RoboPhD code base, not the run. Nothing meaningful changed between this run and
 `v0_0_9_cap_0_063_opus5` — same solver stack, same harness — so this is the same
 code base at a different cost cap. `cap_0_355` names the training free zone
-($0.355/query); `_opus5` = evolved by Claude Opus 5.
+(\$0.355/query); `_opus5` = evolved by Claude Opus 5.
 
 Prices throughout are quoted to **three decimals**, the leaderboard's precision;
 two entries that round to the same figure are a cost tie decided on score.
@@ -112,7 +112,7 @@ problem IDs embedded here have **zero** overlap with the held-out test IDs.
 - Engine: RoboPhD Elo (Opus 5 evolution, Deep Focus OFF), budget 600 (609 used),
   23 iterations, 14 examples/iteration, restarted once mid-run
 - Winner: `agents/iter21_gold_rubric_and_hard_predicates` — Elo 1602, train mean
-  49.428 @ $0.270, **3 Elo test rounds**
+  49.428 @ \$0.270, **3 Elo test rounds**
 - 10 distinct winners across 23 iterations
 - **Second run with the Elo-reachability guard enabled** (after
   `v0_0_9_cap_0_063_opus5`). It fired at iteration 22 — the same iteration as
@@ -218,9 +218,9 @@ Checked before submitting, because the score is a large jump:
   section describes the INTERNAL run**, which lost four semantic queries to the
   1770s subprocess cap. **23 failed calls out of 18,187 judged (0.13%)**.
 - **Zero** problems had evidence scrubbed by the grounding check.
-- Judge spend $77.85, in line with the two prior runs ($73.90, $72.85).
+- Judge spend \$77.85, in line with the two prior runs (\$73.90, \$72.85).
 - 0 exceptions, 0 zero-accuracy cases, 0 clone detections.
-- The four timeouts recorded $0.00 cost — killed mid-flight at the internal
+- The four timeouts recorded \$0.00 cost — killed mid-flight at the internal
   1770s cap. They **cost** roughly 0.006. The official wrapper ceiling is 3000s,
   so they may complete officially.
 
@@ -246,10 +246,10 @@ uncapped — see risks.
 Agent description as submitted on the form:
 
 > Evolved by RoboPhD with Claude Opus 5 as the evolution (but not a solver)
-> model, under a $0.355/query training cost cap on solver spend — set at exactly
+> model, under a \$0.355/query training cost cap on solver spend — set at exactly
 > the price of the most capable entry on the board, so that evolution had to win
 > on score at a price already known to be competitive. It came in at
-> $0.251/query. The benchmark awards recall only for papers judged
+> \$0.251/query. The benchmark awards recall only for papers judged
 > Perfect on essentially every criterion, and the criteria themselves are hidden
 > at query time — the agent sees only the natural-language request. So it first
 > reconstructs the grading rubric from that request alone, splitting out the
@@ -292,7 +292,7 @@ per (paper, criterion).
 
 ## Official result (2026-08-02)
 
-**As displayed on the board: 0.432 @ $0.251.** 267/267 samples, **zero errors**,
+**As displayed on the board: 0.432 @ \$0.251.** 267/267 samples, **zero errors**,
 6h58m. Full precision below, since the deltas are smaller than the board's
 rounding and the stderr is what makes the comparison to the leader meaningful.
 
@@ -304,7 +304,7 @@ rounding and the stderr is what makes the comparison to the leader meaningful.
 | `metadata_f1` (35) | 0.2149 | 0.228 | +0.013 |
 | Agent cost | $0.2461 | **$0.250635** ± 0.0089 | +$0.0045 |
 
-Judge $206.38 + agent $66.75 = **$273.13**.
+Judge \$206.38 + agent \$66.75 = **\$273.13**.
 
 This is the **best internal→official transfer** of the four submitted runs, and
 the first meaningfully positive one: +0.0025 / −0.0550 / −0.0077 / **+0.0096**.
@@ -343,23 +343,23 @@ a stderr of 0.018, so statistically indistinguishable — at **29% lower cost**.
 Neither dominates, so both stay on the curve. It dominates 14 of the 28 costed
 entries.
 
-The gate aimed at 0.433 @ $0.355 and produced 0.432 @ $0.251. The cost half of
+The gate aimed at 0.433 @ \$0.355 and produced 0.432 @ \$0.251. The cost half of
 the Pareto claim was bought by construction, as intended; the score half missed
 by less than one part in four hundred.
 
 ### Cost calibration (fourth measured point)
 
-Judge came in at **$0.00426/paper** — $206.38 over the official run's **194**
-semantic queries × 250 papers — against $0.0040 / $0.0030 / $0.00407 for the
+Judge came in at **\$0.00426/paper** — \$206.38 over the official run's **194**
+semantic queries × 250 papers — against \$0.0040 / \$0.0030 / \$0.00407 for the
 three prior runs.
 
 The submit script's own projection is `194 × 250 × $0.0040 = $194` judge, and
-actual was $206.38: a **6.0% under-estimate**. So the printed figure is no
+actual was \$206.38: a **6.0% under-estimate**. So the printed figure is no
 longer reliably a ceiling. It over-predicts only for an agent shipping short
-lists (~$219 printed against $118.68 actual for v0_0_8 at 203.5 papers/query);
-for a full-250 agent it now runs slightly under — $194 against $197.32 for
-`cap_0_063`, and $194 against $206.38 here. Budget from the measured
-$0.0041–0.0043 band rather than from the printed number.
+lists (~\$219 printed against \$118.68 actual for v0_0_8 at 203.5 papers/query);
+for a full-250 agent it now runs slightly under — \$194 against \$197.32 for
+`cap_0_063`, and \$194 against \$206.38 here. Budget from the measured
+\$0.0041–0.0043 band rather than from the printed number.
 
 The flat-rate-under-the-250-cap model continues to hold, and evidence length
 continues not to predict it: 765 chars/paper here billed at essentially the same
@@ -377,9 +377,9 @@ Push the commit **before** the full run — `astabench eval` hard-fails if the
 commit is not on the remote, since it stamps the SHA into `eval_spec.revision`.
 
 Spend, now measured rather than projected: 250 papers/query × 194 semantic
-queries = 48,500 papers at 765 chars each, billing **$206.38 judge** at
-$0.00426/paper, plus **$66.75 agent** = **$273.13**. The script's own projection
-prints $194 judge, which under-shot by 6.0% — see
+queries = 48,500 papers at 765 chars each, billing **\$206.38 judge** at
+\$0.00426/paper, plus **\$66.75 agent** = **\$273.13**. The script's own projection
+prints \$194 judge, which under-shot by 6.0% — see
 [Cost calibration](#cost-calibration-fourth-measured-point).
 
 Then upload `submissions/asta_paper_finder/v0_0_9_cap_0_355_opus5.tar.gz` via
@@ -388,11 +388,11 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 
 ## Submission status
 
-- [x] Official eval run (2026-08-02: 0.43177 @ $0.250635/query, $273.13 spend, 6h58m, 267/267 no errors)
+- [x] Official eval run (2026-08-02: 0.43177 @ \$0.250635/query, \$273.13 spend, 6h58m, 267/267 no errors)
 - [x] Tarball uploaded — submitted to AstaBench 2026-08-02, under official review
 - [x] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
 
 Two RoboPhD submissions are under review concurrently: `v0_0_9_cap_0_063_opus5`
-(0.376 @ $0.052) and this one (0.432 @ $0.251). Once both clear, four RoboPhD
+(0.376 @ \$0.052) and this one (0.432 @ \$0.251). Once both clear, four RoboPhD
 entries are listed and three hold frontier slots — `v0_0_7` is displaced by
 `cap_0_063`, which is higher *and* cheaper.

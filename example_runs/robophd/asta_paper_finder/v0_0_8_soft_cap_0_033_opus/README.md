@@ -4,27 +4,27 @@ Second RoboPhD submission to the AstaBench PaperFindingBench leaderboard
 (Literature Understanding category, Standard tools tier), and the cheap
 counterpart to `v0_0_7_soft_cap_0_06_fable`. The `0_0_8` patch continues
 the cross-benchmark submission sequence; `soft_cap_0_033` names the
-training-time mean-spend free zone ($0.033/query); `_opus` = evolved by
+training-time mean-spend free zone (\$0.033/query); `_opus` = evolved by
 Claude Opus 4.8.
 
 The two submissions are distinct Pareto points from the same benchmark,
-not competitors: v0_0_7 buys score (0.3749 @ $0.0533), this one buys
-price (0.2754 @ $0.006).
+not competitors: v0_0_7 buys score (0.3749 @ \$0.0533), this one buys
+price (0.2754 @ \$0.006).
 
 ## The cost gate was aimed at a named competitor
 
-The $0.033 free-zone threshold was not a round number — it is, to the
+The \$0.033 free-zone threshold was not a round number — it is, to the
 cent, a competitor's price. The board's frontier has two points at the
-cheap end: Smolagents Coder Llama 4 Scout 17B at **0.070 @ $0.013**
-(cheapest) and Smolagents Coder GPT-5 Mini at **0.172 @ $0.033**
-(second-cheapest). The board rounds both displays down — to $0.01 and
-$0.03 — so the true figures are what the gate was built from.
+cheap end: Smolagents Coder Llama 4 Scout 17B at **0.070 @ \$0.013**
+(cheapest) and Smolagents Coder GPT-5 Mini at **0.172 @ \$0.033**
+(second-cheapest). The board rounds both displays down — to \$0.01 and
+\$0.03 — so the true figures are what the gate was built from.
 
 The gate was aimed at the **second**-cheapest, because it is the harder
-and more valuable target: clearing $0.033 on cost is easier than clearing
-$0.013, while 0.172 is the higher score bar of the two.
+and more valuable target: clearing \$0.033 on cost is easier than clearing
+\$0.013, while 0.172 is the higher score bar of the two.
 
-Setting the free zone *at* $0.033 — exactly that competitor's price,
+Setting the free zone *at* \$0.033 — exactly that competitor's price,
 not above it — means any agent evolution is willing to keep spends at
 most what that competitor spends. That buys the *cost* half of a
 Pareto-dominance claim by construction, leaving only the *score* half to
@@ -32,13 +32,13 @@ win. The run cleared 0.172 comfortably, at 0.2754 internally and 0.2205
 officially.
 
 Evolution then overshot the target: rather than spending up to the
-ceiling it came in at **$0.0059/query**, **5.5× under the gate**, which
-also undercuts Llama 4 Scout's $0.013. The entry therefore dominates
+ceiling it came in at **\$0.0059/query**, **5.5× under the gate**, which
+also undercuts Llama 4 Scout's \$0.013. The entry therefore dominates
 *both* cheap-end frontier points rather than the one it was aimed at —
 strictly higher score at strictly lower cost than every listed agent at
-≤$0.033. Only the first domination was by design; the second is a
+≤\$0.033. Only the first domination was by design; the second is a
 consequence of undershooting, and would not have followed from the gate
-alone. Nothing on the board sits near $0.0059.
+alone. Nothing on the board sits near \$0.0059.
 
 Recording this because the technique generalizes: a cost gate
 reverse-engineered from a specific leaderboard entry is a repeatable way
@@ -85,9 +85,9 @@ test gold is published. Same decision and same clean result as v0_0_7
   Elo lead at iteration 15 and held it through 22 (7 Elo test rounds,
   final Elo 1589, train mean 24.21)
 - 10 distinct winners across 22 iterations; meta-evolution configured
-  (opus-4.8, first@4, cadence 3) but never fired ($0.00)
+  (opus-4.8, first@4, cadence 3) but never fired (\$0.00)
 - First full-stack cheap-judge campaign: luna no-prose training judge +
-  enforced 2500-char evidence cap + the $0.033/$0.003 cost gate
+  enforced 2500-char evidence cap + the \$0.033/\$0.003 cost gate
 
 ## Architecture (1,006 lines, single `agent.py`)
 
@@ -109,20 +109,20 @@ prior behavior on failure.
 **Every LLM call goes through one model** — `GPT_5_4_MINI`
 (`openai/gpt-5.4-mini`), no reasoning tier. Tool calls are free and used
 generously. This single-model shape is the direct answer to the tight
-cost gate; the $0.036+ lineages all reach for a second, stronger model.
+cost gate; the \$0.036+ lineages all reach for a second, stronger model.
 
 ## Internal results (basis: full stock GPT-4o re-eval)
 
 - Test (267 queries, no cost penalty at test time): **mean F1 0.2754**
   — semantic 0.2080, specific 0.7456, metadata 0.1384
-- Mean agent cost **$0.006/query** — 5.5× under the $0.033 free zone, so
+- Mean agent cost **\$0.006/query** — 5.5× under the \$0.033 free zone, so
   no penalty applied anywhere in the run
-- Judge spend (informational, never penalized): $66.99 stock
-- Whole campaign cost $98.65 (evolution $64.89 + train judge $30.08 +
-  eval $3.68) — cheapest to date by ~2×
+- Judge spend (informational, never penalized): \$66.99 stock
+- Whole campaign cost \$98.65 (evolution \$64.89 + train judge \$30.08 +
+  eval \$3.68) — cheapest to date by ~2×
 
 **Where this is weak, stated plainly:** semantic at 0.2080 sits well
-below the $0.036+ lineages' ~0.32–0.37. $0.006/query is below the knee of
+below the \$0.036+ lineages' ~0.32–0.37. \$0.006/query is below the knee of
 the cost-quality curve for semantic retrieval. `specific` (0.7456) holds
 up at any budget. This is an honest cheap-point submission; the claim is
 Pareto-dominance at the cheap end, not frontier score.
@@ -156,11 +156,11 @@ one.
 Agent description as submitted on the form:
 
 > Evolved by RoboPhD with Claude Opus 4.8 as the evolution (but not a
-> solver) model, under a $0.033/query soft training cost cap on solver
+> solver) model, under a \$0.033/query soft training cost cap on solver
 > spend — a cap set at exactly the price of the second-cheapest point on
 > the board's cost-quality frontier, so that evolution had to win on score
 > at a price already known to be competitive. It answered by building a pipeline that runs every LLM
-> call on a single cheap model, GPT-5.4-mini, and came in at $0.006/query,
+> call on a single cheap model, GPT-5.4-mini, and came in at \$0.006/query,
 > five times under its own cap. The agent retrieves facet-diverse
 > candidates from keyword and snippet search, enriches abstracts, then
 > reranks on a fine-grained judge-aligned scale so papers matching every
@@ -175,22 +175,22 @@ Agent description as submitted on the form:
 
 ## Official result (2026-07-25)
 
-**adjusted_f1_micro_avg = 0.2205** (stderr 0.0155) @ **$0.005943/query**
+**adjusted_f1_micro_avg = 0.2205** (stderr 0.0155) @ **\$0.005943/query**
 (litellm 1.88.1 bundled pricing). Per-type: semantic 0.1809, specific
 0.4956, metadata 0.1410. Run took 1h32m at `--max-samples 6` — no false
 starts, zero sample errors, zero tool errors, zero retries.
 
 **The Pareto claim holds.** Against the two cheap-end frontier points:
-dominates Smolagents Coder GPT-5 Mini (0.172 @ $0.033) by +0.048 score at
-1/5 the cost, and Smolagents Coder Llama 4 Scout 17B (0.070 @ $0.013)
-outright. It also dominates ReAct GPT-5 Mini (0.220 @ $0.060) — equal
+dominates Smolagents Coder GPT-5 Mini (0.172 @ \$0.033) by +0.048 score at
+1/5 the cost, and Smolagents Coder Llama 4 Scout 17B (0.070 @ \$0.013)
+outright. It also dominates ReAct GPT-5 Mini (0.220 @ \$0.060) — equal
 score at 10× lower cost, which satisfies dominance (equal-or-better on
 every axis, strictly better on one). The dominance there rests entirely
 on the cost axis: our 0.2205 and their 0.220 are the same number at the
 board's displayed precision, so this is not a claim to a *higher* score.
 
-Cost came in at **$118.68** total — $117.09 judge (98.7%), $1.59 agent —
-against a pre-run projection of $140–175. The agent-side cost matched
+Cost came in at **\$118.68** total — \$117.09 judge (98.7%), \$1.59 agent —
+against a pre-run projection of \$140–175. The agent-side cost matched
 internal prediction to four decimals.
 
 ### Internal over-predicted; two-thirds of it is `specific`
@@ -264,11 +264,11 @@ what search ranks first, which is recency-biased.
   *favorably* across this same boundary (0.3724 → 0.3749, cost repriced
   cheaper), so the precedent is good — but that is one data point.
   Projected official judge spend: 194 semantic queries × 203.5 submitted
-  papers ≈ 39.5K verdicts. At the ~$0.0042/paper measured on v0_0_7 that
-  is ~$166, but this agent ships much shorter evidence (750 chars/paper
-  vs 976), so expect **~$140–175** — below v0_0_7's actual $192. Note the
+  papers ≈ 39.5K verdicts. At the ~\$0.0042/paper measured on v0_0_7 that
+  is ~\$166, but this agent ships much shorter evidence (750 chars/paper
+  vs 976), so expect **~\$140–175** — below v0_0_7's actual \$192. Note the
   submit script's built-in projection assumes a flat 250 papers/query and
-  will print a higher number (~$219); it overestimates for this agent.
+  will print a higher number (~\$219); it overestimates for this agent.
 - **No self-pacing**: unlike v0_0_7's agent (SOFT_DEADLINE 1300 /
   TAIL_DEADLINE 1550), this one has **no deadline constants at all**, no
   per-call timeouts, and swallows tool exceptions. Its runtime comes from
@@ -280,9 +280,9 @@ what search ranks first, which is recency-biased.
   (`openai/gpt-4o-2024-11-20`) — the same judge the headline number above
   was computed with.
 - **Repricing**: `astabench score` uses litellm's bundled price map
-  (1.88.1 prices `gpt-5.4-mini` at $0.75/$4.50 per M). Single OpenAI
+  (1.88.1 prices `gpt-5.4-mini` at \$0.75/\$4.50 per M). Single OpenAI
   model, so the DS-1000 v0_0_6 Gemini reasoning-token trap does not
-  apply. At $0.006/query the free-zone margin is enormous; repricing
+  apply. At \$0.006/query the free-zone margin is enormous; repricing
   cannot plausibly threaten the cost claim.
 
 ### How they resolved
@@ -290,7 +290,7 @@ what search ranks first, which is recency-biased.
 Three of the four were non-issues: no self-pacing never bit (zero
 errors, zero retries, 1h32m total, the 3000s ceiling never fired), the
 judge pin held, and repricing reproduced the agent cost to four decimals.
-Cost came in **under** the projection ($118.68 vs $140–175) — the
+Cost came in **under** the projection (\$118.68 vs \$140–175) — the
 per-verdict figure inherited from v0_0_7 was too high for this agent's
 shorter evidence.
 
@@ -333,9 +333,9 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 
 ## Submission status
 
-- [x] Official eval run (2026-07-25: 0.2205 @ $0.005943/query, $118.68 spend, 1h32m)
+- [x] Official eval run (2026-07-25: 0.2205 @ \$0.005943/query, \$118.68 spend, 1h32m)
 - [x] Tarball uploaded — submitted to AstaBench 2026-07-27, under official review
 - [x] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
 
 Both RoboPhD entries are under review concurrently: v0_0_7 (0.3749 @
-$0.0533) and this one (0.2205 @ $0.0059).
+\$0.0533) and this one (0.2205 @ \$0.0059).

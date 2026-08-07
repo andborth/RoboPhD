@@ -3,7 +3,7 @@
 Third RoboPhD submission to the AstaBench PaperFindingBench leaderboard
 (Literature Understanding category, Standard tools tier). `0_0_9` continues the
 cross-benchmark patch sequence; `cap_0_063` names the training-time mean-spend
-free zone ($0.063/query); `_opus5` = evolved by Claude Opus 5.
+free zone (\$0.063/query); `_opus5` = evolved by Claude Opus 5.
 
 The name drops the `soft_`/`sharp_` prefix carried by `v0_0_7` and `v0_0_8`.
 That prefix encoded the cost-penalty slope, which now standardizes at 10% of
@@ -18,26 +18,26 @@ decided on score alone. This matters immediately: see below.
 ## What this displaces
 
 Unlike `v0_0_8`, this is not a new Pareto point beside the others — it takes a
-slot from our own earlier entry. Internal 0.3839 @ **$0.053/query**, a cost tie
-with `v0_0_7` (0.3749 @ $0.053; the two agree to four decimals, $0.0533, but
+slot from our own earlier entry. Internal 0.3839 @ **\$0.053/query**, a cost tie
+with `v0_0_7` (0.3749 @ \$0.053; the two agree to four decimals, \$0.0533, but
 the tie is already settled at three), for **+0.009 more score**. On a tie the
 score decides, so if the official run transfers it strictly displaces
-`v0_0_7`. It also dominates Ai2's Asta v0 (0.3757 @ $0.063) on both axes.
+`v0_0_7`. It also dominates Ai2's Asta v0 (0.3757 @ \$0.063) on both axes.
 
-It does **not** reach Asta Paper Finder (0.3972 @ $0.063), which remains the
+It does **not** reach Asta Paper Finder (0.3972 @ \$0.063), which remains the
 next bar above and is the target for a future run.
 
 ## The cost gate is a competitor's price, again
 
-Like `v0_0_8`'s $0.033, the $0.063 free zone is not a round number — it is a
-competitor's price. Asta Paper Finder's cheaper frontier point is **$0.063**
+Like `v0_0_8`'s \$0.033, the \$0.063 free zone is not a round number — it is a
+competitor's price. Asta Paper Finder's cheaper frontier point is **\$0.063**
 (0.0626 raw, and three decimals is where the board stops). The gate is that
 figure exactly, not a margin above it.
 
 Setting the free zone *at* the competitor's price means evolution is willing to
 spend at most what that competitor spends, which buys the **cost** half of a
 Pareto-dominance claim by construction and leaves only the **score** half to
-win — and under the tie rule, landing *on* $0.063 would still have been enough,
+win — and under the tie rule, landing *on* \$0.063 would still have been enough,
 since a cost tie is decided on score. Above it the score bar jumps from our own
 0.3749 to Ai2's 0.3972, so there is no free-zone incentive to cross.
 
@@ -46,9 +46,9 @@ at the *second-cheapest* board entry and the run then undershot it 5.5×, so the
 domination that followed was partly accidental. Here the target is the frontier
 point directly above our own, and the lineage did not undershoot: the winning
 agent's docstring projects
-"~$0.071/semantic query, ~$0.053 batch mean against the $0.063 free-zone
-threshold"; the observed training batch mean was $0.054 and the 267-query test
-mean $0.0533, with the official run landing at **$0.052** on the board. It
+"~\$0.071/semantic query, ~\$0.053 batch mean against the \$0.063 free-zone
+threshold"; the observed training batch mean was \$0.054 and the 267-query test
+mean \$0.0533, with the official run landing at **\$0.052** on the board. It
 engineered to the threshold and
 landed on it, which is what makes that price deliberate rather than a leftover.
 
@@ -99,7 +99,7 @@ construction. Same clean result as v0_0_7 (25 IDs) and v0_0_8 (24 IDs).
 - Engine: RoboPhD Elo (Opus 5 evolution, Deep Focus OFF — `new_agent_test_rounds=0`),
   evaluation budget 600 (605 used), 22 iterations, 14 examples/iteration
 - Winner: `agents/iter15_verdict_repair` — final Elo 1571, 5 Elo test rounds,
-  train mean 45.655 @ $0.054
+  train mean 45.655 @ \$0.054
 - 12 distinct winners across 22 iterations
 - **First run with the Elo-reachability guard enabled.** It fired at iteration
   22, switching that iteration to `greedy`: no evolution session, 14 fresh
@@ -213,10 +213,10 @@ cached. Official judging is uncapped — see risks.
 
 Agent description as submitted on the form:
 
-> Evolved by RoboPhD under a $0.063/query training cost cap on solver spend
+> Evolved by RoboPhD under a \$0.063/query training cost cap on solver spend
 > — set at exactly the price of the frontier entry directly above ours
-> ($0.063), so that evolution had to win on score at a price already known
-> to be competitive. It came in at $0.053/query, and is the first agent we
+> (\$0.063), so that evolution had to win on score at a price already known
+> to be competitive. It came in at \$0.053/query, and is the first agent we
 > have submitted that was evolved by Claude Opus 5. The
 > agent's organizing insight is that the benchmark awards recall only for
 > papers judged Perfect on essentially every criterion. The benchmark's
@@ -282,10 +282,10 @@ uses `--max-samples 6`.
 | `metadata_f1` (35) | 0.2687 | 0.2653 | −0.0034 |
 | Agent cost | $0.0533 | **$0.0524** ± 0.0018 | −$0.0009 |
 
-**$0.052 @ 0.376 on the board.** Judge $197.32 + agent $13.99 = $211.31, 7.3 h
-at `--max-samples 6`. Per-paper judge rate $0.00407 — v0_0_7's $0.0040, not
-v0_0_8's $0.0030, despite near-identical evidence length. Evidence length alone
-does not predict the judge bill; the submit script's $0.0040 ceiling was the
+**\$0.052 @ 0.376 on the board.** Judge \$197.32 + agent \$13.99 = \$211.31, 7.3 h
+at `--max-samples 6`. Per-paper judge rate \$0.00407 — v0_0_7's \$0.0040, not
+v0_0_8's \$0.0030, despite near-identical evidence length. Evidence length alone
+does not predict the judge bill; the submit script's \$0.0040 ceiling was the
 better estimator.
 
 The pre-submission risk list held up well. Risk 1 (`specific_f1` is the metric
@@ -301,7 +301,7 @@ judging) cost −0.0117 on semantic, real but small.
 | **v0_0_9** | **0.376** | **0.052** |
 
 Higher *and* cheaper, so v0_0_7 leaves the curve. It also newly dominates Ai2's
-Asta v0 (0.376 @ $0.063) — tied on score at board precision, 17% cheaper.
+Asta v0 (0.376 @ \$0.063) — tied on score at board precision, 17% cheaper.
 v0_0_7 could not make that claim: at 0.375 it sat *below* Asta v0 on score and
 was merely cheaper, so the two were incomparable. The +0.0013 gain is small but
 it is exactly the increment that converts "incomparable" into "dominates".
@@ -320,7 +320,7 @@ is anyone else's.
 
 ### Twins on the outside, substantially different agents
 
-v0_0_9 edges v0_0_7 on both axes — +0.0013 score, −$0.0009 cost — so at board
+v0_0_9 edges v0_0_7 on both axes — +0.0013 score, −\$0.0009 cost — so at board
 precision the two entries look like the same agent nudged. They are not. The
 headline near-identity hides a composition that differs sharply, and the
 margin comes from one category while two others move against it:
@@ -388,8 +388,8 @@ Budget the full judge spend accordingly.
 
 Projected judge spend, measured from this run's own submissions: 250
 papers/query × 193 semantic queries = 48,250 papers at 747 chars each. At
-v0_0_8's measured $0.0030/paper (750 chars — near-identical evidence length),
-**~$145**; the submit script's ceiling formula prints ~$193.
+v0_0_8's measured \$0.0030/paper (750 chars — near-identical evidence length),
+**~\$145**; the submit script's ceiling formula prints ~\$193.
 
 Then upload `submissions/asta_paper_finder/v0_0_9_cap_0_063_opus5.tar.gz` via
 the HF Spaces form (https://huggingface.co/spaces/allenai/asta-bench-leaderboard).
@@ -397,10 +397,10 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 
 ## Submission status
 
-- [x] Official eval run (2026-07-31: 0.3762 @ $0.052396/query, $211.31 spend, 7.3h)
+- [x] Official eval run (2026-07-31: 0.3762 @ \$0.052396/query, \$211.31 spend, 7.3h)
 - [x] Tarball uploaded — submitted to AstaBench 2026-07-31, under official review
 - [x] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
 
 Three RoboPhD entries are on the board once this clears review: v0_0_7 (0.375 @
-$0.053, displaced by this one), v0_0_8 (0.220 @ $0.006) and this (0.376 @
-$0.052).
+\$0.053, displaced by this one), v0_0_8 (0.220 @ \$0.006) and this (0.376 @
+\$0.052).
