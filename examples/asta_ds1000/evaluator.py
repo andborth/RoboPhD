@@ -795,6 +795,32 @@ class Ds1000Evaluator:
         # to error paths. Other primary fields (stderr, stdout) are
         # preserved under a `primary_*` namespace so the audit trail
         # survives.
+        # KNOWN DEVIATION (documented 2026-08-06, deliberately NOT fixed).
+        # This evaluator keys its error diagnostic "error"; core's
+        # write_diagnostic_files treats the key AS the filename and the other
+        # examples all use "error.md" (docfinqa, arc_agi_1, text2sql, sudoku,
+        # protein_go). Core's domain.py:419 therefore computes
+        # `has_error = "error.md" in diagnostics`, which is FALSE for every
+        # DS-1000 eval — so result.json["error"], error_index.json's
+        # total_errors, and the "Errors" column report_generator.py:152
+        # renders are all permanently 0 for this task. The other tasks are
+        # unaffected; their flags fire correctly.
+        #
+        # Impact is bounded: the per-problem `error` FILE is still written
+        # and still sits in the problem dir, so an evolution session browsing
+        # the experiment directory can read it. What is missing is only the
+        # AGGREGATE count. examples/asta_ds1000/_check_infra_failures.py
+        # reads those files directly and is the supported way to detect
+        # infrastructure-zeroed evals here.
+        #
+        # Renaming the key is not a one-word change and is not behavior-safe:
+        # this line is the fallback contract (rename the emitters alone and
+        # the seed fallback silently stops firing, a SCORING change),
+        # main.py:177 populates the per-problem test schema from the same
+        # key, the on-disk filename would change for new runs only, and the
+        # "Errors" column would begin populating mid-campaign — an
+        # evolution-visible signal that would make runs before and after the
+        # change non-comparable. Revisit when the freeze lifts.
         if self.fallback_candidate is not None and "error" in diagnostics:
             primary_error = diagnostics["error"]
             primary_cost = diagnostics.get("agent_cost_usd", 0.0) or 0.0
