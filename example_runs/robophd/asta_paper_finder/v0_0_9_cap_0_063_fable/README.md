@@ -396,7 +396,10 @@ in an unusual direction.
 | Agent cost | $0.0583 | **$0.048119** ± 0.00178 | **−$0.0102** |
 
 Sixth calibration point, and the second-worst: **+0.0025 / −0.0550 / −0.0077 /
-+0.0096 / +0.0020 / −0.0236**. The four middling ones still sit within ±0.010;
++0.0096 / +0.0020 / −0.0236**. Note what a transfer number actually spans — a
+fresh agent execution *and* a judging-basis change. Those are separated
+[below](#uncapped-judging-is-real-but-small--and-it-explains-only-half-the-campaigns-cases),
+and for this run the agent term is the larger one. The four middling ones still sit within ±0.010;
 this run and `v0_0_8` are the two that do not.
 
 `specific_f1` fell 0.0615, which is about one standard deviation on a category
@@ -473,30 +476,49 @@ by 11%, in a run whose agent was always going to be slow. The transfer needs a
 different cause, and [risk 2](#official-result-risks-assessed-pre-submission)
 supplies it.
 
-### Uncapped judging, which is now 2-for-2 in each direction
+### Uncapped judging is real but small — and it explains only half the campaign's cases
 
-Internally only the top-K estimate is judged; officially all 250 submitted
-papers are. Semantic is the only category that judging basis can touch, and it
-is where the loss is: **−0.0271, which is 83% of the total score points lost.**
+Semantic is the only category a judging basis can touch, and it carries **83% of
+the score points lost** here (−0.0271 over 194 queries). The campaign has
+attributed movements like that to the capped→uncapped switch. **That attribution
+can be tested for free, and it only partly holds.**
 
-| run | gate | semantic, internal → official | delta |
-| --- | --- | --- | --- |
-| `-010` | $0.063 | 0.3227 → 0.3110 | **−0.0117** |
-| **`-013`** | **$0.063** | 0.3141 → 0.2870 | **−0.0271** |
-| `-011` | $0.355 | 0.3800 → 0.3930 | **+0.0130** |
-| `-012` | $0.355 | 0.3715 → 0.3749 | **+0.0033** |
+`adjusted_f1 = harmonic(rank, recall@estimate)` — verified on all 194 samples.
+`recall@estimate` is *already* K-windowed, so judging depth cannot move it;
+capping can only change the nDCG `rank` term. The official run judged all 250
+papers, so its own verdicts are enough to recompute what the **capped** score
+would have been: truncate the ordered grade list to K and re-score. No LLM cost.
 
-**Both cheap-gate agents lose on semantic when judged uncapped; both
-expensive-gate agents gain.** That is the pattern `-012`'s README could only
-call "suggestive at n=3" — it is now 2-for-2 in each direction, and it is the
-sign that was predictable from the gate. An agent that fills all 250 slots on a
-$0.063 budget cannot grade the tail it submits, so papers it never validated get
-graded officially and dilute the rank term. The $0.355 agents grade far deeper,
-so their tail survives official scrutiny and adds recall instead.
+Validated before use: parsing the official per-paper verdicts back out and
+recomputing `rank` reproduces the official value **exactly** on 151 of 194
+samples. The mismatches are precisely the samples with skipped documents, where
+a missing verdict shifts the list. Only verified samples are used below.
 
-This is a **gate-dependent property, not an agent defect**, and it was risk 2's
-stated exposure: "this agent fills all 250 slots on every one of its 194
-semantic queries, so it is exposed either way."
+| run | gate | cap effect (capped − uncapped) | published internal → official | cap explains |
+| --- | --- | --- | --- | --- |
+| `-010` | $0.063 | −0.0008 | **−0.0117** | ✗ wrong direction |
+| **`-013`** | **$0.063** | **−0.0023** | **−0.0271** | ✗ wrong direction |
+| `-011` | $0.355 | −0.0071 | **+0.0130** | ✓ ~55% |
+| `-012` | $0.355 | −0.0054 | **+0.0033** | ✓ all of it |
+
+Two things follow, and they pull in opposite directions.
+
+**The mechanism is real and gate-dependent, as the campaign supposed.** Capping
+always *lowers* the score, and it lowers it 3–4× more for the deep-grading
+$0.355 agents (0.005–0.007) than for the cheap ones (0.001–0.002). Agents that
+grade deeper do gain more from having their tail judged.
+
+**But it is far too small to carry the observed transfers, and at this gate it
+has the wrong sign.** The cheap-gate runs moved −0.0117 and −0.0271 while the
+cap pushes *positive*. Whatever drove those, it worked against the cap and was
+an order of magnitude larger. The residual is the agent itself: an official run
+is a fresh stochastic execution, and on this evidence **run-to-run variance
+dominates the scoring basis** at the cheap gate.
+
+So risk 2 named a real exposure and correctly predicted the sign at $0.355 — but
+it is not the explanation for this run's −0.0236. An earlier version of this
+section claimed it was, on a "2-for-2 in each direction" pattern that conflated
+the judging change with a fresh agent run.
 
 ### Two things this run does not explain
 
