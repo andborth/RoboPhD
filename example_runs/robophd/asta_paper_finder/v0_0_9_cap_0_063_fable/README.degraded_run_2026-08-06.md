@@ -1,3 +1,39 @@
+# ARCHIVED — the 2026-08-06 official run, superseded by a re-run
+
+**This is not the submission record.** It is the README as it stood after the
+first official run of `v0_0_9_cap_0_063_fable`, kept because that run is
+informative about how these evals behave and because the analysis below is
+cited elsewhere.
+
+**Why it was superseded.** The run scored 0.36382 @ \$0.048119, but its agent
+cost came in **17.4% below** what training (\$0.058) and internal eval
+(\$0.0583) had both measured — 4.3x the largest internal-to-official cost
+deviation across the five prior submissions, which span −4.0% to +1.6%. Paired
+per-query analysis (Spearman(Δcost, Δscore) = +0.183, n=194, p≈0.01) tied the
+cost shortfall to the score shortfall, and the effect was **episodic**:
+
+| hour of run | mean Δcost | mean Δscore | share in worst quartile |
+| --- | --- | --- | --- |
+| t+0–2h | −0.0003 | **+0.0075** | 6% |
+| t+8–10h | −0.0238 | −0.0217 | 48% |
+| t+12–14h | −0.0026 | −0.0156 | 0% |
+
+The first two hours reproduced the internal measurement; the middle ~10 hours
+did not; the last two recovered. Roughly 85% of the run executed degraded. A
+concurrent DS-1000 run (`asta_ds1000_20260806_230212`) covered t+5.3h–t+12.6h
+and showed 2.6x the spend reduction inside its window, but the degradation
+began ~3h before it, so it is a partial explanation at best.
+
+The frontier claim also depended on the anomaly: at \$0.048 the entry is not
+dominated and holds a slot; at the twice-measured \$0.058 it is strictly worse
+than our own `cap_0_063_opus5` (0.376 @ \$0.052) and earns nothing.
+
+**Artifacts** (gitignored, under `submissions/asta_paper_finder/`):
+`v0_0_9_cap_0_063_fable/logs/full_test.degraded_20260806/` and
+`v0_0_9_cap_0_063_fable.degraded_20260806.tar.gz`.
+
+---
+
 # v0_0_9_cap_0_063_fable — PaperFindingBench (AstaBench) submission snapshot
 
 Sixth RoboPhD submission to the AstaBench PaperFindingBench leaderboard
@@ -44,11 +80,10 @@ The board as it stands, before this entry:
 `v0_0_7` (0.375 @ \$0.053) is listed but off the frontier, displaced by our own
 `cap_0_063`.
 
-**Where this entry lands is not claimed here.** Internally it scores 0.38738 @
-\$0.05828, but internal is not banked — see
-[Official-result risks](#official-result-risks-assessed-pre-submission). The
-frontier table with this entry inserted, and the outcome against the target,
-are filled in under [Official result](#official-result) after the run.
+**Outcome: 0.364 @ \$0.048 — a new frontier slot, but the target stands.**
+Asta's 0.397 needed clearing and was not cleared; this entry slots in below our
+own `cap_0_063` at a slightly lower price. Six frontier slots, five ours. Full
+numbers under [Official result](#official-result-2026-08-07).
 
 ## What this run is for: completing the 2×2
 
@@ -60,52 +95,80 @@ Scored on the leaderboard's own basis, so all four cells are comparable:
 
 | official mean F1 | **$0.063 gate** | **$0.355 gate** |
 | --- | --- | --- |
-| **opus-5** | `-010` 0.37620 | `-011` 0.43177 |
-| **fable-5** | `-013` *pending* | `-012` 0.44025 |
-| **delta to fable-5** | *pending* | **+0.0085** |
+| **opus-5** | `-010` **0.37620** | `-011` 0.43177 |
+| **fable-5** | `-013` 0.36382 | `-012` **0.44025** |
+| **delta to fable-5** | **−0.0124** | **+0.0085** |
 
-The \$0.063 cell fills in from [Official result](#official-result) after the run;
-until then the 2×2 has one open corner. **n = 1 per cell** either way, so a
-consistent sign across both gates is the most this design can show — not an
-effect size.
+**The signs are opposite, and that is the run's main result.** On the \$0.355
+cell alone, fable-5 looked like the better evolution model by +0.0085. Filling
+the cheap corner reverses it: at \$0.063 opus-5 wins by 0.0124, half again the
+margin fable-5 held at the expensive gate.
 
-## The category shape replicates at both gates
+So the honest reading of the completed design is **not** "fable-5 builds better
+agents". It is that the evolution model interacts with the cost gate, and a
+single cell cannot tell you which way. Had we stopped at the \$0.355 A/B — which
+was the cleanest controlled comparison in the campaign, and which we published
+as such — we would have banked a conclusion this run overturns.
 
-*Preliminary, on internal figures; recomputed on the official basis once the
-run lands.* Against `-010` on the **266** query IDs the two runs share — `-010`
-lost one to a subprocess timeout, which its per-problem file records as
-`sample_id: "None"` scored 0.0:
+**n = 1 per cell** still, so the interaction itself is one observation, not an
+established effect. What is established is that the +0.0085 was not
+generalisable.
+
+## Two of the three categories do replicate
+
+Official against official at the \$0.063 gate:
 
 | category | n | opus-5 (`-010`) | **fable-5 (`-013`)** | delta | score points (n × delta) |
 | --- | --- | --- | --- | --- | --- |
-| semantic | 193 | **0.3227** | 0.3126 | −0.0101 | **−1.94** |
-| specific | 38 | 0.8114 | **0.8465** | +0.0351 | **+1.33** |
-| metadata | 35 | 0.2687 | **0.2950** | +0.0262 | **+0.92** |
-| **all** | **266** | 0.38539 | **0.38655** | | **+0.31** |
+| semantic | 194 | **0.3110** | 0.2870 | −0.0240 | **−4.66** |
+| specific | 38 | **0.8114** | 0.7850 | −0.0264 | **−1.00** |
+| metadata | 35 | 0.2653 | **0.3300** | +0.0647 | **+2.26** |
+| **all** | **267** | **0.37620** | 0.36382 | −0.0124 | **−3.39** |
 
-+0.31 / 266 = **+0.0012**, the difference between the two.
+−3.39 / 267 = **−0.0127**, the difference between the two (−0.0124 on the
+reported means; the gap is per-type rounding).
 
-The signs are the same three as the \$0.355 cell (metadata **+0.1202**, specific
-**+0.0430**, semantic **−0.0184**). **fable-5 trades semantic away for the other
-two categories at both price points.** The headline is a trade, not a uniform
-gain — which is the same conclusion the \$0.355 A/B reached, now replicated at a
-gate 5.6× cheaper.
+Set beside the \$0.355 cell, two of three category signs hold:
 
-Semantic is close to even query-by-query — 89 solo wins against 96 solo losses
-across 193 queries — so the −0.0101 is a small net rather than a systematic
-collapse. But semantic carries 73% of the queries, so a small per-query loss
-there cancels most of what the two small categories win.
+| category | $0.063 | $0.355 | replicates? |
+| --- | --- | --- | --- |
+| metadata | **+0.0647** | **+0.1202** | ✅ fable-5 up at both |
+| semantic | **−0.0240** | **−0.0184** | ✅ fable-5 down at both |
+| specific | −0.0264 | +0.0430 | ❌ flips |
+
+**fable-5 trades semantic for metadata at both price points** — that much
+survives the completed design. Specific flips sign, but that is the category
+carrying ~0.058 SD over 38 all-or-nothing queries, so both figures are inside
+half a standard deviation and neither is evidence of anything.
+
+What changes with the gate is whether the trade pays. At \$0.355 the metadata
+gain is large enough (+0.1202 over 35 queries) to outrun the semantic loss over
+194. At \$0.063 it is not: metadata contributes +2.26 score points against
+semantic's −4.66. **Semantic carries 73% of the queries, so it decides the
+headline whenever the metadata gain is merely good rather than enormous.**
 
 ## Cap-hugging replicates too
 
-| gate | opus-5 | fable-5 |
-| --- | --- | --- |
-| $0.063 | $0.0533 (85%) | **$0.0583 (93%)** |
-| $0.355 | $0.2506 (71%) | $0.2786 (78%) |
+Cap utilisation is a **training** behaviour — it describes what evolution
+optimised toward — so it is measured on each winner's mean training spend
+against its own free zone:
 
-Four observations, same direction: **fable-5 spends closer to the line at both
-price points, and the gap widens as the cap tightens.** At \$0.063 it leaves only
-7% of the free zone unused.
+| gate | opus-5 | **fable-5** |
+| --- | --- | --- |
+| $0.063 | $0.054 (**86%**) | **$0.058 (92%)** |
+| $0.355 | $0.270 (**76%**) | **$0.303 (85%)** |
+
+Four observations, same direction: **fable-5 evolves agents that spend closer to
+the line at both price points**, by 6–9 points of the free zone. This is the one
+claim in this document that the completed 2×2 leaves fully intact.
+
+A caution on which number to quote. This agent's cost differs across all three
+bases — train \$0.058, internal test \$0.0583, **official \$0.0481 (76% of cap)** —
+and only the first says anything about evolution's behaviour, because the free
+zone is a *training* signal and the training mean is what evolution optimised
+against. Reading cap utilisation off the official figure would invert the
+finding at this gate, and the reason that figure came in low is itself
+[not established](#two-things-this-run-does-not-explain).
 
 ## Naming and conventions
 
@@ -353,28 +416,180 @@ internal score a conservative floor for this agent specifically — and the
 official per-sample distribution, already recorded in the `.eval` log, is the
 check.
 
-## Official result
+## Official result (2026-08-07)
 
-**A first official run was made on 2026-08-06 and is being re-run.** It scored
-0.36382 @ \$0.048119, but its agent cost landed 17.4% below what training and
-internal eval had both measured, and the shortfall was episodic — the opening
-two hours matched internal, the middle ~10 did not. That run, and the analysis
-of it, are preserved in
-[`README.degraded_run_2026-08-06.md`](README.degraded_run_2026-08-06.md); its
-log and tarball are under `submissions/asta_paper_finder/` with a
-`.degraded_20260806` suffix. **None of its numbers are carried below.**
+**As displayed on the board: 0.364 @ \$0.048.** 267/267 samples, **zero errors**,
+**14h33m**. Judge \$187.38 + agent \$12.85 = **\$200.23**. Full precision below,
+since the transfer is larger than the board's rounding step and the cost moved
+in an unusual direction.
 
-*Pending — filled in after the re-run:* board position and the frontier
-table with this entry inserted; the Internal/Official/Delta table; the sixth
-transfer calibration point; the wall-clock comparison against risk 5; and the
-sixth cost-calibration point.
+| Metric | Internal | **Official** | Delta |
+| --- | --- | --- | --- |
+| Mean F1 | 0.38738 | **0.36382** ± 0.01863 | **−0.0236** |
+| `semantic_f1` (194) | 0.3141 | 0.2870 | −0.0271 |
+| `specific_f1` (38) | 0.8465 | 0.7850 | −0.0615 |
+| `metadata_f1` (35) | 0.2950 | **0.3300** | **+0.0350** |
+| Agent cost | $0.0583 | **$0.048119** ± 0.00178 | **−$0.0102** |
 
-*Two sections above also close out from here:* the open corner of the
-[2×2](#what-this-run-is-for-completing-the-2×2) takes this run's official mean
-F1 and the \$0.063 delta, and the
-[category comparison](#the-category-shape-replicates-at-both-gates) is
-recomputed official-against-official — which retires its 266-matched-ID
-qualifier along with `-010`'s timed-out query.
+Sixth calibration point, and the second-worst: **+0.0025 / −0.0550 / −0.0077 /
++0.0096 / +0.0020 / −0.0236**. Note what a transfer number actually spans — a
+fresh agent execution *and* a judging-basis change. Those are separated
+[below](#uncapped-judging-is-real-but-small--and-it-explains-only-half-the-campaigns-cases),
+and for this run the agent term is the larger one. The four middling ones still sit within ±0.010;
+this run and `v0_0_8` are the two that do not.
+
+`specific_f1` fell 0.0615, which is about one standard deviation on a category
+of 38 all-or-nothing queries — [risk 3](#official-result-risks-assessed-pre-submission)
+called this in advance and it needs no mechanism. `metadata_f1` **rose** 0.0350,
+its best official figure at this gate. The drop is semantic: −0.0271 over 194
+queries is **−5.26 of the −6.37 total score points**, 83% of it.
+
+### Where it lands: a new frontier slot, but not the target
+
+| | entry | score | $/prob | tier |
+| --- | --- | --- | --- | --- |
+| 1 | RoboPhD (v0_0_8) | 0.220 | 0.006 | Standard |
+| 2 | **this entry** | **0.364** | **0.048** | **Standard** |
+| 3 | RoboPhD (v0_0_9 @ cap 0.063, opus5) | 0.376 | 0.052 | Standard |
+| 4 | Asta Paper Finder | 0.397 | 0.063 | Custom interface |
+| 5 | RoboPhD (v0_0_9 @ cap 0.355, opus5) | 0.432 | 0.251 | Standard |
+| 6 | RoboPhD (v0_0_9 @ cap 0.355, fable) | 0.440 | 0.279 | Standard |
+
+Nothing on the board scores ≥ 0.364 at ≤ \$0.048, so this is **not dominated**
+and takes a sixth slot — five of six now ours. It dominates nothing either: it
+is strictly below our own `cap_0_063` on score while being \$0.004 cheaper.
+
+**The target was missed.** Asta Paper Finder's 0.397 @ \$0.063 needed 0.397 from
+this entry and it returned 0.364. The gate has now been aimed at that entry
+twice and cleared neither time. Asta keeps its slot.
+
+### The 14h33m is the agent, not the venue
+
+The run's length invites a latency story. It does not survive measurement.
+
+**This agent is the slowest in the campaign by construction.** Comparing
+semantic samples only, on each run's own internal evaluation:
+
+| run | internal median | official median | official ÷ internal |
+| --- | --- | --- | --- |
+| `-012` ($0.355, fable) | 814s | 709s | **0.87×** |
+| **`-013` (this entry)** | **1378s** | **1529s** | **1.11×** |
+
+`-013` is **1.69× slower than `-012` before either agent ever ran officially**.
+The title-guess channel, the extra reformulation probes and the deeper expansion
+all cost round-trips. 267 samples at ~1500s over 6 concurrent slots is 14 hours
+whatever the backend does.
+
+**The official-side slowdown is real but small: 11%.** `-012` ran 13% *faster*
+officially, so `-013` did lose something at the venue that `-012` gained — but
+an 11% shift, not a collapse.
+
+Three checks constrain what it can be:
+
+- **No drift across the run.** Median agent-phase span by start-time quartile:
+  1238s / 1305s / 1291s / 1229s, Pearson *r* = **+0.063** against elapsed hours.
+  A degrading backend would show a trend; this is flat from first sample to last.
+- **The task is retrieval-bound, and always has been.** Merging every model
+  call's interval per sample, the share of agent wall time *not* inside any LLM
+  call is **98.2% / 95.0% / 93.9% / 97.6%** for `-010` / `-011` / `-012` /
+  `-013`. Model latency is a rounding error in all four; agent speed is tool
+  round-trips. So a slow agent here means *more* round-trips, which is a design
+  property, not a venue property.
+- **Model-call latency was normal** (median 2.3s against 1.2–1.7s elsewhere) —
+  OpenAI was not the bottleneck either.
+
+**A correction to an earlier draft of this section.** It reported the official
+run as 16% slower with "94% of queries above 1500s against 17%". Both figures
+were wrong: the internal median was taken over all 267 samples (including the
+fast `specific`/`metadata` ones) and compared against an official median over
+the 194 `semantic` ones. Like-for-like the shift is 11%, and the ≥1500s counts
+(29 → 183) exaggerate it further because the median sits just below the
+threshold internally and just above it officially — an 11% shift drags most of
+the distribution across the line.
+
+**So risk 5 is not the explanation for the score.** Wall-clock pressure moved
+by 11%, in a run whose agent was always going to be slow. The transfer needs a
+different cause, and [risk 2](#official-result-risks-assessed-pre-submission)
+supplies it.
+
+### Uncapped judging is real but small — and it explains only half the campaign's cases
+
+Semantic is the only category a judging basis can touch, and it carries **83% of
+the score points lost** here (−0.0271 over 194 queries). The campaign has
+attributed movements like that to the capped→uncapped switch. **That attribution
+can be tested for free, and it only partly holds.**
+
+`adjusted_f1 = harmonic(rank, recall@estimate)` — verified on all 194 samples.
+`recall@estimate` is *already* K-windowed, so judging depth cannot move it;
+capping can only change the nDCG `rank` term. The official run judged all 250
+papers, so its own verdicts are enough to recompute what the **capped** score
+would have been: truncate the ordered grade list to K and re-score. No LLM cost.
+
+Validated before use: parsing the official per-paper verdicts back out and
+recomputing `rank` reproduces the official value **exactly** on 151 of 194
+samples. The mismatches are precisely the samples with skipped documents, where
+a missing verdict shifts the list. Only verified samples are used below.
+
+| run | gate | cap effect (capped − uncapped) | published internal → official | cap explains |
+| --- | --- | --- | --- | --- |
+| `-010` | $0.063 | −0.0008 | **−0.0117** | ✗ wrong direction |
+| **`-013`** | **$0.063** | **−0.0023** | **−0.0271** | ✗ wrong direction |
+| `-011` | $0.355 | −0.0071 | **+0.0130** | ✓ ~55% |
+| `-012` | $0.355 | −0.0054 | **+0.0033** | ✓ all of it |
+
+Two things follow, and they pull in opposite directions.
+
+**The mechanism is real and gate-dependent, as the campaign supposed.** Capping
+always *lowers* the score, and it lowers it 3–4× more for the deep-grading
+\$0.355 agents (0.005–0.007) than for the cheap ones (0.001–0.002). Agents that
+grade deeper do gain more from having their tail judged.
+
+**But it is far too small to carry the observed transfers, and at this gate it
+has the wrong sign.** The cheap-gate runs moved −0.0117 and −0.0271 while the
+cap pushes *positive*. Whatever drove those, it worked against the cap and was
+an order of magnitude larger. The residual is the agent itself: an official run
+is a fresh stochastic execution, and on this evidence **run-to-run variance
+dominates the scoring basis** at the cheap gate.
+
+So risk 2 named a real exposure and correctly predicted the sign at \$0.355 — but
+it is not the explanation for this run's −0.0236. An earlier version of this
+section claimed it was, on a "2-for-2 in each direction" pattern that conflated
+the judging change with a fresh agent run.
+
+### Two things this run does not explain
+
+**Why agent spend fell 17%** (\$0.0583 → \$0.0481). Prior runs' internal-to-
+official cost agreement was within ±\$0.005; this is double the widest previous
+move. The internal evaluator records only dollars, not tokens, so there is no
+way here to separate "did less work" from "billed on a different price map".
+Persisting per-model token counts on internal test evals would close this, and
+is cheap.
+
+**Judge-side dropouts are ruled out** as a factor: 51 documents skipped for
+missing judgements across ~48,500 (**0.11%**), against `-011`'s recorded 0.13%.
+Normal rate, no effect on the comparison.
+
+Judge-side dropouts were normal and are not a factor: 51 documents skipped for
+missing judgements across ~48,500 (**0.11%**), against `-011`'s recorded 0.13%.
+
+### Cost calibration (sixth measured point)
+
+Judge came in at **\$0.00386/paper** — \$187.38 over 194 semantic queries × 250
+papers — against \$0.0040 / \$0.0030 / \$0.00407 / \$0.00426 / \$0.00420 for the five
+prior runs. **The lowest of any full-250 agent.** Judge input tokens were 42.3M here
+against `-012`'s 45.5M for the same paper count, so this agent submits ~7% less
+evidence text per paper — a property of what it writes, not of what the venue
+charged.
+
+Total \$200.23 against a **\$213–226** pre-run estimate — **the first projection
+this campaign to miss high**. The method (measured \$/paper band × 48,500 plus
+the agent's own internal cost) is sound in shape; both of its inputs simply came
+in low, the judge rate because this agent writes shorter evidence and the agent
+term for reasons not established (see above).
+
+Recomputing prior judge bills from logged tokens at gpt-4o list rates reproduces
+`$203.61` and `$197.32` exactly, so the \$187.38 is on the same basis as the
+series.
 
 ## Reproduce
 
@@ -388,11 +603,11 @@ Push the commit **before** the full run — `astabench eval` hard-fails if the
 commit is not on the remote, since it stamps the SHA into `eval_spec.revision`.
 The script's own preflight refuses to run against a dirty working tree.
 
-Projected spend **\$213–226**: judge \$0.0041–0.0043/paper × 48,500 papers (194
-semantic queries × 250) plus ~\$15.6 agent. Judge-dominated — the agent side is a
-quarter of `cap_0_355_fable`'s because of the gate. The script's printed
-estimate (~\$209) uses a hardcoded \$0.0040/paper and has under-predicted both
-prior full-250 runs; budget from the measured band.
+Measured spend: **\$187.38 judge + \$12.85 agent = \$200.23**, at \$0.00386/paper
+over 194 semantic queries × 250 papers, in **14h33m** at `--max-samples 6`. That
+came in *under* the \$213–226 projection — the first time this campaign's
+estimate has missed high; see
+[Cost calibration](#cost-calibration-sixth-measured-point).
 
 Then upload `submissions/asta_paper_finder/v0_0_9_cap_0_063_fable.tar.gz` via
 the HF Spaces form (https://huggingface.co/spaces/allenai/asta-bench-leaderboard).
@@ -400,6 +615,6 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 
 ## Submission status
 
-- [ ] Official eval run
+- [x] Official eval run (2026-08-07: 0.36382 @ \$0.048119/query, \$200.23 spend, 14h33m, 267/267 no errors)
 - [ ] Tarball uploaded
 - [ ] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
