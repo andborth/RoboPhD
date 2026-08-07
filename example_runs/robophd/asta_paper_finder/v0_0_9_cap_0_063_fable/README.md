@@ -7,22 +7,30 @@ Sixth RoboPhD submission to the AstaBench PaperFindingBench leaderboard
 > — iteration-14 winner of run `robophd-asta_paper_finder-013`, 2,068 lines,
 > two OpenAI model handles. Everything below describes that file.
 
-## The gate is Asta's price, for the second time
+## The gate is Asta's price; the variable is the evolution model
 
 The training free zone is set at **$0.063/query** — exactly the price of **Asta
 Paper Finder's 0.397 @ $0.063**, the one non-RoboPhD entry still holding a
 frontier slot. Evolution had to win on score at a price already known to be
 competitive.
 
-This is the third use of the competitor-priced-gate technique on this task, and
-the second attempt at *this* target:
+This is the third use of the competitor-priced-gate technique on this task. It
+is the second run aimed at *this* target — but not a repeat of it: the gate,
+the guard, the judges, the budget and the harness are all held fixed, and
+**the evolution model is the one deliberate change**.
 
-| submission | gate | aimed at |
-| --- | --- | --- |
-| `v0_0_8` | $0.033 | the second-cheapest point on the frontier |
-| `v0_0_9_cap_0_063_opus5` | $0.063 | Asta Paper Finder, 0.397 @ $0.063 |
-| `v0_0_9_cap_0_355_*` | $0.355 | the board leader |
-| **this entry** | **$0.063** | **Asta Paper Finder, again** |
+| submission | gate | evolution model | aimed at |
+| --- | --- | --- | --- |
+| `v0_0_8` | $0.033 | Opus 4.8 | the second-cheapest point on the frontier |
+| `v0_0_9_cap_0_063_opus5` | $0.063 | **Opus 5** | Asta Paper Finder, 0.397 @ $0.063 |
+| `v0_0_9_cap_0_355_opus5` | $0.355 | **Opus 5** | the board leader |
+| `v0_0_9_cap_0_355_fable` | $0.355 | **fable-5** | the board leader |
+| **this entry** | **$0.063** | **fable-5** | **Asta Paper Finder, 0.397 @ $0.063** |
+
+Read down the last three rows and the design is visible: the $0.355 gate has
+already been run under both evolution models, and this entry supplies the
+missing fable-5 arm at $0.063. That is the point of the run — the two attempts
+at Asta's price are a controlled pair, not a retry.
 
 The board as it stands, before this entry:
 
