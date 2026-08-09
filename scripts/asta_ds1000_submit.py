@@ -320,15 +320,91 @@ indefinitely. asyncio.TimeoutError is a subclass of Exception on
 Python 3.11+, so the existing `except Exception` blocks catch the
 timeout and fall to the next tier naturally.
 
+Per-sample module isolation: agent_inner and seed_agent are loaded as FRESH
+module instances per sample (see _isolated below), so anything an evolved
+agent keeps at module scope is per-sample here exactly as it is under
+RoboPhD's one-subprocess-per-sample evaluator. Without this, --max-samples
+concurrent samples share one module namespace and per-sample state silently
+becomes global. model_registry deliberately stays shared.
+
 Wrapper recipe lives in scripts/asta_ds1000_submit.py:WRAPPER_TEMPLATE.
 """
 import asyncio
+import importlib.util
+import itertools
+import sys
 import traceback
+import uuid
+from pathlib import Path
 
 from inspect_ai.solver import Generate, TaskState, solver
 
-from agent_inner import make_solver as _inner_make_solver
-from seed_agent import make_solver as _seed_make_solver
+# LOAD-BEARING — do not delete as an "unused import". This runs while
+# inspect's chdir_python() still has the submission dir on sys.path, which
+# pins model_registry into sys.modules. agent_inner does `from model_registry
+# import ...` at ITS module scope, and the per-sample loads below happen long
+# after chdir_python.__exit__ restored sys.path (inspect_ai/_util/path.py:60).
+# Without this, every sample dies with ModuleNotFoundError.
+import model_registry  # noqa: F401
+
+
+_HERE = Path(__file__).resolve().parent
+_TAG = uuid.uuid4().hex[:8]   # load_module() re-execs this file on every
+_SEQ = itertools.count()      # solver_from_spec, so a bare counter collides
+
+
+def _isolated(stem: str):
+    """Load <stem>.py as a FRESH module: its module scope becomes per-sample.
+
+    `astabench eval` runs --max-samples samples as asyncio tasks in ONE
+    process; RoboPhD training and internal test run one sample per subprocess.
+    Agents are therefore evolved where module scope means "per sample" and
+    graded where it means "shared across concurrent samples". No DS-1000 agent
+    shipped to date keeps mutable state there, but nothing prevents the next
+    one from doing so, and the failure is silent — see the paper_finder
+    submission where a module-scope deadline clock cost 30% of samples.
+
+    Isolation boundary: modules loaded from THIS directory under a synthetic
+    name. model_registry stays SHARED by design (canonical name in
+    sys.modules — one connection pool). An agent that mutates a shared
+    module's globals is not isolated by this.
+    """
+    if str(_HERE) not in sys.path:
+        sys.path.insert(0, str(_HERE))
+    name = f"{stem}__iso{_TAG}_{next(_SEQ)}"
+    spec = importlib.util.spec_from_file_location(name, _HERE / f"{stem}.py")
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot build a module spec for {stem}.py")
+    mod = importlib.util.module_from_spec(spec)
+    # Register BEFORE exec: the @solver decorator calls find_spec() on this
+    # name, which is a full sys.path scan whenever the name is absent.
+    sys.modules[name] = mod
+    try:
+        spec.loader.exec_module(mod)
+    finally:
+        # Drop the name so hundreds of module dicts don't accumulate. Never
+        # mod.__dict__.clear() — a cancelled asyncio task may still be
+        # unwinding through these globals.
+        sys.modules.pop(name, None)
+    # agent_inner's own @solver registered under the same bare name
+    # ("make_solver") and clobbered ours. inspect's eval-set resume path
+    # resolves the solver by that name, so put it back. Absent during the
+    # warm-up below, which runs before the wrapper is defined.
+    _wrapper = globals().get("make_solver")
+    if _wrapper is not None:
+        try:
+            from inspect_ai._util.registry import registry_add, registry_info
+            registry_add(_wrapper, registry_info(_wrapper))
+        except Exception:
+            pass
+    return mod
+
+
+# Warm-up load, at module scope so it runs INSIDE inspect's chdir_python
+# window. Compiles the pyc once so no sample pays compile cost, and surfaces a
+# broken agent_inner here rather than on sample 1. Must stay ABOVE the @solver
+# below so the wrapper is the last thing registered.
+_isolated("agent_inner")
 
 
 PRIMARY_TIMEOUT_S = 1200  # 20 min — bounds hung primaries
@@ -337,13 +413,14 @@ SEED_TIMEOUT_S = 1200     # same — applied independently to the fallback tier
 
 @solver
 def make_solver():
-    inner = _inner_make_solver()
-    seed = _seed_make_solver()
-
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         if state.metadata is None:
             state.metadata = {}
         try:
+            # Fresh module per sample. INSIDE the try on purpose: a load
+            # failure (transient OSError, MemoryError, a half-written source
+            # file) must degrade to the seed tier, not abort the whole eval.
+            inner = _isolated("agent_inner").make_solver()
             return await asyncio.wait_for(inner(state, generate), timeout=PRIMARY_TIMEOUT_S)
         except Exception as primary:
             print(f"[{state.sample_id}] WRAPPER primary caught {type(primary).__name__}: {primary}")
@@ -352,6 +429,9 @@ def make_solver():
             state.metadata["__wrapper_primary_caught"] = repr(primary)[:500]
             state.metadata["__wrapper_primary_traceback"] = traceback.format_exc()[:2000]
             try:
+                # Lazy: the seed is loaded only on the failure path, so the
+                # happy path pays zero seed loads.
+                seed = _isolated("seed_agent").make_solver()
                 return await asyncio.wait_for(seed(state, generate), timeout=SEED_TIMEOUT_S)
             except Exception as fallback:
                 print(f"[{state.sample_id}] WRAPPER seed fallback ALSO caught {type(fallback).__name__}: {fallback}")
@@ -366,7 +446,7 @@ def make_solver():
 '''
 
 
-def stage(s: Submission) -> Path:
+def stage(s: Submission, restage: bool = False) -> Path:
     """Stage a working dir with the two-tier resilience wrapper.
 
     Layout in dst_dir:
@@ -380,12 +460,24 @@ def stage(s: Submission) -> Path:
     on the seed also raising it emits empty completion. See
     WRAPPER_TEMPLATE above for the rationale.
 
+    FROZEN once the submission has been evaluated. Staging is unconditional
+    and runs BEFORE the already_evaluated() skip, so without this guard a
+    re-run silently rewrites the staged source of an already-posted entry
+    while skipping the eval — an invisible loss of the record of what produced
+    it. Especially relevant here: the module docstring already notes v0_0_1 and
+    v0_0_2 are NOT runnable at HEAD, so their staged trees are the only
+    surviving description of those runs. --restage overwrites deliberately.
+
     Returns the working dir path.
     """
+    dst_dir = WORKING_BASE / s.name
+    if already_evaluated(dst_dir) and not restage:
+        print(f"[skip stage] {s.name}: frozen (already evaluated); "
+              f"pass --restage to overwrite")
+        return dst_dir
     src_agent = SOURCE_BASE / s.name / s.agent_rel_path
     src_seed = EXAMPLES_DIR / "seeds" / "baseline" / "agent.py"
     src_registry = EXAMPLES_DIR / "model_registry.py"
-    dst_dir = WORKING_BASE / s.name
     dst_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy(src_agent, dst_dir / "agent_inner.py")
     shutil.copy(src_seed, dst_dir / "seed_agent.py")
@@ -594,10 +686,14 @@ def main() -> int:
     # evals, but --only also avoids re-scoring/re-tarring old entries
     # whose tarballs were already uploaded).
     args = sys.argv[1:]
+    # --restage: overwrite a frozen (already-evaluated) working dir. Pulled out
+    # first so the positional --only parsing below is unchanged.
+    restage = "--restage" in args
+    args = [a for a in args if a != "--restage"]
     selected = SUBMISSIONS
     if args:
         if args[0] != "--only" or len(args) < 2:
-            print(f"usage: {sys.argv[0]} [--only NAME [NAME ...]]")
+            print(f"usage: {sys.argv[0]} [--restage] [--only NAME [NAME ...]]")
             return 2
         names = set(args[1:])
         unknown = names - {s.name for s in SUBMISSIONS}
@@ -617,7 +713,7 @@ def main() -> int:
     failures = []
     for s in selected:
         print(f"\n{'#' * 70}\n# {s.name}\n{'#' * 70}")
-        working_dir = stage(s)
+        working_dir = stage(s, restage)
         if not eval_submission(s, working_dir):
             print(f"!! eval failed for {s.name}; continuing to next submission")
             failures.append((s.name, "eval"))

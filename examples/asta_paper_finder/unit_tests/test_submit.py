@@ -45,16 +45,110 @@ def wrapper_tree(submit_mod) -> ast.AST:
     return ast.parse(submit_mod.WRAPPER_TEMPLATE)
 
 
-def test_wrapper_template_imports_seed_agent(wrapper_tree: ast.AST) -> None:
-    """Without the seed import, the second fallback tier can't fire and
-    submissions silently revert to empty-submission-on-error."""
-    seed_imports = [
+def _isolated_loads_of(tree: ast.AST, stem: str) -> list[ast.Call]:
+    """Calls of the form _isolated("<stem>") anywhere in the template."""
+    return [
+        n for n in ast.walk(tree)
+        if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
+        and n.func.id == "_isolated"
+        and n.args and isinstance(n.args[0], ast.Constant)
+        and n.args[0].value == stem
+    ]
+
+
+def test_wrapper_template_can_reach_the_seed_tier(wrapper_tree: ast.AST) -> None:
+    """Without a way to load the seed, the second fallback tier can't fire and
+    submissions silently revert to empty-submission-on-error. The seed is now
+    loaded per-sample via _isolated() rather than imported at module scope."""
+    legacy_import = [
         node for node in ast.walk(wrapper_tree)
         if isinstance(node, ast.ImportFrom)
         and node.module == "seed_agent"
         and any(alias.name == "make_solver" for alias in node.names)
     ]
-    assert seed_imports
+    assert _isolated_loads_of(wrapper_tree, "seed_agent") or legacy_import, (
+        "wrapper must load seed_agent, via _isolated() or a module-scope import"
+    )
+
+
+def test_wrapper_template_isolates_agent_inner_per_sample(
+        wrapper_tree: ast.AST) -> None:
+    """`astabench eval --max-samples 6` runs six samples as asyncio tasks in
+    ONE process, while RoboPhD training runs one sample per subprocess. A
+    module-scope `from agent_inner import ...` therefore turns the agent's
+    per-sample state global: v0_0_9_cap_0_063_fable kept its deadline clock and
+    tool semaphore at module scope, _remaining() never counted down, and 30% of
+    samples were guillotined."""
+    module_scope_import = [
+        n for n in ast.walk(wrapper_tree)
+        if isinstance(n, ast.ImportFrom) and n.module == "agent_inner"
+    ]
+    assert not module_scope_import, (
+        "agent_inner must NOT be imported at module scope — that is exactly "
+        "the shared-state bug this wrapper exists to prevent"
+    )
+    assert _isolated_loads_of(wrapper_tree, "agent_inner"), (
+        "agent_inner must be loaded per-sample via _isolated()"
+    )
+
+
+def test_wrapper_template_keeps_registry_and_pacer_shared(
+        wrapper_tree: ast.AST) -> None:
+    """model_registry holds the model handles (one connection pool) and
+    tool_pacer holds the global launch budget — isolating either would give
+    every sample its own and blow the Asta rate limit.
+
+    The model_registry import is load-bearing for a second reason: it runs
+    inside inspect's chdir_python() window, pinning the module into sys.modules
+    so agent_inner's own `from model_registry import ...` resolves at solve()
+    time, long after chdir_python.__exit__ restored sys.path."""
+    imported = {
+        a.name for n in wrapper_tree.body if isinstance(n, ast.Import)
+        for a in n.names
+    }
+    for mod in ("tool_pacer", "model_registry"):
+        assert mod in imported, f"{mod} must stay a plain module-scope import"
+        assert not _isolated_loads_of(wrapper_tree, mod), (
+            f"{mod} must stay shared across samples, not isolated"
+        )
+
+
+def test_wrapper_template_warms_up_above_the_solver(wrapper_tree: ast.AST) -> None:
+    """The warm-up load must sit at module scope (so it runs inside
+    chdir_python's window, pinning model_registry and compiling the pyc) and
+    ABOVE the @solver def, so the wrapper is the last thing registered under
+    the bare name "make_solver" — inspect's resume path resolves by that name."""
+    warm = [
+        n for n in wrapper_tree.body
+        if isinstance(n, ast.Expr) and isinstance(n.value, ast.Call)
+        and isinstance(n.value.func, ast.Name) and n.value.func.id == "_isolated"
+    ]
+    assert warm, "template must warm-load agent_inner at module scope"
+    solver_def = next(
+        n for n in wrapper_tree.body
+        if isinstance(n, ast.FunctionDef) and n.name == "make_solver"
+    )
+    assert warm[0].lineno < solver_def.lineno, (
+        "warm-up must precede the @solver definition"
+    )
+
+
+def test_wrapper_template_loads_inner_inside_the_try(wrapper_tree: ast.AST) -> None:
+    """A per-sample load failure (transient OSError, MemoryError) must degrade
+    to the seed tier, not propagate out of solve() and abort the whole eval —
+    which would defeat the wrapper's entire purpose."""
+    solve_fn = next(
+        n for n in ast.walk(wrapper_tree)
+        if isinstance(n, ast.AsyncFunctionDef) and n.name == "solve"
+    )
+    guarded = any(
+        isinstance(c, ast.Call) and isinstance(c.func, ast.Name)
+        and c.func.id == "_isolated" and c.args
+        and getattr(c.args[0], "value", None) == "agent_inner"
+        for t in ast.walk(solve_fn) if isinstance(t, ast.Try)
+        for stmt in t.body for c in ast.walk(stmt)
+    )
+    assert guarded, "_isolated('agent_inner') must be inside solve()'s try block"
 
 
 def test_wrapper_template_has_two_tier_fallback(wrapper_tree: ast.AST) -> None:
@@ -140,6 +234,60 @@ def test_stage_copies_seed_file(submit_tree: ast.AST) -> None:
         for n in ast.walk(stage_fn)
     )
     assert found
+
+
+def test_stage_freezes_a_submission_with_a_successful_full_log(
+        submit_mod, monkeypatch, tmp_path) -> None:
+    """stage() runs BEFORE eval_submission's skip-on-success check, so without
+    a freeze any re-run — including a bare invocation with no --only — silently
+    rewrites the staged source of an already-posted submission. The eval is
+    skipped either way, so the loss is invisible. v0_0_7_soft_cap_0_06_fable
+    still carries its original 3702-byte, pre-tool_pacer wrapper; that is the
+    artifact this guard exists to preserve."""
+    s = submit_mod.SUBMISSIONS[0]
+    monkeypatch.setattr(submit_mod, "WORKING_BASE", tmp_path)
+    monkeypatch.setattr(submit_mod, "_log_status", lambda p: ("success", 267))
+    dst = tmp_path / s.name
+    dst.mkdir(parents=True)
+    (dst / "agent.py").write_text("ORIGINAL WRAPPER")
+
+    assert submit_mod.stage(s) == dst
+    assert (dst / "agent.py").read_text() == "ORIGINAL WRAPPER", (
+        "frozen working dir was overwritten"
+    )
+    # --restage is the deliberate escape hatch.
+    submit_mod.stage(s, restage=True)
+    assert (dst / "agent.py").read_text() == submit_mod.WRAPPER_TEMPLATE
+
+
+def test_stage_proceeds_without_a_successful_log(
+        submit_mod, monkeypatch, tmp_path) -> None:
+    """The freeze must not block a first run, nor a resume after an
+    interrupted one (status cancelled/error)."""
+    s = submit_mod.SUBMISSIONS[0]
+    monkeypatch.setattr(submit_mod, "WORKING_BASE", tmp_path)
+    for status in (None, "cancelled", "error"):
+        monkeypatch.setattr(submit_mod, "_log_status", lambda p, _s=status: (_s, 10))
+        dst = submit_mod.stage(s)
+        assert (dst / "agent.py").read_text() == submit_mod.WRAPPER_TEMPLATE
+        (dst / "agent.py").write_text("clobbered")
+
+
+def test_work_suffix_gives_ab_arms_their_own_dir(
+        submit_mod, monkeypatch, tmp_path) -> None:
+    """A/B arms must not stage into the real (frozen) submission dir."""
+    s = submit_mod.SUBMISSIONS[0]
+    monkeypatch.setattr(submit_mod, "WORKING_BASE", tmp_path)
+    # Only the real dir has a completed run; a fresh arm dir has no log.
+    monkeypatch.setattr(
+        submit_mod, "_log_status",
+        lambda p: (None, 0) if "__ab_" in str(p) else ("success", 267))
+    real, arm = submit_mod.work_dir(s), submit_mod.work_dir(s, "__ab_new")
+    assert real != arm and arm.name.endswith("__ab_new")
+    # The real dir is frozen; the arm is not, so it stages normally.
+    assert submit_mod.stage(s, "__ab_new") == arm
+    assert (arm / "agent.py").read_text() == submit_mod.WRAPPER_TEMPLATE
+    assert not real.exists(), "A/B staging must not touch the submission dir"
 
 
 def test_task_name_matches_astabench_config(submit_mod) -> None:
@@ -237,9 +385,26 @@ def test_smoke_runs_are_log_isolated_and_untarred(submit_mod, submit_tree) -> No
         and node.func.id == "tar_submission"
     ]
     assert tar_calls_guarded, "main() must call tar_submission"
-    src = ast.unparse(main_fn)  # note: unparse parenthesizes `not`
-    assert "args.limit is None and (not tar_submission" in src, (
-        "tar_submission must be gated on `args.limit is None`"
+    # Structural, not a substring match on ast.unparse: the guard grows
+    # conjuncts over time (--work-suffix added one), and a literal match
+    # fails on a gate that got STRICTER, which is the wrong direction to
+    # break in.
+    tar_if = next(
+        n for n in ast.walk(main_fn)
+        if isinstance(n, ast.If)
+        and any(isinstance(c, ast.Call) and isinstance(c.func, ast.Name)
+                and c.func.id == "tar_submission" for c in ast.walk(n.test))
+    )
+    conds = (tar_if.test.values if isinstance(tar_if.test, ast.BoolOp)
+             else [tar_if.test])
+    rendered = [ast.unparse(c) for c in conds]
+    assert any("args.limit is None" in c for c in rendered), (
+        f"tar_submission must be gated on `args.limit is None`; got {rendered}"
+    )
+    # A/B arms stage into <name><suffix>/ but tar_submission derives the
+    # archive name from s.name, so an untarred-arm guard is required too.
+    assert any("args.work_suffix" in c for c in rendered), (
+        f"tar_submission must be gated on an empty --work-suffix; got {rendered}"
     )
 
 

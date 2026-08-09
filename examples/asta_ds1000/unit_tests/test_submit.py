@@ -54,21 +54,70 @@ def wrapper_tree(wrapper_template_str: str) -> ast.AST:
     return ast.parse(wrapper_template_str)
 
 
-def test_wrapper_template_imports_seed_agent(wrapper_tree: ast.AST) -> None:
-    """The wrapper must import `make_solver` from `seed_agent` (the
-    bundled seed file `stage()` copies in). Without this import, the
-    seed fallback can't fire and submissions silently revert to
-    empty-completion-on-error."""
-    seed_imports = [
+def _isolated_loads_of(tree: ast.AST, stem: str) -> list[ast.Call]:
+    """Calls of the form _isolated("<stem>") anywhere in the template."""
+    return [
+        n for n in ast.walk(tree)
+        if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
+        and n.func.id == "_isolated"
+        and n.args and isinstance(n.args[0], ast.Constant)
+        and n.args[0].value == stem
+    ]
+
+
+def test_wrapper_template_can_reach_the_seed_tier(wrapper_tree: ast.AST) -> None:
+    """The wrapper must be able to load `seed_agent` (the bundled seed file
+    `stage()` copies in). Without it the seed fallback can't fire and
+    submissions silently revert to empty-completion-on-error. The seed is now
+    loaded per-sample via _isolated() rather than imported at module scope."""
+    legacy_import = [
         node for node in ast.walk(wrapper_tree)
         if isinstance(node, ast.ImportFrom)
         and node.module == "seed_agent"
         and any(alias.name == "make_solver" for alias in node.names)
     ]
-    assert seed_imports, (
-        "WRAPPER_TEMPLATE must contain `from seed_agent import make_solver "
-        "as _seed_make_solver` (or equivalent) so the second tier of the "
-        "fallback can fire"
+    assert _isolated_loads_of(wrapper_tree, "seed_agent") or legacy_import, (
+        "WRAPPER_TEMPLATE must load seed_agent — via _isolated('seed_agent') "
+        "or a module-scope import — so the second fallback tier can fire"
+    )
+
+
+def test_wrapper_template_isolates_agent_inner_per_sample(
+        wrapper_tree: ast.AST) -> None:
+    """`astabench eval --max-samples N` runs samples as asyncio tasks in ONE
+    process, while RoboPhD's evaluator runs one sample per subprocess. A
+    module-scope `from agent_inner import ...` therefore turns any per-sample
+    state the agent keeps at module scope into shared global state. No DS-1000
+    agent has hit this yet; the paper_finder submission did, losing pacing on
+    30% of samples."""
+    module_scope_import = [
+        n for n in ast.walk(wrapper_tree)
+        if isinstance(n, ast.ImportFrom) and n.module == "agent_inner"
+    ]
+    assert not module_scope_import, (
+        "agent_inner must NOT be imported at module scope — that is exactly "
+        "the shared-state bug this wrapper exists to prevent"
+    )
+    assert _isolated_loads_of(wrapper_tree, "agent_inner"), (
+        "agent_inner must be loaded per-sample via _isolated()"
+    )
+
+
+def test_wrapper_template_keeps_registry_shared(wrapper_tree: ast.AST) -> None:
+    """model_registry holds the model handles (one connection pool); isolating
+    it would give every sample its own. The import is also load-bearing: it
+    runs inside inspect's chdir_python() window, pinning the module into
+    sys.modules so agent_inner's own `from model_registry import ...` resolves
+    at solve() time, long after chdir_python.__exit__ restored sys.path."""
+    imported = {
+        a.name for n in wrapper_tree.body if isinstance(n, ast.Import)
+        for a in n.names
+    }
+    assert "model_registry" in imported, (
+        "model_registry must stay a plain module-scope import"
+    )
+    assert not _isolated_loads_of(wrapper_tree, "model_registry"), (
+        "model_registry must stay shared across samples, not isolated"
     )
 
 
