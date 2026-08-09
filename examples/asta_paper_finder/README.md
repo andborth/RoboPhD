@@ -15,19 +15,29 @@ Snapshots live in `example_runs/robophd/asta_paper_finder/<name>/`; the pipeline
 | `v0_0_9_cap_0_063_opus5` | `iter15_verdict_repair` (`-010`, opus-5) | $0.063 | 0.3839 @ $0.0533 | **0.3762 @ $0.0524** |
 | `v0_0_9_cap_0_355_opus5` | `iter21_gold_rubric_and_hard_predicates` (`-011`, opus-5) | $0.355 | 0.4222 @ $0.2461 | **0.4318 @ $0.2506** |
 | `v0_0_9_cap_0_355_fable` | `iter18_cocite_largegold_v1` (`-012`, fable-5) | $0.355 | 0.4383 @ $0.2780 | **0.4403 @ $0.2786** |
-| `v0_0_9_cap_0_063_fable` | `iter14_title_channel` (`-013`, fable-5) | $0.063 | 0.3874 @ $0.0583 | **0.3638 @ $0.0481** |
+| `v0_0_9_cap_0_063_fable` | `iter14_title_channel` (`-013`, fable-5) | $0.063 | 0.3874 @ $0.0583 | **0.3895 @ $0.0581** |
 
 Five of the six hold frontier slots; `v0_0_7` is displaced by `cap_0_063_opus5`,
 which is both higher-scoring and cheaper. Asta Paper Finder's 0.397 @ $0.063 is
-the one non-RoboPhD entry still on the curve.
+the one non-RoboPhD entry still on the curve, and `cap_0_063_fable` now sits
+just under it at 0.390 @ $0.058 — cheaper, lower-scoring, so both stay.
 
 **The four `v0_0_9` entries form a completed 2×2** of {opus-5, fable-5} ×
 {$0.063, $0.355} on one frozen stack. The evolution-model delta to fable-5 is
-**+0.0085** at $0.355 but **−0.0124** at $0.063 — opposite signs, so the
-"fable-5 builds better agents" reading that the $0.355 A/B supported does not
-survive the cheap cell. Two of three category signs do replicate: fable-5 up on
-metadata and down on semantic at both gates. See
+**+0.0085** at $0.355 and **+0.0133** at $0.063 — same sign in both cells, so
+the "fable-5 builds better agents" reading that the $0.355 A/B supported does
+survive the cheap cell. n = 1 per cell and both deltas sit inside their runs'
+~0.018 stderrs, so consistency of sign is the claim, not an effect size. The
+category signs do **not** replicate: the $0.355 cell is a three-way trade
+(semantic −0.0184), while $0.063 is positive in all three. See
 `example_runs/robophd/asta_paper_finder/v0_0_9_cap_0_063_fable/README.md`.
+
+> **Correction (2026-08-08).** Until the re-run this table carried
+> `cap_0_063_fable` at 0.3638 @ $0.0481, and this paragraph reported the
+> cheap-gate delta as **−0.0124** — opposite signs, concluding the $0.355 A/B
+> "does not survive the cheap cell". That first official run was degraded (agent
+> spend at 82.6% of internal, an episodic Asta MCP slowdown) and has been
+> superseded. The reversal was an artifact of it and is withdrawn.
 
 Of the first two entries, v0_0_8's internal-to-official transfer was **not** clean, unlike v0_0_7's: −0.055 overall, of which `specific_f1` contributes −0.036 (65%) and `semantic_f1` −0.020 (36%). `specific` is the part needing explanation — it's the larger share, and it's a metric the judge never touches, so no judging-basis story is available; three runs of the same agent show it's systematic rather than variance (snapshot README has the analysis). `semantic`'s share is real but confounded with the capped→uncapped judging change. Don't read v0_0_7's clean transfer as a general guarantee that internal predicts official.
 

@@ -3,7 +3,16 @@
 **This is not the submission record.** It is the README as it stood after the
 first official run of `v0_0_9_cap_0_063_fable`, kept because that run is
 informative about how these evals behave and because the analysis below is
-cited elsewhere.
+cited elsewhere. The current record is [`README.md`](README.md).
+
+> **One conclusion below is WITHDRAWN, not merely superseded.** This document
+> reads the completed 2×2 as *reversing* the \$0.355 A/B — a cheap-gate delta
+> of **−0.0124**, opposite in sign, concluding that the "fable-5 builds better
+> agents" reading does not generalise. The clean re-run gives **+0.01334** at
+> the same gate, the same sign as \$0.355's +0.0085. **That reversal was an
+> artifact of this run's degraded agent spend.** Everything else here — the
+> cost-shortfall forensics, the hourly breakdown, the episodic-slowdown
+> diagnosis — stands, and is what motivated the re-run.
 
 **Why it was superseded.** The run scored 0.36382 @ \$0.048119, but its agent
 cost came in **17.4% below** what training (\$0.058) and internal eval

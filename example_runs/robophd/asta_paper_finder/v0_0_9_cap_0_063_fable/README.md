@@ -44,11 +44,10 @@ The board as it stands, before this entry:
 `v0_0_7` (0.375 @ \$0.053) is listed but off the frontier, displaced by our own
 `cap_0_063`.
 
-**Where this entry lands is not claimed here.** Internally it scores 0.38738 @
-\$0.05828, but internal is not banked — see
-[Official-result risks](#official-result-risks-assessed-pre-submission). The
-frontier table with this entry inserted, and the outcome against the target,
-are filled in under [Official result](#official-result) after the run.
+**It came in at 0.38954 @ \$0.058059** — a new frontier slot, cheaper than
+Asta's entry and scoring below it. **The target is not cleared:** 0.0075 short,
+which is well inside this run's own 0.0178 stderr. Full accounting under
+[Official result](#official-result).
 
 ## What this run is for: completing the 2×2
 
@@ -61,40 +60,55 @@ Scored on the leaderboard's own basis, so all four cells are comparable:
 | official mean F1 | **$0.063 gate** | **$0.355 gate** |
 | --- | --- | --- |
 | **opus-5** | `-010` 0.37620 | `-011` 0.43177 |
-| **fable-5** | `-013` *pending* | `-012` 0.44025 |
-| **delta to fable-5** | *pending* | **+0.0085** |
+| **fable-5** | **`-013` 0.38954** | `-012` 0.44025 |
+| **delta to fable-5** | **+0.01334** | **+0.0085** |
 
-The \$0.063 cell fills in from [Official result](#official-result) after the run;
-until then the 2×2 has one open corner. **n = 1 per cell** either way, so a
-consistent sign across both gates is the most this design can show — not an
-effect size.
+**The 2×2 closes with a consistent sign: fable-5 leads at both gates**, and by
+more at the cheap one (+0.0133 against +0.0085). **n = 1 per cell**, so that
+consistency is the whole result — not an effect size, and not evidence the gap
+widens as the gate tightens. Both deltas sit inside the runs' own ~0.018
+stderrs; what the design buys is that two independent cells point the same way.
 
-## The category shape replicates at both gates
+## The category shape does NOT replicate at the cheap gate
 
-*Preliminary, on internal figures; recomputed on the official basis once the
-run lands.* Against `-010` on the **266** query IDs the two runs share — `-010`
-lost one to a subprocess timeout, which its per-problem file records as
-`sample_id: "None"` scored 0.0:
+**This section's original claim did not survive the official basis.** Written
+pre-submission on internal figures, it read the \$0.063 cell as the same
+three-way trade the \$0.355 cell showed — semantic given away to buy the two
+small categories. Official-against-official, on all **267** IDs (both runs
+have every query; the 266-matched qualifier retires with `-010`'s timed-out
+sample, which its *internal* per-problem file recorded as `sample_id: "None"`):
 
 | category | n | opus-5 (`-010`) | **fable-5 (`-013`)** | delta | score points (n × delta) |
 | --- | --- | --- | --- | --- | --- |
-| semantic | 193 | **0.3227** | 0.3126 | −0.0101 | **−1.94** |
-| specific | 38 | 0.8114 | **0.8465** | +0.0351 | **+1.33** |
-| metadata | 35 | 0.2687 | **0.2950** | +0.0262 | **+0.92** |
-| **all** | **266** | 0.38539 | **0.38655** | | **+0.31** |
+| semantic | 194 | 0.3110 | **0.3184** | **+0.0074** | **+1.44** |
+| specific | 38 | 0.8114 | **0.8289** | +0.0175 | **+0.67** |
+| metadata | 35 | 0.2653 | **0.3069** | +0.0416 | **+1.46** |
+| **all** | **267** | 0.37620 | **0.38954** | **+0.01334** | **+3.56** |
 
-+0.31 / 266 = **+0.0012**, the difference between the two.
++3.56 / 267 = **+0.01334**. **All three categories move the same way, and
+semantic — the category the trade story said fable-5 sells — is positive.**
 
-The signs are the same three as the \$0.355 cell (metadata **+0.1202**, specific
-**+0.0430**, semantic **−0.0184**). **fable-5 trades semantic away for the other
-two categories at both price points.** The headline is a trade, not a uniform
-gain — which is the same conclusion the \$0.355 A/B reached, now replicated at a
-gate 5.6× cheaper.
+For contrast, the same comparison at \$0.355 (metadata **+0.1202**, specific
+**+0.0430**, semantic **−0.0184**) *is* a trade. So the honest statement is:
+**fable-5 beats opus-5 at both gates, but it does not do it the same way at
+each.** One shape, two gates, is not a pattern.
 
-Semantic is close to even query-by-query — 89 solo wins against 96 solo losses
-across 193 queries — so the −0.0101 is a small net rather than a systematic
-collapse. But semantic carries 73% of the queries, so a small per-query loss
-there cancels most of what the two small categories win.
+Two things worth separating out, because the pre-submission draft conflated
+them:
+
+**The internal basis pointed the other way** — semantic −0.0101 there, +0.0074
+officially, and the overall delta an order of magnitude smaller (+0.0012 vs
++0.01334). That is not a scoring error; it is the capped→uncapped judging
+transition acting in opposite directions on the two agents. `-010` *lost*
+0.0131 of semantic going uncapped, `-013` *gained* 0.0042. Nine-tenths of the
+official gap between these two agents is that divergence, not a difference the
+capped basis could see.
+
+**Which means the trade story was an artifact of the basis, not a finding.**
+Anything computed from internal per-problem files across two agents judged at
+different depths is measuring the judging transition as much as the agents.
+The \$0.355 cell's trade is on official figures for both arms and stands; this
+cell's was not, and does not.
 
 ## Cap-hugging replicates too
 
@@ -364,17 +378,121 @@ of it, are preserved in
 log and tarball are under `submissions/asta_paper_finder/` with a
 `.degraded_20260806` suffix. **None of its numbers are carried below.**
 
-*Pending — filled in after the re-run:* board position and the frontier
-table with this entry inserted; the Internal/Official/Delta table; the sixth
-transfer calibration point; the wall-clock comparison against risk 5; and the
-sixth cost-calibration point.
+**The re-run (2026-08-07 17:03 → 08-08 05:43, 12h40m) scored 0.38954 @
+\$0.058059**, stderr 0.01782, cost stderr 0.001976. 267/267 samples, zero
+errors, zero limit hits, zero seed-tier fallbacks, zero empty submissions.
 
-*Two sections above also close out from here:* the open corner of the
-[2×2](#what-this-run-is-for-completing-the-2×2) takes this run's official mean
-F1 and the \$0.063 delta, and the
-[category comparison](#the-category-shape-replicates-at-both-gates) is
-recomputed official-against-official — which retires its 266-matched-ID
-qualifier along with `-010`'s timed-out query.
+### Board position: a new frontier slot, target not cleared
+
+| | entry | score | $/prob | tier |
+| --- | --- | --- | --- | --- |
+| 1 | RoboPhD (v0_0_8) | 0.220 | 0.006 | Standard |
+| 2 | RoboPhD (v0_0_9 @ cap 0.063, opus5) | 0.376 | 0.052 | Standard |
+| 3 | **RoboPhD (this entry)** | **0.390** | **0.058** | **Standard** |
+| 4 | **Asta Paper Finder** | **0.397** | **0.063** | Custom interface |
+| 5 | RoboPhD (v0_0_9 @ cap 0.355, opus5) | 0.432 | 0.251 | Standard |
+| 6 | RoboPhD (v0_0_9 @ cap 0.355, fable) | 0.440 | 0.279 | Standard |
+
+Six frontier slots, **five ours**. This entry neither dominates nor is
+dominated: it undercuts Asta by \$0.005 and trails it by 0.0075 on score, so
+both stay on the curve. It does not displace our own \$0.052 point either —
+that one is cheaper.
+
+**The target was Asta's 0.397 and we did not reach it.** 0.0075 short against a
+0.0178 stderr, so the two are not separated by this measurement; but "not
+statistically distinguishable" is not "cleared", and the frontier records the
+point estimate. Third slot on the board is what this run bought.
+
+### Internal → official
+
+| Metric | Internal (capped) | Official (uncapped) | Delta |
+| --- | --- | --- | --- |
+| Mean F1 (267) | 0.38738 | **0.38954** | **+0.00216** |
+| `semantic_f1` (194) | 0.31413 | 0.31838 | +0.00425 |
+| `specific_f1` (38) | 0.8465 | 0.8289 | −0.0176 |
+| `metadata_f1` (35) | 0.2950 | 0.3069 | +0.0119 |
+| Agent \$/query | 0.05828 | 0.058059 | −0.4% |
+
+**Sixth transfer calibration point: +0.0022.** The series is now +0.0025 /
+−0.0550 / −0.0077 / +0.0096 / +0.0020 / **+0.0022** — five of six inside
+±0.010, with `v0_0_8`'s −0.0550 still the lone outlier and still explained by
+the `ad7faf24` basis change.
+
+`specific_f1` moved −0.0176, about a third of the category's ~0.058 SD over 38
+all-or-nothing queries. That is risk 3 behaving exactly as written; no
+mechanism needed.
+
+**Uncapped judging helped a cheap-gate agent for the first time.** Semantic
++0.0042 (t = 0.66, n = 194) here, against −0.0131 (t = −2.01) for `-010` at the
+same gate. The prior reading — expensive gates gain, cheap gates lose — was
+2-for-2 and is now 3-for-4. Both of this run's and `-012`'s effects are
+indistinguishable from zero (t = 0.66, t = 0.51); only `-011` (+0.0146) and
+`-010` (−0.0131) are individually meaningful, and they point opposite ways. The
+gate-dependence story should be treated as unsupported rather than confirmed.
+
+### Cost
+
+| | value |
+| --- | --- |
+| Agent | \$15.50 (\$0.058059/query) |
+| Judge | \$201.92 (**\$0.00416/paper**, 194 × 250) |
+| **Total** | **\$217.42** |
+
+**Sixth cost calibration point: \$0.00416/paper**, against \$0.0040 / \$0.0030 /
+\$0.00407 / \$0.00426 / \$0.00420. Total landed inside the \$213–226 pre-run
+band, the second projection running that did not miss low.
+
+Agent spend came in at **99.6% of internal** — the check that the degraded run
+failed (82.6%), and the reason this re-run exists.
+
+### Against the degraded first attempt
+
+| | score | agent \$/query |
+| --- | --- | --- |
+| degraded (2026-08-06) | 0.36382 | 0.048119 |
+| **this run** | **0.38954** | **0.058059** |
+| delta | **+0.02572** | **+20.7%** |
+
+Paired per-sample, 111 W / 83 L. So the first attempt cost roughly **0.026 of
+score**, and the cost shortfall was the tell throughout: it is the axis on
+which the two runs differ most, and the one that flagged the problem before any
+score comparison was possible.
+
+### Wall clock — risk 5, checked
+
+| | max | median | ≥1500s |
+| --- | --- | --- | --- |
+| internal (`max_workers=8`) | 1590s | 1318s | 32 / 267 |
+| **official (`--max-samples 6`)** | **1534s** | **1256s** | **81 / 267** |
+
+Risk 5 predicted the 6-way official run would see *less* contention than 8-way
+training, and the median agrees (1318 → 1256s). **But samples at the ceiling
+went 32 → 81**, which the risk did not anticipate, and the cause is not
+contention at all.
+
+Investigating it during this run turned up a defect in the submission wrapper,
+not the agent: `astabench eval` runs its samples as asyncio tasks in **one
+process**, while RoboPhD training and internal test run **one sample per
+subprocess**. This agent keeps its deadline clock at module scope
+(`_START`/`_DEADLINE`, `agent_inner.py:178`), so under the official harness
+every starting sample re-stamped the shared clock, `_remaining()` never counted
+down, and every trim gate the agent evolved — mining depth, rerank skip, patch
+skip — was dead. 81 samples ran to their own `wait_for` ceiling instead of
+self-pacing inside it.
+
+**It cost this run nothing measurable.** Paired against internal, the 81
+guillotined samples scored **+0.0100**, because the cut lands after the last
+stage that changes which papers are submitted or in what order. It was
+expensive on the degraded run, where 22 samples never reached their first
+checkpoint and fell to the agent's minimal fallback at −0.1302 each — over half
+that run's damage. The wrapper now loads a fresh module per sample
+(`WRAPPER_TEMPLATE`, both submit scripts), restoring the regime the agent was
+evolved under. **That change is not in this submission's artifact** — this
+entry is exactly the agent and wrapper that produced 0.38954.
+
+So risk 5's conclusion held (internal was a conservative floor, +0.0022) but
+its reasoning did not: the headroom came from the guillotine landing on
+low-value work, not from reduced contention.
 
 ## Reproduce
 
@@ -400,6 +518,9 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 
 ## Submission status
 
-- [ ] Official eval run
-- [ ] Tarball uploaded
-- [ ] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
+- [x] Official eval run — 2026-08-08, 0.38954 @ \$0.058059, 267/267, zero errors
+- [x] Tarball built — `submissions/asta_paper_finder/v0_0_9_cap_0_063_fable.tar.gz`
+      (229 MB, 2026-08-08 05:44; the `.degraded_20260806` tarball is the
+      superseded first attempt and must not be uploaded)
+- [ ] Tarball uploaded to HF Spaces
+- [x] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
