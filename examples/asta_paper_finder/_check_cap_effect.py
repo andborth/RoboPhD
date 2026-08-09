@@ -36,10 +36,17 @@ Method note (why the sample count is < 194)
 -------------------------------------------
 Grades are parsed from the judge's own model events, in call order, and the
 result is VALIDATED by recomputing `rank` and comparing against the official
-value. It reproduces exactly on ~151/194 samples; the mismatches are precisely
-the samples where the scorer skipped a document (see the "Skipping" warnings),
+value. It reproduces exactly on ~151/194 samples; those mismatches are the
+samples where the scorer skipped a document (see the "Skipping" warnings),
 which shifts the ordered list. Only verified samples are reported -- an
 unverified ordering would silently produce a wrong nDCG.
+
+A SECOND, unrelated cause also drops samples: a query with no k_estimate in
+the --k-from run. That says nothing about judging -- it means the run dir does
+not cover this submission's queries -- so the two are counted and reported
+separately in the "dropped" column. Reading a --k-from shortfall as evidence
+about capped judging would be a mistake; the run prints a warning when any
+occur.
 
 Usage
 -----
@@ -150,6 +157,13 @@ def analyse(name: str, ks: dict[str, int]) -> dict | None:
         return None
     log = read_eval_log(logs[0])
     verified, total, unc, cap = 0, 0, [], []
+    # Two DIFFERENT causes shrink verified/total below, and conflating them
+    # misreads the result: a rank mismatch is a property of the LOG (the
+    # scorer skipped a document, shifting the ordered list), while a missing
+    # k_estimate is a property of the --k-from RUN not covering this query.
+    # The second says nothing about judging and should not be read as if it
+    # did — it just means you pointed at the wrong run dir.
+    rank_mismatch, no_k = 0, 0
     for s in log.samples or []:
         if not str(s.id).startswith("semantic"):
             continue
@@ -164,9 +178,11 @@ def analyse(name: str, ks: dict[str, int]) -> dict | None:
         total += 1
         # VALIDATION: our parsed+ordered grades must reproduce official rank.
         if abs(lower_bound_corrected_ndcg(grades)["rank"] - rank_off) >= 1e-6:
+            rank_mismatch += 1
             continue
         k = ks.get(str(s.id))
         if not k:
+            no_k += 1
             continue
         verified += 1
         unc.append(_harmonic(rank_off, recall))
@@ -176,6 +192,7 @@ def analyse(name: str, ks: dict[str, int]) -> dict | None:
         return None
     return dict(
         name=name, verified=verified, total=total,
+        rank_mismatch=rank_mismatch, no_k=no_k,
         uncapped=st.mean(unc), capped=st.mean(cap),
         effect=st.mean(cap) - st.mean(unc),
     )
@@ -197,14 +214,24 @@ def main() -> int:
         run_dir = Path(runs[-1])
     ks = _k_estimates(run_dir)
     print(f"k_estimate from {run_dir.name} ({len(ks)} queries)\n")
-    print(f"{'submission':28s} {'n':>5s} {'uncapped':>9s} {'capped':>9s} {'cap effect':>11s}")
+    print(f"{'submission':28s} {'n':>5s} {'uncapped':>9s} {'capped':>9s} "
+          f"{'cap effect':>11s}  {'dropped':>16s}")
+    missing_k = False
     for name in args.names:
         r = analyse(name, ks)
         if not r:
             continue
+        missing_k = missing_k or r["no_k"] > 0
         print(f"{r['name']:28s} {r['verified']:>3d}/{r['total']:<3d} "
-              f"{r['uncapped']:9.5f} {r['capped']:9.5f} {r['effect']:+11.4f}")
+              f"{r['uncapped']:9.5f} {r['capped']:9.5f} {r['effect']:+11.4f}"
+              f"  {r['rank_mismatch']:>5d} rank {r['no_k']:>4d} no-k")
+    if missing_k:
+        print(f"\n!! some queries have no k_estimate in {run_dir.name}: those "
+              f"samples are dropped for a reason unrelated to judging.\n"
+              f"   Point --k-from at the run that produced these submissions.")
     print("\ncap effect = capped - uncapped, semantic mean over rank-validated samples.")
+    print("dropped: 'rank' = our parsed ordering did not reproduce the official rank")
+    print("(the scorer skipped a document); 'no-k' = the --k-from run lacks that query.")
     print("Negative means uncapped judging scores HIGHER, i.e. the switch to official")
     print("judging adds that much on its own — before any agent-resampling difference.")
     return 0
