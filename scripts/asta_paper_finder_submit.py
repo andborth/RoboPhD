@@ -540,6 +540,38 @@ import model_registry  # noqa: F401
 _HERE = Path(__file__).resolve().parent
 _TAG = uuid.uuid4().hex[:8]   # load_module() re-execs this file on every
 _SEQ = itertools.count()      # solver_from_spec, so a bare counter collides
+_WARNED = set()
+
+
+def _warn_once(key: str, detail: str) -> None:
+    """One line per distinct problem, not one per sample.
+
+    These conditions are not fatal to a sample but they ARE load-bearing for
+    the run, so swallowing them is wrong: the eval would finish and score
+    plausibly with no trace of what changed.
+    """
+    if key not in _WARNED:
+        _WARNED.add(key)
+        print(f"[WRAPPER] WARNING: {detail}", flush=True)
+
+
+# Private inspect API, resolved once at load rather than per sample. If it
+# moves, the wrapper still runs, but agent_inner's @solver keeps the bare
+# "make_solver" registry entry it clobbers on every load — and eval-set's
+# RESUME path (evalset.py resolve_solver, inside task_identifier) looks the
+# solver up by that name, so a resumed run would execute agent_inner with NO
+# wrapper: no wait_for ceiling, no seed tier, no tool pacing, and the shared
+# module state this whole wrapper exists to prevent. Loud here, once.
+try:
+    from inspect_ai._util.registry import registry_add as _registry_add
+    from inspect_ai._util.registry import registry_info as _registry_info
+except Exception as _reg_err:  # pragma: no cover - private API moved
+    _registry_add = _registry_info = None
+    print(f"[WRAPPER] WARNING: inspect_ai._util.registry unavailable "
+          f"({type(_reg_err).__name__}: {_reg_err}); the solver registry entry "
+          f"cannot be restored after per-sample loads. Do NOT resume this "
+          f"eval-set — a resume may run agent_inner with no wrapper.",
+          flush=True)
 
 
 def _isolated(stem: str):
@@ -560,6 +592,16 @@ def _isolated(stem: str):
     in sys.modules — one connection pool, one global launch budget). An agent
     that mutates a shared module's globals is not isolated by this.
     """
+    # chdir_python() had this dir on sys.path only while agent.py itself was
+    # loading, then __exit__ restored the snapshot. Third-line defence only:
+    # the load below uses an absolute path, and model_registry is already
+    # pinned in sys.modules by the module-scope import above. It is here
+    # because the failure it guards (ModuleNotFoundError on every sample)
+    # zeroes an entire run at full judge cost.
+    # The entry persists for the process lifetime. That is safe because
+    # `astabench eval` runs exactly ONE submission per process — the submit
+    # script spawns a subprocess per submission — so no second submission dir
+    # can ever be shadowed by it.
     if str(_HERE) not in sys.path:
         sys.path.insert(0, str(_HERE))
     name = f"{stem}__iso{_TAG}_{next(_SEQ)}"
@@ -582,12 +624,16 @@ def _isolated(stem: str):
     # resolves the solver by that name, so put it back. Absent during the
     # warm-up below, which runs before the wrapper is defined.
     _wrapper = globals().get("make_solver")
-    if _wrapper is not None:
+    if _wrapper is not None and _registry_add is not None:
         try:
-            from inspect_ai._util.registry import registry_add, registry_info
-            registry_add(_wrapper, registry_info(_wrapper))
-        except Exception:
-            pass
+            _registry_add(_wrapper, _registry_info(_wrapper))
+        except Exception as e:
+            _warn_once(
+                "registry_restore",
+                f"could not restore the solver registry entry after loading "
+                f"{stem} ({type(e).__name__}: {e}). Samples still run, but do "
+                f"NOT resume this eval-set — a resume may run agent_inner "
+                f"with no wrapper.")
     return mod
 
 
