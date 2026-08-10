@@ -352,8 +352,9 @@ def test_interrupted_log_resumes_instead_of_skipping(submit_mod, monkeypatch, tm
     anything else must re-run (inspect eval-set reuses completed samples)."""
     s = submit_mod.SUBMISSIONS[0]
     calls: list = []
-    monkeypatch.setattr(submit_mod, "run",
-                        lambda cmd, *, cwd, extra_env=None: (calls.append(cmd), 0)[1])
+    monkeypatch.setattr(
+        submit_mod, "run",
+        lambda cmd, *, cwd, extra_env=None, tee=None: (calls.append(cmd), 0)[1])
 
     # Cancelled log → re-run; post-run status still not success → False.
     monkeypatch.setattr(submit_mod, "_log_status", lambda d: ("cancelled", 42))
