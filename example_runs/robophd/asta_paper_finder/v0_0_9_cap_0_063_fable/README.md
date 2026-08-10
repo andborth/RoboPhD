@@ -34,18 +34,9 @@ Read down the last three rows and the design is visible: the \$0.355 gate has
 already been run under both evolution models, and this entry supplies the
 missing fable-5 arm at \$0.063. 
 
-The board as it stands, before this entry:
-
-| | entry | score | $/prob | tier |
-| --- | --- | --- | --- | --- |
-| 1 | RoboPhD (v0_0_8) | 0.220 | 0.006 | Standard |
-| 2 | RoboPhD (v0_0_9 @ cap 0.063, opus5) | 0.376 | 0.052 | Standard |
-| 3 | **Asta Paper Finder** | **0.397** | **0.063** | Custom interface |
-| 4 | RoboPhD (v0_0_9 @ cap 0.355, opus5) | 0.432 | 0.251 | Standard |
-| 5 | RoboPhD (v0_0_9 @ cap 0.355, fable) | 0.440 | 0.279 | Standard |
-
-`v0_0_7` (0.375 @ \$0.053) is listed but off the frontier, displaced by our own
-`cap_0_063`.
+Going in, the frontier held five slots, four of them ours. The board with this
+run inserted is under
+[Board position](#board-position-a-new-frontier-slot-target-not-cleared).
 
 **It came in at 0.390 @ \$0.058** — a new frontier slot, cheaper than Asta's
 entry and scoring below it. **The target is not cleared:** 0.0075 short, which
@@ -198,15 +189,6 @@ starved pools only. The rationale, from the agent's own comment:
 This reaches papers a model has memorised but that no phrasing of the query
 retrieves — a different failure mode from "the search terms were wrong".
 
-**Expansion rounds return partial results rather than fail.** An earlier
-lineage member wrapped each expansion round in `asyncio.wait_for`; a timeout
-*discarded the whole round* (one query spent 420s and kept nothing, scoring
-0.272 against 0.659 with the round completed). Rounds are now bounded by an
-elapsed-time cutoff checked before each chunk fetch — chunks past the cutoff are
-dropped, chunks already fetched are **returned**. A slow backend yields a
-thin-but-graded round, never a total loss. This matters for the official run;
-see risk 5.
-
 **The thin-pool gate fires on grade-3 count, not total strength.** Coarse
 grade-3 count predicted score monotonically across a batch (0 grade-3s → 0.09–0.15;
 40+ → 0.50–0.71), but a `strong < 25` gate missed the worst starvation: one
@@ -249,25 +231,57 @@ Both priced in the litellm 1.88.1 bundled map. The expensive handle is reserved
 for the three parse/plan calls; everything that scales with pool size runs on
 mini.
 
-## Internal results (basis: stock GPT-4o judge, canonical ordering)
+## How the agent budgets its 29 minutes
 
-| Metric | Value |
-| --- | --- |
-| Mean F1 (267 queries) | **0.38738** |
-| `semantic_f1` (194) | 0.3141 |
-| `specific_f1` (38) | 0.8465 |
-| `metadata_f1` (35) | 0.2950 |
-| Agent cost | $0.0583/query ($15.56 total) |
-| Judge cost (internal, capped + cached) | $73.23 |
-| Timeouts | **0** |
+The siblings have nothing like this — `v0_0_8`'s README records that its agent
+has "no deadline constants at all". This lineage evolved a **graded degradation
+ladder**, and it was never handed a number in seconds to build it from:
+`background.md` says only that a query taking "more than **29 minutes** of
+wall-clock" scores 0, rendered by the harness from `(EVAL_TIMEOUT - 30) // 60`.
 
-Judge spend is 4.7× the agent's own bill — the usual shape on this task at a
-cheap gate.
+**A self-imposed budget under that ceiling.** `SOLVE_BUDGET = 1560.0`, reasoned
+in the source from "<30 s pre-solve overhead, leaving >200 s of margin for the
+final evidence build + write" and calibrated on "iter13's worst wall clock was
+1518 s".
 
-### Still weak: metadata
+**Gates ordered by what each stage is worth.** As `_remaining()` falls the agent
+sheds the tail and protects retrieval: weak-criterion patch skipped below 330s,
+judge-mimic rerank needs 90s, individual tool and LLM calls short-circuit at 20s
+and 15s. Upstream, the thin-pool round needs 420s and expansion must leave
+`EXP_RESERVE = 720` — itself derived from measured downstream need, "full-depth
+mining ~300 s + rerank ~30 s + weak-criterion patch ~320 s". Mining depth
+degrades in steps rather than switching off:
 
-0.2950 with **12 of 35 queries at zero**. That is a real improvement on `-010`'s
-18 zeros at the same gate, but well short of `-012`'s 5:
+```python
+mine_depth = (MINE_DEPTH if rem > 700 else       # 200 papers
+              120 if rem > 540 else
+              72 if rem > 360 else 0)
+```
+
+**Three checkpoints, so there is always something to submit** — after coarse
+grading, after expansion, after mining+rerank — with a minimal `_fallback()` if
+even the first is missed. Expansion feeds this: a predecessor wrapped each round
+in `asyncio.wait_for` and a timeout discarded the *whole* round (one query spent
+420s and kept nothing, scoring 0.272 against 0.659 completed). Rounds are now
+bounded by a cutoff checked before each chunk fetch, so a slow backend costs
+depth, not the round.
+
+**The ordering is measurably right.** With the pacing disabled by the official
+harness, 81 samples ran to their ceiling and still scored **+0.0100 against
+internal** — the axe falls after the last stage that changes *which* papers are
+submitted or in *what* order. Missing the first checkpoint is the failure that
+hurts: 22 samples on the degraded run dropped to `_fallback()` at −0.1302 each.
+See [Wall clock](#wall-clock--risk-5-checked).
+
+Source caveat: the docstring says "budget 1500 s of the ~1770 s kill line", the
+constant is 1560, and a trailing comment names 1740 — none of them the real
+1770. The self-description drifted from the constants, as with the stale
+docstring header noted above.
+
+## Still weak: metadata
+
+**12 of 35 queries score zero.** A real improvement on `-010`'s 18 at the same
+gate, but well short of `-012`'s 5:
 
 | entry | gate | `metadata_f1` | zeros |
 | --- | --- | --- | --- |
@@ -335,54 +349,36 @@ Agent description as entered on the form:
 
 ## Official-result risks (assessed pre-submission)
 
-**1. Internal is not banked.** Transfer has run +0.0025 / −0.0550 / −0.0077 /
-+0.0096 / +0.0020 across the five submitted runs. Four of five sit within
-±0.010; `v0_0_8`'s −0.0550 is the outlier, and it spans the `ad7faf24` scoring
-fix — its internal number was computed pre-fix and its official post-fix, a
-basis change this run does not have.
+Each was resolved by the run; the figures live once, in
+[Official result](#official-result).
 
-**2. Uncapped official judging.** Internally only the top-K estimate is judged;
-officially all 250 submitted papers per query are. This has cut both ways —
-it *helped* `cap_0_355_opus5` (+0.0146 semantic, t = 2.03) and `cap_0_355_fable`
-(+0.0033, t = 0.51), and *hurt* `cap_0_063` (−0.0131, t = −2.01). This agent
-fills all 250 slots on every one of its 194 semantic queries, so it is exposed
-either way. Note the tempting-but-unsupported inference: submission depth does
-**not** separate the runs that gained from the one that lost — `-010` also
-filled all 250. Whatever distinguishes them is grading-pool depth, which has not
-been measured here.
-
-**3. `specific_f1` is resampling noise, not signal.** 0.8465 here. The category
-carries ~0.058 SD over 38 all-or-nothing queries, so a ±0.05 swing between runs
-needs no mechanism to explain it. Do not read a modest official drop as a defect.
-
-**4. Selection confidence is unusually strong.** The winner was measured over
-**8** Elo test rounds against the 2–5 typical of prior winners, and held the
-champion slot from iteration 14 to the end. Where prior submissions had to argue
-that the Elo ladder had picked correctly against a higher-train-mean runner-up,
-this one does not: `iter14_title_channel` leads the pool by 74 Elo.
-
-**5. Wall-clock headroom is thin, and the failure is silent.** Max sample 1590s
-against the 1800s internal cap, 32 of 267 samples at ≥1500s, median 1318s — all
-at `max_workers=8`. Because this lineage's expansion rounds are time-boxed to
-return *partial* results rather than fail, wall-clock pressure costs score
-quietly rather than producing errors, so "zero timeouts" is not the same as
-"no time pressure". The official run uses `--max-samples 6`, less contention
-than training saw. `-011` measured that exact transition: four internal
-timeouts at 8-way became a 1042s max / 651s median officially. That makes the
-internal score a conservative floor for this agent specifically — and the
-official per-sample distribution, already recorded in the `.eval` log, is the
-check.
+1. **Internal is not banked.** Transfer had run within ±0.010 on four of five
+   prior submissions. → *sixth calibration point.*
+2. **Uncapped official judging.** Internal judges only the top-K estimate,
+   official all 250 — and this agent fills all 250 on every semantic query, so
+   it was exposed either way. → *semantic internal→official.*
+3. **`specific_f1` is resampling noise.** Its SD over 38 all-or-nothing queries
+   swamps any plausible move, so a drop is not a defect. → *−0.0176, a third of
+   that SD.*
+4. **Selection confidence is unusually strong.** 8 Elo test rounds against the
+   2–5 typical of prior winners, champion from iteration 14 to the end, ahead by
+   **74 Elo** — so unlike prior submissions this one never had to argue the
+   ladder picked correctly. *(The one risk the run cannot settle.)*
+5. **Wall-clock headroom is thin, and the failure is silent.** The stages
+   degrade rather than error (see [How the agent budgets its 29
+   minutes](#how-the-agent-budgets-its-29-minutes)), so "zero timeouts" is not
+   "no time pressure". → *checked; not the answer this risk expected.*
 
 ## Official result
 
-**A first official run was made on 2026-08-06 and is being re-run.** It scored
-0.36382 @ \$0.048119, but its agent cost landed 17.4% below what training and
-internal eval had both measured, and the shortfall was episodic — the opening
-two hours matched internal, the middle ~10 did not. That run, and the analysis
-of it, are preserved in
-[`README.degraded_run_2026-08-06.md`](README.degraded_run_2026-08-06.md); its
-log and tarball are under `submissions/asta_paper_finder/` with a
-`.degraded_20260806` suffix. **None of its numbers are carried below.**
+A first official run on 2026-08-06 was discarded: its agent cost landed 17.4%
+below what training and internal eval had both measured, episodically — the
+opening two hours matched internal, the middle ~10 did not. It is preserved
+with its analysis in
+[`README.degraded_run_2026-08-06.md`](README.degraded_run_2026-08-06.md), and
+its log and tarball carry a `.degraded_20260806` suffix under
+`submissions/asta_paper_finder/`. Its figures appear below only in the
+[comparison table](#against-the-degraded-first-attempt).
 
 **The re-run (2026-08-07 17:03 → 08-08 05:43, 12h40m) scored 0.38954 @
 \$0.058059**, stderr 0.01782, cost stderr 0.001976. 267/267 samples, zero
@@ -398,6 +394,9 @@ errors, zero limit hits, zero seed-tier fallbacks, zero empty submissions.
 | 4 | **Asta Paper Finder** | **0.397** | **0.063** | Custom interface |
 | 5 | RoboPhD (v0_0_9 @ cap 0.355, opus5) | 0.432 | 0.251 | Standard |
 | 6 | RoboPhD (v0_0_9 @ cap 0.355, fable) | 0.440 | 0.279 | Standard |
+
+`v0_0_7` (0.375 @ \$0.053) is on the board but off the frontier, displaced by
+our own `cap_0_063`.
 
 Six frontier slots, **five ours**. This entry neither dominates nor is
 dominated: it undercuts Asta by \$0.005 and trails it by 0.0075 on score, so
@@ -418,6 +417,10 @@ point estimate. Third slot on the board is what this run bought.
 | `specific_f1` (38) | 0.8465 | 0.8289 | −0.0176 |
 | `metadata_f1` (35) | 0.2950 | 0.3069 | +0.0119 |
 | Agent \$/query | 0.05828 | 0.058059 | −0.4% |
+
+Internal basis: stock GPT-4o judge, canonical ordering, capped to the top-K
+estimate. It cost \$73.23 in judging (capped + cached, against the official
+run's uncapped \$201.92) and recorded **zero timeouts** at `max_workers=8`.
 
 **Sixth transfer calibration point: +0.0022.** The series is now +0.0025 /
 −0.0550 / −0.0077 / +0.0096 / +0.0020 / **+0.0022** — five of six inside
@@ -448,9 +451,6 @@ gate-dependence story should be treated as unsupported rather than confirmed.
 \$0.00407 / \$0.00426 / \$0.00420. Total landed inside the \$213–226 pre-run
 band, the second projection running that did not miss low.
 
-Agent spend came in at **99.6% of internal** — the check that the degraded run
-failed (82.6%), and the reason this re-run exists.
-
 ### Against the degraded first attempt
 
 | | score | agent \$/query |
@@ -459,9 +459,9 @@ failed (82.6%), and the reason this re-run exists.
 | **this run** | **0.38954** | **0.058059** |
 | delta | **+0.02572** | **+20.7%** |
 
-Paired per-sample, 111 W / 83 L. So the first attempt cost roughly **0.026 of
-score**, and the cost shortfall was the tell throughout: it is the axis on
-which the two runs differ most, and the one that flagged the problem before any
+Paired per-sample, 111 W / 83 L: the first attempt cost roughly **0.026 of
+score**. Agent spend is the axis the two differ on most — **99.6% of internal
+here against 82.6% there** — and it is what flagged the problem before any
 score comparison was possible.
 
 ### Wall clock — risk 5, checked
