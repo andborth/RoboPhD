@@ -47,10 +47,10 @@ The board as it stands, before this entry:
 `v0_0_7` (0.375 @ \$0.053) is listed but off the frontier, displaced by our own
 `cap_0_063`.
 
-**It came in at 0.38954 @ \$0.058059** — a new frontier slot, cheaper than
-Asta's entry and scoring below it. **The target is not cleared:** 0.0075 short,
-which is well inside this run's own 0.0178 stderr. Full accounting under
-[Official result](#official-result).
+**It came in at 0.390 @ \$0.058** — a new frontier slot, cheaper than Asta's
+entry and scoring below it. **The target is not cleared:** 0.0075 short, which
+is well inside this run's own 0.0178 stderr. Full accounting, at full
+precision, under [Official result](#official-result).
 
 ## What this run is for: completing the 2×2
 
