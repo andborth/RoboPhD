@@ -79,12 +79,9 @@ stderrs; what the design buys is that two independent cells point the same way.
 
 ## The category shape does NOT replicate at the cheap gate
 
-**This section's original claim did not survive the official basis.** Written
-pre-submission on internal figures, it read the \$0.063 cell as the same
-three-way trade the \$0.355 cell showed — semantic given away to buy the two
-small categories. Official-against-official, on all **267** IDs (both runs
-have every query; the 266-matched qualifier retires with `-010`'s timed-out
-sample, which its *internal* per-problem file recorded as `sample_id: "None"`):
+Official-against-official versus `-010`, on all **267** IDs (both runs have
+every query; `-010`'s timed-out sample exists only in its *internal*
+per-problem file, recorded there as `sample_id: "None"`):
 
 | category | n | opus-5 (`-010`) | **fable-5 (`-013`)** | delta | score points (n × delta) |
 | --- | --- | --- | --- | --- | --- |
@@ -93,30 +90,31 @@ sample, which its *internal* per-problem file recorded as `sample_id: "None"`):
 | metadata | 35 | 0.2653 | **0.3069** | +0.0416 | **+1.46** |
 | **all** | **267** | 0.37620 | **0.38954** | **+0.01334** | **+3.56** |
 
-+3.56 / 267 = **+0.01334**. **All three categories move the same way, and
-semantic — the category the trade story said fable-5 sells — is positive.**
++3.56 / 267 = **+0.01334**. **All three categories move the same way**, semantic
+included.
 
 For contrast, the same comparison at \$0.355 (metadata **+0.1202**, specific
-**+0.0430**, semantic **−0.0184**) *is* a trade. So the honest statement is:
-**fable-5 beats opus-5 at both gates, but it does not do it the same way at
-each.** One shape, two gates, is not a pattern.
+**+0.0430**, semantic **−0.0184**) *is* a three-way trade. So the honest
+statement is: **fable-5 beats opus-5 at both gates, but it does not do it the
+same way at each.** One shape, two gates, is not a pattern.
 
-Two things worth separating out, because the pre-submission draft conflated
-them:
+**The internal basis points the other way, and that is the interesting part.**
+Semantic reads −0.0101 there against +0.0074 officially, and the overall delta
+is an order of magnitude smaller (+0.0012 vs +0.01334). Not a scoring error:
+the capped→uncapped judging transition moves the two agents in *opposite*
+directions. `-010` **lost** 0.0131 of semantic going uncapped; `-013`
+**gained** 0.0042. Nine-tenths of the official gap between these two agents is
+that divergence — a difference the capped basis cannot see at all.
 
-**The internal basis pointed the other way** — semantic −0.0101 there, +0.0074
-officially, and the overall delta an order of magnitude smaller (+0.0012 vs
-+0.01334). That is not a scoring error; it is the capped→uncapped judging
-transition acting in opposite directions on the two agents. `-010` *lost*
-0.0131 of semantic going uncapped, `-013` *gained* 0.0042. Nine-tenths of the
-official gap between these two agents is that divergence, not a difference the
-capped basis could see.
+**The rule that follows:** comparing two agents on internal per-problem files
+measures the judging transition as much as it measures the agents, whenever
+their grading depth differs. The \$0.355 cell's trade is computed from official
+figures on both arms and stands; a cheap-gate trade computed from internal
+files does not.
 
-**Which means the trade story was an artifact of the basis, not a finding.**
-Anything computed from internal per-problem files across two agents judged at
-different depths is measuring the judging transition as much as the agents.
-The \$0.355 cell's trade is on official figures for both arms and stands; this
-cell's was not, and does not.
+> **Historic note.** Until the official numbers landed, this section claimed the
+> opposite — that the three-way trade replicated at both gates. That reading was
+> internal-basis only, and is exactly the artifact the rule above describes.
 
 ## Cap-hugging replicates too
 
