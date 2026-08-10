@@ -463,6 +463,12 @@ def run(cmd: list[str], *, cwd: Path, extra_env: dict | None = None,
     inspect records model events, not prints. Without a tee they exist only in
     whatever terminal scrollback happens to survive, which is how the
     2026-08-06 post-mortem lost its most direct evidence.
+
+    The file is APPENDED, never truncated: eval_submission reuses one log_dir
+    across resumes — that is how `inspect eval-set`'s retry path reuses
+    completed samples — so opening "w" would delete the interrupted attempt's
+    stdout, which is precisely what a post-mortem of that interruption needs.
+    Each attempt gets a banner so the boundaries are greppable.
     """
     env = {**os.environ, **(extra_env or {})}
     print(f"\n$ cd {cwd}")
@@ -470,9 +476,17 @@ def run(cmd: list[str], *, cwd: Path, extra_env: dict | None = None,
     if tee is None:
         return subprocess.run(cmd, cwd=cwd, env=env).returncode
     tee.parent.mkdir(parents=True, exist_ok=True)
+    # The child block-buffers stdout when it is a pipe rather than a tty, so
+    # without this the agent's prints reach the file in ~8 KB gulps and a run
+    # that dies loses whatever is still in the buffer — the tail being exactly
+    # the part worth reading.
+    env["PYTHONUNBUFFERED"] = "1"
     with subprocess.Popen(cmd, cwd=cwd, env=env, stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT, bufsize=1,
-                          text=True) as p, tee.open("w") as fh:
+                          text=True) as p, tee.open("a") as fh:
+        fh.write("\n===== attempt started %s =====\n"
+                 % time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+        fh.flush()
         for line in p.stdout:          # keeps the live-stream contract
             sys.stdout.write(line)
             fh.write(line)
