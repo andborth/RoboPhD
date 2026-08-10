@@ -35,9 +35,9 @@ category signs do **not** replicate: the $0.355 cell is a three-way trade
 > **Correction (2026-08-08).** Until the re-run this table carried
 > `cap_0_063_fable` at 0.3638 @ $0.0481, and this paragraph reported the
 > cheap-gate delta as **−0.0124** — opposite signs, concluding the $0.355 A/B
-> "does not survive the cheap cell". That first official run was degraded (agent
-> spend at 82.6% of internal, an episodic Asta MCP slowdown) and has been
-> superseded. The reversal was an artifact of it and is withdrawn.
+> "does not survive the cheap cell". That first official run was degraded —
+> agent spend at 82.6% of internal, episodic, **cause never established** — and
+> has been superseded. The reversal was an artifact of it and is withdrawn.
 
 Of the first two entries, v0_0_8's internal-to-official transfer was **not** clean, unlike v0_0_7's: −0.055 overall, of which `specific_f1` contributes −0.036 (65%) and `semantic_f1` −0.020 (36%). `specific` is the part needing explanation — it's the larger share, and it's a metric the judge never touches, so no judging-basis story is available; three runs of the same agent show it's systematic rather than variance (snapshot README has the analysis). `semantic`'s share is real but confounded with the capped→uncapped judging change. Don't read v0_0_7's clean transfer as a general guarantee that internal predicts official.
 
