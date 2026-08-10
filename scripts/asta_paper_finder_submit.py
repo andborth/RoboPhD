@@ -453,12 +453,30 @@ def print_cost_projection(limit: int | None) -> None:
               f"kept separate and never tarred.")
 
 
-def run(cmd: list[str], *, cwd: Path, extra_env: dict | None = None) -> int:
-    """Stream subprocess output live. Returns exit code."""
+def run(cmd: list[str], *, cwd: Path, extra_env: dict | None = None,
+        tee: Path | None = None) -> int:
+    """Stream subprocess output live. Returns exit code.
+
+    `tee` also writes the child's combined output to a file. The agent's own
+    stage prints ("[t+NNNs] plan: ...", "DEADLINE: solver timed out", trim
+    messages) go to stdout and are NOT captured anywhere in the .eval log —
+    inspect records model events, not prints. Without a tee they exist only in
+    whatever terminal scrollback happens to survive, which is how the
+    2026-08-06 post-mortem lost its most direct evidence.
+    """
     env = {**os.environ, **(extra_env or {})}
     print(f"\n$ cd {cwd}")
     print(f"$ {' '.join(cmd)}\n")
-    return subprocess.run(cmd, cwd=cwd, env=env).returncode
+    if tee is None:
+        return subprocess.run(cmd, cwd=cwd, env=env).returncode
+    tee.parent.mkdir(parents=True, exist_ok=True)
+    with subprocess.Popen(cmd, cwd=cwd, env=env, stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT, bufsize=1,
+                          text=True) as p, tee.open("w") as fh:
+        for line in p.stdout:          # keeps the live-stream contract
+            sys.stdout.write(line)
+            fh.write(line)
+        return p.wait()
 
 
 # Auto-generated resilience wrapper inserted as `agent.py` in the staged
@@ -866,7 +884,8 @@ def eval_submission(s: Submission, working_dir: Path, limit: int | None) -> bool
         # Forwarded to `inspect eval-set` via agenteval's
         # ignore_unknown_options Click context.
         cmd += ["--limit", str(limit)]
-    rc = run(cmd, cwd=working_dir, extra_env=extra_env)
+    rc = run(cmd, cwd=working_dir, extra_env=extra_env,
+             tee=log_dir / "submit_stdout.log")
     if rc != 0:
         return False
     # Belt-and-suspenders: a zero exit with a non-success log (cancelled
