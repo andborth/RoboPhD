@@ -288,6 +288,27 @@ Gate experiment (2026-07-24, 148 stored iter13 docs, luna+no-prose basis, clip-a
 - [ ] **Standard-Tools allowlist (AST scan).** The evaluator should reject candidates that import outside `{json, re, asyncio, dataclasses, ..., inspect_ai.*, model_registry}`. Without this, evolution could in principle introduce `import openai` and silently lose cost-accounting fidelity / the Standard Tools badge. ~30 lines of `ast.parse` walking.
 - [x] **Submission pipeline: `scripts/asta_paper_finder_submit.py`** (ported from `asta_ds1000_submit.py`, 2026-07-19). Stages `agent.py` (resilience wrapper) + `agent_inner.py` + `seed_agent.py` + `model_registry.py`, re-runs official `astabench eval paper_finder_test` + `astabench score`, and tarballs *that* run's logs. Deltas from ds1000: no Docker, `ASTA_TOOL_KEY`/`HF_ACCESS_TOKEN` preflights, a litellm bundled-map pricing preflight over `AGENT_MODELS`, an uncapped-judging cost projection, `--limit N` smoke runs (log-isolated, never tarred), and a schema-valid empty submission as the wrapper's last resort (an empty string would route through the scorer's LLM re-parse). No seed-baseline entry: ASTA didn't post ds1000's seed on the leaderboard. Tests: `unit_tests/test_submit.py`. See "Leaderboard submissions" above.
 
+### Known weaknesses (deliberately unfixed, for comparability)
+
+Real defects we are **not** fixing while the campaign's cells stay comparable —
+`examples/asta_paper_finder/` is a frozen stack, and the four-cell 2×2 rests on
+"zero commits between `-012` and `-013`". Fix at the next stack boundary and
+note the epoch change in the changelog.
+
+- [ ] **`background.md` overstates the retry ladder.** It tells the agent that
+  "HTTP 429/529/504 **and server errors (500/502/503)** and broken connections
+  are retried". The 500/502/503 clause is false twice over: `_is_retryable_error`
+  covers only `{429, 529, 504}` plus `BrokenResourceError`, and
+  `make_retry_wrapper` short-circuits on `ToolError` before consulting
+  retryability at all (see the Credentials section above). So a server 500
+  arriving as a `ToolError` is never retried, and the agent has been told the
+  opposite — false assurance, which is worse than silence. Measured cost: run
+  `20260809_222409` iter 5 censused **162 / 75 / 139** such errors across one
+  14-problem batch and traced two zeroed exact-match queries to them, on
+  queries other agents in the same batch scored 1.000. When fixing, note that
+  agents evolved under the old text may carry defenses premised on retries that
+  never existed.
+
 ### Design questions to revisit
 
 - [ ] **Whether to add `paper_finder` (high-level MCP tool) to the allowlist.** Using it would make our agent an `ai2i_paper_finder` lookalike — defeats the purpose. Lean: exclude.
