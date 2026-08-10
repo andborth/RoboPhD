@@ -526,7 +526,14 @@ Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 
 - [x] Official eval run — 2026-08-08, 0.38954 @ \$0.058059, 267/267, zero errors
 - [x] Tarball built — `submissions/asta_paper_finder/v0_0_9_cap_0_063_fable.tar.gz`
-      (229 MB, 2026-08-08 05:44; the `.degraded_20260806` tarball is the
-      superseded first attempt and must not be uploaded)
-- [ ] Tarball uploaded to HF Spaces
+      (229,170,818 bytes = 218.6 MiB, 2026-08-08 05:44; the `.degraded_20260806`
+      tarball is the superseded first attempt and must not be uploaded)
+- [x] **Uploaded to HF Spaces — 2026-08-09**, pending maintainer review. Form
+      fields as recorded under
+      [Submission form metadata](#submission-form-metadata); upload verified at
+      218.6 MiB, and the archive's own `summary_stats.json` reports 0.38954 @
+      \$0.058059 with the `2026-08-08` eval inside.
 - [x] Official score/cost recorded in `../robophd_runs/results/asta_paper_finder.json`
+- [ ] Verified live on the board — expect slot 3, between our own 0.376 @
+      \$0.052 and Asta Paper Finder's 0.397 @ \$0.063. The two prior entries
+      took until 2026-08-06 to appear, so allow several days.
