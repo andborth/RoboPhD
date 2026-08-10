@@ -133,8 +133,6 @@ def main():
         logger.info(f"Test results saved to {test_path}")
         return
 
-    seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
-
     # Resolve --max-workers for the gepa/autoresearch engines (which take it
     # directly, not via ConfigManager). Order: explicit flag > value recovered
     # from a resumed checkpoint > task default. The RoboPhD engine instead packs
@@ -210,7 +208,7 @@ def main():
     result = optimize_anything(
         evaluator=evaluator,
         dataset=dataset,
-        seed_candidate=seed,
+        seed_agents={"baseline": HERE / "seeds" / "baseline"},
         objective=objective,
         background=background,
         config=cfg,

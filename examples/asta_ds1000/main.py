@@ -52,6 +52,11 @@ from RoboPhD.runner_utils import (
     validate_cost_slope,
     validate_cost_threshold,
 )
+from RoboPhD.candidate_utils import read_agent_dir
+
+# The agent this run starts from, and the source of the test evaluator's
+# fallback_candidate. Named once so the two uses cannot drift apart.
+SEED_AGENT_DIR = HERE / "seeds" / "baseline"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -651,12 +656,14 @@ def main():
     objective = _interpolate((HERE / "objective.md").read_text().strip())
     background = _interpolate((HERE / "background.md").read_text().strip())
 
-    # Seed is loaded early so it can plumb into the test evaluator as
+    # Seed is read early so it can plumb into the test evaluator as
     # `fallback_candidate` below. Training keeps fallback_candidate=None
     # so error signals stay visible to the evolution loop; test/inference
     # opts in so a single primary failure doesn't tank that example's
     # score on the leaderboard or in --eval-test-set / --eval-only runs.
-    seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
+    # optimize_anything reads SEED_AGENT_DIR itself; this is the same
+    # artifacts in the dict form the evaluator wants.
+    seed = read_agent_dir(SEED_AGENT_DIR)
 
     # Two evaluator instances. Training applies the bounded cost penalty
     # (a tiebreaker between correctness-tied agents); test paths report
@@ -884,7 +891,7 @@ def main():
     result = optimize_anything(
         evaluator=evaluator,
         dataset=dataset,
-        seed_candidate=seed,
+        seed_agents={"baseline": SEED_AGENT_DIR},
         objective=objective,
         background=background,
         config=cfg,

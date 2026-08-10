@@ -360,13 +360,7 @@ def find_best_agent(run_dir: Path) -> Tuple[str, Path]:
         f"tests: {best_perf['test_count']})"
     )
 
-    agent_info = agent_pool.get(best_id)
-    if not agent_info or "package_dir" not in agent_info:
-        raise ValueError(f"Agent {best_id} not found in agent_pool or missing package_dir")
-
-    agent_dir = Path(run_dir) / agent_info["package_dir"]
-    if not agent_dir.exists():
-        raise FileNotFoundError(f"Agent directory not found: {agent_dir}")
+    agent_dir = _resolve_agent_dir(run_dir, best_id, agent_pool, perf_records, log)
 
     return best_id, agent_dir
 
@@ -767,10 +761,25 @@ def find_last_winner(run_dir: Path) -> Tuple[str, Path, bool]:
 
 def _resolve_agent_dir(run_dir: Path, agent_id: str, agent_pool: dict,
                        perf_records: dict, log) -> Path:
-    """Resolve an agent's directory from the agent pool."""
+    """Resolve an agent's directory from the agent pool.
+
+    Prefers the canonical in-run layout (``<run_dir>/agents/<agent_id>``, what
+    the researcher writes) over the checkpoint's stored ``package_dir``. Most
+    checkpoints store that relative, where the two agree — but some store it
+    absolute, pointing at wherever the run lived when it was written. Since
+    ``Path(run_dir) / "/abs/path"`` yields the absolute path, a run that has
+    since been moved or archived would resolve to its ORIGINAL location:
+    silently reading a copy that can be deleted or edited independently of the
+    snapshot being asked about. The stored value stays as the fallback for
+    layouts the canonical path doesn't cover.
+    """
     agent_info = agent_pool.get(agent_id)
     if not agent_info or "package_dir" not in agent_info:
         raise ValueError(f"Agent {agent_id} not found in agent_pool or missing package_dir")
+
+    canonical = Path(run_dir) / "agents" / agent_id
+    if canonical.exists():
+        return canonical
 
     agent_dir = Path(run_dir) / agent_info["package_dir"]
     if not agent_dir.exists():

@@ -53,6 +53,7 @@ from RoboPhD import (
 )
 from RoboPhD.runner_utils import (
     apply_engine_config,
+    find_best_agent,
     parse_dollars_or_percent,
     read_task_config_extras,
     resolve_run_immutable,
@@ -160,6 +161,47 @@ def _enforce_immutable_on_resume(
         cli_value, stored_value, default_value, name,
         on_resume=on_resume, fmt=fmt, missing_note=_ALL_FLAGS_NOTE,
     )
+
+
+def _resolve_seed_runs(specs: list[str]) -> dict:
+    """Turn ``LABEL=RUN_DIR`` specs into an optimize_anything seed_agents pool.
+
+    Each run contributes its best-Elo agent, located through find_best_agent so
+    the seeded agent cannot disagree with what that run actually produced. The
+    pool name is formed as ``seed_<LABEL>`` here rather than taken from the
+    caller: the prefix keeps seeds visibly distinct from this run's own evolved
+    agents, and makes the ``iter<N>_`` name that the API rejects unreachable
+    from this flag.
+
+    Returns {agent_name: agent_dir}, ordered as given. The directories are
+    handed over unread — optimize_anything walks them.
+    """
+    seeds: dict = {}
+    sources: dict = {}
+    for spec in specs:
+        label, sep, run_dir = spec.partition("=")
+        if not sep or not label or not run_dir:
+            raise SystemExit(
+                f"--seed-runs entry {spec!r} is not LABEL=RUN_DIR "
+                f"(e.g. 063_opus5=example_runs/robophd/asta_paper_finder/"
+                f"v0_0_9_cap_0_063_opus5)"
+            )
+        name = f"seed_{label}"
+        if name in seeds:
+            raise SystemExit(
+                f"--seed-runs label {label!r} given twice; labels name the "
+                f"pool agents, so they must be unique "
+                f"(already used by {sources[name]})"
+            )
+        try:
+            agent_name, agent_dir = find_best_agent(Path(run_dir))
+        except (FileNotFoundError, ValueError) as exc:
+            raise SystemExit(f"--seed-runs {label}: {exc}") from exc
+
+        seeds[name] = agent_dir
+        sources[name] = f"{agent_name} ({run_dir})"
+        logger.info(f"Seed {name} <- {agent_name} from {run_dir}")
+    return seeds
 
 
 def _resume_enforces_task_knobs(engine: str, resume: bool, eval_only: bool) -> bool:
@@ -731,6 +773,20 @@ def parse_args():
                         "-005 lineage; evolved target ~-50%%). 0 disables. "
                         "Run-immutable; clipping surfaces per-problem as "
                         "evidence_truncation.md.")
+    p.add_argument("--seed-runs", type=str, nargs="+", default=None,
+                   metavar="LABEL=RUN_DIR",
+                   help="Seed the run from the best-Elo agent of each named "
+                        "prior run instead of seeds/baseline. LABEL is a "
+                        "provenance tag you choose (e.g. 063_opus5); the pool "
+                        "agent is named seed_LABEL, and the agent itself is "
+                        "resolved by Elo from RUN_DIR's checkpoint.json, so it "
+                        "cannot drift from that run's actual winner. Seeds "
+                        "beyond agents_per_iteration are not dropped — "
+                        "untested agents get selection priority in later "
+                        "iterations, so a 4th seed enters at iteration 2. "
+                        "Fresh runs only: seeds are baked into a run, so this "
+                        "is rejected with --resume."
+                        "%(default).0s")
     p.add_argument("--random-seed", type=int, default=None)
     p.add_argument("--engine-config", type=str, default=None)
     p.add_argument("--meta-evolution-strategy", default=None)
@@ -739,7 +795,8 @@ def parse_args():
     p.add_argument("--eval-only", action="store_true")
     p.add_argument("--eval-agent", type=str, default=None,
                    help="Name of a specific agent from the --resume run's agent_pool to "
-                        "evaluate (e.g. the seed name to baseline, or any iter agent name). "
+                        "evaluate (e.g. 'baseline' for the seed, a seed_* name "
+                        "from --seed-runs, or any iter agent name). "
                         "Requires --eval-only. Defaults to the best-Elo agent. Output file "
                         "is suffixed with the agent name so results don't overwrite the "
                         "default best-Elo results.")
@@ -857,6 +914,21 @@ def main():
     on_resume = _resume_enforces_task_knobs(
         args.engine, bool(args.resume), args.eval_only
     )
+    # Seeds are established when the pool is loaded and then live in the
+    # checkpoint; a resume never revisits them, so accepting the flag here
+    # would silently do nothing.
+    if args.seed_runs and args.resume:
+        raise SystemExit(
+            "--seed-runs cannot be combined with --resume: the seed pool is "
+            "fixed when a run starts and is recovered from the checkpoint "
+            "thereafter. Start a fresh run to change seeds."
+        )
+    # Fail before the dataset load rather than at the optimize_anything call.
+    if args.seed_runs and args.engine != "robophd":
+        raise SystemExit(
+            f"--seed-runs requires the robophd engine; --engine "
+            f"{args.engine} optimizes a single candidate."
+        )
     checkpoint_pfb = (
         _read_pfb_runtime_config(Path(args.resume)) if args.resume else {}
     )
@@ -1112,7 +1184,10 @@ def main():
     objective = _interpolate((HERE / "objective.md").read_text().strip())
     background = _interpolate((HERE / "background.md").read_text().strip())
 
-    seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
+    seed_agents = (
+        _resolve_seed_runs(args.seed_runs) if args.seed_runs
+        else {"baseline": HERE / "seeds" / "baseline"}
+    )
 
     # Two evaluator instances. Training applies the mean-cost penalty;
     # test paths report raw mean F1 so evolved agents land at their true
@@ -1349,7 +1424,7 @@ def main():
     result = optimize_anything(
         evaluator=evaluator,
         dataset=dataset,
-        seed_candidate=seed,
+        seed_agents=seed_agents,
         objective=objective,
         background=background,
         config=cfg,

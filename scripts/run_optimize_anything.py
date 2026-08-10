@@ -269,7 +269,7 @@ def run_demo_resume(evaluator_fn, parent_experiments_dir: str):
     result = optimize_anything(
         evaluator=evaluator_fn,
         dataset=DATASET,
-        seed_candidate=SEED_CANDIDATE,
+        seed_agents={"baseline": SEED_CANDIDATE},
         objective=OBJECTIVE,
         background=BACKGROUND,
         config=RoboPhDConfig(
@@ -376,7 +376,7 @@ def main():
     result = optimize_anything(
         evaluator=evaluator_fn,
         dataset=DATASET,
-        seed_candidate=SEED_CANDIDATE,
+        seed_agents={"baseline": SEED_CANDIDATE},
         objective=OBJECTIVE,
         background=BACKGROUND,
         config=RoboPhDConfig(

@@ -1316,3 +1316,96 @@ def test_write_test_results_tolerates_missing_usage(main_mod, tmp_path):
     )
     assert _json.loads(summary_path.read_text())["test_eval_usage"] == {}
     assert _json.loads(per_problem_path.read_text())[0]["usage"] is None
+
+
+# --- --seed-runs -------------------------------------------------------------
+
+
+EXAMPLE_RUNS = REPO_ROOT / "example_runs" / "robophd" / "asta_paper_finder"
+
+
+def test_seed_runs_names_are_prefixed_and_ordered(main_mod):
+    """The seed_ prefix is formed here, not taken from the operator: it
+    keeps seeds visibly distinct from this run's evolved agents, and makes
+    the iter<N>_ name the API rejects unreachable from this flag."""
+    seeds = main_mod._resolve_seed_runs(
+        [
+            f"063_opus5={EXAMPLE_RUNS / 'v0_0_9_cap_0_063_opus5'}",
+            f"355_fable={EXAMPLE_RUNS / 'v0_0_9_cap_0_355_fable'}",
+        ]
+    )
+    assert list(seeds) == ["seed_063_opus5", "seed_355_fable"]
+    for agent_dir in seeds.values():
+        assert (agent_dir / "agent.py").read_text().strip()
+
+
+def test_seed_runs_reads_the_runs_own_snapshot(main_mod):
+    """v0_0_9_cap_0_063_fable's checkpoint stores an absolute package_dir
+    into the original run location. The seed must come from the archived
+    snapshot, which is the thing the label names."""
+    run_dir = EXAMPLE_RUNS / "v0_0_9_cap_0_063_fable"
+    seeds = main_mod._resolve_seed_runs([f"063_fable={run_dir}"])
+    assert seeds["seed_063_fable"] == run_dir / "agents" / "iter14_title_channel"
+
+
+@pytest.mark.parametrize(
+    "spec, expected",
+    [
+        ("nolabel", "not LABEL=RUN_DIR"),
+        ("=/some/dir", "not LABEL=RUN_DIR"),
+        ("label=", "not LABEL=RUN_DIR"),
+        ("label=/definitely/not/a/run", "No checkpoint.json"),
+    ],
+)
+def test_seed_runs_rejects_bad_specs(main_mod, spec, expected):
+    with pytest.raises(SystemExit, match=re.escape(expected)):
+        main_mod._resolve_seed_runs([spec])
+
+
+def test_seed_runs_rejects_duplicate_labels(main_mod):
+    """A dict would silently keep only the last one, quietly shrinking the
+    pool the operator asked for."""
+    specs = [
+        f"dup={EXAMPLE_RUNS / 'v0_0_9_cap_0_063_opus5'}",
+        f"dup={EXAMPLE_RUNS / 'v0_0_9_cap_0_355_opus5'}",
+    ]
+    with pytest.raises(SystemExit, match="given twice"):
+        main_mod._resolve_seed_runs(specs)
+
+
+def test_seed_runs_is_rejected_with_resume_and_non_robophd_engines():
+    """Seeds are fixed at pool load and recovered from the checkpoint after,
+    so a resume that accepted the flag would silently ignore it."""
+    guards = {}
+    for node in ast.walk(MAIN_TREE):
+        if not isinstance(node, ast.If):
+            continue
+        condition = ast.dump(node.test)
+        if "seed_runs" not in condition:
+            continue
+        for conflict in ("resume", "engine"):
+            if conflict in condition:
+                guards[conflict] = node
+
+    assert set(guards) == {"resume", "engine"}, (
+        f"missing a --seed-runs conflict guard: found {sorted(guards)}"
+    )
+    for conflict, guard in guards.items():
+        assert any(
+            isinstance(n, ast.Raise) and getattr(n.exc.func, "id", "") == "SystemExit"
+            for n in ast.walk(guard)
+        ), f"the --seed-runs/{conflict} guard must exit rather than warn"
+
+
+def test_optimize_anything_receives_the_seed_pool():
+    """The pool only reaches the engine if it's threaded through the call;
+    the flag parsing alone proves nothing."""
+    for node in ast.walk(MAIN_TREE):
+        if (isinstance(node, ast.Call)
+                and getattr(node.func, "id", None) == "optimize_anything"):
+            kwargs = {kw.arg for kw in node.keywords}
+            assert "seed_agents" in kwargs
+            assert not {"seed_candidate", "seed_candidates"} & kwargs
+            break
+    else:
+        pytest.fail("no optimize_anything call found in main.py")

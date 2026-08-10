@@ -64,3 +64,63 @@ def extract_candidate(
         src = agent_dir / filepath
         candidate[key] = src.read_text() if src.exists() else ""
     return candidate
+
+
+# Directory entries that are build or tooling residue rather than agent
+# artifacts. `examples/asta_ds1000/seeds/baseline/` carries a stray
+# `__pycache__/agent.cpython-311.pyc` on disk (gitignored, so absent from the
+# repo but present after any local run), and without this filter it would be
+# handed to evolution as an editable artifact.
+_IGNORED_COMPONENTS = {"__pycache__"}
+
+
+def read_agent_dir(agent_dir: Path) -> Dict[str, str]:
+    """
+    Read every artifact in an agent directory into a candidate dict.
+
+    The inverse of materialize_candidate for the case where the file_mapping
+    is not known in advance: keys are paths relative to agent_dir, so the
+    caller can derive the mapping from the result. Use extract_candidate
+    instead when the mapping is already fixed.
+
+    Skips dot-prefixed entries and build residue at any depth. Nested paths
+    are preserved as keys ("lib/util.py"); materialize_candidate recreates
+    the parent directories.
+
+    Args:
+        agent_dir: Path to an agent directory.
+
+    Returns:
+        Dict mapping relative path to text content, ordered by path.
+
+    Raises:
+        FileNotFoundError: agent_dir is missing or is not a directory.
+        ValueError: agent_dir contains no readable artifacts, or one of them
+            is not UTF-8 text (candidates are text; a binary artifact means
+            the caller is pointing at the wrong directory).
+    """
+    agent_dir = Path(agent_dir)
+    if not agent_dir.is_dir():
+        raise FileNotFoundError(f"Seed agent directory not found: {agent_dir}")
+
+    candidate = {}
+    for path in sorted(agent_dir.rglob("*")):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(agent_dir)
+        if any(
+            part.startswith(".") or part in _IGNORED_COMPONENTS
+            for part in relative.parts
+        ):
+            continue
+        try:
+            candidate[str(relative)] = path.read_text()
+        except UnicodeDecodeError as exc:
+            raise ValueError(
+                f"Seed artifact {path} is not UTF-8 text. Agent artifacts are "
+                f"text files; check that {agent_dir} is an agent directory."
+            ) from exc
+
+    if not candidate:
+        raise ValueError(f"Seed agent directory has no artifacts: {agent_dir}")
+    return candidate

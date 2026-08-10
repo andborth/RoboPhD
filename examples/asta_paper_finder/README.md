@@ -124,6 +124,42 @@ python examples/asta_paper_finder/main.py --engine gepa
 python examples/asta_paper_finder/main.py --engine autoresearch
 ```
 
+### Multi-seed runs (`--seed-runs`)
+
+Start from the winners of prior runs instead of `seeds/baseline`. Each
+`LABEL=RUN_DIR` pair contributes that run's best-Elo agent, resolved from its
+`checkpoint.json`, so the seeded agent cannot drift from what the run actually
+produced. `LABEL` is a provenance tag you choose; the pool agent is named
+`seed_<LABEL>`. Fresh runs only — seeds are fixed when a run starts and recovered
+from the checkpoint thereafter, so `--resume` rejects the flag. Without it the run
+seeds from `seeds/baseline` as the agent `baseline`, which is also the name to
+pass to `--eval-agent` to baseline the seed.
+
+```bash
+# Seed from all four v0_0_9 winners (the {opus-5, fable-5} x {$0.063, $0.355} 2x2)
+python examples/asta_paper_finder/main.py \
+  --cost-threshold 0.063 \
+  --seed-runs \
+    063_opus5=example_runs/robophd/asta_paper_finder/v0_0_9_cap_0_063_opus5 \
+    355_opus5=example_runs/robophd/asta_paper_finder/v0_0_9_cap_0_355_opus5 \
+    355_fable=example_runs/robophd/asta_paper_finder/v0_0_9_cap_0_355_fable \
+    063_fable=example_runs/robophd/asta_paper_finder/v0_0_9_cap_0_063_fable
+```
+
+Seeding more agents than `agents_per_iteration` (default 3) loses none of them:
+untested agents have selection priority, so the 4th seed enters at iteration 2.
+Don't raise `agents_per_iteration` to compensate — that widens every round-robin
+for the whole run to buy what the selection ladder already does once.
+
+Seeds far above the run's cost gate start pinned to the floor and stay there.
+At `--cost-threshold 0.063` with the default slope, a $0.355-cell agent
+(~$0.25/query) takes roughly 208 penalty points against a 100-point maximum
+(see [Cost-penalty math](#cost-penalty-math)), so it loses every head-to-head
+and stops being selected after its first appearance — it persists as
+cross-pollination material for evolution sessions rather than as a competitor.
+That is a reason to include such a seed, not a bug; `--cost-per-error` flattens
+the slope if you want it competing.
+
 ## Model registry
 
 Nine pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside the candidate's `file_mapping`, which only contains `agent.py`), grouped by family into three tiers:

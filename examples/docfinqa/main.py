@@ -162,8 +162,6 @@ def main():
         logger.info(f"Test results saved to {test_path}")
         return
 
-    seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
-
     # Build config based on engine choice
     if args.engine in ("gepa", "autoresearch"):
         _robophd_flags = {"--num-iterations", "--resume", "--extend", "--from-iteration", "--meta-evolution-strategy"}
@@ -223,7 +221,7 @@ def main():
     result = optimize_anything(
         evaluator=evaluator,
         dataset=dataset,
-        seed_candidate=seed,
+        seed_agents={"baseline": HERE / "seeds" / "baseline"},
         objective=objective,
         background=background,
         config=cfg,

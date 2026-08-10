@@ -117,7 +117,7 @@ def parse_args():
                              "splits requested via --eval-test-set / --eval-price149")
     parser.add_argument("--eval-agent", type=str, default=None,
                         help="Name of a specific agent from the --resume run's agent_pool to "
-                             "evaluate (e.g. 'seed_407zcoan' to baseline the seed). Requires "
+                             "evaluate (e.g. 'baseline' to baseline the seed). Requires "
                              "--eval-only. Defaults to the best-Elo agent. Output file is "
                              "suffixed with the agent name so results don't overwrite the "
                              "default 'test_results.json' / 'price149_results.json'.")
@@ -343,8 +343,6 @@ def main():
             )
         return
 
-    seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
-
     # Build config based on engine choice
     if args.engine in ("gepa", "autoresearch"):
         _robophd_flags = {"--num-iterations", "--resume", "--extend", "--from-iteration", "--meta-evolution-strategy"}
@@ -408,7 +406,7 @@ def main():
     result = optimize_anything(
         evaluator=evaluator,
         dataset=dataset,
-        seed_candidate=seed,
+        seed_agents={"baseline": HERE / "seeds" / "baseline"},
         objective=objective,
         background=background,
         config=cfg,

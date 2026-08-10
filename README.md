@@ -157,7 +157,7 @@ def evaluator(candidate, example, *, problem_dir=None):
 result = optimize_anything(
     evaluator=evaluator,
     dataset=[{"id": "1", "question": "...", "answer": "..."}],
-    seed_candidate={"system_prompt": "Your initial prompt here"},
+    seed_agents={"baseline": {"system_prompt": "Your initial prompt here"}},
     objective="Maximize accuracy on my task",
     config=RoboPhDConfig(num_iterations=5, evaluation_budget=200),
 )
@@ -181,7 +181,15 @@ result = optimize_anything(
 )
 ```
 
-Note: `seed_candidate` is only needed for the initial run — on resume, the file mapping is recovered from the checkpoint. `evaluator` and `dataset` are always required (they can't be serialized).
+Note: `seed_agents` is only needed for the initial run — on resume, the agent pool and file mapping are recovered from the checkpoint. `evaluator` and `dataset` are always required (they can't be serialized).
+
+`seed_agents` is keyed by **agent name** (what you'll see in the Elo table and pass to `--eval-agent`). Each value is either the artifacts themselves, as above, or a `Path` to an agent directory — which is what the bundled examples use:
+
+```python
+seed_agents={"baseline": Path("examples/sudoku/seeds/baseline")}
+```
+
+Pass several to start a run from several agents at once — e.g. the winners of prior runs — and they compete from iteration 1.
 
 **Evaluating candidates** — use `eval_candidate()` to evaluate any candidate on a dataset:
 

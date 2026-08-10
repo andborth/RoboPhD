@@ -201,8 +201,6 @@ def main():
     dataset = ds["train"]
     logger.info(f"Dataset: {len(dataset)} training problems")
 
-    seed = {"agent.py": (HERE / "seeds" / "baseline" / "agent.py").read_text()}
-
     # Build config based on engine choice
     # Sudoku has no separate val split — GEPA/Autoresearch auto-split from train.
     # max_workers=1 for all engines: solvers are scored on CPU time via
@@ -252,7 +250,7 @@ def main():
     result = optimize_anything(
         evaluator=evaluator,
         dataset=dataset,
-        seed_candidate=seed,
+        seed_agents={"baseline": HERE / "seeds" / "baseline"},
         objective=objective,
         background=background,
         config=cfg,

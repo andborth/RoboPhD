@@ -129,6 +129,39 @@ The `optimize_anything()` API supports three engines, selected by config type:
 - **`GEPAConfig`**: Pareto-based reflective text evolution
 - **`AutoresearchConfig`**: Single Claude Code session with greedy experimentation
 
+### Seeding
+
+`optimize_anything()` takes one seed parameter, `seed_agents`, holding the agents the run
+starts from as `{agent name: source}`:
+
+```python
+seed_agents={"baseline": HERE / "seeds" / "baseline"}      # every example
+seed_agents={"063_opus5": winner_dir, "355_fable": ...}    # several prior winners
+seed_agents={"baseline": {"agent.py": src}}                # artifacts in memory
+```
+
+An agent's identity in this architecture **is its directory**, so the keys are agent names —
+what shows up in Elo tables, reports, and `--eval-agent`. Values are either a `Path` to an
+agent directory (walked by `candidate_utils.read_agent_dir`, skipping dot-prefixed entries
+and `__pycache__`) or the artifacts themselves as `{relative path: contents}`. A bare `str`
+is rejected: it would be ambiguous between the two, and the likely mistake is passing one
+agent's artifacts where a pool of agents belongs. The number of artifacts per agent is free
+(text2sql seeds two files); every agent in a pool must have the same set, since they define
+one `file_mapping`.
+
+Every seed enters at Elo 1500 and competes from iteration 1. GEPA and Autoresearch evolve a
+single agent and require a one-entry pool rather than silently dropping the rest.
+
+Seed names must be safe single path components and must **not** start with `iter<N>` —
+`--from-iteration` archival parses that prefix as an iteration number of the *current* run
+and would move the seed out of the pool. Prefix seeds instead (`seed_<label>`).
+
+Seeding more agents than `agents_per_iteration` loses none of them: untested agents have
+selection priority (`researcher.select_agents_for_iteration` Priority 3), so a 4th seed in a
+3-slot run enters at iteration 2 rather than needing a wider round-robin.
+`examples/asta_paper_finder/main.py --seed-runs LABEL=RUN_DIR ...` is the worked example —
+it resolves each run's best-Elo agent via `runner_utils.find_best_agent`.
+
 ### How Evolution Works (RoboPhD Engine)
 
 ```

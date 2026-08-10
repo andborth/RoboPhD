@@ -15,7 +15,7 @@ Usage:
     result = optimize_anything(
         evaluator=evaluator,
         dataset=[{"input": "2+2", "expected": "4"}, ...],
-        seed_candidate={"prompt": "Solve the math problem:"},
+        seed_agents={"baseline": {"prompt": "Solve the math problem:"}},
         objective="Maximize accuracy on math problems",
     )
     print(result.best_candidate, result.best_score)
@@ -24,6 +24,8 @@ Usage:
 from __future__ import annotations
 
 import logging
+import os
+import re
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -135,7 +137,7 @@ class OptimizeResult:
     """Result of an optimize_anything() call."""
 
     best_candidate: Dict[str, str]
-    """Best agent's text artifacts (same keys as seed_candidate)."""
+    """Best agent's text artifacts (same keys as the seed agents')."""
     best_score: float
     """Best agent's Elo rating."""
     experiment_dir: Path
@@ -499,14 +501,159 @@ def _build_resume_kwargs(
     return config_manager, num_iterations, researcher_kwargs, task_config
 
 
+# Seed names become directory names under the seeds container and then agent
+# IDs in the pool, so they must be safe single path components. The leading
+# character is restricted separately from the rest: a name of all-allowed
+# characters can still be "." or ".." (which would materialize the agent into
+# the container root or its parent), ".hidden" (which read_agent_dir would
+# skip if it appeared inside an agent), or "-x" (ambiguous as a CLI value to
+# --eval-agent).
+_SEED_NAME_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9._-]*$")
+# ...and must not look like an evolved agent. `--from-iteration` archival
+# parses the `iter<N>_` prefix off any directory in <experiment_dir>/agents/
+# to decide what to move out (researcher._archive_from_iteration), so a seed
+# carrying its source run's name would be read as "created in iteration N of
+# THIS run" and silently archived away.
+_EVOLVED_NAME_RE = re.compile(r"^iter\d")
+
+
+# Parameters removed from optimize_anything, and what to do instead. Dropping
+# them outright leaves callers with a bare "unexpected keyword argument", which
+# is loud but says nothing — and this is the project's primary public API, so
+# the retirement should explain itself the way a retired model handle does.
+_RETIRED_KWARGS = {
+    "seed_candidate": (
+        "seed_candidate was replaced by seed_agents, which is keyed by AGENT "
+        'name: seed_agents={"baseline": {"agent.py": ...}} for artifacts, or '
+        'seed_agents={"baseline": Path(".../seeds/baseline")} to read an '
+        "agent directory. The name you choose is what appears in the Elo "
+        "table and --eval-agent."
+    ),
+    "seed_candidates": (
+        "seed_candidates was renamed to seed_agents. Same {name: candidate} "
+        "shape, and values may now also be a Path to an agent directory."
+    ),
+}
+
+
+def _reject_retired_kwargs(kwargs: Dict[str, Any]) -> None:
+    """Turn a call using a removed parameter into an actionable error."""
+    for name in kwargs:
+        if name in _RETIRED_KWARGS:
+            raise TypeError(f"optimize_anything(): {_RETIRED_KWARGS[name]}")
+    # Anything else is an ordinary typo; keep Python's own wording rather than
+    # letting **kwargs quietly change what that failure looks like.
+    raise TypeError(
+        f"optimize_anything() got an unexpected keyword argument "
+        f"'{next(iter(kwargs))}'"
+    )
+
+
+def _ensure_seeds_dir(run_dir: Path) -> Path:
+    """The staging area seed agents are materialized into.
+
+    Purely startup scaffolding: the researcher copies each agent into
+    ``<experiment_dir>/agents/`` at load, and ``agents_directory`` is never
+    read again (``researcher.load_initial_agents`` is the only reader, and
+    resume skips it).
+    """
+    seeds_dir = Path(run_dir) / "robophd" / "_optimize_anything_seeds"
+    seeds_dir.mkdir(parents=True, exist_ok=True)
+    return seeds_dir
+
+
+def _resolve_seed_agents(
+    seed_agents: Dict[str, Union[Path, Dict[str, str]]],
+) -> Dict[str, Dict[str, str]]:
+    """Resolve ``{name: directory-or-artifacts}`` to ``{name: artifacts}``.
+
+    Directory values are read with ``read_agent_dir``; artifact dicts pass
+    through. Names are validated here rather than at materialization so the
+    failure names the offending seed instead of surfacing as a path error.
+
+    Raises ValueError (or FileNotFoundError, from a missing directory).
+    """
+    from RoboPhD.candidate_utils import read_agent_dir
+
+    if not seed_agents:
+        raise ValueError(
+            "seed_agents must be a non-empty {name: directory-or-artifacts} dict"
+        )
+
+    resolved: Dict[str, Dict[str, str]] = {}
+    for name, source in seed_agents.items():
+        if not isinstance(name, str) or not _SEED_NAME_RE.match(name):
+            raise ValueError(
+                f"Invalid seed name {name!r}: names become directory names and "
+                f"agent IDs, so they must match {_SEED_NAME_RE.pattern} — "
+                f"letters, digits, '.', '_' and '-', starting with a letter, "
+                f"digit or underscore. That excludes path separators, '.' and "
+                f"'..', and names beginning with '.' or '-'."
+            )
+        if _EVOLVED_NAME_RE.match(name):
+            raise ValueError(
+                f"Invalid seed name {name!r}: names starting with 'iter<N>' "
+                f"collide with evolved-agent naming. --from-iteration archival "
+                f"parses that prefix as an iteration number of the CURRENT run "
+                f"and would move the seed out of the pool. Prefix it instead "
+                f"(e.g. 'seed_{name}')."
+            )
+
+        # os.PathLike, not str: a bare string is ambiguous between "a
+        # directory path" and one artifact's contents, and the second is the
+        # likely mistake (passing ONE agent's artifacts where a pool of agents
+        # belongs). Requiring Path makes the two forms disjoint, so that
+        # mistake gets a message instead of a confusing path error.
+        if isinstance(source, os.PathLike):
+            resolved[name] = read_agent_dir(Path(source))
+        elif isinstance(source, dict):
+            if not source:
+                raise ValueError(f"Seed {name!r} has no artifacts")
+            wrong = [k for k, v in source.items() if not isinstance(v, str)]
+            if wrong:
+                raise ValueError(
+                    f"Seed {name!r} maps {wrong[0]!r} to "
+                    f"{type(source[wrong[0]]).__name__}, not text. Artifact "
+                    f"dicts are {{relative path: file contents}}."
+                )
+            resolved[name] = source
+        else:
+            hint = (
+                " If that is a directory, wrap it in Path()."
+                if isinstance(source, str) else ""
+            )
+            raise ValueError(
+                f"Seed {name!r} must be a Path to an agent directory or a "
+                f"{{relative path: file contents}} dict, got "
+                f"{type(source).__name__}.{hint} Note seed_agents is keyed by "
+                f'AGENT name: {{"baseline": Path(...)}} or '
+                f'{{"baseline": {{"agent.py": "..."}}}} — not by artifact name.'
+            )
+
+    # One file_mapping is derived from these keys and applied to every seed. A
+    # seed missing a mapped file fails the researcher's agent-dir validation
+    # and is dropped with only a printed warning, so catch it here.
+    key_sets = {name: frozenset(c) for name, c in resolved.items()}
+    reference_name, reference_keys = next(iter(key_sets.items()))
+    for name, keys in key_sets.items():
+        if keys != reference_keys:
+            raise ValueError(
+                f"All seed agents must have the same artifacts (they define a "
+                f"single file_mapping). Seed {reference_name!r} has "
+                f"{sorted(reference_keys)}; seed {name!r} has {sorted(keys)}."
+            )
+    return resolved
+
+
 def optimize_anything(
     evaluator: Callable,
     dataset: List[Dict],
-    seed_candidate: Optional[Dict[str, str]] = None,
+    seed_agents: Optional[Dict[str, Union[Path, Dict[str, str]]]] = None,
     objective: str = "",
     background: str = "",
     config: Optional[Union[RoboPhDConfig, GEPAConfig, AutoresearchConfig]] = None,
     task_name: str = "optimize_anything",
+    **retired,
 ) -> OptimizeResult:
     """Optimize text artifacts using evolutionary search.
 
@@ -518,19 +665,18 @@ def optimize_anything(
 
     Example::
 
-        # RoboPhD (default)
-        result = optimize_anything(evaluator=e, dataset=d,
-                                   seed_candidate={"prompt": "..."}, objective="...")
+        # RoboPhD (default) — seed from an agent directory on disk
+        result = optimize_anything(evaluator=e, dataset=d, objective="...",
+                                   seed_agents={"baseline": HERE / "seeds" / "baseline"})
 
-        # GEPA
+        # Several seeds, e.g. the winners of prior runs
+        result = optimize_anything(evaluator=e, dataset=d, objective="...",
+                                   seed_agents={"cheap": dir_a, "expensive": dir_b})
+
+        # GEPA / Autoresearch optimize one agent, so the pool must hold one
         result = optimize_anything(evaluator=e, dataset=train,
-                                   seed_candidate={"prompt": "..."},
+                                   seed_agents={"baseline": {"prompt": "..."}},
                                    config=GEPAConfig(val_dataset=val))
-
-        # Autoresearch
-        result = optimize_anything(evaluator=e, dataset=train,
-                                   seed_candidate={"prompt": "..."},
-                                   config=AutoresearchConfig(val_dataset=val))
 
     Supports resume/extend via ``config.experiment_dir`` (RoboPhD only)::
 
@@ -546,9 +692,27 @@ def optimize_anything(
         dataset: List of example dicts. For RoboPhD, all examples enter the Elo
             competition pool. For GEPA/Autoresearch, this is the training pool
             (validation comes from ``config.val_dataset``).
-        seed_candidate: Initial text artifact(s) to optimize. Dict mapping
-            component names to text content, e.g. ``{"prompt": "Solve carefully"}``.
-            Required for fresh runs; optional when resuming (recovered from checkpoint).
+        seed_agents: The agents the run starts from, as ``{name: source}``.
+            **Keys are agent names** — they become directory names, pool IDs,
+            and what you pass to ``--eval-agent``. Each value is either a path
+            to an agent directory (read with ``candidate_utils.read_agent_dir``,
+            skipping dot-prefixed entries and ``__pycache__``) or the artifacts
+            themselves as ``{relative path: file contents}``.
+
+            Required for fresh runs; optional when resuming (recovered from the
+            checkpoint). Every seed enters the pool at Elo 1500 and competes
+            from iteration 1, and all of them must have the same artifacts,
+            since they define one ``file_mapping``.
+
+            Names must be safe single path components and must not start with
+            ``iter<N>`` — ``--from-iteration`` archival parses that prefix as an
+            iteration number of the *current* run and would move the seed out of
+            the pool.
+
+            Seeding more agents than ``agents_per_iteration`` loses none of them:
+            untested agents have selection priority, so a 4th seed in a 3-slot
+            run is tested at iteration 2. GEPA and Autoresearch optimize a single
+            agent and require a one-entry pool.
         objective: Natural-language optimization goal shown to the evolution AI.
         background: Optional domain documentation shown to the evolution AI.
         config: Engine configuration. Type determines the engine. If None,
@@ -561,18 +725,33 @@ def optimize_anything(
     Returns:
         OptimizeResult with best_candidate, best_score, and experiment_dir.
     """
+    if retired:
+        _reject_retired_kwargs(retired)
     if not dataset:
         raise ValueError("dataset must be a non-empty list of example dicts")
 
     cfg = config or RoboPhDConfig()
 
-    # Dispatch to engine based on config type
-    if isinstance(cfg, GEPAConfig):
-        from RoboPhD.engines.gepa import run_gepa
-        return run_gepa(evaluator, dataset, seed_candidate, objective, background, cfg, task_name)
-    elif isinstance(cfg, AutoresearchConfig):
+    # Dispatch to engine based on config type. GEPA and Autoresearch evolve a
+    # single agent, so they take one candidate rather than a pool; resolve the
+    # pool here and hand the sole entry down.
+    if isinstance(cfg, (GEPAConfig, AutoresearchConfig)):
+        single_candidate = None
+        if seed_agents:
+            resolved = _resolve_seed_agents(seed_agents)
+            if len(resolved) > 1:
+                raise ValueError(
+                    f"{type(cfg).__name__} optimizes a single agent, but "
+                    f"seed_agents holds {len(resolved)}: "
+                    f"{', '.join(resolved)}. Pass a one-entry pool, or use "
+                    f"RoboPhDConfig to evolve several agents against each other."
+                )
+            single_candidate = next(iter(resolved.values()))
+        if isinstance(cfg, GEPAConfig):
+            from RoboPhD.engines.gepa import run_gepa
+            return run_gepa(evaluator, dataset, single_candidate, objective, background, cfg, task_name)
         from RoboPhD.engines.autoresearch import run_autoresearch
-        return run_autoresearch(evaluator, dataset, seed_candidate, objective, background, cfg, task_name)
+        return run_autoresearch(evaluator, dataset, single_candidate, objective, background, cfg, task_name)
 
     # --- RoboPhD Elo engine (default) ---
     from RoboPhD.config_manager import ConfigManager, ConfigSource
@@ -617,16 +796,33 @@ def optimize_anything(
 
     else:
         # --- Fresh start ---
-        if not seed_candidate:
-            raise ValueError("seed_candidate is required for fresh runs")
+        if not seed_agents:
+            raise ValueError("seed_agents is required for fresh runs")
 
-        file_mapping = {key: key for key in seed_candidate}
+        resolved_seeds = _resolve_seed_agents(seed_agents)
+        # Artifacts are keyed by their path within the agent directory, and
+        # _resolve_seed_agents has pinned every seed to the same set.
+        file_mapping = {key: key for key in next(iter(resolved_seeds.values()))}
 
-        seed_agents_dir = run_dir / "robophd" / "_optimize_anything_seeds"
-        seed_agents_dir.mkdir(parents=True, exist_ok=True)
-        seed_dir = Path(tempfile.mkdtemp(dir=seed_agents_dir, prefix="seed_"))
-        materialize_candidate(seed_candidate, seed_dir, file_mapping, name="seed")
-        seed_agent_name = seed_dir.name
+        # One container per run, so the seed directories inside it can carry
+        # the caller's names as-is: uniqueness across runs comes from the
+        # container, uniqueness within it from the dict keys. (Pointing
+        # agents_directory at the shared parent instead would force every seed
+        # name to be globally unique across every run and task.)
+        seeds_root = Path(
+            tempfile.mkdtemp(
+                dir=_ensure_seeds_dir(run_dir), prefix="seeds_"
+            )
+        )
+        for name, candidate in resolved_seeds.items():
+            materialize_candidate(candidate, seeds_root / name, file_mapping, name=name)
+
+        seed_agents_root = seeds_root
+        seed_agent_names = list(resolved_seeds)
+        logger.info(
+            "Seeding %d agent(s): %s",
+            len(seed_agent_names), ", ".join(seed_agent_names),
+        )
 
         config_manager = ConfigManager()
         researcher_config = {
@@ -641,8 +837,8 @@ def optimize_anything(
             "meta_evolution_model": cfg.meta_evolution_model,
             "meta_evolution_first_iteration": cfg.meta_evolution_first_iteration,
             "meta_evolution_cadence": cfg.meta_evolution_cadence,
-            "agents_directory": str(seed_dir.parent),
-            "initial_agents": [seed_agent_name],
+            "agents_directory": str(seed_agents_root),
+            "initial_agents": list(seed_agent_names),
         }
         if cfg.max_workers is not None:
             researcher_config["max_workers"] = cfg.max_workers
@@ -684,7 +880,7 @@ def optimize_anything(
                 cfg.task_config_extras,
             ),
         )
-        initial_agents = [seed_agent_name]
+        initial_agents = list(seed_agent_names)
 
     completed_normally = researcher.run(initial_agents=initial_agents)
 
@@ -769,7 +965,8 @@ def eval_candidate(
             ``(candidate: dict, example: dict) -> (score: float, diagnostics: dict)``.
             Must be thread-safe (called concurrently).
         dataset: List of example dicts for evaluation.
-        candidate: Text artifact(s) to evaluate (same shape as seed_candidate).
+        candidate: Text artifact(s) to evaluate — one agent's worth, i.e. a
+            single ``seed_agents`` value in its dict form.
         config: Evaluation configuration. If None, uses ``RoboPhDEvalConfig()`` defaults.
 
     Returns:
