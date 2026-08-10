@@ -62,9 +62,14 @@ Scored on the leaderboard's own basis, so all four cells are comparable:
 
 | official mean F1 | **$0.063 gate** | **$0.355 gate** |
 | --- | --- | --- |
-| **opus-5** | `-010` 0.37620 | `-011` 0.43177 |
-| **fable-5** | **`-013` 0.38954** | `-012` 0.44025 |
-| **delta to fable-5** | **+0.01334** | **+0.0085** |
+| **opus-5** | `-010` 0.376 | `-011` 0.432 |
+| **fable-5** | **`-013` 0.390** | `-012` 0.440 |
+| **delta to fable-5** | **+0.0133** | **+0.0085** |
+
+Cells are the board's three-decimal basis; the delta row is the full-precision
+difference, so it will not subtract exactly from the rounded cells above
+(0.38954 − 0.37620 = 0.01334). The deltas keep the extra digit because they are
+compared against the runs' ~0.018 stderrs below.
 
 **The 2×2 closes with a consistent sign: fable-5 leads at both gates**, and by
 more at the cheap one (+0.0133 against +0.0085). **n = 1 per cell**, so that
