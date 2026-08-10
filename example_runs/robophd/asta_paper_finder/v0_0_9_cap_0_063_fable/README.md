@@ -14,10 +14,13 @@ Paper Finder's 0.397 @ \$0.063**, the one non-RoboPhD entry still holding a
 frontier slot. Evolution had to win on score at a price already known to be
 competitive.
 
-This is the third use of the competitor-priced-gate technique on this task. It
-is the second run aimed at *this* target — but not a repeat of it: the gate,
-the guard, the judges, the budget and the harness are all held fixed, and
-**the evolution model is the one deliberate change**.
+The competitor-priced gate is the standing construction on this task — every
+submission since `v0_0_7` has set its free zone at, or just under, the price of
+a named entry on the board. This is the **second run to put the gate at Asta
+Paper Finder's \$0.063 exactly** (`v0_0_7`'s \$0.06 aimed at the same region
+without matching the price). It is not a repeat of the first: the gate, the
+guard, the judges, the budget and the harness are all held fixed, and **the
+evolution model is the one deliberate change**.
 
 | submission | gate | evolution model | aimed at |
 | --- | --- | --- | --- |
