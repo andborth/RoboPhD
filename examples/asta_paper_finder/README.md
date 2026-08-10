@@ -105,7 +105,11 @@ The leaderboard's Standard tools tier requires the Asta MCP corpus tools, served
 export ASTA_TOOL_KEY="..."
 ```
 
-`ASTA_TOOL_KEY` is **hard-required** — the MCP suite is the task's only retrieval surface, and both `main.py` and the evaluator's constructor error at startup without it. The MCP factory wraps every tool in astabench's `make_retry_wrapper`, so agents never see transient 429/5xx.
+`ASTA_TOOL_KEY` is **hard-required** — the MCP suite is the task's only retrieval surface, and both `main.py` and the evaluator's constructor error at startup without it. The MCP factory wraps every tool in astabench's `make_retry_wrapper`.
+
+**That ladder is narrower than it looks, and agents DO see transient server errors.** `_is_retryable_error` (`astabench/tools/asta_tools.py:482`) retries only `{429, 529, 504}` plus `anyio.BrokenResourceError` — **500/502/503 are not in the retryable set**. And `make_retry_wrapper` short-circuits on `ToolError` *before* consulting retryability at all (`:601`, commented "ToolErrors are not retryable and usually mean the LLM did a bad request"), so a server-side failure arriving as a `ToolError` whose message reads `Internal Server Error` is re-raised on the first attempt and the ten-attempt ladder never engages.
+
+Not hypothetical. It is the documented aggregate-contention signature — `tool_pacer.py`'s docstring records "windows of HTTP 500s in which every call to the endpoint fails" in run `asta_paper_finder_20260724_193339` iters 9-11, 100+ tool errors in one batch, exact-match queries zeroed — and it recurred in `asta_paper_finder_20260809_222409` iteration 5 at **162 / 75 / 139** errors across a single 14-problem batch, zeroing two exact-match queries that other agents scored 1.000 on. `tool_pacer` reduces how often the endpoint is pushed into that state; nothing in the stack retries this class once it happens.
 
 ## Running
 
