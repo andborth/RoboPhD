@@ -365,6 +365,69 @@ def find_best_agent(run_dir: Path) -> Tuple[str, Path]:
     return best_id, agent_dir
 
 
+def resolve_seed_runs(specs: list, *, example: str) -> dict:
+    """Turn ``LABEL=RUN_DIR`` specs into an optimize_anything seed_agents pool.
+
+    Backs the examples' ``--seed-runs`` flag, which starts a run from the
+    winners of prior runs instead of the task's baseline seed.
+
+    Each run contributes its winner, resolved from the run itself so a seed
+    cannot disagree with what that run actually produced: a RoboPhD run
+    through find_best_agent (best Elo from checkpoint.json), a GEPA or
+    Autoresearch run from ``best_agent/``, since those engines optimize a
+    single candidate and write no checkpoint. Both shapes are plain agent.py
+    directories, so either seeds the same way.
+
+    The pool name is formed as ``seed_<LABEL>`` here rather than taken from
+    the caller: the prefix keeps seeds visibly distinct from the run's own
+    evolved agents, and makes the ``iter<N>_`` name that the API rejects
+    unreachable from this flag.
+
+    `example` is a task-appropriate LABEL=RUN_DIR string for the malformed-spec
+    error — the one part of the message a caller can make more useful than a
+    generic resolver could.
+
+    Returns {agent_name: agent_dir}, ordered as given. The directories are
+    handed over unread — optimize_anything walks them.
+    """
+    log = logging.getLogger(__name__)
+    seeds: dict = {}
+    sources: dict = {}
+    for spec in specs:
+        label, sep, run_dir = spec.partition("=")
+        if not sep or not label or not run_dir:
+            raise SystemExit(
+                f"--seed-runs entry {spec!r} is not LABEL=RUN_DIR "
+                f"(e.g. {example})"
+            )
+        name = f"seed_{label}"
+        if name in seeds:
+            raise SystemExit(
+                f"--seed-runs label {label!r} given twice; labels name the "
+                f"pool agents, so they must be unique "
+                f"(already used by {sources[name]})"
+            )
+        path = Path(run_dir)
+        if (path / "checkpoint.json").exists():
+            try:
+                agent_name, agent_dir = find_best_agent(path)
+            except (FileNotFoundError, ValueError) as exc:
+                raise SystemExit(f"--seed-runs {label}: {exc}") from exc
+        elif (path / "best_agent" / "agent.py").exists():
+            agent_name, agent_dir = "best_agent", path / "best_agent"
+        else:
+            raise SystemExit(
+                f"--seed-runs {label}: {run_dir} has neither a "
+                f"checkpoint.json (RoboPhD run) nor a best_agent/agent.py "
+                f"(GEPA/Autoresearch run)"
+            )
+
+        seeds[name] = agent_dir
+        sources[name] = f"{agent_name} ({run_dir})"
+        log.info(f"Seed {name} <- {agent_name} from {run_dir}")
+    return seeds
+
+
 def find_named_agent(run_dir: Path, agent_name: str) -> Tuple[str, Path]:
     """Find a specific named agent from a run's agent_pool.
 

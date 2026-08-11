@@ -1319,58 +1319,47 @@ def test_write_test_results_tolerates_missing_usage(main_mod, tmp_path):
 
 
 # --- --seed-runs -------------------------------------------------------------
+#
+# The resolution semantics (seed_ prefixing, Elo lookup, the best_agent/
+# branch, malformed specs, duplicate labels) belong to
+# runner_utils.resolve_seed_runs and are covered by
+# RoboPhD/unit_tests/test_resolve_seed_runs.py — not duplicated here. What is
+# example-specific, and therefore tested here, is that main.py binds it with
+# THIS example's run dir and wires the result into the seed pool.
 
 
 EXAMPLE_RUNS = REPO_ROOT / "example_runs" / "robophd" / "asta_paper_finder"
 
 
-def test_seed_runs_names_are_prefixed_and_ordered(main_mod):
-    """The seed_ prefix is formed here, not taken from the operator: it
-    keeps seeds visibly distinct from this run's evolved agents, and makes
-    the iter<N>_ name the API rejects unreachable from this flag."""
-    seeds = main_mod._resolve_seed_runs(
-        [
-            f"063_opus5={EXAMPLE_RUNS / 'v0_0_9_cap_0_063_opus5'}",
-            f"355_fable={EXAMPLE_RUNS / 'v0_0_9_cap_0_355_fable'}",
-        ]
-    )
-    assert list(seeds) == ["seed_063_opus5", "seed_355_fable"]
-    for agent_dir in seeds.values():
-        assert (agent_dir / "agent.py").read_text().strip()
-
-
-def test_seed_runs_reads_the_runs_own_snapshot(main_mod):
+def test_seed_runs_binding_reads_the_runs_own_snapshot(main_mod):
     """v0_0_9_cap_0_063_fable's checkpoint stores an absolute package_dir
     into the original run location. The seed must come from the archived
     snapshot, which is the thing the label names."""
     run_dir = EXAMPLE_RUNS / "v0_0_9_cap_0_063_fable"
     seeds = main_mod._resolve_seed_runs([f"063_fable={run_dir}"])
-    assert seeds["seed_063_fable"] == run_dir / "agents" / "iter14_title_channel"
+    assert seeds == {"seed_063_fable": run_dir / "agents" / "iter14_title_channel"}
 
 
-@pytest.mark.parametrize(
-    "spec, expected",
-    [
-        ("nolabel", "not LABEL=RUN_DIR"),
-        ("=/some/dir", "not LABEL=RUN_DIR"),
-        ("label=", "not LABEL=RUN_DIR"),
-        ("label=/definitely/not/a/run", "No checkpoint.json"),
-    ],
-)
-def test_seed_runs_rejects_bad_specs(main_mod, spec, expected):
-    with pytest.raises(SystemExit, match=re.escape(expected)):
-        main_mod._resolve_seed_runs([spec])
+def test_seed_runs_binding_supplies_a_paper_finder_example(main_mod):
+    """The shared resolver can't know which archive to point at; a DS-1000
+    path here would send the operator to the wrong one."""
+    with pytest.raises(SystemExit, match="asta_paper_finder"):
+        main_mod._resolve_seed_runs(["nolabel"])
 
 
-def test_seed_runs_rejects_duplicate_labels(main_mod):
-    """A dict would silently keep only the last one, quietly shrinking the
-    pool the operator asked for."""
-    specs = [
-        f"dup={EXAMPLE_RUNS / 'v0_0_9_cap_0_063_opus5'}",
-        f"dup={EXAMPLE_RUNS / 'v0_0_9_cap_0_355_opus5'}",
-    ]
-    with pytest.raises(SystemExit, match="given twice"):
-        main_mod._resolve_seed_runs(specs)
+def test_resolver_is_not_reimplemented_locally():
+    """This resolver was forked into both AstaBench examples once, differing
+    only in a branch and an example string, which meant every message fix had
+    to land twice. Same sibling-drift guard as the cost validators."""
+    assert "def resolve_seed_runs(" not in MAIN_SRC
+    resolver = next(
+        n for n in ast.walk(MAIN_TREE)
+        if isinstance(n, ast.FunctionDef) and n.name == "_resolve_seed_runs"
+    )
+    assert any(
+        isinstance(n, ast.Call) and getattr(n.func, "id", "") == "resolve_seed_runs"
+        for n in ast.walk(resolver)
+    ), "the local binding must delegate to runner_utils.resolve_seed_runs"
 
 
 def test_seed_runs_is_rejected_with_resume_and_non_robophd_engines():

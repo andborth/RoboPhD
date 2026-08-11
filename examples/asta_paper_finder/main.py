@@ -53,10 +53,10 @@ from RoboPhD import (
 )
 from RoboPhD.runner_utils import (
     apply_engine_config,
-    find_best_agent,
     parse_dollars_or_percent,
     read_task_config_extras,
     resolve_run_immutable,
+    resolve_seed_runs,
     validate_cost_slope,
     validate_cost_threshold,
 )
@@ -164,44 +164,15 @@ def _enforce_immutable_on_resume(
 
 
 def _resolve_seed_runs(specs: list[str]) -> dict:
-    """Turn ``LABEL=RUN_DIR`` specs into an optimize_anything seed_agents pool.
-
-    Each run contributes its best-Elo agent, located through find_best_agent so
-    the seeded agent cannot disagree with what that run actually produced. The
-    pool name is formed as ``seed_<LABEL>`` here rather than taken from the
-    caller: the prefix keeps seeds visibly distinct from this run's own evolved
-    agents, and makes the ``iter<N>_`` name that the API rejects unreachable
-    from this flag.
-
-    Returns {agent_name: agent_dir}, ordered as given. The directories are
-    handed over unread — optimize_anything walks them.
-    """
-    seeds: dict = {}
-    sources: dict = {}
-    for spec in specs:
-        label, sep, run_dir = spec.partition("=")
-        if not sep or not label or not run_dir:
-            raise SystemExit(
-                f"--seed-runs entry {spec!r} is not LABEL=RUN_DIR "
-                f"(e.g. 063_opus5=example_runs/robophd/asta_paper_finder/"
-                f"v0_0_9_cap_0_063_opus5)"
-            )
-        name = f"seed_{label}"
-        if name in seeds:
-            raise SystemExit(
-                f"--seed-runs label {label!r} given twice; labels name the "
-                f"pool agents, so they must be unique "
-                f"(already used by {sources[name]})"
-            )
-        try:
-            agent_name, agent_dir = find_best_agent(Path(run_dir))
-        except (FileNotFoundError, ValueError) as exc:
-            raise SystemExit(f"--seed-runs {label}: {exc}") from exc
-
-        seeds[name] = agent_dir
-        sources[name] = f"{agent_name} ({run_dir})"
-        logger.info(f"Seed {name} <- {agent_name} from {run_dir}")
-    return seeds
+    """PaperFinder binding of runner_utils.resolve_seed_runs — supplies the
+    example run dir for the malformed-spec error."""
+    return resolve_seed_runs(
+        specs,
+        example=(
+            "063_opus5=example_runs/robophd/asta_paper_finder/"
+            "v0_0_9_cap_0_063_opus5"
+        ),
+    )
 
 
 def _resume_enforces_task_knobs(engine: str, resume: bool, eval_only: bool) -> bool:

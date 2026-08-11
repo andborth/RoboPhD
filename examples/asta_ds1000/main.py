@@ -46,10 +46,10 @@ from RoboPhD import (
 )
 from RoboPhD.runner_utils import (
     apply_engine_config,
-    find_best_agent,
     parse_dollars_or_percent,
     read_task_config_extras,
     resolve_run_immutable,
+    resolve_seed_runs,
     validate_cost_slope,
     validate_cost_threshold,
 )
@@ -308,59 +308,12 @@ def _enforce_immutable_on_resume(
 
 
 def _resolve_seed_runs(specs: list[str]) -> dict:
-    """Turn ``LABEL=RUN_DIR`` specs into an optimize_anything seed_agents pool.
-
-    The pool name is formed as ``seed_<LABEL>`` here rather than taken from
-    the caller: the prefix keeps seeds visibly distinct from this run's own
-    evolved agents, and makes the ``iter<N>_`` name that the API rejects
-    unreachable from this flag.
-
-    A RoboPhD run contributes its best-Elo agent, located through
-    find_best_agent so the seeded agent cannot disagree with what that run
-    actually produced. GEPA and Autoresearch runs write no checkpoint.json —
-    they optimize a single candidate and leave it in ``best_agent/`` — so
-    that directory is used directly for them. Both engines' outputs are
-    plain agent.py dirs, so either shape seeds the same way.
-
-    Returns {agent_name: agent_dir}, ordered as given. The directories are
-    handed over unread — optimize_anything walks them.
-    """
-    seeds: dict = {}
-    sources: dict = {}
-    for spec in specs:
-        label, sep, run_dir = spec.partition("=")
-        if not sep or not label or not run_dir:
-            raise SystemExit(
-                f"--seed-runs entry {spec!r} is not LABEL=RUN_DIR "
-                f"(e.g. 029=../robophd_runs/robophd/asta_ds1000_20260618_155040)"
-            )
-        name = f"seed_{label}"
-        if name in seeds:
-            raise SystemExit(
-                f"--seed-runs label {label!r} given twice; labels name the "
-                f"pool agents, so they must be unique "
-                f"(already used by {sources[name]})"
-            )
-        path = Path(run_dir)
-        if (path / "checkpoint.json").exists():
-            try:
-                agent_name, agent_dir = find_best_agent(path)
-            except (FileNotFoundError, ValueError) as exc:
-                raise SystemExit(f"--seed-runs {label}: {exc}") from exc
-        elif (path / "best_agent" / "agent.py").exists():
-            # GEPA / Autoresearch run layout.
-            agent_name, agent_dir = "best_agent", path / "best_agent"
-        else:
-            raise SystemExit(
-                f"--seed-runs {label}: {run_dir} has neither a "
-                f"checkpoint.json (RoboPhD run) nor a best_agent/agent.py "
-                f"(GEPA/Autoresearch run)"
-            )
-
-        seeds[name] = agent_dir
-        sources[name] = f"{agent_name} ({run_dir})"
-        logger.info(f"Seed {name} <- {agent_name} from {run_dir}")
-    return seeds
+    """DS-1000 binding of runner_utils.resolve_seed_runs — supplies the
+    example run dir for the malformed-spec error."""
+    return resolve_seed_runs(
+        specs,
+        example="029=example_runs/robophd/asta_ds1000/v0_0_5_soft_cap_0_05",
+    )
 
 
 def _resume_enforces_cost_knobs(engine: str, resume: bool, eval_only: bool) -> bool:

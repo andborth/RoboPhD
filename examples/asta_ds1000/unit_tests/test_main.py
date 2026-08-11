@@ -1302,70 +1302,48 @@ def test_validators_are_not_reimplemented_locally():
 
 
 # --- --seed-runs -------------------------------------------------------------
+#
+# The resolution semantics (seed_ prefixing, Elo lookup, the best_agent/
+# branch, malformed specs, duplicate labels) belong to
+# runner_utils.resolve_seed_runs and are covered by
+# RoboPhD/unit_tests/test_resolve_seed_runs.py — not duplicated here. What
+# is example-specific, and therefore tested here, is that main.py binds it
+# with THIS example's run dir and wires the result into the seed pool.
 
 
 EXAMPLE_RUNS = REPO_ROOT / "example_runs" / "robophd" / "asta_ds1000"
 
 
-def test_seed_runs_names_are_prefixed_and_ordered(ds_main):
-    """The seed_ prefix is formed here, not taken from the operator: it
-    keeps seeds visibly distinct from this run's evolved agents, and makes
-    the iter<N>_ name the API rejects unreachable from this flag."""
-    seeds = ds_main._resolve_seed_runs(
-        [
-            f"029={EXAMPLE_RUNS / 'v0_0_5_soft_cap_0_05'}",
-            f"044={EXAMPLE_RUNS / 'v0_0_7_sharp_cap_0_003'}",
-        ]
-    )
-    assert list(seeds) == ["seed_029", "seed_044"]
-    for agent_dir in seeds.values():
-        assert (agent_dir / "agent.py").read_text().strip()
-
-
-def test_seed_runs_resolves_the_runs_own_elo_winner(ds_main):
-    """Resolved through find_best_agent rather than a caller-supplied name,
-    so a seed cannot disagree with what that run actually produced."""
+def test_seed_runs_binding_resolves_this_examples_own_runs(ds_main):
+    """End-to-end through the binding: a DS-1000 submission snapshot must
+    land on the agent that submission actually shipped."""
     run_dir = EXAMPLE_RUNS / "v0_0_4_soft_cap_0_08"
     seeds = ds_main._resolve_seed_runs([f"028={run_dir}"])
-    assert seeds["seed_028"] == run_dir / "agents" / "iter11_ds1000_tridtype_judge"
+    assert seeds == {
+        "seed_028": run_dir / "agents" / "iter11_ds1000_tridtype_judge"
+    }
 
 
-def test_seed_runs_accepts_a_gepa_or_autoresearch_run(ds_main, tmp_path):
-    """Those engines optimize a single candidate and write no
-    checkpoint.json — their winner is best_agent/. DS-1000 runs all three
-    engines, so a seed pool that only understood the RoboPhD layout would
-    silently exclude two thirds of the run archive."""
-    run_dir = tmp_path / "autoresearch_run"
-    (run_dir / "best_agent").mkdir(parents=True)
-    (run_dir / "best_agent" / "agent.py").write_text("# winner\n")
-
-    seeds = ds_main._resolve_seed_runs([f"auto={run_dir}"])
-    assert seeds == {"seed_auto": run_dir / "best_agent"}
+def test_seed_runs_binding_supplies_a_ds1000_example(ds_main):
+    """The shared resolver can't know which archive to point at; a
+    PaperFinder path here would send the operator to the wrong one."""
+    with pytest.raises(SystemExit, match="asta_ds1000"):
+        ds_main._resolve_seed_runs(["nolabel"])
 
 
-@pytest.mark.parametrize(
-    "spec, expected",
-    [
-        ("nolabel", "not LABEL=RUN_DIR"),
-        ("=/some/dir", "not LABEL=RUN_DIR"),
-        ("label=", "not LABEL=RUN_DIR"),
-        ("label=/definitely/not/a/run", "neither a checkpoint.json"),
-    ],
-)
-def test_seed_runs_rejects_bad_specs(ds_main, spec, expected):
-    with pytest.raises(SystemExit, match=re.escape(expected)):
-        ds_main._resolve_seed_runs([spec])
-
-
-def test_seed_runs_rejects_duplicate_labels(ds_main):
-    """A dict would silently keep only the last one, quietly shrinking the
-    pool the operator asked for."""
-    specs = [
-        f"dup={EXAMPLE_RUNS / 'v0_0_5_soft_cap_0_05'}",
-        f"dup={EXAMPLE_RUNS / 'v0_0_7_sharp_cap_0_003'}",
-    ]
-    with pytest.raises(SystemExit, match="given twice"):
-        ds_main._resolve_seed_runs(specs)
+def test_resolver_is_not_reimplemented_locally():
+    """Same sibling-drift guard as the cost validators below: this resolver
+    was forked into both AstaBench examples once, differing only in a branch
+    and an example string, which meant every message fix had to land twice."""
+    assert "def resolve_seed_runs(" not in _MAIN_SRC
+    resolver = next(
+        n for n in ast.walk(_MAIN_TREE)
+        if isinstance(n, ast.FunctionDef) and n.name == "_resolve_seed_runs"
+    )
+    assert any(
+        isinstance(n, ast.Call) and getattr(n.func, "id", "") == "resolve_seed_runs"
+        for n in ast.walk(resolver)
+    ), "the local binding must delegate to runner_utils.resolve_seed_runs"
 
 
 def test_seed_runs_is_rejected_with_resume_and_non_robophd_engines():
@@ -1392,11 +1370,35 @@ def test_seed_runs_is_rejected_with_resume_and_non_robophd_engines():
         ), f"the --seed-runs/{conflict} guard must exit rather than warn"
 
 
+def _seed_agents_arg() -> ast.expr:
+    """The seed_agents= expression handed to optimize_anything."""
+    call = next(
+        n for n in ast.walk(_MAIN_TREE)
+        if isinstance(n, ast.Call)
+        and getattr(n.func, "id", "") == "optimize_anything"
+    )
+    return next(kw.value for kw in call.keywords if kw.arg == "seed_agents")
+
+
 def test_seed_agents_falls_back_to_the_baseline_seed():
-    """Without the flag the pool must stay {'baseline': SEED_AGENT_DIR} —
-    every run before this feature, and every run that doesn't pass it."""
-    assert "_resolve_seed_runs(args.seed_runs) if args.seed_runs" in _MAIN_SRC
-    assert 'else {"baseline": SEED_AGENT_DIR}' in _MAIN_SRC
+    """Without the flag the pool must stay {"baseline": SEED_AGENT_DIR} —
+    every run before this feature, and every run that doesn't pass it.
+
+    Structural rather than a source-substring match: a line wrap or a
+    variable extraction changes the text without changing the wiring, and a
+    test that fails on those trains you to stop reading it."""
+    arg = _seed_agents_arg()
+    assert isinstance(arg, ast.IfExp), (
+        "seed_agents must be conditional on --seed-runs, so a run without "
+        "the flag still seeds from the baseline"
+    )
+    assert isinstance(arg.orelse, ast.Dict), "the no-flag branch must be a pool dict"
+    assert [k.value for k in arg.orelse.keys] == ["baseline"]
+    assert [v.id for v in arg.orelse.values] == ["SEED_AGENT_DIR"]
+    assert any(
+        isinstance(n, ast.Call) and getattr(n.func, "id", "") == "_resolve_seed_runs"
+        for n in ast.walk(arg.body)
+    ), "the flag branch must resolve the pool from the named runs"
 
 
 def test_baseline_seed_still_backs_the_test_fallback_candidate():
@@ -1404,4 +1406,9 @@ def test_baseline_seed_still_backs_the_test_fallback_candidate():
     fallback_candidate. Seeding from prior runs must not repoint it, or a
     seeded run's leaderboard eval would silently fall back to a submitted
     agent instead of the baseline."""
-    assert "seed = read_agent_dir(SEED_AGENT_DIR)" in _MAIN_SRC
+    reads = _calls_to({"read_agent_dir"}, _MAIN_SRC)
+    assert reads, "main.py must still read the baseline seed for the fallback"
+    assert all(
+        [getattr(a, "id", None) for a in call.args] == ["SEED_AGENT_DIR"]
+        for call in reads
+    ), "the fallback candidate must come from SEED_AGENT_DIR, not a seeded run"
