@@ -46,6 +46,7 @@ from RoboPhD import (
 )
 from RoboPhD.runner_utils import (
     apply_engine_config,
+    find_best_agent,
     parse_dollars_or_percent,
     read_task_config_extras,
     resolve_run_immutable,
@@ -306,6 +307,62 @@ def _enforce_immutable_on_resume(
     )
 
 
+def _resolve_seed_runs(specs: list[str]) -> dict:
+    """Turn ``LABEL=RUN_DIR`` specs into an optimize_anything seed_agents pool.
+
+    The pool name is formed as ``seed_<LABEL>`` here rather than taken from
+    the caller: the prefix keeps seeds visibly distinct from this run's own
+    evolved agents, and makes the ``iter<N>_`` name that the API rejects
+    unreachable from this flag.
+
+    A RoboPhD run contributes its best-Elo agent, located through
+    find_best_agent so the seeded agent cannot disagree with what that run
+    actually produced. GEPA and Autoresearch runs write no checkpoint.json —
+    they optimize a single candidate and leave it in ``best_agent/`` — so
+    that directory is used directly for them. Both engines' outputs are
+    plain agent.py dirs, so either shape seeds the same way.
+
+    Returns {agent_name: agent_dir}, ordered as given. The directories are
+    handed over unread — optimize_anything walks them.
+    """
+    seeds: dict = {}
+    sources: dict = {}
+    for spec in specs:
+        label, sep, run_dir = spec.partition("=")
+        if not sep or not label or not run_dir:
+            raise SystemExit(
+                f"--seed-runs entry {spec!r} is not LABEL=RUN_DIR "
+                f"(e.g. 029=../robophd_runs/robophd/asta_ds1000_20260618_155040)"
+            )
+        name = f"seed_{label}"
+        if name in seeds:
+            raise SystemExit(
+                f"--seed-runs label {label!r} given twice; labels name the "
+                f"pool agents, so they must be unique "
+                f"(already used by {sources[name]})"
+            )
+        path = Path(run_dir)
+        if (path / "checkpoint.json").exists():
+            try:
+                agent_name, agent_dir = find_best_agent(path)
+            except (FileNotFoundError, ValueError) as exc:
+                raise SystemExit(f"--seed-runs {label}: {exc}") from exc
+        elif (path / "best_agent" / "agent.py").exists():
+            # GEPA / Autoresearch run layout.
+            agent_name, agent_dir = "best_agent", path / "best_agent"
+        else:
+            raise SystemExit(
+                f"--seed-runs {label}: {run_dir} has neither a "
+                f"checkpoint.json (RoboPhD run) nor a best_agent/agent.py "
+                f"(GEPA/Autoresearch run)"
+            )
+
+        seeds[name] = agent_dir
+        sources[name] = f"{agent_name} ({run_dir})"
+        logger.info(f"Seed {name} <- {agent_name} from {run_dir}")
+    return seeds
+
+
 def _resume_enforces_cost_knobs(engine: str, resume: bool, eval_only: bool) -> bool:
     """Validate --resume usage and report whether the run-immutable cost
     knobs (cost-threshold / cost-per-error) must be enforced on this run.
@@ -467,6 +524,21 @@ def parse_args():
                    help=f"Parallel eval workers (default: {DEFAULT_MAX_WORKERS}; "
                         f"on --resume, the checkpoint's value). See README."
                         "%(default).0s")  # suppress argparse's auto "(default: None)"
+    p.add_argument("--seed-runs", type=str, nargs="+", default=None,
+                   metavar="LABEL=RUN_DIR",
+                   help="Seed the run from the best agent of each named prior "
+                        "run instead of seeds/baseline. LABEL is a provenance "
+                        "tag you choose (e.g. 029); the pool agent is named "
+                        "seed_LABEL. For a RoboPhD run the agent is resolved "
+                        "by Elo from RUN_DIR's checkpoint.json, so it cannot "
+                        "drift from that run's actual winner; for a GEPA or "
+                        "Autoresearch run it is RUN_DIR/best_agent. Seeds "
+                        "beyond agents_per_iteration are not dropped — "
+                        "untested agents get selection priority in later "
+                        "iterations, so a 4th seed enters at iteration 2. "
+                        "Fresh runs only: seeds are baked into a run, so this "
+                        "is rejected with --resume."
+                        "%(default).0s")
     p.add_argument("--runs-dir", default="../robophd_runs",
                    help="Root directory for experiment output (default: %(default)s)")
     p.add_argument("--random-seed", type=int, default=None,
@@ -510,6 +582,21 @@ def main():
     on_resume = _resume_enforces_cost_knobs(
         args.engine, bool(args.resume), args.eval_only
     )
+    # Seeds are established when the pool is loaded and then live in the
+    # checkpoint; a resume never revisits them, so accepting the flag here
+    # would silently do nothing.
+    if args.seed_runs and args.resume:
+        raise SystemExit(
+            "--seed-runs cannot be combined with --resume: the seed pool is "
+            "fixed when a run starts and is recovered from the checkpoint "
+            "thereafter. Start a fresh run to change seeds."
+        )
+    # Fail before the dataset load rather than at the optimize_anything call.
+    if args.seed_runs and args.engine != "robophd":
+        raise SystemExit(
+            f"--seed-runs requires the robophd engine; --engine "
+            f"{args.engine} optimizes a single candidate."
+        )
     checkpoint_ds1000 = (
         _read_ds1000_runtime_config(Path(args.resume)) if args.resume else {}
     )
@@ -891,7 +978,10 @@ def main():
     result = optimize_anything(
         evaluator=evaluator,
         dataset=dataset,
-        seed_agents={"baseline": SEED_AGENT_DIR},
+        seed_agents=(
+            _resolve_seed_runs(args.seed_runs) if args.seed_runs
+            else {"baseline": SEED_AGENT_DIR}
+        ),
         objective=objective,
         background=background,
         config=cfg,

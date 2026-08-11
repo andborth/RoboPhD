@@ -161,6 +161,46 @@ python examples/asta_ds1000/main.py --new-agent-test-rounds 1
 python examples/asta_ds1000/main.py --engine gepa
 ```
 
+### Multi-seed runs (`--seed-runs`)
+
+Start from the winners of prior runs instead of `seeds/baseline`. Each
+`LABEL=RUN_DIR` pair contributes that run's best agent — resolved by Elo from
+`checkpoint.json` for a RoboPhD run, or taken from `best_agent/` for a GEPA or
+Autoresearch run, which optimize a single candidate and write no checkpoint.
+Either way the seed cannot drift from what the run actually produced. `LABEL` is
+a provenance tag you choose; the pool agent is named `seed_<LABEL>`. Fresh runs
+only — seeds are fixed when a run starts and recovered from the checkpoint
+thereafter, so `--resume` rejects the flag. Without it the run seeds from
+`seeds/baseline` as the agent `baseline`.
+
+```bash
+# Seed from four archived leaderboard submissions
+python examples/asta_ds1000/main.py --eval-test-set --cost-threshold 0.028 \
+  --seed-runs \
+    009=example_runs/robophd/asta_ds1000/v0_0_2_soft_cap_0_08 \
+    020=example_runs/robophd/asta_ds1000/v0_0_3_soft_cap_0_06 \
+    028=example_runs/robophd/asta_ds1000/v0_0_4_soft_cap_0_08 \
+    029=example_runs/robophd/asta_ds1000/v0_0_5_soft_cap_0_05
+```
+
+Seeding more agents than `agents_per_iteration` (default 3) loses none of them:
+untested agents have selection priority, so the 4th seed enters at iteration 2.
+Don't raise `agents_per_iteration` to compensate — that widens every round-robin
+for the whole run to buy what the selection ladder already does once.
+
+Seeds far above the run's cost gate start pinned to the floor and stay there. At
+`--cost-threshold 0.028` with the default slope, a $0.127/problem agent takes
+roughly 35 error-equivalents of penalty against a 20-problem batch, so it loses
+every head-to-head and stops being selected after its first appearance — it
+persists as cross-pollination material for evolution sessions rather than as a
+competitor. That is a reason to include such a seed, not a bug; `--cost-per-error`
+flattens the slope if you want it competing.
+
+Seeds run against the *current* `model_registry.py`, not the one they evolved
+against. An archived agent that imports a retired handle fails at import, not at
+the call site — `CLAUDE_OPUS_4_7`, used by the v0_0_1 and v0_0_2 submissions, is
+the known case.
+
 ## Scoring details
 
 The canonical scorer is `inspect_evals/ds1000/ds1000.py:86-114` (`ds1000_scorer()`). Per-sample it returns:
