@@ -611,6 +611,76 @@ def test_k_from_without_test_problems_is_fatal(tmp_path, fake_eval_log):
         rt.load_eval_log(log, run_dir, k_from=tmp_path / "not_a_run")
 
 
+# --- --cap-to-k ---------------------------------------------------------------
+#
+# Official logs are judged uncapped; --cap-to-k replays them at the internal
+# depth so the depth axis can be isolated with the agent draw held fixed.
+
+
+def test_cap_to_k_sets_cap_from_k_estimate(tmp_path, fake_eval_log, monkeypatch):
+    run_dir, log = _eval_log_run(tmp_path, ("semantic_1", "metadata_1"), k=2, cap=99)
+    fake_eval_log([
+        _log_sample("semantic_1", results=[("A", "a"), ("B", "b"), ("C", "c")]),
+        _log_sample("metadata_1"),
+    ])
+    samples = rt.load_eval_log(log, run_dir)
+    sem = next(s for s in samples if not s.carry)
+    assert sem.cap is None, "official judging is uncapped before --cap-to-k"
+
+    # What main() does under --cap-to-k. cap comes from k_estimate, NOT from
+    # the run's stored scored_depth_cap (99 here) -- the official submission
+    # set has no cap of its own to inherit.
+    for s in samples:
+        if not s.carry:
+            s.cap = s.k_estimate
+    assert sem.cap == 2
+    _order, _preset, to_judge, statuses = rt.plan_sample(sem, {})
+    assert len(to_judge) == 2, "third paper is beyond k"
+    assert [st for _p, st in statuses][-1] == "beyond_scored_depth"
+
+
+def test_cap_to_k_rejected_off_the_eval_log_path(tmp_path, monkeypatch):
+    run_dir = tmp_path / "runs" / "robophd" / "run1"
+    _mk_problem(run_dir / "test_problems", "metadata_1", score=1.0)
+    monkeypatch.setattr(sys, "argv", [
+        "rejudge_test.py", str(run_dir), "--judge", "openai/gpt-5.6-luna",
+        "--cap-to-k",
+    ])
+    with pytest.raises(SystemExit, match="only applies to --from-eval-log"):
+        rt.main()
+
+
+def test_cap_to_k_and_uncapped_are_mutually_exclusive(tmp_path, monkeypatch):
+    run_dir = tmp_path / "runs" / "robophd" / "run1"
+    _mk_problem(run_dir / "test_problems", "metadata_1", score=1.0)
+    log = tmp_path / "official.eval"
+    log.write_text("")
+    monkeypatch.setattr(sys, "argv", [
+        "rejudge_test.py", str(run_dir), "--judge", "openai/gpt-5.6-luna",
+        "--from-eval-log", str(log), "--cap-to-k", "--uncapped",
+    ])
+    with pytest.raises(SystemExit, match="opposite depths"):
+        rt.main()
+
+
+def test_capk_tag_keeps_arms_from_clobbering(tmp_path):
+    """The capped arm must not overwrite the uncapped pass's verdict file."""
+    s = _sample(tmp_path, [("A", "a"), ("B", "b"), ("C", "c")], k=3)
+    names = set()
+    for uncapped, cap_to_k in ((False, False), (False, True)):
+        s.problem_dir = tmp_path / f"{uncapped}{cap_to_k}"
+        _run_process(
+            tmp_path, s, lambda ents: {d.corpus_id: PERFECT for d in ents},
+            no_cache_write=True, uncapped=uncapped, cap_to_k=cap_to_k,
+            from_eval_log=Path("official.eval"),
+        )
+        names |= {p.name for p in s.problem_dir.iterdir()}
+    assert names == {
+        "judge_verdicts.rejudge_testbasis.officiallog.json",
+        "judge_verdicts.rejudge_testbasis.capk.officiallog.json",
+    }
+
+
 def test_verdict_diagnostic_creates_its_parent(tmp_path):
     """rejudge_officiallog/<sid>/ does not exist before the first write."""
     s = _sample(tmp_path, [("A", "a"), ("B", "b"), ("C", "c")], k=3)

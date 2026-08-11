@@ -24,9 +24,9 @@ so a later live eval with the new judge starts warm.
 
 Usage:
     python rejudge_test.py <run_dir> --judge openai/gpt-5.6-luna
-        [--from-eval-log PATH] [--k-from RUN_DIR] [--no-baseline] [--limit N]
-        [--uncapped] [--concurrency 4] [--retries 1] [--no-cache-write]
-        [--dry-run] [--force]
+        [--from-eval-log PATH] [--k-from RUN_DIR] [--cap-to-k] [--no-baseline]
+        [--limit N] [--uncapped] [--concurrency 4] [--retries 1]
+        [--no-cache-write] [--dry-run] [--force]
 
 --from-eval-log replays an OFFICIAL astabench .eval log instead of the run's
 own test_problems/. That is the only stored source of an UNCAPPED,
@@ -54,6 +54,15 @@ official astabench scoring uses. k_estimate still governs the recall window,
 so the extra verdicts reach only the rank term. Outputs carry an .uncapped
 tag; the verdict cache is shared with the capped pass, since a verdict is
 keyed by (query, paper, evidence) and does not depend on judging depth.
+
+--cap-to-k is the mirror image, for --from-eval-log only: official submissions
+were judged uncapped, and this replays them at the INTERNAL depth instead
+(cap = k_estimate, which is the internal rule exactly — verified equal on all
+194 of -013's semantic queries). Run a log plain and then again with
+--cap-to-k and the pair isolates the depth axis with the agent draw held
+fixed, which no comparison between an internal eval and an official one can
+do. The second pass is free: same cache, no new verdicts. Without it, depth is
+confounded with agent draw in every internal-vs-official comparison.
 
 --dry-run reports, per basis, how much of this run's judging the cache
 already covers and what the remainder would cost. A cold target cache is
@@ -560,6 +569,7 @@ async def _process_sample(sample, cache, cache_path, sem, args, progress):
     # able to resume, and a same-basis rerun replays identical cached
     # verdicts anyway; different bases write different filenames.
     _tag = ".uncapped" if getattr(args, "uncapped", False) else ""
+    _tag += ".capk" if getattr(args, "cap_to_k", False) else ""
     _tag += ".officiallog" if getattr(args, "from_eval_log", None) else ""
     verdict_path = (
         sample.problem_dir / f"judge_verdicts.rejudge_{args.basis}{_tag}.json"
@@ -752,6 +762,19 @@ def main() -> int:
              "verdict CACHE is shared, since a verdict is keyed by "
              "(query, paper, evidence) and does not depend on depth.",
     )
+    ap.add_argument(
+        "--cap-to-k", action="store_true",
+        help="with --from-eval-log: judge the official submissions only down to "
+             "k_estimate, reproducing the INTERNAL capped depth on the official "
+             "submission set. Isolates the depth axis -- pair it with a plain "
+             "(uncapped) pass over the same log and the only difference is how "
+             "deep the judge went, with the agent draw held fixed. Costs nothing "
+             "extra after that pass: a verdict is keyed by "
+             "(query, paper, evidence) and does not depend on depth, so the "
+             "capped arm replays entirely from the warm cache. k_estimate IS the "
+             "internal cap -- verified equal on all 194 of -013's semantic "
+             "queries. Outputs carry a .capk tag.",
+    )
     ap.add_argument("--concurrency", type=int, default=4,
                     help="queries judged in flight (each judges all its docs at once)")
     ap.add_argument("--retries", type=int, default=1,
@@ -777,6 +800,18 @@ def main() -> int:
     target_cache = cache_dir / f"shared_test_{args.basis}.json"
     stock_cache = cache_dir / f"shared_test_{stock_basis}.json"
 
+    if args.cap_to_k and not args.from_eval_log:
+        raise SystemExit(
+            "--cap-to-k only applies to --from-eval-log: the run's own path "
+            "already replays at the stored scored_depth_cap, which is what "
+            "--cap-to-k reconstructs. Drop the flag."
+        )
+    if args.cap_to_k and args.uncapped:
+        raise SystemExit(
+            "--cap-to-k and --uncapped ask for opposite depths. An official log "
+            "is uncapped by default, so run it plain for the uncapped arm and "
+            "again with --cap-to-k for the capped one."
+        )
     if args.k_from and not args.from_eval_log:
         raise SystemExit(
             "--k-from only applies to --from-eval-log: the run's own path reads "
@@ -799,6 +834,19 @@ def main() -> int:
               f"comparison is against the log's official scores)")
     else:
         samples = load_run(run_dir, args.limit)
+    if args.cap_to_k:
+        # load_eval_log leaves cap=None (official judging is uncapped). Setting
+        # it to k_estimate reconstructs the internal capped depth on the
+        # official submission set -- cap == k_estimate is the internal rule,
+        # not an approximation of it. plan_sample then marks everything past k
+        # beyond_scored_depth, exactly as an internal eval did.
+        for s in samples:
+            if not s.carry:
+                s.cap = s.k_estimate
+        print(f"--cap-to-k: judging to k_estimate "
+              f"({sum(s.cap or 0 for s in samples if not s.carry):,} of "
+              f"{sum(len(s.results) for s in samples if not s.carry):,} "
+              f"submitted papers)")
     if args.uncapped:
         # AFTER load_run: k_estimate falls back to cap when score_meta lacks
         # it (load_run:188), so clearing cap earlier would break the recall
@@ -823,9 +871,13 @@ def main() -> int:
                 f"--uncapped: {omitted:,} submitted papers beyond the judging "
                 f"cap have no persisted evidence (EVIDENCE_OMITTED_MARKER in "
                 f"submission.json), so they cannot be judged offline.\n"
-                f"  * Test evals run after 2026-08-06 keep that evidence "
+                f"  * Test evals run after 2026-08-11 keep that evidence "
                 f"(PaperFinderEvaluator persist_full_evidence, which main.py "
-                f"sets on the TEST evaluator only) and do support --uncapped.\n"
+                f"sets on the TEST evaluator only) and do support --uncapped. "
+                f"NOT 2026-08-06, when the flag landed: it was dropped at the "
+                f"subprocess boundary until 2026-08-11, so every test eval in "
+                f"between trimmed regardless -- check for the marker rather "
+                f"than trusting the run date.\n"
                 f"  * For an older run, --from-eval-log <official .eval> "
                 f"replays the official submissions, which were never trimmed "
                 f"and were judged uncapped.\n"
@@ -871,6 +923,7 @@ def main() -> int:
     # keyed by (query, paper, evidence) and is identical whether or not the
     # paper fell beyond the cap, so an uncapped pass warms the same cache.
     suffix = ".uncapped" + suffix if args.uncapped else suffix
+    suffix = ".capk" + suffix if args.cap_to_k else suffix
     suffix = ".officiallog" + suffix if args.from_eval_log else suffix
     out_summary = run_dir / f"test_results.rejudge_{args.basis}{suffix}.json"
     out_per_problem = (
@@ -933,8 +986,14 @@ def main() -> int:
         "k_estimate_source": str(args.k_from.resolve()) if args.k_from else None,
         "judge": args.judge,
         "judge_prompt": args.judge_prompt,
-        "scored_depth": "uncapped (full submission)" if args.uncapped
-                        else "capped at stored scored_depth_cap",
+        "scored_depth": (
+            "uncapped (full submission)" if args.uncapped
+            else "capped to k_estimate on an UNCAPPED official submission set "
+                 "(--cap-to-k; depth-isolated arm)" if args.cap_to_k
+            else "uncapped (full submission, as official judging does)"
+                 if args.from_eval_log
+            else "capped at stored scored_depth_cap"
+        ),
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "aggregate": target_agg,
         "n_problems": len(samples),
