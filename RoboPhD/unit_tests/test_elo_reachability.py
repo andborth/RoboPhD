@@ -603,6 +603,56 @@ def test_budget_exhaustion_still_reports_a_winner_it_already_found():
     )
 
 
+def test_the_forced_pending_winner_can_decide_the_verdict():
+    """assess_reachability must thread previous_winner into the search.
+
+    The forced slot spends one of the challenger's two games on whoever won
+    last, whether or not that agent is the obstacle. When the previous winner
+    is weak the cost is doubled: the forced game pays little, AND the game it
+    displaces would have dragged a top rival down. Here that is the whole
+    difference between a winning line existing and not.
+
+    Without this the pass-through is unpinned — every other previous_winner
+    test works below assess_reachability (_round_participants) or on a field
+    lopsided enough that the forced slot cannot change the outcome.
+    """
+    field = {"leader": 1545.0, "second": 1541.0, "weak_winner": 1500.0}
+    common = dict(rounds_remaining=1.0, agents_per_iteration=3,
+                  binding_constraint="budget", history_depth=10)
+
+    free = assess_reachability(field, previous_winner=None, **common)
+    forced = assess_reachability(field, previous_winner="weak_winner", **common)
+
+    assert free.reachable, (
+        "free choice of the top two: the challenger climbs while dragging "
+        "them down, so a line exists"
+    )
+    assert not forced.reachable, (
+        "forced onto the weak previous winner, the challenger gains less and "
+        "the leader is never played, so no line exists"
+    )
+    assert forced.projected_challenger_elo < free.projected_challenger_elo
+    assert forced.projected_best_rival_elo > free.projected_best_rival_elo
+
+
+def test_the_forced_slot_changes_which_rival_is_unpassable():
+    """The verdict names the agent no line passes, and the forced slot can
+    change which one that is: the leader can be attacked, but an agent the
+    challenger is never free to play can only be passed on points. Observed
+    on asta_paper_finder_20260809_222409 iteration 21, where the guard named
+    the third-rated agent rather than the leader."""
+    field = {"leader": 1560.0, "runner_up": 1556.0, "winner": 1555.0}
+    common = dict(rounds_remaining=1.0, agents_per_iteration=3,
+                  binding_constraint="budget", history_depth=10)
+
+    forced = assess_reachability(field, previous_winner="winner", **common)
+
+    assert not forced.reachable
+    assert "runner_up" in forced.reason, (
+        f"expected the un-attackable rival to be named, got: {forced.reason}"
+    )
+
+
 def test_forced_slot_is_the_previous_winner_in_round_one():
     """select_agents_for_iteration's P1: the previous round's winner is always
     pending, so it always occupies one of the challenger's two games."""
@@ -816,6 +866,48 @@ def _run_guard(stub, iteration=5, **config_overrides):
         stub, iteration, config
     )
     return changed, stub.config_manager.get_config(iteration)
+
+
+def test_the_guard_feeds_the_real_pending_winner_into_the_verdict():
+    """researcher passes _last_iteration_winner() as the forced opponent.
+
+    The other guard tests run on a runaway 2200 leader, unreachable whichever
+    agent is forced, so dropping that argument would not fail them. This field
+    is reachable when the challenger may pick its two games and unreachable
+    once the weak previous winner takes a slot, so the wiring — including
+    reading the winner out of test_history by score — is load-bearing.
+    """
+    field = {
+        "leader": {"elo": 1545.0, "test_count": 5},
+        "second": {"elo": 1541.0, "test_count": 5},
+        "weak_winner": {"elo": 1500.0, "test_count": 3},
+    }
+    history = [{"weak_winner": {"average_score": 0.9},
+                "leader": {"average_score": 0.4}}]
+
+    stub = _guard_stub(performance_records=field, test_history=history)
+    changed, resolved = _run_guard(stub)
+
+    assert changed is True, (
+        "with the weak previous winner forced into the round there is no "
+        "winning line, so the guard should switch to greedy"
+    )
+    assert resolved["evolution_strategy"] == "greedy"
+
+    # Same field, but the strong leader won last: it can then be attacked in
+    # the forced slot, and a line exists again.
+    stub = _guard_stub(
+        performance_records=field,
+        test_history=[{"leader": {"average_score": 0.9},
+                       "weak_winner": {"average_score": 0.4}}],
+    )
+    changed, resolved = _run_guard(stub)
+
+    assert changed is False, (
+        "forced onto the leader the challenger can drag it down, so evolution "
+        "must be left alone"
+    )
+    assert resolved["evolution_strategy"] == "use_your_judgment"
 
 
 def test_guard_rewrites_the_strategy_when_unreachable():
