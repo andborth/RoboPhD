@@ -1620,3 +1620,40 @@ def test_v0_0_6_official_cost_regression(bundled_fixture_map):
     }
     total = sum(_est(mod, m, **c) for m, c in usage.items())
     assert total / 900 == pytest.approx(0.004280335, abs=1e-6)
+
+
+def test_subprocess_payload_carries_persist_full_evidence():
+    """The worker is what writes submission.json, so a diagnostics flag that
+    does not cross the boundary never takes effect at all.
+
+    This is the 2026-08-11 regression: 0090c860 set persist_full_evidence on
+    main.py's TEST evaluator, but _evaluate_via_subprocess never sent it and
+    subprocess_isolation defaults to True, so every test eval for five days
+    trimmed beyond-cap evidence anyway and could not be rejudged at depth.
+    test_persist_full_evidence_rides_with_overrides passed throughout -- it
+    guards with_overrides, one layer inside the boundary that actually broke.
+    """
+    tree = ast.parse(EVALUATOR_SRC)
+    fn = next(
+        n for n in ast.walk(tree)
+        if isinstance(n, ast.FunctionDef) and n.name == "_evaluate_via_subprocess"
+    )
+    keys = {
+        k.value
+        for d in ast.walk(fn) if isinstance(d, ast.Dict)
+        for k in d.keys if isinstance(k, ast.Constant) and isinstance(k.value, str)
+    }
+    assert "persist_full_evidence" in keys, (
+        "the subprocess payload must send persist_full_evidence; without it the "
+        "worker builds an evaluator that silently trims test submissions"
+    )
+
+    worker = ast.parse((PFB_DIR / "_eval_worker.py").read_text())
+    call = next(
+        n for n in ast.walk(worker)
+        if isinstance(n, ast.Call)
+        and getattr(n.func, "id", None) == "PaperFinderEvaluator"
+    )
+    assert "persist_full_evidence" in {kw.arg for kw in call.keywords}, (
+        "the worker must pass persist_full_evidence to the constructor"
+    )

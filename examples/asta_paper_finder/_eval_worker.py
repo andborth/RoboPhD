@@ -59,6 +59,10 @@ def main() -> int:
             apply_cost_penalty=params["apply_cost_penalty"],
             min_cost_threshold=params["min_cost_threshold"],
             cost_per_error=params["cost_per_error"],
+            # This process writes submission.json, so the trimming decision has
+            # to be made here. Strict key on purpose: a parent that fails to
+            # send it should fail loudly, not silently trim a test eval.
+            persist_full_evidence=params["persist_full_evidence"],
         )
         score, diagnostics = evaluator.evaluate(params["candidate"], params["example"])
     except Exception:

@@ -1454,6 +1454,17 @@ class PaperFinderEvaluator:
                 "apply_cost_penalty": self.apply_cost_penalty,
                 "min_cost_threshold": self.min_cost_threshold,
                 "cost_per_error": self.cost_per_error,
+                # persist_full_evidence MUST cross this boundary: the worker is
+                # what writes submission.json, so a flag left behind here never
+                # took effect at all. It was missing from 0090c860 until
+                # 2026-08-11, and because subprocess_isolation defaults to True,
+                # every test eval in that window trimmed beyond-cap evidence
+                # despite main.py setting the flag on the test evaluator --
+                # leaving those evals unrejudgeable at depth (verified on -014,
+                # which ran five days after 0090c860 and still wrote markers).
+                # eval_timeout is deliberately NOT sent: it is used only
+                # parent-side, to derive the subprocess_timeout enforced below.
+                "persist_full_evidence": self.persist_full_evidence,
             }, inf, default=str)
             inf_path = inf.name
         out_path = inf_path + ".out"
