@@ -24,9 +24,9 @@ so a later live eval with the new judge starts warm.
 
 Usage:
     python rejudge_test.py <run_dir> --judge openai/gpt-5.6-luna
-        [--from-eval-log PATH] [--no-baseline] [--limit N] [--uncapped]
-        [--concurrency 4] [--retries 1] [--no-cache-write] [--dry-run]
-        [--force]
+        [--from-eval-log PATH] [--k-from RUN_DIR] [--no-baseline] [--limit N]
+        [--uncapped] [--concurrency 4] [--retries 1] [--no-cache-write]
+        [--dry-run] [--force]
 
 --from-eval-log replays an OFFICIAL astabench .eval log instead of the run's
 own test_problems/. That is the only stored source of an UNCAPPED,
@@ -34,10 +34,19 @@ leaderboard-basis submission set for runs completed before 2026-08-06, since
 submission.json omitted beyond-cap evidence until then — and it is the more
 useful basis regardless, being the submissions and depth that actually
 reached the board. run_dir is still required: it supplies k_estimate per
-query (a property of the query, not the agent) and hosts the diagnostics.
-The stock-4o A/B arm is skipped in this mode — it would be a full cold pass
-(~$186 on a 250-deep agent) and the log already carries official 4o scores.
-Measured on -012: 48,255 scoreable docs, ~$14 on luna.
+query (a property of the query, not the agent) and hosts the diagnostics,
+which land in a dedicated rejudge_officiallog/<sid>/ tree rather than in
+test_problems/. The stock-4o A/B arm is skipped in this mode — it would be a
+full cold pass (~$186 on a 250-deep agent) and the log already carries
+official 4o scores. Measured on -012: 48,255 scoreable docs, ~$14 on luna.
+
+--k-from borrows k_estimate from another completed run of the same split.
+Required with --from-eval-log for any run that timed out on a semantic query:
+the official log carries all 267 samples, but K is stored only in the run's
+own test_problems/, which lacks the failed ones (-010 lacks semantic_242;
+-011 lacks four), so a same-dir replay hard-errors on exactly those queries.
+K is a per-query benchmark constant — verified identical for every shared sid
+across -010/-011/-012/-013/-014 — so any 267-complete run serves.
 
 By default the replay stops at the stored scored_depth_cap, matching how the
 eval judged. --uncapped judges the whole submission instead — the basis
@@ -219,7 +228,12 @@ def load_run(run_dir: Path, limit: int | None = None) -> list[Sample]:
     return samples
 
 
-def load_eval_log(eval_path: Path, run_dir: Path, limit: int | None = None):
+def load_eval_log(
+    eval_path: Path,
+    run_dir: Path,
+    limit: int | None = None,
+    k_from: Path | None = None,
+):
     """Load samples from an OFFICIAL astabench .eval log instead of a RoboPhD
     run's test_problems/.
 
@@ -230,12 +244,27 @@ def load_eval_log(eval_path: Path, run_dir: Path, limit: int | None = None):
     for runs already completed — which makes it the right place to measure a
     judge-basis change against the numbers that actually reached the board.
 
-    run_dir supplies the scaffolding the log lacks:
-      * k_estimate per query, from test_problems/<sid>/score_meta.json. K is
-        a property of the QUERY (the benchmark's recall denominator), not of
-        the agent — verified: -012 and -013 have byte-identical cap totals
-        (19,860 each) — so any completed run of the same test split serves.
-      * a home for the per-problem verdict diagnostics.
+    The log lacks two things, sourced separately:
+
+      * k_estimate per query, from <k_source>/test_problems/<sid>/
+        score_meta.json, where <k_source> is ``--k-from`` when given and
+        run_dir otherwise. K is a property of the QUERY (the benchmark's
+        recall denominator, read from astabench's normalizer reference), not
+        of the agent — verified across -010/-011/-012/-013/-014: every
+        shared sid agrees, zero mismatches, and the three 267-complete runs
+        each total 19,860. So any completed run of the same split serves,
+        and ``--k-from`` exists because a run's OWN test_problems is missing
+        exactly the samples that timed out (-010 lacks semantic_242; -011
+        lacks four) while the official log has all 267 — so replaying a run
+        against its own dir hard-errors on precisely the queries it failed.
+
+      * a home for the per-problem verdict diagnostics: a dedicated
+        <run_dir>/rejudge_officiallog/<sid>/ tree, NOT test_problems/.
+        Deliberate — these verdicts grade the official submission, not this
+        run's internal eval, and writing them into test_problems/ would have
+        to mkdir the very sids the eval never produced, inflating the
+        directory count that scripts read as "samples evaluated".
+
     Samples carry cap=None: official judging is uncapped by construction.
     """
     from inspect_ai.log import read_eval_log
@@ -243,12 +272,14 @@ def load_eval_log(eval_path: Path, run_dir: Path, limit: int | None = None):
     log = read_eval_log(str(eval_path))
     if not log.samples:
         raise SystemExit(f"{eval_path}: no samples in log")
-    tp = run_dir / "test_problems"
+    tp = (k_from or run_dir) / "test_problems"
     if not tp.is_dir():
         raise SystemExit(
-            f"{tp} not found — --from-eval-log still needs a completed run dir "
-            f"of the same test split for k_estimate and diagnostics"
+            f"{tp} not found — --from-eval-log needs a completed run dir of "
+            f"the same test split for k_estimate (this run's own dir, or "
+            f"another one via --k-from)"
         )
+    diag_root = run_dir / "rejudge_officiallog"
     samples: list[Sample] = []
     for x in log.samples:
         sid = str(x.id)
@@ -257,7 +288,7 @@ def load_eval_log(eval_path: Path, run_dir: Path, limit: int | None = None):
         stored = float(getattr(score_obj, "value", 0.0) or 0.0)
         s = Sample(
             sid=sid, score_type=score_type, stored_score=stored,
-            problem_dir=tp / sid,
+            problem_dir=diag_root / sid,
         )
         if not sid.startswith("semantic"):
             s.carry, s.carried_reason = True, "exact_match"
@@ -294,8 +325,9 @@ def load_eval_log(eval_path: Path, run_dir: Path, limit: int | None = None):
         if s.k_estimate is None:
             raise SystemExit(
                 f"{sid}: no k_estimate at {tp / sid / 'score_meta.json'} — "
-                f"cannot compute recall. Point run_dir at a completed run of "
-                f"the same test split."
+                f"cannot compute recall. Pass --k-from <run_dir> pointing at a "
+                f"267-complete run of the same test split (K is a per-query "
+                f"benchmark constant, so any of them serves)."
             )
         s.cap = None  # official judging is uncapped
         s.results = pairs[:MAX_RESULTS_TO_CONSIDER]
@@ -532,6 +564,10 @@ async def _process_sample(sample, cache, cache_path, sem, args, progress):
     verdict_path = (
         sample.problem_dir / f"judge_verdicts.rejudge_{args.basis}{_tag}.json"
     )
+    # test_problems/<sid>/ already exists on the run's own path; the
+    # --from-eval-log path writes to a rejudge_officiallog/<sid>/ tree that
+    # does not (see load_eval_log on why it is separate).
+    verdict_path.parent.mkdir(parents=True, exist_ok=True)
     verdict_path.write_text(
         json.dumps({"scored_depth_cap": sample.cap, "papers": papers}, indent=2)
     )
@@ -688,9 +724,22 @@ def main() -> int:
              "result and were judged UNCAPPED, so this measures a judge-basis "
              "change against the submissions and depth that actually reached "
              "the leaderboard. run_dir is still required: it supplies "
-             "k_estimate per query and hosts the diagnostics. The stock-4o "
+             "k_estimate per query (unless --k-from overrides that) and hosts "
+             "the diagnostics under rejudge_officiallog/. The stock-4o "
              "A/B arm is skipped here (it would be a full cold pass, ~$190); "
              "the log's own official scores are the 4o reference.",
+    )
+    ap.add_argument(
+        "--k-from", type=Path, metavar="RUN_DIR",
+        help="source k_estimate from ANOTHER completed run's test_problems/ "
+             "instead of run_dir's. Needed with --from-eval-log whenever the "
+             "run being replayed timed out on a semantic query: the official "
+             "log has all 267 samples but the run's own test_problems/ lacks "
+             "the failed ones, and K is only stored there (-010 lacks "
+             "semantic_242; -011 lacks four). Safe because K is a per-query "
+             "benchmark constant, not an agent property — verified identical "
+             "across every run that stores it. Point it at a 267-complete "
+             "run. Diagnostics and outputs still go to run_dir.",
     )
     ap.add_argument(
         "--uncapped", action="store_true",
@@ -728,10 +777,22 @@ def main() -> int:
     target_cache = cache_dir / f"shared_test_{args.basis}.json"
     stock_cache = cache_dir / f"shared_test_{stock_basis}.json"
 
+    if args.k_from and not args.from_eval_log:
+        raise SystemExit(
+            "--k-from only applies to --from-eval-log: the run's own path reads "
+            "K from the same test_problems/<sid>/ dir it reads the submission "
+            "from, so borrowing K from elsewhere there would pair one run's "
+            "recall denominator with another run's stored submission."
+        )
     if args.from_eval_log:
         if not args.from_eval_log.is_file():
             raise SystemExit(f"{args.from_eval_log}: not a file")
-        samples = load_eval_log(args.from_eval_log, run_dir, args.limit)
+        k_from = args.k_from.resolve() if args.k_from else None
+        samples = load_eval_log(
+            args.from_eval_log, run_dir, args.limit, k_from=k_from
+        )
+        if k_from:
+            print(f"--k-from: k_estimate sourced from {k_from}")
         args.baseline = False  # see --from-eval-log help
         print(f"--from-eval-log: {args.from_eval_log.name} "
               f"(uncapped official submissions; stock-4o arm skipped, "
@@ -869,6 +930,7 @@ def main() -> int:
     summary = {
         "source_run": str(run_dir),
         "source_eval_log": str(args.from_eval_log) if args.from_eval_log else None,
+        "k_estimate_source": str(args.k_from.resolve()) if args.k_from else None,
         "judge": args.judge,
         "judge_prompt": args.judge_prompt,
         "scored_depth": "uncapped (full submission)" if args.uncapped

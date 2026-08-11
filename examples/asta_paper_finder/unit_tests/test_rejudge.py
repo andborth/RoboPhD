@@ -350,6 +350,20 @@ def test_judge_prompt_not_separately_settable(monkeypatch, capsys):
     assert "unrecognized arguments" in capsys.readouterr().err
 
 
+def test_k_from_rejected_without_from_eval_log(tmp_path, monkeypatch, capsys):
+    """On the run's own path, K and the submission come from the same
+    test_problems/<sid>/ dir. Borrowing K there would pair one run's recall
+    denominator with another run's stored submission."""
+    run_dir = tmp_path / "runs" / "robophd" / "run1"
+    _mk_problem(run_dir / "test_problems", "metadata_1", score=1.0)
+    monkeypatch.setattr(sys, "argv", [
+        "rejudge_test.py", str(run_dir), "--judge", "openai/gpt-5.6-luna",
+        "--k-from", str(run_dir),
+    ])
+    with pytest.raises(SystemExit, match="only applies to --from-eval-log"):
+        rt.main()
+
+
 def test_non_clobber_without_force_and_derived_basis(tmp_path, monkeypatch):
     """Luna's basis derives to no-prose (matching live evals), so the
     non-clobber gate must guard the _noprose-suffixed filename."""
@@ -520,7 +534,11 @@ def test_load_eval_log_semantic_and_carry(tmp_path, fake_eval_log):
     assert s.known_good == {"777"}                   # from the log's target
     assert s.criteria[0]["name"] == "Relevance Criterion"
     assert s.k_estimate == 2                         # from run_dir score_meta
-    assert s.problem_dir == run_dir / "test_problems" / "semantic_1"
+    # Diagnostics land in a dedicated tree, NOT test_problems/: these verdicts
+    # grade the OFFICIAL submission, and a run that timed out has no
+    # test_problems/<sid>/ for the failed queries — creating them would inflate
+    # the directory count that scripts read as "samples evaluated".
+    assert s.problem_dir == run_dir / "rejudge_officiallog" / "semantic_1"
 
 
 def test_load_eval_log_is_uncapped_even_when_the_run_had_a_cap(tmp_path, fake_eval_log):
@@ -551,8 +569,57 @@ def test_load_eval_log_missing_k_estimate_is_fatal(tmp_path, fake_eval_log):
     _mk_problem(tp, "semantic_1", [("X", "ev")], cap=None, write_score_meta=False)
     log = tmp_path / "official.eval"; log.write_text("")
     fake_eval_log([_log_sample("semantic_1", results=[("A", "a")])])
-    with pytest.raises(SystemExit, match="k_estimate"):
+    with pytest.raises(SystemExit, match="--k-from"):
         rt.load_eval_log(log, tmp_path / "run")
+
+
+# --- --k-from ----------------------------------------------------------------
+#
+# A run that timed out on a semantic query has no test_problems/<sid>/ for it,
+# but the official log carries all 267 samples — and K is stored only in
+# test_problems. So replaying such a run against its own dir dies on exactly
+# the queries it failed (-010: semantic_242; -011: four). K is a per-query
+# benchmark constant, so --k-from borrows it from a 267-complete run.
+
+
+def test_k_from_supplies_a_sid_the_run_never_evaluated(tmp_path, fake_eval_log):
+    run_dir, log = _eval_log_run(tmp_path, ("semantic_1",), k=11)  # no semantic_2
+    complete = tmp_path / "complete"
+    _mk_problem(complete / "test_problems", "semantic_1", [("X", "ev")], k=11)
+    _mk_problem(complete / "test_problems", "semantic_2", [("X", "ev")], k=22)
+    fake_eval_log([
+        _log_sample("semantic_1", results=[("A", "a")]),
+        _log_sample("semantic_2", results=[("B", "b")]),
+    ])
+
+    by_sid = {s.sid: s for s in rt.load_eval_log(log, run_dir, k_from=complete)}
+
+    assert by_sid["semantic_1"].k_estimate == 11
+    assert by_sid["semantic_2"].k_estimate == 22
+    # Outputs still belong to the run being replayed, not to the K donor.
+    assert by_sid["semantic_2"].problem_dir == (
+        run_dir / "rejudge_officiallog" / "semantic_2"
+    )
+    assert not (run_dir / "test_problems" / "semantic_2").exists()
+    assert not (complete / "rejudge_officiallog").exists()
+
+
+def test_k_from_without_test_problems_is_fatal(tmp_path, fake_eval_log):
+    run_dir, log = _eval_log_run(tmp_path)
+    fake_eval_log([_log_sample("semantic_1", results=[("A", "a")])])
+    with pytest.raises(SystemExit, match="test_problems"):
+        rt.load_eval_log(log, run_dir, k_from=tmp_path / "not_a_run")
+
+
+def test_verdict_diagnostic_creates_its_parent(tmp_path):
+    """rejudge_officiallog/<sid>/ does not exist before the first write."""
+    s = _sample(tmp_path, [("A", "a"), ("B", "b"), ("C", "c")], k=3)
+    s.problem_dir = tmp_path / "rejudge_officiallog" / s.sid  # never created
+    _row, _calls = _run_process(
+        tmp_path, s, lambda ents: {d.corpus_id: PERFECT for d in ents},
+        no_cache_write=True,
+    )
+    assert (s.problem_dir / "judge_verdicts.rejudge_testbasis.json").is_file()
 
 
 def test_load_eval_log_unparseable_target_is_fatal(tmp_path, fake_eval_log):
