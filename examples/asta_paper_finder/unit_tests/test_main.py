@@ -1398,3 +1398,76 @@ def test_optimize_anything_receives_the_seed_pool():
             break
     else:
         pytest.fail("no optimize_anything call found in main.py")
+
+
+# --- eval_timeout is resolved once, then threaded ------------------------------
+#
+# 2026-08-13: EVAL_TIMEOUT was read directly at four sites that all execute
+# BEFORE --engine-config is parsed, so '{"eval_timeout": N}' reached the engine
+# alone. A run launched that way recorded N in its checkpoint while agents were
+# killed at, and told, the module default.
+
+
+def test_eval_timeout_never_read_from_the_constant():
+    """Every consumer must take the resolved value, not EVAL_TIMEOUT.
+
+    The constant is the DEFAULT; main() resolves checkpoint -> --engine-config
+    -> default once and threads it. A new call site that reads the constant
+    silently reintroduces the split, so pin it at the AST level.
+    """
+    offenders = []
+    for node in ast.walk(MAIN_TREE):
+        if not isinstance(node, ast.Call):
+            continue
+        for kw in node.keywords:
+            if kw.arg == "eval_timeout" and isinstance(kw.value, ast.Name) \
+                    and kw.value.id == "EVAL_TIMEOUT":
+                offenders.append(f"line {kw.value.lineno}")
+    assert not offenders, (
+        "eval_timeout=EVAL_TIMEOUT passed directly (use the resolved "
+        "eval_timeout local, or --engine-config overrides will apply to the "
+        "engine only): " + "; ".join(offenders)
+    )
+
+
+def test_eval_timeout_min_uses_the_resolved_value():
+    """The evolution-facing budget must track the resolved timeout."""
+    interp = re.search(
+        r'\$\{EVAL_TIMEOUT_MIN\}"\s*,\s*str\(\((\w+) - 30\) // 60\)', MAIN_SRC
+    )
+    assert interp, "${EVAL_TIMEOUT_MIN} interpolation not found or reshaped"
+    assert interp.group(1) == "eval_timeout", (
+        f"interpolated from {interp.group(1)!r}; must be the resolved local so "
+        f"raising the limit actually tells evolution about it"
+    )
+
+
+def test_eval_timeout_min_renders_29_at_the_default():
+    """HARD CONSTRAINT: at the 1800 default the evolution-facing interface is
+    unchanged, so runs before and after this fix stay comparable."""
+    import main  # noqa: E402  (module-scoped import already used in this file)
+    assert (main.EVAL_TIMEOUT - 30) // 60 == 29
+    assert (2700 - 30) // 60 == 44
+
+
+def test_eval_timeout_is_run_immutable():
+    """Resolve-once is only sound if nothing can move it mid-run."""
+    sys.path.insert(0, str(REPO_ROOT))
+    from RoboPhD.config_manager import IMMUTABLE_PARAMS
+    assert "eval_timeout" in IMMUTABLE_PARAMS, (
+        "eval_timeout must be immutable after iteration 1: tasks resolve it "
+        "once at startup for the evaluator and the agent-facing docs"
+    )
+
+
+def test_cap_help_states_it_changes_scoring_without_claiming_a_size():
+    """The old help claimed 'no measured score change ... the rank term is
+    empirically unaffected'. Measurement contradicts it."""
+    cap_help = re.search(
+        r'"--cap-judge-to-estimate".*?%\(default\)\.0s"', MAIN_SRC, re.S
+    )
+    assert cap_help, "--cap-judge-to-estimate help block not found"
+    text = cap_help.group(0)
+    assert "no measured score change" not in text
+    assert "empirically unaffected" not in text
+    assert "CHANGES THE SCORE" in text

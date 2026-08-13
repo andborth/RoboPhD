@@ -28,6 +28,14 @@ IMMUTABLE_PARAMS = [
     "meta_evolution_strategy",
     "meta_evolution_first_iteration",
     "meta_evolution_cadence",
+    # Consumed OUTSIDE the engine as well as inside it: tasks resolve it once at
+    # startup to build their evaluator and to tell agents their wall-clock budget
+    # (asta_paper_finder's ${EVAL_TIMEOUT_MIN}). A mid-run change would leave those
+    # holding a stale value while the engine used a new one — the engine reporting
+    # one limit while agents are killed at another. Needs the full lock rather than
+    # _get_meta_evolution_forbidden_params, which stops meta-evolution only and would
+    # still let a schedule or --modify-config move it.
+    "eval_timeout",
 ]
 
 

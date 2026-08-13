@@ -101,10 +101,19 @@ DEFAULT_NUM_ITERATIONS = 999
 # scaled by the 66/100 training-pool ratio), which yielded 16.
 DEFAULT_EVALUATION_BUDGET = 600
 
-# Per-example timeout: must match the value passed to RoboPhDConfig /
-# RoboPhDEvalConfig below. The evaluator derives a slightly-shorter
-# subprocess_timeout internally (eval_timeout - 30s) so subprocesses get
-# SIGKILLed BEFORE RoboPhD's reaper would leak the thread.
+# DEFAULT per-example timeout, not the value: override per run with
+# --engine-config '{"eval_timeout": N}'. The resolved value is computed
+# once in main() and threaded to every consumer — the evaluator, the
+# test-eval config, the engine config, and the ${EVAL_TIMEOUT_MIN}
+# placeholder evolution reads. Do NOT read this constant anywhere else;
+# a unit test enforces that, because when these sites disagreed the
+# checkpoint recorded one limit while agents were killed at another.
+# (asta_ds1000 and arc_agi_1 still use the constant-everywhere pattern
+# and have the same latent split.)
+#
+# The evaluator derives a slightly-shorter subprocess_timeout internally
+# (eval_timeout - 30s) so subprocesses get SIGKILLed BEFORE RoboPhD's
+# reaper would leak the thread.
 #
 # 30-minute cap, matching asta_ds1000 and for the same reason: wall
 # clock is not a leaderboard criterion, so the timeout is a runaway
@@ -150,6 +159,34 @@ def _read_pfb_runtime_config(resume_dir: Path) -> dict:
     its first real run, so there are no historical sidecar-only runs.
     """
     return read_task_config_extras(resume_dir, PFB_TASK_CONFIG_KEY)
+
+
+def _stored_eval_timeout(resume_dir: Path) -> int | None:
+    """The run's eval_timeout from its checkpoint, or None.
+
+    Read from iteration 1 of the engine's config — the authoritative
+    record of a run's settings, and (since eval_timeout is in
+    IMMUTABLE_PARAMS) its value for the run's lifetime.
+
+    Needed because RoboPhD's engine_overrides carries ONLY values the
+    user passed on this invocation (api.py's resume contract), so a
+    resume that omits --engine-config would otherwise drop the evaluator
+    and the docs back to the module default while the engine restored
+    the real value from its checkpoint — the exact split this function
+    exists to prevent.
+    """
+    ckpt = resume_dir / "checkpoint.json"
+    try:
+        cfg = json.loads(ckpt.read_text())
+        stored = (
+            cfg.get("config_manager", {})
+            .get("iteration_configs", {})
+            .get("1", {})
+            .get("eval_timeout")
+        )
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return None
+    return int(stored) if isinstance(stored, (int, float)) else None
 
 
 def _enforce_immutable_on_resume(
@@ -666,12 +703,13 @@ def parse_args():
                    help="Judge only the top-estimate (recall depth) submitted "
                         "papers instead of all of them — in training AND in "
                         "internal test evals (--eval-test-set / --eval-only). "
-                        "On by default; cuts judge cost with no measured score "
-                        "change (recall reads only the top-estimate; the rank "
-                        "term is empirically unaffected, though capped test "
-                        "scores are a slightly different basis than official "
-                        "uncapped scoring — the mode is recorded in "
-                        "test_results.json). For training it is run-immutable "
+                        "On by default; cuts judge cost. It CHANGES THE SCORE: "
+                        "recall reads only the top-estimate and is unaffected, "
+                        "but the rank term is computed over the judged papers, "
+                        "so capping moves it. Capped scores are therefore a "
+                        "different basis than official uncapped scoring — the "
+                        "mode is recorded in test_results.json. For training "
+                        "it is run-immutable "
                         "like --cost-threshold: locked for the run's lifetime, "
                         "so resume keeps the original setting; on --eval-only "
                         "the flag applies at eval time instead. Official "
@@ -903,6 +941,27 @@ def main():
     checkpoint_pfb = (
         _read_pfb_runtime_config(Path(args.resume)) if args.resume else {}
     )
+    # Parsed HERE, far above the engine config it feeds, because
+    # eval_timeout must also reach the evaluator and the
+    # evolution-facing docs — both built long before that point. Parsing
+    # it late is what let --engine-config '{"eval_timeout": N}' apply to
+    # the engine alone: the checkpoint recorded N while agents were
+    # still killed at, and told, the module default.
+    parsed_engine_config = (
+        json.loads(args.engine_config) if args.engine_config else {}
+    )
+    # Precedence: a resumed run's own stored value, else this
+    # invocation's --engine-config, else the task default. Passing a
+    # DIFFERENT value on resume is not silently ignored — eval_timeout is
+    # in IMMUTABLE_PARAMS, so the engine raises when engine_overrides is
+    # applied as a delta at the resume iteration.
+    _stored_timeout = (
+        _stored_eval_timeout(Path(args.resume)) if args.resume else None
+    )
+    eval_timeout = (
+        _stored_timeout if _stored_timeout is not None
+        else parsed_engine_config.get("eval_timeout", EVAL_TIMEOUT)
+    )
     cost_threshold = _enforce_immutable_on_resume(
         cli_value=args.cost_threshold,
         stored_value=checkpoint_pfb.get("cost_threshold"),
@@ -1123,11 +1182,15 @@ def main():
             .replace("${COST_PENALTY_TABLE}", cost_penalty_table)
             .replace("${COST_THRESHOLD}", _fmt_cost(cost_threshold))
             .replace("${COST_PER_ERROR}", _fmt_cost(cost_per_error))
-            # True per-query budget the agent experiences: EVAL_TIMEOUT
-            # minus the 30s reaper buffer, floored to whole minutes.
-            # Floored & buffer-aware so the doc never over-promises the
-            # wall-clock the agent actually gets.
-            .replace("${EVAL_TIMEOUT_MIN}", str((EVAL_TIMEOUT - 30) // 60))
+            # True per-query budget the agent experiences: the RESOLVED
+            # eval_timeout minus the 30s reaper buffer, floored to whole
+            # minutes. Floored & buffer-aware so the doc never
+            # over-promises the wall-clock the agent actually gets, and
+            # resolved rather than constant so raising the limit tells
+            # evolution about it. Unchanged formula: the 1800 default
+            # still renders 29, keeping this interface byte-identical to
+            # every run before 2026-08-13.
+            .replace("${EVAL_TIMEOUT_MIN}", str((eval_timeout - 30) // 60))
             # Per-engine session-access note (empty for GEPA — no shell).
             .replace("${SESSION_ACCESS_NOTE}", session_access_note)
             # Enforced-cap contract line (empty when the cap is off, so the
@@ -1164,7 +1227,7 @@ def main():
     # test paths report raw mean F1 so evolved agents land at their true
     # point on the Pareto cost-vs-score curve.
     evaluator = PaperFinderEvaluator(
-        eval_timeout=EVAL_TIMEOUT,
+        eval_timeout=eval_timeout,
         apply_cost_penalty=True,  # training: penalty fires
         min_cost_threshold=cost_threshold,
         cost_per_error=cost_per_error,
@@ -1204,7 +1267,7 @@ def main():
     # --eval-test-set paths) so the test pipeline can't silently drift
     # from the training pipeline's eval_timeout or max_workers.
     test_eval_config = RoboPhDEvalConfig(
-        eval_timeout=EVAL_TIMEOUT,
+        eval_timeout=eval_timeout,
         max_workers=effective_max_workers,
     )
 
@@ -1304,9 +1367,8 @@ def main():
     # queries. Derived from len(train) rather than hardcoded so a future
     # thermometer holdout (see README) shrinks it automatically.
     # Override via --engine-config '{"examples_per_iteration": N}'.
-    parsed_engine_config = (
-        json.loads(args.engine_config) if args.engine_config else {}
-    )
+    #
+    # parsed_engine_config is resolved far above, alongside eval_timeout.
     is_resume = args.resume is not None
     engine_overrides: dict = {}
     if not is_resume:
@@ -1342,7 +1404,7 @@ def main():
             max_workers=effective_max_workers,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
-            eval_timeout=EVAL_TIMEOUT,
+            eval_timeout=eval_timeout,
         )
         cfg = apply_engine_config(cfg, parsed_engine_config)
         dataset = train
@@ -1353,7 +1415,7 @@ def main():
             max_workers=effective_max_workers,
             seed=args.random_seed or 0,
             parent_experiments_dir=args.runs_dir,
-            eval_timeout=EVAL_TIMEOUT,
+            eval_timeout=eval_timeout,
             # Copied into <output_dir>/session_tools/ at startup; the
             # session reads it from the workspace at ../session_tools/.
             session_tools=[str(HERE / "tool_probe.py")],
@@ -1369,7 +1431,7 @@ def main():
             random_seed=args.random_seed,
             meta_evolution_strategy=args.meta_evolution_strategy,
             engine_overrides=engine_overrides,
-            eval_timeout=EVAL_TIMEOUT,
+            eval_timeout=eval_timeout,
             # Copied into <experiment>/session_tools/ at startup (fresh
             # and resume): read-only helper scripts for evolution
             # sessions. tool_probe.py gives sessions an agent-identical
