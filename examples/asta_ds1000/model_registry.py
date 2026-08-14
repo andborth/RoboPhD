@@ -7,6 +7,11 @@ into a cheap/fast tier, a standard tier, and a strong/slow tier:
   Anthropic: CLAUDE_HAIKU_4_5          CLAUDE_SONNET_4_6     CLAUDE_OPUS_4_8
   Google:    GEMINI_3_1_FLASH_LITE     GEMINI_3_5_FLASH      GEMINI_3_1_PRO_PREVIEW
 
+Nine is the MENU count — what background.md offers evolution. A few extra
+names resolve below (superseded-model aliases, and CLAUDE_OPUS_4_7 for
+replaying archived runs); they are code-only and stay out of the agent-facing
+docs on purpose, so evolution never selects them.
+
 Evolved agents import these handles and call `.generate(...)` on them;
 the underlying provider/model strings live here, OUTSIDE the evolvable
 artifact (agent.py is the only file in a candidate's file_mapping).
@@ -120,10 +125,22 @@ GEMINI_3_FLASH_PREVIEW = GEMINI_3_5_FLASH
 # (dollars, or a percentage like 20%) to soften the per-call penalty.
 _GPT_5_5_ID = "openai/gpt-5.5"
 _CLAUDE_OPUS_4_8_ID = "anthropic/claude-opus-4-8"
+_CLAUDE_OPUS_4_7_ID = "anthropic/claude-opus-4-7"
 _GEMINI_3_1_PRO_PREVIEW_ID = "google/gemini-3.1-pro-preview"
 
 GPT_5_5 = get_model(_GPT_5_5_ID)
 CLAUDE_OPUS_4_8 = get_model(_CLAUDE_OPUS_4_8_ID, api_key=_ANTHROPIC_API_KEY)
+# Archive-only handle: deliberately NOT on the evolution menu (absent from
+# background.md), present so archived agents from runs -007/-009 import and
+# run on the model they were actually ranked on.
+#
+# Bound to the real 4.7 id, and never aliased to 4.8. 2065ce40 removed
+# exactly that alias, and its reasoning is why this binding is the true one:
+# claude-opus-4-7 is still a live model, so an alias would silently re-point
+# old agents at a model they were never evaluated on. Contrast the
+# GEMINI_*_PREVIEW aliases above, which ARE faithful because the provider
+# itself re-routed those ids.
+CLAUDE_OPUS_4_7 = get_model(_CLAUDE_OPUS_4_7_ID, api_key=_ANTHROPIC_API_KEY)
 # All three Gemini handles default to "low" reasoning_effort for a
 # uniform Gemini family default. Two reasons specific to Pro Preview:
 # (1) Inspect's google provider silently UPGRADES "medium" to

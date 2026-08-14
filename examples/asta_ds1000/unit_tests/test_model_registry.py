@@ -85,6 +85,21 @@ def test_flash_preview_alias_points_to_3_5(model_registry):
     )
 
 
+def test_opus_4_7_is_a_true_handle_not_an_alias(model_registry):
+    """CLAUDE_OPUS_4_7 must resolve to the real 4.7 model, never to 4.8.
+
+    The inverse of the two alias tests above, and the distinction is
+    load-bearing. Those Gemini aliases are faithful because the provider
+    re-routed the old ids server-side. claude-opus-4-7 is still served as a
+    distinct model, so aliasing it would silently re-rank archived agents
+    (runs -007/-009) on a model they were never evaluated on — which is why
+    2065ce40 deleted the alias. The handle exists for replaying those runs,
+    so a future "simplification" back to `= CLAUDE_OPUS_4_8` must fail here.
+    """
+    assert model_registry.CLAUDE_OPUS_4_7 is not model_registry.CLAUDE_OPUS_4_8
+    assert "claude-opus-4-7" in model_registry.CLAUDE_OPUS_4_7.name
+
+
 def test_get_model_still_accepts_pinned_kwargs():
     """Guard against a future Inspect release renaming the kwargs we use.
 
