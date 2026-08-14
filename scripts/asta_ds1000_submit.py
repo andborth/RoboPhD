@@ -85,10 +85,10 @@ class Submission(NamedTuple):
     # — all handles import unconditionally — so the env var is a no-op
     # against the registry at HEAD. Kept (and still set for the v0_0_1/
     # v0_0_2 entries) so re-staging those submissions reproduces their
-    # original eval-time env. Note that env reproduction is no longer
-    # sufficient for those two entries: since 2065ce4 the live registry
-    # no longer exports CLAUDE_OPUS_4_7, so they fail at import when
-    # staged at HEAD (see the per-entry notes below).
+    # original eval-time env. Env reproduction is again sufficient for
+    # those two entries: b6e28d86 restored CLAUDE_OPUS_4_7 as an
+    # archive-only handle bound to the real 4.7 model, so they import
+    # and run at HEAD (see the per-entry notes below).
     needs_stronger_models: bool = False
 
 
@@ -101,13 +101,15 @@ SUBMISSIONS = [
         agent_rel_path="agent.py",
         model_arg="openai/gpt-5.4-mini",
     ),
-    # NOT runnable at HEAD: the v0_0_1/v0_0_2 archived agents import
-    # CLAUDE_OPUS_4_7, dropped from the live registry in 2065ce4 — a
-    # deliberate substitution-avoidance choice (aliasing it to 4.8 would
-    # silently re-rank old agents on a model they weren't evaluated on),
-    # so the archived agents stay as-is. To re-stage either entry, check
-    # out the revision recorded in its snapshot's eval log (any
-    # pre-2065ce4 commit works).
+    # Runnable at HEAD again: the v0_0_1/v0_0_2 archived agents import
+    # CLAUDE_OPUS_4_7, which 2065ce4 dropped and b6e28d86 restored as an
+    # archive-only handle bound to the REAL 4.7 model (still served). The
+    # substitution-avoidance choice behind the removal is preserved — the
+    # handle is a true binding, never an alias to 4.8, which would
+    # silently re-rank these agents on a model they weren't evaluated on.
+    # Do NOT instead "reproduce" them from an old revision: commits
+    # between 0da77028 and 2065ce4 export CLAUDE_OPUS_4_7 as exactly that
+    # alias, so the agents import cleanly and silently run 4.8.
     Submission(
         name="v0_0_1_soft_cap_0_16",
         agent_rel_path="agents/iter10_idiomatic_loop_guard_v1/agent.py",
@@ -510,9 +512,10 @@ def stage(s: Submission, restage: bool = False) -> Path:
     and runs BEFORE the already_evaluated() skip, so without this guard a
     re-run silently rewrites the staged source of an already-posted entry
     while skipping the eval — an invisible loss of the record of what produced
-    it. Especially relevant here: the module docstring already notes v0_0_1 and
-    v0_0_2 are NOT runnable at HEAD, so their staged trees are the only
-    surviving description of those runs. --restage overwrites deliberately.
+    it. Especially relevant for v0_0_1/v0_0_2, whose staged trees are the
+    record of the exact source and eval-time env their official numbers came
+    from — including the ASTA_DS1000_ALLOW_STRONGER_MODELS reproduction that
+    the registry at HEAD no longer needs. --restage overwrites deliberately.
 
     Returns the working dir path.
     """

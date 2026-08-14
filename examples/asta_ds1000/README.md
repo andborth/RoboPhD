@@ -197,9 +197,14 @@ competitor. That is a reason to include such a seed, not a bug; `--cost-per-erro
 flattens the slope if you want it competing.
 
 Seeds run against the *current* `model_registry.py`, not the one they evolved
-against. An archived agent that imports a retired handle fails at import, not at
-the call site — `CLAUDE_OPUS_4_7`, used by the v0_0_1 and v0_0_2 submissions, is
-the known case.
+against. An archived agent that imports a handle the registry no longer exports
+fails at import, not at the call site, so confirm the registry still covers your
+seed's imports before launching. Superseded handles are kept for exactly this
+reason, in one of two forms: an alias, where the provider re-routed the id
+server-side (`GEMINI_3_FLASH_PREVIEW`), or an archive-only binding to the real
+model, where it is still served (`CLAUDE_OPUS_4_7`, used by the v0_0_1 and
+v0_0_2 submissions). Both are code-only — neither appears on the agent-facing
+menu in `background.md`, so evolution is never offered them.
 
 ## Scoring details
 
