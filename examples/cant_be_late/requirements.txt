@@ -1,0 +1,21 @@
+# Can't Be Late example.
+#
+# Every package here is a dependency of the VENDORED spot simulator under
+# utils/, not of anything RoboPhD itself imports — see utils/README.md for
+# that subtree's provenance and license.
+#
+# numpy is declared even though core's litellm happens to require it today.
+# The simulator imports it directly (sky_spot/simulate.py and others), and a
+# direct import that depends on an unrelated package's transitive closure is
+# one dependency bump away from breaking.
+#
+# Two other simulator imports are deliberately absent:
+#   tqdm  — a genuine core dependency, so it comes from requirements.txt
+#   wandb — never installed; simulator/main.py injects a stub into
+#           sys.modules (one of this copy's documented local changes)
+#
+# This example makes no LLM calls, so no API keys are needed.
+ConfigArgParse>=1.5  # simulator CLI (main.py, sky_spot/env.py, strategies/strategy.py)
+colorama>=0.4.6      # simulator's colored trace output (main.py)
+PyYAML>=6.0          # simulator scenario configs (main.py)
+numpy>=1.17          # simulator cost statistics (sky_spot/simulate.py)

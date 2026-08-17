@@ -8,6 +8,9 @@ Evolve agents that answer numerical questions over long financial documents (SEC
 # Install core dependencies (from repo root)
 pip install -r requirements.txt
 
+# Install this example's dependencies
+pip install -r examples/docfinqa/requirements.txt
+
 # Set API keys
 export OPENAI_API_KEY="sk-..."                     # for the solver (gpt-4.1-mini + text-embedding-3-small)
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."  # only if using --engine gepa (reflection model)

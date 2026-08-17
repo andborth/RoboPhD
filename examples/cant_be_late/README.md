@@ -10,6 +10,10 @@ Pure algorithmic optimization — no LLM calls needed for the solver. Only Claud
 # Install core dependencies (from repo root)
 pip install -r requirements.txt
 
+# Install this example's dependencies (the vendored simulator's — see
+# utils/README.md for that subtree's provenance and license)
+pip install -r examples/cant_be_late/requirements.txt
+
 # Only if using --engine gepa (reflection model); the default Elo engine uses
 # the Claude Code CLI's Claude Max auth and needs no API key.
 export ANTHROPIC_API_KEY_FOR_ROBOPHD="sk-ant-..."

@@ -263,3 +263,17 @@ If you use RoboPhD in your research, please cite the paper — [*RoboPhD: Evolvi
   year={2026}
 }
 ```
+
+## License
+
+RoboPhD is released under the MIT License — see [`LICENSE`](LICENSE).
+
+Third-party material is documented separately from the framework itself:
+
+- [`NOTICE.md`](NOTICE.md) — core dependencies, the one vendored third-party subtree, and the
+  services the evolution loop requires.
+- `examples/<domain>/THIRD_PARTY.md` — that example's own packages, datasets and services.
+
+The split is not just tidiness: installing an example can pull in licenses core does not.
+`protein_go` involves GPL-3.0 components, and several benchmark datasets carry share-alike
+or gated terms. Check the relevant example's file before redistributing work built on it.

@@ -1,0 +1,9 @@
+# DocFinQA example.
+#
+# huggingface_hub is imported directly by evaluator.py to fetch the DocFinQA
+# split. It used to arrive transitively; declaring it makes the dependency
+# visible and pins the attribution in THIRD_PARTY.md to something real.
+#
+# litellm is NOT listed here: it is a core dependency (RoboPhD/config.py,
+# runner_utils.py, llm_providers.py) and comes from the root requirements.txt.
+huggingface_hub>=0.20.0

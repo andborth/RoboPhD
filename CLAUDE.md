@@ -322,3 +322,18 @@ Domain-specific setup, datasets, and troubleshooting live in each example's READ
 ## License
 
 MIT License - see LICENSE file for details.
+
+Third-party attribution is split to match the dependency structure, and the split is
+load-bearing rather than cosmetic — `protein_go` pulls in GPL-3.0 components that core does
+not, and several datasets are share-alike or access-gated:
+
+- `NOTICE.md` — core dependencies, the vendored subtree under
+  `examples/cant_be_late/utils/` (the only third-party source in the repo), and the services
+  the evolution loop needs.
+- `examples/<domain>/THIRD_PARTY.md` — that example's packages, datasets, external binaries
+  and model providers. Every example has one, including those needing nothing beyond core.
+
+`RoboPhD/unit_tests/test_attribution_coverage.py` asserts every declared package appears in
+the file covering it. It cannot check that a recorded license is *correct* — confirm those by
+hand against `importlib.metadata` and the package's own LICENSE file, which do not always
+agree (`func-timeout` declares LGPLv2 in metadata but ships LGPL-3.0).

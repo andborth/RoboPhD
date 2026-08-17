@@ -1,0 +1,15 @@
+# Sudoku example.
+#
+# Both are imported directly by evaluator.py to fetch and parse the
+# sudoku-extreme CSVs. Neither is a core dependency.
+#
+# pandas is declared explicitly rather than left to arrive with something
+# else: this example's README used to say `pip install datasets`, and pandas
+# came along as one of datasets' dependencies. Nothing here needs `datasets`
+# — evaluator.py only calls hf_hub_download — so relying on it was an
+# accident waiting to break, which it did the moment the instruction changed.
+#
+# This example makes no LLM calls — the agent is a pure-Python solver — so no
+# API keys are needed.
+huggingface_hub>=0.20.0
+pandas>=1.5
