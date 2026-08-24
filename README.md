@@ -257,7 +257,7 @@ If you use RoboPhD in your research, please cite the paper — [*RoboPhD: Evolvi
 
 ```bibtex
 @article{borthwick2026robophd,
-  title={RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets},
+  title={{RoboPhD}: Evolving Diverse Complex Agents Under Tight Evaluation Budgets},
   author={Borthwick, Andrew and Ash, Stephen and Galczak, Anthony},
   journal={arXiv preprint arXiv:2604.04347},
   year={2026}

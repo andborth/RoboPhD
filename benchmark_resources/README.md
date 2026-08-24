@@ -75,7 +75,7 @@ If you use the BIRD benchmark, please cite:
 
 ```bibtex
 @inproceedings{li2024bird,
-  title={Can LLM Already Serve as A Database Interface? A BIg Bench for Large-Scale Database Grounded Text-to-SQLs},
+  title={Can {LLM} Already Serve as A Database Interface? A {BI}g Bench for Large-Scale Database Grounded Text-to-{SQL}s},
   author={Li, Jinyang and others},
   booktitle={NeurIPS},
   year={2024}
