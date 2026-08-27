@@ -88,6 +88,25 @@ logger = logging.getLogger(__name__)
 SANDBOX_SETTINGS_RELPATH = ".claude/settings.local.json"
 
 
+# Per-iteration RNG derivation. Each iteration reseeds Python's global `random`
+# from the run's ORIGINAL seed plus an iteration offset, so every iteration gets a
+# distinct, reproducible stream and a resumed run can re-derive exactly the stream an
+# uninterrupted run would have used. Defined once because three sites depend on the
+# same arithmetic -- the fresh-run loop, the resume path, and the recovery of an
+# original seed from a pre-2026-08-26 checkpoint that only stored the derived value.
+SEED_ITERATION_STRIDE = 10000
+
+
+def _iteration_seed(original_seed: int, iteration: int) -> int:
+    """The RNG seed iteration N runs under, derived from the run's original seed."""
+    return (original_seed + iteration * SEED_ITERATION_STRIDE) % (2**32)
+
+
+def _recover_original_seed(derived_seed: int, iteration: int) -> int:
+    """Invert _iteration_seed for checkpoints written before original_seed was stored."""
+    return (derived_seed - iteration * SEED_ITERATION_STRIDE) % (2**32)
+
+
 def install_iteration_sandbox(working_dir: Path, experiment_dir: Path) -> None:
     """Copy the experiment's sandbox settings into a working_dir.
 
@@ -1130,14 +1149,8 @@ class ParallelAgentResearcher:
             self.current_iteration_evolution_cost = None
 
             # Validate checkpoint integrity before any mutation
-            self.original_seed = resume_checkpoint.get("random_seed")
-            if self.original_seed is None:
-                raise ValueError(
-                    "Checkpoint missing random_seed at root level. "
-                    "Cannot resume - checkpoint may be corrupted."
-                )
-
             last_completed = resume_checkpoint.get('last_completed_iteration', len(resume_checkpoint.get('test_history', [])))
+            self.original_seed = self._resolve_original_seed(resume_checkpoint, last_completed)
             # Always archive partial work from crashed iterations
             self.archive_iterations(resume_from_iteration or (last_completed + 1))
             # Only restore performance tracking when explicitly rewinding with --from-iteration
@@ -1146,10 +1159,13 @@ class ParallelAgentResearcher:
             if resume_from_iteration and resume_from_iteration <= last_completed:
                 self._restore_performance_tracking_before_iteration(resume_from_iteration)
 
+            # The seed this iteration WOULD have had if the run were never interrupted:
+            # derived from the original seed, not from whatever the checkpoint last stored.
             current_iteration = resume_from_iteration if resume_from_iteration else last_completed + 1
-            self.random_seed = (self.original_seed + current_iteration * 10000) % (2**32)
+            self.random_seed = _iteration_seed(self.original_seed, current_iteration)
             random.seed(self.random_seed)
-            print(f"🎲 Resume seed: {self.random_seed}")
+            print(f"🎲 Resume seed: {self.random_seed} "
+                  f"(original {self.original_seed}, iteration {current_iteration})")
         else:
             # Fresh start initialization
             # Setup random seed (from parameter, set by main())
@@ -1371,6 +1387,49 @@ class ParallelAgentResearcher:
         
         return restored_pool
     
+    @staticmethod
+    def _resolve_original_seed(resume_checkpoint: Dict, last_completed: int) -> int:
+        """Recover the seed this run was launched with, for resuming.
+
+        Checkpoints written from 2026-08-26 carry 'original_seed' directly. Earlier ones
+        stored only 'random_seed', which is the DERIVED per-iteration value -- reading it
+        back as the original silently re-based the RNG on every resume, so a resumed run
+        drew from a stream no uninterrupted run would produce. For those, invert the
+        derivation instead.
+
+        The recovery is exact for a run that was never resumed. For one that WAS resumed
+        under the old behavior it returns that run's post-shift seed, which is the seed it
+        actually went on to use -- the right value to continue from, even though it is not
+        the seed originally typed.
+        """
+        original = resume_checkpoint.get("original_seed")
+        derived = resume_checkpoint.get("random_seed")
+
+        if original is not None:
+            if derived is not None and derived != _iteration_seed(original, last_completed):
+                logger.warning(
+                    f"Checkpoint seed fields disagree: random_seed={derived} but "
+                    f"original_seed={original} implies {_iteration_seed(original, last_completed)} "
+                    f"at iteration {last_completed}. This run was resumed under the pre-fix "
+                    f"behavior at some point. Continuing from original_seed={original}."
+                )
+            return original
+
+        if derived is None:
+            raise ValueError(
+                "Checkpoint missing both original_seed and random_seed at root level. "
+                "Cannot resume - checkpoint may be corrupted."
+            )
+
+        original = _recover_original_seed(derived, last_completed)
+        logger.warning(
+            f"Checkpoint predates original_seed persistence: recovered original seed "
+            f"{original} from random_seed={derived} at iteration {last_completed}. "
+            f"Exact if this run was never resumed; if it was, this is the post-shift seed "
+            f"it actually used. Pass --random-seed {original} to reproduce its draws."
+        )
+        return original
+
     def _restore_performance_tracking_before_iteration(self, from_iteration: int):
         """
         Restore last_win_iteration and last_test_iteration to their state
@@ -3307,7 +3366,7 @@ class ParallelAgentResearcher:
                 config = self.config_manager.get_config(iteration)
 
             # Update random seed for this iteration
-            self.random_seed = (self.original_seed + iteration * 10000) % (2**32)
+            self.random_seed = _iteration_seed(self.original_seed, iteration)
             random.seed(self.random_seed)
 
             # Update mutable parameters from config
@@ -4199,6 +4258,10 @@ class ParallelAgentResearcher:
         checkpoint = {
             'last_completed_iteration': iteration,
             'num_iterations': self.num_iterations,
+            # The seed the run was LAUNCHED with. This is the reproducible identity of
+            # the run; 'random_seed' below is a derived per-iteration value and is NOT
+            # the seed to pass to --random-seed.
+            'original_seed': self.original_seed,
             'random_seed': self.random_seed,
             'agent_pool': serializable_pool,
             'performance_records': self.performance_records,
