@@ -12,6 +12,7 @@ from it, and the iteration a resume starts on draws exactly what it would have d
 had the run never stopped.
 """
 
+import ast
 import random
 import sys
 from pathlib import Path
@@ -117,23 +118,111 @@ def test_from_iteration_rewind_replays_that_iterations_draw():
     assert _batch_at(resolve(ckpt, 12), 7) == first_pass
 
 
-# --- persistence -----------------------------------------------------------
+# --- persistence and wiring (structural, not source-substring) --------------
+#
+# These check the SHAPE of the code, not its text. The substring form -- matching
+# "'original_seed': self.original_seed," and friends -- fails on a dict reordering,
+# a quote-style change or a line wrap, none of which alter behavior. This repo has
+# rewritten that pattern twice for the same reason (cad0f71's tar guard matched an
+# ast.unparse substring and broke when the gate got stricter; d535df6d's seed_agents
+# guard walks the IfExp instead).
 
-def test_checkpoint_writes_original_seed_alongside_the_derived_value():
-    src = (Path(__file__).parent.parent / "researcher.py").read_text()
-    assert "'original_seed': self.original_seed," in src, (
-        "the launch seed must be persisted; without it a finished run cannot report "
-        "the seed needed to reproduce or seed-pair it"
-    )
-    assert "'random_seed': self.random_seed," in src, (
-        "keep the legacy field: external readers and older tooling expect the key"
+_TREE = ast.parse((Path(__file__).parent.parent / "researcher.py").read_text())
+
+
+_RESEARCHER = next(n for n in _TREE.body
+                   if isinstance(n, ast.ClassDef) and n.name == "ParallelAgentResearcher")
+
+
+def _func(name: str) -> ast.FunctionDef:
+    """A method of ParallelAgentResearcher by name.
+
+    Scoped to the class: researcher.py defines several (MemoryMonitor,
+    StuckProcessReaper, ParallelAgentEvolver), so a module-wide walk for
+    "__init__" finds the wrong one.
+    """
+    return next(n for n in ast.walk(_RESEARCHER)
+                if isinstance(n, ast.FunctionDef) and n.name == name)
+
+
+def _assignments_to(func: ast.FunctionDef, attr: str) -> list:
+    return [n for n in ast.walk(func) if isinstance(n, ast.Assign)
+            and any(isinstance(t, ast.Attribute) and t.attr == attr for t in n.targets)]
+
+
+def _reads_checkpoint_directly(node: ast.AST) -> bool:
+    """True if the expression pulls a value straight out of resume_checkpoint."""
+    for n in ast.walk(node):
+        if (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+                and n.func.attr == "get"
+                and isinstance(n.func.value, ast.Name)
+                and n.func.value.id == "resume_checkpoint"):
+            return True
+        if (isinstance(n, ast.Subscript) and isinstance(n.value, ast.Name)
+                and n.value.id == "resume_checkpoint"):
+            return True
+    return False
+
+
+def test_checkpoint_persists_the_launch_seed_and_keeps_the_legacy_field():
+    """Without original_seed a finished run cannot report the seed needed to
+    reproduce or seed-pair it. random_seed stays because the resume validation and
+    external readers expect the key."""
+    save = _func("_save_checkpoint")
+    ckpt = next(d for d in ast.walk(save) if isinstance(d, ast.Dict)
+                and any(isinstance(k, ast.Constant) and k.value == "last_completed_iteration"
+                        for k in d.keys))
+    pairs = {k.value: v for k, v in zip(ckpt.keys, ckpt.values)
+             if isinstance(k, ast.Constant)}
+    assert "original_seed" in pairs, "the launch seed is not persisted"
+    assert "random_seed" in pairs, "the legacy derived field was dropped"
+    bound = pairs["original_seed"]
+    assert isinstance(bound, ast.Attribute) and bound.attr == "original_seed", (
+        "original_seed must be bound to self.original_seed, not to a derived value"
     )
 
 
-def test_resume_derives_from_original_not_from_the_stored_value():
-    src = (Path(__file__).parent.parent / "researcher.py").read_text()
-    assert "self.random_seed = _iteration_seed(self.original_seed, current_iteration)" in src
-    assert "self.original_seed = self._resolve_original_seed(" in src
-    assert "self.original_seed = resume_checkpoint.get(\"random_seed\")" not in src, (
-        "the defect being fixed: reading the derived value back as the original"
-    )
+def test_resume_resolves_the_launch_seed_instead_of_reading_the_derived_field():
+    """The defect: self.original_seed = resume_checkpoint.get('random_seed'), which
+    re-bases the RNG on every resume."""
+    init = _func("__init__")
+    assigns = _assignments_to(init, "original_seed")
+    assert assigns, "__init__ never sets original_seed"
+    assert any(isinstance(a.value, ast.Call)
+               and getattr(a.value.func, "attr", "") == "_resolve_original_seed"
+               for a in assigns), "the resume path must go through the resolver"
+    for a in assigns:
+        assert not _reads_checkpoint_directly(a.value), (
+            "original_seed must never be read straight out of the checkpoint -- that "
+            "field holds the derived per-iteration value"
+        )
+
+
+def test_the_stride_is_never_re_inlined():
+    """Anti-drift guard, same shape as asta_ds1000's
+    test_validators_are_not_reimplemented_locally. Three sites share this arithmetic
+    and an inverse that drifts from its forward function fails silently rather than
+    loudly, so the literal lives in exactly one place."""
+    holders = {n.targets[0].id for n in _TREE.body
+               if isinstance(n, ast.Assign) and isinstance(n.targets[0], ast.Name)
+               and isinstance(n.value, ast.Constant) and n.value.value == SEED_ITERATION_STRIDE}
+    assert "SEED_ITERATION_STRIDE" in holders
+
+    for fn in ("__init__", "run", "_save_checkpoint"):
+        node = _func(fn)   # raises if the method is renamed -- deliberate, not skipped
+        for n in ast.walk(node):
+            if isinstance(n, ast.BinOp) and isinstance(n.op, ast.Mult):
+                operands = [n.left, n.right]
+                assert not any(isinstance(o, ast.Constant) and o.value == SEED_ITERATION_STRIDE
+                               for o in operands), (
+                    f"{fn} re-inlines the stride; call _iteration_seed instead"
+                )
+
+
+def test_derivation_and_recovery_stay_mutually_inverse():
+    """The forward function and its inverse are only correct relative to each other."""
+    for original in (0, 1, 8170, 218170, 2**32 - 1):
+        for iteration in (0, 1, 19, 21, 999):
+            derived = _iteration_seed(original, iteration)
+            assert 0 <= derived < 2**32
+            assert _recover_original_seed(derived, iteration) == original
