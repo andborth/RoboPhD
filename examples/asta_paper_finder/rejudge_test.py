@@ -157,7 +157,21 @@ def load_run(run_dir: Path, limit: int | None = None) -> list[Sample]:
     that would silently skew the aggregate."""
     tp = run_dir / "test_problems"
     if not tp.is_dir():
-        raise SystemExit(f"{tp} not found — is this a completed test-eval run dir?")
+        # Non-stock test evals persist under a judge-suffixed name
+        # (test_problems.judge_<judge>[-<prompt>]) so they never clobber a
+        # stock draw. Fall back to that iff it is unambiguous.
+        suffixed = sorted(run_dir.glob("test_problems.*"))
+        suffixed = [p for p in suffixed if p.is_dir()]
+        if len(suffixed) == 1:
+            tp = suffixed[0]
+        elif len(suffixed) > 1:
+            raise SystemExit(
+                f"{tp} not found and multiple suffixed test_problems dirs "
+                f"exist ({', '.join(p.name for p in suffixed)}); ambiguous — "
+                f"symlink or rename the one to replay."
+            )
+        else:
+            raise SystemExit(f"{tp} not found — is this a completed test-eval run dir?")
     scrubbed = sorted(p.parent.name for p in tp.glob("*/evidence_grounding.md"))
     if scrubbed:
         raise SystemExit(
