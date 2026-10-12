@@ -8,6 +8,15 @@ from typing import Dict, Optional, Union
 
 # Model configuration with pricing from official Anthropic pricing
 SUPPORTED_MODELS = {
+    'opus-5.5': {
+        'name': 'claude-opus-5-5',  # plain ID for pricing/display; the 1M [1m] variant lives in CLAUDE_CLI_MODEL_MAP
+        'pricing': {                 # 20% below opus-5 on base rates; litellm's registry and the CLI's own billing agree
+            'input': 4.00,       # $4/MTok (base input)
+            'output': 20.00,     # $20/MTok
+            'cache_write': 5.00,  # $5/MTok (5m cache writes)
+            'cache_read': 0.20    # $0.20/MTok (cache hits & refreshes)
+        }
+    },
     'fable-5.1': {
         'name': 'claude-fable-5-1',  # plain ID for pricing/display; the 1M [1m] variant lives in CLAUDE_CLI_MODEL_MAP
         'pricing': {                  # same base rates as fable-5; cache reads are cheaper (litellm's registry and the CLI's own billing agree)
@@ -105,6 +114,7 @@ SUPPORTED_MODELS = {
 # Claude CLI accepts both aliases ('haiku') and full IDs; full IDs are
 # preferred so cache keys stay stable when aliases roll forward.
 CLAUDE_CLI_MODEL_MAP = {
+    'opus-5.5': 'claude-opus-5-5[1m]',  # [1m] = explicit 1M-context request for the evolution CLI session
     'fable-5.1': 'claude-fable-5-1[1m]',  # [1m] = explicit 1M-context request for the evolution CLI session
     'fable-5': 'claude-fable-5[1m]',    # [1m] = explicit 1M-context request for the evolution CLI session
     'opus-5': 'claude-opus-5[1m]',      # [1m] = explicit 1M-context request for the evolution CLI session
