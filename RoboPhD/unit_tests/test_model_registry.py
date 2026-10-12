@@ -19,12 +19,12 @@ from RoboPhD.config import (
 )
 from RoboPhD.config_manager import ConfigManager, ConfigSource
 
-DEFAULT_EVOLUTION_MODEL = "opus-5"
+DEFAULT_EVOLUTION_MODEL = "opus-5.5"
 
 
 def test_default_model_is_registered_in_both_tables():
-    assert SUPPORTED_MODELS[DEFAULT_EVOLUTION_MODEL]["name"] == "claude-opus-5"
-    assert CLAUDE_CLI_MODEL_MAP[DEFAULT_EVOLUTION_MODEL] == "claude-opus-5[1m]"
+    assert SUPPORTED_MODELS[DEFAULT_EVOLUTION_MODEL]["name"] == "claude-opus-5-5"
+    assert CLAUDE_CLI_MODEL_MAP[DEFAULT_EVOLUTION_MODEL] == "claude-opus-5-5[1m]"
 
 
 def test_every_cli_alias_has_pricing():
