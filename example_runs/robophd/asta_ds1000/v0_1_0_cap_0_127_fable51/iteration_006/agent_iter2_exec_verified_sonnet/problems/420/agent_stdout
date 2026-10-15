@@ -1,0 +1,21 @@
+
+[420] library=Numpy
+  targets=[] func=smoothclamp in_function=False inputs=['x', 'x_min', 'x_max']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+def smoothclamp(x, mi=x_min, mx=x_max):
+    t = np.clip((x - mi) / (mx - mi), 0, 1)
+    return mi + (mx - mi) * (3 * t**2 - 2 * t**3)
+  exec ok=True
+[values after running the solution]
+--- function smoothclamp(x, mi=0, mx=1) defined
+--- call smoothclamp(x) [as the hidden test does] ->
+type=numpy.float64
+0.15625
+[shape] () [dtype] float64
+  review: KEEP
+  final:
+def smoothclamp(x, mi=x_min, mx=x_max):
+    t = np.clip((x - mi) / (mx - mi), 0, 1)
+    return mi + (mx - mi) * (3 * t**2 - 2 * t**3)
+  llm_calls=2 est_cost=$0.0105

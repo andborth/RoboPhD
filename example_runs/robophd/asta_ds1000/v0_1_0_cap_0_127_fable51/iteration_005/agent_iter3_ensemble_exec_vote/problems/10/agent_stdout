@@ -1,0 +1,57 @@
+
+[10] library=Pandas
+  targets=['result'] func=None in_function=False inputs=['df']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+def f(df):
+    if len(df.columns) == 1:
+        if df.values.size == 1:
+            return df.values[0][0]
+        return df.values.squeeze()
+    grouped = df.groupby(df.columns[0])
+    d = {k: f(g.iloc[:, 1:]) for k, g in grouped}
+    return d
+
+result = f(df)
+  candidate B (gpt54):
+def nested_dict(frame):
+    if frame.shape[1] == 2:
+        return frame.set_index(frame.columns[0])[frame.columns[1]].to_dict()
+    return frame.groupby(frame.columns[0], sort=False).apply(lambda x: nested_dict(x.iloc[:, 1:])).to_dict()
+
+result = nested_dict(df)
+  candidate C (gemini):
+def to_nested_dict(df):
+    if df.shape[1] == 2:
+        return dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
+    return {k: to_nested_dict(g.iloc[:, 1:]) for k, g in df.groupby(df.columns[0])}
+
+result = to_nested_dict(df)
+  exec A ok=True
+[values after running the solution]
+--- result:
+type=builtins.dict
+{'A': {'A1': {'A11': 1}, 'A2': {'A12': 2, 'A21': 6}}, 'B': {'B1': {'B12': 3}, 'B2': {'B21': 5}}, 'C': {'C1': {'C11': 4}}}
+  exec B ok=True
+[values after running the solution]
+--- result:
+type=builtins.dict
+{'A': {'A1': {'A11': 1}, 'A2': {'A12': 2, 'A21': 6}}, 'B': {'B1': {'B12': 3}, 'B2': {'B21': 5}}, 'C': {'C1': {'C11': 4}}}
+  exec C ok=True
+[values after running the solution]
+--- result:
+type=builtins.dict
+{'A': {'A1': {'A11': 1}, 'A2': {'A12': 2, 'A21': 6}}, 'B': {'B1': {'B12': 3}, 'B2': {'B21': 5}}, 'C': {'C1': {'C11': 4}}}
+  runnable=3/3 agreement groups=[3]
+  majority of 3 agrees -> candidate B
+  final:
+def nested_dict(frame):
+    if frame.shape[1] == 2:
+        return frame.set_index(frame.columns[0])[frame.columns[1]].to_dict()
+    return frame.groupby(frame.columns[0], sort=False).apply(lambda x: nested_dict(x.iloc[:, 1:])).to_dict()
+
+result = nested_dict(df)
+  llm_calls=3 est_cost=$0.0693
+    opus: in=2559 out=125 reas=0 $0.0159
+    gpt54: in=1743 out=1113 reas=1034 $0.0366
+    gemini: in=1812 out=93 reas=1009 $0.0168

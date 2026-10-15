@@ -1,0 +1,44 @@
+
+[564] library=Matplotlib
+  targets=[] func=None in_function=False inputs=['x', 'y']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+plt.plot(x, y)
+plt.ylabel("Y")
+ax = plt.gca()
+ax.yaxis.set_label_position("right")
+ax.yaxis.tick_left()
+  candidate B (gpt54):
+plt.plot(x, y)
+ax = plt.gca()
+ax.set_ylabel('Y')
+ax.yaxis.set_label_position('right')
+ax.yaxis.tick_left()
+  candidate C (gemini):
+plt.plot(x, y)
+plt.ylabel("Y")
+plt.gca().yaxis.set_label_position("right")
+  exec A ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='' xlabel='' ylabel='Y' xlim=(-0.45, 9.45) ylim=(-0.45, 9.45) lines=1 patches=0 collections=0 texts=0 legend=None xticks=[-2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0] yticks=[-2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0]
+  exec B ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='' xlabel='' ylabel='Y' xlim=(-0.45, 9.45) ylim=(-0.45, 9.45) lines=1 patches=0 collections=0 texts=0 legend=None xticks=[-2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0] yticks=[-2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0]
+  exec C ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='' xlabel='' ylabel='Y' xlim=(-0.45, 9.45) ylim=(-0.45, 9.45) lines=1 patches=0 collections=0 texts=0 legend=None xticks=[-2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0] yticks=[-2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0]
+  runnable=3/3 agreement groups=[3]
+  majority of 3 agrees -> candidate A
+  final:
+plt.plot(x, y)
+plt.ylabel("Y")
+ax = plt.gca()
+ax.yaxis.set_label_position("right")
+ax.yaxis.tick_left()
+  llm_calls=3 est_cost=$0.0254
+    opus: in=2162 out=73 reas=0 $0.0126
+    gpt54: in=1418 out=103 reas=59 $0.0060
+    gemini: in=1458 out=34 reas=288 $0.0068

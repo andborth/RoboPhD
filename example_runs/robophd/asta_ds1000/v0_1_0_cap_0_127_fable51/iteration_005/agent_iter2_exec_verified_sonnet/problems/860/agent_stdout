@@ -1,0 +1,21 @@
+
+[860] library=Sklearn
+  targets=['column_names'] func=None in_function=False inputs=['clf', 'clf']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+model = SelectFromModel(clf, prefit=True)
+column_names = X.columns[model.get_support()]
+  exec ok=None
+(the skeleton itself cannot run here)
+[program crashed: exit code 1]
+[stderr]
+Traceback (most recent call last):
+  File "/workspace/_cand.py", line 14, in <module>
+    X, y = load_data()
+           ^^^^^^^^^
+NameError: name 'load_data' is not defined
+  review: KEEP
+  final:
+model = SelectFromModel(clf, prefit=True)
+column_names = X.columns[model.get_support()]
+  llm_calls=2 est_cost=$0.0105

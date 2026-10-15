@@ -191,6 +191,20 @@ SUBMISSIONS = [
         # +46%); internally Pareto-dominates ReAct/GPT-5-Mini
         # (0.710 @ $0.003 true cost).
     ),
+    Submission(
+        name="v0_1_0_cap_0_127_fable51",
+        agent_rel_path="agents/iter6_ensemble_exec_vote_escalate/agent.py",
+        model_arg="none",
+        # Run robophd-asta_ds1000-054 (FIRST fable-5.1-evolved submission).
+        # cost_threshold=0.127 (the board's top point's cost), default-scaled
+        # cost_per_error=0.0127. Three-provider execution vote: claude-opus-4-8
+        # + gpt-5.4-2026-03-05 + gemini-3.1-pro-preview candidates, Opus judge;
+        # claude-sonnet-4-6 + gpt-5.5 escalation on three-way splits;
+        # gpt-5.4-mini last resort -- all priced in the litellm 1.88.1
+        # bundled map. Internal 900-test 0.8711 @ $0.0561; internally
+        # Pareto-dominates v0_0_1_soft_cap_0_16 (0.8622 @ $0.1273, official).
+        # Internal max 336 s/problem, so the 1200 s wrapper cap is not in play.
+    ),
 ]
 
 

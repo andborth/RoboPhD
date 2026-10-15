@@ -1,0 +1,61 @@
+
+[812] library=Scipy
+  targets=['weights'] func=None in_function=False inputs=['a']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+weights = (a.values / a.values.sum()).squeeze()
+  candidate B (gpt54):
+weights = a.iloc[:, 0] / a.iloc[:, 0].sum()
+  candidate C (gemini):
+weights = a['A1'] / a['A1'].sum()
+  exec A ok=True
+[values after running the solution]
+--- weights:
+type=numpy.ndarray
+[0.         0.02941176 0.05882353 0.08823529 0.05882353 0.02941176 0.17647059 0.         0.02941176 0.02941176
+ 0.20588235 0.29411765]
+[shape] (12,) [dtype] float64
+  exec B ok=True
+[values after running the solution]
+--- weights:
+type=pandas.core.series.Series
+0     0.000000
+1     0.029412
+2     0.058824
+3     0.088235
+4     0.058824
+5     0.029412
+6     0.176471
+7     0.000000
+8     0.029412
+9     0.029412
+10    0.205882
+11    0.294118
+[shape] (12,) [dtype] float64 [name] 'A1'
+[index] RangeIndex [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  exec C ok=True
+[values after running the solution]
+--- weights:
+type=pandas.core.series.Series
+0     0.000000
+1     0.029412
+2     0.058824
+3     0.088235
+4     0.058824
+5     0.029412
+6     0.176471
+7     0.000000
+8     0.029412
+9     0.029412
+10    0.205882
+11    0.294118
+[shape] (12,) [dtype] float64 [name] 'A1'
+[index] RangeIndex [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  runnable=3/3 agreement groups=[2, 1]
+  majority of 2 agrees -> candidate B
+  final:
+weights = a.iloc[:, 0] / a.iloc[:, 0].sum()
+  llm_calls=3 est_cost=$0.0857
+    opus: in=2480 out=31 reas=0 $0.0132
+    gemini: in=1712 out=19 reas=757 $0.0127
+    gpt54: in=1676 out=1866 reas=1838 $0.0597

@@ -1,0 +1,64 @@
+
+[662] library=Matplotlib
+  targets=[] func=None in_function=False inputs=['df']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+g = sns.FacetGrid(df, row="b")
+g.map(sns.pointplot, "a", "c")
+
+for ax in g.axes.flat:
+    # Get the current xtick positions (0-indexed positions for categories)
+    # pointplot uses categorical axis, so ticks are at 0, 1, 2, ...
+    all_ticks = ax.get_xticks()
+    ax.set_xticks(all_ticks)
+    labels = []
+    for t in all_ticks:
+        idx = int(round(t))
+        # Get the tick label from the xticklabels if available
+        tick_labels = [label.get_text() for label in ax.get_xticklabels()]
+        if tick_labels and idx < len(tick_labels):
+            val = tick_labels[idx]
+        else:
+            val = str(idx + 1)
+        labels.append(val)
+
+    # Re-approach: set ticks at every position, but only show labels every 2
+    xticklabels = ax.get_xticklabels()
+    label_texts = [lbl.get_text() for lbl in xticklabels]
+
+    new_labels = []
+    for i, lbl in enumerate(label_texts):
+        if i % 2 == 0:
+            new_labels.append(lbl)
+        else:
+            new_labels.append("")
+    ax.set_xticklabels(new_labels)
+  exec ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='b = A' xlabel='' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.003010319426941563, 1.0041822054111822) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = B' xlabel='' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.003010319426941563, 1.0041822054111822) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = C' xlabel='a' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.003010319426941563, 1.0041822054111822) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+  review proposed revision ok=True
+g = sns.FacetGrid(df, row="b")
+g.map(sns.pointplot, "a", "c")
+
+for ax in g.axes.flat:
+    n = len(ax.get_xticklabels())
+    ax.set_xticks(range(n))
+    ax.set_xticklabels([lbl.get_text() if i % 2 == 0 else "" for i, lbl in enumerate(ax.get_xticklabels())])
+[values after running the solution]
+--- figures: [1]
+axes: title='b = A' xlabel='' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.03873952357783149, 1.0008540995395916) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = B' xlabel='' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.03873952357783149, 1.0008540995395916) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = C' xlabel='a' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.03873952357783149, 1.0008540995395916) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+  loop-free rewrite still has loops or empty; keeping original
+  final:
+g = sns.FacetGrid(df, row="b")
+g.map(sns.pointplot, "a", "c")
+
+for ax in g.axes.flat:
+    n = len(ax.get_xticklabels())
+    ax.set_xticks(range(n))
+    ax.set_xticklabels([lbl.get_text() if i % 2 == 0 else "" for i, lbl in enumerate(ax.get_xticklabels())])
+  llm_calls=3 est_cost=$0.0286

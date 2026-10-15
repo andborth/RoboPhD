@@ -1,0 +1,24 @@
+
+[804] library=Scipy
+  targets=['result'] func=None in_function=False inputs=['centroids', 'data']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+dist = scipy.spatial.distance.cdist(centroids, data)
+closest_indices = dist.argmin(axis=1)
+result = data[closest_indices]
+  exec ok=True
+[values after running the solution]
+--- result:
+type=numpy.ndarray
+[[0.76853115 0.48884085 0.79550305]
+ [0.14212442 0.78451559 0.51967977]
+ [0.52969034 0.79452987 0.71692101]
+ [0.29915859 0.21300514 0.93072208]
+ [0.13415692 0.80023841 0.13001476]]
+[shape] (5, 3) [dtype] float64
+  review: KEEP
+  final:
+dist = scipy.spatial.distance.cdist(centroids, data)
+closest_indices = dist.argmin(axis=1)
+result = data[closest_indices]
+  llm_calls=2 est_cost=$0.0110

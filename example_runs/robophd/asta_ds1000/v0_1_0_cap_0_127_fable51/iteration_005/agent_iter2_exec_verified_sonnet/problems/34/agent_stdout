@@ -1,0 +1,42 @@
+
+[34] library=Pandas
+  targets=['result'] func=None in_function=False inputs=['df']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+val_cols = df.filter(like='val').columns.tolist()
+agg_dict = {"group_color": "first", **{col: "sum" for col in val_cols}}
+result = df.groupby('group').agg(agg_dict)
+  exec ok=True
+[values after running the solution]
+--- result:
+type=pandas.core.frame.DataFrame
+      group_color  val1  val2  val3
+group                              
+A           green    10    14     6
+B            blue     9    12     6
+[shape] (2, 4)
+[dtypes] group_color:object, val1:int64, val2:int64, val3:int64
+[index] Index ['A', 'B']
+[columns] ['group_color', 'val1', 'val2', 'val3']
+  review proposed revision ok=True
+val_cols = df.filter(like='val').columns.tolist()
+agg_dict = {"group_color": "first"}
+agg_dict.update(dict(zip(val_cols, ['sum']*len(val_cols))))
+result = df.groupby('group').agg(agg_dict)
+[values after running the solution]
+--- result:
+type=pandas.core.frame.DataFrame
+      group_color  val1  val2  val3
+group                              
+A           green    10    14     6
+B            blue     9    12     6
+[shape] (2, 4)
+[dtypes] group_color:object, val1:int64, val2:int64, val3:int64
+[index] Index ['A', 'B']
+[columns] ['group_color', 'val1', 'val2', 'val3']
+  final:
+val_cols = df.filter(like='val').columns.tolist()
+agg_dict = {"group_color": "first"}
+agg_dict.update(dict(zip(val_cols, ['sum']*len(val_cols))))
+result = df.groupby('group').agg(agg_dict)
+  llm_calls=2 est_cost=$0.0142

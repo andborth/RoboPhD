@@ -1,0 +1,85 @@
+
+[760] library=Scipy
+  targets=[] func=f in_function=True inputs=['example_pre_course_scores', 'example_during_course_scores']
+  [t=15s] versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  [t=16s] opus call took 1s
+  [t=20s] gpt54 call took 5s
+  [t=165s] gemini call timed out after 150s
+  generation C failed: TimeoutError()
+  candidate A (opus):
+    return stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  candidate B (gpt54):
+    return stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  [t=166s] sonnet call took 2s
+  candidate S (sonnet):
+    return stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  [t=176s] exec A ok=True
+[values after running the solution]
+--- function f(pre_course_scores=array([ 0.16812727, -1.19743724, -0.2620899 , -0.28110164, -1.61947451,
+       -0.25602409,  1.48767018, -0.27635956, -0.43154241, -0.50854045]), during_course_scores=array([ 0.31506307, -1.294363  ,  0.2606051 ,  0.40566161, -0.64904508,
+       -0.39975991,  2.53870777, -0.45795196,  0.9286291 , -0.38354044])) defined
+--- call f(0 positional arg(s)) ->
+type=numpy.float64
+0.4496917979688909
+[shape] () [dtype] float64
+  keys A: strict=6a080b09 values=8507503a dtypes: type=numpy.float64 | [shape] () [dtype] float64
+  [t=187s] exec B ok=True
+[values after running the solution]
+--- function f(pre_course_scores=array([-1.13154512,  2.75299999,  0.07788547, -0.99355837, -0.16269261,
+       -0.1096306 ,  0.10633429,  0.89800164, -0.45237369, -1.52044094]), during_course_scores=array([ 0.58126576, -0.0273108 ,  0.16198544,  0.66124688,  0.20492291,
+        2.02214746, -0.26534951,  0.2993254 , -0.72562326, -2.47248365])) defined
+--- call f(0 positional arg(s)) ->
+type=numpy.float64
+0.3643461266335529
+[shape] () [dtype] float64
+  keys B: strict=299042cf values=9775e55d dtypes: type=numpy.float64 | [shape] () [dtype] float64
+  [t=192s] exec S ok=True
+[values after running the solution]
+--- function f(pre_course_scores=array([ 0.52012833,  0.27436992,  1.11350979, -0.76348926, -0.09184663,
+        1.30656851,  1.01494316,  0.15189802, -0.77891019,  1.19919105]), during_course_scores=array([ 0.59184   , -0.55529282,  0.57734185, -0.04952092,  0.3549004 ,
+       -1.41701192,  1.76111084, -1.07574793, -0.89331521, -0.25677667])) defined
+--- call f(0 positional arg(s)) ->
+type=numpy.float64
+0.22647606604348625
+[shape] () [dtype] float64
+  keys S: strict=8d4cc66d values=b09278d6 dtypes: type=numpy.float64 | [shape] () [dtype] float64
+  runnable=3/3 agreement groups=[1, 1, 1]
+  [t=192s] no agreement among 3 candidates -> escalating with sonnet, gpt55
+  [t=195s] sonnet call took 2s
+  [t=197s] gpt55 call took 5s
+  candidate D (sonnet):
+    return stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  [t=207s] exec D ok=True
+[values after running the solution]
+--- function f(pre_course_scores=array([ 0.3206419 , -0.90969802, -0.50417559, -0.76374079,  2.18052162,
+       -1.9270682 , -0.31605658,  0.07098696,  0.66817334, -1.86447475]), during_course_scores=array([ 0.68993195,  0.77251884, -0.93672549, -1.03554417, -0.47839462,
+       -1.00507253,  0.40455238, -1.12773215, -1.32024794,  1.30377629])) defined
+--- call f(0 positional arg(s)) ->
+type=numpy.float64
+1.0
+[shape] () [dtype] float64
+  keys D: strict=42c75339 values=6b59a24c dtypes: type=numpy.float64 | [shape] () [dtype] float64
+  candidate E (gpt55):
+    return stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  [t=213s] exec E ok=True
+[values after running the solution]
+--- function f(pre_course_scores=array([-0.74383868,  0.27633251, -2.14104088,  0.8475939 , -1.19135724,
+       -0.91173708,  1.76299254, -0.69741528, -0.9265748 ,  2.35932786]), during_course_scores=array([-0.63402096, -0.58577982,  0.4332448 , -2.28421845, -1.15531459,
+       -0.41947954, -0.04681469, -0.31819997,  0.4068382 ,  0.59927283])) defined
+--- call f(0 positional arg(s)) ->
+type=numpy.float64
+0.8205958397554409
+[shape] () [dtype] float64
+  keys E: strict=46d966ce values=55a19bd4 dtypes: type=numpy.float64 | [shape] () [dtype] float64
+  runnable=5/5 agreement groups=[1, 1, 1, 1, 1]
+  [t=214s] opus call took 1s
+  judge chose candidate A
+  final (done=True, t=214s):
+    return stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  llm_calls=6 est_cost=$0.0661
+    opus: in=2542 out=39 reas=0 $0.0137
+    gpt54: in=1664 out=172 reas=144 $0.0067
+    sonnet: in=1842 out=33 reas=0 $0.0060
+    sonnet: in=1842 out=33 reas=0 $0.0060
+    gpt55: in=1664 out=88 reas=59 $0.0110
+    opus: in=4494 out=10 reas=0 $0.0227

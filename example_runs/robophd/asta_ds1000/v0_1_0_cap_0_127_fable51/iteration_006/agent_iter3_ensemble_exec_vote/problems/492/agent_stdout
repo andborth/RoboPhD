@@ -1,0 +1,34 @@
+
+[492] library=Numpy
+  targets=['result'] func=None in_function=False inputs=['n', 'm', 'tag', 's1']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+result = (~np.isclose(s1, s2, equal_nan=True)).sum()
+  candidate B (gpt54):
+result = np.count_nonzero(~np.isclose(s1, s2, equal_nan=True))
+  candidate C (gemini):
+result = np.count_nonzero(~np.isclose(s1, s2, equal_nan=True))
+  exec A ok=True
+[values after running the solution]
+--- result:
+type=numpy.int64
+0
+[shape] () [dtype] int64
+  exec B ok=True
+[values after running the solution]
+--- result:
+type=builtins.int
+0
+  exec C ok=True
+[values after running the solution]
+--- result:
+type=builtins.int
+0
+  runnable=3/3 agreement groups=[2, 1]
+  majority of 2 agrees -> candidate B
+  final:
+result = np.count_nonzero(~np.isclose(s1, s2, equal_nan=True))
+  llm_calls=3 est_cost=$0.0321
+    opus: in=2647 out=38 reas=0 $0.0142
+    gpt54: in=1762 out=160 reas=128 $0.0087
+    gemini: in=1833 out=29 reas=434 $0.0092

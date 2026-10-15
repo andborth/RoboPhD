@@ -1,0 +1,23 @@
+
+[918] library=Sklearn
+  targets=['new_X'] func=None in_function=False inputs=['X', 'clf']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+from sklearn.preprocessing import OrdinalEncoder
+enc = OrdinalEncoder()
+new_X = enc.fit_transform(X)
+clf.fit(new_X, ['4', '5'])
+  exec ok=True
+[values after running the solution]
+--- new_X:
+type=numpy.ndarray
+[[0. 0.]
+ [1. 1.]]
+[shape] (2, 2) [dtype] float64
+  review: KEEP
+  final:
+from sklearn.preprocessing import OrdinalEncoder
+enc = OrdinalEncoder()
+new_X = enc.fit_transform(X)
+clf.fit(new_X, ['4', '5'])
+  llm_calls=2 est_cost=$0.0103

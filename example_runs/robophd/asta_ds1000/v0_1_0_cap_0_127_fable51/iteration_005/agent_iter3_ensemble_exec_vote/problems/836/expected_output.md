@@ -1,0 +1,1 @@
+"{'reduce_dIm': PCA(), 'pOly': PolynomialFeatures(), 't1919810': PCA(), 'svdm': SVC()}"

@@ -1,0 +1,98 @@
+
+[440] library=Numpy
+  targets=['X'] func=None in_function=False inputs=['Y']
+  [t=16s] versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  [t=17s] opus call took 1s
+  [t=25s] gpt54 call took 9s
+  [t=256s] gemini call timed out after 240s
+  generation C failed: TimeoutError()
+  candidate A (opus):
+X = np.sqrt(Y[:, 0, :]).T
+  candidate B (gpt54):
+X = np.sqrt(np.diagonal(Y, axis1=1, axis2=2)).T
+  [t=262s] sonnet call took 6s
+  candidate S (sonnet):
+X = np.sqrt(Y[np.arange(Y.shape[0]), np.argmax(np.diag(Y[0]) if False else np.array([np.diag(y) for y in Y]), axis=1), np.argmax(np.array([np.diag(y) for y in Y]), axis=1)]).reshape(1,-1)
+
+# Better approach: from each xi*xi.T matrix, recover xi
+# The diagonal of xi*xi.T gives xi[j]^2
+# We can get xi from the first row (or any row) divided by sqrt of diagonal element
+
+N = Y.shape[0]
+M = Y.shape[1]
+
+# For each n, Y[n] = xi * xi.T where xi is column vector of length M
+# Y[n][i,j] = xi[i]*xi[j]
+# diagonal: Y[n][i,i] = xi[i]^2
+# So xi[i] = sqrt(Y[n][i,i]) (all positive)
+
+X = np.sqrt(np.array([np.diag(Y[n]) for n in range(N)])).T
+  [t=272s] exec A ok=True
+[values after running the solution]
+--- X:
+type=numpy.ndarray
+[[9.         2.         5.         5.        ]
+ [7.93725393 3.46410162 5.91607978 5.47722558]
+ [7.93725393 2.82842712 5.         3.16227766]]
+[shape] (3, 4) [dtype] float64
+  [t=282s] exec B ok=True
+[values after running the solution]
+--- X:
+type=numpy.ndarray
+[[9. 2. 5. 5.]
+ [7. 6. 7. 6.]
+ [7. 4. 5. 2.]]
+[shape] (3, 4) [dtype] float64
+  [t=288s] exec S ok=True
+[values after running the solution]
+--- X:
+type=numpy.ndarray
+[[9. 2. 5. 5.]
+ [7. 6. 7. 6.]
+ [7. 4. 5. 2.]]
+[shape] (3, 4) [dtype] float64
+  runnable=3/3 agreement groups=[2, 1]
+  majority of 2 agrees -> candidate B
+  [t=291s] sonnet call took 3s
+  alternative input skeleton:
+import numpy as np
+Y = np.array([[[16, 8, 24, 4],
+               [8, 4, 12, 2],
+               [24, 12, 36, 6],
+               [4, 2, 6, 1]],
+
+              [[9, 3, 6, 15],
+               [3, 1, 2, 5],
+               [6, 2, 4, 10],
+               [15, 5, 10, 25]],
+
+              [[49, 63, 35, 14],
+               [63, 81, 45, 18],
+               [35, 45, 25, 10],
+               [14, 18, 10, 4]]])
+  [t=297s] exec2 B ok=True
+[values after running the solution]
+--- X:
+type=numpy.ndarray
+[[4. 3. 7.]
+ [2. 1. 9.]
+ [6. 2. 5.]
+ [1. 5. 2.]]
+[shape] (4, 3) [dtype] float64
+  [t=307s] exec2 S ok=True
+[values after running the solution]
+--- X:
+type=numpy.ndarray
+[[4. 3. 7.]
+ [2. 1. 9.]
+ [6. 2. 5.]
+ [1. 5. 2.]]
+[shape] (4, 3) [dtype] float64
+  generality: all agree on the alternative input too
+  final (done=True, t=307s):
+X = np.sqrt(np.diagonal(Y, axis1=1, axis2=2)).T
+  llm_calls=4 est_cost=$0.0472
+    opus: in=2521 out=31 reas=0 $0.0134
+    gpt54: in=1690 out=504 reas=473 $0.0189
+    sonnet: in=1836 out=284 reas=0 $0.0098
+    sonnet: in=761 out=191 reas=0 $0.0051

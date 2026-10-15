@@ -1,0 +1,66 @@
+
+[165] library=Pandas
+  targets=['result'] func=None in_function=False inputs=['birds', 'someTuple']
+  [t=17s] versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  [t=19s] opus call took 2s
+  [t=23s] gpt54 call took 6s
+  [t=41s] gemini call took 23s
+  candidate A (opus):
+result = pd.DataFrame(np.column_stack(someTuple), columns=['birdType', 'birdCount'])
+  candidate B (gpt54):
+result = pd.DataFrame({'birdType': someTuple[0], 'birdCount': someTuple[1]})
+  candidate C (gemini):
+result = pd.DataFrame({'birdType': someTuple[0], 'birdCount': someTuple[1]})
+  [t=51s] exec A ok=True
+[values after running the solution]
+--- result:
+type=pandas.core.frame.DataFrame
+            birdType birdCount
+0    African Swallow     16510
+1        Dead Parrot     16570
+2  Exploding Penguin     16920
+[shape] (3, 2)
+[dtypes] birdType:object, birdCount:object
+[index] RangeIndex [0, 1, 2]
+[columns] ['birdType', 'birdCount']
+  keys A: strict=aaef70ae values=64a53147 dtypes: type=pandas.core.frame.DataFrame | [dtypes] birdType:object, birdCount:object
+  [t=61s] exec B ok=True
+[values after running the solution]
+--- result:
+type=pandas.core.frame.DataFrame
+            birdType  birdCount
+0    African Swallow      16510
+1        Dead Parrot      16570
+2  Exploding Penguin      16920
+[shape] (3, 2)
+[dtypes] birdType:object, birdCount:int64
+[index] RangeIndex [0, 1, 2]
+[columns] ['birdType', 'birdCount']
+  keys B: strict=f15904b2 values=64a53147 dtypes: type=pandas.core.frame.DataFrame | [dtypes] birdType:object, birdCount:int64
+  [t=71s] exec C ok=True
+[values after running the solution]
+--- result:
+type=pandas.core.frame.DataFrame
+            birdType  birdCount
+0    African Swallow      16510
+1        Dead Parrot      16570
+2  Exploding Penguin      16920
+[shape] (3, 2)
+[dtypes] birdType:object, birdCount:int64
+[index] RangeIndex [0, 1, 2]
+[columns] ['birdType', 'birdCount']
+  keys C: strict=f15904b2 values=64a53147 dtypes: type=pandas.core.frame.DataFrame | [dtypes] birdType:object, birdCount:int64
+  runnable=3/3 agreement groups=[2, 1]
+  majority of 2 (of 3 runnable) agrees -> candidate B
+  dtype-split: values agree, dtypes differ across 2 groups (Bx2, Ax1)
+    B: type=pandas.core.frame.DataFrame | [dtypes] birdType:object, birdCount:int64
+    A: type=pandas.core.frame.DataFrame | [dtypes] birdType:object, birdCount:object
+  [t=73s] opus call took 2s
+  dtype judge chose candidate B (2 model(s) produced these dtypes)
+  final (done=True, t=73s):
+result = pd.DataFrame({'birdType': someTuple[0], 'birdCount': someTuple[1]})
+  llm_calls=4 est_cost=$0.0495
+    opus: in=2764 out=49 reas=0 $0.0150
+    gpt54: in=1809 out=217 reas=181 $0.0078
+    gemini: in=1899 out=27 reas=180 $0.0063
+    opus: in=3824 out=50 reas=0 $0.0204

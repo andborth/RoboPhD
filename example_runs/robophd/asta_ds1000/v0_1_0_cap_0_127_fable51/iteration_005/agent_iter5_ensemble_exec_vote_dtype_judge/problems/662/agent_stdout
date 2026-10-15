@@ -1,0 +1,70 @@
+
+[662] library=Matplotlib
+  targets=[] func=None in_function=False inputs=['df']
+  [t=15s] versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  [t=19s] opus call took 3s
+  [t=60s] gpt54 call took 45s
+  [t=255s] gemini call timed out after 240s
+  generation C failed: TimeoutError()
+  candidate A (opus):
+g = sns.FacetGrid(df, row="b")
+g.map(sns.pointplot, "a", "c")
+for ax in g.axes.flat:
+    labels = ax.get_xticklabels()
+    for i, label in enumerate(labels):
+        if i % 2 == 1:
+            label.set_visible(False)
+  candidate B (gpt54):
+def pointplot_with_sparse_xticklabels(data, color=None, **kws):
+    ax = plt.gca()
+    ticks = np.arange(data["a"].min(), data["a"].max() + 1, 1)
+    sns.pointplot(data=data, x="a", y="c", order=ticks, color=color, ax=ax)
+    ax.set_xticks(np.arange(ticks.size))
+    ax.set_xticklabels(np.where(np.arange(ticks.size) % 2 == 0, ticks, ""))
+
+g = sns.FacetGrid(df, row="b", sharex=False)
+g.map_dataframe(pointplot_with_sparse_xticklabels)
+  [t=259s] sonnet call took 4s
+  candidate S (sonnet):
+g = sns.FacetGrid(df, row="b")
+g.map(sns.pointplot, "a", "c")
+
+for ax in g.axes.flat:
+    ax.set_xticks(range(len(ax.get_xticklabels())))
+    labels = [t.get_text() for t in ax.get_xticklabels()]
+    new_labels = [label if i % 2 == 0 else "" for i, label in enumerate(labels)]
+    ax.set_xticklabels(new_labels)
+  [t=270s] exec A ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='b = A' xlabel='' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.048249912683542284, 1.0272875803341597) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = B' xlabel='' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.048249912683542284, 1.0272875803341597) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = C' xlabel='a' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.048249912683542284, 1.0272875803341597) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+  [t=280s] exec B ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='b = A' xlabel='a' ylabel='c' xlim=(-0.5, 9.5) ylim=(0.030845192036660612, 1.0368841876799801) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[0.0, 0.2, 0.4, 0.6000000000000001, 0.8, 1.0, 1.2000000000000002]
+axes: title='b = B' xlabel='a' ylabel='c' xlim=(-0.5, 9.5) ylim=(0.030845192036660612, 1.0368841876799801) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[0.0, 0.2, 0.4, 0.6000000000000001, 0.8, 1.0, 1.2000000000000002]
+axes: title='b = C' xlabel='a' ylabel='c' xlim=(-0.5, 9.5) ylim=(0.030845192036660612, 1.0368841876799801) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[0.0, 0.2, 0.4, 0.6000000000000001, 0.8, 1.0, 1.2000000000000002]
+  [t=287s] exec S ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='b = A' xlabel='' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.03448271877072775, 1.0288126164674016) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = B' xlabel='' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.03448271877072775, 1.0288126164674016) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = C' xlabel='a' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.03448271877072775, 1.0288126164674016) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+  runnable=3/3 agreement groups=[1, 1, 1]
+  fallback pick -> B
+  final (done=True, t=287s):
+def pointplot_with_sparse_xticklabels(data, color=None, **kws):
+    ax = plt.gca()
+    ticks = np.arange(data["a"].min(), data["a"].max() + 1, 1)
+    sns.pointplot(data=data, x="a", y="c", order=ticks, color=color, ax=ax)
+    ax.set_xticks(np.arange(ticks.size))
+    ax.set_xticklabels(np.where(np.arange(ticks.size) % 2 == 0, ticks, ""))
+
+g = sns.FacetGrid(df, row="b", sharex=False)
+g.map_dataframe(pointplot_with_sparse_xticklabels)
+  llm_calls=3 est_cost=$0.1260
+    opus: in=2426 out=114 reas=0 $0.0150
+    gpt54: in=1600 out=3336 reas=3192 $0.1019
+    sonnet: in=1743 out=207 reas=53 $0.0091

@@ -1,0 +1,17 @@
+
+[812] library=Scipy
+  targets=['weights'] func=None in_function=False inputs=['a']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+weights = a['A1'].values / a['A1'].sum()
+  exec ok=True
+[values after running the solution]
+--- weights:
+type=numpy.ndarray
+[0.         0.02941176 0.05882353 0.08823529 0.05882353 0.02941176 0.17647059 0.         0.02941176 0.02941176
+ 0.20588235 0.29411765]
+[shape] (12,) [dtype] float64
+  review: KEEP
+  final:
+weights = a['A1'].values / a['A1'].sum()
+  llm_calls=2 est_cost=$0.0108

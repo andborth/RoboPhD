@@ -1,0 +1,64 @@
+
+[662] library=Matplotlib
+  targets=[] func=None in_function=False inputs=['df']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+g = sns.FacetGrid(df, row="b")
+g.map(sns.pointplot, "a", "c")
+for ax in g.axes.flat:
+    labels = ax.get_xticklabels()
+    for i, l in enumerate(labels):
+        if i % 2 != 0:
+            l.set_visible(False)
+  candidate B (gpt54):
+def pointplot_ticks(data, color=None, **kwargs):
+    ax = plt.gca()
+    sns.pointplot(data=data, x="a", y="c", color=color, **kwargs)
+    vals = np.sort(data["a"].unique())
+    pos = np.arange(len(vals))
+    ax.set_xticks(pos)
+    ax.set_xticklabels(np.where(pos % 2 == 0, vals.astype(str), ""))
+
+g = sns.FacetGrid(df, row="b")
+g.map_dataframe(pointplot_ticks)
+  candidate C (gemini):
+g = sns.FacetGrid(df, row="b")
+g.map(sns.pointplot, "a", "c")
+for ax in g.axes.flatten():
+    for ind, label in enumerate(ax.get_xticklabels()):
+        if ind % 2 != 0:
+            label.set_visible(False)
+  exec A ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='b = A' xlabel='' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.01258880345947419, 1.0449594691426107) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = B' xlabel='' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.01258880345947419, 1.0449594691426107) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = C' xlabel='a' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.01258880345947419, 1.0449594691426107) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+  exec B ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='b = A' xlabel='a' ylabel='c' xlim=(-0.5, 9.5) ylim=(-0.007176312214598246, 1.0388986293116025) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = B' xlabel='a' ylabel='c' xlim=(-0.5, 9.5) ylim=(-0.007176312214598246, 1.0388986293116025) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = C' xlabel='a' ylabel='c' xlim=(-0.5, 9.5) ylim=(-0.007176312214598246, 1.0388986293116025) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+  exec C ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='b = A' xlabel='' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.037844589640227216, 1.043514354643251) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = B' xlabel='' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.037844589640227216, 1.043514354643251) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+axes: title='b = C' xlabel='a' ylabel='c' xlim=(-0.5, 29.5) ylim=(-0.037844589640227216, 1.043514354643251) lines=11 patches=0 collections=0 texts=0 legend=None xticks=[0, 1, 2, 3, 4, 5, 6, 7] yticks=[-0.2, 0.0, 0.2, 0.4000000000000001, 0.6000000000000001, 0.8, 1.0000000000000002, 1.2000000000000002]
+  runnable=3/3 agreement groups=[1, 1, 1]
+  judge chose candidate C
+  loop rewrite (opus) ok=True same_output=False
+  final:
+g = sns.FacetGrid(df, row="b")
+g.map(sns.pointplot, "a", "c")
+for ax in g.axes.flatten():
+    for ind, label in enumerate(ax.get_xticklabels()):
+        if ind % 2 != 0:
+            label.set_visible(False)
+  llm_calls=5 est_cost=$0.1115
+    opus: in=2267 out=114 reas=0 $0.0142
+    gpt54: in=1493 out=1265 reas=1148 $0.0399
+    gemini: in=1538 out=80 reas=1046 $0.0166
+    opus: in=4849 out=10 reas=0 $0.0245
+    opus: in=2584 out=136 reas=0 $0.0163

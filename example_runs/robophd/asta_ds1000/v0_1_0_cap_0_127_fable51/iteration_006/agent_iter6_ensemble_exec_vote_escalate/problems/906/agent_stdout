@@ -1,0 +1,81 @@
+
+[906] library=Sklearn
+  targets=['slopes'] func=None in_function=False inputs=['df1']
+  [t=14s] versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  [t=17s] opus call took 3s
+  [t=49s] gemini call took 35s
+  [t=58s] gpt54 call took 44s
+  candidate A (opus):
+slopes = []
+for col in df1.columns:
+    if col == "Time":
+        continue
+    df2 = df1[~np.isnan(df1[col])]
+    df3 = df2[['Time', col]]
+    npMatrix = np.matrix(df3)
+    X, Y = npMatrix[:, 0], npMatrix[:, 1]
+    slope = LinearRegression().fit(X, Y)
+    m = slope.coef_[0]
+    slopes.append(m)
+slopes = np.array(slopes).reshape(-1, 1)
+  candidate B (gpt54):
+x = df1.iloc[:, 0]
+slopes = df1.iloc[:, 1:].apply(
+    lambda s: LinearRegression().fit(
+        x[(s.notna()) & (x.notna())].to_frame(),
+        s[(s.notna()) & (x.notna())]
+    ).coef_[0]
+).values
+  candidate C (gemini):
+def get_slope(col):
+    valid = df1[['Time', col]].dropna()
+    return LinearRegression().fit(valid[['Time']], valid[col]).coef_[0]
+
+slopes = list(map(get_slope, df1.columns.drop('Time')))
+  [t=68s] exec A ok=None
+(the skeleton itself cannot run here)
+[program crashed: exit code 1]
+[stderr]
+Traceback (most recent call last):
+  File "/workspace/_cand.py", line 12, in <module>
+    df1 = load_data()
+          ^^^^^^^^^
+NameError: name 'load_data' is not defined
+  [t=74s] exec B ok=None
+(the skeleton itself cannot run here)
+[program crashed: exit code 1]
+[stderr]
+Traceback (most recent call last):
+  File "/workspace/_cand.py", line 12, in <module>
+    df1 = load_data()
+          ^^^^^^^^^
+NameError: name 'load_data' is not defined
+  [t=80s] exec C ok=None
+(the skeleton itself cannot run here)
+[program crashed: exit code 1]
+[stderr]
+Traceback (most recent call last):
+  File "/workspace/_cand.py", line 12, in <module>
+    df1 = load_data()
+          ^^^^^^^^^
+NameError: name 'load_data' is not defined
+  [t=92s] opus call took 11s
+  judge chose candidate A
+  [t=95s] opus call took 3s
+  final (done=True, t=95s):
+def fit_col(col):
+    df2 = df1[~np.isnan(df1[col])]
+    df3 = df2[['Time', col]]
+    npMatrix = np.matrix(df3)
+    X, Y = npMatrix[:, 0], npMatrix[:, 1]
+    slope = LinearRegression().fit(X, Y)
+    return slope.coef_[0]
+
+cols = df1.columns.drop('Time')
+slopes = np.array(list(map(fit_col, cols))).reshape(-1, 1)
+  llm_calls=5 est_cost=$0.1534
+    opus: in=3037 out=188 reas=0 $0.0199
+    gemini: in=2150 out=65 reas=832 $0.0151
+    gpt54: in=2107 out=3425 reas=3345 $0.0566
+    opus: in=3971 out=811 reas=1 $0.0401
+    opus: in=3433 out=182 reas=0 $0.0217

@@ -1,0 +1,20 @@
+
+[38] library=Pandas
+  targets=['result'] func=None in_function=False inputs=['df', 'row_list', 'column_list']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+s = df.loc[row_list, column_list].sum()
+result = s.drop(s.idxmax())
+  exec ok=True
+[values after running the solution]
+--- result:
+type=pandas.core.series.Series
+a    3
+b    3
+[shape] (2,) [dtype] int64 [name] None
+[index] Index ['a', 'b']
+  review: KEEP
+  final:
+s = df.loc[row_list, column_list].sum()
+result = s.drop(s.idxmax())
+  llm_calls=2 est_cost=$0.0121

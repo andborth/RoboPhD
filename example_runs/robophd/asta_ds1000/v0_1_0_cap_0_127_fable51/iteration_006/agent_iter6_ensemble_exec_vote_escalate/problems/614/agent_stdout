@@ -1,0 +1,38 @@
+
+[614] library=Matplotlib
+  targets=[] func=None in_function=False inputs=['x', 'y']
+  [t=18s] versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  [t=19s] opus call took 1s
+  [t=31s] gpt54 call took 13s
+  [t=168s] gemini call timed out after 150s
+  generation C failed: TimeoutError()
+  candidate A (opus):
+plt.stem(x, y, orientation="horizontal")
+  candidate B (gpt54):
+plt.stem(x, y, orientation='horizontal')
+  [t=169s] sonnet call took 1s
+  candidate S (sonnet):
+plt.stem(x, y, orientation='horizontal')
+  [t=179s] exec A ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='' xlabel='' ylabel='' xlim=(-0.13553254873506457, 2.8461835234363555) ylim=(-0.20915926535897936, 6.592344572538566) lines=2 patches=0 collections=1 texts=0 legend=None xticks=[-0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0] yticks=[-1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+  keys A: strict=1ecdf515 values=3e65774c dtypes: 
+  [t=190s] exec B ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='' xlabel='' ylabel='' xlim=(-0.13553254873506457, 2.8461835234363555) ylim=(-0.20915926535897936, 6.592344572538566) lines=2 patches=0 collections=1 texts=0 legend=None xticks=[-0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0] yticks=[-1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+  keys B: strict=1ecdf515 values=3e65774c dtypes: 
+  [t=196s] exec S ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='' xlabel='' ylabel='' xlim=(-0.13553254873506457, 2.8461835234363555) ylim=(-0.20915926535897936, 6.592344572538566) lines=2 patches=0 collections=1 texts=0 legend=None xticks=[-0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0] yticks=[-1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+  keys S: strict=1ecdf515 values=3e65774c dtypes: 
+  runnable=3/3 agreement groups=[3]
+  majority of 3 (of 3 runnable) agrees -> candidate A
+  final (done=True, t=196s):
+plt.stem(x, y, orientation="horizontal")
+  llm_calls=3 est_cost=$0.0327
+    opus: in=2319 out=29 reas=0 $0.0123
+    gpt54: in=1521 out=754 reas=732 $0.0151
+    sonnet: in=1653 out=23 reas=0 $0.0053

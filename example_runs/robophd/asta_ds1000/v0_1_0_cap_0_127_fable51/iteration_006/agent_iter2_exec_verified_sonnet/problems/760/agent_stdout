@@ -1,0 +1,19 @@
+
+[760] library=Scipy
+  targets=[] func=f in_function=True inputs=['example_pre_course_scores', 'example_during_course_scores']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+    return stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  exec ok=True
+[values after running the solution]
+--- function f(pre_course_scores=array([ 0.08910708, -0.12525767, -2.7070627 ,  1.68203317, -1.09641224,
+       -1.0125061 , -0.47256014, -0.14543714, -0.27425284,  1.78934818]), during_course_scores=array([ 0.76272538, -0.49019477, -1.01763393,  0.75985601,  1.22386675,
+       -0.27774792,  0.26944247, -0.56662328, -1.54754807,  0.14959185])) defined
+--- call f(0 positional arg(s)) ->
+type=numpy.float64
+0.8205958397554409
+[shape] () [dtype] float64
+  review: KEEP
+  final:
+    return stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  llm_calls=2 est_cost=$0.0108

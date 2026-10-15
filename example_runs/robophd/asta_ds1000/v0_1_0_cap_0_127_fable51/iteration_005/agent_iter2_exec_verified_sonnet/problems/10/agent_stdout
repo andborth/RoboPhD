@@ -1,0 +1,33 @@
+
+[10] library=Pandas
+  targets=['result'] func=None in_function=False inputs=['df']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+def df_to_dict(df):
+    cols = df.columns.tolist()
+    if len(cols) == 2:
+        return dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
+    return df.groupby(cols[0]).apply(
+        lambda x: df_to_dict(x[cols[1:]]),
+        include_groups=False
+    ).to_dict()
+
+result = df_to_dict(df)
+  exec ok=True
+[values after running the solution]
+--- result:
+type=builtins.dict
+{'A': {'A1': {'A11': 1}, 'A2': {'A12': 2, 'A21': 6}}, 'B': {'B1': {'B12': 3}, 'B2': {'B21': 5}}, 'C': {'C1': {'C11': 4}}}
+  review: KEEP
+  final:
+def df_to_dict(df):
+    cols = df.columns.tolist()
+    if len(cols) == 2:
+        return dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
+    return df.groupby(cols[0]).apply(
+        lambda x: df_to_dict(x[cols[1:]]),
+        include_groups=False
+    ).to_dict()
+
+result = df_to_dict(df)
+  llm_calls=2 est_cost=$0.0332

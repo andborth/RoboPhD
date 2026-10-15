@@ -1,0 +1,48 @@
+
+[857] library=Sklearn
+  targets=['coef'] func=None in_function=False inputs=['pipe', 'grid']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+grid.fit(X, y)
+coef = grid.best_estimator_.named_steps["model"].coef_
+  candidate B (gpt54):
+grid.fit(X, y)
+coef = grid.best_estimator_.named_steps["model"].coef_
+  candidate C (gemini):
+grid.fit(X, y)
+coef = grid.best_estimator_.named_steps["model"].coef_
+  exec A ok=None
+(the skeleton itself cannot run here)
+[program crashed: exit code 1]
+[stderr]
+Traceback (most recent call last):
+  File "/workspace/_cand.py", line 15, in <module>
+    X, y = load_data()
+           ^^^^^^^^^
+NameError: name 'load_data' is not defined
+  exec B ok=None
+(the skeleton itself cannot run here)
+[program crashed: exit code 1]
+[stderr]
+Traceback (most recent call last):
+  File "/workspace/_cand.py", line 15, in <module>
+    X, y = load_data()
+           ^^^^^^^^^
+NameError: name 'load_data' is not defined
+  exec C ok=None
+(the skeleton itself cannot run here)
+[program crashed: exit code 1]
+[stderr]
+Traceback (most recent call last):
+  File "/workspace/_cand.py", line 15, in <module>
+    X, y = load_data()
+           ^^^^^^^^^
+NameError: name 'load_data' is not defined
+  3 identical candidates -> A
+  final:
+grid.fit(X, y)
+coef = grid.best_estimator_.named_steps["model"].coef_
+  llm_calls=3 est_cost=$0.0330
+    opus: in=2616 out=45 reas=0 $0.0142
+    gpt54: in=1684 out=207 reas=175 $0.0099
+    gemini: in=1743 out=29 reas=420 $0.0089

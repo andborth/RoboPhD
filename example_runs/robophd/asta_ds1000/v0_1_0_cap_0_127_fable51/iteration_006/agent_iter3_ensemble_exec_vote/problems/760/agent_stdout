@@ -1,0 +1,46 @@
+
+[760] library=Scipy
+  targets=[] func=f in_function=True inputs=['example_pre_course_scores', 'example_during_course_scores']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+    return stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  candidate B (gpt54):
+    return stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  candidate C (gemini):
+    return stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  exec A ok=True
+[values after running the solution]
+--- function f(pre_course_scores=array([ 0.74155567,  0.12250364, -1.12289978, -0.58990487, -1.06683737,
+        1.1388117 ,  1.26891963,  1.20108238, -1.0076296 , -1.22361093]), during_course_scores=array([ 0.78105621,  0.5473826 , -1.10931583, -1.63768684,  2.17020874,
+       -0.32036694,  0.56812403,  0.57461781, -0.02497979, -1.63051694])) defined
+--- call f(0 positional arg(s)) ->
+type=numpy.float64
+0.8205958397554409
+[shape] () [dtype] float64
+  exec B ok=True
+[values after running the solution]
+--- function f(pre_course_scores=array([-0.05255901, -0.56838908,  0.18656041, -0.38647635, -1.05327562,
+       -0.91784838, -1.40938922, -0.19916721,  0.34977416, -2.11677878]), during_course_scores=array([ 1.32239619,  1.50699237,  0.45070558, -1.06689556,  0.42036051,
+        0.45884899,  0.4987411 ,  0.30609157,  0.72744406, -0.94131495])) defined
+--- call f(0 positional arg(s)) ->
+type=numpy.float64
+0.01016520189195626
+[shape] () [dtype] float64
+  exec C ok=True
+[values after running the solution]
+--- function f(pre_course_scores=array([-1.44886581,  0.22758561, -0.3806133 ,  0.72292418, -0.02302972,
+       -0.29415033, -1.66334288, -0.32328805, -0.80981287,  1.70703144]), during_course_scores=array([-0.52488048,  0.33731669, -0.12119473,  0.68043066,  1.41206453,
+       -1.14841477, -0.60172502, -1.16376646,  1.20963409, -2.79154459])) defined
+--- call f(0 positional arg(s)) ->
+type=numpy.float64
+1.0
+[shape] () [dtype] float64
+  runnable=3/3 agreement groups=[1, 1, 1]
+  judge chose candidate A
+  final:
+    return stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  llm_calls=4 est_cost=$0.0437
+    opus: in=2383 out=39 reas=0 $0.0129
+    gpt54: in=1557 out=92 reas=65 $0.0062
+    gemini: in=1655 out=25 reas=189 $0.0059
+    opus: in=3683 out=10 reas=0 $0.0187

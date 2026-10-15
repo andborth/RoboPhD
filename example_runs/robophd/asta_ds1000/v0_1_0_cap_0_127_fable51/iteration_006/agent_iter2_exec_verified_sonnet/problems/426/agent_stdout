@@ -1,0 +1,20 @@
+
+[426] library=Numpy
+  targets=['result'] func=None in_function=False inputs=['a', 'm']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+result = (a[:, None] >> np.arange(m-1, -1, -1)) & 1
+  exec ok=True
+[values after running the solution]
+--- result:
+type=numpy.ndarray
+[[0 0 0 0 0 1]
+ [0 0 0 0 1 0]
+ [0 0 0 0 1 1]
+ [0 0 0 1 0 0]
+ [0 0 0 1 0 1]]
+[shape] (5, 6) [dtype] int64
+  review: KEEP
+  final:
+result = (a[:, None] >> np.arange(m-1, -1, -1)) & 1
+  llm_calls=2 est_cost=$0.0112

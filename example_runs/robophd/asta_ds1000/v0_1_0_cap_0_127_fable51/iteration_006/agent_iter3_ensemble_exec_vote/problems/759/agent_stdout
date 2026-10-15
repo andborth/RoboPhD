@@ -1,0 +1,36 @@
+
+[759] library=Scipy
+  targets=['p_value'] func=None in_function=False inputs=['pre_course_scores', 'during_course_scores']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+_, p_value = stats.ranksums(pre_course_scores, during_course_scores)
+  candidate B (gpt54):
+p_value = stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  candidate C (gemini):
+p_value = stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  exec A ok=True
+[values after running the solution]
+--- p_value:
+type=numpy.float64
+0.5967012167293563
+[shape] () [dtype] float64
+  exec B ok=True
+[values after running the solution]
+--- p_value:
+type=numpy.float64
+0.5967012167293563
+[shape] () [dtype] float64
+  exec C ok=True
+[values after running the solution]
+--- p_value:
+type=numpy.float64
+0.5967012167293563
+[shape] () [dtype] float64
+  runnable=3/3 agreement groups=[3]
+  majority of 3 agrees -> candidate A
+  final:
+_, p_value = stats.ranksums(pre_course_scores, during_course_scores)
+  llm_calls=3 est_cost=$0.0236
+    opus: in=2337 out=39 reas=0 $0.0127
+    gpt54: in=1531 out=54 reas=25 $0.0050
+    gemini: in=1613 out=27 reas=202 $0.0060

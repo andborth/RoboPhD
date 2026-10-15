@@ -1,0 +1,51 @@
+
+[804] library=Scipy
+  targets=['result'] func=None in_function=False inputs=['centroids', 'data']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+dist = scipy.spatial.distance.cdist(centroids, data)
+result = data[np.argmin(dist, axis=1)]
+  candidate B (gpt54):
+result = data[scipy.spatial.distance.cdist(centroids, data).argmin(axis=1)]
+  candidate C (gemini):
+result = data[np.argmin(scipy.spatial.distance.cdist(centroids, data), axis=1)]
+  exec A ok=True
+[values after running the solution]
+--- result:
+type=numpy.ndarray
+[[0.24763902 0.63184306 0.58370751]
+ [0.69983407 0.28915978 0.92668962]
+ [0.6303605  0.07120299 0.60180192]
+ [0.80782703 0.43997033 0.64706795]
+ [0.40285893 0.30669254 0.00704323]]
+[shape] (5, 3) [dtype] float64
+  exec B ok=True
+[values after running the solution]
+--- result:
+type=numpy.ndarray
+[[0.71880142 0.07471583 0.88340576]
+ [0.07476776 0.18401181 0.78886233]
+ [0.32639664 0.56713433 0.27239152]
+ [0.87724771 0.80840759 0.06511283]
+ [0.43335195 0.46136842 0.04800409]]
+[shape] (5, 3) [dtype] float64
+  exec C ok=True
+[values after running the solution]
+--- result:
+type=numpy.ndarray
+[[0.74450524 0.42481355 0.99556135]
+ [0.14997771 0.41306762 0.781184  ]
+ [0.93580903 0.46461567 0.17489034]
+ [0.46668961 0.30431031 0.13225966]
+ [0.2454367  0.5595172  0.62892908]]
+[shape] (5, 3) [dtype] float64
+  runnable=3/3 agreement groups=[1, 1, 1]
+  judge chose candidate A
+  final:
+dist = scipy.spatial.distance.cdist(centroids, data)
+result = data[np.argmin(dist, axis=1)]
+  llm_calls=4 est_cost=$0.0499
+    opus: in=2437 out=54 reas=0 $0.0135
+    gpt54: in=1588 out=179 reas=144 $0.0088
+    gemini: in=1643 out=30 reas=502 $0.0097
+    opus: in=3517 out=10 reas=0 $0.0178

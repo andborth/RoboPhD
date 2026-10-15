@@ -1,0 +1,71 @@
+
+[492] library=Numpy
+  targets=['result'] func=None in_function=False inputs=['n', 'm', 'tag', 's1']
+  [t=17s] versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  [t=19s] opus call took 2s
+  [t=25s] gpt54 call took 8s
+  [t=70s] gemini call took 53s
+  candidate A (opus):
+result = (~np.isclose(s1, s2, equal_nan=True)).sum()
+  candidate B (gpt54):
+result = np.count_nonzero(~np.isclose(s1, s2, equal_nan=True))
+  candidate C (gemini):
+result = np.sum(~np.isclose(s1, s2, equal_nan=True))
+  [t=82s] exec A ok=True
+[values after running the solution]
+--- result:
+type=numpy.int64
+0
+[shape] () [dtype] int64
+  keys A: strict=1e2b8a9f values=04f1a139 dtypes: type=numpy.int64 | [shape] () [dtype] int64
+  [t=94s] exec B ok=True
+[values after running the solution]
+--- result:
+type=builtins.int
+0
+  keys B: strict=538b8719 values=04f1a139 dtypes: type=builtins.int
+  [t=105s] exec C ok=True
+[values after running the solution]
+--- result:
+type=numpy.int64
+0
+[shape] () [dtype] int64
+  keys C: strict=1e2b8a9f values=04f1a139 dtypes: type=numpy.int64 | [shape] () [dtype] int64
+  runnable=3/3 agreement groups=[2, 1]
+  majority of 2 (of 3 runnable) agrees -> candidate A
+  dtype-split: values agree, dtypes differ across 2 groups (Ax2, Bx1)
+    A: type=numpy.int64 | [shape] () [dtype] int64
+    B: type=builtins.int
+  [t=107s] opus call took 2s
+  dtype judge chose candidate A (2 model(s) produced these dtypes)
+  [t=110s] sonnet call took 3s
+  alternative input skeleton:
+import numpy as np
+n = 7
+m = 3
+tag = np.random.rand(n, m)
+s1 = np.sum(tag, axis=1)
+s2 = np.sum(tag[:, ::-1], axis=1)
+s1 = np.append(s1, np.nan)
+s2 = np.append(s2, np.nan)
+  [t=117s] exec2 A ok=True
+[values after running the solution]
+--- result:
+type=numpy.int64
+0
+[shape] () [dtype] int64
+  [t=122s] exec2 C ok=True
+[values after running the solution]
+--- result:
+type=numpy.int64
+0
+[shape] () [dtype] int64
+  generality: all agree on the alternative input too
+  final (done=True, t=122s):
+result = (~np.isclose(s1, s2, equal_nan=True)).sum()
+  llm_calls=5 est_cost=$0.0618
+    opus: in=2806 out=38 reas=0 $0.0150
+    gpt54: in=1869 out=316 reas=284 $0.0094
+    gemini: in=1942 out=27 reas=751 $0.0132
+    opus: in=3619 out=71 reas=0 $0.0199
+    sonnet: in=926 out=105 reas=0 $0.0044

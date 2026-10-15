@@ -1,0 +1,48 @@
+
+[426] library=Numpy
+  targets=['result'] func=None in_function=False inputs=['a', 'm']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+result = (((a[:, None] & (1 << np.arange(m)[::-1]))) > 0).astype(int)
+  candidate B (gpt54):
+result = ((np.asarray(a, dtype=object)[:, None] & (2 ** np.arange(m - 1, -1, -1, dtype=object))) != 0).astype(int)
+  candidate C (gemini):
+result = (a[:, None] >> np.arange(m - 1, -1, -1)) & 1
+  exec A ok=True
+[values after running the solution]
+--- result:
+type=numpy.ndarray
+[[0 0 0 0 0 1]
+ [0 0 0 0 1 0]
+ [0 0 0 0 1 1]
+ [0 0 0 1 0 0]
+ [0 0 0 1 0 1]]
+[shape] (5, 6) [dtype] int64
+  exec B ok=True
+[values after running the solution]
+--- result:
+type=numpy.ndarray
+[[0 0 0 0 0 1]
+ [0 0 0 0 1 0]
+ [0 0 0 0 1 1]
+ [0 0 0 1 0 0]
+ [0 0 0 1 0 1]]
+[shape] (5, 6) [dtype] int64
+  exec C ok=True
+[values after running the solution]
+--- result:
+type=numpy.ndarray
+[[0 0 0 0 0 1]
+ [0 0 0 0 1 0]
+ [0 0 0 0 1 1]
+ [0 0 0 1 0 0]
+ [0 0 0 1 0 1]]
+[shape] (5, 6) [dtype] int64
+  runnable=3/3 agreement groups=[3]
+  majority of 3 agrees -> candidate A
+  final:
+result = (((a[:, None] & (1 << np.arange(m)[::-1]))) > 0).astype(int)
+  llm_calls=3 est_cost=$0.0667
+    opus: in=2471 out=48 reas=0 $0.0136
+    gemini: in=1739 out=30 reas=1131 $0.0174
+    gpt54: in=1674 out=1079 reas=1026 $0.0358

@@ -1,0 +1,87 @@
+
+[10] library=Pandas
+  targets=['result'] func=None in_function=False inputs=['df']
+  [t=16s] versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  [t=18s] opus call took 2s
+  [t=36s] gpt54 call took 20s
+  [t=52s] gemini call took 36s
+  candidate A (opus):
+def recur(df):
+    if len(df.columns) == 1:
+        if df.values.size == 1:
+            return df.values[0][0]
+        return df.values.squeeze()
+    grouped = df.groupby(df.columns[0])
+    d = {k: recur(g.iloc[:, 1:]) for k, g in grouped}
+    return d
+
+result = recur(df)
+  candidate B (gpt54):
+def nested(df):
+    if df.shape[1] == 2:
+        return df.set_index(df.columns[0])[df.columns[1]].to_dict()
+    return df.groupby(df.columns[0], sort=False)[df.columns[1:]].apply(nested).to_dict()
+
+result = nested(df)
+  candidate C (gemini):
+result = {}
+for row in df.values:
+    *keys, val = row
+    d = result
+    for k in keys[:-1]:
+        d = d.setdefault(k, {})
+    d[keys[-1]] = val
+  [t=62s] exec A ok=True
+[values after running the solution]
+--- result:
+type=builtins.dict
+{'A': {'A1': {'A11': 1}, 'A2': {'A12': 2, 'A21': 6}}, 'B': {'B1': {'B12': 3}, 'B2': {'B21': 5}}, 'C': {'C1': {'C11': 4}}}
+  [t=68s] exec B ok=True
+[values after running the solution]
+--- result:
+type=builtins.dict
+{'A': {'A1': {'A11': 1}, 'A2': {'A12': 2, 'A21': 6}}, 'B': {'B1': {'B12': 3}, 'B2': {'B21': 5}}, 'C': {'C1': {'C11': 4}}}
+  [t=74s] exec C ok=True
+[values after running the solution]
+--- result:
+type=builtins.dict
+{'A': {'A1': {'A11': 1}, 'A2': {'A12': 2, 'A21': 6}}, 'B': {'B1': {'B12': 3}, 'B2': {'B21': 5}}, 'C': {'C1': {'C11': 4}}}
+  runnable=3/3 agreement groups=[3]
+  majority of 3 agrees -> candidate B
+  [t=76s] sonnet call took 2s
+  alternative input skeleton:
+import pandas as pd
+
+
+df = pd.DataFrame({'name': ['X', 'X', 'Y', 'Z', 'Y', 'X', 'Z'],
+                   'v1': ['X1', 'X2', 'Y1', 'Z1', 'Y2', 'X1', 'Z1'],
+                   'v2': ['X11', 'X21', 'Y11', 'Z11', 'Y21', 'X12', 'Z12'],
+                   'v3': [10, 20, 30, 40, 50, 60, 70]})
+  [t=86s] exec2 A ok=True
+[values after running the solution]
+--- result:
+type=builtins.dict
+{'X': {'X1': {'X11': 10, 'X12': 60}, 'X2': {'X21': 20}}, 'Y': {'Y1': {'Y11': 30}, 'Y2': {'Y21': 50}}, 'Z': {'Z1': {'Z11': 40, 'Z12': 70}}}
+  [t=93s] exec2 B ok=True
+[values after running the solution]
+--- result:
+type=builtins.dict
+{'X': {'X1': {'X11': 10, 'X12': 60}, 'X2': {'X21': 20}}, 'Y': {'Y1': {'Y11': 30}, 'Y2': {'Y21': 50}}, 'Z': {'Z1': {'Z11': 40, 'Z12': 70}}}
+  [t=98s] exec2 C ok=True
+[values after running the solution]
+--- result:
+type=builtins.dict
+{'X': {'X1': {'X11': 10, 'X12': 60}, 'X2': {'X21': 20}}, 'Y': {'Y1': {'Y11': 30}, 'Y2': {'Y21': 50}}, 'Z': {'Z1': {'Z11': 40, 'Z12': 70}}}
+  generality: all agree on the alternative input too
+  final (done=True, t=98s):
+def nested(df):
+    if df.shape[1] == 2:
+        return df.set_index(df.columns[0])[df.columns[1]].to_dict()
+    return df.groupby(df.columns[0], sort=False)[df.columns[1:]].apply(nested).to_dict()
+
+result = nested(df)
+  llm_calls=4 est_cost=$0.0874
+    opus: in=2718 out=128 reas=0 $0.0168
+    gpt54: in=1850 out=1337 reas=1262 $0.0436
+    gemini: in=1921 out=58 reas=1439 $0.0218
+    sonnet: in=935 out=162 reas=0 $0.0052

@@ -1,0 +1,3 @@
+```python
+plt.plot(x, y, marker="d")
+```

@@ -1,0 +1,49 @@
+
+[420] library=Numpy
+  targets=[] func=smoothclamp in_function=False inputs=['x', 'x_min', 'x_max']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+def smoothclamp(x, x_min=x_min, x_max=x_max):
+    t = np.clip((x - x_min) / (x_max - x_min), 0, 1)
+    return x_min + (x_max - x_min) * (t * t * (3 - 2 * t))
+  candidate B (gpt54):
+def smoothclamp(x, mi=x_min, mx=x_max):
+    t = np.clip((x - mi) / (mx - mi), 0, 1)
+    return mi + (mx - mi) * (3 * t**2 - 2 * t**3)
+  candidate C (gemini):
+def smoothclamp(x, mi, mx):
+    t = np.clip((x - mi) / (mx - mi), 0.0, 1.0)
+    return mi + (mx - mi) * (3.0 * t**2 - 2.0 * t**3)
+  exec A ok=True
+[values after running the solution]
+--- function smoothclamp(x, x_min=0, x_max=1) defined
+--- call smoothclamp(x) [as the hidden test does] ->
+type=numpy.float64
+0.15625
+[shape] () [dtype] float64
+  exec B ok=True
+[values after running the solution]
+--- function smoothclamp(x, mi=0, mx=1) defined
+--- call smoothclamp(x) [as the hidden test does] ->
+type=numpy.float64
+0.15625
+[shape] () [dtype] float64
+  exec C ok=True
+[values after running the solution]
+--- function smoothclamp(x, mi, mx) defined
+--- WARNING: calling smoothclamp(x) with ONE positional argument (as the hidden test does) failed: TypeError("smoothclamp() missing 2 required positional arguments: 'mi' and 'mx'")
+--- call smoothclamp(3 positional arg(s)) ->
+type=numpy.float64
+0.15625
+[shape] () [dtype] float64
+  runnable=3/3 agreement groups=[1, 1, 1]
+  judge chose candidate B
+  final:
+def smoothclamp(x, mi=x_min, mx=x_max):
+    t = np.clip((x - mi) / (mx - mi), 0, 1)
+    return mi + (mx - mi) * (3 * t**2 - 2 * t**3)
+  llm_calls=4 est_cost=$0.0935
+    opus: in=2230 out=99 reas=0 $0.0136
+    gemini: in=1510 out=71 reas=944 $0.0152
+    gpt54: in=1475 out=1505 reas=1434 $0.0478
+    opus: in=3328 out=10 reas=0 $0.0169

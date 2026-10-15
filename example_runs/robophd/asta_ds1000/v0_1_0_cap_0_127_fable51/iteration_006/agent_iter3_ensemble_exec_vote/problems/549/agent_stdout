@@ -1,0 +1,41 @@
+
+[549] library=Matplotlib
+  targets=[] func=None in_function=False inputs=['x', 'y1', 'y2']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+ax1.plot(x, y1)
+ax2.plot(x, y2)
+  candidate B (gpt54):
+fig, ax = plt.subplots(2, 1, sharex=True)
+ax[0].plot(x, y1)
+ax[1].plot(x, y2)
+  candidate C (gemini):
+fig, (ax1, ax2) = plt.subplots(2, sharex=True)
+ax1.plot(x, y1)
+ax2.plot(x, y2)
+  exec A ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='' xlabel='' ylabel='' xlim=(-0.3141592653589793, 6.5973445725385655) ylim=(-1.0999914757517075, 1.0999914757517075) lines=1 patches=0 collections=0 texts=0 legend=None xticks=[-1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0] yticks=[-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5]
+axes: title='' xlabel='' ylabel='' xlim=(-0.3141592653589793, 6.5973445725385655) ylim=(-1.0999674529962649, 1.0999984501426794) lines=1 patches=0 collections=0 texts=0 legend=None xticks=[-1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0] yticks=[-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5]
+  exec B ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='' xlabel='' ylabel='' xlim=(-0.3141592653589793, 6.5973445725385655) ylim=(-1.0999914757517075, 1.0999914757517075) lines=1 patches=0 collections=0 texts=0 legend=None xticks=[-1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0] yticks=[-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5]
+axes: title='' xlabel='' ylabel='' xlim=(-0.3141592653589793, 6.5973445725385655) ylim=(-1.0999674529962649, 1.0999984501426794) lines=1 patches=0 collections=0 texts=0 legend=None xticks=[-1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0] yticks=[-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5]
+  exec C ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='' xlabel='' ylabel='' xlim=(-0.3141592653589793, 6.5973445725385655) ylim=(-1.0999914757517075, 1.0999914757517075) lines=1 patches=0 collections=0 texts=0 legend=None xticks=[-1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0] yticks=[-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5]
+axes: title='' xlabel='' ylabel='' xlim=(-0.3141592653589793, 6.5973445725385655) ylim=(-1.0999674529962649, 1.0999984501426794) lines=1 patches=0 collections=0 texts=0 legend=None xticks=[-1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0] yticks=[-1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5]
+  runnable=3/3 agreement groups=[3]
+  majority of 3 agrees -> candidate A
+  final:
+fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+ax1.plot(x, y1)
+ax2.plot(x, y2)
+  llm_calls=3 est_cost=$0.0245
+    opus: in=2190 out=67 reas=0 $0.0126
+    gpt54: in=1433 out=95 reas=48 $0.0057
+    gemini: in=1476 out=46 reas=219 $0.0061

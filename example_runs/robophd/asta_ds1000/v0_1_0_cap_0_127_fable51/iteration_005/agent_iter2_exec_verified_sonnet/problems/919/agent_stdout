@@ -1,0 +1,44 @@
+
+[919] library=Sklearn
+  targets=['predict', 'logReg'] func=None in_function=False inputs=['filename', 'dataframe', 'dataframe', 'cleanup']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+X = dataframe.iloc[:, :-1].astype(float)
+y = dataframe.iloc[:, -1].astype(float)
+
+logReg = LogisticRegression()
+logReg.fit(X, y)
+predict = logReg.predict(X)
+  exec ok=None
+(the skeleton itself cannot run here)
+[program crashed: exit code 1]
+[stderr]
+Traceback (most recent call last):
+  File "/workspace/_cand.py", line 13, in <module>
+    dataframe = pd.read_csv(filename, dtype='category')
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'animalData.csv'
+  review: KEEP
+  final:
+X = dataframe.iloc[:, :-1].astype(float)
+y = dataframe.iloc[:, -1].astype(float)
+
+logReg = LogisticRegression()
+logReg.fit(X, y)
+predict = logReg.predict(X)
+  llm_calls=2 est_cost=$0.0153

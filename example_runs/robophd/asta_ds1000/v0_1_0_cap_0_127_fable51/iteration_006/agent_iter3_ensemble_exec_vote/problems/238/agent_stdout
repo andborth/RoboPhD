@@ -1,0 +1,93 @@
+
+[238] library=Pandas
+  targets=['result'] func=None in_function=False inputs=['df1', 'df2']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+def g(df1, df2):
+    df = pd.concat([df1, df2.merge(df1[['id', 'city', 'district']].drop_duplicates(), on='id', how='left')], sort=False)
+    df = df.sort_values(['id', 'date']).reset_index(drop=True)
+    df['date'] = pd.to_datetime(df['date']).dt.strftime('%d-%b-%Y')
+    return df
+
+result = g(df1.copy(), df2.copy())
+  candidate B (gpt54):
+tmp = df2.merge(df1[['id', 'city', 'district']].drop_duplicates('id'), on='id', how='left')
+result = pd.concat([tmp, df1], ignore_index=True, sort=False)
+result['date'] = pd.to_datetime(result['date']).dt.strftime('%d-%b-%Y')
+result = result[['id', 'city', 'district', 'date', 'value']].sort_values('id', kind='mergesort').reset_index(drop=True)
+  candidate C (gemini):
+result = pd.concat([df1, df2], sort=False, ignore_index=True)
+result['city'] = result.groupby('id')['city'].transform('first')
+result['district'] = result.groupby('id')['district'].transform('first')
+result['date'] = pd.to_datetime(result['date']).dt.strftime('%d-%b-%Y')
+result = result.sort_values(['id', 'date']).reset_index(drop=True)
+result = result[['id', 'city', 'district', 'date', 'value']]
+  exec A ok=True
+[values after running the solution]
+--- result:
+type=pandas.core.frame.DataFrame
+   id city district         date  value
+0   1   bj       ft  01-Jan-2019      1
+1   2   bj       ft  01-Jan-2019      5
+2   3   sh       hp  01-Jan-2019      9
+3   3   sh       hp  01-Feb-2019      1
+4   4   sh       hp  01-Jan-2019     13
+5   4   sh       hp  01-Feb-2019      5
+6   5   sh       hp  01-Jan-2019     17
+7   5   sh       hp  01-Feb-2019      9
+8   6  NaN      NaN  01-Feb-2019     13
+9   7  NaN      NaN  01-Feb-2019     17
+[shape] (10, 5)
+[dtypes] id:int64, city:object, district:object, date:object, value:int64
+[index] RangeIndex [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[columns] ['id', 'city', 'district', 'date', 'value']
+  exec B ok=True
+[values after running the solution]
+--- result:
+type=pandas.core.frame.DataFrame
+   id city district         date  value
+0   1   bj       ft  01-Jan-2019      1
+1   2   bj       ft  01-Jan-2019      5
+2   3   sh       hp  01-Feb-2019      1
+3   3   sh       hp  01-Jan-2019      9
+4   4   sh       hp  01-Feb-2019      5
+5   4   sh       hp  01-Jan-2019     13
+6   5   sh       hp  01-Feb-2019      9
+7   5   sh       hp  01-Jan-2019     17
+8   6  NaN      NaN  01-Feb-2019     13
+9   7  NaN      NaN  01-Feb-2019     17
+[shape] (10, 5)
+[dtypes] id:int64, city:object, district:object, date:object, value:int64
+[index] RangeIndex [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[columns] ['id', 'city', 'district', 'date', 'value']
+  exec C ok=True
+[values after running the solution]
+--- result:
+type=pandas.core.frame.DataFrame
+   id  city district         date  value
+0   1    bj       ft  01-Jan-2019      1
+1   2    bj       ft  01-Jan-2019      5
+2   3    sh       hp  01-Feb-2019      1
+3   3    sh       hp  01-Jan-2019      9
+4   4    sh       hp  01-Feb-2019      5
+5   4    sh       hp  01-Jan-2019     13
+6   5    sh       hp  01-Feb-2019      9
+7   5    sh       hp  01-Jan-2019     17
+8   6  None     None  01-Feb-2019     13
+9   7  None     None  01-Feb-2019     17
+[shape] (10, 5)
+[dtypes] id:int64, city:object, district:object, date:object, value:int64
+[index] RangeIndex [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[columns] ['id', 'city', 'district', 'date', 'value']
+  runnable=3/3 agreement groups=[1, 1, 1]
+  judge chose candidate B
+  final:
+tmp = df2.merge(df1[['id', 'city', 'district']].drop_duplicates('id'), on='id', how='left')
+result = pd.concat([tmp, df1], ignore_index=True, sort=False)
+result['date'] = pd.to_datetime(result['date']).dt.strftime('%d-%b-%Y')
+result = result[['id', 'city', 'district', 'date', 'value']].sort_values('id', kind='mergesort').reset_index(drop=True)
+  llm_calls=4 est_cost=$0.1201
+    opus: in=3127 out=166 reas=0 $0.0198
+    gpt54: in=2319 out=1297 reas=1183 $0.0430
+    gemini: in=2377 out=130 reas=1496 $0.0243
+    opus: in=5193 out=285 reas=0 $0.0331

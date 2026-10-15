@@ -1,0 +1,22 @@
+
+[11] library=Pandas
+  targets=['df'] func=None in_function=False inputs=['df']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+df['datetime'] = df['datetime'].dt.tz_localize(None)
+  exec ok=True
+[values after running the solution]
+--- df:
+type=pandas.core.frame.DataFrame
+             datetime
+0 2015-12-01 00:00:00
+1 2015-12-02 00:01:00
+2 2015-12-03 00:00:00
+[shape] (3, 1)
+[dtypes] datetime:datetime64[ns]
+[index] RangeIndex [0, 1, 2]
+[columns] ['datetime']
+  review: KEEP
+  final:
+df['datetime'] = df['datetime'].dt.tz_localize(None)
+  llm_calls=2 est_cost=$0.0110

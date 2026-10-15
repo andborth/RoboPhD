@@ -1,0 +1,24 @@
+
+[836] library=Sklearn
+  targets=['clf'] func=None in_function=False inputs=['estimators', 'clf']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+steps = list(clf.steps)
+idx = [name for name, _ in steps].index('svdm')
+steps.insert(idx, ('t1919810', PCA()))
+clf.steps = steps
+  exec ok=True
+[values after running the solution]
+--- clf:
+type=sklearn.pipeline.Pipeline
+Pipeline(steps=[('reduce_dIm', PCA()), ('pOly', PolynomialFeatures()),
+                ('t1919810', PCA()), ('svdm', SVC())])
+  review: KEEP
+  loop-free rewrite ok=True same_output=True
+  final:
+steps = list(clf.steps)
+names = list(zip(*steps))[0]
+idx = list(names).index('svdm')
+steps.insert(idx, ('t1919810', PCA()))
+clf.steps = steps
+  llm_calls=3 est_cost=$0.0173

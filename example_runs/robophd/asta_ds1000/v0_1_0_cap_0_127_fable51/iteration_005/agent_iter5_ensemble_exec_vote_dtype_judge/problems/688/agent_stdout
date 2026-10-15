@@ -1,0 +1,80 @@
+
+[688] library=Tensorflow
+  targets=['result'] func=None in_function=False inputs=['a', 'b']
+  [t=14s] versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0, tensorflow 2.16.1
+  [t=16s] opus call took 2s
+  [t=18s] gpt54 call took 4s
+  [t=119s] gemini call took 105s
+  candidate A (opus):
+def g(a, b):
+    return tf.reduce_sum(tf.square(tf.subtract(a, b)), 1)
+
+result = g(a, b)
+  candidate B (gpt54):
+result = tf.reduce_sum(tf.square(a - b), axis=1)
+  candidate C (gemini):
+result = tf.reduce_sum(tf.square(a - b), axis=1)
+  [t=131s] exec A ok=True
+[values after running the solution]
+--- result:
+type=tensorflow.python.framework.ops.EagerTensor
+<tf.Tensor: shape=(2,), dtype=int32, numpy=array([3, 0], dtype=int32)>
+[shape] (2,) [dtype] <dtype: 'int32'>
+  [t=138s] exec B ok=True
+[values after running the solution]
+--- result:
+type=tensorflow.python.framework.ops.EagerTensor
+<tf.Tensor: shape=(2,), dtype=int32, numpy=array([3, 0], dtype=int32)>
+[shape] (2,) [dtype] <dtype: 'int32'>
+  [t=146s] exec C ok=True
+[values after running the solution]
+--- result:
+type=tensorflow.python.framework.ops.EagerTensor
+<tf.Tensor: shape=(2,), dtype=int32, numpy=array([3, 0], dtype=int32)>
+[shape] (2,) [dtype] <dtype: 'int32'>
+  runnable=3/3 agreement groups=[3]
+  majority of 3 agrees -> candidate A
+  [t=148s] sonnet call took 2s
+  alternative input skeleton:
+import tensorflow as tf
+
+
+a = tf.constant([
+  [2, 3, 1],
+  [5, 5, 5],
+  [0, 0, 0]
+])
+b = tf.constant([
+  [1, 1, 1],
+  [5, 5, 5],
+  [3, 4, 0]
+])
+  [t=161s] exec2 A ok=True
+[values after running the solution]
+--- result:
+type=tensorflow.python.framework.ops.EagerTensor
+<tf.Tensor: shape=(3,), dtype=int32, numpy=array([ 5,  0, 25], dtype=int32)>
+[shape] (3,) [dtype] <dtype: 'int32'>
+  [t=168s] exec2 B ok=True
+[values after running the solution]
+--- result:
+type=tensorflow.python.framework.ops.EagerTensor
+<tf.Tensor: shape=(3,), dtype=int32, numpy=array([ 5,  0, 25], dtype=int32)>
+[shape] (3,) [dtype] <dtype: 'int32'>
+  [t=175s] exec2 C ok=True
+[values after running the solution]
+--- result:
+type=tensorflow.python.framework.ops.EagerTensor
+<tf.Tensor: shape=(3,), dtype=int32, numpy=array([ 5,  0, 25], dtype=int32)>
+[shape] (3,) [dtype] <dtype: 'int32'>
+  generality: all agree on the alternative input too
+  final (done=True, t=175s):
+def g(a, b):
+    return tf.reduce_sum(tf.square(tf.subtract(a, b)), 1)
+
+result = g(a, b)
+  llm_calls=4 est_cost=$0.0348
+    opus: in=2579 out=59 reas=0 $0.0144
+    gpt54: in=1703 out=166 reas=140 $0.0088
+    gemini: in=1777 out=23 reas=344 $0.0080
+    sonnet: in=699 out=99 reas=0 $0.0036

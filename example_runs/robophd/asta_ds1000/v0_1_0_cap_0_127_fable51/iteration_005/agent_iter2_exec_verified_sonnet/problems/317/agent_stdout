@@ -1,0 +1,18 @@
+
+[317] library=Numpy
+  targets=['result'] func=None in_function=False inputs=['a']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+result = np.array(a)
+  exec ok=True
+[values after running the solution]
+--- result:
+type=numpy.ndarray
+[[1 2 3]
+ [4 5 6]
+ [7 8 9]]
+[shape] (3, 3) [dtype] int64
+  review: KEEP
+  final:
+result = np.array(a)
+  llm_calls=2 est_cost=$0.0094

@@ -1,0 +1,45 @@
+
+[317] library=Numpy
+  targets=['result'] func=None in_function=False inputs=['a']
+  [t=16s] versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  [t=17s] opus call took 1s
+  [t=19s] gpt54 call took 3s
+  [t=74s] gemini call took 58s
+  candidate A (opus):
+result = np.array(a)
+  candidate B (gpt54):
+result = np.array(a)
+  candidate C (gemini):
+result = np.array(a)
+  [t=84s] exec A ok=True
+[values after running the solution]
+--- result:
+type=numpy.ndarray
+[[1 2 3]
+ [4 5 6]
+ [7 8 9]]
+[shape] (3, 3) [dtype] int64
+  [t=90s] exec B ok=True
+[values after running the solution]
+--- result:
+type=numpy.ndarray
+[[1 2 3]
+ [4 5 6]
+ [7 8 9]]
+[shape] (3, 3) [dtype] int64
+  [t=95s] exec C ok=True
+[values after running the solution]
+--- result:
+type=numpy.ndarray
+[[1 2 3]
+ [4 5 6]
+ [7 8 9]]
+[shape] (3, 3) [dtype] int64
+  runnable=3/3 agreement groups=[3]
+  majority of 3 agrees -> candidate A
+  final (done=True, t=95s):
+result = np.array(a)
+  llm_calls=3 est_cost=$0.0220
+    opus: in=2402 out=18 reas=0 $0.0125
+    gpt54: in=1601 out=39 reas=22 $0.0049
+    gemini: in=1638 out=12 reas=103 $0.0047

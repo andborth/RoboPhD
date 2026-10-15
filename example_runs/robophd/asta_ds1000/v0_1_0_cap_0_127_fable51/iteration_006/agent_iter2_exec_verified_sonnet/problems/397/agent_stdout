@@ -1,0 +1,17 @@
+
+[397] library=Numpy
+  targets=[] func=f in_function=True inputs=[]
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate:
+    return np.exp(np.random.uniform(np.log(min), np.log(max), n))
+  exec ok=True
+[values after running the solution]
+--- function f(min=1, max=2.718281828459045, n=10000) defined
+--- call f(0 positional arg(s)) ->
+type=numpy.ndarray
+[1.35253836 2.47796639 1.38228291 ... 1.7549171  1.49647038 1.73142695]
+[shape] (10000,) [dtype] float64
+  review: KEEP
+  final:
+    return np.exp(np.random.uniform(np.log(min), np.log(max), n))
+  llm_calls=2 est_cost=$0.0101

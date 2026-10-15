@@ -1,0 +1,69 @@
+
+[759] library=Scipy
+  targets=['p_value'] func=None in_function=False inputs=['pre_course_scores', 'during_course_scores']
+  [t=15s] versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  [t=17s] opus call took 2s
+  [t=19s] gpt54 call took 4s
+  [t=55s] gemini call took 40s
+  candidate A (opus):
+_, p_value = stats.ranksums(pre_course_scores, during_course_scores)
+  candidate B (gpt54):
+p_value = stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  candidate C (gemini):
+p_value = stats.ranksums(pre_course_scores, during_course_scores).pvalue
+  [t=66s] exec A ok=True
+[values after running the solution]
+--- p_value:
+type=numpy.float64
+0.5967012167293563
+[shape] () [dtype] float64
+  keys A: strict=0fbf8540 values=a46f5f43 dtypes: type=numpy.float64 | [shape] () [dtype] float64
+  [t=76s] exec B ok=True
+[values after running the solution]
+--- p_value:
+type=numpy.float64
+0.5967012167293563
+[shape] () [dtype] float64
+  keys B: strict=0fbf8540 values=a46f5f43 dtypes: type=numpy.float64 | [shape] () [dtype] float64
+  [t=86s] exec C ok=True
+[values after running the solution]
+--- p_value:
+type=numpy.float64
+0.5967012167293563
+[shape] () [dtype] float64
+  keys C: strict=0fbf8540 values=a46f5f43 dtypes: type=numpy.float64 | [shape] () [dtype] float64
+  runnable=3/3 agreement groups=[3]
+  majority of 3 (of 3 runnable) agrees -> candidate A
+  [t=88s] sonnet call took 2s
+  alternative input skeleton:
+import numpy as np
+from scipy import stats
+np.random.seed(42)
+pre_course_scores = np.random.randn(25)
+during_course_scores = np.random.randn(25)
+  [t=99s] exec2 A ok=True
+[values after running the solution]
+--- p_value:
+type=numpy.float64
+0.6624274847372416
+[shape] () [dtype] float64
+  [t=110s] exec2 B ok=True
+[values after running the solution]
+--- p_value:
+type=numpy.float64
+0.6624274847372416
+[shape] () [dtype] float64
+  [t=122s] exec2 C ok=True
+[values after running the solution]
+--- p_value:
+type=numpy.float64
+0.6624274847372416
+[shape] () [dtype] float64
+  generality: all agree on the alternative input too
+  final (done=True, t=122s):
+_, p_value = stats.ranksums(pre_course_scores, during_course_scores)
+  llm_calls=4 est_cost=$0.0262
+    opus: in=2496 out=39 reas=0 $0.0135
+    gpt54: in=1638 out=48 reas=19 $0.0048
+    gemini: in=1722 out=27 reas=111 $0.0051
+    sonnet: in=632 out=61 reas=0 $0.0028

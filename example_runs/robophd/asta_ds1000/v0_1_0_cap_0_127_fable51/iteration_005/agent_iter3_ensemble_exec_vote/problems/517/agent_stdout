@@ -1,0 +1,31 @@
+
+[517] library=Matplotlib
+  targets=[] func=None in_function=False inputs=['x', 'y']
+  versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  candidate A (opus):
+plt.plot(x, y, marker='d')
+  candidate B (gpt54):
+plt.plot(x, y, '-d')
+  candidate C (gemini):
+plt.plot(x, y, marker='d')
+  exec A ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='' xlabel='' ylabel='' xlim=(-0.45, 9.45) ylim=(-2.810464345070961, 2.5121778255259066) lines=1 patches=0 collections=0 texts=0 legend=None xticks=[-2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0] yticks=[-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
+  exec B ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='' xlabel='' ylabel='' xlim=(-0.45, 9.45) ylim=(-1.5766670126340832, 1.5769027894511072) lines=1 patches=0 collections=0 texts=0 legend=None xticks=[-2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0] yticks=[-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5]
+  exec C ok=True
+[values after running the solution]
+--- figures: [1]
+axes: title='' xlabel='' ylabel='' xlim=(-0.45, 9.45) ylim=(-2.113724728493524, 1.329516167079256) lines=1 patches=0 collections=0 texts=0 legend=None xticks=[-2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0] yticks=[-2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0]
+  runnable=3/3 agreement groups=[1, 1, 1]
+  judge chose candidate A
+  final:
+plt.plot(x, y, marker='d')
+  llm_calls=4 est_cost=$0.0429
+    opus: in=2152 out=25 reas=0 $0.0114
+    gpt54: in=1409 out=189 reas=169 $0.0089
+    gemini: in=1448 out=16 reas=76 $0.0040
+    opus: in=3260 out=93 reas=0 $0.0186

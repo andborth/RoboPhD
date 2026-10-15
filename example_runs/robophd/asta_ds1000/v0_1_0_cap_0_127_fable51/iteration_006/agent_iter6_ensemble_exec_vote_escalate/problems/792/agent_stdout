@@ -1,0 +1,73 @@
+
+[792] library=Scipy
+  targets=['result'] func=None in_function=False inputs=['sa', 'sb']
+  [t=14s] versions: numpy 1.26.4, pandas 2.2.2, scipy 1.15.3, sklearn 1.4.0, matplotlib 3.10.0
+  [t=15s] opus call took 1s
+  [t=24s] gpt54 call took 10s
+  [t=37s] gemini call took 23s
+  candidate A (opus):
+result = sparse.vstack((sa, sb)).tocsr()
+  candidate B (gpt54):
+result = sparse.vstack((sa, sb), format='csr')
+  candidate C (gemini):
+result = sparse.vstack([sa, sb])
+  [t=48s] exec A ok=True
+[values after running the solution]
+--- result:
+type=scipy.sparse._csr.csr_matrix
+<Compressed Sparse Row sparse matrix of dtype 'float64'
+	with 2 stored elements and shape (20, 10)>
+[shape] (20, 10) [dtype] float64
+  keys A: strict=e6a7a8eb values=d10f250d dtypes: type=scipy.sparse._csr.csr_matrix | [shape] (20, 10) [dtype] float64
+  [t=54s] exec B ok=True
+[values after running the solution]
+--- result:
+type=scipy.sparse._csr.csr_matrix
+<Compressed Sparse Row sparse matrix of dtype 'float64'
+	with 2 stored elements and shape (20, 10)>
+[shape] (20, 10) [dtype] float64
+  keys B: strict=e6a7a8eb values=d10f250d dtypes: type=scipy.sparse._csr.csr_matrix | [shape] (20, 10) [dtype] float64
+  [t=60s] exec C ok=True
+[values after running the solution]
+--- result:
+type=scipy.sparse._csr.csr_matrix
+<Compressed Sparse Row sparse matrix of dtype 'float64'
+	with 2 stored elements and shape (20, 10)>
+[shape] (20, 10) [dtype] float64
+  keys C: strict=e6a7a8eb values=d10f250d dtypes: type=scipy.sparse._csr.csr_matrix | [shape] (20, 10) [dtype] float64
+  runnable=3/3 agreement groups=[3]
+  majority of 3 (of 3 runnable) agrees -> candidate A
+  [t=61s] sonnet call took 1s
+  alternative input skeleton:
+from scipy import sparse
+sa = sparse.random(15, 8, density = 0.05, format = 'csr', random_state=42)
+sb = sparse.random(6, 8, density = 0.1, format = 'csr', random_state=7)
+  [t=72s] exec2 A ok=True
+[values after running the solution]
+--- result:
+type=scipy.sparse._csr.csr_matrix
+<Compressed Sparse Row sparse matrix of dtype 'float64'
+	with 11 stored elements and shape (21, 8)>
+[shape] (21, 8) [dtype] float64
+  [t=78s] exec2 B ok=True
+[values after running the solution]
+--- result:
+type=scipy.sparse._csr.csr_matrix
+<Compressed Sparse Row sparse matrix of dtype 'float64'
+	with 11 stored elements and shape (21, 8)>
+[shape] (21, 8) [dtype] float64
+  [t=84s] exec2 C ok=True
+[values after running the solution]
+--- result:
+type=scipy.sparse._csr.csr_matrix
+<Compressed Sparse Row sparse matrix of dtype 'float64'
+	with 11 stored elements and shape (21, 8)>
+[shape] (21, 8) [dtype] float64
+  generality: all agree on the alternative input too
+  final (done=True, t=84s):
+result = sparse.vstack((sa, sb)).tocsr()
+  llm_calls=4 est_cost=$0.0327
+    opus: in=2552 out=32 reas=0 $0.0136
+    gpt54: in=1681 out=305 reas=281 $0.0088
+    gemini: in=1750 out=14 reas=289 $0.0071
+    sonnet: in=674 out=79 reas=0 $0.0032
