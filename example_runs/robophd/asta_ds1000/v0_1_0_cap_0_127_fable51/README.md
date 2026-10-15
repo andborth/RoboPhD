@@ -66,6 +66,12 @@ Model usage across the 900 samples: Opus 4.8 and GPT-5.4 on every sample, Gemini
 | URL (form) | https://github.com/andborth/RoboPhD |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) |
 
+**Agent description (as submitted on the form):**
+
+> 1,226-line agent evolved by RoboPhD from the 46-line baseline seed, with Claude Fable 5.1 as the evolution (but not solver) model, trained under a $0.127/problem cap set at exactly the price of the most capable entry on the board (an early RoboPhD agent), so that evolution had to win on score at a price already known to be competitive. Evolution saturated the training signal early, so the agent uses only ~43% of the cap.
+>
+> Claude Opus 4.8, GPT-5.4 and Gemini 3.1 Pro each write a candidate in parallel. Each candidate runs in a fresh sandbox subprocess, its target variables are dumped (type/shape/dtype/index), and a crashing candidate gets one Sonnet 4.6 repair round. If the executed outputs agree, that answer wins with no judge call. If all three disagree, Sonnet 4.6 and GPT-5.5 add two more votes, and otherwise an Opus 4.8 low-reasoning judge picks among one representative per distinct output. When a majority agrees on the output but their code differs, Sonnet 4.6 writes an alternative input and the agreeing candidates are re-run on it to check that they generalize. Cost-aware staging (its own token-cost estimate, soft caps on optional steps, per-stage time cutoffs) always emits a best-so-far answer. Mean cost: ~$0.054/problem.
+
 Key stats (not required by the AstaBench form; recorded for our own tracking):
 
 | Stat | Value |
