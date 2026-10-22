@@ -336,6 +336,31 @@ SUBMISSIONS = [
         # --uncapped / --from-eval-log, evaluator persist_full_evidence) are
         # test/offline tooling and touch neither solver nor training.
     ),
+    Submission(
+        name="v0_1_0_cap_0_063_fable51",
+        agent_rel_path="agents/iter16_feedcast/agent.py",
+        model_arg="none",
+        # Run robophd-asta_paper_finder-021 (FABLE-5.1-evolved; luna no-prose
+        # training judge, full objective), winner iter16_feedcast (Elo 1590,
+        # 5 rounds). Internal test 0.39787 @ $0.05783/query on the stock
+        # GPT-4o capped basis -- the same basis as -013's 0.38738 above, so
+        # +0.0105 at equal cost. Projected official ~0.403 (uncapping adds
+        # +0.003..+0.006 on fixed submission sets) against Asta Paper
+        # Finder's 0.397 @ $0.063: the third attempt at that target, and the
+        # first projected to clear it.
+        # Known weak spot, reproducible: specific_f1 0.754 vs -013's 0.846,
+        # from a submit-count rule that pads single-gold nickname queries
+        # and submits one of two duplicate S2 records (see -021's
+        # specific_drop_analysis).
+        # Models: gpt-5.4-mini + gpt-5.4-2026-03-05 + claude-sonnet-4-6 (a
+        # second specific-query planner) -- all already in AGENT_MODELS (no
+        # preflight change).
+        # Version moves to v0_1_0, matching DS-1000's v0_1_0_cap_0_127_fable51:
+        # the submission infrastructure is considered settled. Since the last
+        # shipped v0_0_9 run, the per-sample isolation wrapper (cad0f713) and
+        # the fable-5.1 / opus-5.5 engine registrations have landed. This is the first
+        # official PFB run under the isolation wrapper.
+    ),
 ]
 
 

@@ -1,0 +1,40 @@
+[semantic_155] score_type=semantic_f1 query='vision language models that use perceivers to encode images'
+  plan: kw=['vision language perceiver encoder', 'perceiver image encoder multimodal', 'vision language model perceiver', 'perceiver resampler image tokens', 'flamingo perceiver vision encoder', 'gated cross attention perceiver', 'multimodal transformer perceiver', 'image encoding perceiver architecture', 'visual question answering perceiver', 'image captioning perceiver encoder', 'perceiver based vision language', 'vision language model image encoder', 'vision language models use perceivers encode images', 'use perceivers encode images'] sn=['This paper presents a vision language model that uses a Perceiver module to encode images into a compact latent representation.', 'We evaluate the model on image text tasks using a Perceiver based image encoder.', 'We report zero shot and few shot performance for the vision language model with Perceiver image encoding.', 'Our experiments use large scale multimodal pretraining with a Perceiver encoder for visual inputs.', 'We compare the Perceiver image encoder against standard ViT based encoders in a vision language setting.'] criteria=['The paper is about vision language models.', 'The paper uses a Perceiver or Perceiver Resampler to encode images or visual inputs.', 'The paper explicitly connects the Perceiver based encoder with the vision language model architecture or experiments.']
+  !! snippet_search failed: RuntimeError: tool call failed: ToolError: Error executing tool snippet_search: Network error communicating with endpoint kwargs={'query': 'Our experiments use large scale multimodal pretraining with a Perceiver encoder for visua
+  kw 'vision language perceiver encoder': 100 items
+  kw 'perceiver image encoder multimodal': 100 items
+  kw 'vision language model perceiver': 100 items
+  kw 'perceiver resampler image tokens': 100 items
+  kw 'flamingo perceiver vision encoder': 100 items
+  kw 'gated cross attention perceiver': 100 items
+  kw 'multimodal transformer perceiver': 100 items
+  kw 'image encoding perceiver architecture': 100 items
+  kw 'visual question answering perceiver': 100 items
+  kw 'image captioning perceiver encoder': 100 items
+  kw 'perceiver based vision language': 100 items
+  kw 'vision language model image encoder': 100 items
+  kw 'vision language models use perceivers encode image': 100 items
+  kw 'use perceivers encode images': 100 items
+  sn 'This paper presents a vision language model that u': 100 items
+  sn 'We evaluate the model on image text tasks using a ': 100 items
+  sn 'We report zero shot and few shot performance for t': 100 items
+  sn 'Our experiments use large scale multimodal pretrai': 0 items
+  sn 'We compare the Perceiver image encoder against sta': 100 items
+  sn 'The paper is about vision language models. The pap': 100 items
+  sn 'The paper uses a Perceiver or Perceiver Resampler ': 100 items
+  sn 'vision language models that use perceivers to enco': 100 items
+  1605 unique candidates after 347s
+  stage1 yield check: 1 grade>=2 in fused positions 240-360 -> stop
+  stage1 graded 360/360 in 1 round(s) (349s)
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:253734932', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  stage2: 3 seeds -> 290 new citers, graded 160/160 (442s)
+  grade distribution: {3: 1, 2: 3, 1: 101, None: 1375, 0: 415}
+  stage1-tail (fused pos>=360) papers graded>=2 inside top250: 0
+  head predicted-grade distribution: {3: 2, 1: 21, 0: 13}
+  head rerank: 36/36 rated, 2 all-criteria-perfect, 35 moved (447s)
+  head: 253734932:[3, 3, 3] 267740125:[3, 3, 3] 253581325:[3, 1, 1] 256390509:[3, 0, 0] 276250278:[3, 0, 0] 248476411:[3, 0, 0] 274776421:[3, 0, 0] 268531413:[3, 0, 0] 275470964:[3, 0, 0] 264935429:[3, 0, 0] 274423359:[3, 0, 0] 277955299:[3, 0, 0]
+  evidence query: all criteria (topic weak for 43% of window)
+  evidence group pass: 13 calls, 375 passages, 77/100 papers covered (631s)
+  evidence per-paper retry: 8 calls, 7 passages (694s)
+  evidence: 79/100 window papers carry body passages; weak-criteria histogram: {0: 43, 1: 98, 2: 91}
+  submitted 250 papers in 694s

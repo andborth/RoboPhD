@@ -1,0 +1,44 @@
+[semantic_229] score_type=semantic_f1 query='Is there any work that analyzes the scaling law of the multi-module models, such as video-text, image-text models?'
+  plan: kw=['multimodal scaling laws', 'vision language scaling', 'image text model scaling', 'video text model scaling', 'multimodal model laws', 'vision language pretraining scaling', 'cross modal scaling law', 'data compute scaling multimodal', 'CLIP scaling study', 'Flamingo scaling analysis', 'multimodal foundation models scaling', 'scale laws for multimodal models', 'analyzes scaling law multi-module models such as', 'multi-module models such as video-text image-text models'] sn=['This paper analyzes scaling laws for multimodal models and studies how performance changes with data, compute, and model size across vision language or video text systems.', 'We evaluate scaling behavior on image text models using a held out benchmark and report performance as a function of parameter count.', 'We study video text scaling laws under different data regimes and measure how accuracy varies with training set size.', 'We present experiments on compute optimal scaling for multimodal pretraining and report loss versus compute in image text and video text models.', 'We analyze the scaling properties of contrastive multimodal models and compare scaling trends across model families such as CLIP and Flamingo.'] criteria=['Must analyze scaling laws or scaling behavior of multi module multimodal models.', 'Must involve image text models, video text models, or closely related vision language multimodal systems.', 'Must connect the scaling law analysis to the multimodal setting, not just general language or vision models alone.']
+  !! search_papers_by_relevance failed: RuntimeError: tool call failed: ToolError: Error executing tool search_papers_by_relevance: Network error communicating with endpoint kwargs={'keyword': 'cross modal scaling law', 'fields': 'title,abstract,corpusId,year,tldr,venue,citationCo
+  !! snippet_search failed: snippet_search timed out after 170s kwargs={'query': 'We evaluate scaling behavior on image text models using a held out benchmark and report p
+  kw 'multimodal scaling laws': 100 items
+  kw 'vision language scaling': 100 items
+  kw 'image text model scaling': 100 items
+  kw 'video text model scaling': 100 items
+  kw 'multimodal model laws': 100 items
+  kw 'vision language pretraining scaling': 100 items
+  kw 'cross modal scaling law': 0 items
+  kw 'data compute scaling multimodal': 100 items
+  kw 'CLIP scaling study': 100 items
+  kw 'Flamingo scaling analysis': 100 items
+  kw 'multimodal foundation models scaling': 100 items
+  kw 'scale laws for multimodal models': 100 items
+  kw 'analyzes scaling law multi-module models such as': 19 items
+  kw 'multi-module models such as video-text image-text ': 100 items
+  sn 'This paper analyzes scaling laws for multimodal mo': 100 items
+  sn 'We evaluate scaling behavior on image text models ': 0 items
+  sn 'We study video text scaling laws under different d': 100 items
+  sn 'We present experiments on compute optimal scaling ': 100 items
+  sn 'We analyze the scaling properties of contrastive m': 100 items
+  sn 'Must analyze scaling laws or scaling behavior of m': 100 items
+  sn 'Must involve image text models, video text models,': 100 items
+  sn 'Is there any work that analyzes the scaling law of': 100 items
+  1399 unique candidates after 571s
+  stage1: force-grading 41 strong passage hits below position 360
+  stage1: forced passage hits graded>=2: 0/41
+  stage1 yield check: 1 grade>=2 in fused positions 240-360 -> stop
+  stage1 graded 401/401 in 1 round(s) (573s)
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:272593336', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  stage2: 4 seeds -> 205 new citers, graded 160/160 (664s)
+  grade distribution: {3: 4, 2: 20, 1: 86, None: 1043, 0: 451}
+  stage1-tail (fused pos>=360) papers graded>=2 inside top250: 0
+  head predicted-grade distribution: {3: 10, 1: 19, 0: 7}
+  head rerank: 36/36 rated, 10 all-criteria-perfect, 30 moved (670s)
+  head: 277667587:[3, 3, 3] 272593336:[3, 3, 3] 225094178:[3, 3, 3] 255570036:[3, 3, 3] 254636568:[3, 3, 3] 244527510:[3, 3, 3] 271600832:[3, 3, 3] 276937543:[3, 3, 3] 275790563:[3, 3, 3] 269033049:[3, 3, 3] 276258680:[1, 3, 1] 273404213:[1, 3, 1]
+  evidence query: all criteria (topic weak for 87% of window)
+  !! snippet_search failed: snippet_search timed out after 170s kwargs={'query': 'Must analyze scaling laws or scaling behavior of multi module multimodal models. Must inv
+  evidence group pass: 13 calls, 364 passages, 84/100 papers covered (902s)
+  evidence per-paper retry: 3 calls, 0 passages (933s)
+  evidence: 88/100 window papers carry body passages; weak-criteria histogram: {0: 87, 1: 54, 2: 88}
+  submitted 250 papers in 933s

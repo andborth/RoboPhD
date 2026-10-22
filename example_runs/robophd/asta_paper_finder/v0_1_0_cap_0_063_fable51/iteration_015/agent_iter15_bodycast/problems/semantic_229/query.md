@@ -1,0 +1,1 @@
+Is there any work that analyzes the scaling law of the multi-module models, such as video-text, image-text models?

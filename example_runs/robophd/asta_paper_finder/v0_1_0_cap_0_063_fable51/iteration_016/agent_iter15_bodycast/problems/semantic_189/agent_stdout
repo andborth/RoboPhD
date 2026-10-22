@@ -1,0 +1,43 @@
+[semantic_189] score_type=semantic_f1 query='papers discussing how modern language models set d_model and number of layers in transformer architecture, focusing on t'
+  plan: kw=['transformer width depth tradeoff', 'd_model layers scaling', 'wide shallow transformer', 'long narrow transformer', 'model depth width analysis', 'transformer architecture hyperparameters', 'representation dimension number of layers', 'efficient transformer design', 'scaling laws transformer depth width', 'BERT layer width ablation', 'GPT model size depth width', 'hidden size layer count', 'discussing modern language models set d_model number', 'effects long narrow vs wide shallow models'] sn=['This paper studies how transformer architectures set the hidden size and number of layers, and analyzes the tradeoff between long narrow and wide shallow models.', 'We vary d_model and layer count while holding parameter budget fixed to compare deep narrow and shallow wide transformers.', 'We report validation perplexity for transformer models across different depth width configurations.', 'Our experiments evaluate long narrow versus wide shallow transformer architectures on language modeling benchmarks.', 'We analyze how changing the number of layers and model dimension affects performance, optimization, and parameter efficiency.'] criteria=['Discusses how modern language models set d_model and number of layers in transformer architecture', 'Focuses on the effects of long narrow versus wide shallow models', 'Connects transformer depth width tradeoffs to model performance, scaling, or efficiency']
+  !! snippet_search failed: snippet_search timed out after 170s kwargs={'query': 'This paper studies how transformer architectures set the hidden size and number of layers
+  kw 'transformer width depth tradeoff': 100 items
+  kw 'd_model layers scaling': 100 items
+  kw 'wide shallow transformer': 100 items
+  kw 'long narrow transformer': 100 items
+  kw 'model depth width analysis': 100 items
+  kw 'transformer architecture hyperparameters': 100 items
+  kw 'representation dimension number of layers': 100 items
+  kw 'efficient transformer design': 100 items
+  kw 'scaling laws transformer depth width': 100 items
+  kw 'BERT layer width ablation': 100 items
+  kw 'GPT model size depth width': 100 items
+  kw 'hidden size layer count': 100 items
+  kw 'discussing modern language models set d_model numb': 100 items
+  kw 'effects long narrow vs wide shallow models': 100 items
+  sn 'This paper studies how transformer architectures s': 0 items
+  sn 'We vary d_model and layer count while holding para': 100 items
+  sn 'We report validation perplexity for transformer mo': 100 items
+  sn 'Our experiments evaluate long narrow versus wide s': 100 items
+  sn 'We analyze how changing the number of layers and m': 100 items
+  sn 'Discusses how modern language models set d_model a': 100 items
+  sn 'Focuses on the effects of long narrow versus wide ': 100 items
+  sn 'papers discussing how modern language models set d': 100 items
+  1801 unique candidates after 540s
+  stage1: force-grading 44 strong passage hits below position 360
+  stage1: forced passage hits graded>=2: 10/44
+  stage1 yield check: 9 grade>=2 in the last 120 -> graded 160 more (now 520)
+  stage1 yield check: 10 grade>=2 in the last 120 -> graded 160 more (now 680)
+  stage1 graded 724/724 in 3 round(s) (547s)
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:252968423', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  stage2: 4 seeds -> 36 new citers, graded 36/36 (638s)
+  grade distribution: {3: 4, 2: 56, 1: 128, None: 1108, 0: 541}
+  stage1-tail (fused pos>=360) papers graded>=2 inside top250: 23
+  head predicted-grade distribution: {3: 2, 2: 7, 1: 15, 0: 12}
+  head rerank: 36/36 rated, 2 all-criteria-perfect, 34 moved (643s)
+  head: 252968423:[3, 3, 3] 150373667:[3, 3, 3] 234338042:[1, 3, 3] 252683785:[1, 3, 3] 257616068:[1, 3, 3] 236428967:[1, 3, 3] 251135220:[1, 3, 3] 237504796:[1, 3, 3] 224814118:[3, 3, 1] 235254672:[0, 3, 3] 276116987:[0, 3, 3] 265295002:[1, 3, 1]
+  evidence query: all criteria (topic weak for 91% of window)
+  evidence group pass: 13 calls, 305 passages, 77/100 papers covered (767s)
+  evidence per-paper retry: 9 calls, 16 passages (919s)
+  evidence: 85/100 window papers carry body passages; weak-criteria histogram: {0: 91, 1: 84, 2: 85}
+  submitted 250 papers in 919s

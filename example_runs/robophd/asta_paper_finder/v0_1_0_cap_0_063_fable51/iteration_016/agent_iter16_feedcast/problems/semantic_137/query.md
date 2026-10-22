@@ -1,0 +1,1 @@
+Are language models better at discriminating among previously generated alternatives compared to generating initial responses? What evidence exists about their relative performance in generation vs discrimination tasks?

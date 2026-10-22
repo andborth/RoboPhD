@@ -1,0 +1,1 @@
+Could you recommend a study that investigates how contrastive learning enhances sentence-level embeddings in natural language processing, especially for subsequent applications?

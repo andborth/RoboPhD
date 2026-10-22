@@ -1,0 +1,1 @@
+earliest paper comparing two dialogue systems with win rates judged by humans

@@ -1,0 +1,45 @@
+[semantic_226] score_type=semantic_f1 query='Show me research on the long video description. Here, long videos are defined as those with a duration of at least sever'
+  plan: kw=['video captioning', 'dense video captioning', 'long video understanding', 'video description generation', 'multi minute video captioning', 'temporal video grounding', 'open domain video captioning', 'activitynet captions', 'youcook2 captions', 'eva video captioning', 'movie description generation', 'long form video summarization', 'Show long video description Here long videos', 'defined as duration at least several minutes'] sn=['This paper presents a model for generating natural language descriptions of long videos with multiple minutes of duration.', 'We evaluate video description on videos that are at least several minutes long.', 'We report caption quality for long form video understanding using standard video description metrics.', 'Our experiments use long duration video datasets such as ActivityNet Captions or similar multi minute benchmarks.', 'We study dense video captioning for long videos and measure temporal localization and caption generation performance.'] criteria=['The paper is about video description or video captioning.', 'The videos are long, meaning at least several minutes in duration.', 'The paper connects the video description task with long duration video settings or benchmarks.']
+  !! search_papers_by_relevance failed: search_papers_by_relevance timed out after 150s kwargs={'keyword': 'dense video captioning', 'fields': 'title,abstract,corpusId,year,tldr,venue,citationCou
+  kw 'video captioning': 100 items
+  kw 'dense video captioning': 0 items
+  kw 'long video understanding': 100 items
+  kw 'video description generation': 100 items
+  kw 'multi minute video captioning': 100 items
+  kw 'temporal video grounding': 100 items
+  kw 'open domain video captioning': 100 items
+  kw 'activitynet captions': 100 items
+  kw 'youcook2 captions': 100 items
+  kw 'eva video captioning': 100 items
+  kw 'movie description generation': 100 items
+  kw 'long form video summarization': 100 items
+  kw 'Show long video description Here long videos': 100 items
+  kw 'defined as duration at least several minutes': 100 items
+  sn 'This paper presents a model for generating natural': 100 items
+  sn 'We evaluate video description on videos that are a': 100 items
+  sn 'We report caption quality for long form video unde': 100 items
+  sn 'Our experiments use long duration video datasets s': 100 items
+  sn 'We study dense video captioning for long videos an': 100 items
+  sn 'The paper is about video description or video capt': 100 items
+  sn 'The videos are long, meaning at least several minu': 100 items
+  sn 'Show me research on the long video description. He': 100 items
+  1368 unique candidates after 158s
+  stage1: force-grading 36 strong passage hits below position 360
+  stage1: forced passage hits graded>=2: 2/36
+  stage1 yield check: 5 grade>=2 in the last 120 -> graded 160 more (now 520)
+  stage1 yield check: 3 grade>=2 in fused positions 400-520 -> stop
+  stage1 graded 556/556 in 2 round(s) (162s)
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:276741160', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  stage2: 6 seeds -> 154 new citers, graded 154/154 (254s)
+  grade distribution: {3: 6, 2: 47, 1: 232, None: 833, 0: 404}
+  stage1-tail (fused pos>=360) papers graded>=2 inside top250: 7
+  head predicted-grade distribution: {3: 10, 2: 8, 1: 18}
+  head rerank: 36/36 rated, 10 all-criteria-perfect, 35 moved (258s)
+  head: 267759646:[3, 3, 3] 273964017:[3, 3, 3] 50781732:[3, 3, 3] 257804730:[3, 3, 3] 10909210:[3, 3, 3] 265143190:[3, 3, 3] 237142167:[3, 3, 3] 277243029:[3, 3, 3] 212737076:[3, 3, 3] 277468066:[3, 3, 3] 276741160:[3, 1, 3] 243938288:[3, 3, 1]
+  evidence query: non-topic criteria (topic weak for 10% of window)
+  evidence group pass: 13 calls, 287 passages, 78/100 papers covered (321s)
+  !! snippet_search failed: snippet_search timed out after 170s kwargs={'query': 'The videos are long, meaning at least several minutes in duration. The paper connects the
+  !! snippet_search failed: snippet_search timed out after 170s kwargs={'query': 'The videos are long, meaning at least several minutes in duration. The paper connects the
+  evidence per-paper retry: 7 calls, 2 passages (491s)
+  evidence: 79/100 window papers carry body passages; weak-criteria histogram: {0: 10, 1: 83, 2: 83}
+  submitted 250 papers in 491s

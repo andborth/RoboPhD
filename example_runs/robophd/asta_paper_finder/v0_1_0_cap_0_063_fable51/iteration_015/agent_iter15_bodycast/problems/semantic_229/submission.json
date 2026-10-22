@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_229",
+    "results": [
+      {
+        "paper_id": "277667587",
+        "markdown_evidence": "Scaling Laws for Native Multimodal Models ... Building general-purpose models that can effectively perceive the world through multimodal signals has been a long-standing goal. Current approaches involve integrating separately pre-trained components, such as connecting vision encoders to LLMs and continuing multimodal training. While such approaches exhibit remarkable sample efficiency, it remains an open question whether such late-fusion architectures are inherently superior. In this work, we revisit the architectural design of native multimodal models (NMMs)-those trained from the ground up on all modali-ties-and conduct an extensive scaling laws study, spanning 457 trained models with different architectures and training mixtures. Our investigation reveals no inherent advantage to late-fusion architectures over early-fusion ones, which do not rely on image encoders or tokenizers. On the contrary, early-fusion exhibits stronger performance at lower parameter counts, is more efficient to train, and is easier to deploy. ... Some multimodal models trained from scratch [4,66,76] relax this constraint by utilizing pre-trained image tokenizers such as [20,70] to convert images into discrete tokens, integrating them into the text vocabulary. This approach enables models to understand and generate text and images, facilitating a more seamless multimodal learning process. Scaling laws. ... [26] (α = 0.339, β = 0.285). Likewise, our computed values of a = 0.526 and b = 0.473 align closely with a = 0.46 and b = 0.54 from [26], reinforcing the idea that, for native multimodal models, the number of training tokens and model parameters should be scaled proportionally. However, since the gap between a and b is smaller than in LLMs, this principle holds even more strongly for NMMs. ... Moreover, with abundant multimodal data available, initializing from unimodal pre-training is potentially detrimental, as it may introduce biases that prevent the model Based on the scaling laws study in § 3.1, we observe: (1) early and late fusion models provide similar validation loss L when trained with the same compute budget C (FLOPs); (2) This performance is achieved via a different trade-off between ... This investigation reveals no inherent advantage to late-fusion architectures over early-fusion ones, which do not rely on image encoders or tokenizers, and shows that incorporating Mixture of Experts (MoEs) allows models to learn"
+      },
+      {
+        "paper_id": "272593336",
+        "markdown_evidence": "Scaling Law Hypothesis for Multimodal Model ... We propose a scaling law hypothesis for multimodal models processing text, audio, images, and video within a shared token and embedding space. Our framework predicts model performance based on modality-specific compression and tokenization efficiency, extending established scaling laws from text-based decoder models to mixed-modality systems. We explore whether leveraging more training data in multiple modalities can reduce the size of the multimodal model, enabling efficient deployment on resource-constrained devices. ... Video data, which combines both spatial and temporal dimensions, is even more complex and generates a greater number of tokens, further increasing the compute required. This variability in compression efficiency across modalities underscores the need for a scaling law that accounts for the specific characteristics of each data type, ensuring that model performance is accurately predicted for mixed-modality systems. ... In multimodal systems, diverse types of data, such as text, audio, images and video, are processed through specialized tokenization techniques, each with varying levels of compression efficiency. Text is tokenized using methods like Byte Pair Encoding (BPE) [10], which offers relatively stable compression efficiency. ... Current scaling laws have guided the development of large models in natural language processing, demonstrating how model performance scales with increased data and model size. However, these insights have not been fully explored in the context of multimodal models, where different modalities have varying tokenization efficiencies and data complexities. ... This work proposes a scaling law hypothesis for multimodal models processing text, audio, images, and video within a shared token and embedding space and explores whether leveraging more training data in multiple modalities can reduce the size of the multimodal model, enabling efficient deployment on resource-constrained devices."
+      },
+      {
+        "paper_id": "225094178",
+        "markdown_evidence": "Scaling Laws for Autoregressive Generative Modeling ... We identify empirical scaling laws for the cross-entropy loss in four domains: generative image modeling, video modeling, multimodal image$\\leftrightarrow$text models, and mathematical problem solving. In all cases autoregressive Transformers smoothly improve in performance as model size and compute budgets increase, following a power-law plus constant scaling law. The optimal model size also depends on the compute budget through a power-law, with exponents that are nearly universal across all data domains. The cross-entropy loss has an information theoretic interpretation as $S($True$) + D_{\\mathrm{KL}}($True$||$Model$)$, and the empirical scaling laws suggest a prediction for both the true data distribution's entropy and the KL divergence between the true and model distributions. With this interpretation, billion-parameter Transformers are nearly perfect models of the YFCC100M image distribution downsampled to an $8\\times 8$ resolution, and we can forecast the model size needed to achieve any given reducible loss (ie $D_{\\mathrm{KL}}$) in nats/image for other resolutions. ... The smooth trends for finetuned performance on image classification suggest a more general lesson: that the scaling laws for unsupervised learning imply that downstream performance also improves with model size and compute. Information theory provides a useful lens for examining model performance in other contexts. ... We apply autoregressive decoder-only Transformer models to all data modalities, which include web-scraped YFCC100M images [TSF + 15] of various resolutions, video data from various sources, multimodal im-age+language data, and procedurally generated math problems. We also reference prior results on language [KMH + 20, BMR + 20]. ... For math alone we used a weight decay [LH17] 1 Summary of scaling laws-In this table we summarize the model size and compute scaling fits to equation (1.1) along with N opt (C), with the loss in nats/token, and compute measured in petaflop-days. In most cases the irreducible losses match quite well between model size and compute scaling laws. ... The case that scaling laws have important implications for neural network performance, including on downstream tasks is strengthened, as empirical scaling laws for the cross-entropy loss are identified."
+      },
+      {
+        "paper_id": "255570036",
+        "markdown_evidence": "Scaling Laws for Generative Mixed-Modal Language Models ... Generative language models define distributions over sequences of tokens that can represent essentially any combination of data modalities (e.g., any permutation of image tokens from VQ-VAEs, speech tokens from HuBERT, BPE tokens for language or code, and so on). To better understand the scaling properties of such mixed-modal models, we conducted over 250 experiments using seven different modalities and model sizes ranging from 8 million to 30 billion, trained on 5-100 billion tokens. We report new mixed-modal scaling laws that unify the contributions of individual modalities and the interactions between them. Specifically, we explicitly model the optimal synergy and competition due to data and model size as an additive term to previous uni-modal scaling laws. We also find four empirical phenomena observed during the training, such as emergent coordinate-ascent style training that naturally alternates between modalities, guidelines for selecting critical hyper-parameters, and connections between mixed-modal competition and training stability. ... However, the scaling behavior of larger number of modalities remains largely unstudied. We present an extensive empirical study of scaling laws for mixed-modal generative language models over tokens. We assume that every modality can be represented as a sequence of tokens (e.g. VQ-VAEs for images (Esser et al., 2020) or HuBERT for speech (Hsu et al., 2021)). ... Our contributions are the following: • We develop neural scaling laws for mixed-modalities models that include text, speech, images, code, and their numerous couplings. • We discover a set of scaling laws describing the competition between arbitrary modalities. • We provide a simple recipe for selecting hyper-parameters in a multi-modal setting when optimal uni-modal hyper-parameters are known. ... We truncate this normal distribution within two standard deviations and observed substantial gain in both training stability and performance. Model We measure the impact of the choice of objective by conducting an additional scaling law on our Speech and Text datasets on the standard (causal) language modeling objective. Everything is kept constant except for the objective, including the training procedures. ... New mixed-modal scaling laws are reported that unify the contributions of individual modalities and the interactions between them and are"
+      },
+      {
+        "paper_id": "254636568",
+        "markdown_evidence": "Reproducible Scaling Laws for Contrastive Language-Image Learning ... Scaling up neural networks has led to remarkable performance across a wide range of tasks. Moreover, performance often follows reliable scaling laws as a function of training set size, model size, and compute, which offers valuable guidance as large-scale experiments are becoming increasingly expensive. However, previous work on scaling laws has primarily used private data & models or focused on uni-modal language or vision learning. To address these limitations, we investigate scaling laws for contrastive language-image pre-training (CLIP) with the public LAION dataset and the open-source OpenCLIP repository. Our large-scale experiments involve models trained on up to two billion image-text pairs and identify power law scaling for multiple downstream tasks including zero-shot classification, retrieval, linear probing, and end-to-end fine-tuning. We find that the training distribution plays a key role in scaling laws as the OpenAI and OpenCLIP models exhibit different scaling behavior despite identical model architectures and similar training recipes. ... So far, the literature on empirical scaling laws has focused on language-only [35,72,28] or visiononly models [82,25,61]. In the multimodal domain of language and vision, contrastive language-image models such as CLIP [55] have recently achieved large performance gains in zero-image classification, for instance improving zero-shot ImageNet accuracy from the prior state-of-the-art of 12% to 76%. ... In the multimodal domain of language and vision, contrastive language-image models such as CLIP [55] have recently achieved large performance gains in zero-image classification, for instance improving zero-shot ImageNet accuracy from the prior state-of-the-art of 12% to 76%. Moreover, these models demonstrate unprecedented robustness to distribution shifts compared to prior supervised models [70,55,77]. ... Scaling laws for robustness benchmarks [70] can be derived when controlling for larger accuracies observed at larger scales. Further, treating vision and text encoder scales separately may lead to modality specific scaling laws. A promising direction is to study the effect of the pre-training dataset on scaling behavior. Our observations so far hint that the data source may strongly influence task-specific scaling."
+      },
+      {
+        "paper_id": "244527510",
+        "markdown_evidence": "Scaling Up Vision-Language Pretraining for Image Captioning ... In recent years, we have witnessed significant performance boost in the image captioning task based on vision-language pre-training (VLP). Scale is believed to be an important factor for this advance. However, most existing work only focuses on pre-training transformers with moderate sizes (e.g., 12 or 24 layers) on roughly 4 million images. In this paper, we present LEMON O, a LargE-scale iMage captiONer, and provide the first empirical study on the scaling behavior of VLP for image captioning. We use the state-of-the-art Vin VL model as our reference model, which consists of an image feature extractor and a transformer model, and scale the transformer both up and down, with model sizes ranging from 13 to 675 million parameters. In terms of data, we conduct experiments with up to 200 million imagetext pairs which are automatically collected from web based on the alt attribute of the image (dubbed as ALT200M11The dataset is released at https://github.com/xiaoweihu/ALT200M). Extensive analysis helps to characterize the performance trend as the model size and the pre-training data size increase. ... While the scaling protocols have been investigated for many NLP and vision tasks, we are the first to study the scaling behavior of VLP for image captioning, and push multimodal transformer pre-training to a much larger scale. In Appendix, we also provide a detailed related work review on non-pretraining-based image captioning methods. ... Scale is believed to be an important ingredient in attaining excellent performance [20,38,48]. Recent work has investigated the Pareto frontier of training transformer models, often referred to as the neural scaling law, in the domains of natural language processing [2,21,46] and computer vision [13,55], via unsupervised or weakly-supervised learning methods. ... The unigrams are counted and sorted by occurrences from large to small to form a distribution curve for each dataset. Our dataset features much more long-tail concepts, as indicated by the number of unigrams included in the 0.1% distribution tail. The datasets used in CLIP [38] and ALIGN [20] are not included, since we do not know the corresponding statistics. its scaling behavior w.r. Scaling Law. ... LEMON O, a LargE-scale iMage captiONer, is presented, and the first empirical study on the scaling behavior of VLP for image captioning is provided, and it"
+      },
+      {
+        "paper_id": "271600832",
+        "markdown_evidence": "Are Bigger Encoders Always Better in Vision Large Models? ... In recent years, multimodal large language models (MLLMs) have shown strong potential in real-world applications. They are developing rapidly due to their remarkable ability to comprehend multimodal information and their inherent powerful cognitive and reasoning capabilities. Among MLLMs, vision language models (VLM) stand out for their ability to understand vision information. However, the scaling trend of VLMs under the current mainstream paradigm has not been extensively studied. Whether we can achieve better performance by training even larger models is still unclear. To address this issue, we conducted experiments on the pretraining stage of MLLMs. We conduct our experiment using different encoder sizes and large language model (LLM) sizes. Our findings indicate that merely increasing the size of encoders does not necessarily enhance the performance of VLMs. Moreover, we analyzed the effects of LLM backbone parameter size and data quality on the pretraining outcomes. Additionally, we explored the differences in scaling laws between LLMs and VLMs. ... They trained LLMs and modality encoders from scratch, similar to the approach chosen by BEiT-3 Wang et al. [2022], to obtain their scaling law. This discrepancy has sparked our research focus. To the best of our knowledge, the scaling law of multimodal large models under the connected vision paradigm is still under-researched. 3 Methods ... [2021] and Laion400M Schuhmann et al. [2021], known for their high-quality pairs. We use data sizes from 1 million to 10 million image-text pairs for our scaling law experiments. The core contributions of this paper are summarized as follows: • New Perspective To the best of our knowledge, we are the first to conduct scaling law studies for the connect vision paradigm. ... These factors may also interact with each other in more complex ways. In addition, different modalities, fusion methods for integrating multimodal information, and architectures of modality encoders may exhibit different forms of scaling law. • Different Estimates of Computational Costs Under the current training framework, it is not appropriate to solely rely on C ≈ 6N D for estimating computational costs. ... It is indicated that merely increasing the size of encoders does not necessarily enhance the performance of VLMs, and the differences in scaling laws between LLMs and VLMs are"
+      },
+      {
+        "paper_id": "276937543",
+        "markdown_evidence": "Scaling Laws for Conditional Emergence of Multilingual Image Captioning via Generalization from Translation ... Cross-lingual, cross-task transfer is challenged by task-specific data scarcity, which becomes more severe as language support grows and is further amplified in vision-language models (VLMs). We investigate multilingual generalization in encoder-decoder transformer VLMs to enable zero-shot image captioning in languages encountered only in the translation task. In this setting, the encoder must learn to generate generalizable, task-aware latent vision representations to instruct the decoder via inserted cross-attention layers. To analyze scaling behavior, we train Florence-2 based and Gemma-2 based models (0.4B to 11.2B parameters) on a synthetic dataset using varying compute budgets. While all languages in the dataset have image-aligned translations, only a subset of them include image captions. Notably, we show that captioning can emerge using a language prefix, even when this language only appears in the translation task. We find that indirect learning of unseen task-language pairs adheres to scaling laws that are governed by the multilinguality of the model, model size, and seen training samples. ... 2023(Futeral et al. , 2025a)). Muennighoff et al. (2023) also perform cross-lingual transfer by fine-tuning LLMs without target-task data but rely on the model's existing multilingual capabilities. In contrast, we investigate scaling laws for improving performance in a new task-language combination with respect to model size, seen training samples, and initial multilingual loss. ... Scaling laws. Following a power-law relationship, scaling laws enable predictable and efficient large-scale training and offer valuable insights into training dynamics. These laws were first described for computer vision (Sun et al. 2017) and have since been applied to natural language processing (Kaplan et al. 2020;Ghorbani et al. 2022;Hoffmann et al. 2022;Fernandes et al. 2023), transfer learning (Hernandez et al. ... It is demonstrated that the scaling laws extend to downstream tasks, achieving competitive performance through fine-tuning in multimodal machine translation (Multi30K, CoMMuTE), lexical disambiguation (CoMMuTE), and image captioning (Multi30K, XM3600, COCO Karpathy)."
+      },
+      {
+        "paper_id": "275790563",
+        "markdown_evidence": "Inference Compute-Optimal Video Vision Language Models ... This work investigates the optimal allocation of inference compute across three key scaling factors in video vision language models: language model size, frame count, and the number of visual tokens per frame. While prior works typically focuses on optimizing model efficiency or improving performance without considering resource constraints, we instead identify optimal model configuration under fixed inference compute budgets. We conduct large-scale training sweeps and careful parametric modeling of task performance to identify the inference compute-optimal frontier. Our experiments reveal how task performance depends on scaling factors and finetuning data size, as well as how changes in data size shift the compute-optimal frontier. These findings translate to practical tips for selecting these scaling factors."
+      },
+      {
+        "paper_id": "269033049",
+        "markdown_evidence": "Scaling Laws for Data Filtering—Data Curation Cannot be Compute Agnostic ... Vision-language models (VLMs) are trained for thousands of GPU hours on carefully selected subsets of massive web scrapes. For instance, the LAION public dataset retained only about 10% of the total crawled data. In recent times, data curation has gained prominence with several works developing strategies to retain ‘high-quality’ subsets of ‘raw’ scraped data. However, these strategies are typically developed agnostic to the available compute for training. In this paper, we demonstrate that making filtering decisions independent of training compute is often suboptimal—well-curated data rapidly loses its utility when repeated, eventually decreasing below the utility of ‘unseen’ but ‘lower-quality’ data. While past research in neural scaling laws has considered web data to be homogenous, real data is not. Our work bridges this important gap in the literature by developing scaling laws that characterize the differing ‘utility’ of various data subsets, and accounting for how this diminishes for a data point at its ‘nth’ repetition. ... 2022;Kaplan et al. 2020).To the best of our knowledge, the only large scale attempt at predicting scaling of vision language models was done in the work of Cherti et al. (2023).However, the extrapolated graphs in their work showed large errors as compared to the actual performance of the models.Hence, the scaling of vision language models is still an open question, especially when trained under contrastive loss. ... 2023a) to fit the scaling curves for data filtering. Scaling Laws in CLIP Application of scaling laws to models like CLIP is still an area of active research.As with the scaling laws observed in pure language models, there's an indication that as the model and data sizes for CLIP grow, its performance on downstream vision tasks improves, albeit with diminishing returns (Gadre et al. 2023b;Schuhmann et al. ... Scaling Laws in Language Modeling One of the most salient trends in recent deep learning research is the observation that neural network performance tends to improve predictably with increases in model size, data size, and computation.In the domain of language modeling, such observations have been systematized into a set of principles known as scaling laws.Kaplan et al. ... It is demonstrated that making filtering decisions independent of training compute is often"
+      },
+      {
+        "paper_id": "276258680",
+        "markdown_evidence": "Scaling Pre-Training to One Hundred Billion Data for Vision Language Models ... We provide an empirical investigation of the potential of pre-training vision-language models on an unprecedented scale: 100 billion examples. We find that model performance tends to saturate at this scale on many common Western-centric classification and retrieval benchmarks, such as COCO Captions. Nevertheless, tasks of cultural diversity achieve more substantial gains from the 100-billion scale web data, thanks to its coverage of long-tail concepts. Furthermore, we analyze the model's multilinguality and show gains in low-resource languages as well. In addition, we observe that reducing the size of the pretraining dataset via quality filters like using CLIP, typically used to enhance performance, may inadvertently reduce the cultural diversity represented in large-scale datasets. Our results highlight that while traditional benchmarks may not benefit significantly from scaling noisy, raw web data to 100 billion examples, this data scale is vital for building truly inclusive multimodal systems. ... These \"scaling laws,\" as they came to be known in the literature, have been used, among others, to determine the training data size needed to achieve a specified level of accuracy [10,19,28] and to optimize the model size [4,37,43]. They have also been justified theoretically using spacepartitioning arguments [7,40,67]. Importantly, a power law implies that increasing the amount of training data can * K. ... A prevalent and highly effective strategy is to learn visual representations and language modeling independently, followed by joint pre-training of the visionlanguage model using high-quality multimodal data. Since the advent of CLIP [60], contrastive learning on large, noisy web datasets has become the dominant approach for acquiring powerful visual representations [14,78]. ... [84] further explored scaling behavior in Vision Transformers [26] using the JFT-3B dataset, showing that scaling both data and model size simultaneously leads to improved generalization. The pivotal role of data scaling is equally applicable to VLMs, as highlighted in [18]. This has led to a substantial increase in the development of image-text datasets over the last ten years. ... This empirical investigation of the potential of pre-training vision-language models on an unprecedented scale: 100 billion examples finds that model performance tends to"
+      },
+      {
+        "paper_id": "273404213",
+        "markdown_evidence": "Fluid: Scaling Autoregressive Text-to-image Generative Models with Continuous Tokens ... Scaling up autoregressive models in vision has not proven as beneficial as in large language models. In this work, we investigate this scaling problem in the context of text-to-image generation, focusing on two critical factors: whether models use discrete or continuous tokens, and whether tokens are generated in a random or fixed raster order using BERT- or GPT-like transformer architectures. Our empirical results show that, while all models scale effectively in terms of validation loss, their evaluation performance -- measured by FID, GenEval score, and visual quality -- follows different trends. Models based on continuous tokens achieve significantly better visual quality than those using discrete tokens. Furthermore, the generation order and attention mechanisms significantly affect the GenEval score: random-order models achieve notably better GenEval scores compared to raster-order models. Inspired by these findings, we train Fluid, a random-order autoregressive model on continuous tokens. Fluid 10.5B model achieves a new state-of-the-art zero-shot FID of 6.16 on MS-COCO 30K, and 0.69 overall score on the GenEval benchmark. ... These observations have inspired significant efforts to scale up language models to trillions of parameters (Achiam et al., 2023;Team et al., 2023;Dubey et al., 2024). Scaling vision models. Similar scaling law has been obscure for computer vision. For recognition models (Tan, 2019;Zhai et al., 2022;He et al., 2022;Dehghani et al., 2023), scaling often comes with diminishing returns. For example, Dehghani et al. ... We hope that our findings and promising results could provide valuable insights into the scaling behavior of autoregressive models for image generation and help bridge the gap between the scaling performance of vision models and language models. Reproducibility Statement. ... Third, there is often a confusion between two levels of generalizability when evaluating scaling laws in vision models: (a) generalization to new data using the same metric as the training loss (commonly referred to as validation loss), and (b) generalization to a new metric or problem different from the training objective, such as FID (Heusel et al., 2017), the GenEval benchmark (Ghosh et al., 2024), or visual ... This work investigates this scaling problem in the context of text-to-image generation,"
+      },
+      {
+        "paper_id": "252222320",
+        "markdown_evidence": "PaLI: A Jointly-Scaled Multilingual Language-Image Model ... Effective scaling and a flexible task interface enable large language models to excel at many tasks. We present PaLI (Pathways Language and Image model), a model that extends this approach to the joint modeling of language and vision. PaLI generates text based on visual and textual inputs, and with this interface performs many vision, language, and multimodal tasks, in many languages. To train PaLI, we make use of large pre-trained encoder-decoder language models and Vision Transformers (ViTs). This allows us to capitalize on their existing capabilities and leverage the substantial cost of training them. We find that joint scaling of the vision and language components is important. Since existing Transformers for language are much larger than their vision counterparts, we train a large, 4-billion parameter ViT (ViT-e) to quantify the benefits from even larger-capacity vision models. To train PaLI, we create a large multilingual mix of pretraining tasks, based on a new image-text training set containing 10B images and texts in over 100 languages. ... We find benefits from jointly scaling both the vision and the language components, with vision providing a better return on investment (accuracy improvement per parameter/FLOP). As a result, the capacity of our largest PaLI model, PaLI-17B, is distributed relatively equitably between the two modalities, with the ViT-e component accounting for about 25% of the total parameter count. ... More importantly, we show that multimodal performance greatly benefits from scaling the vision component beyond the previous-largest ViT, which provides a scaling roadmap for future vision & language models. • We empirically validate that a mixture-of-objectives benefits the performance of large vision & language models. ... On the vision side, CNNs (Mahajan et al., 2018;Huang et al., 2019;Kolesnikov et al., 2020), Vision Transformers (Dosovitskiy et al., 2021), and other models (Tolstikhin et al., 2021;Riquelme et al., 2021) have seen similar benefits from scale (Zhai et al., 2022a), albeit to a lesser extent than in language. ... The PaLI (Pathways Language and Image model), a model that achieves state-of-the-art in multiple vision and language tasks, while retaining a simple, modular, and scalable design."
+      },
+      {
+        "paper_id": "274581884",
+        "markdown_evidence": "Expanding Performance Boundaries of Open-Source Multimodal Models with Model, Data, and Test-Time Scaling ... We introduce InternVL 2.5, an advanced multimodal large language model (MLLM) series that builds upon InternVL 2.0, maintaining its core model architecture while introducing significant enhancements in training and testing strategies as well as data quality. In this work, we delve into the relationship between model scaling and performance, systematically exploring the performance trends in vision encoders, language models, dataset sizes, and test-time configurations. Through extensive evaluations on a wide range of benchmarks, including multi-discipline reasoning, document understanding, multi-image / video understanding, real-world comprehension, multimodal hallucination detection, visual grounding, multilingual capabilities, and pure language processing, InternVL 2.5 exhibits competitive performance, rivaling leading commercial models such as GPT-4o and Claude-3.5-Sonnet. Notably, our model is the first open-source MLLMs to surpass 70% on the MMMU benchmark, achieving a 3.7-point improvement through Chain-of-Thought (CoT) reasoning and showcasing strong potential for test-time scaling. ... Our contributions can be summarized as follows: (1) We release InternVL 2.5 to the open-source community, providing a powerful tool for the development and application of multimodal AI systems and encouraging further research in this domain. (2) We investigate how scaling different components of the MLLMs such as vision encoders, language models, dataset sizes, and inference time affect performance. ... Various attempts have been made to address these challenges, including enhancing model architectures [220,232,5,172,157,210], scaling vision encoders [252,66,36,293,185] and language models [231,235,64,19,229,221,62], incorporating more diverse and high-quality datasets [124,234,25,155], and refining the test-time scaling process [215,249,230] to boost performance. ... We systematically explore the relationship between model scaling and performance, analyzing vision encoders, language models, dataset sizes, and test-time configurations. Extensive evaluations on diverse benchmarks demonstrate that InternVL 2.5 achieves competitive performance across tasks such as multi-discipline reasoning, document understanding, video understanding, multilingual processing, etc."
+      },
+      {
+        "paper_id": "249926846",
+        "markdown_evidence": "Scaling Autoregressive Models for Content-Rich Text-to-Image Generation ... We present the Pathways Autoregressive Text-to-Image (Parti) model, which generates high-fidelity photorealistic images and supports content-rich synthesis involving complex compositions and world knowledge. Parti treats text-to-image generation as a sequence-to-sequence modeling problem, akin to machine translation, with sequences of image tokens as the target outputs rather than text tokens in another language. This strategy can naturally tap into the rich body of prior work on large language models, which have seen continued advances in capabilities and performance through scaling data and model sizes. Our approach is simple: First, Parti uses a Transformer-based image tokenizer, ViT-VQGAN, to encode images as sequences of discrete tokens. Second, we achieve consistent quality improvements by scaling the encoder-decoder Transformer model up to 20B parameters, with a new state-of-the-art zero-shot FID score of 7.23 and finetuned FID score of 3.22 on MS-COCO. ... With image tokenization and de-tokenization, text-to-image generation is treated as a sequence-to-sequence problem amenable to language models with transformers, which provide opportunities of scaling such models by applying techniques and observations from large language models [7,19,75,76]. ... All models use conv-shaped masked sparse attention [34]. We train four size variants ranging from 350 million to 20 billion parameters, as detailed in Table 1. Specifically, we configure the Transformers following previous practice of those in scaling language models with default expansion ratio of 4× in MLP dimensions. We double the number of heads when the model dimension is doubled. ... They have standard rights as contractors. They are fluent non-native English speakers. We observe that as compared to the human preference for image-text match (Figure 12), the 20B model wins out on image realism by a smaller margin. This suggests that model scaling mostly benefits language understanding and image-text match, as compared to improvements on image realism. This makes intuitive sense: ... The Pathways Autoregressive Text-to-Image (Parti) model is presented, which generates high-fidelity photorealistic images and supports content-rich synthesis involving complex compositions and world knowledge and explores and highlights limitations of the models."
+      },
+      {
+        "paper_id": "266052386",
+        "markdown_evidence": "Scaling Laws of Synthetic Images for Model Training … for Now ... Recent significant advances in text-to-image models un-lock the possibility of training vision systems using synthetic images, potentially overcoming the difficulty of collecting curated data at scale. It is unclear, however, how these models behave at scale, as more synthetic data is added to the training set. In this paper we study the scaling laws of synthetic images generated by state of the art text-to-image models, for the training of supervised models: image classifiers with label supervision, and CLIP with language super-vision. We identify several factors, including text prompts, classifier-free guidance scale, and types of text-to-image models, that significantly affect scaling behavior. After tuning these factors, we observe that synthetic images demon-strate a scaling trend similar to, but slightly less effective than, real images in CLIP training, while they significantly underperform in scaling when training supervised image classifiers. ... Chinchilla [35] suggests scaling up data propor-tionally to model size, to obtain compute-optimal LLMs. [3] propose to fit scaling laws by extrapolating training curves. Of particular interest, [74] theoretically shows one can break the power law with respect to data size with an ideal data pruning strategy. In this paper, we focus on the scaling behavior of synthetic data for training models. ... We examine the scaling behavior of synthetic images created by cutting-edge text-to-image models, comparing their efficacy to real images in two key scenarios: the training of supervised classifiers and the training of vision models with language supervision, such as CLIP. Additionally, we explore a range of factors that markedly impact the scaling efficiency of synthetic images. ... Prior works on scaling laws, such as [39], have observed that, for sufficiently large models, the test loss L and dataset 2) with varied k when data is less than 4M. By tuning the CFG scale, text prompts and textto-image models, the scaling behavior for synthetic images can be significantly improved (from light blue to orange). Red dashed line is for real images. ... The analysis indicates that the inability of off-the-shelf text-to-image models to generate certain concepts is a limitation that significantly impairs the training of image classifiers, and suggests that scaling synthetic data can be particularly"
+      },
+      {
+        "paper_id": "269790803",
+        "markdown_evidence": "Many-Shot In-Context Learning in Multimodal Foundation Models ... Large language models are effective at few-shot in-context learning (ICL). Recent advancements in multimodal foundation models have enabled unprecedentedly long context windows, presenting an opportunity to explore their capability to perform ICL with many more demonstrating examples. In this work, we evaluate the performance of multimodal foundation models scaling from few-shot to many-shot ICL. We benchmark GPT-4o and Gemini 1.5 Pro across 14 datasets spanning multiple domains (natural imagery, medical imagery, remote sensing, and molecular imagery) and tasks (image classification, visual QA, and object localization). We observe that many-shot ICL, including up to almost 2,000 demonstrating examples, leads to substantial improvements compared to few-shot (<100 examples) ICL across all of the datasets. Further, Gemini 1.5 Pro performance continues to improve log-linearly up to the maximum number of tested examples on many datasets. ... Pan Zhang, Xiaoyi Dong, Yuhang Zang, Yuhang Cao, Rui Qian, Lin Chen,Qipeng Guo,Haodong Duan,Bin Wang,Linke Ouyang,: A versatile large vision language model supporting long-contextual input and output. arXiv preprint arXiv:2407.03320, 2024a. Xingxuan Zhang, Jiansheng Li, Wenjing Chu, Junjia Hai, Renzhe Xu, Yuqing Yang, Shikai Guan, Jiazheng Xu, and Peng Cui. ... To investigate the capability of state-of-the-art multimodal foundation models to perform many-shot ICL, we conduct a large suite of experiments benchmarking model performance on 14 datasets spanning several domains and multimodal tasks after scaling up the number of demonstrating examples by multiple orders of magnitude. Specifically, our contributions are as follows: 1. ... We benchmark their performance using standard performance metrics as well as an ICL data efficiency metric (Section 3.3) on 14 datasets spanning several vision domains and multimodal tasks (Section 3.2). We conduct ablation studies to test the impact of batching queries on model performance and explain the substantial improvement in zero-shot settings (Section 4.2). ... It is shown that batching up to 50 queries can lead to performance improvements under zero-shot and many-shot ICL, with substantial gains in the zero-shot setting on multiple datasets, while drastically reducing per-query cost and latency."
+      },
+      {
+        "paper_id": "271432386",
+        "markdown_evidence": "InternVideo2: Scaling Foundation Models for Multimodal Video Understanding ... We introduce InternVideo2, a new family of video foundation models (ViFM) that achieve the state-of-the-art results in video recognition, video-text tasks, and video-centric dialogue. Our core design is a progressive training approach that unifies the masked video modeling, crossmodal contrastive learning, and next token prediction, scaling up the video encoder size to 6B parameters. At the data level, we prioritize spatiotemporal consistency by semantically segmenting videos and generating video-audio-speech captions. This improves the alignment between video and text. Through extensive experiments, we validate our designs and demonstrate superior performance on over 60 video and audio tasks. Notably, our model outperforms others on various video-related dialogue and long video understanding benchmarks, highlighting its ability to reason and comprehend longer contexts. Code and models are available at https://github.com/OpenGVLab/InternVideo/tree/main/InternVideo2/. ... With advances in large language models (LLMs) [Devlin et al., 2018, Raffel et al., 2020, Brown et al., 2020], their multimodal versions (MLLMs) is becoming popular as it can handle open-world tasks. Seminal works like Flamingo [Alayrac et al., 2022] showed outstanding zero/few-shots performances over a range of multimodal tasks [Goyal et al., 2017b, Plummer et al., 2015, Xu et al., 2016, Marino et al., 2019]. ... Recently, the advancement of Large Language Models (LLMs) [Brown et al., 2020, OpenAI, 2023a, Touvron et al., 2023a,b] and their multimodal variations (MLLMs) [OpenAI, 2023b, Gong et al., 2023, Liu et al., 2023, Team et al., 2023] have had a profound impact on vision research and other disciplines. ... Specifically, we utilize the initial 19 layers of BERT-Large as the text encoder, with the subsequent 5 layers equipped with cross-attention layers serving as the multimodal decoder. For pretraining objectives, we establish alignment across different modalities via text, including video, audio, image, and speech. ... This work introduces InternVideo2, a new family of video foundation models (ViFM) that achieve the state-of-the-art results in video recognition, video-text tasks, and video-centric dialogue, highlighting its ability to reason and comprehend longer contexts."
+      },
+      {
+        "paper_id": "268667436",
+        "markdown_evidence": "InternVideo2: Scaling Video Foundation Models for Multimodal Video Understanding ... This work scales both data and model size for the InternVideo2, a model that outperforms others on various video-related captioning, dialogue, and long video understanding benchmarks, highlighting its ability to reason and comprehend long temporal contexts."
+      },
+      {
+        "paper_id": "275954151",
+        "markdown_evidence": "Janus-Pro: Unified Multimodal Understanding and Generation with Data and Model Scaling ... In this work, we introduce Janus-Pro, an advanced version of the previous work Janus. Specifically, Janus-Pro incorporates (1) an optimized training strategy, (2) expanded training data, and (3) scaling to larger model size. With these improvements, Janus-Pro achieves significant advancements in both multimodal understanding and text-to-image instruction-following capabilities, while also enhancing the stability of text-to-image generation. We hope this work will inspire further exploration in the field. Code and models are publicly available. ... Janus-Pro is introduced, an advanced version of the previous work Janus that incorporates an optimized training strategy, expanded training data, and scaling to larger model size, achieving significant advancements in both multimodal understanding and text-to-image instruction-following capabilities."
+      },
+      {
+        "paper_id": "260068316",
+        "markdown_evidence": "Image as a Foreign Language: BEIT Pretraining for Vision and Vision-Language Tasks ... A big convergence of language, vision, and multimodal pretraining is emerging. In this work, we introduce a general-purpose multimodal foundation model BEIT-3, which achieves excellent transfer performance on both vision and vision-language tasks. Specifically, we advance the big convergence from three aspects: backbone architecture, pretraining task, and model scaling up. We use Multiway Transformers for general-purpose modeling, where the modular architecture enables both deep fusion and modality-specific encoding. Based on the shared backbone, we perform masked “language” modeling on images (Imglish), texts (English), and image-text pairs (“parallel sentences”) in a unified manner. Experimental results show that BEIT-3 obtains remarkable performance on object detection (COCO), semantic segmentation (ADE20K), image classification (ImageNet), visual reasoning (NLVR2), visual question answering (VQAv2), image captioning (COCO), and cross-modal retrieval (Flickr30K, COCO)."
+      },
+      {
+        "paper_id": "257496100",
+        "markdown_evidence": "Scaling Vision-Language Models with Sparse Mixture of Experts ... The field of natural language processing (NLP) has made significant strides in recent years, particularly in the development of large-scale vision-language models (VLMs). These models aim to bridge the gap between text and visual information, enabling a more comprehensive understanding of multimedia data. However, as these models become larger and more complex, they also become more challenging to train and deploy. One approach to addressing this challenge is the use of sparsely-gated mixture-of-experts (MoE) techniques, which divide the model into smaller, specialized sub-models that can jointly solve a task. In this paper, we explore the effectiveness of MoE in scaling vision-language models, demonstrating its potential to achieve state-of-the-art performance on a range of benchmarks over dense models of equivalent computational cost. Our research offers valuable insights into stabilizing the training of MoE models, understanding the impact of MoE on model interpretability, and balancing the trade-offs between compute performance when scaling VLMs. ... In summary, our contributions are as follows: • We propose VL-MoE, the first large-scale generative MoEs multimodal models for vision/langaugeonly, as well as vision-and-language tasks. • We explore various scaling strategies, including increasing dense model size, increasing expert numbers, and scaling either T-FFN or V-FFN alone, to investigate the trade-offs between model complexity and performance on various ... To the best of our knowledge, the proposed VL-MoE is the first the MoE scaling study to consider the generalized generative modeling objective in the VL pre-training, and we evaluate its scaling performance in a more comprehensive manner, including vision/language-only, as well as vision-and-language tasks. ... However, we observed that scaling both vision and language modalities leads to the most balanced performing model with 70.6% averaged performance. This may be attributed to the fact that we employ three different pretraining objectives for each modality, and scaling each modality contributes to better optimization of the specific modality pretraining loss as well as the VLM loss. ... The effectiveness of MoE in scaling vision-language models is explored, demonstrating its potential to achieve state-of-the-art performance on a range of benchmarks over dense models of"
+      },
+      {
+        "paper_id": "266573555",
+        "markdown_evidence": "Unified-IO 2: Scaling Autoregressive Multimodal Models with Vision, Language, Audio, and Action ... We present Unified-IO 2,the. first autoregressive multi-modal model that is capable of understanding and generating image, text, audio, and action. To unify different modalities, we tokenize inputs and outputs - images, text, audio, action, bounding boxes etc., into a shared semantic space and then process them with a single encoder-decoder transformer model. Since training with such diverse modalities is challenging, we propose various architectural improvements to stabilize model training. We train our model from scratch on a large multimodal pre-training corpus from diverse sources with a multimodal mixture of denoisers objective. To learn an expansive set of skills, such as following multimodal instructions, we construct and. finetune on an ensemble of 120 datasets with prompts and augmentations. With a single unified model, Unified-io 2 achieves state-of-the-art performance on the GRIT benchmark and strong results in more than 35 benchmarks, including image generation and understanding, natural language understanding, video and audio understanding, and robotic manipulation. We release all our models to the research community. ... While these efforts are effective for understanding tasks, they do not allow complex multimodal generation and often exclude modalities long considered central to computer vision (e.g., ImageBind cannot support sparse annotation of images). Fewer works have considered multimodal generation. ... The world is multimodal, so our agents must partake in rich interactions that are multimodal in nature via vision, language, sound, action etc. Psychologists have argued that the redundancy of our sensory systems serves as supervisory mechanisms to improve each other [48,144,167]. ... While recent video language models [108,110,128] have shown proficiency in conventional video tasks like video tagging and captioning, their performance in SEED-Bench's temporal understanding is even worse than that of vision language models, which might be attributed to their limited instructionfollowing capabilities. ... The first autoregressive multi-modal model that is capable of understanding and generating image, text, audio, and action, and the first autoregressive multi-modal model capable of understanding and generating image, text, audio, and action is presented."
+      },
+      {
+        "paper_id": "275515660",
+        "markdown_evidence": "Tarsier2: Advancing Large Vision-Language Models from Detailed Video Description to Comprehensive Video Understanding ... We introduce Tarsier2, a state-of-the-art large vision-language model (LVLM) designed for generating detailed and accurate video descriptions, while also exhibiting superior general video understanding capabilities. Tarsier2 achieves significant advancements through three key upgrades: (1) Scaling pre-training data from 11M to 40M video-text pairs, enriching both volume and diversity; (2) Performing fine-grained temporal alignment during supervised fine-tuning; (3) Using model-based sampling to automatically construct preference data and applying DPO training for optimization. Extensive experiments show that Tarsier2-7B consistently outperforms leading proprietary models, including GPT-4o and Gemini 1.5 Pro, in detailed video description tasks. On the DREAM-1K benchmark, Tarsier2-7B improves F1 by 2.8% over GPT-4o and 5.8% over Gemini-1.5-Pro. In human side-by-side evaluations, Tarsier2-7B shows a +8.6% performance advantage over GPT-4o and +24.9% over Gemini-1.5-Pro. ... Tarsier2 sets new state-of-the-art results across 15 public benchmarks, spanning tasks such as video question-answering, video grounding, hallucination test, and embodied question-answering, demonstrating its versatility as a robust generalist vision-language model."
+      },
+      {
+        "paper_id": "266521410",
+        "markdown_evidence": "Intern VL: Scaling up Vision Foundation Models and Aligning for Generic Visual-Linguistic Tasks ... The exponential growth of large language models (LLMs) has opened up numerous possibilities for multi-modal AGI systems. However, the progress in vision and vision-language foundation models, which are also critical elements of multi-modal AGI, has not kept pace with LLMs. In this work, we design a large-scale vision-language foun-dation model (Intern VL), which scales up the vision foun-dation model to 6 billion parameters and progressively aligns it with the LLM, using web-scale image-text data from various sources. This model can be broadly applied to and achieve state-of-the-art performance on 32 generic visual-linguistic benchmarks including visual perception tasks such as image-level or pixel-level recognition, vision-language tasks such as zero-shot image/video classification, zero-shot image/video-text retrieval, and link with LLMs to create multi-modal dialogue systems. It has powerful visual capabilities and can be a good alternative to the ViT-22B. We hope that our research could contribute to the development of multi-modal large models. ... The exponential growth of large language models (LLMs) has opened up numerous possibilities for multimodal AGI systems. However, the progress in vision and vision-language foundation models, which are also critical elements of multi-modal AGI, has not kept pace with LLMs. ... Large language models (LLMs) largely promote the development of artificial general intelligence (AGI) systems with their impressive capabilities in open-world language tasks, and their model scale and performance are still increasing at a fast pace. ... Specifically, we design a largescale vision foundation model InternViT-6B, progressively align it with an LLM-initialized language middleware QL-LaMA, and leverage web-scale image-text data from various sources for efficient training. ... A large-scale vision-language foun-dation model (Intern VL), which scales up the vision foun-dation model to 6 billion parameters and progressively aligns it with the LLM, using web-scale image-text data from various sources is designed."
+      },
+      {
+        "paper_id": "265312551",
+        "markdown_evidence": "Stable Video Diffusion: Scaling Latent Video Diffusion Models to Large Datasets ... We present Stable Video Diffusion - a latent video diffusion model for high-resolution, state-of-the-art text-to-video and image-to-video generation. Recently, latent diffusion models trained for 2D image synthesis have been turned into generative video models by inserting temporal layers and finetuning them on small, high-quality video datasets. However, training methods in the literature vary widely, and the field has yet to agree on a unified strategy for curating video data. In this paper, we identify and evaluate three different stages for successful training of video LDMs: text-to-image pretraining, video pretraining, and high-quality video finetuning. Furthermore, we demonstrate the necessity of a well-curated pretraining dataset for generating high-quality videos and present a systematic curation process to train a strong base model, including captioning and filtering strategies. We then explore the impact of finetuning our base model on high-quality data and train a text-to-video model that is competitive with closed-source video generation. ... While most of these works aim at learning general motion representation and are consequently trained on large and diverse datasets, another well-recognized branch of diffusion-based video synthesis tackles personalized video generation based on finetuning of pretrained text-to-image models on more narrow datasets tailored to a specific domain [32] or application, partly including non-deep motion priors [113]. ... For textto-video synthesis in particular, most works directly condition the model on a text prompt [9,97] or make use of an additional text-to-image prior [23,82]. In our work, we follow the former approach and show that the resulting model is a strong general motion prior, which can easily be finetuned into an image-to-video or multi-view synthesis model. ... To construct its pretraining dataset, we conduct a systematic data selection and scaling study, and propose a method to curate vast amounts of video data and turn large and noisy video collection into suitable datasets for generative video models. Furthermore, we introduce three distinct stages of video model training which we separately analyze to assess their impact on the final model performance. ... This paper identifies and evaluates three different stages for successful training of video LDMs:"
+      },
+      {
+        "paper_id": "277467353",
+        "markdown_evidence": "Scaling Language-Free Visual Representation Learning ... Visual Self-Supervised Learning (SSL) currently underperforms Contrastive Language-Image Pretraining (CLIP) in multimodal settings such as Visual Question Answering (VQA). This multimodal gap is often attributed to the semantics introduced by language supervision, even though visual SSL and CLIP models are often trained on different data. In this work, we ask the question: “Do visual selfsupervised approaches lag behind CLIP due to the lack of language supervision, or differences in the training data?” We study this question by training both visual SSL and CLIP models on the same MetaCLIP data, and leveraging VQA as a diverse testbed for vision encoders. In this controlled setup, visual SSL models scale better than CLIP models in terms of data and model capacity, and visual SSL performance does not saturate even after scaling up to $7 B$ parameters. Consequently, we observe visual SSL methods achieve CLIP-level performance on a wide range of VQA and classic vision benchmarks. ... Despite SSL models outperforming languagesupervised models on classic vision tasks such as classification and segmentation (Oquab et al., 2023), they are less commonly adopted in recent multimodal large language models (MLLMs) (Liu et al., 2023a(Liu et al., , 2024a;;Agrawal et al., 2024;Tong et al., 2024a;Beyer et al., 2024;Li et al., 2024;AI@Meta, 2024). ... In this work, we investigate a fundamental question: Is language supervision necessary to pretrain visual representations for multimodal modeling? Rather than seeking to replace language-supervised approaches, we aim to understand the intrinsic capabilities and limitations of visual self-supervision at scale for multimodal applications. ... As shown in Figure 9, we observe three key trends: ( These findings suggest that as model size and, in particular, training samples scale, vision models naturally develop text-sensitive features and achieve strong alignment with LLMs and multimodal tasks, without explicit language supervision. ... It is demonstrated that pure visual SSL can match language-supervised visual pretraining at scale, opening new opportunities for visioncentric representation learning."
+      },
+      {
+        "paper_id": "231879586",
+        "markdown_evidence": "Scaling Up Visual and Vision-Language Representation Learning With Noisy Text Supervision ... Pre-trained representations are becoming crucial for many NLP and perception tasks. While representation learning in NLP has transitioned to training on raw text without human annotations, visual and vision-language representations still rely heavily on curated training datasets that are expensive or require expert knowledge. For vision applications, representations are mostly learned using datasets with explicit class labels such as ImageNet or OpenImages. For vision-language, popular datasets like Conceptual Captions, MSCOCO, or CLIP all involve a non-trivial data collection (and cleaning) process. This costly curation process limits the size of datasets and hence hinders the scaling of trained models. In this paper, we leverage a noisy dataset of over one billion image alt-text pairs, obtained without expensive filtering or post-processing steps in the Conceptual Captions dataset. A simple dual-encoder architecture learns to align visual and language representations of the image and text pairs using a contrastive loss. ... In the vision domain, pre-training on large-scale supervised data such as ImageNet (Deng et al., 2009), OpenImages (Kuznetsova et al., 2020), and JFT-300M (Sun et al., 2017;Kolesnikov et al., 2020) has proven to be critical for improving performance on downstream tasks via transfer learning. ... A noisy dataset of over one billion image alt-text pairs is leverage, obtained without expensive filtering or post-processing steps in the Conceptual Captions dataset and it is shown that the scale of the corpus can make up for its noise and leads to state-of-the-art representations even with such a simple learning scheme."
+      },
+      {
+        "paper_id": "267628004",
+        "markdown_evidence": "A Tale of Tails: Model Collapse as a Change of Scaling Laws ... As AI model size grows, neural scaling laws have become a crucial tool to predict the improvements of large models when increasing capacity and the size of original (human or natural) training data. Yet, the widespread use of popular models means that the ecosystem of online data and text will co-evolve to progressively contain increased amounts of synthesized data. In this paper we ask: How will the scaling laws change in the inevitable regime where synthetic data makes its way into the training corpus? Will future models, still improve, or be doomed to degenerate up to total (model) collapse? We develop a theoretical framework of model collapse through the lens of scaling laws. We discover a wide range of decay phenomena, analyzing loss of scaling, shifted scaling with number of generations, the ''un-learning\"of skills, and grokking when mixing human and synthesized data. Our theory is validated by large-scale experiments with a transformer on an arithmetic task and text generation using the large language model Llama2. ... This study was extended to demonstrate many more power law relations in various scenarios (vision transformer, video modeling, multimodal models, and mathematical problem solving) (Henighan et al., 2021). In the machine translation (MT) setting, Gordon et al. ... In many domains of machine learning including speech, translation, vision, video, and mathematical problem solving, empirically observed neural scaling laws (Hestness et al., 2017;Rosenfeld et al., 2020;Kaplan et al., 2020;Hoffmann et al., 2022;Gordon et al., 2021;Henighan et al., 2021;Aghajanyan et al., 2023) demonstrate that test error often falls off as a power law with the amount of training data, model size, ... Taking finite model capacity and optimization into account, Cabannes et al. (2023) recently proved scaling laws in constraint-capacity associative memories, and our Triplet Scaling Law builds on this work. Less than a handful of works begin to provide theoretical explanations for the behavior of models in the \"synthetic data age\". ... A theoretical framework of model collapse through the lens of scaling laws is developed and a wide range of decay phenomena is discovered, analyzing loss of scaling, shifted scaling with number of generations, the ''un-learning\" of skills, and grokking when mixing human and synthesized data."
+      },
+      {
+        "paper_id": "274280605",
+        "markdown_evidence": "Towards Precise Scaling Laws for Video Diffusion Transformers ... Achieving optimal performance of video diffusion transformers within given data and compute budget is crucial due to their high training costs. This necessitates precisely determining the optimal model size and training hyperparameters before large-scale training. While scaling laws are employed in language models to predict performance, their existence and accurate derivation in visual generation models remain underexplored. In this paper, we systematically analyze scaling laws for video diffusion transformers and confirm their presence. Moreover, we discover that, unlike language models, video diffusion models are more sensitive to learning rate and batch size—two hyperparameters often not precisely modeled. To address this, we propose a new scaling law that predicts optimal hyperparameters for any model size and compute budget. Under these optimal settings, we achieve comparable performance and reduce inference costs by 40.1% compared to conventional scaling methods, within a compute budget of 1e10 TFlops. ... These analyses underscore the importance of a refined approach to hyperparameter selection in scaling law research. To address this, we propose the precise Scaling Law for video DiT (see Appendix E for similar results on image DiT with 1 frame). In this section, we derive a power-law relationship linking hyperparameters to model size and data size, offering a theory-driven improvement over prior methods. ... In the field of computer vision, researchers have primarily made empirical attempts in the scaling properties [33,38,41,44,47] of image DiT, seldom modeling precise scaling laws as done in language models. In the domain of video generation, such research is virtually nonexistent. ... We began our investigation by applying a commonly used scaling law from large language models [26] to video diffusion transformers. However, we found that due to the greater sensitivity of video diffusion models to hyperparameters such as batch size and learning rate, the predictions made using this scaling law were inaccurate. ... A new scaling law is proposed that predicts optimal hyperparameters for any model size and compute budget and achieves comparable performance and reduce inference costs by 40.1% compared to conventional scaling methods, within a compute budget of 1e10 TFlops."
+      },
+      {
+        "paper_id": "274859327",
+        "markdown_evidence": "ScaMo: Exploring the Scaling Law in Autoregressive Motion Generation Model ... The scaling law has been validated in various domains, such as natural language processing (NLP) and massive computer vision tasks; however, its application to motion generation remains largely unexplored. In this paper, we introduce a scalable motion generation framework that includes the motion tokenizer Motion FSQ-VAE and a text-prefix autoregressive transformer. Through comprehensive experiments, we observe the scaling behavior of this system. For the first time, we confirm the existence of scaling laws within the context of motion generation. Specifically, our results demonstrate that the normalized test loss of our prefix autoregressive models adheres to a logarithmic law in relation to compute budgets. Furthermore, we also confirm the power law between Non-Vocabulary Parameters, Vocabulary Parameters, and Data Tokens with respect to compute budgets respectively. Leveraging the scaling law, we predict the optimal transformer size, vocabulary size, and data requirements for a compute budget of 1e18. ... In recent years, the scaling law has been extensively studied, particularly in the field of natural language processing (NLP), where many large language models (LLMs) [4,8,27,51] have empirically validated their scaling properties. Building on these prior successes, recent research has extended scaling laws to the community of computer vision, particularly for tasks such as text-to-image generation [30,49]. ... Our contribution can be summarized as (1) We first demonstrate the existence of scaling laws in the motion generation task from a practical perspective. (2) We have revealed the core factors that limit the scaling laws in motion generation of previous work are the lack of data and unscalable model architectures. Our proposed scalable motion generation system opens the door to scalable research in motion generation. ... In the auto-regressive motion generation framework, directly scaling the size of the motion codebook is almost in vain. In contrast to tokenizers used in text, image, and video modalities, the vocabulary in motion tokenization is insufficient for naïve scaling. Directly applying existing vector quantization (VQ) methods for tokenization fails to scale effectively. ... A scalable motion generation framework that includes the motion tokenizer Motion FSQ-VAE and a text-prefix autoregressive transformer is"
+      },
+      {
+        "paper_id": "276116987",
+        "markdown_evidence": "Scaling laws in wearable human activity recognition ... Many deep architectures and self-supervised pre-training techniques have been proposed for human activity recognition (HAR) from wearable multimodal sensors. Scaling laws have the potential to help move towards more principled design by linking model capacity with pre-training data volume. Yet, scaling laws have not been established for HAR to the same extent as in language and vision. By conducting an exhaustive grid search on both amount of pre-training data and Transformer architectures, we establish the first known scaling laws for HAR. We show that pre-training loss scales with a power law relationship to amount of data and parameter count and that increasing the number of users in a dataset results in a steeper improvement in performance than increasing data per user, indicating that diversity of pre-training data is important, which contrasts to some previously reported findings in self-supervised HAR. We show that these scaling laws translate to downstream performance improvements on three HAR benchmark datasets of postures, modes of locomotion and activities of daily living: UCI HAR and WISDM Phone and WISDM Watch. ... Scaling up the size of Transformers has led to significant improvements in performance in language and vision models. We are particularly interested in the scaling laws that link model capacity, pre-training data volume and performance, as this contributes to more principled design. In language foundation models, Kaplan et al. ... In this paper we explore scaling laws based on Masked Autoencoder with a ViT encoder for the following reasons: • In language and vision domains, Transformers and Masked Autoencoder have proven to scale well due to high paralellization (e.g. compared to recurrent nets). ... This emphasizes that diversity of data is extremely important, and dictates the scaling law. Note that the offset is different for each fold, but that is to be expected, since the test sets are different. Similarly, in Figure 3 we fit a power law between pre-training test loss and model capacity in terms of number of parameters, further demonstrating the existence of a scaling law. ... It is shown that pre-training loss scales with a power law relationship to amount of data and parameter count and that increasing the number of users in a dataset results in a steeper improvement in performance than increasing data per user,"
+      },
+      {
+        "paper_id": "274515181",
+        "markdown_evidence": "Infinity∞: Scaling Bitwise AutoRegressive Modeling for High-Resolution Image Synthesis ... We present Infinity, a Bitwise Visual AutoRegressive Modeling capable of generating high-resolution, photorealistic images following language instruction. Infinity refactors visual autoregressive model under a bitwise token prediction framework with an infinite-vocabulary classifier and bit-wise self-correction mechanism. By theoretically expanding the tokenizer vocabulary size to infinity in Transformer, our method significantly unleashes powerful scaling capabilities to infinity compared to vanilla VAR. Extensive experiments indicate Infinity outperforms AutoRegressive Text-to-Image models by large margins, matches or surpasses leading diffusion models. Without extra optimization, Infinity generates a 1024×1024 image in 0.8s, 2.6× faster than SD3-Medium, making it the fastest Text-to-Image model. All the code and models are available to promote further exploration of Infinity for visual generation. ... Scaling laws in autoregressive language models reveal a power-law relationship between model size, dataset size, and compute with test set cross-entropy loss [31,25,1]. These laws help predict larger model performance, leading to efficient resource allocation and ongoing improvements without saturation [9,62,63,80,70,28]. ... AutoRegressive models [15,22,75,61], on the other hand, harness the scalability and generalizability of language models [16,2,28,62,63,70,57,3,60] by employing a visual tokenizer [64,47,74] to convert images into discrete tokens and optimize these tokens causally, allowing image generation through next-token prediction or next-scale prediction. ... AutoRegressive models, leveraging the powerful scaling capabilities of LLMs [44,9,16,62,63], use discrete image tokenizers [64,47,22] in conjunction with transformers to generate images based on next-token prediction. VQ-based methods [64,47,22,35,55] employ vector quantization to convert image patches into index-wise tokens and use a decoder-only transformer to predict the next token index. ... In Infinity, a Bitwise Visual AutoRegressive Modeling capable of generating high-resolution, photorealistic images following language instruction, this work refactors visual autoregressive model under a bitwise token prediction framework with an infinite-vocabulary classifier and bit-wise self-correction mechanism."
+      },
+      {
+        "paper_id": "276259426",
+        "markdown_evidence": "Recursive Inference Scaling: A Winning Path to Scalable Inference in Language and Multimodal Systems ... Inspired by recent findings on the fractal geometry of language, we introduce Recursive INference Scaling (RINS) as a complementary, plug-in recipe for scaling inference time in language and multimodal systems. RINS is a particular form of recursive depth that significantly outperforms +55 other variants, including the recent\"repeat-all-over\"(RAO) strategy in Mobile LLM (Liu et al., 2024) and latent recurrent thinking (Geiping et al., 2025). Unlike prior works, we carry out our comparisons on a compute-matched regime, and demonstrate that for a fixed model size and training compute budget, RINS substantially improves language modeling performance. It also generalizes beyond pure language tasks, delivering gains in multimodal systems, including a +2% improvement in 0-shot ImageNet accuracy for SigLIP-B/16. Additionally, by deriving data scaling laws, we show that RINS improves both the asymptotic performance limits and the scaling exponents. ... Data Scaling Laws. Next, we investigate the influence of Recursive INference Scaling (RINS) on the data scaling behavior of language models. Specifically, we fit a power law of the form ε(x) = βx −c + ε ∞ , to the log-perplexity loss ε(x) as a function of the training FLOPs x. ... 3. unlike prior works, we study the effectiveness of recursive depth beyond language to multimodal systems that incorporate language in their processing, such as contrastive models. In particular, our SigLIP-RINS-B/16 outperforms the popular SigLIP-B/16 (Zhai et al., 2023) by a wide margin; e.g. improving 0-shot accuracy in ImageNet from 77.3% to 79.6% and CIFAR100 from 70.3% to 80.7%. ... Recursive INference Scaling (RINS) is introduced as a complementary, plug-in recipe for scaling inference time in language and multimodal systems, and offers a no-regret strategy, meaning that RINS-enabled pretraining improves performance in language modeling even when recursive depth is not applied at inference time."
+      },
+      {
+        "paper_id": "274514554",
+        "markdown_evidence": "HunyuanVideo: A Systematic Framework For Large Video Generative Models ... Recent advancements in video generation have significantly impacted daily life for both individuals and industries. However, the leading video generation models remain closed-source, resulting in a notable performance gap between industry capabilities and those available to the public. In this report, we introduce HunyuanVideo, an innovative open-source video foundation model that demonstrates performance in video generation comparable to, or even surpassing, that of leading closed-source models. HunyuanVideo encompasses a comprehensive framework that integrates several key elements, including data curation, advanced architectural design, progressive model scaling and training, and an efficient infrastructure tailored for large-scale model training and inference. As a result, we successfully trained a video generative model with over 13 billion parameters, making it the largest among all open-source models. We conducted extensive experiments and implemented a series of targeted designs to ensure high visual quality, motion dynamics, text-video alignment, and advanced filming techniques. ... Kaplan et.al [41] and Hoffmann et.al [36] explored emperical scaling laws for language models on cross-entropy loss. ... Neural scaling laws [41,36] In contrast to prior scaling laws on large language models [41, 36, 81, 1, 2] and image generation models [49,42], video generation models typically rely on pre-trained image models. Consequently, our initial step involved establishing the foundational scaling laws pertinent to text-to-image. ... In the single-stream phase, we concatenate the video and text tokens and feed them into subsequent Transformer blocks for effective multimodal information fusion. This design captures complex interactions between visual and semantic information, enhancing overall model performance. Position Embedding. ... HunyuanVideo is introduced, an innovative open-source video foundation model that demonstrates performance in video generation comparable to, or even surpassing, that of leading closed-source models."
+      },
+      {
+        "paper_id": "276259070",
+        "markdown_evidence": "Gemstones: A Model Suite for Multi-Faceted Scaling Laws ... Scaling laws are typically fit using a family of models with a narrow range of frozen hyperparameter choices. In this work we study scaling laws using multiple architectural shapes and hyperparameter choices, highlighting their impact on resulting prescriptions. As a primary artifact of our research, we release the Gemstones: an open-source scaling law dataset, consisting of over 4000 checkpoints from transformers with up to 2 billion parameters and diverse architectural shapes; including ablations over learning rate and cooldown. Our checkpoints enable more complex studies of scaling, such as analyzing the relationship between width and depth. By examining our model suite, we find that the prescriptions of scaling laws can be highly sensitive to the experimental design process and the specific model checkpoints used during fitting. ... Liang et al. [2024] look at scaling laws for diffusion transformer models. Li et al. [2024a] analyze scaling laws for vision encoder commonly used to encode image inputs for transformer model backbones, finding increasing the size of the encoder alone can lead to performance degradation in some cases. ... However the more general study of scaling laws for sparse architectures is quite extensive. Clark et al. [2022] analyze how the number of experts can be used in the law, studying both linear and quadratic interactions for many types of routing models. Frantar et al. [2023] focus on weight sparsity within foundation models, adding a multiplicative parameter on the parameters term in the law. Yun et al. ... Choshen et al. [2024] collect both loss and benchmark performance metrics for a multitude of models and offer a practitioner's guide to fitting scaling laws. Notably, they suggest that 5 models are ample to fit a scaling law, and that you should omit the early part of training when fitting, because those early steps don't follow the same scaling behavior and can skew the results. In contrast, Li et al. ... The Gemstones: an open-source scaling law dataset, consisting of over 4000 checkpoints from transformers with up to 2 billion parameters and diverse architectural shapes, is released, to enable more complex studies of scaling."
+      },
+      {
+        "paper_id": "275458105",
+        "markdown_evidence": "Scalable Vision Language Model Training via High Quality Data Curation ... In this paper, we introduce SAIL-VL (ScAlable Vision Language Model TraIning via High QuaLity Data Curation), an open-source vision language model (VLM) series achieving state-of-the-art (SOTA) performance in 2B and 8B parameters. The following three key improvements contribute to SAIL-VL's leading performance: (1) Scalable high-quality visual understanding data construction: We implement a data construction pipeline to enable hundred-million-scale high-quality recaption data annotation. The resulted dataset SAIL-Caption is validated to be of the highest data quality compared with opensource datasets. (2) Scalable Pretraining with High-Quality Visual Understanding Data: We scale SAIL-VL's pretraining budget up to 655B tokens and show that even a 2B VLM benefits from scaled up training data sizes, exhibiting logarithmic data size scaling laws in benchmark performance. ... Whether it is representation learning models like CLIP and its derivatives (Radford et al., 2021;Jia et al., 2021;Shen et al., 2022;Cherti et al., 2023;Fang et al., 2023), generative models (Wang et al., 2022;Li et al., 2021;Bao et al., 2022;Yu et al., 2022;Li et al., 2023b), or recent vision language models (Li et al., 2023b;Liu et al., 2024b;Team, 2024a;Bai et al., 2023), all of these methods are built upon large ... (2) We scale up SAIL-VL's pretraining data size to 655B tokens, and report logarithmic model performance scaling laws w.r.t. training data sizes. To the best of our knowledge, this is the first time that data size scaling laws for VLM pretraining are proposed and discussed. (3) We elaborate on the methodologies for highquality SFT data curation, and demonstrate the effectiveness of the curriculum SFT strategy. ... SAIL-VL series models achieve the highest average score in 18 widely used VLM benchmarks in the authors' evaluation, with the 2B model takes the top position over VLMs of comparable sizes on OpenCompass 2024 (https://rank.opencompass.org.cn/leaderboard-multimodal)."
+      },
+      {
+        "paper_id": "251719655",
+        "markdown_evidence": "Image as a Foreign Language: BEiT Pretraining for All Vision and Vision-Language Tasks ... A big convergence of language, vision, and multimodal pretraining is emerging. In this work, we introduce a general-purpose multimodal foundation model BEiT-3, which achieves state-of-the-art transfer performance on both vision and vision-language tasks. Specifically, we advance the big convergence from three aspects: backbone architecture, pretraining task, and model scaling up. We introduce Multiway Transformers for general-purpose modeling, where the modular architecture enables both deep fusion and modality-specific encoding. Based on the shared backbone, we perform masked\"language\"modeling on images (Imglish), texts (English), and image-text pairs (\"parallel sentences\") in a unified manner. Experimental results show that BEiT-3 obtains state-of-the-art performance on object detection (COCO), semantic segmentation (ADE20K), image classification (ImageNet), visual reasoning (NLVR2), visual question answering (VQAv2), image captioning (COCO), and cross-modal retrieval (Flickr30K, COCO). ... In addition, the scaling up benefits from treating images as a foreign language, as we can directly reuse the pipeline developed for large-scale language model pretraining. In this work, we take advantage of the above ideas to pretrain a general-purpose multimodal foundation model BEIT-3. We pretrain a Multiway Transformer by performing masked data modeling on images, texts, and image-text pairs. ... Using a pool of modality experts encourages the model to capture more modality-specific information. The shared self-attention module learns the alignment between different modalities and enables deep fusion for multimodal (such as vision-language) tasks. As shown in Figure 3, the unified architecture enables BEIT-3 to support a wide range of downstream tasks. ... I2T/T2I is short for image-to-text/text-to-image retrieval. In this work, we advance the convergence trend for vision-language pretraining from the following three aspects. First, the success of Transformers [VSP + 17] is translated from language to vision [DBK + 20] and multimodal [KSK21,WBDW21] problems. The unification of network architectures enables us to seamlessly handle multiple modalities. ... This work introduces a general-purpose multimodal foundation model BEiT-3, which achieves state-of-the-art transfer performance on both vision and vision-language tasks and"
+      },
+      {
+        "paper_id": "273821300",
+        "markdown_evidence": "Efficient and Effective Adaptation of Multimodal Foundation Models in Sequential Recommendation ... Multimodal foundation models (MFMs) have revolutionized sequential recommender systems through advanced representation learning. While Parameter-efficient Fine-tuning (PEFT) is commonly used to adapt these models, studies often prioritize parameter efficiency, neglecting GPU memory and training speed. To address this, we introduced the IISAN framework, significantly enhancing efficiency. However, IISAN was limited to symmetrical MFMs and identical text and image encoders, preventing the use of state-of-the-art Large Language Models. To overcome this, we developed IISAN-Versa, a versatile plug-and-play architecture compatible with both symmetrical and asymmetrical MFMs. IISAN-Versa employs a Decoupled PEFT structure and utilizes both intra- and inter-modal adaptation. It effectively handles asymmetry through a simple yet effective combination of group layer-dropping and dimension transformation alignment. Our research demonstrates that IISAN-Versa effectively adapts large text encoders, and we further identify a scaling effect where larger text encoders generally perform better. ... Furthermore, we fully explore the effect of scaling laws on text encoders, observing that larger pre-trained text encoders typically lead to better performance. • To gain a clearer understanding of efficiency improvement during the training process, this paper analyzes it from the perspectives of forward and backward propagation. II. RELATED WORK Multimodal Foundation Models. ... CLIP [1] further bridged vision and language, training a multimodal foundation model to match images with their textual descriptions through contrastive learning, enabling powerful zero-shot learning capabilities [1]. The evolution continued with large-scale models like GPT-4, and multimodal variants such as Flamingo [9]. ... Despite these advancements, merging multimodal hidden states from two different encoders presents two limitations: (1) it can only be conducted for symmetrical multimodal transformer encoders; (2) due to the first limitation, it is hard to explore whether scaling the text encoder in IISAN with recent state-of-theart LLMs could yield performance improvements. ... IISAN-Versa is developed, a versatile plug-and-play architecture compatible with both symmetrical and asymmetrical MFMs that effectively adapts large text encoders and"
+      },
+      {
+        "paper_id": "274514993",
+        "markdown_evidence": "Liquid: Language Models are Scalable and Unified Multi-Modal Generators ... We present Liquid, a versatile and native auto-regressive generation paradigm that seamlessly integrates visual comprehension and generation by tokenizing images into discrete codes and learning these code embeddings alongside text tokens within a shared feature space for both vision and language. Unlike previous multimodal large language model (MLLM), Liquid achieves this integration using any existing large language models (LLMs), eliminating the need for external pretrained visual modules such as CLIP and diffusion models. For the first time, Liquid reveals that the power-law scaling laws of unified multimodal models align with those observed in language models, and it discovers that the trade-offs between visual and language tasks diminish as model size increases. Furthermore, the unified token space enables visual generation and comprehension tasks to mutually enhance each other, effectively removing the typical interference seen in earlier models. We demonstrate that existing LLMs can serve as strong foundations for Liquid, saving training costs by 100times while surpassing Chameleon in multimodal capabilities. ... Our experiments reveal several insightful properties: 1) Directly employing LLMs for visual generation exhibits clear scaling laws in both validation loss and image consistency metrics, consistent with those seen in LLMs, regardless of whether the models retain their language capabilities or focus solely on visual generation tasks. ... 2) Secondly, this unification of multimodal tasks tends to impair both visual generation and language tasks; however, this impairment gradually diminishes as the model size increases. 3) Lastly, we found that when visual and language tokens are represented uniformly, visual understanding and generation tasks can mutually enhance each other. ... In this paper, we explore the potential of solely employing LLMs as multimodal generators, and conduct a comprehensive empirical study to investigate a series of properties including the scaling laws of visual generation, the impact on original language capabilities, and the interrelation between visual understanding and generation tasks."
+      },
+      {
+        "paper_id": "257767223",
+        "markdown_evidence": "Sigmoid Loss for Language Image Pre-Training ... We propose a simple pairwise sigmoid loss for imagetext pre-training. Unlike standard contrastive learning with softmax normalization, the sigmoid loss operates solely on image-text pairs and does not require a global view of the pairwise similarities for normalization. The sigmoid loss simultaneously allows further scaling up the batch size, while also performing better at smaller batch sizes. With only four TPUv4 chips, we can train a Base CLIP model at 4k batch size and a Large LiT model at 20k batch size, the latter achieves 84.5% ImageNet zero-shot accuracy in two days. This disentanglement of the batch size from the loss further allows us to study the impact of examples vs pairs and negative to positive ratio. Finally, we push the batch size to the extreme, up to one million, and find that the benefits of growing batch size quickly diminish, with a more reasonable batch size of 32k being sufficient. We hope our research motivates further explorations in improving the quality and efficiency of language-image pre-training. ... A simple pairwise sigmoid loss for imagetext pre-training operates solely on image-text pairs and does not require a global view of the pairwise similarities for normalization, which allows further scaling up the batch size, while also performing better at smaller batch sizes."
+      },
+      {
+        "paper_id": "260334248",
+        "markdown_evidence": "Unified Model for Image, Video, Audio and Language Tasks ... Large Language Models (LLMs) have made the ambitious quest for generalist agents significantly far from being a fantasy. A key hurdle for building such general models is the diversity and heterogeneity of tasks and modalities. A promising solution is unification, allowing the support of a myriad of tasks and modalities within one unified framework. While few large models (e.g., Flamingo (Alayrac et al., 2022), trained on massive datasets, can support more than two modalities, current small to mid-scale unified models are still limited to 2 modalities, usually image-text or video-text. The question that we ask is: is it possible to build efficiently a unified model that can support all modalities? To answer this, we propose UnIVAL, a step further towards this ambitious goal. Without relying on fancy datasets sizes or models with billions of parameters, the ~ 0.25B parameter UnIVAL model goes beyond two modalities and unifies text, images, video, and audio into a single model. Our model is efficiently pretrained on many tasks, based on task balancing and multimodal curriculum learning. ... More data efficient approaches (Shukor et al., 2022;Li et al., 2021a;2022b;Dou et al., 2021;Singh et al., 2022), have relied on additional multimodal interaction modules and variety of training objectives such as image-text matching, masked language modeling and image-text contrastive (Chen et al., 2020c;Kim et al., 2021;Lu et al., 2019;Zhang et al., 2021). ... This is the first study of weight interpolation showing its effectiveness with multimodal foundation models. between language and frames sequences (Cheng et al., 2022;Wang et al., 2023a;Fu et al., 2021;Zellers et al., 2021;Yang et al., 2021a). Few works have targeted both image and video language pretraining (Wang et al., 2022b). (Alayrac et al., 2022) 2.3B (27M) Unified models. ... Once such models are available, they can be seamlessly adapted without retraining, via prompting such zero-shot or few-shot In Context Learning. Scaling vision transformer models (Dehghani et al., 2023) lead to be more robust and aligned to human object recognition. While being very successful, training such models is hard, extremely costly and need dedicated infrastructure. ... The proposed UnIVAL model is efficiently pretrained on many tasks, based on task balancing and multimodal curriculum learning, and unifies text,"
+      },
+      {
+        "paper_id": "248476411",
+        "markdown_evidence": "Flamingo: a Visual Language Model for Few-Shot Learning ... Building models that can be rapidly adapted to novel tasks using only a handful of annotated examples is an open challenge for multimodal machine learning research. We introduce Flamingo, a family of Visual Language Models (VLM) with this ability. We propose key architectural innovations to: (i) bridge powerful pretrained vision-only and language-only models, (ii) handle sequences of arbitrarily interleaved visual and textual data, and (iii) seamlessly ingest images or videos as inputs. Thanks to their flexibility, Flamingo models can be trained on large-scale multimodal web corpora containing arbitrarily interleaved text and images, which is key to endow them with in-context few-shot learning capabilities. We perform a thorough evaluation of our models, exploring and measuring their ability to rapidly adapt to a variety of image and video tasks. These include open-ended tasks such as visual question-answering, where the model is prompted with a question which it has to answer; captioning tasks, which evaluate the ability to describe a scene or an event; and close-ended tasks such as multiple-choice visual question-answering. ... They are trained on a carefully chosen To condition the LM on visual inputs, we insert new cross-attention layers between existing pretrained and frozen LM layers. The keys and values in these layers are obtained from the vision features while the queries are derived from the language inputs. They are followed by dense feed-forward layers. ... Perceiver Resampler: from varying-size large feature maps to few visual tokens. This module connects the vision encoder to the frozen language model as shown in Figure 3. It takes as input a variable number of image or video features from the vision encoder and produces a fixed number of visual outputs (64), reducing the computational complexity of the vision-text cross-attention. ... Web-scale vision and language training datasets. Manually annotated vision and language datasets are costly to obtain and thus relatively small (10k-100k) in scale [3,15,69,122,129,139]. To alleviate this lack of data, numerous works [14,50,98,110] automatically scrape readily available paired vision-text data. ... This work introduces Flamingo, a family of Visual Language Models (VLM) with this ability to bridge powerful pretrained vision-only and language-only models, handle sequences of arbitrarily"
+      },
+      {
+        "paper_id": "265456959",
+        "markdown_evidence": "Mug-STAN: Adapting Image-Language Pretrained Models for General Video Understanding ... Large-scale image-language pretrained models, e.g., CLIP, have demonstrated remarkable proficiency in acquiring general multi-modal knowledge through web-scale image-text data. Despite the impressive performance of image-language models on various image tasks, how to effectively expand them on general video understanding remains an area of ongoing exploration. In this paper, we investigate the image-to-video transferring from the perspective of the model and the data, unveiling two key obstacles impeding the adaptation of image-language models: non-generalizable temporal modeling and partially misaligned video-text data. To address these challenges, we propose Spatial-Temporal Auxiliary Network with Mutual-guided alignment module (Mug-STAN), a simple yet effective framework extending image-text model to diverse video tasks and video-text data.Specifically, STAN adopts a branch structure with decomposed spatial-temporal modules to enable generalizable temporal modeling, while Mug suppresses misalignment by introducing token-wise feature aggregation of either modality from the other. ... In video-language pretraining, models typically initialize the video encoder and text encoder with separately pre-trained weights [13], [37]- [39], and then use multiple pretraining targets to achieve crossmodal alignment and multimodal learning, such as contrastive learning, masked language modeling, and video-text matching. ... (2) Suppressing the partial misalignment during training on video-text data. To this end, we propose Spatial-Temporal Auxiliary Network with Mutual-guided alignment module (Mug-STAN) -a plug-and-use framework adapting image-language models to general video tasks, where STAN introduces effective temporal modeling and Mug mitigates partial misalignment during training. In Fig. ... It's worth noting that recent advancements in multimodal understanding have been largely propelled by the fusion of image-based vision models with LLMs, such as Flamingo [32], BLIP-2 [33], and LLaVA [24], fortunately, these multimodal dialogue models generally employ CLIP-L/14 as the visual encoder. Consequently, our Mug-STAN can be seamlessly implemented on these models to achieve zero-shot video chatting. ... This paper proposes Spatial-Temporal Auxiliary Network with Mutual-guided alignment module (Mug-STAN), a simple yet effective"
+      },
+      {
+        "paper_id": "246411402",
+        "markdown_evidence": "BLIP: Bootstrapping Language-Image Pre-training for Unified Vision-Language Understanding and Generation ... Vision-Language Pre-training (VLP) has advanced the performance for many vision-language tasks. However, most existing pre-trained models only excel in either understanding-based tasks or generation-based tasks. Furthermore, performance improvement has been largely achieved by scaling up the dataset with noisy image-text pairs collected from the web, which is a suboptimal source of supervision. In this paper, we propose BLIP, a new VLP framework which transfers flexibly to both vision-language understanding and generation tasks. BLIP effectively utilizes the noisy web data by bootstrapping the captions, where a captioner generates synthetic captions and a filter removes the noisy ones. We achieve state-of-the-art results on a wide range of vision-language tasks, such as image-text retrieval (+2.7% in average recall@1), image captioning (+2.8% in CIDEr), and VQA (+1.6% in VQA score). BLIP also demonstrates strong generalization ability when directly transferred to video-language tasks in a zero-shot manner. Code, models, and datasets are released at https://github.com/salesforce/BLIP. ... However, encoder-based models are less straightforward to directly transfer to text generation tasks (e.g. image captioning), whereas encoder-decoder models have not been successfully adopted for image-text retrieval tasks. (2) Data perspective: most state-of-the-art methods (e.g., CLIP (Radford et al., 2021), ALBEF (Li et al., 2021a), SimVLM (Wang et al., 2021)) pre-train on image-text pairs collected from the web. ... Vision-language pre-training (VLP) aims to improve performance of downstream vision and language tasks by pretraining the model on large-scale image-text pairs. ... (2021a), where negatives pairs with higher contrastive similarity in a batch are more likely to be selected to compute the loss. Language Modeling Loss (LM) activates the imagegrounded text decoder, which aims to generate textual descriptions given an image. It optimizes a cross entropy loss which trains the model to maximize the likelihood of the text in an autoregressive manner. ... BLIP effectively utilizes the noisy web data by bootstrapping the captions, where a captioner generates synthetic captions and a filter removes the noisy ones, and demonstrates strong generalization ability when directly transferred to video-language tasks"
+      },
+      {
+        "paper_id": "273233741",
+        "markdown_evidence": "Scaling Laws For Diffusion Transformers ... Diffusion transformers (DiT) have already achieved appealing synthesis and scaling properties in content recreation, e.g., image and video generation. However, scaling laws of DiT are less explored, which usually offer precise predictions regarding optimal model size and data requirements given a specific compute budget. Therefore, experiments across a broad range of compute budgets, from 1e17 to 6e18 FLOPs are conducted to confirm the existence of scaling laws in DiT for the first time. Concretely, the loss of pretraining DiT also follows a power-law relationship with the involved compute. Based on the scaling law, we can not only determine the optimal model size and required data but also accurately predict the text-to-image generation loss given a model with 1B parameters and a compute budget of 1e21 FLOPs. Additionally, we also demonstrate that the trend of pre-training loss matches the generation performances (e.g., FID), even across various datasets, which complements the mapping from compute to synthesis quality and thus provides a predictable benchmark that assesses model performance and data quality at a reduced cost. ... In most of our experiments, each data point is seen only once during training, which is consistent with the data-infinite setting commonly adopted in the industry. However, scaling laws do not rely on this assumption. To demonstrate this, we also evaluate scaling behavior under a data-constrained setting using ImageNet (Deng et al., 2009), with results presented in Appendix H.9. ... Scaling laws in large language models (LLMs) (Kaplan et al., 2020;Hestness et al., 2017;Henighan et al., 2020;Hoffmann et al., 2022) have been widely observed and validated, suggesting that pretraining performance follows a power-law relationship with the compute C. The actual compute could be roughly calculated as C = 6N D, where N is the model size and D is the data quantity. ... We extend our scaling law analysis to additional architectures, including PixArt (Chen et al., 2023) and Flux. As shown in Fig. 13(b) and Fig. 12(b), both models exhibit clear linear behavior in their loss curves. These results suggest that scaling laws are consistent across different diffusion transformer architectures. We further test the applicability of scaling laws on higher-resolution data. ... Based on the scaling law, the loss of pretraining DiT also follows a power-law"
+      },
+      {
+        "paper_id": "277467678",
+        "markdown_evidence": "Video-T1: Test-Time Scaling for Video Generation ... With the scale capability of increasing training data, model size, and computational cost, video generation has achieved impressive results in digital creation, enabling users to express creativity across various domains. Recently, researchers in Large Language Models (LLMs) have expanded the scaling to test-time, which can significantly improve LLM performance by using more inference-time computation. Instead of scaling up video foundation models through expensive training costs, we explore the power of Test-Time Scaling (TTS) in video generation, aiming to answer the question: if a video generation model is allowed to use non-trivial amount of inference-time compute, how much can it improve generation quality given a challenging text prompt. In this work, we reinterpret the test-time scaling of video generation as a searching problem to sample better trajectories from Gaussian noise space to the target video distribution. Specifically, we build the search space with test-time verifiers to provide feedback and heuristic algorithms to guide searching process. ... This scaling behavior during the training process, commonly referred to as Scaling Laws [12,19,38,41], plays a crucial guiding role in the advancement of generative models with progressively higher capabilities. Despite these advancements, generating high-quality videos remains challenging due to the need for maintaining temporal coherence and capturing complex dynamics across frames [62]. ... Similarly, Test-Time Scaling (TTS) in video generation hinges on key components like different video generation models, multimodal evaluation models, and the complexity of prompts across diverse benchmark dimensions. However, unlike LLMs, video generation poses specific challenges. ... This work reinterpret the test-time scaling of video generation as a searching problem to sample better trajectories from Gaussian noise space to the target video distribution to answer the question: if a video generation model is allowed to use non-trivial amount of inference-time compute, how much can it improve generation quality given a challenging text prompt."
+      },
+      {
+        "paper_id": "261043320",
+        "markdown_evidence": "OpenFlamingo: An Open-Source Framework for Training Large Autoregressive Vision-Language Models ... We introduce OpenFlamingo, a family of autoregressive vision-language models ranging from 3B to 9B parameters. OpenFlamingo is an ongoing effort to produce an open-source replication of DeepMind's Flamingo models. On seven vision-language datasets, OpenFlamingo models average between 80 - 89% of corresponding Flamingo performance. This technical report describes our models, training data, hyperparameters, and evaluation suite. We share our models and code at https://github.com/mlfoundations/open_flamingo. ... Following Flamingo, we augment the layers of pretrained, frozen language models so that they cross attend to the outputs of a frozen vision encoder while predicting the next token. The cross-modal module is trained on web-scraped image-text sequences, in our case, two open source datasets: LAION-2B [32] and Multimodal C4 [45]. ... A popular format for vision and language models is (image, text) → text, i.e., models take as input an image and some text, and produce text as output, e.g., BLIP-2 [22].The flexible format directly supports tasks like image classification and visual question answering (VQA). ... All five models use a CLIP ViT-L/14 vision encoder [30]. A cross-attention interval of 4 means that a cross-attention module is inserted every 4th language model layer. Note that OpenFlamingo models labeled (Instruct) use language models that were finetuned on language-only tasks; we have not instruction-tuned OpenFlamingo models on vision-language tasks. ... OpenFlamingo is an ongoing effort to produce an open-source replication of DeepMind's Flamingo models, and the models, training data, hyperparameters, and evaluation suite are introduced."
+      },
+      {
+        "paper_id": "259145047",
+        "markdown_evidence": "Image Captioners Are Scalable Vision Learners Too ... Contrastive pretraining on image-text pairs from the web is one of the most popular large-scale pretraining strategies for vision backbones, especially in the context of large multimodal models. At the same time, image captioning on this type of data is commonly considered an inferior pretraining strategy. In this paper, we perform a fair comparison of these two pretraining strategies, carefully matching training data, compute, and model capacity. Using a standard encoder-decoder transformer, we find that captioning alone is surprisingly effective: on classification tasks, captioning produces vision encoders competitive with contrastively pretrained encoders, while surpassing them on vision&language tasks. We further analyze the effect of the model architecture and scale, as well as the pretraining data on the representation quality, and find that captioning exhibits the same or better scaling behavior along these axes. Overall our results show that plain image captioning is a more powerful pretraining strategy than was previously believed. ... Overall, our results show that pretraining a simple encoder-decoder architecture via image captioning alone can produce vision encoders competitive with CLIP and presents an interesting alternative to contrastive pretraining-in particular for multimodal vision-language models built form pretrained vision and language modeling components. ... Finally, we also trained a Cap model with no image input (Blind dec.), which is just a language model for alt-text. This model overall performs only slightly worse than Cap and CapPa, which suggests that the sentence manipulation in ARO can to a large extent be detected by language modeling alone. ... Image captioning/alt-text prediction is a popular ingredient to build large multimodal models from separately pretrained vision and language models [1,6,60,22,17,5]. Some of these models freeze large parts of vision and language components, sometimes only learning a small adapter between the two [1,17,38]. ... This paper performs a fair comparison of contrastive pretraining on image-text pairs from the web, and finds that captioning alone is surprisingly effective: on classification tasks, captioning produces vision encoders competitive with contrastively pretrained encodes, while surpassing them on vision&language tasks."
+      },
+      {
+        "paper_id": "277313543",
+        "markdown_evidence": "Dita: Scaling Diffusion Transformer for Generalist Vision-Language-Action Policy ... While recent vision-language-action models trained on diverse robot datasets exhibit promising generalization capabilities with limited in-domain data, their reliance on compact action heads to predict discretized or continuous actions constrains adaptability to heterogeneous action spaces. We present Dita, a scalable framework that leverages Transformer architectures to directly denoise continuous action sequences through a unified multimodal diffusion process. Departing from prior methods that condition denoising on fused embeddings via shallow networks, Dita employs in-context conditioning-enabling fine-grained alignment between denoised actions and raw visual tokens from historical observations. This design explicitly models action deltas and environmental nuances. By scaling the diffusion action denoiser alongside the Transformer's scalability, Dita effectively integrates crossembodiment datasets across diverse camera perspectives, observation scenes, tasks, and action spaces. Such synergy enhances robustness against various variances and facilitates the successful execution of long-horizon tasks. ... Generalist Robot Policies Language-conditioned policies [15,23,44,49,60,73,84] have gained prominence for their adaptability in real-world applications, enabling robots to interpret and execute natural language instructions. ... Dita is a scalable framework that leverages Transformer architectures to directly denoise continuous action sequences through a unified multimodal diffusion process, establishing a versatile, lightweight and opensource baseline for generalist robot policy learning."
+      },
+      {
+        "paper_id": "267199774",
+        "markdown_evidence": "Scaling Up to Excellence: Practicing Model Scaling for Photo-Realistic Image Restoration In the Wild ... We introduce SUPIR (Scaling-UP Image Restoration), a groundbreaking image restoration method that harnesses generative prior and the power of model scaling up. Lever-aging multi-modal techniques and advanced generative prior, SUPIR marks a significant advance in intelligent and realistic image restoration. As a pivotal catalyst within SUPIR, model scaling dramatically enhances its capabil-ities and demonstrates new potential for image restoration. We collect a dataset comprising 20 million high-resolution, high-quality images for model training, each en-riched with descriptive text annotations. SUPIR provides the capability to restore images guided by textual prompts, broadening its application scope and potential. Moreover, we introduce negative-quality prompts to further improve perceptual quality. We also develop a restoration-guided sampling method to suppress the fidelity issue encountered in generative-based restoration. Experiments demonstrate SUPIR's exceptional restoration effects and its novel capac-ity to manipulate restoration through textual prompts. ... To maximize the benefits of model scaling, we collect a dataset of over 20 million high-quality, high-resolution images, each accompanied by detailed descriptive text. We utilize a 13billion-parameter multi-modal language model to provide image content prompts, greatly improving the accuracy and intelligence of our method. ... (2) In cases of severe degradation, even the best IR models struggle to recover completely lost information. In such cases, textual prompts can serve as a control mechanism, enabling targeted completion of missing information based on user preferences. (3) We can also describe the desired image quality through text, further enhancing the perceptual quality of the output. See Fig. 1(b) for some examples. ... Model Scaling is an important means to further improve the capabilities of deep-learning models. The most typical examples include the scaling of language models [7,73,74], text-to-image generation models [12,37,63,67,68,85], and image segmentation models [44]. The scale and complexity of these models have increased dramatically, now encompassing billions of parameters. ... This work introduces SUPIR (Scaling-UP Image Restoration), a groundbreaking image restoration method that harnesses generative prior and the"
+      },
+      {
+        "paper_id": "258588079",
+        "markdown_evidence": "Alternating Gradient Descent and Mixture-of-Experts for Integrated Multimodal Perception ... We present Integrated Multimodal Perception (IMP), a simple and scalable multimodal multi-task training and modeling approach. IMP integrates multimodal inputs including image, video, text, and audio into a single Transformer encoder with minimal modality-specific components. IMP makes use of a novel design that combines Alternating Gradient Descent (AGD) and Mixture-of-Experts (MoE) for efficient model and task scaling. We conduct extensive empirical studies and reveal the following key insights: 1) Performing gradient descent updates by alternating on diverse modalities, loss functions, and tasks, with varying input resolutions, efficiently improves the model. 2) Sparsification with MoE on a single modality-agnostic encoder substantially improves the performance, outperforming dense models that use modality-specific encoders or additional fusion layers and greatly mitigates the conflicts between modalities. IMP achieves competitive performance on a wide range of downstream tasks including video classification, image classification, image-text, and video-text retrieval. ... Our approach provides a promising new scaling direction that avoids many of the pitfalls when dealing with multimodal training. However, there are still some remaining obstacles from fully realizing this approach. We note that our model provides exceptional performance in zero-shot video understanding, but falls slightly short in zero-shot image and audio understanding. ... Given this context, our contributions and findings are as follows: 1. We define an integrated modality-agnostic encoder model, and leverage a strong combination of image-text contrastive, video-text contrastive, video-audio contrastive, and image/video/audio classification losses during pretraining to create an Integrated Multimodal Perception (IMP) model, as shown in Figure 1. 2. ... However, given the vast quantity of independent variables involved in designing such a system, achieving an integrated multimodal machine learning model still remains an open research direction. More specifically, designing a multi-task model that integrates many multimodal signals is challenging due to various reasons: i. Different modalities require structurally different I/O signatures to properly train. ii. ... Extensive empirical studies are conducted and reveal the following key insights:"
+      },
+      {
+        "paper_id": "276235455",
+        "markdown_evidence": "Long-VITA: Scaling Large Multi-modal Models to 1 Million Tokens with Leading Short-Context Accuracy ... We introduce Long-VITA, a simple yet effective large multi-modal model for long-context visual-language understanding tasks. It is adept at concurrently processing and analyzing modalities of image, video, and text over 4K frames or 1M tokens while delivering advanced performances on short-context multi-modal tasks. We propose an effective multi-modal training schema that starts with large language models and proceeds through vision-language alignment, general knowledge learning, and two sequential stages of long-sequence fine-tuning. We further implement context-parallelism distributed inference and logits-masked language modeling head to scale Long-VITA to infinitely long inputs of images and texts during model inference. Regarding training data, Long-VITA is built on a mix of 17M samples from public datasets only and demonstrates state-of-the-art performance on various multi-modal benchmarks, compared against recent cutting-edge models with internal data. Long-VITA is fully open-source and reproducible.. ... Recent advancements have seen the creation of large vision language models (LVLMs), which usually enhance large language models with the capability to process and interpret visual information. Flamingo [16] performs various multi-modal tasks, e.g., image captioning, visual dialogue, classification, or visual question answering, from only a few input/output examples. ... This technical report presents Long-VITA, a new series of open-source vision-language models that explore longcontext vision understanding without token compression and sparse local attention. Our multi-modal architecture is constructed around three core components: the Vision Encoder, the Projector, and the LLM. Large Language Model. We choose Qwen2.5-14B-Instruct [57] as our LLM. Vision Encoder. ... In recent years, proprietary Large Multi-Modal Models (LMMs) have been undergoing rapid iteration and evolution [1][2][3], progressively extending large language models (LLMs) with multi-sensory skills, such as visual understanding. ... An effective multi-modal training schema that starts with large language models and proceeds through vision-language alignment, general knowledge learning, and two sequential stages of long-sequence fine-tuning to serve as a competitive baseline and offer valuable insights for the open-source community"
+      },
+      {
+        "paper_id": "274422930",
+        "markdown_evidence": "Sparrow: Data-Efficient Video-LLM With Text-to-Image Augmentation ... Recent Multimodal Large Language Models (MLLMs) have achieved remarkable success in vision understanding, largely attributed to scaling laws emphasizing larger models and datasets. However, the effectiveness of scaling with synthetic data remains underexplored. This work investigates video-LLM development from a data-centric perspective by fine-tuning pre-trained image-LLMs with video data. Our experiments reveal low learning efficiency when naively scaling video data, which we attribute to limited instruction diversity. To address this, we propose Sparrow, a data augmentation method that synthesizes “video” samples from text instruction data. By mixing these synthetic samples with video data, our approach achieves comparable or superior performance using significantly fewer training samples. Additionally, incorporating synthetic samples enhances long video understanding without requiring long video training data. Comprehensive experiments demonstrate our method’s effectiveness and efficiency across multiple benchmarks. ... Apart from solving traditional vision tasks (such as VQA), these models also excel in following user instructions and generalizing We introduce Sparrow, a data-efficient training method for video-LLMs that achieves \"Train less, gain more\" in both general video and long video understanding performance. 0 sample indicates zero-shot inference with the image-LLM [1]. to new tasks. ... This underscores the importance of maintaining instruction diversity in video-language training, as insufficient diversity can lead to reduced learning efficiency. In such cases, our data augmentation strategy facilitates a more diverse instructional distribution. Figure 7. Scaling performance with different data volumes and types on general video benchmarks. ... Notably, under the same data budget, our proposed scheme (Row 4) achieves the best performance. Furthermore, compared to the full fine-tuning setting with 200K samples, our method achieves comparable performance using only 15% of the number of training samples. The training cost is also significantly reduced from 276.8 GPU hours to 33.6 GPU hours, yielding an 8.2× improvement in efficiency. ... This work investigates video-LLM development from a data-centric perspective by fine-tuning pre-trained image-LLMs with video data, and proposes Sparrow, a data augmentation method that"
+      },
+      {
+        "paper_id": "278886930",
+        "markdown_evidence": "Scaling Up Biomedical Vision-Language Models: Fine-Tuning, Instruction Tuning, and Multi-Modal Learning ... Objective To advance biomedical vision language model capabilities through scaling up, fine-tuning, and instruction tuning, develop vision-language models with improved performance in handling long text, explore strategies to efficiently adopt vision language models for diverse multi-modal biomedical tasks, and examine the zero-shot learning performance. Methods We developed two biomedical vision language models, BiomedGPT-Large and BiomedGPT-XLarge, based on an encoder-decoder-based transformer architecture. We fine-tuned the two models on 23 benchmark datasets from 6 multi-modal biomedical tasks, including one image-only task (image classification), three language-only tasks (text understanding, text summarization, and question answering), and two vision-language tasks (visual question answering and image captioning). We compared the developed scaled models with our previous BiomedGPT-Base model and existing prestigious models reported in the literature. We instruction-tuned the two models using a large-scale multi-modal biomedical instruction-tuning dataset and assessed the zero-shot learning performance and alignment accuracy. ... The new models developed in this study outperform the authors' previous BiomedGPT-Base model on 17 of 23 benchmark datasets and achieve state-of-the-art performance on 15 of 23 datasets when compared to previous models reported in the literature."
+      },
+      {
+        "paper_id": "278911260",
+        "markdown_evidence": "GeoLLaVA-8K: Scaling Remote-Sensing Multimodal Large Language Models to 8K Resolution ... Ultra-high-resolution (UHR) remote sensing (RS) imagery offers valuable data for Earth observation but pose challenges for existing multimodal foundation models due to two key bottlenecks: (1) limited availability of UHR training data, and (2) token explosion caused by the large image size. To address data scarcity, we introduce SuperRS-VQA (avg. 8,376$\\times$8,376) and HighRS-VQA (avg. 2,000$\\times$1,912), the highest-resolution vision-language datasets in RS to date, covering 22 real-world dialogue tasks. To mitigate token explosion, our pilot studies reveal significant redundancy in RS images: crucial information is concentrated in a small subset of object-centric tokens, while pruning background tokens (e.g., ocean or forest) can even improve performance. Motivated by these findings, we propose two strategies: Background Token Pruning and Anchored Token Selection, to reduce the memory footprint while preserving key semantics.Integrating these techniques, we introduce GeoLLaVA-8K, the first RS-focused multimodal large language model capable of handling inputs up to 8K$\\times$8K resolution, built on the LLaVA framework. ... GeoLLaVA-8K is introduced, the first RS-focused multimodal large language model capable of handling inputs up to 8K$\\times$8K resolution, built on the LLaVA framework, and proposes two strategies: Background Token Pruning and Anchored Token Selection, to reduce the memory footprint while preserving key semantics."
+      },
+      {
+        "paper_id": "278768720",
+        "markdown_evidence": "Emerging Properties in Unified Multimodal Pretraining ... Unifying multimodal understanding and generation has shown impressive capabilities in cutting-edge proprietary systems. In this work, we introduce BAGEL, an open-source foundational model that natively supports multimodal understanding and generation. BAGEL is a unified, decoder-only model pretrained on trillions of tokens curated from large-scale interleaved text, image, video, and web data. When scaled with such diverse multimodal interleaved data, BAGEL exhibits emerging capabilities in complex multimodal reasoning. As a result, it significantly outperforms open-source unified models in both multimodal generation and understanding across standard benchmarks, while exhibiting advanced multimodal reasoning abilities such as free-form image manipulation, future frame prediction, 3D manipulation, and world navigation. In the hope of facilitating further opportunities for multimodal research, we share the key findings, pretraining details, data creation protocal, and release our code and checkpoints to the community. The project page is at https://bagel-ai.org/"
+      },
+      {
+        "paper_id": "258967670",
+        "markdown_evidence": "PaLI-X: On Scaling up a Multilingual Vision and Language Model ... We present the training recipe and results of scaling up PaLI-X, a multilingual vision and language model, both in terms of size of the components and the breadth of its training task mixture. Our model achieves new levels of performance on a wide-range of varied and complex tasks, including multiple image-based captioning and question-answering tasks, image-based document understanding and few-shot (in-context) learning, as well as object detection, video question answering, and video captioning. PaLI-X advances the state-of-the-art on most vision-and-language benchmarks considered (25+ of them). Finally, we observe emerging capabilities, such as complex counting and multilingual object detection, tasks that are not explicitly in the training mix. ... 2), and the ability to switch between the language of text present in the image (e.g., English) and the language of the generated image caption (e.g., Romanian). component and demonstrated the benefit of scaling up this part up to 70B parameters on the few-shot multimodal capabilities, while the vision encoder is fixed with 435M parameters. ... Inspired by the work in [5], we present PaLI-X, a multilingual vision and language model with reusable scaled-up components, consisting of a pretrained large-capacity visual encoder (using [6] as the starting point) and a pretrained language-only encoder-decoder (using [7] as the starting point), further trained at-scale on a vision-and-language data mixture using a combination of self-supervision and ... In this work we draw more insights from further scaling vision and language models. We show that the scaling and the improved training recipe results in a model that substantially outperforms previous state-of-the-art models, leads to emergent behaviors and identifies further margins for improvements. ... PaLI-X, a multilingual vision and language model, advances the state-of-the-art on most vision-and-language benchmarks considered and observes emerging capabilities, such as complex counting and multilingual object detection, tasks that are not explicitly in the training mix."
+      },
+      {
+        "paper_id": "267499921",
+        "markdown_evidence": "EVA-CLIP-18B: Scaling CLIP to 18 Billion Parameters ... Scaling up contrastive language-image pretraining (CLIP) is critical for empowering both vision and multimodal models. We present EVA-CLIP-18B, the largest and most powerful open-source CLIP model to date, with 18-billion parameters. With only 6-billion training samples seen, EVA-CLIP-18B achieves an exceptional 80.7% zero-shot top-1 accuracy averaged across 27 widely recognized image classification benchmarks, outperforming its forerunner EVA-CLIP (5-billion parameters) and other open-source CLIP models by a large margin. Remarkably, we observe a consistent performance improvement with the model size scaling of EVA-CLIP, despite maintaining a constant training dataset of 2-billion image-text pairs from LAION-2B and COYO-700M. This dataset is openly available and much smaller than the in-house datasets (e.g., DFN-5B, WebLI-10B) employed in other state-of-the-art CLIP models. EVA-CLIP-18B demonstrates the potential of EVA-style weak-to-strong visual model scaling. With our model weights made publicly available, we hope to facilitate future research in vision and multimodal foundation models. ... Recent years witnessed the rapid growth of Large Multimodal Models (LMMs) [3,64,62,69,5,46], with CLIP models [53,19,63,43,75,28,17] serving as a foundational vision encoder to deliver robust and transferable visual representations, and Large Language Models (LLMs) [65,54] serving as a general interface for reasoning across different modalities. ... We show that following EVA's weak-to-strong vision scaling principle, we can further scale up CLIP models to a new record and advance SOTA on multiple prevalent benchmarks across image, video and 3D domains. Importantly, we demonstrate that scaling up the size of EVA-CLIP models consistently boosts performance with no sign of saturation, shedding light on future vision model scaling. ... [68] ObjectNet [8] CIFAR-10 [40] CIFAR-100 [40] MNIST [41] Caltech101 [31] SUN397 [72] FGVC Aircraft [47] Country-211 [53] Stanford Cars [39] Birdsnap [9] DTD [21] EuroSAT [34] FER2013 [33] Flowers-102 [49] Food-101 [10] GTSRB [61] PCam [67] Pets [51] Rendered SST2 [53] RESISC45 [18] STL-10 [23] VOC2007 [27] .avg. top-1 acc. signal of performance saturation, shedding light on further scaling of vision models. ... EVA-CLIP-18B is presented, the largest and most powerful open-source CLIP model to date, with 18-billion parameters,"
+      },
+      {
+        "paper_id": "259341858",
+        "markdown_evidence": "Performance Scaling via Optimal Transport: Enabling Data Selection from Partially Revealed Sources ... Traditionally, data selection has been studied in settings where all samples from prospective sources are fully revealed to a machine learning developer. However, in practical data exchange scenarios, data providers often reveal only a limited subset of samples before an acquisition decision is made. Recently, there have been efforts to fit scaling laws that predict model performance at any size and data source composition using the limited available samples. However, these scaling functions are black-box, computationally expensive to fit, highly susceptible to overfitting, or/and difficult to optimize for data selection. This paper proposes a framework called, which predicts model performance and supports data selection decisions based on partial samples of prospective data sources. Our approach distinguishes itself from existing work by introducing a novel *two-stage* performance inference process. In the first stage, we leverage the Optimal Transport distance to predict the model's performance for any data mixture ratio within the range of disclosed data sizes. ... Scaling laws, predicting how the model performance changes with the scale of training data, model parameters, and computation budget [26], have seen increasingly successful in a variety of tasks pertaining to vision and text processing [27]. ... Evaluation over a diverse range of applications demonstrates that this framework significantly improves existing performance scaling approaches in terms of both the accuracy of performance inference and the computation costs associated with constructing the performance predictor."
+      },
+      {
+        "paper_id": "237592821",
+        "markdown_evidence": "Scale Efficiently: Insights from Pre-training and Fine-tuning Transformers ... There remain many open questions pertaining to the scaling behaviour of Transformer architectures. These scaling decisions and findings can be critical, as training runs often come with an associated computational cost which have both financial and/or environmental impact. The goal of this paper is to present scaling insights from pretraining and finetuning Transformers. While Kaplan et al. presents a comprehensive study of the scaling behaviour of Transformer language models, the scope is only on the upstream (pretraining) loss. Therefore, it is still unclear if these set of findings transfer to downstream task within the context of the pretrain-finetune paradigm. The key findings of this paper are as follows: (1) we show that aside from only the model size, model shape matters for downstream fine-tuning, (2) scaling protocols operate differently at different compute regions, (3) widely adopted T5-base and T5-large sizes are Pareto-inefficient. ... That said, the experiments of Hernandez et al. (2021) are mainly targeted at dataset transfer between two different distributions (language and code) and make the same assumptions as Kaplan et al. (2020) about model scaling. In a similar vein, Henighan et al. (2020) studied empirical scaling laws for different domains for generative modeling in vision, video and multimodal setups. ... In a similar vein, Henighan et al. (2020) studied empirical scaling laws for different domains for generative modeling in vision, video and multimodal setups. There have been increasing demand for training and scaling Transformers (Shoeybi et al., 2019;Raffel et al., 2019;Fedus et al., 2021;Conneau et al., 2019;Lin et al., 2021). ... Moreover, on top of the 17 GLUE (Wang et al., 2018) / SuperGLUE (Wang et al., 2019) and SQuAD (Rajpurkar et al., 2016) tasks we employed in our extensive study, we verify our findings via additional downstream experiments across 12 diverse language tasks (section 4.6). ... It is shown that aside from only the model size, model shape matters for downstream fine-tuning, and scaling protocols operate differently at different compute regions, and widely adopted T5-base and T4-large sizes are Pareto-inefficient."
+      },
+      {
+        "paper_id": "266162752",
+        "markdown_evidence": "4M: Massively Multimodal Masked Modeling ... Current machine learning models for vision are often highly specialized and limited to a single modality and task. In contrast, recent large language models exhibit a wide range of capabilities, hinting at a possibility for similarly versatile models in computer vision. In this paper, we take a step in this direction and propose a multimodal training scheme called 4M. It consists of training a single unified Transformer encoder-decoder using a masked modeling objective across a wide range of input/output modalities - including text, images, geometric, and semantic modalities, as well as neural network feature maps. 4M achieves scalability by unifying the representation space of all modalities through mapping them into discrete tokens and performing multimodal masked modeling on a small randomized subset of tokens. ... A crucial aspect of scalability and versatility in vision is the ability to handle multiple (input) modalities and (output) tasks, as vision models must deal with a diverse range of sensory inputs, such as images, 3D, and text and solve a wide range of tasks. ... In vision, however, many scaling efforts have instead focused on training specialized models on a single task and modality, such as predicting masked RGB pixels [20,31,4,48,118,34], discrete tokens [7,132], or other (deep) features [117,6,82,114,36,70] from RGB inputs. ... Our main contributions and results can be summarized as follows: 1. Method: we introduce 4M, a framework for training versatile and scalable foundation models for vision tasks using a multimodal masked modeling objective. Our approach results in models that learn rich representations and perform well on a wide range of tasks without requiring task-specific adaptations. 2. ... The potential of 4M for training versatile and scalable foundation models for vision tasks is demonstrated, setting the stage for further exploration in multimodal learning for vision and other domains."
+      },
+      {
+        "paper_id": "273549424",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256668806",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259187664",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259187590",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276580677",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252917726",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270702885",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253510587",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265043448",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254125280",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272987383",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271843478",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273497538",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268877781",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269635544",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277780955",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252222370",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277856792",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276903531",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233296206",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268875775",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273654137",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274822212",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278129712",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246035820",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271892350",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253080333",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268091168",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267311517",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266348670",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267338873",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268857227",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267027735",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271218629",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270688091",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266550872",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268987507",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273850193",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277780663",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276929009",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278714643",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270440809",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258546790",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277622207",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275570297",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274763116",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274422572",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277451671",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263131626",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253725798",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277853591",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266162309",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269457479",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268510331",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252846241",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268667113",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269756882",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276422481",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265040160",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "282097664",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277733563",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "88516861",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277620880",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273807940",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275535833",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271270413",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278602689",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276287490",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274859410",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265129010",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254095850",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277435677",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259203031",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268041837",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273798092",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267426775",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278427204",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781259",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278769474",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276235972",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274609928",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274777454",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277955072",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267712817",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273695606",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277382872",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270063355",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258832817",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249674556",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266844340",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276395155",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277955839",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258615266",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270973476",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236956474",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274610091",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275789885",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273375506",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274638371",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250113843",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244463149",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276408094",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272968818",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256504073",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270520604",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273962272",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269416018",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266899567",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275515682",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254445260",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268201933",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263135612",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274992610",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277313659",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276444274",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271064540",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237420491",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276094958",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254408865",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276250550",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273025685",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53331686",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274446326",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256000866",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276079880",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259847783",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268824372",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277451906",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271270595",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "61725177",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276284633",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273157055",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "23941724",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268857163",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "195345251",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276161624",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482898",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275133415",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276456727",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231951742",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271957175",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274611092",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "240585750",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781025",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279092758",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277320434",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275405379",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265609165",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275921731",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273638196",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270001511",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258762390",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272074961",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267897968",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "19183820",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273529318",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271957128",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271161802",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268531411",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269982521",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259108935",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267060976",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269362280",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278782728",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272255014",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274776246",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258091923",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268642996",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278892655",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270560756",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271601023",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235490558",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273374801",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268531271",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273102310",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276249212",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "15086315",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260956949",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274642789",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263673066",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255708339",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262055614",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273963485",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268536959",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267626982",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235367962",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271212319",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278200815",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

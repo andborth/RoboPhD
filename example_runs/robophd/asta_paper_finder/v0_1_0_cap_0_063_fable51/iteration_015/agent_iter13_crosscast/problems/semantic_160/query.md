@@ -1,0 +1,1 @@
+What are the current solutions and approaches to address the transcription bottleneck in linguistic fieldwork and documentation of endangered languages? Include both technological and methodological solutions.

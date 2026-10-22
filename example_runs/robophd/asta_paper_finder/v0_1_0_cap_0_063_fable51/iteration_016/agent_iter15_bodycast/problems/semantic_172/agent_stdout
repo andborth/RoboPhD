@@ -1,0 +1,43 @@
+[semantic_172] score_type=semantic_f1 query='papers about long term memory in agents'
+  plan: kw=['long term memory agents', 'agent memory mechanisms', 'persistent memory in agents', 'memory augmented agents', 'continual learning agents', 'lifelong learning memory', 'episodic memory agents', 'working memory architectures', 'external memory neural agents', 'retrieval augmented agents', 'memory networks agents', 'long horizon agent memory'] sn=['This paper studies long term memory in agents and shows how memory mechanisms improve behavior over extended interactions.', 'We evaluate long term memory in agents on long horizon tasks with delayed dependencies.', 'We report performance on tasks requiring persistent memory across episodes for an agent.', 'Our experiments measure memory retention and retrieval over long time spans in embodied agents.', 'We test agent memory under continual learning settings with repeated exposure and forgetting constraints.'] criteria=['The paper is about long term memory in agents.', 'The paper connects agents with memory over extended time or long horizon interactions.', 'The paper is a research paper relevant to memory mechanisms, not just a general discussion.']
+  !! search_papers_by_relevance failed: search_papers_by_relevance timed out after 150s kwargs={'keyword': 'episodic memory agents', 'fields': 'title,abstract,corpusId,year,tldr,venue,citationCou
+  !! snippet_search failed: snippet_search timed out after 170s kwargs={'query': 'Our experiments measure memory retention and retrieval over long time spans in embodied a
+  !! snippet_search failed: snippet_search timed out after 170s kwargs={'query': 'The paper connects agents with memory over extended time or long horizon interactions. Th
+  kw 'long term memory agents': 100 items
+  kw 'agent memory mechanisms': 100 items
+  kw 'persistent memory in agents': 100 items
+  kw 'memory augmented agents': 100 items
+  kw 'continual learning agents': 100 items
+  kw 'lifelong learning memory': 100 items
+  kw 'episodic memory agents': 0 items
+  kw 'working memory architectures': 100 items
+  kw 'external memory neural agents': 100 items
+  kw 'retrieval augmented agents': 100 items
+  kw 'memory networks agents': 100 items
+  kw 'long horizon agent memory': 100 items
+  sn 'This paper studies long term memory in agents and ': 100 items
+  sn 'We evaluate long term memory in agents on long hor': 100 items
+  sn 'We report performance on tasks requiring persisten': 100 items
+  sn 'Our experiments measure memory retention and retri': 0 items
+  sn 'We test agent memory under continual learning sett': 100 items
+  sn 'The paper is about long term memory in agents. The': 100 items
+  sn 'The paper connects agents with memory over extende': 0 items
+  sn 'papers about long term memory in agents': 100 items
+  1238 unique candidates after 509s
+  stage1: force-grading 22 strong passage hits below position 360
+  stage1: forced passage hits graded>=2: 13/22
+  stage1 yield check: 14 grade>=2 in the last 120 -> graded 160 more (now 520)
+  stage1 yield check: 20 grade>=2 in the last 120 -> graded 160 more (now 680)
+  stage1 graded 702/702 in 3 round(s) (515s)
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:276394679', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  stage2: 10 seeds -> 154 new citers, graded 154/154 (637s)
+  grade distribution: {3: 36, 2: 133, 1: 209, None: 555, 0: 459}
+  stage1-tail (fused pos>=360) papers graded>=2 inside top250: 47
+  head predicted-grade distribution: {3: 19, 2: 8, 1: 8, 0: 1}
+  head rerank: 36/36 rated, 19 all-criteria-perfect, 32 moved (644s)
+  head: 278165315:[3, 3, 3] 272828154:[3, 3, 3] 9596808:[3, 3, 3] 278904525:[3, 3, 3] 276394679:[3, 3, 3] 276928772:[3, 3, 3] 276249662:[3, 3, 3] 73729415:[3, 3, 3] 271854911:[3, 3, 3] 272592995:[3, 3, 3] 277313420:[3, 3, 3] 278788765:[3, 3, 3]
+  evidence query: all criteria (topic weak for 40% of window)
+  evidence group pass: 13 calls, 308 passages, 77/100 papers covered (798s)
+  evidence per-paper retry: 10 calls, 20 passages (890s)
+  evidence: 83/100 window papers carry body passages; weak-criteria histogram: {0: 40, 1: 70, 2: 68}
+  submitted 250 papers in 891s

@@ -1,0 +1,47 @@
+[semantic_224] score_type=semantic_f1 query='List all papers that use autoregressive transformer to generate videos.'
+  plan: kw=['autoregressive video generation', 'transformer video synthesis', 'video autoregressive transformer', 'autoregressive transformer videos', 'generative video transformer', 'next frame prediction transformer', 'masked video generation transformer', 'video token autoregressive model', 'discrete video transformer', 'video generation with transformers', 'VQGAN video transformer', 'VideoGPT autoregressive', 'List all use autoregressive transformer generate videos', 'autoregressive transformer generate videos'] sn=['We propose an autoregressive transformer for video generation that models video as a sequence of discrete tokens and generates future frames sequentially.', 'We evaluate autoregressive video generation on benchmark video datasets and report visual quality metrics such as FVD and IS.', 'Our method uses a transformer decoder to generate videos in an autoregressive manner from previous frames or latent tokens.', 'We train the autoregressive transformer for video synthesis on large-scale video data and compare against prior generative video models.', 'The model generates long video sequences one token at a time using an autoregressive transformer architecture.'] criteria=['The paper is about generating videos.', 'The paper uses an autoregressive transformer for video generation.', 'The paper must connect the transformer autoregressive method with video synthesis or video generation, not just general video understanding.']
+  !! search_papers_by_relevance failed: search_papers_by_relevance timed out after 150s kwargs={'keyword': 'VideoGPT autoregressive', 'fields': 'title,abstract,corpusId,year,tldr,venue,citationCo
+  !! search_papers_by_relevance failed: search_papers_by_relevance timed out after 150s kwargs={'keyword': 'List all use autoregressive transformer generate videos', 'fields': 'title,abstract,cor
+  !! search_papers_by_relevance failed: search_papers_by_relevance timed out after 150s kwargs={'keyword': 'autoregressive transformer generate videos', 'fields': 'title,abstract,corpusId,year,tl
+  kw 'autoregressive video generation': 100 items
+  kw 'transformer video synthesis': 100 items
+  kw 'video autoregressive transformer': 100 items
+  kw 'autoregressive transformer videos': 100 items
+  kw 'generative video transformer': 100 items
+  kw 'next frame prediction transformer': 100 items
+  kw 'masked video generation transformer': 100 items
+  kw 'video token autoregressive model': 100 items
+  kw 'discrete video transformer': 100 items
+  kw 'video generation with transformers': 100 items
+  kw 'VQGAN video transformer': 100 items
+  kw 'VideoGPT autoregressive': 0 items
+  kw 'List all use autoregressive transformer generate v': 0 items
+  kw 'autoregressive transformer generate videos': 0 items
+  sn 'We propose an autoregressive transformer for video': 100 items
+  sn 'We evaluate autoregressive video generation on ben': 100 items
+  sn 'Our method uses a transformer decoder to generate ': 100 items
+  sn 'We train the autoregressive transformer for video ': 100 items
+  sn 'The model generates long video sequences one token': 100 items
+  sn 'The paper is about generating videos. The paper us': 100 items
+  sn 'The paper uses an autoregressive transformer for v': 100 items
+  sn 'List all papers that use autoregressive transforme': 100 items
+  986 unique candidates after 279s
+  stage1: force-grading 26 strong passage hits below position 320
+  stage1: forced passage hits graded>=2: 2/26
+  stage1 yield check: 4 grade>=2 in fused positions 200-320 -> stop
+  stage1 graded 346/346 in 1 round(s) (282s)
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:249431456', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:233307257', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  stage2: 6 title searches -> 60 new neighbours (hits per search: [1, 8, 40, 40, 1, 4]; seeds: ['Towards End-to-End Generative Modeling of Long Videos with', 'Fast Autoregressive Video Generation with Diagonal Decoding', 'Autoregressive Video Generation without Vector Quantization', 'Generative Pre-trained Autoregressive Diffusion Transformer', 'Loong: Generating Minute-level Long Videos with', 'MAGI-1: Autoregressive Video Generation at Scale'])
+  stage2: 10 seeds -> 278 new citers+neighbours, graded 120/120 (434s)
+  stage2 graded>=2: 2/120 (neighbour-only: 0)
+  grade distribution: {3: 12, 2: 37, 1: 111, None: 798, 0: 306}
+  stage1-tail (fused pos>=GRADE_ROUND1) papers graded>=2 inside top250: 2
+  head predicted-grade distribution: {3: 7, 2: 1, 1: 21, 0: 3}
+  head rerank: 32/32 rated, 7 all-criteria-perfect, 31 moved (438s)
+  head: 277104081:[3, 3, 3] 278501597:[3, 3, 3] 273098341:[3, 3, 3] 266435847:[3, 3, 3] 233307257:[3, 3, 3] 274514701:[3, 3, 3] 257804949:[3, 3, 3] 257631449:[3, 1, 3] 274822761:[3, 1, 1] 278768832:[3, 1, 1] 252715594:[3, 1, 1] 249431456:[3, 1, 1]
+  evidence query: non-topic criteria (topic weak for 26% of window)
+  evidence group pass: 13 calls, 331 passages, 90/100 papers covered (590s)
+  evidence per-paper retry: 4 calls, 4 passages (652s)
+  evidence: 93/100 window papers carry body passages; weak-criteria histogram: {0: 26, 1: 55, 2: 88}
+  submitted 250 papers in 652s

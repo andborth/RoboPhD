@@ -1,0 +1,45 @@
+[semantic_193] score_type=semantic_f1 query='Adaptive query expansion with LLMs, focusing on papers published on or after 2023'
+  plan: kw=['adaptive query expansion', 'LLM query expansion', 'large language model retrieval', 'prompt based query reformulation', 'neural query expansion', 'pseudo relevance feedback', 'retrieval augmented generation', 'iterative search refinement', 'query rewriting for search', 'semantic search expansion', 'ad hoc retrieval expansion', 'LLM reranking retrieval', 'Adaptive query expansion LLMs published after 2023', 'LLMs published after 2023'] sn=['This paper presents an adaptive query expansion method that uses large language models to reformulate search queries and improve retrieval effectiveness.', 'We evaluate the adaptive query expansion approach on benchmark document retrieval datasets and report standard ranking metrics such as nDCG and MRR.', 'We study adaptive query expansion with LLMs in a zero-shot or few-shot setting without task-specific fine-tuning.', 'We report retrieval performance for adaptive query expansion on datasets published in 2023 or later.', 'We compare the proposed LLM-based query expansion method against classical pseudo relevance feedback and neural query rewriting baselines.'] criteria=['The paper must be about adaptive query expansion or query reformulation for retrieval.', 'The paper must use large language models or LLMs as part of the query expansion method.', 'The paper must be published on or after 2023.']
+  !! search_papers_by_relevance failed: search_papers_by_relevance timed out after 150s kwargs={'keyword': 'retrieval augmented generation', 'fields': 'title,abstract,corpusId,year,tldr,venue,cit
+  !! search_papers_by_relevance failed: search_papers_by_relevance timed out after 150s kwargs={'keyword': 'LLM reranking retrieval', 'fields': 'title,abstract,corpusId,year,tldr,venue,citationCo
+  !! search_papers_by_relevance failed: search_papers_by_relevance timed out after 150s kwargs={'keyword': 'Adaptive query expansion LLMs published after 2023', 'fields': 'title,abstract,corpusId
+  kw 'adaptive query expansion': 100 items
+  kw 'LLM query expansion': 100 items
+  kw 'large language model retrieval': 100 items
+  kw 'prompt based query reformulation': 100 items
+  kw 'neural query expansion': 100 items
+  kw 'pseudo relevance feedback': 100 items
+  kw 'retrieval augmented generation': 0 items
+  kw 'iterative search refinement': 100 items
+  kw 'query rewriting for search': 100 items
+  kw 'semantic search expansion': 100 items
+  kw 'ad hoc retrieval expansion': 100 items
+  kw 'LLM reranking retrieval': 0 items
+  kw 'Adaptive query expansion LLMs published after 2023': 0 items
+  kw 'LLMs published after 2023': 100 items
+  sn 'This paper presents an adaptive query expansion me': 100 items
+  sn 'We evaluate the adaptive query expansion approach ': 100 items
+  sn 'We study adaptive query expansion with LLMs in a z': 100 items
+  sn 'We report retrieval performance for adaptive query': 100 items
+  sn 'We compare the proposed LLM-based query expansion ': 100 items
+  sn 'The paper must be about adaptive query expansion o': 100 items
+  sn 'The paper must use large language models or LLMs a': 100 items
+  sn 'Adaptive query expansion with LLMs, focusing on pa': 100 items
+  1421 unique candidates after 520s
+  stage1 yield check: 8 grade>=2 in the last 120 -> graded 160 more (now 520)
+  stage1 yield check: 3 grade>=2 in fused positions 400-520 -> stop
+  stage1 graded 520/520 in 2 round(s) (523s)
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:278067489', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:268752488', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  stage2: 10 seeds -> 110 new citers, graded 110/110 (615s)
+  grade distribution: {3: 21, 2: 33, 1: 154, None: 901, 0: 422}
+  stage1-tail (fused pos>=360) papers graded>=2 inside top250: 4
+  head predicted-grade distribution: {2: 26, 1: 10}
+  head rerank: 36/36 rated, 0 all-criteria-perfect, 23 moved (620s)
+  head: 258546701:[3, 3, 1] 264806544:[3, 3, 1] 266977456:[3, 3, 1] 268041808:[3, 3, 1] 273404056:[3, 3, 1] 278067489:[3, 3, 1] 268752488:[3, 3, 1] 257505063:[3, 3, 1] 278740217:[3, 3, 1] 270067958:[3, 3, 1] 270357287:[3, 3, 1] 277955657:[3, 3, 1]
+  evidence query: all criteria (topic weak for 38% of window)
+  !! snippet_search failed: snippet_search timed out after 170s kwargs={'query': 'The paper must be about adaptive query expansion or query reformulation for retrieval. Th
+  evidence group pass: 13 calls, 227 passages, 60/100 papers covered (883s)
+  evidence per-paper retry: 11 calls, 0 passages (1005s)
+  evidence: 64/100 window papers carry body passages; weak-criteria histogram: {0: 38, 1: 38, 2: 100}
+  submitted 250 papers in 1005s

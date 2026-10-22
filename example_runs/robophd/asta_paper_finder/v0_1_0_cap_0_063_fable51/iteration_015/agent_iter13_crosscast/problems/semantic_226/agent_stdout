@@ -1,0 +1,45 @@
+[semantic_226] score_type=semantic_f1 query='Show me research on the long video description. Here, long videos are defined as those with a duration of at least sever'
+  plan: kw=['video description generation', 'long video captioning', 'dense video captioning', 'long form video understanding', 'paragraph video description', 'video narration generation', 'multi minute video captioning', 'temporal video captioning', 'activitynet captions', 'youcook2 captioning', 'movie description generation', 'long video summarization', 'Show long video description Here long videos', 'defined as duration at least several minutes'] sn=['This paper presents a model for generating natural language descriptions of long videos with temporally grounded content over several minutes.', 'We evaluate video description methods on long videos with durations of several minutes or more.', 'We report captioning metrics for long form video description using standard automatic evaluation measures.', 'Our experiments focus on dense description of multi minute videos rather than short clips.', 'We study narrative description generation for extended videos and compare against ActivityNet Captions and YouCook2 baselines.'] criteria=['Must be about video description or captioning', 'Must address long videos with duration of at least several minutes', 'Must connect the description task to long form or extended video understanding']
+  !! search_papers_by_relevance failed: search_papers_by_relevance timed out after 150s kwargs={'keyword': 'video narration generation', 'fields': 'title,abstract,corpusId,year,tldr,venue,citatio
+  kw 'video description generation': 100 items
+  kw 'long video captioning': 100 items
+  kw 'dense video captioning': 100 items
+  kw 'long form video understanding': 100 items
+  kw 'paragraph video description': 100 items
+  kw 'video narration generation': 0 items
+  kw 'multi minute video captioning': 100 items
+  kw 'temporal video captioning': 100 items
+  kw 'activitynet captions': 100 items
+  kw 'youcook2 captioning': 100 items
+  kw 'movie description generation': 100 items
+  kw 'long video summarization': 100 items
+  kw 'Show long video description Here long videos': 100 items
+  kw 'defined as duration at least several minutes': 100 items
+  sn 'This paper presents a model for generating natural': 100 items
+  sn 'We evaluate video description methods on long vide': 100 items
+  sn 'We report captioning metrics for long form video d': 100 items
+  sn 'Our experiments focus on dense description of mult': 100 items
+  sn 'We study narrative description generation for exte': 100 items
+  sn 'Must be about video description or captioning Must': 100 items
+  sn 'Must address long videos with duration of at least': 100 items
+  sn 'Show me research on the long video description. He': 100 items
+  1368 unique candidates after 186s
+  stage1 yield check: 13 grade>=2 in the last 120 -> graded 160 more (now 520)
+  stage1 yield check: 14 grade>=2 in the last 120 -> graded 160 more (now 680)
+  stage1 graded 680/680 in 3 round(s) (191s)
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:276741160', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:277468201', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:270562458', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:55702273', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cita
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:270391637', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  stage2: 10 seeds -> 52 new citers, graded 52/52 (282s)
+  grade distribution: {3: 16, 2: 73, 1: 310, None: 688, 0: 333}
+  stage1-tail (fused pos>=360) papers graded>=2 inside top250: 34
+  head predicted-grade distribution: {3: 3, 2: 5, 1: 27, 0: 1}
+  head rerank: 36/36 rated, 3 all-criteria-perfect, 36 moved (287s)
+  head: 267759646:[3, 3, 3] 273964017:[3, 3, 3] 277243029:[3, 3, 3] 276741160:[3, 1, 3] 276575523:[3, 1, 3] 277467668:[3, 1, 3] 274305802:[3, 1, 3] 275279674:[3, 1, 3] 277993903:[0, 3, 3] 278886040:[0, 3, 3] 270391637:[0, 3, 3] 268856925:[3, 1, 1]
+  evidence query: all criteria (topic weak for 36% of window)
+  evidence group pass: 13 calls, 312 passages, 73/100 papers covered (440s)
+  evidence per-paper retry: 14 calls, 7 passages (653s)
+  evidence: 75/100 window papers carry body passages; weak-criteria histogram: {0: 36, 1: 87, 2: 77}
+  submitted 250 papers in 653s

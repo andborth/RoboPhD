@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_189",
+    "results": [
+      {
+        "paper_id": "252968423",
+        "markdown_evidence": "LiteTransformerSearch: Training-free Neural Architecture Search for Efficient Language Models ... The Transformer architecture is ubiquitously used as the building block of large-scale autoregressive language models. However, finding architectures with the optimal trade-off between task performance (perplexity) and hardware constraints like peak memory utilization and latency is non-trivial. This is exacerbated by the proliferation of various hardware. We leverage the somewhat surprising empirical observation that the number of decoder parameters in autoregressive Transformers has a high rank correlation with task performance, irrespective of the architecture topology. This observation organically induces a simple Neural Architecture Search (NAS) algorithm that uses decoder parameters as a proxy for perplexity without need for any model training. The search phase of our training-free algorithm, dubbed Lightweight Transformer Search (LTS), can be run directly on target devices since it does not require GPUs. Using on-target-device measurements, LTS extracts the Pareto-frontier of perplexity versus any hardware performance cost. ... In this section, we investigate the effect of topology on the performance of decoder parameter count proxy. Specifically, we seek to answer whether for a given decoder parameter count budget, the aspect ratio of the architecture, i.e., trading off the width versus the depth, can affect the final validation perplexity. We define the aspect ratio of the architecture as d model (=width), divided by n layer (=depth). ... Here, the models span wide, shallow topologies (e.g., d model =1024, n layer =3) to narrow, deep topologies (e.g., d model =128, n layer =35). The maximum change in the validation perplexity for a given decoder parameter count is < 7% for a wide range of aspect ratios ∈ [8,323]. ... On certain tasks, e.g., 'ja-en', 'so-en', and 'sw-en' the parameter count proxies perform quite well, achieving a high SRC with both the BLEU score and perplexity. Interestingly, on 'so-en' and 'sw-en', the parameter count and performance are inversely correlated, which may be due to the limited training data for these language pairs which gives smaller models a leading advantage over larger architectures. ... The search phase of this training-free algorithm, dubbed Lightweight Transformer Search (LTS), can be run directly on target devices since it does not require GPUs and effectively"
+      },
+      {
+        "paper_id": "234338042",
+        "markdown_evidence": "Which transformer architecture fits my data? A vocabulary bottleneck in self-attention ... After their successful debut in natural language processing, Transformer architectures are now becoming the de-facto standard in many domains. An obstacle for their deployment over new modalities is the architectural configuration: the optimal depth-to-width ratio has been shown to dramatically vary across data types (e.g., $10$x larger over images than over language). We theoretically predict the existence of an embedding rank bottleneck that limits the contribution of self-attention width to the Transformer expressivity. We thus directly tie the input vocabulary size and rank to the optimal depth-to-width ratio, since a small vocabulary size or rank dictates an added advantage of depth over width. We empirically demonstrate the existence of this bottleneck and its implications on the depth-to-width interplay of Transformer architectures, linking the architecture variability across domains to the often glossed-over usage of different vocabulary sizes or embedding ranks in different domains. ... While the architecture's operation is mostly unchanged, the chosen ratio between the number of selfattention layers (depth) and the dimension of the internal representation (width) varies greatly across different applications. For example, for a fixed BERT-Base size of 110M parameters, popular architectures range from 12-layered networks to much narrower 128-layered networks. ... The Sparse Transformer (Child et al., 2019) over images, which is 128 layers deep at the same parameter count of the 12-layered BERT-Base in language, has a small pixel-intensity vocabulary (each pixel is translated into 3 input tokens corresponding to its color channels), which caps the contribution of width. The same vocabulary is used in the ablation of Henighan et al. ... Figure 1 shows experiments in the language domain, demonstrating that when decreasing the vocabulary size below the value of the network width, depth becomes more important than width also in this data modality. This provides empirical support for our expressivity-based interpretation of the variation in the depth-to-width ratio, and counters the modality based interpretation. ... This work theoretically predicts the existence of an embedding rank bottleneck that limits the contribution of self-attention width to the Transformer expressivity, and empirically demonstrates the"
+      },
+      {
+        "paper_id": "150373667",
+        "markdown_evidence": "Language Modeling with Deep Transformers ... We explore deep autoregressive Transformer models in language modeling for speech recognition. We focus on two aspects. First, we revisit Transformer model configurations specifically for language modeling. We show that well configured Transformer models outperform our baseline models based on the shallow stack of LSTM recurrent neural network layers. We carry out experiments on the open-source LibriSpeech 960hr task, for both 200K vocabulary word-level and 10K byte-pair encoding subword-level language modeling. We apply our word-level models to conventional hybrid speech recognition by lattice rescoring, and the subword-level models to attention based encoder-decoder models by shallow fusion. Second, we show that deep Transformer language models do not require positional encoding. The positional encoding is an essential augmentation for the self-attention mechanism which is invariant to sequence ordering. However, in autoregressive setup, as is the case for language modeling, the amount of information increases along the position dimension, which is a positional signal by its own. ... First of all, the 12-layer (12, 4096, 512, 8) model outperforms the 6-layer (6, 8192, 512, 8) model, while having similar number of parameters, which seems to indicate that the depth effectively benefits Transformer language models. We also train an extreme model which has only 2 layers with wide dimensions (2,8192,2048,8). ... On the other hand, an obvious limitation of the Transformers is that their memory requirement linearly increases in terms of number of tokens in the sequence, which requires to work with a limited context window (basically a n-gram model where the typical number for n is 512) for tasks dealing with long sequences such as character-level language modeling [12]. Dai et al. ... Future work investigates application of crucial components of deep Transformers (such as layer normalization) to deeper LSTM models; e.g., the RNMT+ decoder architecture [40] for language modeling. Furthermore, we do not apply any regularization on models for the large LibriSpeech task, as no overfitting is observed in the range of model sizes we experimented with (for the word-level models). ... The analysis of attention weights shows that deep autoregressive self-attention models can automatically make use of positional information and it is found that removing the positional encoding"
+      },
+      {
+        "paper_id": "224814118",
+        "markdown_evidence": "Beyond English-Centric Multilingual Machine Translation ... Existing work in translation demonstrated the potential of massively multilingual machine translation by training a single model able to translate between any pair of languages. However, much of this work is English-Centric by training only on data which was translated from or to English. While this is supported by large sources of training data, it does not reflect translation needs worldwide. In this work, we create a true Many-to-Many multilingual translation model that can translate directly between any pair of 100 languages. We build and open source a training dataset that covers thousands of language directions with supervised data, created through large-scale mining. Then, we explore how to effectively increase model capacity through a combination of dense scaling and language-specific sparse parameters to create high quality models. Our focus on non-English-Centric models brings gains of more than 10 BLEU when directly translating between non-English directions while performing competitively to the best single systems of WMT. ... We consider increasing the capacity of a Transformer by either increasing the number of layers (depth axis) or the dimensions of each layer, including the feedforward (width axis). On the left panel of Figure 7, we analyze which axis to prioritize by comparing models with different sizes, 1B, 2B, and 10B, obtained by growing their depth or width (see Appendix B for model configurations and dimensions). ... In this section, we investigate different ways to add capacity to an MMT model: we first investigate dense scaling, where we increase the depth and width of standard Transformer architectures. Then, we identify disadvantages of dense scaling, and propose an alternative to effectively add language-specific parameters and exploit the nature of language similarities within the task of multilingual machine translation. ... Adding Language-Specific Layers to a Pre-Trained Model. We demonstrate the impact of adding language-specific layers to the decoder of a pre-trained 12B parameter Transformer in Figure 10. We show that adding language-specific layers for five languages improves results on the WMT evaluation datasets. The language-specific layer adds 3.4B parameters and we train it for 20K updates with the rest of the network frozen."
+      },
+      {
+        "paper_id": "256598241",
+        "markdown_evidence": "Bioformer: an efficient transformer language model for biomedical text mining ... Pretrained language models such as Bidirectional Encoder Representations from Transformers (BERT) have achieved state-of-the-art performance in natural language processing (NLP) tasks. Recently, BERT has been adapted to the biomedical domain. Despite the effectiveness, these models have hundreds of millions of parameters and are computationally expensive when applied to large-scale NLP applications. We hypothesized that the number of parameters of the original BERT can be dramatically reduced with minor impact on performance. In this study, we present Bioformer, a compact BERT model for biomedical text mining. We pretrained two Bioformer models (named Bioformer8L and Bioformer16L) which reduced the model size by 60% compared to BERTBase. Bioformer uses a biomedical vocabulary and was pre-trained from scratch on PubMed abstracts and PubMed Central full-text articles. ... Previous studies [16] also showed that given a fixed model size, model depth (number of layers) and width (hidden embedding size) have a large effect on performance. Therefore, we hypothesize that a well pretrained compact model with optimal model depth and width could achieve faster speed with minimal loss in accuracy. In this study, we present Bioformer, a compact BERT model for biomedical text mining. ... Model depth (number of transformer layers, L) and model width (hidden embedding size, H) are key hyperparameters that impact the performance. Turc et al. [16] released 24 pretrained miniature BERT models in the general domain. To investigate the best model depth and model width for a compact BERT model, we examined the effect of model depth and width on performances of downstream tasks. ... As a trade-off, Bioformer16L is less efficient than Bioformer8L, despite that Bioformer8L has a little more number of parameters (43M versus 42M). The reason might be that Bioformer8L has a larger hidden embedding size and large dense matrix multiplications can be well parallelized. Bioformer16L has more layers and matrix multiplications in different layers cannot start simultaneously. ... This study pretrained two Bioformer models (named Bioformer8L and Bioformer16L) which reduced the model size by 60% compared to BERTBase and evaluated the performance of Bioformer as well as existing biomedical BERT models including BioBERT and PubMedBERT on 15 benchmark datasets of"
+      },
+      {
+        "paper_id": "275993733",
+        "markdown_evidence": "Scaling Inference-Efficient Language Models ... Scaling laws are powerful tools to predict the performance of large language models. However, current scaling laws fall short of accounting for inference costs. In this work, we first show that model architecture affects inference latency, where models of the same size can have up to 3.5x difference in latency. To tackle this challenge, we modify the Chinchilla scaling laws to co-optimize the model parameter count, the number of training tokens, and the model architecture. Due to the reason that models of similar training loss exhibit gaps in downstream evaluation, we also propose a novel method to train inference-efficient models based on the revised scaling laws. We perform extensive empirical studies to fit and evaluate our inference-aware scaling laws. We vary model parameters from 80M to 1B, training tokens from 1.6B to 30B, and model shapes, training 63 models. ... Large Language Models. Transformer (Vaswani, 2017) has been successfully applied to a variety of tasks: text classification (Wang, 2018;Sarlin et al., 2020), generation (Zellers et al., 2019;Sakaguchi et al., 2021), reasoning (Srivastava et al., 2022), and mathematics (Cobbe et al., 2021;Hendrycks et al., 2021), showcasing their broad applicability and effectiveness. ... Furthermore, Figure 3(c) indicates that for the same number of parameters, we can achieve different latency targets by changing the ratio of the number of hidden parameters in one layer (d model ) vs. the number of layers (n layers ). Moreover, in Figure 4, We study the relationship between model shape and inference throughput under a fixed parameter budget. ... This work first shows that model architecture affects inference latency, and modify the Chinchilla scaling laws to co-optimize the model parameter count, the number of training tokens, and the model architecture to train inference-efficient models based on the revised scaling laws."
+      },
+      {
+        "paper_id": "265295002",
+        "markdown_evidence": "Scaling Law of Large Sequential Recommendation Models ... Scaling of neural networks has recently shown great potential to improve the model capacity in various fields. Specifically, model performance has a power-law relationship with model size or data size, which provides important guidance for the development of large-scale models. However, there is still limited understanding on the scaling effect of user behavior models in recommender systems, where the unique data characteristics (e.g., data scarcity and sparsity) pose new challenges in recommendation tasks. In this work, we focus on investigating the scaling laws in large sequential recommendation models. Specifically, we consider a pure ID-based task formulation, where the interaction history of a user is formatted as a chronological sequence of item IDs. We don’t incorporate any side information (e.g., item text), to delve into the scaling law’s applicability from the perspective of user behavior. We successfully scale up the model size to 0.8B parameters, making it feasible to explore the scaling effect in a diverse range of model sizes. ... To gain further insight into the impact of model shape, we examine the relationship between model performance and the transformer model shape. We measure the model shape using the aspect ratio R [7] which is calculated as: It can well reflect the ratio between the depth and width of the model, indicating a deeper or wider model shape. ... Despite that transformer models are widely explored for sequential recommendation [18], [19], [30], most of the existing research mainly focuses on small-sized models (for example there are typically only two layers in SASRec [18] and BERT4Rec [19]). It is meaningful to study how the model performance would change as the model size scales up. ... In this section, we first introduce the model architecture and datasets for exploring the scaling effect of sequential recommendation models. Further, since we empirically find that it is difficult to train large-scale transformer models for recommendation tasks, we propose improvement strategies for stabilizing the model training. ... This work considers a pure ID-based task formulation, and empirically shows that the scaling law still holds for these trained models, even in data-constrained scenarios, which verifies the benefits of large recommendation models."
+      },
+      {
+        "paper_id": "257616068",
+        "markdown_evidence": "Bilaterally Slimmable Transformer for Elastic and Efficient Visual Question Answering ... Recent Transformer architectures (Vaswani et al., 2017) have brought remarkable improvements to visual question answering (VQA). Nevertheless, Transformer-based VQA models are usually deep and wide to guarantee good performance, so they can only run on powerful GPU servers and cannot run on capacity-restricted platforms such as mobile phones. Therefore, it is desirable to learn an elastic VQA model that supports adaptive pruning at runtime to meet the efficiency constraints of different platforms. To this end, we present the bilaterally slimmable Transformer (BST), a general framework that can be seamlessly integrated into arbitrary Transformer-based VQA models to train a single model once and obtain various slimmed submodels of different widths and depths. To verify the effectiveness and generality of this method, we integrate the proposed BST framework with three typical Transformer-based VQA approaches, namely MCAN (Yu et al., 2019), UNITER (Chen et al., 2020), and CLIP-ViL (Shen et al., 2021), and conduct extensive experiments on two commonly-used benchmark datasets. ... By the effectiveness of a submodel architecture, we mean the extent to which its computational cost (e.g., in terms of FLOPs or According to previous studies on designing efficient Transformers [81][29], deep and narrow architectures usually deliver better performance than shallow and wide architectures under constrained computational costs. ... Inspired by the slimmable neural network that trains an elastic CNN model with multiple width multipliers to fit different efficiency constraints at runtime [28], we present a bilaterally slimmable Transformer (BST) framework to support model slimming in both the width and depth directions of the Transformer, where the width is the hidden dimensionality of each layer and the depth is the number of layers. ... The encoder is composed of a cascade of Transformer layers in depth to obtain the bidirectional representations by jointly conditioning on both the left and right contexts, and the decoder takes the representations from the last encoder layer as input to guide the learning of unidirectional representations by conditioning only on the left context. ... This work presents the bilaterally slimmable Transformer (BST), a general framework that can be seamlessly integrated into arbitrary Transformer-based"
+      },
+      {
+        "paper_id": "237504796",
+        "markdown_evidence": "Performance-Efficiency Trade-Offs in Unsupervised Pre-Training for Speech Recognition ... This paper is a study of performance-efficiency trade-offs in pre-trained models for automatic speech recognition (ASR). We focus on wav2vec 2.0, and formalize several architecture designs that influence both the model performance and its efficiency. Putting together all our observations, we introduce SEW-D (Squeezed and Efficient Wav2vec with Disentangled Attention), a pre-trained model architecture with significant improvements along both performance and efficiency dimensions across a variety of training setups. For example, under the 100h-960h semi-supervised setup on LibriSpeech, SEW-D achieves a 1.9x inference speedup compared to wav2vec 2.0, with a 13.5% relative reduction in word error rate. With a similar inference time, SEW reduces word error rate by 25–50% across different model sizes. ... We study two strategies of changing the context network Transformer to reduce the model size and speed up the model, potentially at cost to performance: reducing model depth by using fewer Transformer layers or reducing model width by using smaller hidden state size in the Transformer. When reducing the hidden size, we fix the head dimension to 64. ... Unlike Transformer which adds absolute positional embeddings to the content embeddings at the beginning, disentangled attention keeps the positional embeddings and content embeddings separate and has 3 components in its attention weight computation: (a) content-to-content, (b) content-to-position, and (c) position-tocontent attentions (Appendix G). ... Their experiments apply other changes that can constitute confounding factors when interesting the results, including using the Conformer architecture (Gulati et al., 2020) and RNN-T (Graves, 2012) instead of CTC for ASR fine-tuning. We conduct additional experiments to evaluate the impact of using raw waveform inputs. ... This paper introduces SEW-D (Squeezed and Efficient Wav2vec with Disentangled Attention), a pre-trained model architecture with significant improvements along both performance and efficiency dimensions across a variety of training setups."
+      },
+      {
+        "paper_id": "252683785",
+        "markdown_evidence": "Wide Attention Is The Way Forward For Transformers ... The Transformer is an extremely powerful and prominent deep learning architecture. In this work, we challenge the commonly held belief in deep learning that going deeper is better, and show an alternative design approach that is building wider attention Transformers. We demonstrate that wide single layer Transformer models can compete with or outperform deeper ones in a variety of Natural Language Processing (NLP) tasks when both are trained from scratch. The impact of changing the model aspect ratio on Transformers is then studied systematically. This ratio balances the number of layers and the number of attention heads per layer while keeping the total number of attention heads and all other hyperparameters constant. On average, across 4 NLP tasks and 10 attention types, single layer wide models perform 0.3% better than their deep counterparts. We show an in-depth evaluation and demonstrate how wide models require a far smaller memory footprint and can run faster on commodity hardware, in addition, these wider models are also more interpretable. ... Across all 4 tasks, average accuracy for the vanilla Transformer increases by 0.4% between normal deep models and our single layer wide models. • We show that our results are consistent across a variety of different attention mechanisms and input sequence lengths, and thus there is a general design equivalence in increasing the depth of a Transformer model vs increasing the width. ... Whilst the total number of parameters involved in the attention layers remains constant amongst different aspect ratios, the overall number of parameters decreases. This is due to the feed-forward network (FFN) part of the Transformer layer remaining unaltered as we change the models width. The models with fewer layers have fewer FFN blocks, and so fewer parameters. ... Xue et al. [2022a] investigate masked autoencoder training and how it can help reduce the problem of over smoothing in training deep Transformer networks -embeddings of tokens converging to be similar at deeper layers. They explore the optimal configuration of the Transformer when using masked autoencoding to pretrain it, and then fine-tune it on specific tasks. ... This work challenges the commonly held belief in deep learning that going deeper is better, and shows an alternative design approach that is building wider attention Transformers, and puts forward"
+      },
+      {
+        "paper_id": "250920512",
+        "markdown_evidence": "Scaling Laws vs Model Architectures: How does Inductive Bias Influence Scaling? ... There have been a lot of interest in the scaling properties of Transformer models. However, not much has been done on the front of investigating the effect of scaling properties of different inductive biases and model architectures. Do model architectures scale differently? If so, how does inductive bias affect scaling behaviour? How does this influence upstream (pretraining) and downstream (transfer)? This paper conducts a systematic study of scaling behaviour of ten diverse model architectures such as Transformers, Switch Transformers, Universal Transformers, Dynamic convolutions, Performers, and recently proposed MLP-Mixers. Via extensive experiments, we show that (1) architecture is an indeed an important consideration when performing scaling and (2) the best performing model can fluctuate at different scales. We believe that the findings outlined in this work has significant implications to how model architectures are currently evaluated in the community. ... The key contributions of this paper are as follows: • For the first time, we derive scaling laws for different inductive biases and model architectures.We find that this scaling coefficient differs greatly from model to model.We believe this is an important consideration in model development.It turns out that amongst all ten architectures that we consider, the vanilla Transformer has the best scaling behaviour, even ... While previous studies have repeatedly shown the benefits of scale for language understanding tasks for both dense and sparse Transformers and cross-lingual abilities, all of these used the same Transformer implementation within each studies.With a plethora of improved Transformer architectures proposed in the literature, it is timely to investigate which of these improved architecture has the best scaling ... This paper is an attempt to understand the effect of inductive bias (architecture) on scaling laws of language models.To this end, we pre-train and finetune over ten diverse model architectures across multiple compute region and scales (e.g., from 15M to 40 Billion parameters).In total, we pre-train and finetune over 100 different models of different architectures and sizes and present insights and challenges at"
+      },
+      {
+        "paper_id": "236428967",
+        "markdown_evidence": "Go Wider Instead of Deeper ... More transformer blocks with residual connections have recently achieved impressive results on various tasks. To achieve better performance with fewer trainable parameters, recent methods are proposed to go shallower by parameter sharing or model compressing along with the depth. However, weak modeling capacity limits their performance. Contrastively, going wider by inducing more trainable matrixes and parameters would produce a huge model requiring advanced parallelism to train and inference. In this paper, we propose a parameter-efficient framework, going wider instead of deeper. Specially, following existing works, we adapt parameter sharing to compress along depth. But, such deployment would limit the performance. To maximize modeling capacity, we scale along model width by replacing feed-forward network (FFN) with mixture-of-experts (MoE). Across transformer blocks, instead of sharing normalization layers, we propose to use individual layernorms to transform various semantic representations in a more parameter-efficient way. ... Compared with simply scaling along the width, going wider instead of deeper is a more parameter-efficient framework, which makes the models small enough to be adapted to downstream tasks without advanced parallelisms. Second, each expert in WideNet can be trained by more token representations so that it has better generalization performance. ... The two existing methods both have their own limitations. For huge models, one typical and effective method to scale trainable parameters is replacing part of the feed-forward network (FFN) layer in transformer blocks with MoE layers. In each MoE layer, to refine one single token representation, only a few experts are activated, so the MoE based transformer holds comparable FLOPs with the vanilla transformer. ... Our core idea is to deploy more trainable parameters along the width and fewer trainable parameters along with the depth. To this end, we employ MoE to scale transformer along with width. As a typical conditional computation model (Bengio 2013), MoE only activates a few experts, i.e., subsets of a network. ... This paper designs WideNet, a parameter-efficient framework that scales along model width by replacing feed-forward network with mixture-of-experts (MoE), and proposes to use individual layernorms to transform various semantic representations in a more parameter- efficient way."
+      },
+      {
+        "paper_id": "258762242",
+        "markdown_evidence": "A Study on Transformer Configuration and Training Objective ... Transformer-based models have delivered impressive results on many tasks, particularly vision and language tasks. In many model training situations, conventional configurations are typically adopted. For example, we often set the base model with hidden dimensions (i.e. model width) to be 768 and the number of transformer layers (i.e. model depth) to be 12. In this paper, we revisit these conventional configurations. Through theoretical analysis and experimental evaluation, we show that the masked autoencoder is effective in alleviating the over-smoothing issue in deep transformer training. Based on this finding, we propose Bamboo, an idea of using deeper and narrower transformer configurations, for masked autoencoder training. On ImageNet, with such a simple change in configuration, re-designed model achieves 87.1% top-1 accuracy and outperforms SoTA models like MAE and BEiT. On language tasks, re-designed model outperforms BERT with default setting by 1.1 points on average, on GLUE datasets. ... With sufficient training data, transformerbased models can be scaled to trillions of trainable parameters (Fedus et al., 2021;Du et al., 2021). Through scaling along the width (i.e., hidden dimension) and depth (i.e., number of transformer blocks), these huge transformers show effectiveness across various tasks and even areas. Where are the configurations from? ... Our analysis above shows that the masked autoencoder helps to alleviate the over-smoothing issue, which is a main challenge in scaling transformer along depth (Zhou et al., 2021a;Dong et al., 2021). To realize this potential, we suggest that we may obtain better performance by adapting deeper and narrower model configuration when training with MAE objective. ... We then fine-tune the pre-trained model for image classification. We set the width as 768 and the depth as 48. The total number of trainable parameters and FLOPs is comparable to the original configuration (i.e., width is 1024, depth is 24). The the mean standard deviation of the token representations is shown in Figure 1(a). Observe that the mean standard deviations of ViT-L and MAE-L both increase along depth. ... It is shown that the masked autoencoder is effective in alleviating the over-smoothing issue in deep transformer training and proposed Bamboo, an idea of using deeper and narrower transformer configurations, for masked"
+      },
+      {
+        "paper_id": "256630716",
+        "markdown_evidence": "Multi-Path Transformer is Better: A Case Study on Neural Machine Translation ... For years the model performance in machine learning obeyed a power-law relationship with the model size. For the consideration of parameter efficiency, recent studies focus on increasing model depth rather than width to achieve better performance. In this paper, we study how model width affects the Transformer model through a parameter-efficient multi-path structure. To better fuse features extracted from different paths, we add three additional operations to each sublayer: a normalization at the end of each path, a cheap operation to produce more features, and a learnable weighted mechanism to fuse all features flexibly. Extensive experiments on 12 WMT machine translation tasks show that, with the same number of parameters, the shallower multi-path model can achieve similar or even better performance than the deeper model. It reveals that we should pay more attention to the multi-path structure, and there should be a balance between the model depth and width to train a better large-scale Transformer. ... 2) Efficiency, both the number of parameters and the computational complexity will be changed quadratically corresponding to the model width (referring to scaling the matrix dimensions) while linearly with the model depth, thus the cost of increasing width is often much higher than that of depth. ... To better fuse features extracted from different paths, three additional operations mentioned in Section 3 are introduced. The experimental results on 12 machine translation benchmarks validate our point of view that, instead of indefinitely stacking more layers, there should be a balance between the model depth and width to train a better large-scale Transformer. ... When the model is deeper, increasing the number of paths has a greater advantage (e.g., the 2-layer 5-depth model vs. the 5-layer 2-depth models). In most instances, changing the depth and path have almost the same effect on model performance. ... This paper studies how model width affects the Transformer model through a parameter-efficient multi-path structure, and reveals that there should be a balance between the model depth and width to train a better large-scale Transformer."
+      },
+      {
+        "paper_id": "258832817",
+        "markdown_evidence": "Getting ViT in Shape: Scaling Laws for Compute-Optimal Model Design ... Scaling laws have been recently employed to derive compute-optimal model size (number of parameters) for a given compute duration. We advance and refine such methods to infer compute-optimal model shapes, such as width and depth, and successfully implement this in vision transformers. Our shape-optimized vision transformer, SoViT, achieves results competitive with models that exceed twice its size, despite being pre-trained with an equivalent amount of compute. For example, SoViT-400m/14 achieves 90.3% fine-tuning accuracy on ILSRCV2012, surpassing the much larger ViT-g/14 and approaching ViT-G/14 under identical settings, with also less than half the inference cost. We conduct a thorough evaluation across multiple tasks, such as image classification, captioning, VQA and zero-shot transfer, demonstrating the effectiveness of our model across a broad range of domains and identifying limitations. Overall, our findings challenge the prevailing approach of blindly scaling up vision models and pave a path for a more informed scaling. ... The rationale behind this choice follows from the surprising observation that the transformer shape had little impact on its scaling behavior in language modeling (LM) when performance is measured upstream (e.g. using log-perplexity) [39,32,33]. ... Our recipe allows us to extrapolate without having to conduct an extensive set of experiments. For example, after only 115 experments, we identify a scaling strategy in ViT for all three dimensions: width (internal representation), depth, and MLP size. For comparison, [35] requires over 400 experiments to optimize a single dimension (the parameter count) alone. ... In contrast [12] recommend scaling width over depth, but the authors do not observe any improvement when applying their strategy to ViT. Our analysis draws inspiration from \"compound scaling\" in MobileNet [36] and EfficientNet [64], while differing in significant ways. EfficientNet uses an exhaustive grid search to determine the optimal architecture for a fixed increase in compute (e.g. ×2). ... The shape-optimized vision transformer, SoViT, achieves results competitive with models that exceed twice its size, despite being pre-trained with an equivalent amount of compute, and challenges the prevailing approach of blindly scaling up vision models."
+      },
+      {
+        "paper_id": "174799399",
+        "markdown_evidence": "Learning Deep Transformer Models for Machine Translation ... Transformer is the state-of-the-art model in recent machine translation evaluations. Two strands of research are promising to improve models of this kind: the first uses wide networks (a.k.a. Transformer-Big) and has been the de facto standard for development of the Transformer system, and the other uses deeper language representation but faces the difficulty arising from learning deep networks. Here, we continue the line of research on the latter. We claim that a truly deep Transformer model can surpass the Transformer-Big counterpart by 1) proper use of layer normalization and 2) a novel way of passing the combination of previous layers to the next. On WMT’16 English-German and NIST OpenMT’12 Chinese-English tasks, our deep system (30/25-layer encoder) outperforms the shallow Transformer-Big/Base baseline (6-layer encoder) by 0.4-2.4 BLEU points. As another bonus, the deep model is 1.6X smaller in size and 3X faster in training than Transformer-Big. ... The situation changes when switching to prenorm. While it slightly underperforms the postnorm counterpart in shallow networks, pre-norm Transformer benefits more from the increase in encoder depth. More concretely, pre-norm Transformer achieves optimal result when L=20 (see Figure 3(a)), outperforming the 6-layer baseline by 1.8 BLEU points. ... Table 5 shows the effects of decoder depth on BLEU and inference speed on GPU. Different from encoder, increasing the depth of decoder only yields a slight BLEU improvement, but the cost is high: for every two layers added, the translation speed drops by approximate 500 tokens evenly. It indicates that exploring deep encoders may be more promising than deep decoders for NMT. ... ( 13): In this way, we can simplify Eq.( 17) as: We select hyper-parameters by measuring perplexity on the validation set of WMT En-De task. We compare the effects of hyper-parameters in both shallow networks (6 layers) and deep networks (20 layers). We use the standard hyperparameters for both models as the baselines. ... It is claimed that a truly deep Transformer model can surpass the Transformer-Big counterpart by 1) proper use of layer normalization and 2) a novel way of passing the combination of previous layers to the next."
+      },
+      {
+        "paper_id": "220936619",
+        "markdown_evidence": "DeLighT: Very Deep and Light-weight Transformer ... We introduce a very deep and light-weight transformer, DeLighT, that delivers similar or better performance than transformer-based models with significantly fewer parameters. DeLighT more efficiently allocates parameters both (1) within each Transformer block using DExTra, a deep and light-weight transformation and (2) across blocks using block-wise scaling, that allows for shallower and narrower DeLighT blocks near the input and wider and deeper DeLighT blocks near the output. Overall, DeLighT networks are 2.5 to 4 times deeper than standard transformer models and yet have fewer parameters and operations. Experiments on machine translation and language modeling tasks show that DeLighT matches the performance of baseline Transformers with significantly fewer parameters. On the WMT'14 En-Fr high resource dataset, DeLighT requires 1.8 times fewer parameters and 2 times fewer operations and achieves better performance (+0.4 BLEU score) than baseline transformers. On the WMT'16 En-Ro low resource dataset, DeLighT delivers similar performance with 2.8 times fewer parameters than baseline transformers. ... However, such scaling increases the number of network parameters significantly (e.g., T5 and GPT-3 have 11 billion and 175 billion parameters), and complicates learning (i.e. requiring very large training sets [2][3][4][5] or careful regularization [6][7][8][9]). In this paper, we introduce a new parameter-efficient attention-based architecture that can be easily scaled to be both very wide and deep. ... The intuition is that some blocks benefit from increases in parameters more than others. Figure 2 compares uniform scaling with block-wise scaling. Scaling the DeLighT block: The DeLighT block learns deep and wide representations using DExTra, whose depth and width are controlled by two configuration parameters: the number of group transformation layers N and the width multiplier m w (Figure 2a). ... The second line of research focuses on explaining multi-head attention (e.g., [15,16]). They show that increasing the number of transformer heads can lead to redundant representations [17,18] and using fixed attention heads with predefined patterns [19] or synthetic attention matrices [20] improves performance. These results support our design choice of using single-head attention."
+      },
+      {
+        "paper_id": "272753343",
+        "markdown_evidence": "Scaling Smart: Accelerating Large Language Model Pre-training with Small Model Initialization ... The pre-training phase of language models often begins with randomly initialized parameters. With the current trends in scaling models, training their large number of parameters can be extremely slow and costly. In contrast, small language models are less expensive to train, but they often cannot achieve the accuracy of large models. In this paper, we explore an intriguing idea to connect these two different regimes: Can we develop a method to initialize large language models using smaller pre-trained models? Will such initialization bring any benefits in terms of training time and final accuracy? In this paper, we introduce HyperCloning, a method that can expand the parameters of a pre-trained language model to those of a larger model with increased hidden dimensions. Our method ensures that the larger model retains the functionality of the smaller model. As a result, the larger model already inherits the predictive power and accuracy of the smaller model before the training starts. ... Further studies are necessary to fully understand the benefits of depth versus width scaling and function-preserving versus non-function-preserving transformations. Width expansion was initially introduced by [Chen et al., 2015] for convolutional neural networks and later explored for BERT-style transformer models in [Chen et al., 2021]. ... Width scaling can be beneficial for increased model accuracy, robustness, and inference efficiency, compared to solely increasing depth. The second criterion gives the model a warm-start by ensuring that the larger model performs at least as well as the pretrained smaller model in the begining of training, leading to faster convergence and better final accuracy. ... In this paper, we develop a method called HyperCloning to increase the hidden dimensions of transformer models, enabling the initialization of larger language models from smaller ones as depicted in Figure 1. Our method ensures a function-preserving transformation, where the output logits of the initialized model precisely match those of the smaller model. ... This paper introduces HyperCloning, a method that can expand the parameters of a pre-trained language model to those of a larger model with increased hidden dimensions, and ensures that the larger model retains the functionality of the smaller model."
+      },
+      {
+        "paper_id": "237454597",
+        "markdown_evidence": "What’s Hidden in a One-layer Randomly Weighted Transformer? ... We demonstrate that, hidden within one-layer randomly weighted neural networks, there exist subnetworks that can achieve impressive performance, without ever modifying the weight initializations, on machine translation tasks. To find subnetworks for one-layer randomly weighted neural networks, we apply different binary masks to the same weight matrix to generate different layers. Hidden within a one-layer randomly weighted Transformer, we find that subnetworks that can achieve 29.45/17.29 BLEU on IWSLT14/WMT14. Using a fixed pre-trained embedding layer, the previously found subnetworks are smaller than, but can match 98%/92% (34.14/25.24 BLEU) of the performance of, a trained Transformer_\\text{small/base} on IWSLT14/WMT14. Furthermore, we demonstrate the effectiveness of larger and deeper transformers in this setting, as well as the impact of different initialization methods. ... (2018): 6 encoder layers and 6 decoder layers on IWSLT14 and WMT14. We also vary the depth and width of the Transformer model on machine translation tasks. On IWSLT14, we use 3 different random seeds and plot the mean accuracy ± one standard deviation. All the embedding layers (including the final output projection layer) are also randomized and pruned unless otherwise specified. ... Either increasing the depth or enlarging the width can improve the performance of our one-layer random transformer. Particularly, 3 https://github.com/pytorch/fairseq/ 4 We use the checkpoint from FairSeq for Transbase/big on WMT14, and Transsmall on IWSLT14 to obtain the pre-trained embedding layer for one-layer Transbase/wider and one-layer Transsmall. ... Such a mask, which is used to mask out a part of the entire network to those subnetworks, 1 We released the source code at https://github. com/sIncerass/one_layer_lottery_ticket. * Equal contribution. is referred to as a \"Supermask.\" That is to say, subnetworks of a randomly weighted neural network (NN) can achieve competitive performance, which may act as a good \"prior\" (Gaier and Ha, 2019) and connect to the long ... It is demonstrated that, hidden within one-layer randomly weighted neural networks, there exist subnetworks that can achieve impressive performance, without ever modifying the weight initializations, on machine translation tasks."
+      },
+      {
+        "paper_id": "276259070",
+        "markdown_evidence": "Gemstones: A Model Suite for Multi-Faceted Scaling Laws ... Scaling laws are typically fit using a family of models with a narrow range of frozen hyperparameter choices. In this work we study scaling laws using multiple architectural shapes and hyperparameter choices, highlighting their impact on resulting prescriptions. As a primary artifact of our research, we release the Gemstones: an open-source scaling law dataset, consisting of over 4000 checkpoints from transformers with up to 2 billion parameters and diverse architectural shapes; including ablations over learning rate and cooldown. Our checkpoints enable more complex studies of scaling, such as analyzing the relationship between width and depth. By examining our model suite, we find that the prescriptions of scaling laws can be highly sensitive to the experimental design process and the specific model checkpoints used during fitting. ... The meaning of width and depth. We visualize a standard transformer architecture, highlighting the \"width\" as the size of the hidden dimension and the \"depth\" as the number of transformer blocks. In this work, we produce a vast array of model checkpoints for studying how model design and model selection impact scaling laws. ... Architecture Allen-Zhu and Li [2024] builds scaling laws to model how specific architectural choices impact measures of knowledge acquisition (bits-per-param) in highly controlled settings; they run parallel experiments across dimensions like architecture, quantization, and sparsity to derive insights about which design choices affect acquisition and storage capacity the most. ... Alabdulmohsin et al. [2024] study the impact of width and depth for encoder-decoder vision transformers, using their laws to create a smaller transformer model which has competitive downstream performance when compared with much larger models. The architecture found in this study has since been used by Beyer et al. [2024] in PaliGemma. Concurrently, Zuo et al. ... The Gemstones: an open-source scaling law dataset, consisting of over 4000 checkpoints from transformers with up to 2 billion parameters and diverse architectural shapes, is released, to enable more complex studies of scaling."
+      },
+      {
+        "paper_id": "276647515",
+        "markdown_evidence": "NeoBERT: A Next-Generation BERT ... Recent innovations in architecture, pre-training, and fine-tuning have led to the remarkable in-context learning and reasoning abilities of large auto-regressive language models such as LLaMA and DeepSeek. In contrast, encoders like BERT and RoBERTa have not seen the same level of progress despite being foundational for many downstream NLP applications. To bridge this gap, we introduce NeoBERT, a next-generation encoder that redefines the capabilities of bidirectional models by integrating state-of-the-art advancements in architecture, modern data, and optimized pre-training methodologies. NeoBERT is designed for seamless adoption: it serves as a plug-and-play replacement for existing base models, relies on an optimal depth-to-width ratio, and leverages an extended context length of 4,096 tokens. Despite its compact 250M parameter footprint, it achieves state-of-the-art results on the massive MTEB benchmark, outperforming BERT large, RoBERTa large, NomicBERT, and ModernBERT under identical fine-tuning conditions. ... (2020) provided theoretical and empirical evidence for an optimal depth-to-width ratio in Transformers. Their findings suggested that most language models were operating in a \"depth-inefficiency\" regime, where allocating more parameters to width rather than depth would have improved performance. In contrast, small language models like BERT, RoBERTa, and NomicBERT are instead in a width-inefficiency regime. ... Consistent with standard practices in modern Transformer architectures, we move the normalization layer inside the residual connections of each feed-forward and attention block, a technique known as Pre-Layer Normalization (Pre-LN). Pre-LN improves stability, allows for larger learning rates, and accelerates model convergence (Xiong et al., 2020). ... NeoBERT is a next-generation encoder that redefines the capabilities of bidirectional models by integrating state-of-the-art advancements in architecture, modern data, and optimized pre-training methodologies and achieves state-of-the-art results on the massive MTEB benchmark."
+      },
+      {
+        "paper_id": "237532682",
+        "markdown_evidence": "Scaling Laws for Neural Machine Translation ... We present an empirical study of scaling properties of encoder-decoder Transformer models used in neural machine translation (NMT). We show that cross-entropy loss as a function of model size follows a certain scaling law. Specifically (i) We propose a formula which describes the scaling behavior of cross-entropy loss as a bivariate function of encoder and decoder size, and show that it gives accurate predictions under a variety of scaling approaches and languages; we show that the total number of parameters alone is not sufficient for such purposes. (ii) We observe different power law exponents when scaling the decoder vs scaling the encoder, and provide recommendations for optimal allocation of encoder/decoder capacity based on this observation. (iii) We also report that the scaling behavior of the model is acutely influenced by composition bias of the train/test sets, which we define as any deviation from naturally generated text (either via machine generated or human translated text). We observe that natural text on the target side enjoys scaling, which manifests as successful reduction of the cross-entropy loss. ... All models are trained to near convergence for 500k training steps. Details of the model hyper-parameters are described in Appendix A. Model Scaling Transformer architecture consists of Transformer Blocks: a cascade of self-attention, cross-attention and feed-forward layers, each having multiple adjustable hyper-parameters (e.g. model-dimension, number of attention heads, attention projection dimension etc.). ... The above results suggest that scaling law formalized in Eq. (2) captures the scaling behavior of the Transformer NMT models in multiple language pairs. As such, we can study the fitted coefficients to fully understand the scaling properties of these models. Figure 5 presents the fitted coefficients for all of the test sets under consideration. ... 1. Does the encoder-decoder architecture for NMT share the same scaling law function as the language models? Contrary to previous work on LM, we show that a univariate law depending on the total number of parameters in the network does not adequately describe the scaling behavior of NMT models. ... A formula is proposed which describes the scaling behavior of cross-entropy loss as a bivariate function of encoder and decoder size, and it is shown that it gives accurate predictions under a"
+      },
+      {
+        "paper_id": "237563187",
+        "markdown_evidence": "Primer: Searching for Efficient Transformers for Language Modeling ... Large Transformer models have been central to recent advances in natural language processing. The training and inference costs of these models, however, have grown rapidly and become prohibitively expensive. Here we aim to reduce the costs of Transformers by searching for a more efficient variant. Compared to previous approaches, our search is performed at a lower level, over the primitives that define a Transformer TensorFlow program. We identify an architecture, named Primer, that has a smaller training cost than the original Transformer and other variants for auto-regressive language modeling. Primer's improvements can be mostly attributed to two simple modifications: squaring ReLU activations and adding a depthwise convolution layer after each Q, K, and V projection in self-attention. Experiments show Primer's gains over Transformer increase as compute scale grows and follow a power law with respect to quality at optimal model sizes. We also verify empirically that Primer can be dropped into different codebases to significantly speed up training without additional tuning. ... However, Evolved Transformer is substantially slower than all other models (see Tables 4 and 5) because it is deeper; we follow the same scaling policy as So et al. of adding additional layers to control for parameters, given that an Evolved Transformer layer has significantly less parameters than a standard Transformer layer. ... T r a n s f . T r a n s f . + G E L U T r a n s f . + + P r im Validation Loss Figure 7: Left: When sweeping over optimal model sizes, the relationship between Transformer language model quality and training compute roughly obeys a power law [9]. Right: Comparison of these power law lines for varying Transformer modifications, fit with smoothed MSE loss. ... We focus on decoder-only auto-regressive language modeling (LM), because of its generality and success [18,7,19,20,21]. 2 The discovered model, named Primer (PRIMitives searched transformER), exhibits strong performance improvements over common Transformer variants on auto-regressive language modeling. ... This work identifies an architecture, named Primer, that has a smaller training cost than the original Transformer and other variants for auto-regressive language modeling, and proves empirically that Primer can be dropped into different codebases to significantly speed up"
+      },
+      {
+        "paper_id": "264490865",
+        "markdown_evidence": "LightLM: A Lightweight Deep and Narrow Language Model for Generative Recommendation ... This paper presents LightLM, a lightweight Transformer-based language model for generative recommendation. While Transformer-based generative modeling has gained importance in various AI sub-fields such as NLP and vision, generative recommendation is still in its infancy due to its unique demand on personalized generative modeling. Existing works on generative recommendation often use NLP-oriented Transformer architectures such as T5, GPT, LLaMA and M6, which are heavy-weight and are not specifically designed for recommendation tasks. LightLM tackles the issue by introducing a light-weight deep and narrow Transformer architecture, which is specifically tailored for direct generation of recommendation items. This structure is especially apt for straightforward generative recommendation and stems from the observation that language model does not have to be too wide for this task, as the input predominantly consists of short tokens that are well-suited for the model's capacity. ... We focus our exploration on refining the architecture of the encoderdecoder language model, as depicted in Figure 2. To streamline our discussion and focus on the main aspects, we have omitted some other parts, such as positional encoding and normalization layers, which do not significantly impact the number of parameters in language models. ... For instance, NLP Transformers generally process input sentences of variable and often substantial length, necessitating a considerable depth and width in their architecture. However, in the simple straightforward generative recommendation scenario, the model directly generates the recommended item IDs from the input user ID and such input only contains a few tokens. ... Experiments on real-world datasets show that LightLM outperforms various competitive baselines in terms of both recommendation accuracy and efficiency, and proposes the constrained generation process for generative recommenders."
+      },
+      {
+        "paper_id": "260385353",
+        "markdown_evidence": "Flexible BERT with Width- and Depth-dynamic Inference ... Pre-trained Language Models bring about an in-creasing computational and memory cost. The recently proposed computation-flexible BERT models facilitate their deployment in varied computational environments. Training such flexible BERT models involves jointly optimizing multiple BERT subnets that inevitably interfere with one another. Besides, the performance of large sub nets is limited when there is a significant performance gap between the smallest sub net and the supernet, despite methods managing to enhance the smaller subnets. We propose layer-wise Neural grafting to boost BERT subnets, particularly the larger ones. The proposed method improves the average performance of BERT sub nets on six out of eight GLUE tasks. Furthermore, we build a flexible BERT model that enables practical width- and depth-dynamic inference regarding different inputs by combining width-dynamic gating modules and early exit off-ramps in the depth dimension."
+      },
+      {
+        "paper_id": "267898017",
+        "markdown_evidence": "MobileLLM: Optimizing Sub-billion Parameter Language Models for On-Device Use Cases ... This paper addresses the growing need for efficient large language models (LLMs) on mobile devices, driven by increasing cloud costs and latency concerns. We focus on designing top-quality LLMs with fewer than a billion parameters, a practical choice for mobile deployment. Contrary to prevailing belief emphasizing the pivotal role of data and parameter quantity in determining model quality, our investigation underscores the significance of model architecture for sub-billion scale LLMs. Leveraging deep and thin architectures, coupled with embedding sharing and grouped-query attention mechanisms, we establish a strong baseline network denoted as MobileLLM, which attains a remarkable 2.7%/4.3% accuracy boost over preceding 125M/350M state-of-the-art models. Additionally, we propose an immediate block-wise weight-sharing approach with no increase in model size and only marginal latency overhead. The resultant models, denoted as MobileLLM-LS, demonstrate a further accuracy enhancement of 0.7%/0.8% than MobileLLM 125M/350M. ... In contrast, within the transformer domain, the prevailing consensus posits that the model architecture exerts minimal influence on accuracy, provided the total number of parameters remains consistent (Kaplan et al., 2020). Only a limited number of studies have developed NAS algorithms for language transformers, targeting at BERT models (Xu et al., 2021;Jawahar et al., 2023;Ganesan et al., 2021). ... The findings in Section 2.2.2 on the impact of layer depth versus width suggest deeper layers are favorable for small transformer models. This motivates us to investigate layer sharing as a strategy to increase the number of hidden layers without additional model storage cost. This approach is particularly helpful in on-device scenarios where model size is a major constraint. ... A prevalent belief (Kaplan et al., 2020) in the field suggests that the performance of transformer models is primarily determined by the number of parameters, the size of the training dataset, and the number of training iterations. This belief posits that architectural designs have negligible impact on the transformer model's performance. However, our findings indicate that this may not hold true for smaller models. ... The proposed MobileLLM model family shows significant improvements compared to previous sub-billion models on"
+      },
+      {
+        "paper_id": "259138847",
+        "markdown_evidence": "The Lazy Neuron Phenomenon: On Emergence of Activation Sparsity in Transformers ... This paper studies the curious phenomenon for machine learning models with Transformer architectures that their activation maps are sparse. By activation map we refer to the intermediate output of the multi-layer perceptrons (MLPs) after a ReLU activation function, and by sparse we mean that on average very few entries (e.g., 3.0% for T5-Base and 6.3% for ViT-B16) are nonzero for each input to MLP. Moreover, larger Transformers with more layers and wider MLP hidden dimensions are sparser as measured by the percentage of nonzero entries. Through extensive experiments we demonstrate that the emergence of sparsity is a prevalent phenomenon that occurs for both natural language processing and vision tasks, on both training and evaluation data, for Transformers of various configurations, at layers of all depth levels, as well as for other architectures including MLP-mixers and 2-layer MLPs. We show that sparsity also emerges using training datasets with random labels, or with random inputs, or with infinite amount of data, demonstrating that sparsity is not a result of a specific family of datasets. ... Figure 1 shows the sparsity of the activation maps from the training data, measured by the percentage of nonzeros, in all MLP layers of a T5-Base model which is a Transformer based encoder-decoder model for natural language processing [7]. ... Note that Figure 2e and Figure 2f provide evidence with T5 of varying configuration that larger models tend to be sparser. Here we perform controlled experiments to examine the effect of model depth, measured by the number of Transformer layers, as well as the effect of model width, measured by the dimension of activation map of MLPs (i.e., d ff ), separately. ... Rather, sparsity is prevalent, and occurs broadly in Transformer models: it emerges in all layers of a Transformer, for Transformers trained on both vision and natural language data, for Transformers of various configurations, and for activation maps computed on both training and test data, etc. ... It is demonstrated perhaps surprisingly that enforcing an even sparser activation via Top-k thresholding with a small value of k brings a collection of desired but missing properties for Transformers, namely less sensitivity to noisy training data, more robustness to input corruptions, and better calibration for their prediction"
+      },
+      {
+        "paper_id": "221970592",
+        "markdown_evidence": "Deep Transformers with Latent Depth ... The Transformer model has achieved state-of-the-art performance in many sequence modeling tasks. However, how to leverage model capacity with large or variable depths is still an open challenge. We present a probabilistic framework to automatically learn which layer(s) to use by learning the posterior distributions of layer selection. As an extension of this framework, we propose a novel method to train one shared Transformer network for multilingual machine translation with different layer selection posteriors for each language pair. The proposed method alleviates the vanishing gradient issue and enables stable training of deep Transformers (e.g. 100 layers). We evaluate on WMT English-German machine translation and masked language modeling tasks, where our method outperforms existing approaches for training deeper Transformers. Experiments on multilingual machine translation demonstrate that this approach can effectively leverage increased model capacity and bring universal improvement for both many-to-one and one-to-many translation with diverse language pairs. ... We use β = 1 and λ = 0.1 for latent layers models. Crosslingual Masked Language Modelling. We use the XLM-RBase architecture of [8], which has a hidden dimension of 768, but we explore increasing the number of layers, considering 24, 48 and 96 layer Effect of L K . First, we show that adding the auxiliary loss LK discretizes the samples and achieve the pruning purpose by enforcing sparsity of the resulting model. ... We compare to the standard Transformer with static depth on machine translation task and \"wide\" model, e.g. Transformer-big architecture in [30] which increases the hidden (and FFN) dimension and has been a common approach to leverage large model capacity without encountering the optimization challenges of training a deeper model. ... Theoretical results suggest networks often have an expressive power that scales exponentially in depth instead of width [21], and recent work [36,1,23,32] finds that deeper Transformers improve performance on various generation tasks. However, deeper Transformer models also face the gradient vanishing/exploding problem leading to unstable training [6,31]. In order to mitigate this issue, Huang et al. ... A novel method to train one shared Transformer network for multilingual machine translation with different layer selection posteriors for each language pair"
+      },
+      {
+        "paper_id": "276617632",
+        "markdown_evidence": "Sliding-Window Merging for Compacting Patch-Redundant Layers in LLMs ... Depth-wise pruning accelerates LLM inference in resource-constrained scenarios but suffers from performance degradation due to indiscriminate removal of entire Transformer layers. This paper reveals ``Patch-Like'' redundancy across layers via correlation analysis of the outputs of different layers in reproducing kernel Hilbert space, demonstrating consecutive layers exhibit high functional similarity. Building on this observation, this paper proposes Sliding-Window Merging (SWM) - a dynamic compression method that selects consecutive layers from top to bottom using a pre-defined similarity threshold, and compacts patch-redundant layers through a parameter consolidation, thereby simplifying the model structure while maintaining its performance. Extensive experiments on LLMs with various architectures and different parameter scales show that our method outperforms existing pruning techniques in both zero-shot inference performance and retraining recovery quality after pruning. ... Large language models' multi-layer Transformer architecture often contains substantial redundancy, motivating research on width-wise and depth-wise pruning to reduce this redundancy and improve model efficiency. Width-wise pruning reduces the network width by pruning coupled structures. For example, Voita et al. ... Through systematic evaluation across multiple models and datasets, we reveal a consistent \"patch-redundancy\" phenomenon: a high degree of similarity in the representations of certain consecutive Transformer layers in large language models, exhibiting a clear \"patchlike\" structure. ... 2024)) and depth pruning (SLEB (Song et al. 2024), Shortened-LLM (Kim et al. 2024)) methods. Following the experimental setup of Shortened-LLM, we assess all methods under two target pruning levels: 20% and 35%. If the product of the total number of Transformer layers and target sparsity is not an integer, we round up to determine the number of layers to remove. Benchmarks. Following Touvron et al. ... This paper proposes Sliding-Window Merging (SWM) - a dynamic compression method that selects consecutive layers from top to bottom using a pre-defined similarity threshold, and compacts patch-redundant layers through a parameter consolidation, thereby simplifying the model structure while maintaining its performance."
+      },
+      {
+        "paper_id": "247778764",
+        "markdown_evidence": "Training Compute-Optimal Large Language Models ... We investigate the optimal model size and number of tokens for training a transformer language model under a given compute budget. We find that current large language models are significantly undertrained, a consequence of the recent focus on scaling language models whilst keeping the amount of training data constant. By training over 400 language models ranging from 70 million to over 16 billion parameters on 5 to 500 billion tokens, we find that for compute-optimal training, the model size and the number of training tokens should be scaled equally: for every doubling of model size the number of training tokens should also be doubled. We test this hypothesis by training a predicted compute-optimal model, Chinchilla, that uses the same compute budget as Gopher but with 70B parameters and 4$\\times$ more more data. Chinchilla uniformly and significantly outperforms Gopher (280B), GPT-3 (175B), Jurassic-1 (178B), and Megatron-Turing NLG (530B) on a large range of downstream evaluation tasks. This also means that Chinchilla uses substantially less compute for fine-tuning and inference, greatly facilitating downstream usage. ... Modelling the scaling behavior. Understanding the scaling behaviour of language models and their transfer properties has been important in the development of recent large models (Hernandez et al., 2021;Kaplan et al., 2020). Kaplan et al. (2020) first showed a predictable relationship between model size and loss over many orders of magnitude. ... For example, through the use of conditional computation large MoE models like the 1.7 trillion parameter Switch transformer (Fedus et al., 2021), the 1.2 Trillion parameter GLaM model (Du et al., 2021), and others (Artetxe et al., 2021;Zoph et al., 2022) are able to provide a large effective model size despite using relatively fewer training and inference FLOPs. ... Table 1 | Current LLMs. We show five of the current largest dense transformer models, their size, and the number of training tokens. Other than LaMDA (Thoppilan et al., 2022), most models are trained for approximately 300 billion tokens. We introduce Chinchilla, a substantially smaller model, trained for much longer than 300B tokens. ... This work trains a predicted compute-optimal model, Chinchilla, that uses the same compute budget as Gopher but with 70B parameters and 4$\\times$ more more data, and reaches a state-of-the-art"
+      },
+      {
+        "paper_id": "261530180",
+        "markdown_evidence": "One Wide Feedforward Is All You Need ... The Transformer architecture has two main non-embedding components: Attention and the Feed Forward Network (FFN). Attention captures interdependencies between words regardless of their position, while the FFN non-linearly transforms each input token independently. In this work we explore the role of the FFN, and find that despite taking up a significant fraction of the model’s parameters, it is highly redundant. Concretely, we are able to substantially reduce the number of parameters with only a modest drop in accuracy by removing the FFN on the decoder layers and sharing a single FFN across the encoder. Finally we scale this architecture back to its original size by increasing the hidden dimension of the shared FFN, achieving substantial gains in both accuracy and latency with respect to the original Transformer Big. ... The Transformer architecture (Vaswani et al., 2017) has become the de facto paradigm in many Natural Language Processing (NLP) tasks, including Machine Translation (MT). Several studies have shown that Transformers exhibit impressive scaling-law properties (Gordon et al., 2021;Bansal et al., 2022;Ghorbani et al., 2022), wherein increasing the number of model parameters leads to further accuracy gains. ... We also report results on Transformer Base (N enc = N dec = 6, d model = 512, d ff = 2048, and 8 attention heads), and a deep encoder shallow decoder (Kasai et al., 2021) Transformer Big with 12 encoder layers, and 2 decoder layers. For our decoder-only experiments, the model is identical to the Transformer Big, except that all 12 layers are on the decoder. ... Decoder-only models With the advent of Large Language Models (LLMs) like GPT (Brown et al., 2020), and PaLM (Chowdhery et al., 2022), a lot of effort has been put on decoder-only Transformer models. We train a decoder-only model on WMT22 EN →DE, as shown on Table 6. Due to the absence of an encoder, we are limited to applying a wide FFN on the decoder side. ... This work is able to substantially reduce the number of parameters with only a modest drop in accuracy by removing the FFN on the decoder layers and sharing a single FFN across the encoder."
+      },
+      {
+        "paper_id": "258686446",
+        "markdown_evidence": "TinyStories: How Small Can Language Models Be and Still Speak Coherent English? ... Language models (LMs) are powerful tools for natural language processing, but they often struggle to produce coherent and fluent text when they are small. Models with around 125M parameters such as GPT-Neo (small) or GPT-2 (small) can rarely generate coherent and consistent English text beyond a few words even after extensive training. This raises the question of whether the emergence of the ability to produce coherent English text only occurs at larger scales (with hundreds of millions of parameters or more) and complex architectures (with many layers of global attention). In this work, we introduce TinyStories, a synthetic dataset of short stories that only contain words that a typical 3 to 4-year-olds usually understand, generated by GPT-3.5 and GPT-4. ... We show that our small models exhibit some similar patterns to the ones observed in LLMs in certain aspects. In particular, we investigate two questions: how to balance model size and learning budget for a fixed amount of training flops, and how to choose the number of attention heads for a given model width and depth. Model size versus the training FLOPs. ... Choosing the number of heads. Another design choice for transformers is the number of attention heads for each layer. It is not obvious how the number of heads affects the performance of the model, given a fixed model width and depth. Our results, shown in Figure 24, suggest that in the regime where the number of heads is small, increasing it improves the performance of the model across all metrics. ... Li et al [19] shows a transformer block can encode topical models. Jelassi et al [14] shows one transformer block can encode patch associations. Our work provides empirical evidence that one transformer block can also generate diverse and consistent stories, which suggests that the transformer architecture has a strong expressive power even with a small number of parameters and layers. ... TinyStories, a synthetic dataset of short stories that only contain words that a typical 3 to 4-year-olds usually understand, is introduced and a new paradigm for the evaluation of language models is introduced, which uses GPT-4 to grade the content generated by these models as if those were stories written by students and graded by a (human) teacher."
+      },
+      {
+        "paper_id": "253107233",
+        "markdown_evidence": "Same Pre-training Loss, Better Downstream: Implicit Bias Matters for Language Models ... Language modeling on large-scale datasets leads to impressive performance gains on various downstream language tasks. The validation pre-training loss (or perplexity in autoregressive language modeling) is often used as the evaluation metric when developing language models since the pre-training loss tends to be well-correlated with downstream performance (which is itself difficult to evaluate comprehensively). Contrary to this conventional wisdom, this paper shows that 1) pre-training loss cannot fully explain downstream performance and 2) flatness of the model is well-correlated with downstream performance where pre-training loss is not. On simplified datasets, we identify three ways to produce models with the same (statistically optimal) pre-training loss but different downstream performance: continue pre-training after convergence, increasing the model size, and changing the training algorithm. These experiments demonstrate the existence of implicit bias of pre-training algorithms/optimizers -- among models with the same minimal pre-training loss, they implicitly prefer more transferable ones. ... Tay et al. [50] find out that a narrow but deep transformer is better than a wide but shallow transformer with the same pre-training loss. Zhang et al. [68] demonstrate that Albert [29] generalizes better to OOD tasks than Bert on a synthetic reasoning task. These works indicate that the architecture is an important factor for good downstream performance beyond pre-training loss. ... Recent works also provide empirical evidence that good pre-training loss cannot fully explain the downstream success. Tay et al. [50] find out that a narrow but deep transformer is better than a wide but shallow transformer with the same pre-training loss. ... The experiments above indicate that for models with the same architecture family and the same pre-training loss, the choice of training algorithms, model sizes, and the number of steps that the optimizer works can affect the downstream performance. ... It is proved that SGD with standard mini-batch noise implicitly prefers flatter minima in language models, and a strong correlation between flatness and downstream performance among models with the same minimal pre-training loss is observed."
+      },
+      {
+        "paper_id": "275954347",
+        "markdown_evidence": "2SSP: A Two-Stage Framework for Structured Pruning of LLMs ... We propose a novel Two-Stage framework for Structured Pruning (\\textsc{2SSP}) for pruning Large Language Models (LLMs), which combines two different strategies of pruning, namely Width and Depth Pruning. The first stage (Width Pruning) removes entire neurons, hence their corresponding rows and columns, aiming to preserve the connectivity among the pruned structures in the intermediate state of the Feed-Forward Networks in each Transformer block. This is done based on an importance score measuring the impact of each neuron on the output magnitude. The second stage (Depth Pruning), instead, removes entire Attention submodules. This is done by applying an iterative process that removes the Attention with the minimum impact on a given metric of interest (in our case, perplexity). We also propose a novel mechanism to balance the sparsity rate of the two stages w.r.t. to the desired global sparsity. We test \\textsc{2SSP} on four LLM families and three sparsity rates (25\\%, 37.5\\%, and 50\\%), measuring the resulting perplexity over three language modeling datasets as well as the performance over six downstream tasks. ... Different strategies to select which portions of the network to remove have been proposed, see Figure 1, identifying Width pruning, which removes rows/columns and/or single layers, Depth Pruning (Blocks), which removes entire Transformer Blocks, and Depth Pruning (Submodules), which removes entire submodules (i.e., Attention submodules-in the following, referred to as \"Attentions\", for brevity-and/or Feed-Forward ... We tested our proposed method over four different LLM families, for three different sparsity rates (25%, 37,5%, and 50%) over three language modeling datasets, and six downstream tasks, showing that it consistently outperforms the five most recent state-of-the-art baselines while also having the best performance vs. pruning runtime trade-off. ... Different categories of structured pruning algorithms have been proposed, which can be roughly categorized w.r.t. the granularity of the structures they remove. The earliest approach is named Width Pruning, which encompasses methods that remove specific portions of weight matrices (such as rows and/or columns), or layers inside each Transformer block (such as a single Linear layer). ... A novel Two-Stage framework for Structured Pruning (2SSP) for pruning Large Language Models"
+      },
+      {
+        "paper_id": "208513914",
+        "markdown_evidence": "DeFINE: Deep Factorized Input Token Embeddings for Neural Sequence Modeling ... For sequence models with large vocabularies, a majority of network parameters lie in the input and output layers. In this work, we describe a new method, DeFINE, for learning deep token representations efficiently. Our architecture uses a hierarchical structure with novel skip-connections which allows for the use of low dimensional input and output layers, reducing total parameters and training time while delivering similar or better performance versus existing methods. DeFINE can be incorporated easily in new or existing sequence models. Compared to state-of-the-art methods including adaptive input representations, this technique results in a 6% to 20% drop in perplexity. On WikiText-103, DeFINE reduces the total parameters of Transformer-XL by half with minimal impact on performance. On the Penn Treebank, DeFINE improves AWD-LSTM by 4 points with a 17% reduction in parameters, achieving comparable performance to state-of-the-art methods with fewer parameters. For machine translation, DeFINE improves the efficiency of the Transformer model by about 1.4 times while delivering similar performance. ... Impact of scaling depth (N ) and width (k): Table 7 summarizes the results of our scaling experiments. For the same value of k, the performance of the language model improves with the increase in the depth N . However, when we scale the width k for a fixed value of depth N , the performance does not improve. ... When we scale the depth of DeFINE from 3 to 11 layers (Table 1b)3 , the performance improves by a further 6 points, delivering competitive performance to existing RNN-based methods with fewer parameters (e.g., 1/3 as many parameters as Merity et al. (2018a)). The performance of our model is better than existing methods such as Dauphin et al. (2017) andBai et al. (2018). ... DeFINE replaces standard embedding layers, leaving the rest of the model untouched, and Figure 1: With DeFINE, Transformer-XL learns input (embedding) and output (classification) representations in low n-dimensional space rather than high m-dimensional space, thus reducing parameters significantly while having a minimal impact on the performance. ... A new method is described, DeFINE, for learning deep token representations efficiently, which uses a hierarchical structure with novel skip-connections which allows for the use of low dimensional input and"
+      },
+      {
+        "paper_id": "239768818",
+        "markdown_evidence": "The Efficiency Misnomer ... Model efficiency is a critical aspect of developing and deploying machine learning models. Inference time and latency directly affect the user experience, and some applications have hard requirements. In addition to inference costs, model training also have direct financial and environmental impacts. Although there are numerous well-established metrics (cost indicators) for measuring model efficiency, researchers and practitioners often assume that these metrics are correlated with each other and report only few of them. In this paper, we thoroughly discuss common cost indicators, their advantages and disadvantages, and how they can contradict each other. We demonstrate how incomplete reporting of cost indicators can lead to partial conclusions and a blurred or incomplete picture of the practical considerations of different models. We further present suggestions to improve reporting of efficiency metrics. ... While this argument was made in the spirit of 'fairness' (e.g., comparing both methods at a parameter-matched setup), the up-scaling causes a substantial reduction in model speed. This is largely because parameters in the embedding matrix typically do not incur much computation while increased parameters in other parts of the Transformer stack (more depth/width) lead to a relatively substantial compute cost. ... Scaling Width (W) When scaling up the model size, different strategies can be used. Although these different strategies may have a similar effect in terms of parameter count, and even quality, they can have different effects on the cost in terms of FLOPs and throughput. The most common knobs for scaling up models are changing depth (number of layers) and width (hidden dimension) of models (Tay et al., 2021b). ... Sparse Models and Mixture-of-Experts A defining feature of sparse models (Lample et al., 2019;Fedus et al., 2021) is that they remain compute-matched while enabling scaling to a large number of parameters. Hence, parameter matched comparisons do not make sense for sparse models and parameter-matching sparse models can be seen as an unfair method of unnecessarily downplaying the strengths of sparse models. ... It is demonstrated how incomplete reporting of cost indicators can lead to partial conclusions and a blurred or incomplete picture of the practical considerations of different models, and suggestions to improve reporting of efficiency metrics are"
+      },
+      {
+        "paper_id": "228076344",
+        "markdown_evidence": "The Depth-to-Width Interplay in Self-Attention. ... These guidelines elucidate the depth-to-width trade-off in self-attention networks of sizes up to the scale of GPT3 (which is too deep for its size), and beyond, marking an unprecedented width of 30K as optimal for a 1-Trillion parameter self-Attention network."
+      },
+      {
+        "paper_id": "248987030",
+        "markdown_evidence": "Deeper vs Wider: A Revisit of Transformer Configuration ... Bamboo, an idea of using deeper and narrower transformer conﬁgurations, for masked autoencoder training, is proposed, effective in alleviating the over-smoothing issue in deep transformer training."
+      },
+      {
+        "paper_id": "218629975",
+        "markdown_evidence": "schuBERT: Optimizing Elements of BERT ... Transformers have gradually become a key component for many state-of-the-art natural language representation models. A recent Transformer based model- BERTachieved state-of-the-art results on various natural language processing tasks, including GLUE, SQuAD v1.1, and SQuAD v2.0. This model however is computationally prohibitive and has a huge number of parameters. In this work we revisit the architecture choices of BERT in efforts to obtain a lighter model. We focus on reducing the number of parameters yet our methods can be applied towards other objectives such FLOPs or latency. We show that much efficient light BERT models can be obtained by reducing algorithmically chosen correct architecture design dimensions rather than reducing the number of Transformer encoder layers. In particular, our schuBERT gives 6.6% higher average accuracy on GLUE and SQuAD datasets as compared to BERT with three encoder layers while having the same number of parameters. ... Transformer design dimensions suggested in Vaswani et al. (2017) are suboptimal. • When we aim to obtain a computationally lighter model, using a 'tall and narrow' architecture provides better performance than a 'wide and shallow' architecture. • The fully-connected component applied to each token separately plays a much more significant role in the top layers as compared to the bottom layers. ... Tall and Narrow BERT. When we aim to obtain a computationally lighter model, using a 'tall and narrow' architecture provides better performance than a 'wide and shallow' architecture. Our results in Tables 8, 11, 13 demonstrate that schu-BERT with = 12 encoder layers significantly outperforms BERT with ∈ {9, 6, 3} layers for the same number of parameters. Expansive Multi-head Attention. ... Transformer (Vaswani et al., 2017) based models have achieved state-of-the-art performance for many natural language processing tasks (Dai and Le, 2015;Peters et al., 2018;Radford et al., 2018;Howard and Ruder, 2018). ... This work revisits the architecture choices of BERT in efforts to obtain a lighter model and shows that much efficient light BERT models can be obtained by reducing algorithmically chosen correct architecture design dimensions rather than reducing the number of Transformer encoder layers."
+      },
+      {
+        "paper_id": "264820247",
+        "markdown_evidence": "The Impact of Depth on Compositional Generalization in Transformer Language Models ... To process novel sentences, language models (LMs) must generalize compositionally—combine familiar elements in new ways. What aspects of a model’s structure promote compositional generalization? Focusing on transformers, we test the hypothesis, motivated by theoretical and empirical work, that deeper transformers generalize more compositionally. Simply adding layers increases the total number of parameters; to address this confound between depth and size, we construct three classes of models which trade off depth for width such that the total number of parameters is kept constant (41M, 134M and 374M parameters). We pretrain all models as LMs and fine-tune them on tasks that test for compositional generalization. ... (2016) noted that in models with residual connections, even very deep networks leveraged only shallow subnetworks of roughly constant depth. Brown et al. (2022) also concluded that wide, shallow transformer models can attain roughly-equal performance to deeper ones. Both sets of results, however, are confounded by a lack of control for total parameter count. Very recently, Gromov et al. ... At the same time, in most cases the usefulness of adding layers decreases rapidly as models get deeper: comparatively shallow models can achieve generalization accuracy on compositional tasks that is comparable to that of much deeper models, and language modeling perplexity within a few percentage points of the best-in-class model. ... As each additional layer introduces a new set of parameters, deeper models are also larger, all else being equal, and LMs' performance on a wide variety of tasks is known to be correlated with their size (Kaplan et al., 2020;Hoffmann et al., 2022;Muennighoff et al., 2023). ... The hypothesis that deeper transformers generalize more compositionally than shallower models do is tested, and the recommendation that, with a given total parameter budget, transformers can be made shallower than is typical without sacrificing performance is lead to."
+      },
+      {
+        "paper_id": "221703758",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234358106",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "238582734",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275931811",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267759756",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276768884",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278327271",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "210861095",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262826014",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271903215",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276575815",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247292726",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262013578",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277272565",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273009738",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273228196",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254220701",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274280605",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273233741",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276317819",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277998626",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256826923",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237592821",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267547619",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267035006",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247244670",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250113504",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272330364",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269457365",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274210347",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257280093",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277993893",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277271911",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252545200",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276235803",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258987811",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "207853045",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262064942",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272397612",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267301076",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53214190",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245452798",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "238582964",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271038610",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247447316",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232380042",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258999835",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231573431",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278739784",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276693796",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235367962",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263834773",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221743476",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235352952",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270703481",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225103395",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273185983",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276884854",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273821892",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261582515",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231777316",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270257900",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246652441",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276421795",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274859187",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272694514",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277065550",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278602955",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271362264",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258999501",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265050752",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220496540",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265019228",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278501830",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268042207",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "193956",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278502310",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258968063",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251005814",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268536336",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272910904",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234557589",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257316425",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267786670",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235367976",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276774559",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254685643",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272969110",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278960186",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278777406",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267897758",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267365455",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274150501",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268248475",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268876220",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254877576",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219573658",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "58005587",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225062299",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277065732",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267759571",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277780663",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268358466",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261556690",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275360569",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231847231",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273507181",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257833842",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258309400",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225094178",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272767528",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267682382",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258999829",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257632918",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257232765",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256080480",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255185900",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13765505",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "239753058",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271432523",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263909464",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "104291804",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270063248",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "28694539",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258240531",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269937358",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273877637",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270870209",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248211021",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271874287",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275548207",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270045848",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "988613",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258456518",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202925654",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265208843",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53451033",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275458160",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269691369",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271114613",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252996517",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "122505230",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276095103",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270603393",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278752485",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274023669",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225443962",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253237527",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268532040",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233181647",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253573454",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "238410037",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905560",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259721497",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274514542",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "243479787",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273812052",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277272369",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267141696",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266999374",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276394778",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266198846",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233321643",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269707661",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268248268",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232045912",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "19675222",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269638612",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259606825",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269626143",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5016605",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272600313",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267334922",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269588033",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "34859185",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219124082",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "110065907",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269188171",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258840972",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252198897",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264820296",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254044369",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265498834",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264976508",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53069301",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252318938",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259763540",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277741000",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255941848",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "9227997",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271039066",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258740838",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202719327",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "225067567",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268532438",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257645453",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202155320",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "227968373",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273962638",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276961581",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237605078",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268512821",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "38240528",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249036323",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256806189",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260068316",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276250576",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "136791315",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268437153",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259357156",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+[semantic_172] score_type=semantic_f1 query='papers about long term memory in agents'
+  plan: kw=['long term memory agents', 'agent memory retention', 'persistent memory architectures', 'memory augmented agents', 'episodic memory reinforcement learning', 'continual learning agents', 'long horizon memory', 'neural memory systems', 'memory based agent planning', 'memory retrieval for agents', 'working memory and long term memory', 'lifelong learning autonomous agents'] sn=['This paper presents an agent architecture that stores and retrieves long term memories to support behavior over extended interactions.', 'We evaluate long term memory in agents on long horizon tasks that require information retention across episodes.', 'We report performance on memory retrieval accuracy and downstream task success for agents with persistent memory.', 'We study long term memory in reinforcement learning agents under continual learning and nonstationary data.', 'We compare memory augmented agents against baselines with and without external memory on benchmark environments.'] criteria=['The paper is about long term memory in agents.', 'The paper connects agents with memory that persists, stores, or retrieves information over time.', 'The paper concerns a method, model, experiment, or benchmark for agent memory rather than only a general discussion of memory.']
+  !! search_papers_by_relevance failed: search_papers_by_relevance timed out after 150s kwargs={'keyword': 'agent memory retention', 'fields': 'title,abstract,corpusId,year,tldr,venue,citationCou
+  !! search_papers_by_relevance failed: search_papers_by_relevance timed out after 150s kwargs={'keyword': 'memory augmented agents', 'fields': 'title,abstract,corpusId,year,tldr,venue,citationCo
+  !! snippet_search failed: snippet_search timed out after 170s kwargs={'query': 'We compare memory augmented agents against baselines with and without external memory on 
+  !! snippet_search failed: snippet_search timed out after 170s kwargs={'query': 'The paper is about long term memory in agents. The paper connects agents with memory that
+  !! snippet_search failed: snippet_search timed out after 170s kwargs={'query': 'papers about long term memory in agents', 'limit': 100}
+  kw 'long term memory agents': 100 items
+  kw 'agent memory retention': 0 items
+  kw 'persistent memory architectures': 100 items
+  kw 'memory augmented agents': 0 items
+  kw 'episodic memory reinforcement learning': 100 items
+  kw 'continual learning agents': 100 items
+  kw 'long horizon memory': 100 items
+  kw 'neural memory systems': 100 items
+  kw 'memory based agent planning': 100 items
+  kw 'memory retrieval for agents': 100 items
+  kw 'working memory and long term memory': 100 items
+  kw 'lifelong learning autonomous agents': 100 items
+  sn 'This paper presents an agent architecture that sto': 100 items
+  sn 'We evaluate long term memory in agents on long hor': 100 items
+  sn 'We report performance on memory retrieval accuracy': 100 items
+  sn 'We study long term memory in reinforcement learnin': 100 items
+  sn 'We compare memory augmented agents against baselin': 0 items
+  sn 'The paper is about long term memory in agents. The': 0 items
+  sn 'The paper connects agents with memory that persist': 100 items
+  sn 'papers about long term memory in agents': 0 items
+  1144 unique candidates after 541s
+  stage1: force-grading 15 strong passage hits below position 320
+  stage1: forced passage hits graded>=2: 10/15
+  stage1 yield check: 31 grade>=2 in the last 120 -> graded 160 more (now 480)
+  stage1 yield check: 26 grade>=2 in the last 120 -> graded 160 more (now 640)
+  stage1 graded 655/655 in 3 round(s) (546s)
+  !! get_citations failed: get_citations timed out after 90s kwargs={'paper_id': 'CorpusId:276394679', 'fields': 'title,abstract,corpusId,year,publicationDate,venue,cit
+  stage2: 6 title searches -> 25 new neighbours (hits per search: [3, 1, 1, 40, 1, 2]; seeds: ['KARMA: Augmenting Embodied AI Agents with Long-and-Short', 'Position: Episodic Memory is the Missing Piece for', 'ReMEmbR: Building and Reasoning Over Long-Horizon', 'Memory Sharing for Large Language Model based Agents', 'STMA: A Spatio-Temporal Memory Agent for Long-Horizon', 'Self-evolving Agents with reflective and memory-augmented'])
+  stage2: 10 seeds -> 224 new citers+neighbours, graded 120/120 (638s)
+  stage2 graded>=2: 16/120 (neighbour-only: 4)
+  grade distribution: {3: 33, 2: 140, 1: 139, None: 604, 0: 452}
+  stage1-tail (fused pos>=GRADE_ROUND1) papers graded>=2 inside top250: 63
+  head predicted-grade distribution: {3: 23, 2: 2, 1: 6, 0: 1}
+  head rerank: 32/32 rated, 23 all-criteria-perfect, 31 moved (643s)
+  head: 272828154:[3, 3, 3] 272770776:[3, 3, 3] 269149341:[3, 3, 3] 276394679:[3, 3, 3] 278959847:[3, 3, 3] 272367206:[3, 3, 3] 9596808:[3, 3, 3] 278911777:[3, 3, 3] 73729415:[3, 3, 3] 235253910:[3, 3, 3] 270560778:[3, 3, 3] 278788765:[3, 3, 3]
+  evidence query: all criteria (topic weak for 33% of window)
+  evidence group pass: 13 calls, 304 passages, 74/100 papers covered (767s)
+  evidence per-paper retry: 10 calls, 4 passages (860s)
+  evidence: 75/100 window papers carry body passages; weak-criteria histogram: {0: 33, 1: 69, 2: 69}
+  submitted 250 papers in 860s
