@@ -20,11 +20,13 @@ PaperFindingBench Pareto frontier.**
 - **Against Asta Paper Finder:** higher on score and 7% cheaper. The score margin (+0.0023)
   is far inside the stderr, so this is dominance at the board's point estimates. The cost
   gap ($0.0044 against a $0.0020 stderr) is the firmer axis.
-- **Against our v0_0_9_cap_0_063_fable:** it displaces that entry at displayed precision
-  only. Both show $0.058; at full precision this one is $0.00013/query more expensive.
-- **Frontier:** this was the last PaperFindingBench Pareto point not held by RoboPhD.
-  Every point on the frontier is now a RoboPhD entry: 0.220 @ $0.006, 0.376 @ $0.052,
-  **0.399 @ $0.058**, 0.432 @ $0.251, 0.440 @ $0.279.
+- **Against our v0_0_9_cap_0_063_fable:** the two do not dominate each other. Both show
+  $0.058, but at full precision this one is $0.00013/query more expensive. The board
+  compares at full precision and keeps both on the frontier.
+- **Frontier:** this was the last PaperFindingBench Pareto point not held by RoboPhD. As
+  confirmed on the leaderboard on 2026-10-28, every frontier point is a RoboPhD entry:
+  0.220 @ $0.006, 0.376 @ $0.052, 0.390 @ $0.058, **0.399 @ $0.058**, 0.432 @ $0.251,
+  0.440 @ $0.279.
 
 | Per type | Official | Internal | Δ (paired) |
 | --- | --- | --- | --- |

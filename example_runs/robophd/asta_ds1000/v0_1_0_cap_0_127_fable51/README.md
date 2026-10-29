@@ -36,7 +36,7 @@ The submission wrapper bounds each sample at 1200 s (`PRIMARY_TIMEOUT_S`), below
 
 ## Leaderboard score
 
-**To be submitted as `RoboPhD`.** Official `astabench score` run completed 2026-10-15 (first attempt, clean; eval log `logs/full_test/2026-10-15T05-25-37-00-00_ds1000-test_3N3kuYRBj5nXadRpYyz9JR.eval`, commit `a28d7909`, astabench 0.5.4 / inspect_ai 0.3.203):
+**Submitted as `RoboPhD`. Confirmed live on the leaderboard on 2026-10-28 as 0.873 @ $0.054 (board date 2026-10-15): rank 1 and on the Pareto frontier.** Official `astabench score` run completed 2026-10-15 (first attempt, clean; eval log `logs/full_test/2026-10-15T05-25-37-00-00_ds1000-test_3N3kuYRBj5nXadRpYyz9JR.eval`, commit `a28d7909`, astabench 0.5.4 / inspect_ai 0.3.203):
 
 | | Official (`astabench score`) | Internal dev eval |
 |---|---|---|
