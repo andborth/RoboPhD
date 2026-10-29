@@ -4,6 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![arXiv](https://img.shields.io/badge/arXiv-2604.04347-b31b1b.svg)](https://arxiv.org/abs/2604.04347)
+[![arXiv](https://img.shields.io/badge/arXiv-2608.16207-b31b1b.svg)](https://arxiv.org/abs/2608.16207)
 
 <p align="center">
   <img src="assets/robophd-banner.jpg" alt="RoboPhD: Agentic evaluation and optimization framework for LLMs" width="800">
@@ -17,7 +18,9 @@ evolved_agent = optimize_anything(evaluator, dataset, seed_agent, objective, bac
 
 What comes back is a readable Python agent you own — and it won't look much like what you put in. The seed agent is typically a few dozen lines that demonstrate the API and may score terribly on your metric; the evolved agent can run 1,000+ lines, with a sophisticated prompt and multiple calls to one or more LLMs — and a far higher score (see Key Results below).
 
-> 📄 Paper: [*RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets*](https://arxiv.org/abs/2604.04347)
+> 📄 Papers:
+> - [*RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets*](https://arxiv.org/abs/2604.04347): the core algorithm.
+> - [*Competing at Every Price Point with Agentic Evolution over a Menu of LLMs*](https://arxiv.org/abs/2608.16207): to appear at the NeurIPS 2026 Workshop on Managing Agents that Manage Agents, **oral presentation**.
 
 ## AstaBench DS-1000 Leaderboard
 
@@ -253,7 +256,7 @@ RoboPhD builds on several excellent open-source projects and benchmarks:
 
 ## Citation
 
-If you use RoboPhD in your research, please cite the paper — [*RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets*](https://arxiv.org/abs/2604.04347):
+If you use RoboPhD in your research, please cite the core algorithm paper:
 
 ```bibtex
 @article{borthwick2026robophd,
@@ -261,6 +264,19 @@ If you use RoboPhD in your research, please cite the paper — [*RoboPhD: Evolvi
   author={Borthwick, Andrew and Ash, Stephen and Galczak, Anthony},
   journal={arXiv preprint arXiv:2604.04347},
   year={2026}
+}
+```
+
+If you use RoboPhD's cost-capped evolution over a menu of LLMs, or its AstaBench results,
+please also cite:
+
+```bibtex
+@inproceedings{borthwick2026competing,
+  title={Competing at Every Price Point with Agentic Evolution over a Menu of {LLMs}},
+  author={Borthwick, Andrew},
+  booktitle={NeurIPS 2026 Workshop on Managing Agents that Manage Agents},
+  year={2026},
+  note={Oral presentation. To appear. arXiv:2608.16207}
 }
 ```
 

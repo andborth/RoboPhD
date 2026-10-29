@@ -19,7 +19,7 @@ RoboPhD evolves AI agents to improve task performance without human intervention
 - **DS-1000 (AstaBench)**: Inspect-AI `@solver` code agents, Docker `python_session`; agent picks from a multi-family `model_registry` (OpenAI GPT-5.4/5.5, Claude 4.x, Gemini 3.x)
 - **Protein GO**: GO-MF term prediction from sequences via BLAST/ESM/`llm()` callables (Gemini 3.1 Flash Lite via OpenRouter)
 
-**Paper**: [RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets](https://arxiv.org/abs/2604.04347)
+**Papers**: [RoboPhD: Evolving Diverse Complex Agents Under Tight Evaluation Budgets](https://arxiv.org/abs/2604.04347) (the core algorithm); [Competing at Every Price Point with Agentic Evolution over a Menu of LLMs](https://arxiv.org/abs/2608.16207) (NeurIPS 2026 Workshop on Managing Agents that Manage Agents, oral; to appear)
 
 ## Domains
 
