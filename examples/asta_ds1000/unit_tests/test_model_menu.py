@@ -228,7 +228,7 @@ def test_registry_names_used_sees_every_route():
     src = textwrap.dedent("""
         import model_registry as mr
         import model_registry
-        from model_registry import GPT_5_4, _allowed_model_ids
+        from model_registry import GPT_5_4, allowed_model_ids
         a = mr.CLAUDE_OPUS_4_8
         b = model_registry.GEMINI_3_5_FLASH
         c = mr.ACTIVE_MENU
@@ -291,8 +291,14 @@ def test_extraction_applies_the_rule_before_scoring():
         if isinstance(n, ast.FunctionDef) and n.name == "_extract_score_and_diagnostics"
     )
     src = ast.unparse(fn)
-    rule = src.index("_apply_off_menu_rule(self._allowed_model_ids, cost_by_model_usd")
+    rule = src.index("_apply_off_menu_rule(self._allowed_model_ids")
     assert src.index("cost_by_model_usd[model_name] = model_cost") < rule
+    # Outside the costing try/except: enforcement must not share its swallow.
+    tries = [n for n in ast.walk(fn) if isinstance(n, ast.Try)]
+    assert not any(
+        "_apply_off_menu_rule" in ast.unparse(ast.Module(body=t.body, type_ignores=[]))
+        for t in tries
+    )
     assert rule < src.index("diagnostics['score'] = score_value")
     assert "score_value = 0.0" in src[rule:src.index("diagnostics['score'] = score_value")]
 
@@ -349,7 +355,7 @@ def test_registry_prunes_to_the_menu():
         print(json.dumps({
             "active": m.ACTIVE_MENU,
             "exported": sorted(n for n in m._HANDLE_IDS if hasattr(m, n)),
-            "allowed": sorted(m._allowed_model_ids(m.ACTIVE_MENU)),
+            "allowed": sorted(m.allowed_model_ids(m.ACTIVE_MENU)),
         }))
         try:
             from model_registry import GPT_5_4_MINI
@@ -383,7 +389,7 @@ def test_unrestricted_registry_lists_every_handle():
             "active": m.ACTIVE_MENU,
             "models": models,
             "listed": sorted(m._HANDLE_IDS),
-            "allowed": sorted(m._allowed_model_ids()),
+            "allowed": sorted(m.allowed_model_ids()),
             "ids": sorted(set(m._HANDLE_IDS.values())),
         }))
     """)

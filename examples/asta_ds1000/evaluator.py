@@ -557,7 +557,7 @@ def _elapsed_seconds(t0: float) -> float:
     return round(time.monotonic() - t0, 3)
 
 
-def _apply_off_menu_rule(allowed_model_ids, cost_by_model_usd: dict, diagnostics: dict) -> None:
+def _apply_off_menu_rule(allowed_model_ids, billed_models, diagnostics: dict) -> None:
     """Flag usage of any model outside the run's menu.
 
     Checks the models the example ACTUALLY billed, not what the agent
@@ -569,14 +569,14 @@ def _apply_off_menu_rule(allowed_model_ids, cost_by_model_usd: dict, diagnostics
     Deliberately not an "error": that key triggers the test-time seed
     fallback, which would replace the violating answer and hide it.
     """
-    off = sorted(m for m in cost_by_model_usd if m not in allowed_model_ids)
+    off = sorted(m for m in billed_models if m not in allowed_model_ids)
     if not off:
         return
     diagnostics["off_menu_models"] = off
     diagnostics["off_menu.md"] = (
         f"This example scored 0 because the agent called model(s) that are "
         f"not available in this run: {', '.join(off)}. Every LLM call must "
-        f"go through one of the handles listed in the LLM calls section."
+        f"go through one of the model handles this run documents."
     )
 
 
@@ -672,7 +672,7 @@ class Ds1000Evaluator:
         # Usage under any other model id scores the example 0 (see
         # _extract_score_and_diagnostics) -- enforcement that holds whatever
         # route the call took, not just registry imports.
-        self._allowed_model_ids = _registry._allowed_model_ids(self.model_menu)
+        self._allowed_model_ids = _registry.allowed_model_ids(self.model_menu)
 
         self.subprocess_isolation = subprocess_isolation
         # True for training (RoboPhD's Elo competition): the iteration
@@ -1224,7 +1224,16 @@ class Ds1000Evaluator:
         except Exception:
             pass
 
-        _apply_off_menu_rule(self._allowed_model_ids, cost_by_model_usd, diagnostics)
+        # Enforcement reads the model names straight off the log, outside the
+        # costing block above: a failure while pricing one model must not
+        # leave the rest unchecked. DS-1000 has no judge, so every recorded
+        # model is the agent's.
+        _stats = getattr(log, "stats", None)
+        _apply_off_menu_rule(
+            self._allowed_model_ids,
+            list(getattr(_stats, "model_usage", None) or {}),
+            diagnostics,
+        )
         if diagnostics.get("off_menu_models"):
             score_value = 0.0
 

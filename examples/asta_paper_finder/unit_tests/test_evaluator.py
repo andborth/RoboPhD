@@ -1711,3 +1711,22 @@ def test_subprocess_payload_carries_persist_full_evidence():
     assert "persist_full_evidence" in {kw.arg for kw in call.keywords}, (
         "the worker must pass persist_full_evidence to the constructor"
     )
+
+
+def test_off_menu_rule_survives_a_costing_failure(ev_mod, monkeypatch):
+    """Pricing is best-effort (wrapped in a swallow-all); enforcement must
+    not be. If costing raises on the first model, the off-menu model is still
+    caught -- and the judge still never counts."""
+    def boom(model_name, counts):
+        raise RuntimeError("pricing table exploded")
+    monkeypatch.setattr(ev_mod.PaperFinderEvaluator, "_estimate_cost", staticmethod(boom))
+    ev = _bare_evaluator(ev_mod, allowed_model_ids=frozenset({"openai/gpt-5.4-mini"}),
+                         model_menu=("GPT_5_4_MINI",))
+    log = _fake_log({
+        "openai/gpt-4o-2024-11-20": (5000, 500),
+        "openai/gpt-5.4-mini": (1000, 100),
+        "openai/gpt-5.4-2026-03-05": (1000, 100),
+    }, score=0.8)
+    score, diag = ev._extract_score_and_diagnostics(log, _fake_sample(ev_mod), "")
+    assert score == 0.0
+    assert diag["off_menu_models"] == ["openai/gpt-5.4-2026-03-05"]

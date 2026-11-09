@@ -1185,24 +1185,24 @@ def _import_candidate_solver(agent_code: str) -> Any:
             pass
 
 
-def _apply_off_menu_rule(allowed_model_ids, cost_by_model_usd: dict, diagnostics: dict) -> None:
+def _apply_off_menu_rule(allowed_model_ids, billed_models, diagnostics: dict) -> None:
     """Flag agent usage of any model outside the run's menu.
 
     Checks the models the example ACTUALLY billed (agent spend only -- the
-    relevance judge is split out before this runs), not what the agent
+    caller excludes the relevance judge), not what the agent
     imported, so every route to a model -- a raw get_model() string, a
     re-imported registry -- is covered. A hit records the offending ids and
     an explanation file; the caller scores the example 0. The spend still
     counts toward cost: it was real.
     """
-    off = sorted(m for m in cost_by_model_usd if m not in allowed_model_ids)
+    off = sorted(m for m in billed_models if m not in allowed_model_ids)
     if not off:
         return
     diagnostics["off_menu_models"] = off
     diagnostics["off_menu.md"] = (
         f"This example scored 0 because the agent called model(s) that are "
         f"not available in this run: {', '.join(off)}. Every LLM call must "
-        f"go through one of the handles listed in the LLM calls section."
+        f"go through one of the model handles this run documents."
     )
 
 
@@ -1302,7 +1302,7 @@ class PaperFinderEvaluator:
         # _extract_score_and_diagnostics) -- enforcement that holds whatever
         # route the call took, not just registry imports. Judge ids never
         # reach the check: they are split out of agent spend first.
-        self._allowed_model_ids = _registry._allowed_model_ids(self.model_menu)
+        self._allowed_model_ids = _registry.allowed_model_ids(self.model_menu)
 
         self.subprocess_isolation = subprocess_isolation
         # True for training (RoboPhD's Elo competition): the iteration
@@ -1821,7 +1821,17 @@ class PaperFinderEvaluator:
         except Exception:
             pass
 
-        _apply_off_menu_rule(self._allowed_model_ids, cost_by_model_usd, diagnostics)
+        # Enforcement reads the model names straight off the log, outside the
+        # costing block above: a failure while pricing one model must not
+        # leave the rest unchecked. Judge ids are excluded the same way the
+        # cost split excludes them.
+        _stats = getattr(log, "stats", None)
+        _apply_off_menu_rule(
+            self._allowed_model_ids,
+            [m for m in (getattr(_stats, "model_usage", None) or {})
+             if m not in JUDGE_MODEL_IDS],
+            diagnostics,
+        )
         if diagnostics.get("off_menu_models"):
             score_value = 0.0
 

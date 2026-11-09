@@ -591,6 +591,13 @@ import tool_pacer
 # import ...` at ITS module scope, and the per-sample loads below happen long
 # after chdir_python.__exit__ restored sys.path (inspect_ai/_util/path.py:60).
 # Without this, every sample dies with ModuleNotFoundError.
+# A submission always runs on the full registry. model_registry honors
+# ROBOPHD_MODEL_MENU at import (training's --model-menu); a value left
+# exported in the shell running the official eval would prune handles and
+# crash every sample at import. A menu-restricted run's agent uses only
+# on-menu handles, so the full registry serves it unchanged.
+import os as _os
+_os.environ.pop("ROBOPHD_MODEL_MENU", None)
 import model_registry  # noqa: F401
 
 

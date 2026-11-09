@@ -1067,3 +1067,21 @@ def test_off_menu_usage_scores_zero_without_triggering_the_fallback(ev_mod, monk
     score, diag = ev._extract_score_and_diagnostics(log, example, "")
     assert score == 1.0
     assert "off_menu_models" not in diag
+
+
+def test_off_menu_rule_survives_a_costing_failure(ev_mod, monkeypatch):
+    """Pricing is best-effort (wrapped in a swallow-all); enforcement must
+    not be. If costing raises on the first model, the off-menu model is still
+    caught."""
+    from inspect_ai.dataset import Sample
+
+    def boom(model_name, counts):
+        raise RuntimeError("pricing table exploded")
+    monkeypatch.setattr(ev_mod.Ds1000Evaluator, "_estimate_cost", staticmethod(boom))
+    example = Sample(id="1", input="q", target="t", metadata={"library": "Numpy"})
+    ev = _bare_ds_evaluator(ev_mod, frozenset({"openai/gpt-5.4-2026-03-05"}))
+    log = _fake_ds_log({"openai/gpt-5.4-2026-03-05": (100, 10),
+                        "anthropic/claude-sonnet-4-6": (100, 10)})
+    score, diag = ev._extract_score_and_diagnostics(log, example, "")
+    assert score == 0.0
+    assert diag["off_menu_models"] == ["anthropic/claude-sonnet-4-6"]

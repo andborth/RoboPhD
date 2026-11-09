@@ -169,8 +169,8 @@ GEMINI_3_1_PRO_PREVIEW = get_model(
 # scripts copy this file alone into submission directories. With the env var
 # unset (every submission, every unrestricted run) nothing below changes what
 # this module exports. The handle list and env-var name duplicate
-# model_menu.MENU / MODEL_MENU_ENV; unit_tests/test_model_registry.py pins
-# the copies together.
+# model_menu.MENU / MODEL_MENU_ENV; unit_tests/test_model_menu.py
+# (test_registry_menu_copy_matches_model_menu) pins the copies together.
 _MODEL_MENU_ENV = "ROBOPHD_MODEL_MENU"
 _MENU = (
     "GPT_5_4_MINI",
@@ -225,9 +225,12 @@ def _read_menu_env():
 ACTIVE_MENU = _read_menu_env()
 
 
-def _allowed_model_ids(menu=None):
+def allowed_model_ids(menu=None):
     """Model ids a run may record usage under: the menu's, or (menu None)
-    every id this registry can produce, archive-only handles included."""
+    every id this registry can produce, archive-only handles included.
+
+    Public: this is the registry's contract with the evaluator's off-menu
+    check. Harmless for an agent to import -- it grants no model access."""
     return frozenset(_HANDLE_IDS[h] for h in (menu or _HANDLE_IDS))
 
 

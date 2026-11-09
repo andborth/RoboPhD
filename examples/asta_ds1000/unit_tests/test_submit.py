@@ -235,3 +235,21 @@ def test_wrapper_template_has_per_tier_timeouts(wrapper_tree: ast.AST) -> None:
             f"iter10 samples can take several minutes; too-short timeouts "
             f"would false-trip on slow-but-correct runs."
         )
+
+
+def test_wrapper_clears_the_model_menu_before_importing_the_registry(wrapper_tree) -> None:
+    """model_registry honors ROBOPHD_MODEL_MENU at import. A value left
+    exported in the shell running the official eval would prune handles and
+    crash every sample, so the wrapper clears it before its first (pinning)
+    registry import -- a submission always runs on the full registry."""
+    body = wrapper_tree.body
+    clears = [
+        i for i, n in enumerate(body)
+        if "ROBOPHD_MODEL_MENU" in ast.unparse(n) and ".pop(" in ast.unparse(n)
+    ]
+    imports = [
+        i for i, n in enumerate(body)
+        if isinstance(n, ast.Import) and any(a.name == "model_registry" for a in n.names)
+    ]
+    assert clears and imports, "wrapper must clear the menu and import the registry"
+    assert clears[0] < imports[0]
