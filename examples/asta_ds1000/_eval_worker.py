@@ -16,7 +16,8 @@ Input JSON shape:
    "example": {<Sample.model_dump()>},
    "apply_cost_penalty": true,
    "min_cost_threshold": 0.05,
-   "cost_per_error": 0.005}
+   "cost_per_error": 0.005,
+   "model_menu": ["GPT_5_4"] | null}
 
 Output JSON shape:
   {"score": <float>, "diagnostics": <dict>}
@@ -60,6 +61,9 @@ def main() -> int:
             apply_cost_penalty=params["apply_cost_penalty"],
             min_cost_threshold=params["min_cost_threshold"],
             cost_per_error=params["cost_per_error"],
+            # Strict key: a parent that fails to send the menu should fail
+            # loudly, not silently run the worker unrestricted.
+            model_menu=params["model_menu"],
         )
         score, diagnostics = evaluator.evaluate(params["candidate"], params["example"])
     except Exception:

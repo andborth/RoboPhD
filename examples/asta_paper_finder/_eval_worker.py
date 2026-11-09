@@ -16,7 +16,8 @@ Input JSON shape:
    "example": {<Sample.model_dump()>},
    "apply_cost_penalty": true,
    "min_cost_threshold": 0.06,
-   "cost_per_error": 0.006}
+   "cost_per_error": 0.006,
+   "model_menu": ["GPT_5_4_MINI"] | null}
 
 Output JSON shape:
   {"score": <float>, "diagnostics": <dict>}
@@ -63,6 +64,9 @@ def main() -> int:
             # to be made here. Strict key on purpose: a parent that fails to
             # send it should fail loudly, not silently trim a test eval.
             persist_full_evidence=params["persist_full_evidence"],
+            # Strict key: a parent that fails to send the menu should fail
+            # loudly, not silently run the worker unrestricted.
+            model_menu=params["model_menu"],
         )
         score, diagnostics = evaluator.evaluate(params["candidate"], params["example"])
     except Exception:

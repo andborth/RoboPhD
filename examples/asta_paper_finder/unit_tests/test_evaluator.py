@@ -48,11 +48,32 @@ def ev_mod():
     return evaluator
 
 
+def _registry_model_ids() -> frozenset:
+    """Every model id model_registry.py declares (its `_*_ID` constants),
+    read by AST so the bare evaluator needs no provider keys."""
+    tree = ast.parse((PFB_DIR / "model_registry.py").read_text())
+    return frozenset(
+        node.value.value
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        and len(node.targets) == 1
+        and getattr(node.targets[0], "id", "").endswith("_ID")
+        and isinstance(node.value, ast.Constant)
+    )
+
+
 def _bare_evaluator(ev_mod, *, apply_cost_penalty=True,
                     min_cost_threshold=0.10, cost_per_error=0.02,
-                    persist_full_evidence=False):
-    """Instance without running __init__ (no provider keys needed)."""
+                    persist_full_evidence=False, allowed_model_ids=None,
+                    model_menu=None):
+    """Instance without running __init__ (no provider keys needed).
+
+    allowed_model_ids defaults to the unrestricted set (no --model-menu)."""
     ev = object.__new__(ev_mod.PaperFinderEvaluator)
+    ev.model_menu = model_menu
+    ev._allowed_model_ids = (
+        _registry_model_ids() if allowed_model_ids is None else allowed_model_ids
+    )
     ev.apply_cost_penalty = apply_cost_penalty
     ev.min_cost_threshold = min_cost_threshold
     ev.cost_per_error = cost_per_error
@@ -274,6 +295,39 @@ def test_judge_split_routes_costs(ev_mod, monkeypatch):
     # Running totals split the same way.
     assert ev.total_eval_cost == pytest.approx(1.0)
     assert ev.total_judge_cost == pytest.approx(1.0)
+
+
+def test_off_menu_agent_usage_scores_zero_but_judge_never_counts(ev_mod, monkeypatch):
+    """Under --model-menu GPT_5_4_MINI, an agent that also billed GPT-5.4
+    scores 0 (its spend still counts); the relevance judge is split out
+    before the check, so judging alone can never trip it."""
+    monkeypatch.setattr(
+        ev_mod.PaperFinderEvaluator, "_estimate_cost",
+        staticmethod(lambda model_name, counts: 1.0),
+    )
+    mini_only = frozenset({"openai/gpt-5.4-mini"})
+    ev = _bare_evaluator(ev_mod, allowed_model_ids=mini_only,
+                         model_menu=("GPT_5_4_MINI",))
+    log = _fake_log({
+        "openai/gpt-4o-2024-11-20": (5000, 500),    # the judge
+        "openai/gpt-5.4-mini": (1000, 100),          # on the menu
+        "openai/gpt-5.4-2026-03-05": (1000, 100),    # off the menu
+    }, score=0.8)
+    score, diag = ev._extract_score_and_diagnostics(log, _fake_sample(ev_mod), "")
+    assert score == 0.0 and diag["score"] == 0.0
+    assert diag["off_menu_models"] == ["openai/gpt-5.4-2026-03-05"]
+    assert "off_menu.md" in diag
+    assert diag["agent_cost_usd"] == pytest.approx(2.0)
+
+    clean = _bare_evaluator(ev_mod, allowed_model_ids=mini_only,
+                            model_menu=("GPT_5_4_MINI",))
+    log = _fake_log({
+        "openai/gpt-4o-2024-11-20": (5000, 500),
+        "openai/gpt-5.4-mini": (1000, 100),
+    }, score=0.8)
+    score, diag = clean._extract_score_and_diagnostics(log, _fake_sample(ev_mod), "")
+    assert score == 0.8
+    assert "off_menu_models" not in diag
 
 
 def test_judge_ids_match_astabench(ev_mod):

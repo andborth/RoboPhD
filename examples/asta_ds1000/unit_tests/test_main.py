@@ -1380,25 +1380,45 @@ def _seed_agents_arg() -> ast.expr:
     return next(kw.value for kw in call.keywords if kw.arg == "seed_agents")
 
 
+def _seed_agents_branch() -> ast.If:
+    """The `if args.seed_runs: ... else: ...` that builds seed_agents."""
+    return next(
+        n for n in ast.walk(_MAIN_TREE)
+        if isinstance(n, ast.If)
+        and "seed_runs" in ast.dump(n.test)
+        and any(
+            isinstance(t, ast.Assign)
+            and any(getattr(tg, "id", "") == "seed_agents" for tg in t.targets)
+            for t in n.body
+        )
+    )
+
+
 def test_seed_agents_falls_back_to_the_baseline_seed():
-    """Without the flag the pool must stay {"baseline": SEED_AGENT_DIR} —
-    every run before this feature, and every run that doesn't pass it.
+    """Without --seed-runs or --model-menu the pool must stay
+    {"baseline": SEED_AGENT_DIR} — every run before these features, and
+    every run that passes neither.
 
     Structural rather than a source-substring match: a line wrap or a
     variable extraction changes the text without changing the wiring, and a
     test that fails on those trains you to stop reading it."""
     arg = _seed_agents_arg()
-    assert isinstance(arg, ast.IfExp), (
-        "seed_agents must be conditional on --seed-runs, so a run without "
-        "the flag still seeds from the baseline"
-    )
-    assert isinstance(arg.orelse, ast.Dict), "the no-flag branch must be a pool dict"
-    assert [k.value for k in arg.orelse.keys] == ["baseline"]
-    assert [v.id for v in arg.orelse.values] == ["SEED_AGENT_DIR"]
+    assert isinstance(arg, ast.Name) and arg.id == "seed_agents"
+    branch = _seed_agents_branch()
     assert any(
         isinstance(n, ast.Call) and getattr(n.func, "id", "") == "_resolve_seed_runs"
-        for n in ast.walk(arg.body)
+        for n in ast.walk(ast.Module(body=branch.body, type_ignores=[]))
     ), "the flag branch must resolve the pool from the named runs"
+    (assign,) = branch.orelse
+    pool = assign.value
+    assert isinstance(pool, ast.Dict), "the no-flag branch must be a pool dict"
+    assert [k.value for k in pool.keys] == ["baseline"]
+    (value,) = pool.values
+    # Under --model-menu the (re-pointed) seed artifacts; otherwise the
+    # directory itself, exactly as before.
+    assert isinstance(value, ast.IfExp)
+    assert getattr(value.test, "id", "") == "model_menu"
+    assert getattr(value.orelse, "id", "") == "SEED_AGENT_DIR"
 
 
 def test_baseline_seed_still_backs_the_test_fallback_candidate():

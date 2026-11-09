@@ -1185,6 +1185,27 @@ def _import_candidate_solver(agent_code: str) -> Any:
             pass
 
 
+def _apply_off_menu_rule(allowed_model_ids, cost_by_model_usd: dict, diagnostics: dict) -> None:
+    """Flag agent usage of any model outside the run's menu.
+
+    Checks the models the example ACTUALLY billed (agent spend only -- the
+    relevance judge is split out before this runs), not what the agent
+    imported, so every route to a model -- a raw get_model() string, a
+    re-imported registry -- is covered. A hit records the offending ids and
+    an explanation file; the caller scores the example 0. The spend still
+    counts toward cost: it was real.
+    """
+    off = sorted(m for m in cost_by_model_usd if m not in allowed_model_ids)
+    if not off:
+        return
+    diagnostics["off_menu_models"] = off
+    diagnostics["off_menu.md"] = (
+        f"This example scored 0 because the agent called model(s) that are "
+        f"not available in this run: {', '.join(off)}. Every LLM call must "
+        f"go through one of the handles listed in the LLM calls section."
+    )
+
+
 class PaperFinderEvaluator:
     """RoboPhD evaluator for PaperFindingBench.
 
@@ -1206,6 +1227,7 @@ class PaperFinderEvaluator:
         min_cost_threshold: float = MIN_COST_THRESHOLD,
         cost_per_error: float | None = None,
         persist_full_evidence: bool = False,
+        model_menu: tuple[str, ...] | None = None,
     ):
         # Hard requirement: every provider key the registry references
         # must be set, even if the seed only uses one. Evolution can
@@ -1243,14 +1265,44 @@ class PaperFinderEvaluator:
                 f"shell that launches the run."
             )
 
+        # The run's model menu (main.py --model-menu; None = all nine
+        # handles). The evaluator owns it: it publishes the menu through the
+        # env var model_registry reads at import -- set or CLEARED, so a
+        # value exported in the launching shell can never restrict an
+        # unrestricted run -- and worker subprocesses inherit it (they also
+        # receive it explicitly in their input JSON).
+        from model_menu import MODEL_MENU_ENV, validate_menu
+        self.model_menu = validate_menu(model_menu)
+        if self.model_menu:
+            os.environ[MODEL_MENU_ENV] = ",".join(self.model_menu)
+        else:
+            os.environ.pop(MODEL_MENU_ENV, None)
+
         # Resolve registry handles at construction time (after the env-var
         # check so the friendly error fires first if keys are missing).
         # Storing self._default_model surfaces any registry-resolution
         # failure here rather than waiting for the first .generate()
         # inside inspect.eval. inspect.eval() requires a model argument
-        # even though PFB agents call registry handles directly.
-        from model_registry import GPT_5_4_MINI as _DEFAULT_MODEL
-        self._default_model = _DEFAULT_MODEL
+        # even though PFB agents call registry handles directly; under a
+        # menu it must be ON the menu, since Inspect routes any call that
+        # names no model to it.
+        import model_registry as _registry
+        if _registry.ACTIVE_MENU != self.model_menu:
+            # The registry was imported earlier in this process under a
+            # different menu; its exports no longer match this evaluator.
+            raise RuntimeError(
+                f"model_registry was already imported with menu "
+                f"{_registry.ACTIVE_MENU}, but this evaluator's menu is "
+                f"{self.model_menu}. One process can serve one menu."
+            )
+        self._default_model = getattr(
+            _registry, self.model_menu[0] if self.model_menu else "GPT_5_4_MINI"
+        )
+        # Agent usage under any other model id scores the example 0 (see
+        # _extract_score_and_diagnostics) -- enforcement that holds whatever
+        # route the call took, not just registry imports. Judge ids never
+        # reach the check: they are split out of agent spend first.
+        self._allowed_model_ids = _registry._allowed_model_ids(self.model_menu)
 
         self.subprocess_isolation = subprocess_isolation
         # True for training (RoboPhD's Elo competition): the iteration
@@ -1324,6 +1376,7 @@ class PaperFinderEvaluator:
             "cost_per_error": self.cost_per_error,
             "subprocess_isolation": self.subprocess_isolation,
             "persist_full_evidence": self.persist_full_evidence,
+            "model_menu": self.model_menu,
         }
         base.update(overrides)
         return PaperFinderEvaluator(**base)
@@ -1465,6 +1518,9 @@ class PaperFinderEvaluator:
                 # eval_timeout is deliberately NOT sent: it is used only
                 # parent-side, to derive the subprocess_timeout enforced below.
                 "persist_full_evidence": self.persist_full_evidence,
+                # The worker builds its own evaluator; without the menu it
+                # would clear the env var and run unrestricted.
+                "model_menu": list(self.model_menu) if self.model_menu else None,
             }, inf, default=str)
             inf_path = inf.name
         out_path = inf_path + ".out"
@@ -1764,6 +1820,10 @@ class PaperFinderEvaluator:
                         cost_by_model_usd[model_name] = model_cost
         except Exception:
             pass
+
+        _apply_off_menu_rule(self._allowed_model_ids, cost_by_model_usd, diagnostics)
+        if diagnostics.get("off_menu_models"):
+            score_value = 0.0
 
         # Per-example score is raw F1. The cost penalty applies at the
         # iteration level via PaperFinderEvaluator.aggregate — computing

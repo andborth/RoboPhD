@@ -60,6 +60,14 @@ from RoboPhD.runner_utils import (
     validate_cost_slope,
     validate_cost_threshold,
 )
+from RoboPhD.candidate_utils import read_agent_dir
+from model_menu import (
+    check_seed_agents,
+    resolve_run_menu,
+    restrict_background,
+    restrict_seed_source,
+    stored_menu_value,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -782,6 +790,18 @@ def parse_args():
                         "-005 lineage; evolved target ~-50%%). 0 disables. "
                         "Run-immutable; clipping surfaces per-problem as "
                         "evidence_truncation.md.")
+    p.add_argument("--model-menu", type=str, default=None, metavar="HANDLES",
+                   help="Restrict the solver-model menu to these model_registry "
+                        "handles, comma-separated (e.g. GPT_5_4_MINI). Narrows "
+                        "only: every name must be one of the nine handles. "
+                        "Enforced, not just documented — the registry exports "
+                        "only these handles, an example whose agent bills any "
+                        "other model scores 0, and background.md's handle "
+                        "table and examples show only these. The default "
+                        "seed's handle is re-pointed to an on-menu one (same "
+                        "provider family where possible); --seed-runs seeds "
+                        "must already comply. Run-immutable. Default: all "
+                        "nine handles.")
     p.add_argument("--seed-runs", type=str, nargs="+", default=None,
                    metavar="LABEL=RUN_DIR",
                    help="Seed the run from the best-Elo agent of each named "
@@ -1104,6 +1124,15 @@ def main():
     if evidence_char_cap < 0:
         raise SystemExit("--evidence-char-cap must be >= 0 (0 disables)")
 
+    # Locked for the run like the knobs above, but resolved by its own rule:
+    # a run with no stored menu predates the flag and ran on all nine.
+    model_menu = resolve_run_menu(
+        args.model_menu, checkpoint_pfb,
+        resume=bool(args.resume), eval_only=args.eval_only,
+    )
+    if model_menu:
+        logger.info(f"Model menu restricted to: {', '.join(model_menu)}")
+
     resolved_runtime = {
         "cost_threshold": cost_threshold,
         "cost_per_error": cost_per_error,
@@ -1111,6 +1140,7 @@ def main():
         "training_judge": training_judge,
         "judge_prompt": judge_prompt,
         "evidence_char_cap": evidence_char_cap,
+        "model_menu": stored_menu_value(model_menu),
     }
 
     def _build_cost_penalty_table(threshold: float, cpe: float) -> str:
@@ -1217,11 +1247,30 @@ def main():
 
     objective = _interpolate((HERE / "objective.md").read_text().strip())
     background = _interpolate((HERE / "background.md").read_text().strip())
+    if model_menu:
+        # Only under a menu: an unrestricted run's background stays byte-
+        # identical to every run before the flag existed.
+        background = restrict_background(background, model_menu)
 
-    seed_agents = (
-        _resolve_seed_runs(args.seed_runs) if args.seed_runs
-        else {"baseline": HERE / "seeds" / "baseline"}
-    )
+    if args.seed_runs:
+        seed_agents = _resolve_seed_runs(args.seed_runs)
+        if model_menu:
+            check_seed_agents(seed_agents, model_menu)
+    elif model_menu:
+        # Under a menu the seed goes in as artifacts, its handles re-pointed
+        # to the menu; otherwise as its directory, exactly as before.
+        seed = read_agent_dir(HERE / "seeds" / "baseline")
+        restricted = {
+            k: restrict_seed_source(v, model_menu) if k.endswith(".py") else v
+            for k, v in seed.items()
+        }
+        if restricted != seed:
+            logger.info(
+                f"Seed re-pointed to the model menu ({', '.join(model_menu)})"
+            )
+        seed_agents = {"baseline": restricted}
+    else:
+        seed_agents = {"baseline": HERE / "seeds" / "baseline"}
 
     # Two evaluator instances. Training applies the mean-cost penalty;
     # test paths report raw mean F1 so evolved agents land at their true
@@ -1231,6 +1280,7 @@ def main():
         apply_cost_penalty=True,  # training: penalty fires
         min_cost_threshold=cost_threshold,
         cost_per_error=cost_per_error,
+        model_menu=model_menu,
     )
     # persist_full_evidence is TEST-ONLY on purpose: it keeps beyond-cap
     # evidence in submission.json so a stored test eval stays rejudgeable at

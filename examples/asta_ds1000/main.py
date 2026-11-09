@@ -54,6 +54,13 @@ from RoboPhD.runner_utils import (
     validate_cost_threshold,
 )
 from RoboPhD.candidate_utils import read_agent_dir
+from model_menu import (
+    check_seed_agents,
+    resolve_run_menu,
+    restrict_background,
+    restrict_seed_source,
+    stored_menu_value,
+)
 
 # The agent this run starts from, and the source of the test evaluator's
 # fallback_candidate. Named once so the two uses cannot drift apart.
@@ -473,6 +480,17 @@ def parse_args():
                         f"at the default threshold). See README "
                         "'Cost-penalty math' for regimes.")
 
+    p.add_argument("--model-menu", type=str, default=None, metavar="HANDLES",
+                   help="Restrict the solver-model menu to these model_registry "
+                        "handles, comma-separated (e.g. GPT_5_4). Narrows only: "
+                        "every name must be one of the nine handles. Enforced, "
+                        "not just documented — the registry exports only these "
+                        "handles, an example that bills any other model scores "
+                        "0, and background.md's handle table and examples show "
+                        "only these. The default seed's handle is re-pointed "
+                        "to an on-menu one (same provider family where "
+                        "possible); --seed-runs seeds must already comply. "
+                        "Run-immutable. Default: all nine handles.")
     p.add_argument("--max-workers", type=int, default=None,
                    help=f"Parallel eval workers (default: {DEFAULT_MAX_WORKERS}; "
                         f"on --resume, the checkpoint's value). See README."
@@ -588,9 +606,19 @@ def main():
         fmt=_fmt_cost,
     )
 
+    # Locked for the run like the cost knobs, but resolved by its own rule:
+    # a run with no stored menu predates the flag and ran on all nine.
+    model_menu = resolve_run_menu(
+        args.model_menu, checkpoint_ds1000,
+        resume=bool(args.resume), eval_only=args.eval_only,
+    )
+    if model_menu:
+        logger.info(f"Model menu restricted to: {', '.join(model_menu)}")
+
     resolved_runtime = {
         "cost_threshold": cost_threshold,
         "cost_per_error": cost_per_error,
+        "model_menu": stored_menu_value(model_menu),
     }
 
     from evaluator import Ds1000Evaluator
@@ -695,6 +723,10 @@ def main():
 
     objective = _interpolate((HERE / "objective.md").read_text().strip())
     background = _interpolate((HERE / "background.md").read_text().strip())
+    if model_menu:
+        # Only under a menu: an unrestricted run's background stays byte-
+        # identical to every run before the flag existed.
+        background = restrict_background(background, model_menu)
 
     # Seed is read early so it can plumb into the test evaluator as
     # `fallback_candidate` below. Training keeps fallback_candidate=None
@@ -704,6 +736,18 @@ def main():
     # optimize_anything reads SEED_AGENT_DIR itself; this is the same
     # artifacts in the dict form the evaluator wants.
     seed = read_agent_dir(SEED_AGENT_DIR)
+    if model_menu:
+        # The seed is also the test-time fallback, so it must stay on the
+        # menu in both roles; the rewritten artifacts feed both.
+        restricted = {
+            k: restrict_seed_source(v, model_menu) if k.endswith(".py") else v
+            for k, v in seed.items()
+        }
+        if restricted != seed:
+            logger.info(
+                f"Seed re-pointed to the model menu ({', '.join(model_menu)})"
+            )
+        seed = restricted
 
     # Two evaluator instances. Training applies the bounded cost penalty
     # (a tiebreaker between correctness-tied agents); test paths report
@@ -714,6 +758,7 @@ def main():
         apply_cost_penalty=True,  # training: penalty fires
         min_cost_threshold=cost_threshold,
         cost_per_error=cost_per_error,
+        model_menu=model_menu,
     )
     test_evaluator = evaluator.with_overrides(
         apply_cost_penalty=False,
@@ -928,13 +973,19 @@ def main():
         if args.from_iteration:
             cfg.from_iteration = args.from_iteration
 
+    if args.seed_runs:
+        seed_agents = _resolve_seed_runs(args.seed_runs)
+        if model_menu:
+            check_seed_agents(seed_agents, model_menu)
+    else:
+        # Under a menu the seed goes in as (possibly re-pointed) artifacts;
+        # otherwise as its directory, exactly as before the flag existed.
+        seed_agents = {"baseline": seed if model_menu else SEED_AGENT_DIR}
+
     result = optimize_anything(
         evaluator=evaluator,
         dataset=dataset,
-        seed_agents=(
-            _resolve_seed_runs(args.seed_runs) if args.seed_runs
-            else {"baseline": SEED_AGENT_DIR}
-        ),
+        seed_agents=seed_agents,
         objective=objective,
         background=background,
         config=cfg,

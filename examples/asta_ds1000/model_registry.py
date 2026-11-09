@@ -154,3 +154,85 @@ GEMINI_3_1_PRO_PREVIEW = get_model(
     _GEMINI_3_1_PRO_PREVIEW_ID,
     config=GenerateConfig(reasoning_effort="low"),
 )
+
+
+# ---------------------------------------------------------------------------
+# Model menu (main.py --model-menu)
+# ---------------------------------------------------------------------------
+# A run may narrow its menu to a subset of the nine handles. main.py's
+# evaluator sets ROBOPHD_MODEL_MENU before importing this module (worker
+# subprocesses inherit it); when set, every handle NOT on the menu is deleted
+# from this module below, so importing it fails. The menu can only narrow:
+# an unknown name raises at import rather than being ignored.
+#
+# Self-contained on purpose — no import of model_menu.py — because the submit
+# scripts copy this file alone into submission directories. With the env var
+# unset (every submission, every unrestricted run) nothing below changes what
+# this module exports. The handle list and env-var name duplicate
+# model_menu.MENU / MODEL_MENU_ENV; unit_tests/test_model_registry.py pins
+# the copies together.
+_MODEL_MENU_ENV = "ROBOPHD_MODEL_MENU"
+_MENU = (
+    "GPT_5_4_MINI",
+    "GPT_5_4",
+    "GPT_5_5",
+    "CLAUDE_HAIKU_4_5",
+    "CLAUDE_SONNET_4_6",
+    "CLAUDE_OPUS_4_8",
+    "GEMINI_3_1_FLASH_LITE",
+    "GEMINI_3_5_FLASH",
+    "GEMINI_3_1_PRO_PREVIEW",
+)
+# Every exported handle -> the model id Inspect records it under in
+# model_usage (the evaluator's off-menu check matches on these ids).
+_HANDLE_IDS = {
+    "GPT_5_4_MINI": _GPT_5_4_MINI_ID,
+    "GPT_5_4": _GPT_5_4_ID,
+    "GPT_5_5": _GPT_5_5_ID,
+    "CLAUDE_HAIKU_4_5": _CLAUDE_HAIKU_4_5_ID,
+    "CLAUDE_SONNET_4_6": _CLAUDE_SONNET_4_6_ID,
+    "CLAUDE_OPUS_4_8": _CLAUDE_OPUS_4_8_ID,
+    "GEMINI_3_1_FLASH_LITE": _GEMINI_3_1_FLASH_LITE_ID,
+    "GEMINI_3_5_FLASH": _GEMINI_3_5_FLASH_ID,
+    "GEMINI_3_1_PRO_PREVIEW": _GEMINI_3_1_PRO_PREVIEW_ID,
+    # Archive-only names: never on the menu, so a --model-menu run prunes
+    # them. They stay importable (and allowed) in unrestricted runs so
+    # archived agents replay on the models they were ranked on.
+    "GEMINI_3_1_FLASH_LITE_PREVIEW": _GEMINI_3_1_FLASH_LITE_ID,
+    "GEMINI_3_FLASH_PREVIEW": _GEMINI_3_5_FLASH_ID,
+    "CLAUDE_OPUS_4_7": _CLAUDE_OPUS_4_7_ID,
+}
+
+
+def _read_menu_env():
+    raw = os.environ.get(_MODEL_MENU_ENV, "")
+    names = []
+    for n in (s.strip() for s in raw.split(",")):
+        if n and n not in names:
+            names.append(n)
+    if not names:
+        return None
+    unknown = [n for n in names if n not in _MENU]
+    if unknown:
+        raise ImportError(
+            f"{_MODEL_MENU_ENV} names handles not on the model menu: "
+            f"{', '.join(unknown)}. Valid handles: {', '.join(_MENU)}"
+        )
+    return tuple(names)
+
+
+# None = unrestricted (all handles exported).
+ACTIVE_MENU = _read_menu_env()
+
+
+def _allowed_model_ids(menu=None):
+    """Model ids a run may record usage under: the menu's, or (menu None)
+    every id this registry can produce, archive-only handles included."""
+    return frozenset(_HANDLE_IDS[h] for h in (menu or _HANDLE_IDS))
+
+
+if ACTIVE_MENU is not None:
+    for _name in _HANDLE_IDS:
+        if _name not in ACTIVE_MENU:
+            del globals()[_name]
+    del _name

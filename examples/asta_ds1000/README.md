@@ -206,6 +206,50 @@ model, where it is still served (`CLAUDE_OPUS_4_7`, used by the v0_0_1 and
 v0_0_2 submissions). Both are code-only — neither appears on the agent-facing
 menu in `background.md`, so evolution is never offered them.
 
+### Restricting the model menu (`--model-menu`)
+
+Narrow the solver menu to a subset of the nine handles — the single-model
+ablation, for example:
+
+```bash
+python examples/asta_ds1000/main.py --eval-test-set --model-menu GPT_5_4
+python examples/asta_ds1000/main.py --model-menu GPT_5_4_MINI,GPT_5_4   # two handles
+```
+
+The flag can only narrow: every name must be one of the nine menu handles
+(archive-only names are rejected too), so it can never introduce a model. Passing
+all nine is the same as passing nothing. The restriction is enforced in three
+independent places rather than described to evolution:
+
+- **Registry.** The evaluator publishes the menu in `ROBOPHD_MODEL_MENU`, which
+  `model_registry.py` reads at import and deletes every off-menu handle, so an
+  agent importing one fails at import. Worker subprocesses inherit the variable
+  and also receive the menu in their input JSON.
+- **Billed usage.** An example whose recorded model usage names any model outside
+  the menu scores 0 (spend still counted) and gets an `off_menu.md` diagnostic.
+  This catches every route — a raw `get_model("...")` string included — because it
+  checks what was billed, not what was imported. Without the flag the same check
+  allows exactly the registry's own model ids, closing the raw-string route for
+  ordinary runs as well.
+- **Documentation.** `background.md`'s handle table drops off-menu rows and its
+  code example is re-pointed at menu handles (same provider family where the
+  menu has one; a stanza documenting another family's behaviour is dropped
+  rather than mislabelled). Without the flag `background.md` is byte-identical
+  to runs that predate it.
+
+The default seed calls `GPT_5_4_MINI`; under a menu without it, its handle is re-pointed to an on-menu one (same family where possible), and the re-pointed seed also serves as the test-time fallback. `--seed-runs` seeds are kept verbatim, so a seed using an off-menu
+handle is refused at startup rather than left to score 0 on every example.
+
+The menu is run-immutable: it is stored in the checkpoint (the explicit list;
+all nine for an unrestricted run), and `--resume` rejects a disagreeing flag. A
+run that predates the flag ran on all nine, so a training resume of it rejects a
+restricting flag; an `--eval-only` resume accepts one (GEPA and Autoresearch runs
+persist no task config, so pass the run's menu again when re-evaluating them).
+
+`model_menu.py` holds the menu logic and is dependency-free. `model_registry.py`
+keeps its own copy of the handle list because the submit scripts ship the
+registry alone; `unit_tests/test_model_menu.py` pins the two together.
+
 ## Scoring details
 
 The canonical scorer is `inspect_evals/ds1000/ds1000.py:86-114` (`ds1000_scorer()`). Per-sample it returns:

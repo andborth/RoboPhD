@@ -1010,3 +1010,60 @@ def test_with_overrides_carries_the_resolved_slope(ev_mod, monkeypatch):
     sibling = ev.with_overrides(apply_cost_penalty=False)
     assert sibling.cost_per_error == 0.01
     assert sibling.min_cost_threshold == 0.003
+
+
+# ---------------------------------------------------------------------------
+# --model-menu: off-menu usage scores 0, end to end through extraction
+# ---------------------------------------------------------------------------
+
+def _fake_ds_log(model_usage: dict, value: str = "C"):
+    from types import SimpleNamespace
+    usage = {
+        name: SimpleNamespace(input_tokens=i, output_tokens=o,
+                              total_tokens=i + o, reasoning_tokens=0)
+        for name, (i, o) in model_usage.items()
+    }
+    sample_log = SimpleNamespace(
+        error=None,
+        scores={"scorer": SimpleNamespace(value=value, explanation="", metadata={})},
+        output=SimpleNamespace(completion="<code>x = 1</code>"),
+    )
+    return SimpleNamespace(samples=[sample_log],
+                           stats=SimpleNamespace(model_usage=usage))
+
+
+def _bare_ds_evaluator(ev_mod, allowed_model_ids):
+    import threading
+    ev = object.__new__(ev_mod.Ds1000Evaluator)
+    ev._allowed_model_ids = allowed_model_ids
+    ev._cost_lock = threading.Lock()
+    ev.total_eval_cost = 0.0
+    return ev
+
+
+def test_off_menu_usage_scores_zero_without_triggering_the_fallback(ev_mod, monkeypatch):
+    """Under --model-menu GPT_5_4 a correct answer that also billed Sonnet
+    scores 0, its spend still counts, and no "error" key is set -- that key
+    is the test-time seed-fallback trigger, which would hide the violation."""
+    from inspect_ai.dataset import Sample
+    monkeypatch.setattr(
+        ev_mod.Ds1000Evaluator, "_estimate_cost",
+        staticmethod(lambda model_name, counts: 1.0),
+    )
+    example = Sample(id="1", input="q", target="t", metadata={"library": "Numpy"})
+    gpt54_only = frozenset({"openai/gpt-5.4-2026-03-05"})
+
+    ev = _bare_ds_evaluator(ev_mod, gpt54_only)
+    log = _fake_ds_log({"openai/gpt-5.4-2026-03-05": (100, 10),
+                        "anthropic/claude-sonnet-4-6": (100, 10)})
+    score, diag = ev._extract_score_and_diagnostics(log, example, "")
+    assert score == 0.0 and diag["score"] == 0.0
+    assert diag["off_menu_models"] == ["anthropic/claude-sonnet-4-6"]
+    assert diag["agent_cost_usd"] == pytest.approx(2.0)
+    assert "error" not in diag
+
+    ev = _bare_ds_evaluator(ev_mod, gpt54_only)
+    log = _fake_ds_log({"openai/gpt-5.4-2026-03-05": (100, 10)})
+    score, diag = ev._extract_score_and_diagnostics(log, example, "")
+    assert score == 1.0
+    assert "off_menu_models" not in diag

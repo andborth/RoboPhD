@@ -557,6 +557,29 @@ def _elapsed_seconds(t0: float) -> float:
     return round(time.monotonic() - t0, 3)
 
 
+def _apply_off_menu_rule(allowed_model_ids, cost_by_model_usd: dict, diagnostics: dict) -> None:
+    """Flag usage of any model outside the run's menu.
+
+    Checks the models the example ACTUALLY billed, not what the agent
+    imported, so every route to a model -- a raw get_model() string, a
+    re-imported registry -- is covered. A hit records the offending ids and
+    an explanation file; the caller scores the example 0. The spend still
+    counts toward cost: it was real.
+
+    Deliberately not an "error": that key triggers the test-time seed
+    fallback, which would replace the violating answer and hide it.
+    """
+    off = sorted(m for m in cost_by_model_usd if m not in allowed_model_ids)
+    if not off:
+        return
+    diagnostics["off_menu_models"] = off
+    diagnostics["off_menu.md"] = (
+        f"This example scored 0 because the agent called model(s) that are "
+        f"not available in this run: {', '.join(off)}. Every LLM call must "
+        f"go through one of the handles listed in the LLM calls section."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Evaluator
 # ---------------------------------------------------------------------------
@@ -582,6 +605,7 @@ class Ds1000Evaluator:
         min_cost_threshold: float = MIN_COST_THRESHOLD,
         cost_per_error: float | None = None,
         fallback_candidate: dict[str, str] | None = None,
+        model_menu: tuple[str, ...] | None = None,
     ):
         # Hard requirement: every provider key the registry references
         # must be set, even if the seed only uses one. Evolution can
@@ -614,13 +638,41 @@ class Ds1000Evaluator:
         if not skip_docker_check:
             _check_docker_available()
 
+        # The run's model menu (main.py --model-menu; None = all nine
+        # handles). The evaluator owns it: it publishes the menu through the
+        # env var model_registry reads at import -- set or CLEARED, so a
+        # value exported in the launching shell can never restrict an
+        # unrestricted run -- and worker subprocesses inherit it (they also
+        # receive it explicitly in their input JSON).
+        from model_menu import MODEL_MENU_ENV, validate_menu
+        self.model_menu = validate_menu(model_menu)
+        if self.model_menu:
+            os.environ[MODEL_MENU_ENV] = ",".join(self.model_menu)
+        else:
+            os.environ.pop(MODEL_MENU_ENV, None)
+
         # Resolve registry handles at construction time (after the env-var
         # check so the friendly error fires first if keys are missing).
         # Storing self._default_model surfaces any registry-resolution
         # failure here rather than waiting for the first .generate()
-        # inside inspect.eval.
-        from model_registry import GPT_5_4_MINI as _DEFAULT_MODEL
-        self._default_model = _DEFAULT_MODEL
+        # inside inspect.eval. Under a menu the default must be ON it:
+        # Inspect routes any call that names no model to this one.
+        import model_registry as _registry
+        if _registry.ACTIVE_MENU != self.model_menu:
+            # The registry was imported earlier in this process under a
+            # different menu; its exports no longer match this evaluator.
+            raise RuntimeError(
+                f"model_registry was already imported with menu "
+                f"{_registry.ACTIVE_MENU}, but this evaluator's menu is "
+                f"{self.model_menu}. One process can serve one menu."
+            )
+        self._default_model = getattr(
+            _registry, self.model_menu[0] if self.model_menu else "GPT_5_4_MINI"
+        )
+        # Usage under any other model id scores the example 0 (see
+        # _extract_score_and_diagnostics) -- enforcement that holds whatever
+        # route the call took, not just registry imports.
+        self._allowed_model_ids = _registry._allowed_model_ids(self.model_menu)
 
         self.subprocess_isolation = subprocess_isolation
         # True for training (RoboPhD's Elo competition): the iteration
@@ -685,6 +737,7 @@ class Ds1000Evaluator:
             "cost_per_error": self.cost_per_error,
             "subprocess_isolation": self.subprocess_isolation,
             "fallback_candidate": self.fallback_candidate,
+            "model_menu": self.model_menu,
             "skip_docker_check": True,
         }
         base.update(overrides)
@@ -903,6 +956,9 @@ class Ds1000Evaluator:
                 "apply_cost_penalty": self.apply_cost_penalty,
                 "min_cost_threshold": self.min_cost_threshold,
                 "cost_per_error": self.cost_per_error,
+                # The worker builds its own evaluator; without the menu it
+                # would clear the env var and run unrestricted.
+                "model_menu": list(self.model_menu) if self.model_menu else None,
             }, inf, default=str)
             inf_path = inf.name
         out_path = inf_path + ".out"
@@ -1167,6 +1223,10 @@ class Ds1000Evaluator:
                     agent_cost_usd += model_cost
         except Exception:
             pass
+
+        _apply_off_menu_rule(self._allowed_model_ids, cost_by_model_usd, diagnostics)
+        if diagnostics.get("off_menu_models"):
+            score_value = 0.0
 
         # Per-example score is raw correctness (1.0 / 0.0). The cost
         # penalty applies at the iteration level via Ds1000Evaluator.aggregate
