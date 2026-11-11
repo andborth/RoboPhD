@@ -17,6 +17,15 @@ SUPPORTED_MODELS = {
             'cache_read': 0.20    # $0.20/MTok (cache hits & refreshes)
         }
     },
+    'fable-5.2': {
+        'name': 'claude-fable-5-2',  # plain ID for pricing/display; the 1M [1m] variant lives in CLAUDE_CLI_MODEL_MAP
+        'pricing': {                  # 20% below fable-5.1 on base rates; cache reads $0.20 (the CLI's own billing reconciles to these)
+            'input': 8.00,        # $8/MTok (base input)
+            'output': 40.00,      # $40/MTok
+            'cache_write': 10.00,  # $10/MTok (5m cache writes)
+            'cache_read': 0.20     # $0.20/MTok (cache hits & refreshes)
+        }
+    },
     'fable-5.1': {
         'name': 'claude-fable-5-1',  # plain ID for pricing/display; the 1M [1m] variant lives in CLAUDE_CLI_MODEL_MAP
         'pricing': {                  # same base rates as fable-5; cache reads are cheaper (litellm's registry and the CLI's own billing agree)
@@ -115,6 +124,7 @@ SUPPORTED_MODELS = {
 # preferred so cache keys stay stable when aliases roll forward.
 CLAUDE_CLI_MODEL_MAP = {
     'opus-5.5': 'claude-opus-5-5[1m]',  # [1m] = explicit 1M-context request for the evolution CLI session
+    'fable-5.2': 'claude-fable-5-2[1m]',  # [1m] = explicit 1M-context request for the evolution CLI session
     'fable-5.1': 'claude-fable-5-1[1m]',  # [1m] = explicit 1M-context request for the evolution CLI session
     'fable-5': 'claude-fable-5[1m]',    # [1m] = explicit 1M-context request for the evolution CLI session
     'opus-5': 'claude-opus-5[1m]',      # [1m] = explicit 1M-context request for the evolution CLI session
