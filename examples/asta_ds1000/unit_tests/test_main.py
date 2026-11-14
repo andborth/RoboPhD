@@ -1317,7 +1317,7 @@ EXAMPLE_RUNS = REPO_ROOT / "example_runs" / "robophd" / "asta_ds1000"
 def test_seed_runs_binding_resolves_this_examples_own_runs(ds_main):
     """End-to-end through the binding: a DS-1000 submission snapshot must
     land on the agent that submission actually shipped."""
-    run_dir = EXAMPLE_RUNS / "v0_0_4_soft_cap_0_08"
+    run_dir = EXAMPLE_RUNS / "v0_0_4_cap_0_08_opus"
     seeds = ds_main._resolve_seed_runs([f"028={run_dir}"])
     assert seeds == {
         "seed_028": run_dir / "agents" / "iter11_ds1000_tridtype_judge"

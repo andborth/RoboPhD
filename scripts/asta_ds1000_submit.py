@@ -23,22 +23,21 @@ submission. submissions/ is gitignored so the working dirs don't dirty
 the tree.
 
 Cost / time, sequential:
-    v0_0_1_seed_gpt54_mini   ~$0.50    30-60 min   (gpt-5.4-mini one-shot)
-    v0_0_1_soft_cap_0_16     ~$20-30   2-4 hr      (quad-diverse ensemble + Opus critic)
-    v0_0_2_soft_cap_0_08     ~$12-15   1-2 hr      (Sonnet primary + rare Opus fallback)
-    v0_0_3_soft_cap_0_06     ~$40-50   2-4 hr      (dual-gen + GPT-5.5 adjudication;
+    v0_0_1_cap_0_16_opus     ~$20-30   2-4 hr      (quad-diverse ensemble + Opus critic)
+    v0_0_2_cap_0_08_opus     ~$12-15   1-2 hr      (Sonnet primary + rare Opus fallback)
+    v0_0_3_cap_0_06_fable     ~$40-50   2-4 hr      (dual-gen + GPT-5.5 adjudication;
                                                     internal final eval cost $41.58)
     --
     total                   ~$73-95   5.5-11 hr   (use --only to run a subset)
 
 Prerequisites:
-  - OPENAI_API_KEY              (seed runs gpt-5.4-mini; v0_0_1_soft_cap_0_16
+  - OPENAI_API_KEY              (v0_0_1_cap_0_16_opus
                                  calls GPT-5.4 in its four-candidate ensemble)
   - ANTHROPIC_API_KEY           (or ANTHROPIC_API_KEY_FOR_ROBOPHD;
-                                 model_registry reads either; v0_0_1_soft_cap_0_16
-                                 uses Sonnet+Opus and v0_0_2_soft_cap_0_08
+                                 model_registry reads either; v0_0_1_cap_0_16_opus
+                                 uses Sonnet+Opus and v0_0_2_cap_0_08_opus
                                  uses Sonnet primary + Opus fallback)
-  - GOOGLE_API_KEY              (v0_0_1_soft_cap_0_16's Gemini candidate;
+  - GOOGLE_API_KEY              (v0_0_1_cap_0_16_opus's Gemini candidate;
                                  mostly times out but the registry import
                                  needs the env var present)
   - Docker daemon running       (DS-1000 sandbox tier requires it)
@@ -93,14 +92,6 @@ class Submission(NamedTuple):
 
 
 SUBMISSIONS = [
-    # Cheapest first — if anything's wrong with the path (wrapper
-    # template, stage(), extra_env, etc.) we catch it on the ~$0.50
-    # seed run before spending $20-30 on the iter10 ensemble.
-    Submission(
-        name="v0_0_1_seed_gpt54_mini",
-        agent_rel_path="agent.py",
-        model_arg="openai/gpt-5.4-mini",
-    ),
     # Runnable at HEAD again: the v0_0_1/v0_0_2 archived agents import
     # CLAUDE_OPUS_4_7, which 2065ce4 dropped and b6e28d86 restored as an
     # archive-only handle bound to the REAL 4.7 model (still served). The
@@ -111,19 +102,19 @@ SUBMISSIONS = [
     # between 0da77028 and 2065ce4 export CLAUDE_OPUS_4_7 as exactly that
     # alias, so the agents import cleanly and silently run 4.8.
     Submission(
-        name="v0_0_1_soft_cap_0_16",
+        name="v0_0_1_cap_0_16_opus",
         agent_rel_path="agents/iter10_idiomatic_loop_guard_v1/agent.py",
         model_arg="none",
         needs_stronger_models=True,
     ),
     Submission(
-        name="v0_0_2_soft_cap_0_08",
+        name="v0_0_2_cap_0_08_opus",
         agent_rel_path="agents/iter4_ds1000_idiom_probe/agent.py",
         model_arg="none",
         needs_stronger_models=True,
     ),
     Submission(
-        name="v0_0_3_soft_cap_0_06",
+        name="v0_0_3_cap_0_06_fable",
         agent_rel_path="agents/iter14_filemock_adjudicate/agent.py",
         model_arg="none",
         # No needs_stronger_models: the gate was removed from
@@ -131,7 +122,7 @@ SUBMISSIONS = [
         # GPT-5.5 adjudicator this agent leans on, import unconditionally.
     ),
     Submission(
-        name="v0_0_4_soft_cap_0_08",
+        name="v0_0_4_cap_0_08_opus",
         agent_rel_path="agents/iter11_ds1000_tridtype_judge/agent.py",
         model_arg="none",
         # Run robophd-asta_ds1000-028 (Opus-4.8-evolved). Three-family
@@ -141,7 +132,7 @@ SUBMISSIONS = [
         # needs_stronger_models field is inert at HEAD (gate removed).
     ),
     Submission(
-        name="v0_0_5_soft_cap_0_05",
+        name="v0_0_5_cap_0_05_opus",
         agent_rel_path="agents/iter10_literal_consensus/agent.py",
         model_arg="none",
         # Run robophd-asta_ds1000-029 (Opus-4.8-evolved). Lean 2-model
@@ -152,7 +143,7 @@ SUBMISSIONS = [
         # Pareto-dominate the Button leaderboard entry (0.836 @ $0.03).
     ),
     Submission(
-        name="v0_0_5_soft_cap_0_05_deep_focus",
+        name="v0_0_5_cap_0_05_opus_deep_focus",
         agent_rel_path="agents/iter8_perspective_consensus_ds1000/agent.py",
         model_arg="none",
         # Run robophd-asta_ds1000-032 (Opus-4.8-evolved). Deep-Focus variant
@@ -164,7 +155,7 @@ SUBMISSIONS = [
         # $0.01) and Asta v0 (0.748 @ $0.01), pending the official number.
     ),
     Submission(
-        name="v0_0_6_soft_cap_0_003_fable",
+        name="v0_0_6_cap_0_003_fable",
         agent_rel_path="agents/iter8_expected_diff_cascade/agent.py",
         model_arg="none",
         # Run robophd-asta_ds1000-036 (FIRST fable-5-evolved submission).
@@ -177,7 +168,7 @@ SUBMISSIONS = [
         # (0.710 @ $0.003 true cost) on the official frontier.
     ),
     Submission(
-        name="v0_0_7_sharp_cap_0_003",
+        name="v0_0_7_cap_0_003_opus",
         agent_rel_path="agents/iter12_strong_toplevel/agent.py",
         model_arg="none",
         # Run robophd-asta_ds1000-044 (opus-4.8-evolved). Sharp-penalty
@@ -202,7 +193,7 @@ SUBMISSIONS = [
         # claude-sonnet-4-6 + gpt-5.5 escalation on three-way splits;
         # gpt-5.4-mini last resort -- all priced in the litellm 1.88.1
         # bundled map. Internal 900-test 0.8711 @ $0.0561; internally
-        # Pareto-dominates v0_0_1_soft_cap_0_16 (0.8622 @ $0.1273, official).
+        # Pareto-dominates v0_0_1_cap_0_16_opus (0.8622 @ $0.1273, official).
         # Internal max 336 s/problem, so the 1200 s wrapper cap is not in play.
     ),
 ]

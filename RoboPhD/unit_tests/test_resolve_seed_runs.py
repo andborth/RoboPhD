@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from RoboPhD.runner_utils import resolve_seed_runs  # noqa: E402
 
-EXAMPLE = "029=example_runs/robophd/asta_ds1000/v0_0_5_soft_cap_0_05"
+EXAMPLE = "029=example_runs/robophd/asta_ds1000/v0_0_5_cap_0_05_opus"
 
 
 def _robophd_run(root: Path, name: str, agents: dict) -> Path:

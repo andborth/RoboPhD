@@ -10,8 +10,8 @@ Two RoboPhD-evolved agents are live on the AstaBench DS-1000 leaderboard. Both s
 
 | Submission | Frontier position | Accuracy | Cost / problem | In-repo snapshot |
 |---|---|---|---|---|
-| v0_0_1_soft_cap_0_16 | **#1 accuracy** on the leaderboard | 86.2% | $0.13 | [example_runs/robophd/asta_ds1000/v0_0_1_soft_cap_0_16/](../../example_runs/robophd/asta_ds1000/v0_0_1_soft_cap_0_16/) |
-| v0_0_2_soft_cap_0_08 | Lowest-cost submission above 80% accuracy | 80.9% | $0.01 | [example_runs/robophd/asta_ds1000/v0_0_2_soft_cap_0_08/](../../example_runs/robophd/asta_ds1000/v0_0_2_soft_cap_0_08/) |
+| v0_0_1_cap_0_16_opus | **#1 accuracy** on the leaderboard | 86.2% | $0.13 | [example_runs/robophd/asta_ds1000/v0_0_1_cap_0_16_opus/](../../example_runs/robophd/asta_ds1000/v0_0_1_cap_0_16_opus/) |
+| v0_0_2_cap_0_08_opus | Lowest-cost submission above 80% accuracy | 80.9% | $0.01 | [example_runs/robophd/asta_ds1000/v0_0_2_cap_0_08_opus/](../../example_runs/robophd/asta_ds1000/v0_0_2_cap_0_08_opus/) |
 
 Each snapshot README documents the architecture, lineage, model usage, and submission resilience wrapper of its agent in detail.
 
@@ -177,10 +177,10 @@ thereafter, so `--resume` rejects the flag. Without it the run seeds from
 # Seed from four archived leaderboard submissions
 python examples/asta_ds1000/main.py --eval-test-set --cost-threshold 0.028 \
   --seed-runs \
-    009=example_runs/robophd/asta_ds1000/v0_0_2_soft_cap_0_08 \
-    020=example_runs/robophd/asta_ds1000/v0_0_3_soft_cap_0_06 \
-    028=example_runs/robophd/asta_ds1000/v0_0_4_soft_cap_0_08 \
-    029=example_runs/robophd/asta_ds1000/v0_0_5_soft_cap_0_05
+    009=example_runs/robophd/asta_ds1000/v0_0_2_cap_0_08_opus \
+    020=example_runs/robophd/asta_ds1000/v0_0_3_cap_0_06_fable \
+    028=example_runs/robophd/asta_ds1000/v0_0_4_cap_0_08_opus \
+    029=example_runs/robophd/asta_ds1000/v0_0_5_cap_0_05_opus
 ```
 
 Seeding more agents than `agents_per_iteration` (default 3) loses none of them:
@@ -324,7 +324,7 @@ Strong-tier handles cost ~5–40× the cheap tier, so a single naive call can bl
 
 Provider-prefix translation: Inspect-AI requires `google/...` to route Google models, but litellm prices them under `gemini/...`. `evaluator.py:_estimate_cost` normalizes at the cost-pricing boundary (translates `google/` → `gemini/`) so cost tracking works for the Gemini handles. Without this, Gemini calls would silently price as $0 — the once-per-process "model priced at $0 despite tokens" warning would fire as the symptom.
 
-Billing basis: internal costs are priced from litellm's **bundled** price snapshot — the same table the official `astabench score` bills (agenteval runs under `LITELLM_LOCAL_MODEL_COST_MAP=True`) — not the live remote map, and Gemini reasoning ("thinking") tokens are folded into completion billing per agenteval's rule. The bundled snapshot can lag providers' current list prices (litellm 1.88.1 bills `gemini-3.1-flash-lite` at $0.45/$2.70 per M vs Google's current $0.25/$1.50); we deliberately track the leaderboard's numbers for comparability with other submitted systems, and move only when Ai2 moves (their bundled-map refresh would retroactively reprice historic runs — their call). The `background.md` model-menu table therefore advertises the *billed* rates, and `test_background_md_prices_match_litellm_registry` pins menu-vs-billed consistency on the same bundled-first lookup the evaluator uses. Full postmortem of the divergence this replaced: `example_runs/robophd/asta_ds1000/v0_0_6_soft_cap_0_003_fable/README.md`.
+Billing basis: internal costs are priced from litellm's **bundled** price snapshot — the same table the official `astabench score` bills (agenteval runs under `LITELLM_LOCAL_MODEL_COST_MAP=True`) — not the live remote map, and Gemini reasoning ("thinking") tokens are folded into completion billing per agenteval's rule. The bundled snapshot can lag providers' current list prices (litellm 1.88.1 bills `gemini-3.1-flash-lite` at $0.45/$2.70 per M vs Google's current $0.25/$1.50); we deliberately track the leaderboard's numbers for comparability with other submitted systems, and move only when Ai2 moves (their bundled-map refresh would retroactively reprice historic runs — their call). The `background.md` model-menu table therefore advertises the *billed* rates, and `test_background_md_prices_match_litellm_registry` pins menu-vs-billed consistency on the same bundled-first lookup the evaluator uses. Full postmortem of the divergence this replaced: `example_runs/robophd/asta_ds1000/v0_0_6_cap_0_003_fable/README.md`.
 
 ### Subprocess isolation
 

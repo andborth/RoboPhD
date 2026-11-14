@@ -1,4 +1,6 @@
-# asta_ds1000 / v0_0_5_soft_cap_0_05
+# asta_ds1000 / v0_0_5_cap_0_05_opus
+
+> Originally submitted as `v0_0_5_soft_cap_0_05`; renamed 2026-11-14 to the `cap_<τ>_<model>` convention described in [example_runs/README.md](../../../README.md).
 
 RoboPhD evolution run on AstaBench's DS-1000 task. Headline submitted agent: **`iter10_literal_consensus`**. Run id: `robophd-asta_ds1000-029`. Evolved by **Claude Opus 4.8** (the evolution model; not a solver).
 
@@ -8,7 +10,7 @@ What's distinctive about this submission versus the prior ones (v0_0_3/v0_0_4):
 - **A PROMPT-level lever, not a new mechanism.** Where v0_0_3/v0_0_4 advanced via architecture (file-mock reconstruction; dtype-rich diagnostics + 3-family diversity), this agent's edge is a "literal-reference" reading rule on a 2-model cross-agreement scaffold — see Approach.
 - **First run on the new 750 evaluation budget** (up from ~620), 19 iterations; the longer budget did not overfit.
 
-The `soft_cap_0_05` tail names the per-iteration mean-spend free-zone the run was trained under (`cost_threshold=0.05`, `cost_per_error=0.01` — now the framework default).
+The `cap_0_05` tail names the per-iteration mean-spend free-zone the run was trained under (`cost_threshold=0.05`, `cost_per_error=0.01` — now the framework default).
 
 ## Leaderboard score
 
@@ -18,7 +20,7 @@ The `soft_cap_0_05` tail names the per-iteration mean-spend free-zone the run wa
 |---|---|---|
 | Accuracy (DS-1000 test, 900 samples) | **0.83** (747/900) | 0.8378 (754/900) |
 | Per-problem cost | **$0.017** | $0.0173 |
-| Submission name | `v0_0_5_soft_cap_0_05` / form: `RoboPhD` | — |
+| Submission name | `v0_0_5_cap_0_05_opus` / form: `RoboPhD` | — |
 | Pareto position | Distinct cheap frontier point — cheapest agent reaching ~0.83, ~40% cheaper than Button. Does NOT dominate Button (0.83 < 0.836); it's the cheaper-but-lower-accuracy neighbor on the frontier (sonnet-only v0_0_2 at $0.01/0.809 sits below it) | — |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | — |
 
@@ -78,7 +80,7 @@ Two result subdirs (`iteration_009/`, `iteration_010/`), one evolution-output su
 ```
 cd /path/to/repo
 pip install litellm==1.88.1      # submission-scoring price map (see examples/asta_ds1000/README.md)
-python scripts/asta_ds1000_submit.py --only v0_0_5_soft_cap_0_05
+python scripts/asta_ds1000_submit.py --only v0_0_5_cap_0_05_opus
 ```
 
 The script copies `agents/iter10_literal_consensus/agent.py` and the canonical seed into a working dir, wraps them in the two-tier `WRAPPER_TEMPLATE`, runs `astabench eval --solver agent.py --model none --split test --task DS_1000_test`, scores, and tarballs for upload.

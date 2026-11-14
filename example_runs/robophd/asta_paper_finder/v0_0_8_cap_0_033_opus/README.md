@@ -1,9 +1,11 @@
-# v0_0_8_soft_cap_0_033_opus — PaperFindingBench (AstaBench) submission snapshot
+# v0_0_8_cap_0_033_opus — PaperFindingBench (AstaBench) submission snapshot
+
+> Originally submitted as `v0_0_8_soft_cap_0_033_opus`; renamed 2026-11-14 to the `cap_<τ>_<model>` convention described in [example_runs/README.md](../../../README.md).
 
 Second RoboPhD submission to the AstaBench PaperFindingBench leaderboard
 (Literature Understanding category, Standard tools tier), and the cheap
-counterpart to `v0_0_7_soft_cap_0_06_fable`. The `0_0_8` patch continues
-the cross-benchmark submission sequence; `soft_cap_0_033` names the
+counterpart to `v0_0_7_cap_0_06_fable`. The `0_0_8` patch continues
+the cross-benchmark submission sequence; `cap_0_033` names the
 training-time mean-spend free zone (\$0.033/query); `_opus` = evolved by
 Claude Opus 4.8.
 
@@ -311,8 +313,8 @@ matched official" on one submission as a general guarantee.
 
 ```bash
 pip install litellm==1.88.1   # submission-scoring price map
-python scripts/asta_paper_finder_submit.py --only v0_0_8_soft_cap_0_033_opus --limit 3   # smoke (~$3)
-python scripts/asta_paper_finder_submit.py --only v0_0_8_soft_cap_0_033_opus            # full (~$140-175, 12-19h)
+python scripts/asta_paper_finder_submit.py --only v0_0_8_cap_0_033_opus --limit 3   # smoke (~$3)
+python scripts/asta_paper_finder_submit.py --only v0_0_8_cap_0_033_opus            # full (~$140-175, 12-19h)
 ```
 
 Push the commit **before** the full run — `astabench eval` stamps the
@@ -327,7 +329,7 @@ Budget the full judge spend accordingly. This run's official score
 predates that guard and was scored against whatever the stock cache
 held at the time (v0_0_7's verdicts included).
 
-Then upload `submissions/asta_paper_finder/v0_0_8_soft_cap_0_033_opus.tar.gz`
+Then upload `submissions/asta_paper_finder/v0_0_8_cap_0_033_opus.tar.gz`
 via the HF Spaces form (https://huggingface.co/spaces/allenai/asta-bench-leaderboard).
 Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 

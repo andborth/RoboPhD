@@ -1,8 +1,10 @@
-# asta_ds1000 / v0_0_3_soft_cap_0_06
+# asta_ds1000 / v0_0_3_cap_0_06_fable
+
+> Originally submitted as `v0_0_3_soft_cap_0_06`; renamed 2026-11-14 to the `cap_<τ>_<model>` convention described in [example_runs/README.md](../../../README.md).
 
 RoboPhD evolution run on AstaBench's DS-1000 task with cost-penalty free-zone threshold `--cost-threshold 0.06`. Headline submitted agent: **`iter14_filemock_adjudicate`**. Run id: `robophd-asta_ds1000-020`. First run evolved by **Claude Fable 5** (all prior asta_ds1000 runs used Opus 4.6/4.7/4.8 as the evolution model).
 
-The `0_0_3` patch bump from `v0_0_2_soft_cap_0_08` reflects code-state changes since the prior submission (commit `2927916`), most notably Fable 5 as the evolution model (commit `939fbf6`) and the removal of the stronger-models gate (commit `7494ff7` — all registry handles now unconditional, with the cost penalty as the only discipline). The `soft_cap_0_06` tail names the per-iteration mean-spend free-zone the run was trained under.
+The `0_0_3` patch bump from `v0_0_2_cap_0_08_opus` reflects code-state changes since the prior submission (commit `2927916`), most notably Fable 5 as the evolution model (commit `939fbf6`) and the removal of the stronger-models gate (commit `7494ff7` — all registry handles now unconditional, with the cost penalty as the only discipline). The `cap_0_06` tail names the per-iteration mean-spend free-zone the run was trained under.
 
 ## Leaderboard verified score
 
@@ -13,13 +15,13 @@ The `0_0_3` patch bump from `v0_0_2_soft_cap_0_08` reflects code-state changes s
 | Accuracy (DS-1000 test, 900 samples) | **0.8533** ± 0.0118 (768/900) | 0.8511 (766/900) |
 | Per-problem cost | **$0.05194** | $0.0462 |
 | At the board's 3-decimal comparison basis | **0.853 @ $0.052** | — |
-| Submission name | `v0_0_3_soft_cap_0_06` / form: `RoboPhD` | — |
-| Pareto position | **On the frontier** (board-confirmed 2026-08-05). Ties `v0_0_4_soft_cap_0_08` exactly on score — at 1/900 granularity only 768/900 rounds to 0.853, so both are 768/900. Under the standard definition of dominance v0_0_4 *should* displace this entry (same score, $0.037 vs $0.052), yet the board awards both a frontier trophy. Unexplained — treat the board as the authority on frontier status rather than computing it. | — |
+| Submission name | `v0_0_3_cap_0_06_fable` / form: `RoboPhD` | — |
+| Pareto position | **On the frontier** (board-confirmed 2026-08-05). Ties `v0_0_4_cap_0_08_opus` exactly on score — at 1/900 granularity only 768/900 rounds to 0.853, so both are 768/900. Under the standard definition of dominance v0_0_4 *should* displace this entry (same score, $0.037 vs $0.052), yet the board awards both a frontier trophy. Unexplained — treat the board as the authority on frontier status rather than computing it. | — |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | — |
 
 Transfer: **+0.0022** (0.8511 → 0.8533), within noise.
 
-Calibration: for `v0_0_1_soft_cap_0_16` the leaderboard's single batched `astabench eval` measured +2.3pp above the internal number (0.862 vs 0.8389); `v0_0_2_soft_cap_0_08` landed at parity (0.809 vs 0.8044).
+Calibration: for `v0_0_1_cap_0_16_opus` the leaderboard's single batched `astabench eval` measured +2.3pp above the internal number (0.862 vs 0.8389); `v0_0_2_cap_0_08_opus` landed at parity (0.809 vs 0.8044).
 
 ## Submission metadata
 
@@ -63,7 +65,7 @@ The submitted `agent.py` (inside the leaderboard tarball) is **not** the literal
 
 The wrapper template lives in [`scripts/asta_ds1000_submit.py`](../../../../scripts/asta_ds1000_submit.py) (`WRAPPER_TEMPLATE`) and is materialized at submission stage time.
 
-## Patches relative to v0_0_2_soft_cap_0_08
+## Patches relative to v0_0_2_cap_0_08_opus
 
 Notable changes between submission SHAs that affected this run:
 
@@ -121,7 +123,7 @@ Same asymmetric inclusion as v0_0_2: two result subdirs (`iteration_013/`, `iter
 
 ```
 cd /path/to/repo
-python scripts/asta_ds1000_submit.py --only v0_0_3_soft_cap_0_06
+python scripts/asta_ds1000_submit.py --only v0_0_3_cap_0_06_fable
 ```
 
 The script copies `agents/iter14_filemock_adjudicate/agent.py` and the canonical seed into a working dir, wraps them in the two-tier `WRAPPER_TEMPLATE`, runs `astabench eval --solver agent.py --model none --split test --task DS_1000_test`, scores, and tarballs for upload.

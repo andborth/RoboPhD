@@ -10,8 +10,8 @@ Snapshots live in `example_runs/robophd/asta_paper_finder/<name>/`; the pipeline
 
 | Submission | Agent (run) | Gate | Internal test | Official |
 | --- | --- | --- | --- | --- |
-| `v0_0_7_soft_cap_0_06_fable` | `iter12_body_conjunction` (`-003`, fable-5) | $0.06 | 0.3724 @ $0.0556 | **0.3749 @ $0.0533** |
-| `v0_0_8_soft_cap_0_033_opus` | `iter9_rerank_rich_v1` (`-006`, opus-4.8) | $0.033 | 0.2754 @ $0.0060 | **0.2205 @ $0.0059** |
+| `v0_0_7_cap_0_06_fable` | `iter12_body_conjunction` (`-003`, fable-5) | $0.06 | 0.3724 @ $0.0556 | **0.3749 @ $0.0533** |
+| `v0_0_8_cap_0_033_opus` | `iter9_rerank_rich_v1` (`-006`, opus-4.8) | $0.033 | 0.2754 @ $0.0060 | **0.2205 @ $0.0059** |
 | `v0_0_9_cap_0_063_opus5` | `iter15_verdict_repair` (`-010`, opus-5) | $0.063 | 0.3839 @ $0.0533 | **0.3762 @ $0.0524** |
 | `v0_0_9_cap_0_355_opus5` | `iter21_gold_rubric_and_hard_predicates` (`-011`, opus-5) | $0.355 | 0.4222 @ $0.2461 | **0.4318 @ $0.2506** |
 | `v0_0_9_cap_0_355_fable` | `iter18_cocite_largegold_v1` (`-012`, fable-5) | $0.355 | 0.4383 @ $0.2780 | **0.4403 @ $0.2786** |
@@ -46,8 +46,8 @@ Those first two are distinct Pareto points, not successive attempts: v0_0_7 buys
 ```bash
 pip install litellm==1.88.1
 # Push the commit before the full run — astabench stamps the SHA into eval_spec.revision.
-python scripts/asta_paper_finder_submit.py --only v0_0_8_soft_cap_0_033_opus --limit 3   # smoke (~$3)
-python scripts/asta_paper_finder_submit.py --only v0_0_8_soft_cap_0_033_opus            # full (measured: $118.68, 1h32m)
+python scripts/asta_paper_finder_submit.py --only v0_0_8_cap_0_033_opus --limit 3   # smoke (~$3)
+python scripts/asta_paper_finder_submit.py --only v0_0_8_cap_0_033_opus            # full (measured: $118.68, 1h32m)
 ```
 
 ## Setup

@@ -1,4 +1,6 @@
-# asta_ds1000 / v0_0_7_sharp_cap_0_003
+# asta_ds1000 / v0_0_7_cap_0_003_opus
+
+> Originally submitted as `v0_0_7_sharp_cap_0_003`; renamed 2026-11-14 to the `cap_<τ>_<model>` convention described in [example_runs/README.md](../../../README.md).
 
 RoboPhD evolution run on AstaBench's DS-1000 task. Headline submitted agent: **`iter12_strong_toplevel`**. Run id: `robophd-asta_ds1000-044`. Evolved by **Claude Opus 4.8** (the evolution model; not a solver).
 
@@ -12,7 +14,7 @@ What's distinctive about this submission:
 - **Single strong one-shot + deterministic extraction hardening.** One `gpt-5.4-2026-03-05` generation under a genuinely tiny output-contract preamble (`gpt-5.4-mini` as on-error fallback), then three strictly-additive, format-only fixes that can only fix or no-op, never alter the model's chosen answer: (1) `html.unescape` — strong models HTML-escape `<` as `&lt;` inside `<code>` tags → SyntaxError with correct logic; (2) function-body reindent — the required indent is read from the prompt's indented `### BEGIN SOLUTION` marker and padded, fixing stochastic bare top-level `return` IndentationErrors; (3) target-variable assignment — when the skeleton shows a `NAME = ...` placeholder and the model emits a bare value-expression with no top-level assignment, prepend `TARGET = ` (this iteration's refinement: kwargs/dict-literals no longer suppress the fix). 302 lines total.
 - **A clean two-arm incentive-design result.** Same seed (byte-identical standard), same config, n=1 per arm: `cost_per_error=0.001` → $0.00342 @ 0.772 (run 043, bought through the cap); `cost_per_error=0.0003` → $0.00168 @ 0.733 (this run, retreated far under). The sharper constraint cost ~3.9pp of accuracy for 51% cheaper inference. Design lesson: on batch-noisy costs, sharp soft-cap penalties behave like walls with a wide safety margin, not tight targets.
 
-The `sharp_cap_0_003` tail names the training free-zone and penalty variant: `cost_threshold=0.003` with the sharpened `cost_per_error=0.0003` (v0_0_6's `soft_cap_0_003` = same threshold at the default-scaled `cost_per_error=0.001`).
+The `cap_0_003` tail names the training free zone: `cost_threshold=0.003` with `cost_per_error=0.0003` — the first run with the penalty slope at 10% of the threshold, the convention every later `cap_` run follows (v0_0_6, `cap_0_003_fable`, used the same threshold at `cost_per_error=0.001`). That slope was called "sharp" at the time, relative to the runs before it.
 
 ## First post-fix parity check
 
@@ -27,7 +29,7 @@ This is the first submission whose internal costs were measured **entirely on th
 | Accuracy (DS-1000 test, 900 samples) | **0.7367** (663/900, stderr 0.0147) | 0.7333 (660/900) |
 | Per-problem cost | **$0.001671** (± 0.000026) | $0.001677 |
 | Wrapper fallbacks | 0 / 900 (6 samples used the agent's internal gpt-5.4-mini on-error fallback; 4 scored correct) | 0 / 900 |
-| Submission name | `v0_0_7_sharp_cap_0_003` / form: `RoboPhD` | — |
+| Submission name | `v0_0_7_cap_0_003_opus` / form: `RoboPhD` | — |
 | Pareto outcome | ReAct/GPT-5-Mini (0.710 @ $0.003 true cost) is **strictly dominated officially**: +2.7pp accuracy at 44% lower cost. Also beats v0_0_6 (0.7322 @ $0.00428 official) on both axes. Our unsubmitted 043 point (0.772 @ $0.00342 internal) is not dominated — adjacent frontier slots. | — |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | — |
 

@@ -1,4 +1,6 @@
-# asta_ds1000 / v0_0_6_soft_cap_0_003_fable
+# asta_ds1000 / v0_0_6_cap_0_003_fable
+
+> Originally submitted as `v0_0_6_soft_cap_0_003_fable`; renamed 2026-11-14 to the `cap_<τ>_<model>` convention described in [example_runs/README.md](../../../README.md).
 
 RoboPhD evolution run on AstaBench's DS-1000 task. Headline submitted agent: **`iter8_expected_diff_cascade`**. Run id: `robophd-asta_ds1000-036`. Evolved by **Claude Fable 5** (the evolution model; not a solver) — our first fable-5-evolved submission.
 
@@ -10,7 +12,7 @@ What's distinctive about this submission:
 - **Cap-hugging at 98% — but against a mis-measured basis.** Internal mean agent cost was $0.00294/problem against the $0.003 cap, extending the fable-5 pattern (its $0.03-cap sibling `robophd-asta_ds1000-035` used 84% of its cap; opus-4.8 runs typically leave 60%+ unused). The post-run cost postmortem (below) found the internal number understated: on the leaderboard's billing basis the agent actually spends **$0.00428/problem — 143% of the intended cap**. Evolution hugged a cap it was mis-measuring.
 - **Mechanical detection instead of LLM triage.** The iter8 delta over the iter7 champion replaces flash-lite MATCH/MISMATCH judgment with expected-output diffing: a flash-lite call quotes the desired-output block the asker printed in the problem text (mechanically validated), rendered candidate values are scored by canonicalized order-aware containment (difflib), and the score drives candidate selection, audit mismatch detection, and fix adoption behind a no-hardcoded-literals AST guard. Per the iter8 docstring: "Detection — not audit coverage — was the weak link."
 
-The `soft_cap_0_003` tail names the per-iteration mean-spend free-zone the run was trained under (`cost_threshold=0.003`, `cost_per_error=0.001`); the `fable` tail marks the evolution model (Claude Fable 5).
+The `cap_0_003` tail names the per-iteration mean-spend free-zone the run was trained under (`cost_threshold=0.003`, `cost_per_error=0.001`); the `fable` tail marks the evolution model (Claude Fable 5).
 
 ## Leaderboard score
 
@@ -21,7 +23,7 @@ The `soft_cap_0_003` tail names the per-iteration mean-spend free-zone the run w
 | Accuracy (DS-1000 test, 900 samples) | **0.7322** (659/900, stderr 0.0148) | 0.7322 (659/900) |
 | Per-problem cost | **$0.004280** | $0.00294 (pre-fix basis; see postmortem) |
 | Wrapper fallbacks | 0 / 900 | 0 / 900 |
-| Submission name | `v0_0_6_soft_cap_0_003_fable` / form: `RoboPhD` | — |
+| Submission name | `v0_0_6_cap_0_003_fable` / form: `RoboPhD` | — |
 | Pareto outcome | ReAct/GPT-5-Mini (0.710 @ $0.003 true cost) is **NOT dominated** — we are +2.2pp on accuracy but 43% above it on true cost. The entry is instead a **new frontier point in its own right**: nothing on the board is both cheaper and more accurate, and it slots between ReAct/GPT-5-Mini and our deep_focus entry (0.751 @ $0.0069). Displays as 0.732 @ $0.00 (the rounded band covers ≤$0.0049). | — |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | — |
 
@@ -109,7 +111,7 @@ Two result subdirs (`iteration_007/`, `iteration_008/`), one evolution-output su
 ```
 cd /path/to/repo
 pip install litellm==1.88.1      # submission-scoring price map (see examples/asta_ds1000/README.md)
-python scripts/asta_ds1000_submit.py --only v0_0_6_soft_cap_0_003_fable
+python scripts/asta_ds1000_submit.py --only v0_0_6_cap_0_003_fable
 ```
 
 The script copies `agents/iter8_expected_diff_cascade/agent.py` and the canonical seed into a working dir, wraps them in the two-tier `WRAPPER_TEMPLATE`, runs `astabench eval --solver agent.py --model none --split test --task DS_1000_test`, scores, and tarballs for upload.

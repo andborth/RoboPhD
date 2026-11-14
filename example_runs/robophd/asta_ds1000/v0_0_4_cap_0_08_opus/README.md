@@ -1,13 +1,15 @@
-# asta_ds1000 / v0_0_4_soft_cap_0_08
+# asta_ds1000 / v0_0_4_cap_0_08_opus
+
+> Originally submitted as `v0_0_4_soft_cap_0_08`; renamed 2026-11-14 to the `cap_<τ>_<model>` convention described in [example_runs/README.md](../../../README.md).
 
 RoboPhD evolution run on AstaBench's DS-1000 task with cost-penalty free-zone threshold `--cost-threshold 0.08`. Headline submitted agent: **`iter11_ds1000_tridtype_judge`**. Run id: `robophd-asta_ds1000-028`. Evolved by **Claude Opus 4.8** (the evolution model; not a solver).
 
-The `0_0_4` bump from `v0_0_3_soft_cap_0_06` is a new submission from a distinct run. Two things matter most versus 0.0.3:
+The `0_0_4` bump from `v0_0_3_cap_0_06_fable` is a new submission from a distinct run. Two things matter most versus 0.0.3:
 
 - **Solver model set is fully priceable on the leaderboard.** This agent calls `gpt-5.4-2026-03-05`, `claude-sonnet-4-6`, and `gemini-3.1-pro-preview` — all three appear with costs on existing leaderboard rows. 0.0.3 called `gemini-3.5-flash`, which is absent from the litellm bundled price map the leaderboard recomputes cost from, so 0.0.3 shipped with **Missing** cost. This run is expected to report a real cost figure.
 - **Evolution model is Opus 4.8** (0.0.3 was the first Fable-5-evolved run).
 
-The `soft_cap_0_08` tail names the per-iteration mean-spend free-zone the run was trained under (`cost_threshold=0.08`, `cost_per_error=0.01`).
+The `cap_0_08` tail names the per-iteration mean-spend free-zone the run was trained under (`cost_threshold=0.08`, `cost_per_error=0.01`).
 
 ## Leaderboard score
 
@@ -17,11 +19,11 @@ The `soft_cap_0_08` tail names the per-iteration mean-spend free-zone the run wa
 |---|---|---|
 | Accuracy (DS-1000 test, 900 samples) | **0.853** (0.8533 = 768/900) | 0.8444 (760/900) |
 | Per-problem cost | **$0.037** (submitted $0.0368; leaderboard shows $0.04) | $0.0295 |
-| Submission name | `RoboPhD (Opus 4.8-evolved)` / `v0_0_4_soft_cap_0_08` | — |
+| Submission name | `RoboPhD (Opus 4.8-evolved)` / `v0_0_4_cap_0_08_opus` | — |
 | Pareto position | #3 overall; cheapest agent at 0.853; dominates ReAct gpt-5.5 (0.847 @ $0.05) and gpt-5.4 (0.838 @ $0.04) | — |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | — |
 
-Supersedes `v0_0_3_soft_cap_0_06` (RoboPhD 0.0.3): same 0.8533 accuracy, but a real (non-Missing) cost that is also lower than 0.0.3's locally-rescored $0.0519. Calibration from prior submissions: `v0_0_1_soft_cap_0_16` measured +2.3pp on the leaderboard vs internal (0.862 vs 0.8389); `v0_0_2_soft_cap_0_08` at parity (0.809 vs 0.8044). The leaderboard left the as-submitted cost **unchanged** at $0.0368 (displayed as $0.04, ~$0.037 at three decimals) — a real, non-Missing figure, since all three solver models are priced (Ai2's time-invariant price map did not re-value them).
+Supersedes `v0_0_3_cap_0_06_fable` (RoboPhD 0.0.3): same 0.8533 accuracy, but a real (non-Missing) cost that is also lower than 0.0.3's locally-rescored $0.0519. Calibration from prior submissions: `v0_0_1_cap_0_16_opus` measured +2.3pp on the leaderboard vs internal (0.862 vs 0.8389); `v0_0_2_cap_0_08_opus` at parity (0.809 vs 0.8044). The leaderboard left the as-submitted cost **unchanged** at $0.0368 (displayed as $0.04, ~$0.037 at three decimals) — a real, non-Missing figure, since all three solver models are priced (Ai2's time-invariant price map did not re-value them).
 
 ## Submission metadata
 
@@ -103,7 +105,7 @@ Same asymmetric inclusion as v0_0_3: two result subdirs (`iteration_010/`, `iter
 ```
 cd /path/to/repo
 pip install litellm==1.88.1      # submission-scoring price map (see examples/asta_ds1000/README.md)
-python scripts/asta_ds1000_submit.py --only v0_0_4_soft_cap_0_08
+python scripts/asta_ds1000_submit.py --only v0_0_4_cap_0_08_opus
 ```
 
 The script copies `agents/iter11_ds1000_tridtype_judge/agent.py` and the canonical seed into a working dir, wraps them in the two-tier `WRAPPER_TEMPLATE`, runs `astabench eval --solver agent.py --model none --split test --task DS_1000_test`, scores, and tarballs for upload.

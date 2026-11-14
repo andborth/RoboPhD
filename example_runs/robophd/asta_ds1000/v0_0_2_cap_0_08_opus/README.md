@@ -1,8 +1,10 @@
-# asta_ds1000 / v0_0_2_soft_cap_0_08
+# asta_ds1000 / v0_0_2_cap_0_08_opus
+
+> Originally submitted as `v0_0_2_soft_cap_0_08`; renamed 2026-11-14 to the `cap_<τ>_<model>` convention described in [example_runs/README.md](../../../README.md).
 
 RoboPhD evolution run on AstaBench's DS-1000 task with cost-penalty free-zone threshold `MIN_COST_THRESHOLD = $0.08` (the default; paired with `--allow-stronger-models` to unlock Opus 4.7 as a fallback handle). Headline submitted agent: **`iter4_ds1000_idiom_probe`**. Run id: `robophd-asta_ds1000-009`.
 
-The `0_0_2` patch bump from `v0_0_1_soft_cap_0_16` reflects code-state changes since the prior submission (commit `eb7dd11`), most notably the iteration-aggregate cost-penalty mechanism (commit `b453ee0`). The `soft_cap_0_08` tail names the per-iteration mean-spend free-zone the run was trained under.
+The `0_0_2` patch bump from `v0_0_1_cap_0_16_opus` reflects code-state changes since the prior submission (commit `eb7dd11`), most notably the iteration-aggregate cost-penalty mechanism (commit `b453ee0`). The `cap_0_08` tail names the per-iteration mean-spend free-zone the run was trained under.
 
 ## Leaderboard verified score
 
@@ -10,7 +12,7 @@ The `0_0_2` patch bump from `v0_0_1_soft_cap_0_16` reflects code-state changes s
 |---|---|
 | Accuracy (AstaBench leaderboard) | **80.9%** (0.8089) |
 | Per-problem inference cost | **$0.01** ($0.01181) |
-| Submission name | `v0_0_2_soft_cap_0_08` |
+| Submission name | `v0_0_2_cap_0_08_opus` |
 | Pareto position | Lowest-cost submission above 80% accuracy; strictly outperforms five higher-cost submissions |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) |
 
@@ -37,7 +39,7 @@ A **CLAUDE_OPUS_4_7 escalation** fires only when the Sonnet repair loop exits wi
 
 A final **idiom-guard regeneration** sweeps the chosen solution one more time if it still contains a loop on a problem with idiom-constraint signal.
 
-The architecture is meaningfully simpler than the v0_0_1_soft_cap_0_16 submission's quad-diverse ensemble + Opus critic: one primary model, narrow conditional escalation, no repr-based consensus voting. This gives a much lower per-problem inference cost (~$0.012 vs ~$0.13) at the cost of ~6pp lower score.
+The architecture is meaningfully simpler than the v0_0_1_cap_0_16_opus submission's quad-diverse ensemble + Opus critic: one primary model, narrow conditional escalation, no repr-based consensus voting. This gives a much lower per-problem inference cost (~$0.012 vs ~$0.13) at the cost of ~6pp lower score.
 
 The `iteration_003/` subdir captures the prior-iter result that iter4's evolution session was reading as context; `iteration_004/` is iter4's own first scoring; `evolution_output/iteration_004/` is the Claude Code session that produced it.
 
@@ -56,15 +58,15 @@ except Exception as primary:
         return state
 ```
 
-Both tiers are bounded by `asyncio.wait_for(timeout=1200)` so neither can wedge the eval indefinitely. For this submission the wrapper is essentially defensive insurance — the internal eval finished with 0 errors and 0 timeouts on all 900 samples — but using the same wrapper as `v0_0_1_soft_cap_0_16` keeps the two submissions methodologically comparable.
+Both tiers are bounded by `asyncio.wait_for(timeout=1200)` so neither can wedge the eval indefinitely. For this submission the wrapper is essentially defensive insurance — the internal eval finished with 0 errors and 0 timeouts on all 900 samples — but using the same wrapper as `v0_0_1_cap_0_16_opus` keeps the two submissions methodologically comparable.
 
 The wrapper template lives in [`scripts/asta_ds1000_submit.py`](../../../../scripts/asta_ds1000_submit.py) (`WRAPPER_TEMPLATE`) and is materialized into the working dir as `agent.py` at submission stage time, with the iter4 source renamed to `agent_inner.py` and the seed copied in as `seed_agent.py`.
 
-## Patches relative to v0_0_1_soft_cap_0_16
+## Patches relative to v0_0_1_cap_0_16_opus
 
 13 commits between submission SHAs. The `scripts/asta_ds1000_submit.py` submission script and `WRAPPER_TEMPLATE` are unchanged. Notable changes that affected the run:
 
-- `b453ee0` — **iteration-level cost penalty** via evaluator aggregator hook. Replaces v0_0_1's per-example penalty with a mean-across-the-iteration's-batch penalty. The free-zone threshold a single problem must clear shifted from "your per-example spend < $0.16" to "your batch's mean spend < $0.08", giving evolved agents budget headroom on individual hard problems while keeping average spend honest. This is the dominant scoring-mechanism change between the two runs and motivates the new `soft_cap_0_08` tag.
+- `b453ee0` — **iteration-level cost penalty** via evaluator aggregator hook. Replaces v0_0_1's per-example penalty with a mean-across-the-iteration's-batch penalty. The free-zone threshold a single problem must clear shifted from "your per-example spend < $0.16" to "your batch's mean spend < $0.08", giving evolved agents budget headroom on individual hard problems while keeping average spend honest. This is the dominant scoring-mechanism change between the two runs and motivates the new `cap_0_08` tag.
 - `a374e54` — Gemini 3.1 flash-lite **preview → GA migration** in `examples/asta_ds1000/model_registry.py`. Doesn't affect this submission (iter4 doesn't use Gemini) but the registry shape changed.
 - `5d654f0` — `--resume` no longer clobbers original-run settings.
 - `0d37586`, `7a52ad0` — post-eval error-analysis tooling fixes.
@@ -82,7 +84,7 @@ At the leaderboard-verified **80.9% (0.8089) / $0.01**, this submission strictly
 | `Smolagents Coder / GPT-5` | $0.02 | 75.7% |
 | `ReAct / Claude Sonnet 4` | $0.04 | 75.6% |
 
-Together with the companion `v0_0_1_soft_cap_0_16` submission (86.2% / $0.13) at the high-accuracy end of the leaderboard, the two RoboPhD agents form a two-rung Pareto curve spanning roughly an order of magnitude in cost on DS-1000.
+Together with the companion `v0_0_1_cap_0_16_opus` submission (86.2% / $0.13) at the high-accuracy end of the leaderboard, the two RoboPhD agents form a two-rung Pareto curve spanning roughly an order of magnitude in cost on DS-1000.
 
 ## Lineage (agents/)
 

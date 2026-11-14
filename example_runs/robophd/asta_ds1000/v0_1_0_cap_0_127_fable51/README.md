@@ -2,9 +2,9 @@
 
 RoboPhD evolution run on AstaBench's DS-1000 task. Headline submitted agent: **`iter6_ensemble_exec_vote_escalate`**. Run id: `robophd-asta_ds1000-054`. Evolved by **Claude Fable 5.1** (the evolution model; not a solver) — the first Fable-5.1-evolved DS-1000 submission.
 
-**This run aimed at the top of the board.** The cost threshold was set to the per-problem cost of the board's highest-accuracy entry — our own v0_0_1_soft_cap_0_16 (0.8622 @ $0.1273) — so that any agent evolution produced inside the free zone would be at most as expensive as that point. Standard run configuration otherwise (budget 750, examples-per-iteration 20, Deep Focus off, standard seed, `use_your_judgment`), with `cost_threshold=0.127` and the default-scaled `cost_per_error=0.0127`.
+**This run aimed at the top of the board.** The cost threshold was set to the per-problem cost of the board's highest-accuracy entry — our own v0_0_1_cap_0_16_opus (0.8622 @ $0.1273) — so that any agent evolution produced inside the free zone would be at most as expensive as that point. Standard run configuration otherwise (budget 750, examples-per-iteration 20, Deep Focus off, standard seed, `use_your_judgment`), with `cost_threshold=0.127` and the default-scaled `cost_per_error=0.0127`.
 
-Outcome: **the target was hit and held officially** — official `astabench score` **0.8733 (786/900) @ $0.0543/problem** (internal 0.8711 @ $0.0561), which strictly Pareto-dominates v0_0_1_soft_cap_0_16 (0.8622 @ $0.1273): +1.1pp accuracy at 43% of the cost. A new headline DS-1000 score.
+Outcome: **the target was hit and held officially** — official `astabench score` **0.8733 (786/900) @ $0.0543/problem** (internal 0.8711 @ $0.0561), which strictly Pareto-dominates v0_0_1_cap_0_16_opus (0.8622 @ $0.1273): +1.1pp accuracy at 43% of the cost. A new headline DS-1000 score.
 
 What's distinctive about this submission:
 
@@ -18,9 +18,9 @@ The `cap_0_127` tail names the training free zone, `cost_threshold=0.127`, at th
 
 ## Comparison with the dominated entry
 
-Paired per-problem against v0_0_1_soft_cap_0_16's official eval log (recomputed with litellm's bundled price map, reproducing 0.8622 @ $0.1273 exactly):
+Paired per-problem against v0_0_1_cap_0_16_opus's official eval log (recomputed with litellm's bundled price map, reproducing 0.8622 @ $0.1273 exactly):
 
-| | v0_0_1_soft_cap_0_16 (official) | this agent (internal) |
+| | v0_0_1_cap_0_16_opus (official) | this agent (internal) |
 |---|---|---|
 | Accuracy | 0.8622 (776/900) | 0.8711 (784/900) |
 | Cost / problem (mean) | $0.1273 | $0.0561 |
@@ -46,12 +46,12 @@ The submission wrapper bounds each sample at 1200 s (`PRIMARY_TIMEOUT_S`), below
 | Wrapper fallbacks / sample errors | 0 / 900, 0 errors | 0 / 900 |
 | Wall-clock per sample (median, p99, max) | 80 s, 243 s, 490 s (well under the 1200 s wrapper limit) | — |
 | Submission name | `v0_1_0_cap_0_127_fable51` / form: `RoboPhD` | — |
-| Pareto outcome | v0_0_1_soft_cap_0_16 (0.862 @ $0.127) is **strictly dominated officially**: +1.1pp accuracy at 43% of the cost — a **new top DS-1000 score**. Not dominated by our ~0.853 points ($0.037 Opus-4.8-evolved, $0.052 Fable-5-evolved): higher accuracy. | — |
+| Pareto outcome | v0_0_1_cap_0_16_opus (0.862 @ $0.127) is **strictly dominated officially**: +1.1pp accuracy at 43% of the cost — a **new top DS-1000 score**. Not dominated by our ~0.853 points ($0.037 Opus-4.8-evolved, $0.052 Fable-5-evolved): higher accuracy. | — |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) | — |
 
 **Parity holds on both axes.** Accuracy +2 problems over internal (paired: 20 official-only vs 18 internal-only, p = 0.87); cost −3.1% (official/internal 0.969). The official cost above is reproduced exactly by pricing the log's token usage with litellm's bundled map.
 
-**Official vs official against v0_0_1_soft_cap_0_16** (per-problem join of both eval logs): 40 problems solved only by this agent, 30 only by v0_0_1, 84 by neither (McNemar exact p = 0.28) — accuracy statistically tied, domination decisive on cost (cheaper on 869/900 problems and in every library, roughly 2.1–2.8× per library). By library, accuracy is equal or higher in six of seven; Matplotlib is the exception (0.853 vs 0.902).
+**Official vs official against v0_0_1_cap_0_16_opus** (per-problem join of both eval logs): 40 problems solved only by this agent, 30 only by v0_0_1, 84 by neither (McNemar exact p = 0.28) — accuracy statistically tied, domination decisive on cost (cheaper on 869/900 problems and in every library, roughly 2.1–2.8× per library). By library, accuracy is equal or higher in six of seven; Matplotlib is the exception (0.853 vs 0.902).
 
 Model usage across the 900 samples: Opus 4.8 and GPT-5.4 on every sample, Gemini 3.1 Pro on 728, Sonnet 4.6 on 593, GPT-5.5 on 109; the GPT-5.4-mini last-resort path never fired.
 

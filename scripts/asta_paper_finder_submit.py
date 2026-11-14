@@ -34,10 +34,10 @@ was 98.7% of the v0_0_8 bill and 93.4% of v0_0_9's — and it scales with
 how much the agent ships, not with the agent's own price. Three measured
 points:
 
-    v0_0_7_soft_cap_0_06_fable    $192 judge + $15 agent    ~19 hr
+    v0_0_7_cap_0_06_fable    $192 judge + $15 agent    ~19 hr
         976 chars/paper evidence, 250 papers/semantic query,
         ~12 min/semantic query at --max-samples 4.   $0.0040/paper
-    v0_0_8_soft_cap_0_033_opus    $117 judge + $1.59 agent  1h32m
+    v0_0_8_cap_0_033_opus    $117 judge + $1.59 agent  1h32m
         750 chars/paper, 203.5 papers/query, --max-samples 6.
                                                      $0.0030/paper
     v0_0_9_cap_0_063_opus5        $197 judge + $14 agent    7h18m
@@ -183,7 +183,7 @@ class Submission(NamedTuple):
 
 SUBMISSIONS = [
     Submission(
-        name="v0_0_7_soft_cap_0_06_fable",
+        name="v0_0_7_cap_0_06_fable",
         agent_rel_path="agents/iter12_body_conjunction/agent.py",
         model_arg="none",
         # Run robophd-asta_paper_finder-003 (fable-5-evolved), winner
@@ -195,7 +195,7 @@ SUBMISSIONS = [
         # DS-1000's v0_0_6.
     ),
     Submission(
-        name="v0_0_8_soft_cap_0_033_opus",
+        name="v0_0_8_cap_0_033_opus",
         agent_rel_path="agents/iter9_rerank_rich_v1/agent.py",
         model_arg="none",
         # Run robophd-asta_paper_finder-006 (opus-4.8-evolved; luna
@@ -793,7 +793,7 @@ def stage(s: Submission, suffix: str = "", restage: bool = False) -> Path:
     without this guard any re-run — including a bare invocation with no --only,
     which iterates every entry — silently replaces the on-disk record of what
     produced a posted leaderboard entry. That record has already drifted once:
-    v0_0_7_soft_cap_0_06_fable still carries its original 3702-byte wrapper and
+    v0_0_7_cap_0_06_fable still carries its original 3702-byte wrapper and
     no tool_pacer.py, both predating the current template. The eval itself is
     skipped either way, so the loss would be invisible.
 

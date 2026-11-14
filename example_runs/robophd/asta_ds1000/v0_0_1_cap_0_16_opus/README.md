@@ -1,4 +1,6 @@
-# asta_ds1000 / v0_0_1_soft_cap_0_16
+# asta_ds1000 / v0_0_1_cap_0_16_opus
+
+> Originally submitted as `v0_0_1_soft_cap_0_16`; renamed 2026-11-14 to the `cap_<τ>_<model>` convention described in [example_runs/README.md](../../../README.md).
 
 RoboPhD evolution run on AstaBench's DS-1000 task with cost-penalty free-zone threshold `MIN_COST_THRESHOLD = $0.16` (~4× the prior `v0_soft_cap_0_04` threshold — paired with `--allow-stronger-models` to unlock Opus 4.7 and Gemini 3.1 Pro Preview as solver handles). Headline submitted agent: **`iter10_idiomatic_loop_guard_v1`**. Run id: `robophd-asta_ds1000-007`.
 
@@ -8,7 +10,7 @@ RoboPhD evolution run on AstaBench's DS-1000 task with cost-penalty free-zone th
 |---|---|
 | Accuracy (AstaBench leaderboard) | **86.2%** (0.8622) |
 | Per-problem inference cost | **$0.13** ($0.1273) |
-| Submission name | `v0_0_1_soft_cap_0_16` |
+| Submission name | `v0_0_1_cap_0_16_opus` |
 | Pareto position | **#1 accuracy** on the entire DS-1000 leaderboard |
 | Leaderboard | [AstaBench DS-1000 leaderboard](https://allenai-asta-bench-leaderboard.hf.space/code-execution) |
 

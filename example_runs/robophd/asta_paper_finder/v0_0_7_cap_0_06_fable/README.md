@@ -1,9 +1,11 @@
-# v0_0_7_soft_cap_0_06_fable — PaperFindingBench (AstaBench) submission snapshot
+# v0_0_7_cap_0_06_fable — PaperFindingBench (AstaBench) submission snapshot
+
+> Originally submitted as `v0_0_7_soft_cap_0_06_fable`; renamed 2026-11-14 to the `cap_<τ>_<model>` convention described in [example_runs/README.md](../../../README.md).
 
 First RoboPhD submission to the AstaBench PaperFindingBench leaderboard
 (Literature Understanding category, Standard tools tier). The `0_0_7`
 patch continues the cross-benchmark submission sequence after DS-1000's
-`v0_0_6_soft_cap_0_003_fable`; `soft_cap_0_06` names the training-time
+`v0_0_6_cap_0_003_fable`; `cap_0_06` names the training-time
 mean-spend free zone (\$0.06/query); `_fable` = evolved by Claude Fable 5.
 
 ## Snapshot layout (ds1000 precedent: a curated run snapshot, ~15MB)
@@ -119,11 +121,11 @@ contention — the final ceiling is 3000s (see script history).
 
 ```bash
 pip install litellm==1.88.1   # submission-scoring price map
-python scripts/asta_paper_finder_submit.py --only v0_0_7_soft_cap_0_06_fable --limit 3   # smoke (~$3)
-python scripts/asta_paper_finder_submit.py --only v0_0_7_soft_cap_0_06_fable            # full (~$200-270, 12-18h)
+python scripts/asta_paper_finder_submit.py --only v0_0_7_cap_0_06_fable --limit 3   # smoke (~$3)
+python scripts/asta_paper_finder_submit.py --only v0_0_7_cap_0_06_fable            # full (~$200-270, 12-18h)
 ```
 
-Then upload `submissions/asta_paper_finder/v0_0_7_soft_cap_0_06_fable.tar.gz`
+Then upload `submissions/asta_paper_finder/v0_0_7_cap_0_06_fable.tar.gz`
 via the HF Spaces form (https://huggingface.co/spaces/allenai/asta-bench-leaderboard).
 Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 

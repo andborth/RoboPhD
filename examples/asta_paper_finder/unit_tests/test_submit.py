@@ -241,7 +241,7 @@ def test_stage_freezes_a_submission_with_a_successful_full_log(
     """stage() runs BEFORE eval_submission's skip-on-success check, so without
     a freeze any re-run — including a bare invocation with no --only — silently
     rewrites the staged source of an already-posted submission. The eval is
-    skipped either way, so the loss is invisible. v0_0_7_soft_cap_0_06_fable
+    skipped either way, so the loss is invisible. v0_0_7_cap_0_06_fable
     still carries its original 3702-byte, pre-tool_pacer wrapper; that is the
     artifact this guard exists to preserve."""
     s = submit_mod.SUBMISSIONS[0]

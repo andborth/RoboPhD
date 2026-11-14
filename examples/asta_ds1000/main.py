@@ -319,7 +319,7 @@ def _resolve_seed_runs(specs: list[str]) -> dict:
     example run dir for the malformed-spec error."""
     return resolve_seed_runs(
         specs,
-        example="029=example_runs/robophd/asta_ds1000/v0_0_5_soft_cap_0_05",
+        example="029=example_runs/robophd/asta_ds1000/v0_0_5_cap_0_05_opus",
     )
 
 
