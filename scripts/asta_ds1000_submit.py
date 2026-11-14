@@ -9,7 +9,7 @@ Run from anywhere — paths are resolved relative to the repo root:
 Per submission, the script:
   1. Verifies the working tree is clean (otherwise eval_spec.revision.dirty
      would record `true`, weakening the reproducibility claim).
-  2. Stages a working dir at submissions/asta_ds1000/<dir>/ (gitignored)
+  2. Stages a working dir at submissions/asta_ds1000/<work_name>/ (gitignored)
      with agent.py copied from example_runs/ and model_registry.py copied
      from examples/asta_ds1000/.
   3. Runs `astabench eval` against DS_1000_test (no --ignore-git).
@@ -67,8 +67,9 @@ LOG_SUBDIR = "logs/full_test"
 
 
 class Submission(NamedTuple):
-    # Dir name under both example_runs/robophd/asta_ds1000/ and
-    # submissions/asta_ds1000/. Becomes the .tar.gz basename too.
+    # Dir name under example_runs/robophd/asta_ds1000/. Also names the
+    # submissions/asta_ds1000/ working dir and .tar.gz unless
+    # submitted_as overrides it (see work_name).
     name: str
     # agent.py path relative to the example_runs source dir for this
     # submission. Evolved runs nest under agents/<agent_name>/; seeds
@@ -89,6 +90,16 @@ class Submission(NamedTuple):
     # archive-only handle bound to the real 4.7 model, so they import
     # and run at HEAD (see the per-entry notes below).
     needs_stronger_models: bool = False
+    # The name this entry was submitted to the leaderboard under, when the
+    # snapshot has since been renamed. The working dir, eval logs and
+    # tarball are records of that submission, so they keep this name; only
+    # the example_runs/ source dir follows `name`. --only accepts either.
+    submitted_as: str | None = None
+
+    @property
+    def work_name(self) -> str:
+        """Basename of the submissions/ working dir and the .tar.gz."""
+        return self.submitted_as or self.name
 
 
 SUBMISSIONS = [
@@ -103,18 +114,21 @@ SUBMISSIONS = [
     # alias, so the agents import cleanly and silently run 4.8.
     Submission(
         name="v0_0_1_cap_0_16_opus",
+        submitted_as="v0_0_1_soft_cap_0_16",
         agent_rel_path="agents/iter10_idiomatic_loop_guard_v1/agent.py",
         model_arg="none",
         needs_stronger_models=True,
     ),
     Submission(
         name="v0_0_2_cap_0_08_opus",
+        submitted_as="v0_0_2_soft_cap_0_08",
         agent_rel_path="agents/iter4_ds1000_idiom_probe/agent.py",
         model_arg="none",
         needs_stronger_models=True,
     ),
     Submission(
         name="v0_0_3_cap_0_06_fable",
+        submitted_as="v0_0_3_soft_cap_0_06",
         agent_rel_path="agents/iter14_filemock_adjudicate/agent.py",
         model_arg="none",
         # No needs_stronger_models: the gate was removed from
@@ -123,6 +137,7 @@ SUBMISSIONS = [
     ),
     Submission(
         name="v0_0_4_cap_0_08_opus",
+        submitted_as="v0_0_4_soft_cap_0_08",
         agent_rel_path="agents/iter11_ds1000_tridtype_judge/agent.py",
         model_arg="none",
         # Run robophd-asta_ds1000-028 (Opus-4.8-evolved). Three-family
@@ -133,6 +148,7 @@ SUBMISSIONS = [
     ),
     Submission(
         name="v0_0_5_cap_0_05_opus",
+        submitted_as="v0_0_5_soft_cap_0_05",
         agent_rel_path="agents/iter10_literal_consensus/agent.py",
         model_arg="none",
         # Run robophd-asta_ds1000-029 (Opus-4.8-evolved). Lean 2-model
@@ -144,6 +160,7 @@ SUBMISSIONS = [
     ),
     Submission(
         name="v0_0_5_cap_0_05_opus_deep_focus",
+        submitted_as="v0_0_5_soft_cap_0_05_deep_focus",
         agent_rel_path="agents/iter8_perspective_consensus_ds1000/agent.py",
         model_arg="none",
         # Run robophd-asta_ds1000-032 (Opus-4.8-evolved). Deep-Focus variant
@@ -156,6 +173,7 @@ SUBMISSIONS = [
     ),
     Submission(
         name="v0_0_6_cap_0_003_fable",
+        submitted_as="v0_0_6_soft_cap_0_003_fable",
         agent_rel_path="agents/iter8_expected_diff_cascade/agent.py",
         model_arg="none",
         # Run robophd-asta_ds1000-036 (FIRST fable-5-evolved submission).
@@ -169,6 +187,7 @@ SUBMISSIONS = [
     ),
     Submission(
         name="v0_0_7_cap_0_003_opus",
+        submitted_as="v0_0_7_sharp_cap_0_003",
         agent_rel_path="agents/iter12_strong_toplevel/agent.py",
         model_arg="none",
         # Run robophd-asta_ds1000-044 (opus-4.8-evolved). Sharp-penalty
@@ -531,7 +550,7 @@ def stage(s: Submission, restage: bool = False) -> Path:
 
     Returns the working dir path.
     """
-    dst_dir = WORKING_BASE / s.name
+    dst_dir = WORKING_BASE / s.work_name
     if already_evaluated(dst_dir) and not restage:
         print(f"[skip stage] {s.name}: frozen (already evaluated); "
               f"pass --restage to overwrite")
@@ -643,7 +662,7 @@ def score_submission(working_dir: Path) -> bool:
 
 
 def tar_submission(s: Submission, working_dir: Path) -> bool:
-    out = WORKING_BASE / f"{s.name}.tar.gz"
+    out = WORKING_BASE / f"{s.work_name}.tar.gz"
     rc = run(
         # -C cd's into the working dir, then we tar the leaf dir name
         # so the archive contents are `full_test/...eval` rather than
@@ -659,7 +678,7 @@ def summarize() -> None:
     print("FINAL RESULTS")
     print("=" * 70)
     for s in SUBMISSIONS:
-        scores_path = WORKING_BASE / s.name / LOG_SUBDIR / "scores.json"
+        scores_path = WORKING_BASE / s.work_name / LOG_SUBDIR / "scores.json"
         if not scores_path.exists():
             print(f"  {s.name:25s}  (no scores.json)")
             continue
@@ -674,7 +693,7 @@ def summarize() -> None:
     print("=" * 70)
     print("\nReady-to-upload tarballs:")
     for s in SUBMISSIONS:
-        out = WORKING_BASE / f"{s.name}.tar.gz"
+        out = WORKING_BASE / f"{s.work_name}.tar.gz"
         marker = "✓" if out.exists() else "✗"
         print(f"  {marker} {out}")
     print("\nUpload at:")
@@ -757,19 +776,19 @@ def main() -> int:
             print(f"usage: {sys.argv[0]} [--restage] [--only NAME [NAME ...]]")
             return 2
         names = set(args[1:])
-        unknown = names - {s.name for s in SUBMISSIONS}
+        unknown = names - {n for s in SUBMISSIONS for n in (s.name, s.submitted_as) if n}
         if unknown:
             print(f"unknown submission(s): {sorted(unknown)}")
             print(f"known: {[s.name for s in SUBMISSIONS]}")
             return 2
-        selected = [s for s in SUBMISSIONS if s.name in names]
+        selected = [s for s in SUBMISSIONS if s.name in names or s.submitted_as in names]
 
     verify_clean_tree()
     verify_credentials()
     # Only warm the sandbox base image if an eval is actually pending --
     # a re-run that just re-scores/re-tars already-evaluated submissions
     # shouldn't trigger a redundant pull.
-    if any(not already_evaluated(WORKING_BASE / s.name) for s in selected):
+    if any(not already_evaluated(WORKING_BASE / s.work_name) for s in selected):
         warm_base_image()
     failures = []
     for s in selected:

@@ -329,7 +329,7 @@ Budget the full judge spend accordingly. This run's official score
 predates that guard and was scored against whatever the stock cache
 held at the time (v0_0_7's verdicts included).
 
-Then upload `submissions/asta_paper_finder/v0_0_8_cap_0_033_opus.tar.gz`
+Then upload `submissions/asta_paper_finder/v0_0_8_soft_cap_0_033_opus.tar.gz` (the working dir and archive keep the name the entry was submitted as)
 via the HF Spaces form (https://huggingface.co/spaces/allenai/asta-bench-leaderboard).
 Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 

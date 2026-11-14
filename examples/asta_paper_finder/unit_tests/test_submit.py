@@ -13,6 +13,7 @@ schema-valid, smoke runs must be log-isolated and untarred, and the
 staged snapshot + priced-models registry must exist/agree.
 """
 import ast
+import re
 import importlib.util
 import json
 from pathlib import Path
@@ -245,9 +246,12 @@ def test_stage_freezes_a_submission_with_a_successful_full_log(
     still carries its original 3702-byte, pre-tool_pacer wrapper; that is the
     artifact this guard exists to preserve."""
     s = submit_mod.SUBMISSIONS[0]
+    # The posted record lives under the name it was submitted as, not the
+    # snapshot's current name; a freeze keyed on the new name guards nothing.
+    assert s.work_name == "v0_0_7_soft_cap_0_06_fable"
     monkeypatch.setattr(submit_mod, "WORKING_BASE", tmp_path)
     monkeypatch.setattr(submit_mod, "_log_status", lambda p: ("success", 267))
-    dst = tmp_path / s.name
+    dst = tmp_path / s.work_name
     dst.mkdir(parents=True)
     (dst / "agent.py").write_text("ORIGINAL WRAPPER")
 
@@ -314,6 +318,19 @@ def test_registry_snapshots_exist(submit_mod) -> None:
     for s in submit_mod.SUBMISSIONS:
         src = submit_mod.SOURCE_BASE / s.name / s.agent_rel_path
         assert src.exists(), f"snapshot missing for {s.name}: {src}"
+
+
+def test_submitted_as_matches_snapshot_banner(submit_mod) -> None:
+    """A renamed snapshot's README opens with "Originally submitted as
+    `<name>`". Its SUBMISSIONS entry must carry the same submitted_as:
+    the working dir, eval logs and tarball of the posted entry live under
+    that name, so a missing or mismatched one makes the entry read as never
+    evaluated and a bare run would re-launch a full official eval."""
+    pat = re.compile(r"Originally submitted as `([^`]+)`")
+    for s in submit_mod.SUBMISSIONS:
+        head = (submit_mod.SOURCE_BASE / s.name / "README.md").read_text()[:600]
+        m = pat.search(head)
+        assert s.submitted_as == (m.group(1) if m else None), s.name
 
 
 def test_agent_models_cover_snapshot_imports(submit_mod) -> None:
@@ -403,7 +420,7 @@ def test_smoke_runs_are_log_isolated_and_untarred(submit_mod, submit_tree) -> No
         f"tar_submission must be gated on `args.limit is None`; got {rendered}"
     )
     # A/B arms stage into <name><suffix>/ but tar_submission derives the
-    # archive name from s.name, so an untarred-arm guard is required too.
+    # archive name from s.work_name, so an untarred-arm guard is required too.
     assert any("args.work_suffix" in c for c in rendered), (
         f"tar_submission must be gated on an empty --work-suffix; got {rendered}"
     )

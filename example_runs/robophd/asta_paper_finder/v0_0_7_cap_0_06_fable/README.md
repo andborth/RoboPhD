@@ -125,7 +125,7 @@ python scripts/asta_paper_finder_submit.py --only v0_0_7_cap_0_06_fable --limit 
 python scripts/asta_paper_finder_submit.py --only v0_0_7_cap_0_06_fable            # full (~$200-270, 12-18h)
 ```
 
-Then upload `submissions/asta_paper_finder/v0_0_7_cap_0_06_fable.tar.gz`
+Then upload `submissions/asta_paper_finder/v0_0_7_soft_cap_0_06_fable.tar.gz` (the working dir and archive keep the name the entry was submitted as)
 via the HF Spaces form (https://huggingface.co/spaces/allenai/asta-bench-leaderboard).
 Form metadata: Openness "Open source, closed weights"; Tools tier "Standard".
 

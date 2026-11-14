@@ -12,6 +12,8 @@ submission log after spending API money.
 These AST-level tests catch the structural regression cheaply.
 """
 import ast
+import importlib.util
+import re
 from pathlib import Path
 
 import pytest
@@ -253,3 +255,20 @@ def test_wrapper_clears_the_model_menu_before_importing_the_registry(wrapper_tre
     ]
     assert clears and imports, "wrapper must clear the menu and import the registry"
     assert clears[0] < imports[0]
+
+
+def test_submitted_as_matches_snapshot_banner() -> None:
+    """A renamed snapshot's README opens with "Originally submitted as
+    `<name>`". Its SUBMISSIONS entry must carry the same submitted_as:
+    the working dir, eval logs and tarball of the posted entry live under
+    that name, so a missing or mismatched one makes the entry read as never
+    evaluated and a bare run would re-launch a full official eval."""
+    spec = importlib.util.spec_from_file_location("ds_submit", SUBMIT_PATH)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    pat = re.compile(r"Originally submitted as `([^`]+)`")
+    for s in mod.SUBMISSIONS:
+        head = (mod.SOURCE_BASE / s.name / "README.md").read_text()[:600]
+        m = pat.search(head)
+        assert s.submitted_as == (m.group(1) if m else None), s.name
+        assert s.work_name == (s.submitted_as or s.name)

@@ -13,7 +13,7 @@ Per submission, the script:
      installed litellm's BUNDLED price map covers every model the staged
      agent calls (the DS-1000 v0_0_3 lesson: an unpriced model makes
      `astabench score` emit cost=null and the entry ships costless).
-  3. Stages a working dir at submissions/asta_paper_finder/<name>/
+  3. Stages a working dir at submissions/asta_paper_finder/<work_name>/
      (gitignored) with agent.py (resilience wrapper), agent_inner.py (the
      evolved agent from example_runs/), seed_agent.py (fallback tier), and
      model_registry.py.
@@ -168,8 +168,9 @@ PAPERS_PER_SEMANTIC_QUERY = 250
 
 
 class Submission(NamedTuple):
-    # Dir name under both example_runs/robophd/asta_paper_finder/ and
-    # submissions/asta_paper_finder/. Becomes the .tar.gz basename too.
+    # Dir name under example_runs/robophd/asta_paper_finder/. Also names
+    # the submissions/asta_paper_finder/ working dir and .tar.gz unless
+    # submitted_as overrides it (see work_name).
     name: str
     # agent.py path relative to the example_runs source dir for this
     # submission. Snapshots are run-shaped (ds1000 precedent): the
@@ -179,11 +180,22 @@ class Submission(NamedTuple):
     # the recorded eval.model doesn't claim a single primary; per-call
     # usage is captured in stats.model_usage.
     model_arg: str
+    # The name this entry was submitted to the leaderboard under, when the
+    # snapshot has since been renamed. The working dir, eval logs and
+    # tarball are records of that submission, so they keep this name; only
+    # the example_runs/ source dir follows `name`. --only accepts either.
+    submitted_as: str | None = None
+
+    @property
+    def work_name(self) -> str:
+        """Basename of the submissions/ working dir and the .tar.gz."""
+        return self.submitted_as or self.name
 
 
 SUBMISSIONS = [
     Submission(
         name="v0_0_7_cap_0_06_fable",
+        submitted_as="v0_0_7_soft_cap_0_06_fable",
         agent_rel_path="agents/iter12_body_conjunction/agent.py",
         model_arg="none",
         # Run robophd-asta_paper_finder-003 (fable-5-evolved), winner
@@ -196,6 +208,7 @@ SUBMISSIONS = [
     ),
     Submission(
         name="v0_0_8_cap_0_033_opus",
+        submitted_as="v0_0_8_soft_cap_0_033_opus",
         agent_rel_path="agents/iter9_rerank_rich_v1/agent.py",
         model_arg="none",
         # Run robophd-asta_paper_finder-006 (opus-4.8-evolved; luna
@@ -774,7 +787,7 @@ def work_dir(s: Submission, suffix: str = "") -> Path:
     A non-empty suffix gives an A/B arm its own dir, so the real submission
     dir — frozen once its full run succeeds — is never touched.
     """
-    return WORKING_BASE / f"{s.name}{suffix}"
+    return WORKING_BASE / f"{s.work_name}{suffix}"
 
 
 def stage(s: Submission, suffix: str = "", restage: bool = False) -> Path:
@@ -986,7 +999,7 @@ def score_submission(working_dir: Path, limit: int | None) -> bool:
 
 
 def tar_submission(s: Submission, working_dir: Path) -> bool:
-    out = WORKING_BASE / f"{s.name}.tar.gz"
+    out = WORKING_BASE / f"{s.work_name}.tar.gz"
     rc = run(
         # -C cd's into the working dir, then we tar the leaf dir name
         # so the archive contents are `full_test/...eval` rather than
@@ -1002,7 +1015,7 @@ def summarize(limit: int | None) -> None:
     print("FINAL RESULTS")
     print("=" * 70)
     for s in SUBMISSIONS:
-        scores_path = WORKING_BASE / s.name / log_subdir(limit) / "scores.json"
+        scores_path = WORKING_BASE / s.work_name / log_subdir(limit) / "scores.json"
         if not scores_path.exists():
             print(f"  {s.name:30s}  (no scores.json)")
             continue
@@ -1030,7 +1043,7 @@ def summarize(limit: int | None) -> None:
         return
     print("\nReady-to-upload tarballs:")
     for s in SUBMISSIONS:
-        out = WORKING_BASE / f"{s.name}.tar.gz"
+        out = WORKING_BASE / f"{s.work_name}.tar.gz"
         marker = "✓" if out.exists() else "✗"
         print(f"  {marker} {out}")
     print("\nUpload at:")
@@ -1061,12 +1074,12 @@ def main() -> int:
     selected = SUBMISSIONS
     if args.only:
         names = set(args.only)
-        unknown = names - {s.name for s in SUBMISSIONS}
+        unknown = names - {n for s in SUBMISSIONS for n in (s.name, s.submitted_as) if n}
         if unknown:
             print(f"unknown submission(s): {sorted(unknown)}")
             print(f"known: {[s.name for s in SUBMISSIONS]}")
             return 2
-        selected = [s for s in SUBMISSIONS if s.name in names]
+        selected = [s for s in SUBMISSIONS if s.name in names or s.submitted_as in names]
 
     verify_clean_tree()
     verify_credentials()
@@ -1085,8 +1098,8 @@ def main() -> int:
             print(f"!! score failed for {s.name}")
             failures.append((s.name, "score"))
             continue
-        # A/B arms are never tarred: tar_submission writes <name>.tar.gz off
-        # s.name, which would collide with the real submission's archive.
+        # A/B arms are never tarred: tar_submission writes <work_name>.tar.gz
+        # off s.work_name, which would collide with the real submission's archive.
         if args.limit is None and not args.work_suffix \
                 and not tar_submission(s, working_dir):
             print(f"!! tar failed for {s.name}")
