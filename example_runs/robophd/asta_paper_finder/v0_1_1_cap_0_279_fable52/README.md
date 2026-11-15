@@ -4,11 +4,40 @@ Curated snapshot of RoboPhD run `asta_paper_finder_20261111_142949`
 (`robophd-asta_paper_finder-023`, 2026-11-11 → 2026-11-13). Claude Fable 5.2 evolved the
 agent under a $0.279/query training cost cap, with the full solver menu. The submitted
 agent is `iter20_year_steered_expansion`, the run's max-Elo winner (Elo 1567). This README
-covers the internal result, the agent, the evolution run and the snapshot's contents.
+covers the official and internal results, the agent, the evolution run and the snapshot's
+contents.
 
-**Status: staged, official run pending.** The cap was set at the price of the board's top
-entry, our `v0_0_9_cap_0_355_fable` (0.440 @ $0.279), so evolution had to win on score at
-that price. Internally the agent clears it on both axes.
+The cap was set at the price of the board's top entry, our `v0_0_9_cap_0_355_fable`
+(0.440 @ $0.279), so evolution had to win on score at that price. It does, on both axes:
+
+> **Official 0.501 @ $0.232**, against the incumbent's **0.440 @ $0.279**.
+
+## Official result (2026-11-15)
+
+`astabench eval` at commit `553b0a11` (clean), stock GPT-4o judge, uncapped, 267 queries.
+
+| | Score | Cost/query |
+| --- | --- | --- |
+| **v0_1_1_cap_0_279_fable52** | **0.50140 ± 0.01755** | **$0.23231 ± 0.00588** |
+| v0_0_9_cap_0_355_fable | 0.44025 ± 0.01790 | $0.278579 ± 0.009930 |
+
+| Per type | This agent | v0_0_9_cap_0_355_fable |
+| --- | --- | --- |
+| semantic_f1 (194) | **0.4394** | 0.3749 |
+| specific_f1 (38) | 0.8465 | **0.8588** |
+| metadata_f1 (35) | **0.4706** | 0.3483 |
+| **Overall** | **0.50140** | 0.44025 |
+
+- **Dominance:** +0.061 on score and $0.046/query (17%) cheaper. The incumbent is no longer
+  Pareto-optimal.
+- **Internal→official:** +0.016 (0.48537 → 0.50140), above the −0.055 to +0.010 range of
+  our earlier PFB submissions. Every score type rose, so uncapped judging did not cost this
+  agent anything.
+- **Clean run:** all 267 queries scored; no tool-init failures and no tool calls that
+  exhausted their retries (10 HTTP 429s, all retried by the harness).
+- **Spend:** $206.78 judge (46.5M input / 9.1M output GPT-4o tokens, $0.00426/paper over
+  194 semantic queries × 250 papers) + $62.03 agent = **$268.80**, in 9h08m at
+  `--max-samples 6`.
 
 ## Internal result
 
@@ -27,10 +56,7 @@ Internal held-out eval: stock GPT-4o judge, capped, 267 queries.
 | metadata_f1 (35) | **0.4609** | 0.3423 |
 | **Overall** | **0.48537** | 0.4383 |
 
-- **Margin:** +0.047 internal on score, and $0.048/query cheaper. Internal→official deltas
-  across our PFB submissions have run from −0.055 to +0.010 (the predecessor's was +0.002),
-  so only a repeat of the worst past drop would bring this below 0.440. The cost margin is
-  the firmer axis.
+- **Margin:** +0.047 internal on score, and $0.048/query cheaper.
 - **One tool-init failure:** `semantic_236` failed at tool initialization and scores 0.
   The other 23 zeros are genuine; 13 of them are queries the predecessor also scored 0 on.
 - **Spend:** agent $61.62, judge $73.78 (capped, shared cache).
@@ -121,7 +147,7 @@ stage1_keyed_order (18) → backdated_citation_counts (19) → **year_steered_ex
 | Agent name | RoboPhD |
 | Openness | Open source & closed weights |
 | Tools tier | Standard (Asta MCP corpus tools provided by the task) |
-| Models (solver, from internal logs; confirm from the official log) | gpt-5.4-mini, gpt-5.4-2026-03-05, gpt-5.5, claude-opus-4-8, claude-sonnet-4-6, gemini-3.1-pro-preview |
+| Models (solver, from logs) | gpt-5.4-mini, gpt-5.4-2026-03-05, gpt-5.5, claude-opus-4-8, claude-sonnet-4-6, gemini-3.1-pro-preview |
 | URL | https://github.com/andborth/RoboPhD |
 | Leaderboard | [AstaBench PaperFindingBench leaderboard](https://allenai-asta-bench-leaderboard.hf.space/literature-understanding#h-paperfindingbench-leaderboard) |
 | Tarball | `v0_1_1_cap_0_279_fable52.tar.gz` |
@@ -132,8 +158,8 @@ stage1_keyed_order (18) → backdated_citation_counts (19) → **year_steered_ex
 pip install litellm==1.88.1     # submission-scoring price map
 # The commit must be pushed first: astabench stamps eval_spec.revision
 python scripts/asta_paper_finder_submit.py --only v0_1_1_cap_0_279_fable52 --limit 3   # smoke (~$3)
-caffeinate -i python scripts/asta_paper_finder_submit.py --only v0_1_1_cap_0_279_fable52
+caffeinate -i python scripts/asta_paper_finder_submit.py --only v0_1_1_cap_0_279_fable52   # full (measured: $268.80, 9h08m)
 ```
 
-Re-running the same command resumes an interrupted eval-set. Expected spend: roughly
-$190–230 judge (250 papers per semantic query, uncapped) plus ~$62 agent; about 7 hours.
+Re-running the same command resumes an interrupted eval-set. Measured spend: $206.78
+judge (250 papers per semantic query, uncapped) + $62.03 agent.
