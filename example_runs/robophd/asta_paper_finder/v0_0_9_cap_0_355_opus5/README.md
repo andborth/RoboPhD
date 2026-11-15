@@ -361,15 +361,6 @@ for a full-250 agent it now runs slightly under — \$194 against \$197.32 for
 `cap_0_063`, and \$194 against \$206.38 here. Budget from the measured
 \$0.0041–0.0043 band rather than from the printed number.
 
-The flat-rate-under-the-250-cap model continues to hold, and evidence length
-continues not to predict it: 765 chars/paper here billed at essentially the same
-rate as 747 chars for `cap_0_063` and 976 for v0_0_7.
-
-*(Correction, 2026-11-15: measured from the official logs, these runs shipped
-1,778, 1,808 and 2,523 chars/paper, and judge cost per call does track
-evidence length. v0_0_7 matched the per-paper rate only because 13% of its
-papers needed no judge call. See `scripts/pfb_judge_cost_table.py`.)*
-
 ## Reproduce
 
 ```bash
@@ -382,7 +373,7 @@ Push the commit **before** the full run — `astabench eval` hard-fails if the
 commit is not on the remote, since it stamps the SHA into `eval_spec.revision`.
 
 Spend, now measured rather than projected: 250 papers/query × 194 semantic
-queries = 48,500 papers at 765 chars each, billing **\$206.38 judge** at
+queries = 48,500 papers, billing **\$206.38 judge** at
 \$0.00426/paper, plus **\$66.75 agent** = **\$273.13**. The script's own projection
 prints \$194 judge, which under-shot by 6.0% — see
 [Cost calibration](#cost-calibration-fourth-measured-point).

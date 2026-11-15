@@ -283,16 +283,7 @@ uses `--max-samples 6`.
 | Agent cost | $0.0533 | **$0.0524** ± 0.0018 | −$0.0009 |
 
 **\$0.052 @ 0.376 on the board.** Judge \$197.32 + agent \$13.99 = \$211.31, 7.3 h
-at `--max-samples 6`. Per-paper judge rate \$0.00407 — v0_0_7's \$0.0040, not
-v0_0_8's \$0.0030, despite near-identical evidence length. Evidence length alone
-does not predict the judge bill; the submit script's \$0.0040 ceiling was the
-better estimator.
-
-*(Correction, 2026-11-15: measured from the official logs, evidence was 1,808
-chars/paper against v0_0_8's 1,450, not near-identical (747 vs 750), and judge
-cost per call does track evidence length. v0_0_8's lower rate per submitted
-paper also reflects the 20% of its papers that needed no judge call. See
-`scripts/pfb_judge_cost_table.py`.)*
+at `--max-samples 6`.
 
 The pre-submission risk list held up well. Risk 1 (`specific_f1` is the metric
 to watch) was the right thing to name and it came through at **zero drift** —
@@ -391,11 +382,6 @@ and judges cold (`backup_stock_judge_cache` in the submit script): warm-cache
 scoring permutes the nDCG verdict ordering, so cold is the only reproducible
 official basis (`../robophd_runs/docs/astabench_judge_ordering_issue.md`).
 Budget the full judge spend accordingly.
-
-Projected judge spend, measured from this run's own submissions: 250
-papers/query × 193 semantic queries = 48,250 papers at 747 chars each. At
-v0_0_8's measured \$0.0030/paper (750 chars — near-identical evidence length),
-**~\$145**; the submit script's ceiling formula prints ~\$193.
 
 Then upload `submissions/asta_paper_finder/v0_0_9_cap_0_063_opus5.tar.gz` via
 the HF Spaces form (https://huggingface.co/spaces/allenai/asta-bench-leaderboard).
