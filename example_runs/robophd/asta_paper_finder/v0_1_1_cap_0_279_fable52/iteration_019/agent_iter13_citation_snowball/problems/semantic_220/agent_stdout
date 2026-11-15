@@ -1,0 +1,52 @@
+[semantic_220] score_type=semantic_f1 query='What papers discuss the use of transformer architecture in 3d video generation'
+  plan: kw=['transformer architecture 3d video generation', 'transformer based 3d video synthesis', 'video diffusion transformer 3d scene', '3d aware video generation neural networks', 'spatiotemporal transformer video generation', 'attention mechanism 3d dynamic scene synthesis', 'dynamic neural radiance fields transformer', '4d scene generation transformer', 'video transformer temporal coherence generation', 'diffusion transformer 3d content creation', 'text to 3d video generation transformer', 'volumetric video synthesis deep learning', 'novel view synthesis video transformer', 'transformer generative model 3d point cloud sequence', 'multi view consistent video generation transformer', 'vision transformer video prediction 3d', 'NeRF based video generation transformer', '3d dynamic scene representation attention model'] titles=['Video Diffusion Models', 'Make-A-Video: Text-to-Video Generation without Text-Video Data', 'VideoGPT: Video Generation using VQ-VAE and Transformers', 'Scalable Diffusion Models with Transformers', 'CogVideo: Large-scale Pretraining for Text-to-Video Generation via Transformers', 'NÜWA: Visual Synthesis Pre-training for Neural visUal World creAtion']
+  criteria:
+1. Transformer architecture (weight 0.35): The paper must employ or discuss the transformer architecture, including attention-based models, as a core component.
+2. 3D video generation (weight 0.40): The paper must address 3D video generation, synthesis of dynamic 3D scenes, or 4D content creation.
+3. Relation between transformer and 3D video generation (weight 0.25): The paper must explicitly apply the transformer architecture to the task of 3D video generation, not merely mention both separately.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  retrieval: 1761 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 80, 80, 80, 80, 80, 80, 80, 80, 1, 1, 1, 1, 1, 1]) t=176s
+  tool get_paper_batch failed: ToolError: Paper 541ae786e31a79dde3d159483884d5ae163896e8 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: TimeoutError: 
+  tool get_paper_batch failed: TimeoutError: 
+  graded 320/320 t=428s
+  extra tranche stopped after first 96: est>=2 10 est3 1
+  extra tranche: good1=64 graded 96/200 est>=2: 10 est3: 1 t=429s
+  tool get_paper failed: RuntimeError: tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable
+  tool get_paper failed: TimeoutError: 
+  snowball: seeds=10 answered=10 neighbours=651 multi-linked=74 selected=120 t=569s
+  snowball: hydration timed out
+  snowball: graded 29/29 est>=2: 5 est3: 5 took 242s t=671s
+  est. grades: 3=40 2=39 1=298 other=68
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 74/88 papers t=763s
+  regraded 88/88 t=770s
+  submitted 250 papers
+  round2: near=29 repaired=19 miss=12 miss_filled=0 t=1033s
+  round2: rejudged 7/7; upgraded=0 t=1035s
+  wave B: criterion passages for 92/130 lower-ranked papers t=1035s
+  stage2: full=16 all-criteria=16 of 88
+  provenance: FFFFFFFFFFfffFFfSSSSSSSSSSSSSSSSssSSSSSSSSSSSUUUUUUUUUUUUUUUXXXXUUUUUUUUSSUUUUUUUUUUUUUUUUUUUUUUXXXXXXXsUXSSUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXSssUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU
+  s1 est grade: 3333333333333222221113333333333333222222222111111111111111111111111111113211111111111111111111111111111111321111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111132211111111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 0 0 0 0 0 1 2 2 4 5 14 1 2 3 0 1 0 0 0 0 0 0 0 1 1 1 2 2 2 2 4 4 0 0 1 1 1 2 2 2 0 0 1 0 0 0 0 0 0 0 0 0 0 0 2 2 2 2 3 3 3 3 0 0 0 1 2 2 2 3 1 1 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 2 2 2 2 3 3 3 3 3 3 4 13 14 3 0 3 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 5 3 4 4 4 4 5 5 5 5 5 8 9 17 17 3 4 4 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1
+  evidence: with criterion passages 136/250
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 272831774 360-degree Human Video Generation with 4D Diffusion Transformer
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 270062471 Human4DiT: Free-view Human Video Generation with 4D Diffusion Transformer
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276938107 Reangle-A-Video: 4D Video Generation as Video-to-Video Translation
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 247518928 Look Outside the Room: Synthesizing A Consistent Long-Term 3D Scene Video from A
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 278783081 Interspatial Attention for Efficient 4D Human Video Generation
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 277151053 SV4D 2.0: Enhancing Spatio-Temporal Consistency in Multi-View Video Diffusion fo
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 277435410 CoGen: 3D Consistent Video Generation via Adaptive Conditioning for Autonomous D
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 277467477 Learning 3D-Gaussian Simulators from RGB Videos
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 270123462 OccSora: 4D Occupancy Generation Models as World Simulators for Autonomous Drivi
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 275212985 JOG3R: Towards 3D-Consistent Video Generators
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 271218464 Animate3D: Animating Any 3D Model with Multi-view Video Diffusion
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 273345947 Cavia: Camera-controllable Multi-view Video Diffusion with View-Integrated Atten
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 274515068 4Real-Video: Learning Generalizable Photo-Realistic 4D Video Diffusion
+    2.00 s1=0.83 s2=([3, 3, 3], 3) 266903029 CTNeRF: Cross-Time Transformer for Dynamic Neural Radiance Field from Monocular 
+    2.00 s1=0.75 s2=([3, 3, 3], 3) 237513692 Neural Human Performer: Learning Generalizable Radiance Fields for Human Perform
+  submitted 250 papers
+  done in 1036s; tool failures={'search_papers_by_relevance': 1, 'get_paper_batch': 15, 'get_paper': 2, 'snippet_search': 49}

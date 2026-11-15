@@ -1,0 +1,53 @@
+[semantic_220] score_type=semantic_f1 query='What papers discuss the use of transformer architecture in 3d video generation'
+  plan: kw=['transformer architecture 3d video generation', 'video diffusion transformer 3d synthesis', 'spatiotemporal transformer video generation', 'attention mechanism 3d video synthesis', 'transformer based novel view video', '4d scene generation transformer', 'autoregressive transformer video generation', 'transformer dynamic scene synthesis', 'vision transformer temporal coherence video', '3d aware video generation deep learning', 'transformer neural radiance field video', 'diffusion transformer 3d content creation', 'multi view video generation transformer', 'generative transformer volumetric video', 'temporal attention video prediction transformer', 'transformer point cloud video generation', 'text to 3d video transformer model', 'transformer dynamic neural rendering'] titles=['Make-A-Video: Text-to-Video Generation without Text-Video Data', 'VideoGPT: Video Generation using VQ-VAE and Transformers', 'Text2Video-Zero: Text-to-Image Diffusion Models are Zero-Shot Video Generators', 'MAV3D: Text-To-4D Dynamic Scene Generation', 'Latte: Latent Diffusion Transformer for Video Generation', 'CogVideo: Large-scale Pretraining for Text-to-Video Generation via Transformers']
+  criteria:
+1. Transformer architecture (weight 0.35): The paper must use or discuss a transformer architecture, including self-attention or attention-based models.
+2. 3D video generation (weight 0.35): The paper must address generation of 3D or 4D video content, including dynamic scenes and novel-view video synthesis.
+3. Relation between transformer and 3D video generation (weight 0.30): The paper must explicitly apply the transformer architecture to the task of 3D video generation, not merely mention both separately.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  retrieval: 1698 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 80, 80, 80, 80, 80, 80, 80, 80, 1, 1, 1, 0, 1, 1, 0, 1]) t=210s
+  tool get_paper_batch failed: ToolError: Paper 98bc8e8614dfadd25eb44e3028e91d1ed5fa0467 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper 98bc8e8614dfadd25eb44e3028e91d1ed5fa0467 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper 98bc8e8614dfadd25eb44e3028e91d1ed5fa0467 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  graded 320/320 t=370s
+  extra tranche: good1=85 graded 200/200 est>=2: 29 est3: 11 t=374s
+  tool get_paper failed: RuntimeError: tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable
+  snowball: seeds=10 answered=10 neighbours=742 multi-linked=105 selected=120 t=465s
+  snowball: graded 114/114 of 120 est>=2: 12 est3: 4 took 124s t=589s
+  snowball+ skipped: more=120 est3=4 t=589s
+  est. grades: 3=53 2=73 1=426 other=82
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 70/80 papers t=729s
+  regraded 80/80 t=735s
+  submitted 250 papers
+  round2: near=26 repaired=24 miss=6 miss_filled=0 t=941s
+  round2: rejudged 12/12; upgraded=2 t=944s
+  wave B: criterion passages for 103/130 lower-ranked papers t=944s
+  stage2: full=22 all-criteria=22 of 80
+  head check skipped: full-in-head=16 t=944s
+  provenance: FFFFFFFFFFFFFFFFffFFFFSSSSSSSSSSSsssSSSssssSSSSSsssssSSSsSSSSSSSSSSUUUUUXXXXXXXXXXXXXXXSUSSSSSSSSSSSSUUUUUUUUUUUUUUXXXXXXXXXXXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXXXXXXXUXUUUUUUUUUUUUUUUU
+  s1 est grade: 3333333333333333332222333333333333333333333333333333333332222222222222222222222222222222222222222222222222222222222222222222221111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 0 0 0 0 0 0 0 0 1 1 1 2 2 3 4 4 0 0 1 1 0 0 0 0 1 1 1 1 1 2 3 3 6 5 0 1 1 4 4 12 -1 0 0 2 2 3 3 3 4 4 4 0 1 2 -1 0 0 0 1 1 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 3 4 4 4 4 13 -1 -1 -1 -1 1 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 2 2 3 3 3 4 4 4 5 5 -1 -1 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 3 3 3 3 4 4 4 4 4 5 5 8 9 -1 -1 -1 0 0 0 0 0 0 0 0 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 5 5 5 5 9 12 1 4 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+  evidence: with criterion passages 173/250
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 272831774 360-degree Human Video Generation with 4D Diffusion Transformer
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 247518928 Look Outside the Room: Synthesizing A Consistent Long-Term 3D Scene Video from A
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 270062471 Human4DiT: Free-view Human Video Generation with 4D Diffusion Transformer
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 278165869 DiVE: Efficient Multi-View Driving Scenes Generation Based on Video Diffusion Tr
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 275336281 GS-DiT: Advancing Video Generation with Pseudo 4D Gaussian Fields through Effici
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 277435410 CoGen: 3D Consistent Video Generation via Adaptive Conditioning for Autonomous D
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 274437436 World-consistent Video Diffusion with Explicit 3D Modeling
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 274515068 4Real-Video: Learning Generalizable Photo-Realistic 4D Video Diffusion
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 274465284 Seeing Beyond Views: Multi-View Driving Scene Video Generation with Holistic Att
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 272524273 DriveScape: Towards High-Resolution Controllable Multi-View Driving Video Genera
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 272367525 DiVE: DiT-based Video Generation with Enhanced Control
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 271601181 Ponymation: Learning Articulated 3D Animal Motions from Unlabeled Online Videos
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 270123462 OccSora: 4D Occupancy Generation Models as World Simulators for Autonomous Drivi
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276971649 3DSignDiff: Towards 3D Sign Language Gesture Generation
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 274445741 AniGS: Animatable Gaussian Avatar from a Single Image with Inconsistent Gaussian
+  submitted 250 papers
+  done in 944s; tool failures={'search_papers_by_relevance': 3, 'get_paper_batch': 8, 'get_paper': 1, 'snippet_search': 41}

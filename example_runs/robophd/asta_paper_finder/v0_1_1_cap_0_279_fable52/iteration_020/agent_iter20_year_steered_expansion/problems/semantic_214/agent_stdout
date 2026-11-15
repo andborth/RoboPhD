@@ -1,0 +1,56 @@
+[semantic_214] score_type=semantic_f1 query='Search for papers related to large language models that demonstrate how the same prompt with different responses can improve the performance of the SFT model.'
+  plan: kw=['supervised fine-tuning large language models', 'data augmentation instruction tuning', 'multiple responses per prompt training', 'diverse responses supervised fine-tuning', 'response diversity LLM alignment', 'rejection sampling fine-tuning', 'self-generated responses model training', 'best-of-n sampling LLM training', 'prompt reuse varied outputs', 'scaling response diversity instruction data', 'augmenting SFT with multiple completions', 'sampling temperature response diversity training', 'RAFT reward ranked fine-tuning', 'self-instruct synthetic responses', 'multiple demonstrations same instruction', 'distillation multiple teacher responses', 'improving SFT data quality completions', 'response sampling preference optimization'] titles=['RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment', 'Self-Instruct: Aligning Language Models with Self-Generated Instructions', 'WizardLM: Empowering Large Language Models to Follow Complex Instructions', 'LIMA: Less Is More for Alignment', 'Scaling Relationship on Learning Mathematical Reasoning with Large Language Models', 'STaR: Bootstrapping Reasoning With Reasoning']
+  criteria:
+1. Supervised fine-tuning of LLMs (weight 0.30): The paper must focus on supervised fine-tuning (SFT) of large language models.
+2. Multiple diverse responses per prompt (weight 0.40): The paper must use the same prompt paired with different or multiple responses as training data.
+3. Performance improvement from this strategy (weight 0.30): The paper must demonstrate that using same-prompt-different-responses improves SFT model performance.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool search_paper_by_title failed: TimeoutError: 
+  tool search_paper_by_title failed: TimeoutError: 
+  tool search_paper_by_title failed: TimeoutError: 
+  retrieval: 1704 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 0, 100, 42, 100, 100, 100, 0, 100, 80, 80, 0, 80, 80, 80, 0, 0, 0, 0, 1, 1, 1, 1, 0]) t=221s
+  tool get_paper_batch failed: ToolError: Paper 22f563159fc9aae838a2e71ad24bc1cb7f219fae is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper 22f563159fc9aae838a2e71ad24bc1cb7f219fae is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper 3a63f3e16f3403c0621c96e6fb1254f4fb8aadbd is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  graded 320/320 t=532s
+  extra tranche stopped after first 96: est>=2 3 est3 1
+  extra tranche: good1=35 graded 96/200 est>=2: 3 est3: 1 t=534s
+  snowball: seeds=10 answered=8 neighbours=309 multi-linked=29 selected=120 t=656s
+  snowball: graded 120/120 of 120 est>=2: 8 est3: 2 took 64s t=721s
+  snowball+ skipped: more=120 est3=2 t=721s
+  est. grades: 3=14 2=32 1=199 other=291
+  submitted 250 papers
+  criterion snippets: 42/48 papers t=794s
+  regraded 48/48 t=797s
+  submitted 250 papers
+  round2: near=10 repaired=5 miss=6 miss_filled=3 t=953s
+  round2: rejudged 2/2; upgraded=1 t=954s
+  wave B: criterion passages for 114/130 lower-ranked papers t=954s
+  stage2: full=2 all-criteria=2 of 48
+  head check skipped: full-in-head=2 t=954s
+  provenance: FFSSSSSSSsssSSSSSsSsSSSSsSSsSSsSSSSSSssSSSSSsSSSUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXXXUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXUUUUUUUUUUUUUUXXXXXXXXXXXXUUUUUUUUUXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXXXXXXXUUUUU
+  s1 est grade: 2233333333333333222222222222222222222222222222111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111100000
+  retrieval rank (x100): 1 0 1 1 0 0 0 0 0 3 -1 -1 0 0 2 2 0 -1 1 -1 0 0 2 0 5 1 1 -1 1 1 -1 0 0 0 0 1 3 3 -1 1 0 0 0 0 3 0 1 2 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 4 3 3 4 4 4 4 4 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 0 0 0 1 1 1 1 1 2 2 3 3 3 3 3 3 3 4 7 10 14 -1 -1 -1 -1 -1 -1 0 0 0 0 1 1 1 1 1 2 2 2 2 2 3 3 3 3 4 5 -1 -1 -1 -1 -1 -1 0 0 0 0 0 1 2 2 3 3 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 3 3 3 3 3 3 3 3 3 3 3 6 8 14 10 11 13 15 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 0 0 0 1
+  evidence: with criterion passages 159/250
+    2.00 s1=0.80 s2=([3, 3, 3], 3) 259308873 Preference Ranking Optimization for Human Alignment
+    2.00 s1=0.73 s2=([3, 3, 3], 3) 278339126 Long-Short Chain-of-Thought Mixture Supervised Fine-Tuning Eliciting Efficient R
+    1.04 s1=1.00 s2=([3, 3, 1], 1) 272988100 Balancing Cost and Effectiveness of Synthetic Data Generation Strategies for LLM
+    1.04 s1=1.00 s2=([1, 3, 3], 1) 226226515 SMRTer Chatbots: Improving Non-Task-Oriented Dialog with Simulated Multi-Referen
+    1.03 s1=1.00 s2=([3, 1, 3], 1) 274776642 InverseCoder: Self-improving Instruction-Tuned Code LLMs with Inverse-Instruct
+    1.03 s1=1.00 s2=([3, 1, 3], 1) 276287289 Selective Self-to-Supervised Fine-Tuning for Generalization in Large Language Mo
+    1.03 s1=1.00 s2=([3, 1, 3], 1) 275787902 From Drafts to Answers: Unlocking LLM Potential via Aggregation Fine-Tuning
+    1.01 s1=1.00 s2=([3, 0, 3], 1) 277750158 InverseCoder: Self-improving Instruction-Tuned Code LLMs with Inverse-Instruct
+    1.00 s1=1.00 s2=([3, 1, 1], 1) 273707173 SelfCodeAlign: Self-Alignment for Code Generation
+    0.98 s1=1.00 s2=([3, 0, 1], 1) 267740312 Smaller Language Models are capable of selecting Instruction-Tuning Training Dat
+    0.98 s1=1.00 s2=([3, 0, 1], 1) 277313450 1.4 Million Open-Source Distilled Reasoning Dataset to Empower Large Language Mo
+    0.98 s1=1.00 s2=([3, 0, 1], 1) 270560271 GenQA: Generating Millions of Instructions from a Handful of Prompts
+    0.97 s1=1.00 s2=([1, 1, 1], 1) 268512826 Scaling Data Diversity for Fine-Tuning Language Models in Human Alignment
+    0.97 s1=1.00 s2=([1, 1, 1], 1) 276774295 CrowdSelect: Synthetic Instruction Data Selection with Multi-LLM Wisdom
+    0.95 s1=1.00 s2=([1, 1, 0], 1) 276449636 LongPO: Long Context Self-Evolution of Large Language Models through Short-to-Lo
+  submitted 250 papers
+  done in 955s; tool failures={'search_papers_by_relevance': 6, 'snippet_search': 26, 'search_paper_by_title': 3, 'get_paper_batch': 12}

@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_120",
+    "results": [
+      {
+        "paper_id": "234005523",
+        "markdown_evidence": "Automatic Text Summarization of COVID-19 Research Articles Using Recurrent Neural Networks and Coreference Resolution ... Purpose: Pandemic COVID-19 has created an emergency for the medical community. Researchers require extensive study of scientific literature in order to discover drugs and vaccines. In this situation where every minute is valuable to save the lives of hundreds of people, a quick understanding of scientific articles will help the medical community. Automatic text summarization makes this possible. \nMaterials and Methods: In this study, a recurrent neural network-based extractive summarization is proposed. The extractive method identifies the informative parts of the text. Recurrent neural network is very powerful for analyzing sequences such as text. The proposed method has three phases: sentence encoding, sentence ranking, and summary generation. To improve the performance of the summarization system, a coreference resolution procedure is used. ... Table 2 compares the performance of different types of RNNs. \n\nAs shown in this Table, the LSTM network performs better than the other two RNNs summarization task. In theory, Vanilla RNNs are fully capable of addressing long-term dependencies, but in practice their training is difficult for long-term dependencies [31]. ... This task is considered as a sentence regression process. We combine RNN and coreference resolution procedure to better discover the most informative sentences. \n\nWe have evaluated the performance of different types of RNNs, namely vanilla RNN, RNN with LSTM units and RNN with GRU units in the field of extractive summarization. ... Two other types of RNNs use a gating mechanism and have a more complicated recurrent hidden unit structure. We also examine the LSTM-based recurrent neural network [24]. Unlike an ordinary recurrent unit that only calculates a weighted sum of the input signal and applies a nonlinear function, each LSTM unit holds a memory cell at each time. ... In order to demonstrate the summarization performance of our model, we compare it with Random, Lead, RNN, GRU and LSTM methods. For our experiments we use CORD-19 dataset. Because extractive summarization is implemented as a sentence regression operation, we use the MSE loss between target labels and predicted significance scores to evaluate the system."
+      },
+      {
+        "paper_id": "14715110",
+        "markdown_evidence": "Learning Longer Memory in Recurrent Neural Networks ... Recurrent neural network is a powerful model that learns temporal patterns in sequential data. For a long time, it was believed that recurrent networks are difficult to train using simple optimizers, such as stochastic gradient descent, due to the so-called vanishing gradient problem. In this paper, we show that learning longer term patterns in real data, such as in natural language, is perfectly possible using gradient descent. This is achieved by using a slight structural modification of the simple recurrent neural network architecture. We encourage some of the hidden units to change their state slowly by making part of the recurrent weight matrix close to identity, thus forming kind of a longer term memory. We evaluate our model in language modeling experiments, where we obtain similar performance to the much more complex Long Short Term Memory (LSTM) networks (Hochreiter & Schmidhuber, 1997). ... We evaluate our model on the language modeling task for two datasets. The first dataset is the Penn Treebank Corpus1 , which consists of 930K words in the training set. The pre-processing of data and division to training, validation and test parts are the same as in (Mikolov et al., 2011). ... Nevertheless, simple recurrent networks still suffer from the vanishing gradient problem: as gradients are propagated back through time, their magnitude will almost always exponentially shrink. This makes memory of the SRNs focused only on short term patterns, practically ignoring longer term dependencies. There are two reasons why this happens. ... Empirical comparison of SCRN to Long Short Term Memory (LSTM) recurrent network shows very similar behavior in two language modeling tasks, with similar gains over simple recurrent network. ... Many architectures were proposed to deal with the vanishing gradients. Among those, the long short term memory (LSTM) recurrent neural network (Hochreiter & Schmidhuber, 1997) is a modified version of simple recurrent network which has obtained promising results on hand writing recognition (Graves & Schmidhuber, 2009) and phoneme classification (Graves & Schmidhuber, 2005)."
+      },
+      {
+        "paper_id": "13697606",
+        "markdown_evidence": "Long Short-Term Memory as a Dynamically Computed Element-wise Weighted Sum ... LSTMs were introduced to combat vanishing gradients in simple RNNs by augmenting them with gated additive recurrent connections. We present an alternative view to explain the success of LSTMs: the gates themselves are versatile recurrent models that provide more representational power than previously appreciated. We do this by decoupling the LSTM’s gates from the embedded simple RNN, producing a new class of RNNs where the recurrence computes an element-wise weighted sum of context-independent functions of the input. Ablations on a range of problems demonstrate that the gating mechanism alone performs as well as an LSTM in most settings, strongly suggesting that the gates are doing much more in practice than just alleviating vanishing gradients. ... Results across four major NLP tasks (language modeling, question answering, dependency parsing, and machine translation) indicate that LSTMs suffer little to no performance loss when removing the S-RNN. ... By introducing a memory cell and an output layer controlled by gates, LSTMs enable shortcuts through which gradients can flow when learning with backpropagation. This mechanism enables learning of long-distance dependencies while preserving the expressive power of recurrent nonlinear transformations provided by S-RNNs. ... Long short-term memory (LSTM) (Hochreiter and Schmidhuber, 1997) has become the de-facto recurrent neural network (RNN) for learning representations of sequences in NLP. Like simple recurrent neural networks (S-RNNs) (Elman, 1990), LSTMs are able to learn non-linear functions of arbitrary-length input sequences. ... Even after removing every multiplicative recurrence from the memory cell itself, the model's performance remains well above the vanilla S-2 For the S-RNN baseline (LSTM -GATES), we had to tune the learning rate to 0.1 because the default value (1.0) resulted in exploding gradients."
+      },
+      {
+        "paper_id": "16904319",
+        "markdown_evidence": "Long Short-Term Memory Based Recurrent Neural Network Architectures for Large Vocabulary Speech Recognition ... Long Short-Term Memory (LSTM) is a recurrent neural network (RNN) architecture that has been designed to address the vanishing and exploding gradient problems of conventional RNNs. Unlike feedforward neural networks, RNNs have cyclic connections making them powerful for modeling sequences. They have been successfully used for sequence labeling and sequence prediction tasks, such as handwriting recognition, language modeling, phonetic labeling of acoustic frames. However, in contrast to the deep neural networks, the use of RNNs in speech recognition has been limited to phone recognition in small scale tasks. In this paper, we present novel LSTM based RNN architectures which make more effective use of model parameters to train acoustic models for large vocabulary speech recognition. We train and compare LSTM, RNN and DNN models at various numbers of parameters and configurations. We show that LSTM models converge quickly and give state of the art speech recognition performance for relatively small sized models. ... The trained models are evaluated in a speech recognition system on a test set of 23,000 hand-transcribed utterances and the word error rates (WERs) are reported. The vocabulary size of the language model used in the decoding is 2.6 million. \n\nThe DNNs are trained with SGD with a minibatch size of 200 frames on a Graphics Processing Unit (GPU). ... However, training conventional RNNs with the gradient-based back-propagation through time (BPTT) technique is difficult due to the vanishing gradient and exploding gradient problems [1]. In addition, these problems limit the capability of RNNs to model the long range context dependencies to 5-10 discrete time steps between relevant input signals and output. \n\nTo address these problems, an elegant RNN architecture -Long Short-Term Memory (LSTM) -has been designed [2]. The original architecture of LSTMs contained special units called memory blocks in the recurrent hidden layer. ... We evaluate and compare the performance of DNN, RNN and LSTM neural network architectures on a large vocabulary speech recognition task -Google English Voice Search task."
+      },
+      {
+        "paper_id": "258282835",
+        "markdown_evidence": "A Hybridized Deep Learning Strategy for Course Recommendation ... Recommender systems have been actively used in many areas like e-commerce, movie and video suggestions, and have proven to be highly useful for its users. But the use of recommender systems in online learning platforms is often underrated and less likely used. But many of the times it lacks personalisation especially in collaborative approach while content-based doesn't work well for new users. Therefore, the authors propose a hybrid course recommender system for this problem which takes content as well as collaborative approaches and tackles their individual limitations. The authors see recommendation as a sequential problem and thus have used RNNs for solving the problem. Each recommendation can be seen as the new course in the sequence. The results suggest it outperforms other recommender systems when using LSTMs instead of RNNs. The authors develop and test the recommendation system using the Kaggle dataset of users for grouping similar users as historical data and search history of different users' data. ... The reason for this huge gap is that RNNs are not able to capture long term dependencies since it's gradient of the loss function decays exponentially with time, thus leading to the vanishing gradient problem. On the other hand, LSTM uses gates to control the vanishing gradient problem and has a memory cell for controlling the flow of information to be retained. ... Recurrent neural networks solves the problem of handling the sequential data by taking input from previous cells and thus taking account of prior input for predicting the next input. It is widely used in text processing, music composition as well as time series prediction. ... The use of entropy instead of just similarity also contributes to this significant difference. (Can use Shannon and Renyi Entropies but it will increase the work) When compared the results with various Recurrent Neural Networks too and results were not so shocking that Long Short-term memory outshined vanilla RNN by a significant margin of nearly 4% as shown in Figure 5."
+      },
+      {
+        "paper_id": "13383426",
+        "markdown_evidence": "Gated Orthogonal Recurrent Units: On Learning to Forget ... We present a novel recurrent neural network (RNN)–based model that combines the remembering ability of unitary evolution RNNs with the ability of gated RNNs to effectively forget redundant or irrelevant information in its memory. We achieve this by extending restricted orthogonal evolution RNNs with a gating mechanism similar to gated recurrent unit RNNs with a reset gate and an update gate. Our model is able to outperform long short-term memory, gated recurrent units, and vanilla unitary or orthogonal RNNs on several long-term-dependency benchmark tasks. We empirically show that both orthogonal and unitary RNNs lack the ability to forget. This ability plays an important role in RNNs. We provide competitive results along with an analysis of our model on many natural sequential tasks, including question answering, speech spectrum prediction, character-level language modeling, and synthetic tasks that involve long-term dependencies such as algorithmic, denoising, and copying tasks. ... 2014b) -have led to rapid progress in different areas of machine learning such as language modeling (Graves, Wayne, and Danihelka 2014), neural machine translation (Cho et al. 2014b;Sutskever, Vinyals, and Le 2014), and speech recognition (Chan et al. ... The importance of forgetting for those networks is mainly due to that unitary/orthogonal RNNs can backpropagate the gradients without vanishing through time, and it is very easy for them to just have an output that depends on equal amounts of all the elements of the whole input sequence. ... N can capture long term dependencies more effectively in sequential data than a conventional RNN or LSTM. As a result, this type of model has been shown to perform well on tasks that would require rote memorization (Hochreiter 1991) and simple reasoning, such as the copy task(Hochreiter and Schmidhuber 1997) and the sequential MNIST (Le, Jaitly, and Hinton 2015). ... This task only requires the model to efficiently overcome the gradient vanishing/explosion problem and does not require a forgetting ability. The EURNN performs perfectly and goes through to the baseline in no time -as previously seen. The GORU is the only gated-system to successfully solve this task while the GRU and LSTM get stuck at the baseline as shown in Figure 4."
+      },
+      {
+        "paper_id": "31839991",
+        "markdown_evidence": "Overcoming the vanishing gradient problem in plain recurrent networks ... Plain recurrent networks greatly suffer from the vanishing gradient problem while Gated Neural Networks (GNNs) such as Long-short Term Memory (LSTM) and Gated Recurrent Unit (GRU) deliver promising results in many sequence learning tasks through sophisticated network designs. This paper shows how we can address this problem in a plain recurrent network by analyzing the gating mechanisms in GNNs. We propose a novel network called the Recurrent Identity Network (RIN) which allows a plain recurrent network to overcome the vanishing gradient problem while training very deep models without the use of gates. We compare this model with IRNNs and LSTMs on multiple sequence modeling benchmarks. The RINs demonstrate competitive performance and converge faster in all tasks. Notably, small RIN models produce 12%--67% higher accuracy on the Sequential and Permuted MNIST datasets and reach state-of-the-art performance on the bAbI question answering dataset. ... This simple yet effective method helps the plain recurrent network to overcome the vanishing gradient problem while it is still able to model long-range dependencies. This network is compared against two competing networks, the IRNN (Le et al., 2015) and LSTM, on several long sequence modeling tasks including the adding problem (Section 3.1), Sequential and Permuted MNIST classification tasks (Section 3.2), and bAbI question answering tasks (Section 3.3). ... Notable examples include recurrent networks such as Long-short Term Memory (LSTM) (Hochreiter & Schmidhuber, 1997), Gated Recurrent Unit (GRU) (Chung et al., 2014;Cho et al., 2014), and feedforward networks such as Highway Networks (HNs) (Srivastava et al., 2015), and Residual Networks (ResNets) (He et al., 2015). ... For example, in Phased LSTM, the time gate is inherently interested in temporal frequency selection (Neil et al., 2016). \n\nMotivated by the analysis presented in Section 2, we propose a novel plain recurrent network variant, the Recurrent Identity Network (RIN), that can model long-range dependencies without the use of gates."
+      },
+      {
+        "paper_id": "230510847",
+        "markdown_evidence": "Common Sense-Based Reasoning Using External Knowledge for Question Answering ... Much research has been conducted recently on machines with human-level reasoning ability. Unlike domain knowledge, common sense is an extensive knowledge of the real world, and is included in human reasoning ability in many cases. However, it is difficult for machines to learn common sense because of the lack of well-written data. ComonsenseQA is a dataset in the form of multiple-choice questions and answers created for training and evaluating common sense in machines. RoBERTa, a pre-trained language model that performs well in natural language processing tasks, also performs well in ComonsenseQA. However, its performance is still inadequate compared to human performance. In this paper, we propose a model for predicting the correct answer by searching for information called evidence necessary to answer questions from external knowledge and by using the evidence as a context. ... The LSTM is an improved model for solving the vanishing gradient problem present in the vanilla RNN. The GRU is a simplified LSTM model but has similar performance to LSTM. ... Finetuning is performed as a supervised learning task for which downstream NLP tasks such as MRC, natural language inference, and named entity recognition can be applied. For sentence classification tasks such as natural language inference and semantic analysis, the classification (CLS) token, a special token in BERT, is used for fine-tuning. ... Recently, many datasets have been created for training or evaluating machine common sense [5]- [7]. CommonsenseQA [1] is a multiple-choice QA dataset that requires different types of common sense knowledge to obtain the correct answer. We used CommonsenseQA to assess the performance of our proposed model. ... KagNet, XLNET + Graph Reasoning [25], and HyKAS 2.0 use ConceptNet, similar to the proposed model, but with different model structures to predict the correct answer. The proposed model showed the highest performance among the models using ConceptNet. The comparison with the major models shows that the proposed model is effective for commonsenseQA."
+      },
+      {
+        "paper_id": "26987571",
+        "markdown_evidence": "Label-Dependencies Aware Recurrent Neural Networks ... In the last few years, Recurrent Neural Networks (RNNs) have proved effective on several NLP tasks. Despite such great success, their ability to model \\emph{sequence labeling} is still limited. This lead research toward solutions where RNNs are combined with models which already proved effective in this domain, such as CRFs. In this work we propose a solution far simpler but very effective: an evolution of the simple Jordan RNN, where labels are re-injected as input into the network, and converted into embeddings, in the same way as words. We compare this RNN variant to all the other RNN models, Elman and Jordan RNN, LSTM and GRU, on two well-known tasks of Spoken Language Understanding (SLU). Thanks to label embeddings and their combination at the hidden layer, the proposed variant, which uses more parameters than Elman and Jordan RNNs, but far fewer than LSTM and GRU, is more effective than other RNNs, but also outperforms sophisticated CRF models. ... In order to overcome this limitation the RNNs known as Long Short-Term Memory (LSTM) have been proposed [3]. ... In the last few years Recurrent Neural Networks (RNNs) [1,2,3] have proved very effective in several Natural Language Processing (NLP) tasks such as Part-of-Speech tagging (POS tagging), chunking, Named Entity Recognition (NER), Spoken Language Understanding (SLU), machine translation and even more [4,5,6,7,8,9,10]. ... ATIS is a relatively simple task and doesn't require a sophisticated modeling of label dependencies. This task allows to evaluate models in similar settings as tasks like POS tagging or Named Entity Recognition as defined in the CoNLL Shared Task 2003, both widely used as benchmarks in NLP papers. ... Results on two Spoken Language Understanding tasks show that i) on a simple task like ATIS our variant achieves the same performance as much more complex models such as LSTM and GRU, which are claimed the most effective RNNs; ii) on the MEDIA task, where modeling label dependencies is crucial, our variant outperforms by a large margin all the other RNNs, including LSTM and GRU."
+      },
+      {
+        "paper_id": "201666573",
+        "markdown_evidence": "Non-Local Recurrent Neural Memory for Supervised Sequence Modeling ... Typical methods for supervised sequence modeling are built upon the recurrent neural networks to capture temporal dependencies. One potential limitation of these methods is that they only model explicitly information interactions between adjacent time steps in a sequence, hence the high-order interactions between nonadjacent time steps are not fully exploited. It greatly limits the capability of modeling the long-range temporal dependencies since one-order interactions cannot be maintained for a long term due to information dilution and gradient vanishing. To tackle this limitation, we propose the Non-local Recurrent Neural Memory (NRNM) for supervised sequence modeling, which performs non-local operations to learn full-order interactions within a sliding temporal block and models the global interactions between blocks in a gated recurrent manner. Consequently, our model is able to capture the long-range dependencies. Besides, the latent high-level features contained in high-order interactions can be distilled by our model. ... Next we perform experiments on task of sentiment analysis to evaluate our model on the text modality. Specifically, we aim to identify online movie reviews as positive or negative, which is a sequence classification problem. ... We will first elaborate on the cell structure of our NRNM and then describe how NRNM and the LSTM backbone perform sequence modeling collaboratively. . The architecture of our method. Our proposed NRNM is built upon the LSTM backbone to learn high-order interactions between LSTM hidden states of different time steps within each memory block. ... We first conduct a set of experiments to compare our model to the basic recurrent networks including vanila-RNN, GRU, LSTM and high-order RNN. Figure 9 shows that our model outperforms all other baselines significantly which reveals the remarkable advantages of our NRNM. ... Our model achieves the best performance in both CS and CV metrics, which demonstrates the superiority of our model over other recurrent networks, especially those with memory or gated structures. While our model outperforms the standard LSTM model substantially, the methods based on LSTM [38,52] boost the performance over LSTM by introducing extra attention mechanisms."
+      },
+      {
+        "paper_id": "16867372",
+        "markdown_evidence": "Feedforward Sequential Memory Neural Networks without Recurrent Feedback ... We introduce a new structure for memory neural networks, called feedforward sequential memory networks (FSMN), which can learn long-term dependency without using recurrent feedback. The proposed FSMN is a standard feedforward neural networks equipped with learnable sequential memory blocks in the hidden layers. In this work, we have applied FSMN to several language modeling (LM) tasks. Experimental results have shown that the memory blocks in FSMN can learn effective representations of long history. Experiments have shown that FSMN based language models can significantly outperform not only feedforward neural network (FNN) based LMs but also the popular recurrent neural network (RNN) LMs. ... In our work, we have evaluated the performance of FSMN on two language modeling tasks: Penn Tree Bank (PTB) and English wiki in Large Text Compression Benchmark (LTCB). ... Moreover, the learning of IIR-filter-like RNNs requires to use the so-called back-propagation through time (BPTT) which significantly increases the computational complexity of the learning and also causes the problems of gradient vanishing and exploding [10]. ... In this work, we have proposed a simpler structure for memory neural networks, namely feedforward sequential memory networks (FSMN), which can learn long-term dependency in sequential data without using the recurrent feedback. ... We have first evaluated the performance of FSMN-LMs on the PTB task. We have trained FSMN with an input context window of two, where the previous two words are used to predict the next word. The FSMN contains a linear projection layer (of 200 nodes), two hidden layers (of 400 nodes pre layer) and a memory block in the first hidden layer."
+      },
+      {
+        "paper_id": "250698720",
+        "markdown_evidence": "Learning Sequence Representations by Non-local Recurrent Neural Memory ... The key challenge of sequence representation learning is to capture the long-range temporal dependencies. Typical methods for supervised sequence representation learning are built upon recurrent neural networks to capture temporal dependencies. One potential limitation of these methods is that they only model one-order information interactions explicitly between adjacent time steps in a sequence, hence the high-order interactions between nonadjacent time steps are not fully exploited. It greatly limits the capability of modeling the long-range temporal dependencies since the temporal features learned by one-order interactions cannot be maintained for a long term due to temporal information dilution and gradient vanishing. To tackle this limitation, we propose the non-local recurrent neural memory (NRNM) for supervised sequence representation learning, which performs non-local operations by means of self-attention mechanism to learn full-order interactions within a sliding temporal memory block and models global interactions between memory blocks in a gated recurrent manner. Consequently, our model is able to capture long-range dependencies. ... Classification: Sentiment Analysis \n\nNext we perform experiments on sentiment analysis, another task of sequence classification, to evaluate our model on the text modality. Specifically, we aim to identify online movie reviews as positive or negative. ... This limitation is alleviated by gated recurrent networks such as Long Shot-Term Memory (LSTM) (Hochreiter and Schmidhuber, 1997) and Gate Recurrent Unit (GRU) (Cho et al, 2014), which selectively retain information by learnable gates. ... We opt for Self-Attention mechanism to perform non-local operations within a memory block of NRNM. To investigate the effectiveness of Self-Attention mechanism in our NRNM, in this experiment we replace the Self-Attention with simple concatenation together with linear transformation to carry out the non-local operations among different time steps within a memory block of NRNM. ... Finally, we perform analysis on model complexity. \n\nComparison with recurrent baseline models. To compare with classical recurrent models, we instantiate our NRNM with various recurrent models as backbones, including vanilla-RNN, high-order RNN, GRU and LSTM."
+      },
+      {
+        "paper_id": "226227236",
+        "markdown_evidence": "Recent Neural Methods on Slot Filling and Intent Classification for Task-Oriented Dialogue Systems: A Survey ... In recent years, fostered by deep learning technologies and by the high demand for conversational AI, various approaches have been proposed that address the capacity to elicit and understand user’s needs in task-oriented dialogue systems. We focus on two core tasks, slot filling (SF) and intent classification (IC), and survey how neural based models have rapidly evolved to address natural language understanding in dialogue systems. We introduce three neural architectures: independent models, which model SF and IC separately, joint models, which exploit the mutual benefit of the two tasks simultaneously, and transfer learning models, that scale the model to new domains. We discuss the current state of the research in SF and IC, and highlight challenges that still require attention. ... Other studies (Yao et al., 2014a;Vu et al., 2016) adapt Long Short-Term Memory Network (LSTM) (Hochreiter and Schmidhuber, 1997) to SF. The LSTM model gives better SF performance compared to CRF, CNN, and RNN. ... • The slot filling task is related to Named Entity Recognition (NER) (Grishman and Sundheim, 1996) task as slot values can be a named entity such as airline name, city name etc. If the slot filling task is modeled as a sequence tagging problem, basically recent neural models proposed for NER can be used for slot filling and vice versa. ... Compared with RNN (Yao et al., 2013;Mesnil et al., 2013), CNN gives lower performance for SF on ATIS. Other studies (Yao et al., 2014a;Vu et al., 2016) adapt Long Short-Term Memory Network (LSTM) (Hochreiter and Schmidhuber, 1997) to SF. ... In recent years, neural-network based models have achieved the state of the art for a wide range of natural language processing tasks, including SF and IC. Various neural architectures have been experimented on SF and IC, including RNN-based (Mesnil et al., 2013) and attention-based (Liu and Lane, 2016) approaches, till the more recent transformers models (Chen et al., 2019)."
+      },
+      {
+        "paper_id": "263340989",
+        "markdown_evidence": "Comparison of RNN Architectures and Non-RNN Architectures in Sentiment Analysis ... This study compares the sentiment analysis performance of multiple Recurrent Neural Network architectures and One-Dimensional Convolutional Neural Networks. THE METHODS EVALUATED ARE simple Recurrent Neural Network, Long Short-Term Memory, Gated Recurrent Unit, Bidirectional Recurrent Neural Network, and 1D ConvNets. A dataset comprising text reviews with positive or negative sentiment labels was evaluated. All evaluated models demonstrated an extremely high accuracy, ranging from 99.81% to 99.99%. Apart from that, the loss generated by these models is also low, ranging from 0.0043 to 0.0021. However, there are minor performance differences between the evaluated architectures. The Long Short-Term Memory and Gated Recurrent Unit models mainly perform marginally better than the Simple Recurrent Neural Network, albeit with slightly lower accuracy and loss. In the meantime, the Bidirectional Recurrent Neural Network model demonstrates competitive performance, as it can effectively manage text context from both directions. ... It has been implemented in various fields, such as natural language processing, forecasting, and pattern recognition. \n\nRecurrent neural network (RNN) architectures Simple RNN, LSTM, and GRU are used for sequential data processing, including text, speech, and time series. ... Artificial neural networks possess intrinsic mechanisms that enable them to retain information over extended periods and mitigate the vanishing gradient issue. Consequently, they exhibit enhanced performance in sentiment analysis and speech recognition tasks. The Long Short-Term Memory (LSTM) model shows a more intricate architectural design. ... Recurrent Neural Network (RNN) architectures, including Simple RNN, Long Short-Term Memory (LSTM), and Gated Recurrent Unit (GRU) (Bacanin et al., 2023), (Mirzaei et al., 2022), enable sequential processing of text data, effectively addressing the challenge of longrange relationships in language. ... Both models employ a recurrent neural network (RNN) architecture, which can comprehend data sequences. GRU (Gated Recurrent Unit) and LSTM (Long Short-Term Memory) are RNN variants designed to address the issue of long-range dependencies in sequential data. This demonstrates that RNNs are highly effective at sequential data analysis tasks."
+      },
+      {
+        "paper_id": "271655299",
+        "markdown_evidence": "COMPARISON OF DEEP LEARNING METHODS ON SENTIMENT ANALYSIS USING WORD EMBEDDING ... According to ICW, corruption cases in Indonesia in the last 5 years have increased and the amount of losses suffered by the state from 2012-2022 reached Rp138.39 trillion. According to Transparency International, Indonesia's CPI ranking decreased in 2023 to 115 compared to 2022 at 110 out of 180 countries. These results show that the response to corruption is still slow and continues to deteriorate due to a lack of support from stakeholders. The purpose of this study is to test and compare the performance of deep learning model algorithms (RNN/LSTM/GRU/Bi-GRU/Bi-LSTM) on sentiment classification using word embedding, and obtain a model architecture that can determine the polarity of a sentence about public sentiment related to corruption in Indonesia, which can help governments, researchers, and practitioners in designing more effective anti-corruption strategies. The dataset used amounted to 1793 derived from crawling Twitter with 3 classes namely positive, negative and neutral. This research starts from data collection, preprocessing, word embedding, splitting the dataset which is divided into 80% training data and 20% test data, deep learning model testing, model evaluation and result representation. Word embedding uses word2vec with a dimension of 300. Based on the experimental results obtained, Bi-GRU has better performance than other architectural models with an accuracy value of 88%, precision 88.07%, recall 86.97% and f1-score 87.51%. The data used in this research is relatively small, it is recommended that future research can overcome it"
+      },
+      {
+        "paper_id": "221996154",
+        "markdown_evidence": "Neural Language Modeling with Implicit Cache Pointers ... A cache-inspired approach is proposed for neural language models (LMs) to improve long-range dependency and better predict rare words from long contexts. This approach is a simpler alternative to attention-based pointer mechanism that enables neural LMs to reproduce words from recent history. Without using attention and mixture structure, the method only involves appending extra tokens that represent words in history to the output layer of a neural LM and modifying training supervisions accordingly. A memory-augmentation unit is introduced to learn words that are particularly likely to repeat. We experiment with both recurrent neural network- and Transformer-based LMs. Perplexity evaluation on Penn Treebank and WikiText-2 shows the proposed model outperforms both LSTM and LSTM with attention-based pointer mechanism and is more effective on rare words. N-best rescoring experiments on Switchboard indicate that it benefits both very rare and frequent words. However, it is challenging for the proposed model as well as two other models with attention-based pointer mechanism to obtain good overall WER reductions. ... In this section, we briefly introduce related work about approaches to improve performance on rare words and long-term dependency for sequence modeling problems including neural language modeling and machine translation [16,17,18,19,20,21]. ... The performance gap between the PSMM in the paper [19] and ours is mainly caused by different implementations of truncated back-propagation through time (BPTT). ... Though the PSMM achieves lower perplexity than standard LSTM, the attention and gating mechanisms are relatively complex and not the only approach to do so. We aim to achieve a similar effect with simpler models. ... For LSTM-based models, the proposed ap- proach outperforms the baseline LSTM, but performs slightly worse than the PSMM and neural cache models. For Transformer LMs, the proposed approach also achieves better perplexity than the two Transformer baselines."
+      },
+      {
+        "paper_id": "11405153",
+        "markdown_evidence": "Recurrent Neural Networks with External Memory for Language Understanding ... Recurrent Neural Networks (RNNs) have become increasingly popular for the task of language understanding. In this task, a semantic tagger is deployed to associate a semantic label to each word in an input sequence. The success of RNN may be attributed to its ability to memorize long-term dependence that relates the current-time semantic label prediction to the observations many time instances away. However, the memory capacity of simple RNNs is limited because of the gradient vanishing and exploding problem. We propose to use an external memory to improve memorization capability of RNNs. We conducted experiments on the ATIS dataset, and observed that the proposed model was able to achieve the state-of-the-art results. We compare our proposed model with alternative models and report analysis results that may provide insights for future research. ... Neural network based methods have recently demonstrated promising results on many natural language processing tasks [1, 2]. Specifically, recurrent neural networks (RNNs) based methods have shown strong performances, for example, in language modeling [3], language understanding [4], and machine translation [5,6] tasks. ... This phenomenon prevents simple RNN from learning patterns that are spanned with long time dependence [14]. \n\nTo tackle this problem, long short-term memory (LSTM) neural network was proposed in [17] with an introduction of memory cells, linearly dependent on their past values. LSTM also introduces three gating functions, namely input gate, forget gate and output gate. ... In this paper, we have proposed a novel neural network architecture, RNN-EM, that uses external memory to improve memory capacity of simple recurrent neural networks. On a common language understanding task, RNN-EM achieves new state-ofthe-art results and performs significantly better than the previous best result using long short-term memory neural networks. ... Figure 2   We further repeated ATIS experiments for 10 times with different random seeds for these neural network models. We evaluated their performances after their convergences. Table 4 lists their averaged F1 scores, together with their maximum and minimum F1 scores. A change of 0.12% is significant at the 90% confidence level, when comparing against LSTM result."
+      },
+      {
+        "paper_id": "261406094",
+        "markdown_evidence": "Exploring the Effectiveness of Deep Learning in Analyzing Review Sentiment ... This study aimed to analyze sentiment in office product reviews by using word embedding with three neural network modeling approaches: Convolutional Neural Networks (CNN), Long Short-Term Memory (LSTM), and Gated Recurrent Units (GRU). Office product review data is taken from Amazon's reviews of office products covering a wide range of sentiments. Word embedding converts text into a numerical vector representation for neural network processing. Experimental comparison of this model reveals that CNN achieves the highest accuracy, 77.99%. The CNN model effectively extracts significant features from review text, improving sentiment classification performance. Although the LSTM and GRU models show satisfactory results, they do not match CNN performance. These findings demonstrate the effectiveness of word embedding and neural networks for sentiment analysis in office product reviews. This provides valuable insights for companies to improve their products based on user feedback from online reviews. Additionally, this research serves as a foundation for further advances in sentiment analysis across a wide range of other products and services ... Long Short-Term Memory (LSTM) is a type of recurrent neural network (RNN) architecture that is particularly effective in modeling sequential data, such as natural language processing and time series analysis. LSTMs address the vanishing gradient problem associated with traditional RNNs by incorporating memory cells and gates that control the flow of information. This enables LSTMs to capture long-term dependencies and learn complex patterns over extended sequences. \n\nThe key components of an LSTM cell include an input gate (  ), a forget gate (  ), an output gate (  ) a memory cell (  ) and a hidden state (ℎ  ). ... Since its introduction, GRU has gained widespread popularity and has been successfully applied to various domains, including natural language processing, speech recognition, and machine translation. Its efficiency, simplicity, and competitive performance have made GRU a popular choice for modeling sequential data [15]. ... Gated Recurrent Unit (GRU) is a variant of the recurrent neural network (RNN) architecture that addresses the vanishing gradient problem and offers an efficient alternative to Long Short-Term Memory (LSTM) networks."
+      },
+      {
+        "paper_id": "275965046",
+        "markdown_evidence": "Integrating Attention Mechanisms with Bidirectional Long Short-term Memory Recurrent Neural Networks for Improved Speech Recognition ... Speech-to-text technology is indispensable for converting spoken words into text, facilitating easy storage and retrieval. This process involves several critical stages, progressing from a basic model through signal pre-processing, feature extraction, feature selection, and modeling. There has been extensive literature on improving speech recognition, however, challenges persist, particularly in addressing word error rates, accuracy, latency, and computational efficiency in continuous input streams in a noisy environment. This research systematically evaluates the effectiveness of recurrent neural networks (RNNs), long short-term memory neural networks (LSTMs), gated recurrent units (GRUs), bi-directional long short-term memory (Bi-LSTM), and bi-directional long short-term memory (Bi-LSTM) with attention mechanism networks. It further proposes integrating attention mechanisms with a Bidirectional Long Short Memory Recurrent neural network to enable the model to focus on the crucial parts of the input sequence thus increasing computational efficiency. Experimental results, based on the Libri speech and TIMIT training dataset, demonstrate promising outcomes. The proposed model exhibits superior performance, achieving a word error rate of 1.6%, and an accuracy of 98.4% on the training dataset. As a future avenue of exploration, the study proposes evaluating the use of transformer models to reduce character error rates further and enhance accuracy in continuous input streams."
+      },
+      {
+        "paper_id": "3648736",
+        "markdown_evidence": "Convolutional Sequence to Sequence Learning ... The prevalent approach to sequence to sequence learning maps an input sequence to a variable length output sequence via recurrent neural networks. We introduce an architecture based entirely on convolutional neural networks. Compared to recurrent models, computations over all elements can be fully parallelized during training and optimization is easier since the number of non-linearities is fixed and independent of the input length. Our use of gated linear units eases gradient propagation and we equip each decoder layer with a separate attention module. We outperform the accuracy of the deep LSTM setup of Wu et al. (2016) on both WMT'14 English-German and WMT'14 English-French translation at an order of magnitude faster speed, both on GPU and CPU. ... Popular choices for recurrent networks in encoder-decoder models are long short term memory networks (LSTM; Hochreiter & Schmidhuber, 1997) and gated recurrent units (GRU; Cho et al., 2014). Both extend Elman RNNs (Elman, 1990) with a gating mechanism that allows the memorization of information from previous time steps in order to model long-term dependencies. ... We consider three major WMT translation tasks as well as a text summarization task. \n\nWMT'16 English-Romanian. We use the same data and pre-processing as Sennrich et al. (2016b) but remove sentences with more than 175 words. This results in 2.8M sentence pairs for training and we evaluate on newstest2016. ... In machine translation, this architecture has been demonstrated to outperform traditional phrase-based models by large margins (Sennrich et al., 2016b;Zhou et al., 2016;Wu et al., 2016;§2). \n\nConvolutional neural networks are less common for sequence modeling, despite several advantages (Waibel et al., 1989;LeCun & Bengio, 1995). ... Gated convolutions have been previously explored for machine translation by Meng et al. (2015) but their evaluation was restricted to a small dataset and the model was used in tandem with a traditional count-based model. Architec-tures which are partially convolutional have shown strong performance on larger tasks but their decoder is still recurrent (Gehring et al., 2016)."
+      },
+      {
+        "paper_id": "278350794",
+        "markdown_evidence": "AI-driven early diagnosis of specific mental disorders: a comprehensive study ... One of the areas where artificial intelligence (AI) technologies are used is the detection and diagnosis of mental disorders. AI approaches, including machine learning and deep learning models, can identify early signs of bipolar disorder, schizophrenia, autism spectrum disorder, depression, suicidality, and dementia by analyzing speech patterns, behaviors, and physiological data. These approaches increase diagnostic accuracy and enable timely intervention, which is crucial for effective treatment. This paper presents a comprehensive literature review of AI approaches applied to mental disorder detection using various data sources, such as survey, Electroencephalography (EEG) signal, text and image. Applications include predicting anxiety and depression levels in online games, detecting schizophrenia from EEG signals, detecting autism spectrum disorder, analyzing text-based indicators of suicidality and depression, and diagnosing dementia from magnetic resonance imaging images. ... Long short-term memory networks are deep learning architecture widely used in time series data and sequential data structures. On the other hand, RNNs are models that contain directed loops in memory and show superior performance especially in sequential data. Unlike traditional neural networks and RNNs, LSTM is better at remembering and forgetting data over time, which makes it preferred in tasks where sequential data is critical, such as language modeling, audio processing, and financial forecasting (Van Houdt et al. ... The memory cell stores information from previous time steps and selectively updates it based on the current input and its own internal dynamics. LSTMs use special structures called gates to control the flow of information (incoming and outgoing to the memory cell). There are three main types of gates in an LSTM unit: forget gate, input gate, and output gate. ... GRUs have become quite popular in recent years due to their simplicity, efficiency, and competitive performance in a variety of sequence modeling tasks, including natural language processing, speech recognition, and time series analysis."
+      },
+      {
+        "paper_id": "260422",
+        "markdown_evidence": "Exploring the Limits of Language Modeling ... In this work we explore recent advances in Recurrent Neural Networks for large scale Language Modeling, a task central to language understanding. We extend current models to deal with two key challenges present in this task: corpora and vocabulary sizes, and complex, long term structure of language. We perform an exhaustive study on techniques such as character Convolutional Neural Networks or Long-Short Term Memory, on the One Billion Word Benchmark. Our best single model significantly improves state-of-the-art perplexity from 51.3 down to 30.0 (whilst reducing the number of parameters by a factor of 20), while an ensemble of models sets a new record by improving perplexity from 41.0 down to 23.7. We also release these models for the NLP and ML community to study and improve upon. ... Most of our work is based on Recurrent Neural Networks (RNN) models which retain long term dependencies. To this extent, we used the Long-Short Term Memory model (Hochreiter & Schmidhuber, 1997) which uses a gating mechanism (Gers et al., 2000) to ensure proper propagation of information through many time steps. ... Language Modeling (LM) is a task central to Natural Language Processing (NLP) and Language Understanding. ... The recurrent networks process sequences of characters from both sides and their final state vectors are concatenated. The resulting representation is then fed to a Neural Network. This model achieved very good results on a partof-speech tagging task. ... Section 3 presents our contributions to the field of neural language modeling, emphasizing large scale recurrent neural network training. Sections 4 and 5 aim at exhaustively describing our experience and understanding throughout the project, as well as emplacing our work relative to other known approaches."
+      },
+      {
+        "paper_id": "234063133",
+        "markdown_evidence": "Questions and Answers on Legal Texts Based on BERT-BiGRU ... Using text question and answer technology to improve the efficiency of judicial personnel in the process of case handling can greatly reduce labour costs. This paper proposes a hybrid neural network model that combines pre-training model BERT and Bi-GRU. The model first uses the pre-training model to learn powerful semantic capabilities, then combines Bi-GRU to learn the semantic information between the text and the question, finally gets the answer corresponding to the legal text. The experimental results on the CJRC data set show that compared with the basic baseline model, the algorithm in this paper can effectively improve the accuracy and F1 value. ... It is difficult to learn the intermediate long-term dependence features. Long-short-term memory neural network (LSTM) [16] has made great improvements to traditional RNNs, introducing memory units and threshold mechanisms to capture long-distance information and solve the problem of gradient disappearance. ... In the field of natural language, some methods can use convolutional neural networks (CNN) to extract features for question and answer matching [5], or use Long Short-Term Memory (LSTM) to learn the context relevance of the article sequence to match [6]. ... Therefore, this paper proposes a Bidirectional Gated Recurrent Unit model based on BERT for text question and answer in the legal field, which has achieved good results on the CJRC: A Reliable Human-Annotated Benchmark Dataset for Chinese Judicial Reading Comprehension [15] data set."
+      },
+      {
+        "paper_id": "279598127",
+        "markdown_evidence": "Research on Tibetan Weibo Sentiment Analysis Based on Deep Learning ... This paper focuses on the task of Tibetan Weibo sentiment analysis based on deep learning. It aims to conduct performance comparison experiments among three deep learning models: TextRNN, TextCNN, and TextRCNN, using a dataset comprising 10,000 Tibetan Weibo posts. The experimental results demonstrate that the TextRCNN model exhibits the best performance in Tibetan Weibo sentiment analysis, achieving an accuracy rate of 85%. This notable advantage is primarily attributed to the TextRCNN model's integration of RNN (Recurrent Neural Network) and CNN (Convolutional Neural Network) characteristics, enabling it to simultaneously capture both contextual information and local features of Tibetan text, thereby more accurately understanding and judging sentiment orientations in Weibo posts."
+      },
+      {
+        "paper_id": "272648964",
+        "markdown_evidence": "Leveraging Machine Learning and Remote Sensing for Water Quality Analysis in Lake Ranco, Southern Chile ... This study examines the dynamics of limnological parameters of a South American lake located in southern Chile with the objective of predicting chlorophyll-a levels, which are a key indicator of algal biomass and water quality, by integrating combined remote sensing and machine learning techniques. Employing four advanced machine learning models (recurrent neural network (RNNs), long short-term memory (LSTM), recurrent gate unit (GRU), and temporal convolutional network (TCNs)), the research focuses on the estimation of chlorophyll-a concentrations at three sampling stations within Lake Ranco. The data span from 1987 to 2020 and are used in three different cases: using only in situ data (Case 1), using in situ and meteorological data (Case 2), using in situ, and meteorological and satellite data from Landsat and Sentinel missions (Case 3). In all cases, each machine learning model shows robust performance, with promising results in predicting chlorophyll-a concentrations. Among these models, LSTM stands out as the most effective, with the best metrics in the estimation, the best performance was Case 1, with R2 = 0.89, an RSME of 0.32 µg/L, an MAE 1.25 µg/L and an MSE 0.25 (µg/L)2, consistently outperforming the others according to the static metrics used for validation. ... However, the inference process of a TCN occupies more memory than that of RNNs, as it requires processing the entire sequence to compute the next time step. ... In an LSTM network, each neural unit incorporates three fundamental gates: the input gate, the forgetting gate, and the output gate. These gates allow the network to discern which information is worth retaining and that which should be discarded at each time step. The input gate regulates the incorporation of new information into the network's short-term memory. The forgetting gate regulates the retention or deletion of information in the long-term memory. Finally, the output gate determines which information is used to make predictions or decisions at any given time (see Figure 4). ... Recurrent neural network (RNN), long short-term memory (LSTM), and gate recurrent unit (GRU) architectures were constructed, with a hidden layer in each of them."
+      },
+      {
+        "paper_id": "265249004",
+        "markdown_evidence": "Formal Verification of Long Short-Term Memory based Audio Classifiers: A Star based Approach ... Formally verifying audio classification systems is essential to ensure accurate signal classification across real-world applications like surveillance, automotive voice commands, and multimedia content management, preventing potential errors with serious consequences. Drawing from recent research, this study advances the utilization of star-set-based formal verification, extended through reachability analysis, tailored explicitly for Long Short-Term Memory architectures and their Convolutional variations within the audio classification domain. By conceptualizing the classification process as a sequence of set operations, the star set-based reachability approach streamlines the exploration of potential operational states attainable by the system. The paper serves as an encompassing case study, validating and verifying sequence audio classification analytics within real-world contexts. It accentuates the necessity for robustness verification to ensure precise and dependable predictions, particularly in light of the impact of noise on the accuracy of output classifications. ... In this assessment, we conduct a thorough and comprehensive evaluation of three distinct network architectures across diverse audio classification scenarios. \n\n4. Finally, we develop insights on evaluating the reachability analysis on those networks and possible future direction. ... An LSTM layer, a subtype of the Recurrent Neural Network (RNN) layer, excels at capturing long-term dependencies in time series and sequential data [16]. ... In contrast, LSTMs also maintain a hidden state, but their structure is more complex, featuring multiple gates (input, forget, and output gates) that regulate the information flow. (b) Vanilla RNNs face challenges capturing long-term dependencies within sequences due to the vanishing gradient problem. ... The work in [41] focused on the Vanilla RNN, while this paper delves into models of significantly greater intricacy, such as the LSTM and CNN-LSTM architectures. Vanilla RNNs and LSTMs are both types of recurrent neural networks."
+      },
+      {
+        "paper_id": "221107244",
+        "markdown_evidence": "Attention with Long-Term Interval-Based Deep Sequential Learning for Recommendation ... Modeling user behaviors as sequential learning provides key advantages in predicting future user actions, such as predicting the next product to purchase or the next song to listen to, for the purpose of personalized search and recommendation. Traditional methods for modeling sequential user behaviors usually depend on the premise of Markov processes, while recently recurrent neural networks (RNNs) have been adopted to leverage their power in modeling sequences. In this paper, we propose integrating attention mechanism into RNNs for better modeling sequential user behaviors. Specifically, we design a network featuring Attention with Long-term Interval-based Gated Recurrent Units (ALI-GRU) to model temporal sequences of user actions. ... is layer is designed to extract driven signals from input sequence and to refine the long-term memory by contextual information. We now detail our method for these two targets. \n\nIn the previous work for natural language processing tasks, the attention function is driven by a single vector of input [1,27,40]. ... By adopting time gate, which is strong at modeling shortterm dynamics, and bidirectional RNN, which leads to advantages for modeling long-term information, ALI-GRU better analyzes the complex dependence among items and user intents, together with a novel matrix-form attention mechanism to enhance the performance. ... is is due to the limitation of Basic-GRU/Basic-LSTM in modeling complex long-term sequential data. Compared to Session RNN, Time-LSTM achieves better performance for high precision range (precision larger than about 0.73), which owes to the advantage of short-term intents for predicting highly confident items. ... 3 shows the AUC results for measuring the overall performance. We can observe that all RNN-based methods except Basic-GRU outperform Fossil that is based on matrix factorization with Markov processes, which indicates the advantage of RNN for modeling sequential data."
+      },
+      {
+        "paper_id": "259188026",
+        "markdown_evidence": "Reducing Computational Costs in Sentiment Analysis: Tensorized Recurrent Networks vs. Recurrent Networks ... Anticipating audience reaction towards a certain text is integral to several facets of society ranging from politics, research, and commercial industries. Sentiment analysis (SA) is a useful natural language processing (NLP) technique that utilizes lexical/statistical and deep learning methods to determine whether different-sized texts exhibit positive, negative, or neutral emotions. Recurrent networks are widely used in machine-learning communities for problems with sequential data. However, a drawback of models based on Long-Short Term Memory networks and Gated Recurrent Units is the significantly high number of parameters, and thus, such models are computationally expensive. This drawback is even more significant when the available data are limited. Also, such models require significant over-parameterization and regularization to achieve optimal performance. Tensorized models represent a potential solution. In this paper, we classify the sentiment of some social media posts. ... LSTM is a type of recurrent neural network architecture that addresses the vanishing gradient problem and is wellsuited for capturing long-range dependencies in sequential data. \n\nThe LSTM network consists of a cell state (c t ) and three gates: the forget gate (f t ), the input gate (i t ), and the output gate (o t ) at time step t. ... GRUs The Gated Recurrent Unit is a variant of the recurrent neural network that has simplified architecture compared to the Long Short-Term Memory (LSTM) while still capturing long-range dependencies in sequential data. ... RNNs have proven to be powerful models for tasks such as language modeling, machine translation, speech recognition, sentiment analysis, and many more. Their ability to process sequential data and capture dependencies across time makes them a valuable tool in the field of deep learning and has led to significant advancements in various domains. ... Furthermore, to evaluate the effectiveness of this method, a Long-Term Short-Term Memory (LSTM) network was trained on the sentiment analysis filtered tweets. The LSTM architecture was chosen for its ability to address issues such as the vanishing gradient problem often encountered in traditional recurrent neural networks (RNNs)."
+      },
+      {
+        "paper_id": "268026523",
+        "markdown_evidence": "Comparative study of sequence-to-sequence models: From RNNs to transformers ... In this comprehensive exploration of sequence-to-sequence models in Natural Language Processing (NLP), we have traced the trajectory of their evolution and contributions. Starting from foundational Recurrent Neural Networks (RNNs) to the revolutionary capabilities of Long Short-Term Memory (LSTM), In this comprehensive exploration of sequence-to-sequence models in Natural Language Processing (NLP), we have meticulously traced the trajectory of their evolution and impactful contributions. From the foundational Recurrent Neural Networks (RNNs) to the revolutionary capabilities of Long Short-Term Memory (LSTM), as well as the transformative innovations brought forth by Transformers and BERT, this review eloquently highlights the monumental advancements that have fundamentally reshaped our understanding and generation of language. The crux of our comparative analysis lies in its ability to spotlight the distinctive strengths and limitations inherent in each model. Through an intricate examination, we uncover their nuanced applications across a diverse spectrum of NLP tasks. Particularly noteworthy is the pivotal role played by Transformers and the transformative Bidirectional Encoder Representations from Transformers (BERT). The paper concludes with a summary and outlook of the entire paper. ... The cooperative functionality of these gates empowers the LSTM to uphold long-term dependencies, a trait pivotal for its proficiency in tasks such as predictive sequence analysis and natural language processing. Additionally, the intricate gating mechanism serves to alleviate the vanishing gradient predicament, a prominent challenge in conventional RNNs. LSTMs adeptly manage the flow of information through their gates and cell state, ensuring robust performance while preserving the core essence of the original text. ... Long Short-Term Memory (LSTM) networks, a specialized type of RNN, were created to excel at identifying patterns spanning considerable time durations. ... On the other hand, RoBERTa, with its attention mechanism, outperforms in tasks requiring understanding of context and relationships between different parts of a text, such as question-answering and sentiment analysis. The study further elaborates on the LSTM's capability to capture syntactic dependencies, emphasizing its significance in language processing tasks."
+      },
+      {
+        "paper_id": "52190495",
+        "markdown_evidence": "Improved Sentence Modeling using Suffix Bidirectional LSTM ... Recurrent neural networks have become ubiquitous in computing representations of sequential data, especially textual data in natural language processing. In particular, Bidirectional LSTMs are at the heart of several neural models achieving state-of-the-art performance in a wide variety of tasks in NLP. However, BiLSTMs are known to suffer from sequential bias - the contextual representation of a token is heavily influenced by tokens close to it in a sentence. We propose a general and effective improvement to the BiLSTM model which encodes each suffix and prefix of a sequence of tokens in both forward and reverse directions. We call our model Suffix Bidirectional LSTM or SuBiLSTM. This introduces an alternate bias that favors long range dependencies. We apply SuBiLSTMs to several tasks that require sentence modeling. ... Vanilla RNNs have largely given way to more sophisticated recurrent architectures like Long Short-Term Memory (Hochreiter and Schmidhuber 1997) and the simpler Gated Recurrent Unit (Cho et al. 2014), owing to their superior gradient propagation properties. ... In particular, LSTMs are a core component in several state-of-the-art neural models for NLP tasks like language modeling (Melis, Dyer, and Blunsom 2018; Merity, Keskar, and Socher 2018), textual entailment (Chen et al. 2017), question answering (Seo et al. 2017), semantic role labeling (He et al. 2017) and named entity recognition (Ma and Hovy 2016). ... Recurrent Neural Networks (Elman 1990) have emerged as one of the most powerful tools for computing distributed representations of sequential data. The problems of training vanilla RNNs (Bengio, Simard, and Frasconi 1994) were addressed by more sophisticated models -most notably the Long Short Term Memory (LSTM) (Hochreiter and Schmidhuber 1997) and the simpler GRU (Cho et al. ... We evaluate the representational power of SuBiLSTM using several sentence modeling tasks and datasets from NLP. We do not concern ourselves with designing new models for SuBiLSTM. Rather, for each task, we take a strongly performing base model that uses the token representations of a BiLSTM and replace it with SuBiLSTM. The training procedures are kept exactly the same."
+      },
+      {
+        "paper_id": "252625287",
+        "markdown_evidence": "The effect of the forget gate on bifurcation boundaries and dynamics in Recurrent Neural Networks and its implications for gradient-based optimization ... Recurrent Neural Networks (RNNs) are an internal dynamics approach to identify models from time series data. They have been successfully applied, e.g. in natural language, speech and video processing [1] and the identification of nonlinear state space models [2]. Conventional RNNs, such as the Elman-RNN, are notoriously hard to optimize, since they are highly initialization dependent, prone to slow convergence, and tend to converge to poor local minima. In recent years, the vanishing/exploding gradient phenomenon, which arises when employing gradient-based optimization techniques such as Backpropagation Through Time (BPTT), has been identified as the root cause of these difficulties. This led to the development of several new RNN-architectures, such as the Long Short-Term Memory (LSTM) and the Gated Recurrent Unit (GRU), which were intended to prevent the vanishing-gradient problem and surpassed conventional RNNs in all areas of application. However, it has been shown that the gradient also vanishes in Gated Units [3] and there is no work showing, that the rate of decay is lower than in Elman-RNN. This suggests that the underlying mechanisms responsible for their success are at least in part not yet fully understood. The purpose of this paper is to provide an alternative explanation for the superior performance of Gated Units by viewing them as nonlinear dynamical systems and studying the stability of their fixed points. This work expands on the work of Doya et al. [4] and Pascanu et al. [5], who studied the effects of bifurcation boundaries in the parameter space of Elman-RNNs with one internal state on gradient-based learning."
+      },
+      {
+        "paper_id": "276993914",
+        "markdown_evidence": "LSTM Neural Networks for Brain Signals and Neuromorphic Chip ... Long Short-Term Memory (LSTM) is a type of RNN architecture commonly employed in natural language processing, speech recognition, and various sequence modeling applications. A normal recurrent neural network (RNN), which features a simple architecture of input, hidden state, and output, an LSTM is distinguished by a more complex structure that incorporates supplementary memory cells and gates. This architecture allows the LSTM to selectively retain or discard information from previous time steps. The fundamental component of these devices is a memory cell, which has two input gates, one output gate, and a forget gate. These gates manage the inflow and outflow of data, allowing LSTMs to choose to retain or eliminate information. The articles concentrate on the hardware chip design of the LSTM-like mechanism in neuromorphic systems, which incorporates two LSTM layers and processes eight neurons together with their weights in Xilinx ISE 14.7 and simulates the design for logic verification test cases. LSTM networks could inspire neuromorphic technologies that process time-sensitive information and memory like the brain. The novelty of the work is in the scalable hardware chip design and its performance is synthesized on the FPGA that supports the frequency 570.00 MHz. The design has shown the optimal performance in terms of parameters such as delay, frequency, memory, flip flops, and IoBs onVirtex-5 FPGA for scalable LSTM that is tested up to 64 neurons. The hybrid architecture is based on two intermediate LSTM layers processing 8 neurons in a single slot."
+      },
+      {
+        "paper_id": "276365103",
+        "markdown_evidence": "Origin-destination prediction from road average speed data using GraphResLSTM model ... With the increasing demand for traffic management and resource allocation in Intelligent Transportation Systems (ITS), accurate origin-destination (OD) prediction has become crucial. This article presents a novel integrated framework, effectively merging the distinctive capabilities of graph convolutional network (GCN), residual neural network (ResNet), and long short-term memory network (LSTM), hereby designated as GraphResLSTM. GraphResLSTM leverages road average speed data for OD prediction. Contrary to traditional reliance on traffic flow data, road average speed data provides richer informational dimensions, reflecting not only vehicle volume but also indirectly indicating congestion levels. We use a real-world road network to generate road average speed data and OD data through simulations in Simulation of Urban Mobility (SUMO), thereby avoiding the influence of external factors such as weather. To enhance training efficiency, we employ a method combining the entropy weight method with the Technique for Order Preference by Similarity to Ideal Solution (TOPSIS) for key road segment selection. Using this generated dataset, carefully designed comparative experiments are conducted to compare various different models and data types. The results clearly demonstrate that both the GraphResLSTM model and the road average speed data markedly outperform alternative models and data types in OD prediction. ... LSTM, a variant of recurrent neural network (RNN), is specifically engineered to handle the challenge of long-term dependencies in sequential data (Chen & Aleem, 2024). Distinct from conventional RNN, LSTM employs a more complex internal architecture that effectively captures and retains long-term context information. ... This mechanism alleviates the gradient issues in deep networks by facilitating the flow of gradients through the network during backpropagation. ... The OD prediction results for five distinct input data types, presented in Table 5, illustrate how different data types affect model performance."
+      },
+      {
+        "paper_id": "275567961",
+        "markdown_evidence": "Application of Convolutional Neural Networks and Recurrent Neural Networks in Food Safety ... This review explores the application of convolutional neural networks (CNNs) and recurrent neural networks (RNNs) in food safety detection and risk prediction. This paper highlights the advantages of CNNs in image processing and feature recognition, as well as the powerful capabilities of RNNs (especially their variant LSTM) in time series data modeling. This paper also makes a comparative analysis in many aspects: Firstly, the advantages and disadvantages of traditional food safety detection and risk prediction methods are compared with deep learning technologies such as CNNs and RNNs. Secondly, the similarities and differences between CNNs and fully connected neural networks in processing image data are analyzed. Furthermore, the advantages and disadvantages of RNNs and traditional statistical modeling methods in processing time series data are discussed. ... To address the vanishing gradient issue in long-sequence modeling, Long Short-Term Memory (LSTMs) networks were developed. LSTMs introduce a gating mechanism, including input gates, forget gates, and output gates, which effectively controls the flow of information across time steps, enabling the modeling of long-term dependencies. ... The output layer can take different forms depending on the task requirements. For classification tasks, the output layer is usually a fully connected layer followed by a softmax function, which outputs the probabilities for each class. For sequence generation tasks, the output layer generates predictions for the next time step. ... Figure 4 illustrates the internal structure of an LSTM, providing a clear depiction of how an LSTM neural network unit functions. However, standard RNNs often encounter the problem of vanishing or exploding gradients when processing long sequences [43]. To address the vanishing gradient issue in long-sequence modeling, Long Short-Term Memory (LSTMs) networks were developed. ... In cold chain logistics, RNNs can monitor transportation conditions in real time to prevent food spoilage. Particularly, the RNN variant known as Long Short-Term Memory (LSTM) networks effectively capture long-term dependencies, making them ideal for complex food safety data prediction tasks [23]."
+      },
+      {
+        "paper_id": "210164439",
+        "markdown_evidence": "Does Syntax Need to Grow on Trees? Sources of Hierarchical Inductive Bias in Sequence-to-Sequence Networks ... Learners that are exposed to the same training data might generalize differently due to differing inductive biases. In neural network models, inductive biases could in theory arise from any aspect of the model architecture. We investigate which architectural factors affect the generalization behavior of neural sequence-to-sequence models trained on two syntactic tasks, English question formation and English tense reinflection. For both tasks, the training set is consistent with a generalization based on hierarchical structure and a generalization based on linear order. All architectural factors that we investigated qualitatively affected how models generalized, including factors with no clear connection to hierarchical structure. For example, LSTMs and GRUs displayed qualitatively different inductive biases. However, the only factor that consistently contributed a hierarchical bias across tasks was the use of a tree-structured model rather than a model with sequential recurrence, suggesting that human-like syntactic generalization requires architectural syntactic structure. ... We used three types of recurrent units: simple recurrent networks (SRNs; Elman, 1990), gated recurrent units (GRUs; Cho et al., 2014), and long short-term memory (LSTM) units (Hochreiter and Schmidhuber, 1997). In SRNs and GRUs, the hidden state is represented by a single vector, whereas LSTMs use two vectors (the hidden state and the cell state). ... We also tested a more clearly task-relevant modification of the architecture, namely the use of tree-based models rather than the sequential structure in Figure 3. ... We used the sequence-to-sequence architecture in Figure 3 (Sutskever et al., 2014). This model consists of two neural networks: the encoder and the decoder. The encoder is fed the input sentence one word at a time; after each word, the encoder updates its hidden state, a vector representation of the information encountered so far. ... Recent NLP work has also found that neural networks do not readily transfer knowledge across tasks; e.g., pretrained models often perform worse than non-pretrained models (Wang et al., 2019)."
+      },
+      {
+        "paper_id": "224820474",
+        "markdown_evidence": "\"Forget\" the Forget Gate: Estimating Anomalies in Videos Using Self-contained Long Short-Term Memory Networks ... Abnormal event detection is a challenging task that requires effectively handling intricate features of appearance and motion. In this paper, we present an approach of detecting anomalies in videos by learning a novel LSTM based self-contained network on normal dense optical flow. Due to their sigmoid implementations, standard LSTM's forget gate is susceptible to overlooking and dismissing relevant content in long sequence tasks like abnormality detection. The forget gate mitigates participation of previous hidden state for computation of cell state prioritizing current input. In addition, the hyperbolic tangent activation of standard LSTMs sacrifices performance when a network gets deeper. To tackle these two limitations, we introduce a bi-gated, light LSTM cell by discarding the forget gate and introducing sigmoid activation. Specifically, the LSTM architecture we come up with fully sustains content from previous hidden state thereby enabling the trained model to be robust and make context-independent decision during evaluation. ... Thus, deploying CNNs as core module for such task may not yield well learnt and representative models, which has recently paved way for the introduction of Recurrent Neural Networks (RNNs) [3]. \n\nRNN in general and Long Short-Term Memory (LSTM) in particular have become popular frameworks for modelling long-term sequences. Over the years, the capability of LSTMs to contain the vanishing or exploding gradient issues of conventional RNNs has helped them to be adopted for sequence based tasks like language modelling, weather forecasting and speech recognition [8,31,35]. ... LSTMs can successfully contain the vanishing or exploding gradient issue during back propagation with their inherent gating mechanisms [3,35]. An LSTM cell (structure depicted in Figure 3) possesses three gates (forget gate, input gate, output gate) that monitor the flow of information into and out of its memory. ... Component-based Ablation We also conduct another set of ablation evaluation on networks built by removing the forget gate or input gate (one at a time) from standard LSTMs. We train these networks on the preprocessed dense optical flow and test them with videos from the original dataset. Table 3 shows performance comparisons of these models and standard LSTM based model."
+      },
+      {
+        "paper_id": "12272303",
+        "markdown_evidence": "Understanding Hidden Memories of Recurrent Neural Networks ... Recurrent neural networks (RNNs) have been successfully applied to various natural language processing (NLP) tasks and achieved better results than conventional methods. However, the lack of understanding of the mechanisms behind their effectiveness limits further improvements on their architectures. In this paper, we present a visual analytics method for understanding and comparing RNN models for NLP tasks. We propose a technique to explain the function of individual hidden state units based on their expected response to input texts. We then co-cluster hidden state units and words based on the expected response and visualize co-clustering results as memory chips and word clouds to provide more structured knowledge on RNNs’ hidden states. We also propose a glyph-based sequence visualization based on aggregate information to analyze the behavior of an RNN’s hidden state at the sentence-level. The usability and effectiveness of our method are demonstrated through case studies and reviews from domain experts. ... The reason of this specification is that cell state c c c (t) is considered to maintain long-term memory, while h h h (t)  is directly computed from cell state and used for output. ... RNNs and their variants, especially long short term memory (LSTM) networks and gated recurrent units (GRU), have been successfully applied in various natural language processing (NLP) applications, which include language modeling [30], machine translation [44], speech recognition [17] and sentiment analysis [46]. ... In this paper, we will also use two RNN variants: long short-term memory (LSTM) networks and gated recurrent units (GRUs). ... This suggests that LSTM-Small can well recognize grammatic functions of words, although it only has 200 cell states, and it was not intentionally trained for POS tagging. \n\nComparison between vanilla RNN and Gated RNNs."
+      },
+      {
+        "paper_id": "898135",
+        "markdown_evidence": "N-gram Language Modeling using Recurrent Neural Network Estimation ... We investigate the effective memory depth of RNN models by using them for $n$-gram language model (LM) smoothing. \nExperiments on a small corpus (UPenn Treebank, one million words of training data and 10k vocabulary) have found the LSTM cell with dropout to be the best model for encoding the $n$-gram state when compared with feed-forward and vanilla RNN models. When preserving the sentence independence assumption the LSTM $n$-gram matches the LSTM LM performance for $n=9$ and slightly outperforms it for $n=13$. When allowing dependencies across sentence boundaries, the LSTM $13$-gram almost matches the perplexity of the unlimited history LSTM LM. \nLSTM $n$-gram smoothing also has the desirable property of improving with increasing $n$-gram order, unlike the Katz or Kneser-Ney back-off estimators. Using multinomial distributions as targets in training instead of the usual one-hot target is only slightly beneficial for low $n$-gram orders. \nExperiments on the One Billion Words benchmark show that the results hold at larger scale: while LSTM smoothing for short $n$-gram contexts does not provide significant advantages over classic N-gram models, it becomes effective with long contexts ($n > 5$); depending on the task and amount of data it can match fully recurrent LSTM models at about $n=13$. This may have implications when modeling short-format text, e.g. voice search/query LMs. ... (2013); in fact modeling the sentence independence explicitly is slightly beneficial. \n\nWe observe that on large amounts of data LSTM smoothing for short n-gram contexts does not provide significant advantages over classic back-off n-gram models. This may have implications for short-format text, e.g. ... The LSTM cell due to Hochreiter & Schmidhuber (1997) has proven very effective at modeling long range dependencies and has become the state-of-the-art architecture for language modeling using RNNs, see Józefowicz et al. ... The most significant experimental result is that the LSTM n-gram can match and even outperform the fully recurrent LSTM LM as we increase the order n: n = 9 matches the LSTM LM performance, decreasing the LM perplexity by 34% relative over the Kneser-Ney baseline. ... Finally, we replace the \"vanilla\" RNN cell defined above with a multilayer LSTM cell with dropout."
+      },
+      {
+        "paper_id": "221474710",
+        "markdown_evidence": "English-Hindi Neural Machine Translation-LSTM Seq2Seq and ConvS2S ... Language Translation connects people from all around the world, to collaborate, share information and build relationships. Neural Machine Translation has been able to achieve significant improvement over primitive techniques: Rule-based and Statistical Machine Translation. This paper analyzes and compares two Neural Machine Translation models on the basis of different parameters for English-Hindi language pair: Sequence to Sequence Learning architecture with both encoder and decoder implemented using (1) Long Short Term Memory (LSTM) and (2) Convolutional Neural Network (CNN) with attention mechanism applied in both models. The analysis presents insights that reveal the models and parameters best for this task."
+      },
+      {
+        "paper_id": "8577750",
+        "markdown_evidence": "Gated Feedback Recurrent Neural Networks ... In this work, we propose a novel recurrent neural network (RNN) architecture. The proposed RNN, gated-feedback RNN (GF-RNN), extends the existing approach of stacking multiple recurrent layers by allowing and controlling signals flowing from upper recurrent layers to lower layers using a global gating unit for each pair of layers. The recurrent signals exchanged between layers are gated adaptively based on the previous hidden states and the current input. We evaluated the proposed GF-RNN with different types of recurrent units, such as tanh, long short-term memory and gated recurrent units, on the tasks of character-level language modeling and Python program evaluation. Our empirical evaluation of different RNN units, revealed that in both tasks, the GF-RNN outperforms the conventional approaches to build deep stacked RNNs. We suggest that the improvement arises because the GFRNN can adaptively assign different layers to different timescales and layer-to-layer interactions (including the top-down ones which are not usually present in a stacked RNN) by learning to gate these interactions. ... This effectively lets the model to adapt its structure based on the input sequence. \n\nWe empirically evaluated the proposed model against the conventional stacked RNN and the usual, single-layer RNN on the task of language modeling and Python program eval-arXiv:1502.02367v3 [cs.NE] 18 Feb 2015 uation (Zaremba & Sutskever, 2014). ... A previously successful approaches to this fundamental challenge has been to modify the state-to-state transition function to encourage some hidden units to adaptively maintain long-term memory, creating paths in the time-unfolded RNN, such that gradients can flow over many time-steps. ... We compared three different RNN architectures: a singlelayer RNN, a stacked RNN and the proposed GF-RNN. For each architecture, we evaluated three different transitions functions: tanh + affine, long short-term memory (LSTM) and gated recurrent unit (GRU). ... We also showed that gated-feedback architecture was faster in wall-clock time over the training and achieved better performance compared to standard stacked RNN with a same amount of capacity. Large GF-LSTM was able to outperform the previously reported best results on character-level language modeling."
+      },
+      {
+        "paper_id": "5403702",
+        "markdown_evidence": "Classifying Relations via Long Short Term Memory Networks along Shortest Dependency Paths ... Relation classification is an important research arena in the field of natural language processing (NLP). In this paper, we present SDP-LSTM, a novel neural network to classify the relation of two entities in a sentence. Our neural architecture leverages the shortest dependency path (SDP) between two entities; multichannel recurrent neural networks, with long short term memory (LSTM) units, pick up heterogeneous information along the SDP. Our proposed model has several distinct features: (1) The shortest dependency paths retain most relevant information (to relation classification), while eliminating irrelevant words in the sentence. (2) The multichannel LSTM networks allow effective information integration from heterogeneous sources over the dependency paths. (3) A customized dropout strategy regularizes the neural network to alleviate overfitting. We test our model on the SemEval 2010 relation classification task, and achieve an $F_1$-score of 83.7\\%, higher than competing methods in the literature. ... One problem of the above model is known as gradient vanishing or exploding. The training of neural networks requires gradient backpropagation. If the propagation sequence (path) is too long, the gradient may probably either grow, or decay, exponentially, depending on the magnitude of W rec . ... • Classifying relation is a challenging task due to the inherent ambiguity of natural languages and the diversity of sentence expression. ... Two recurrent neural networks (Figure 2b) pick up information along the left and right sub-paths of the SDP, respecitvely. (The path is separated by the common ancestor node of two entities.) Long short term memory (LSTM) units are used in the recurrent networks for effective information propagation. ... This paper proposes a new neural network, SDP-LSTM, for relation classification. Our model utilizes the shortest dependency path (SDP) between two entities in a sentence; we also design a long short term memory (LSTM)-based recurrent neural network for information processing. The neural architecture is mainly inspired by the following observations."
+      },
+      {
+        "paper_id": "272090316",
+        "markdown_evidence": "Recurrent Neural Networks: A Comprehensive Review of Architectures, Variants, and Applications ... Recurrent neural networks (RNNs) have significantly advanced the field of machine learning (ML) by enabling the effective processing of sequential data. This paper provides a comprehensive review of RNNs and their applications, highlighting advancements in architectures, such as long short-term memory (LSTM) networks, gated recurrent units (GRUs), bidirectional LSTM (BiLSTM), echo state networks (ESNs), peephole LSTM, and stacked LSTM. The study examines the application of RNNs to different domains, including natural language processing (NLP), speech recognition, time series forecasting, autonomous vehicles, and anomaly detection. Additionally, the study discusses recent innovations, such as the integration of attention mechanisms and the development of hybrid models that combine RNNs with convolutional neural networks (CNNs) and transformer architectures. This review aims to provide ML researchers and practitioners with a comprehensive overview of the current state and future directions of RNN research."
+      },
+      {
+        "paper_id": "220668724",
+        "markdown_evidence": "Text classification based recurrent neural network ... Recurrent neural networks (RNNs) have shown outstanding performance for natural language processing tasks, influenced by the repeated multiplication of the recurrent weight matrices, the problem of gradient vanishing and explosion problem will be encountered when training RNN. Independently recurrent neural network (IndRNN) makes neurons independent and constrains recursive weights to effectively solve gradient problems. We combine IndRNN with long short-term memory (LSTM) and attention model, and test it for text classification, the results show that our models can effectively adapt to text classification task."
+      },
+      {
+        "paper_id": "233394000",
+        "markdown_evidence": "Attention vs non-attention for a Shapley-based explanation method ... The field of explainable AI has recently seen an explosion in the number of explanation methods for highly non-linear deep neural networks. The extent to which such methods – that are often proposed and tested in the domain of computer vision – are appropriate to address the explainability challenges in NLP is yet relatively unexplored. In this work, we consider Contextual Decomposition (CD) – a Shapley-based input feature attribution method that has been shown to work well for recurrent NLP models – and we test the extent to which it is useful for models that contain attention operations. To this end, we extend CD to cover the operations necessary for attention-based models. We then compare how long distance subject-verb relationships are processed by models with and without attention, considering a number of different syntactic structures in two different languages: English and Dutch. Our experiments confirm that CD can successfully be applied for attention-based models as well, providing an alternative Shapley-based attribution method for modern neural networks. ... While general performance differed between the two languages, we did find that similar behavioural patterns emerged from the models. This partially held for the explanations obtained through Contextual Decomposition, where we did uncover differences. ... (2020) investigated how emergent mechanisms in language models relate to linguistic processing in humans. \n\nNumber agreement has also been explored before in the context of attribution methods. Due to the clear dependency between a subject and a verb, it is a useful task to evaluate whether a model based its prediction of the verb on the number information of the subject. ... A comparison between the SHA-RNN and the LSTM shows that the SHA-RNN performs slightly worse than the LSTM by a small margin. There are some cases where this difference is more pronounced, such as for the English ThatNounPP task (see Table 3b), where we observe large differences for the singular subject conditions. ... When we compare the results of the models on the Subject Attribution task in Tables 3a and 3b, we find more substantial differences between the models across the languages. In case of the English models, the SHA-RNN performed rather poorly on the plural conditions of the Subject Attribution task."
+      },
+      {
+        "paper_id": "252648702",
+        "markdown_evidence": "The Influence of Word Vectorization for Kawi Language to Indonesian Language Neural Machine Translation ... People relatively use machine translation to learn any textual knowledge beyond their native language. There is already robust machine translation such as Google translate. However, the language list has only covered the high resource language such as English, France, etc., but not for Kawi Language as one of the local languages used in Bali's old works of literature. Therefore, it is necessary to study the development of machine translation from the Kawi language to the more active user language such as the Indonesian language to make easier learning access for the young learner. The research developed the neural machine translation (NMT) using recurrent neural network (RNN) based neural models and analyzed the influence of word vectorization using Word2Vec for the machine translation performance based on BLEU scores. The result shows that word vectorization indeed significantly increases the NMT models performance, and Long-Short Term Memory (LSTM) with attention mechanism has the highest BLEU scores equal to 20.86. The NMT models still could not achieve the BLEU scores on par with those human experts and high resource language machine translation. ... BLEU (bilingual evaluation understudy) is an algorithm for assessing the quality of machine-translated text from one natural language to another [30]. ... The burden of tying the encoder and decoder together is lessened by the attention mechanism. The research examined the mechanics of attention using several RNN cells (vanilla, LSTM, and GRU) and time horizons. According to the results, S2S with Bahdanau's attention performs better than other models. ... Recurrent Neural network (RNN) RNN is a neural network approach for dealing with sequential data [26]. The task for each part of an order is repeated in RNN. The current state's output is determined by the previous computations. RNN keeps track of what it computes in memory. The vanilla RNN or Simple RNN model is the most basic RNN model. ... One of the RNN variation architectures aimed at solving the disappearing gradient problem in a standard RNN is the Gated Recurrent Unit (GRU). It divides the LSTM gates into two parts: update and reset gates. According to the study [29], the GRU outperforms the LSTM for long text and short datasets."
+      },
+      {
+        "paper_id": "202777862",
+        "markdown_evidence": "Capturing Long-Range Dependencies in Video Captioning ... Most video captioning networks rely on recurrent models, including long short-term memory (LSTM). However, these recurrent models have a long-range dependency problem; thus, they are not sufficient for video encoding. To overcome this limitation, several studies investigated the relationships between objects or entities and have shown excellent performance in video classification and video captioning. In this study, we analyze a video captioning network with a non-local block in terms of temporal capacity. We introduce a video captioning method to capture long-range temporal dependencies with a non-local block. The proposed model independently uses local and non-local features. We evaluate our approach on a Microsoft Video Description Corpus (MSVD, YouTube2Text) dataset. The experimental results show that a non-local block applied along the temporal axis can solve the long-range dependency problem of the LSTM in video captioning datasets."
+      },
+      {
+        "paper_id": "181785326",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "240288759",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16119010",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257175086",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251188335",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271386000",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "4747877",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52041655",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "13859741",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "211056738",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271691319",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271574408",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221664906",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "46668360",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "150124438",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259027913",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247545647",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249242720",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265847940",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "44156255",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221819253",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264458767",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "243800633",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245541145",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248490121",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "34810516",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252997393",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232135347",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "988348",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "236376115",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1045792",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "7138078",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "230120517",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245707872",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246366888",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "203337862",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "396527",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "201065436",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234482858",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "104292516",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249829007",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "7510630",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52100282",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233227258",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270640359",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "2410879",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277860897",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "19330884",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "299149",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264463076",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1667944",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "11637332",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14650762",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6951061",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "7961699",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1915014",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "206457500",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "212756",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279889943",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272792376",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "192469073",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270315022",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "18939716",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235070958",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254904546",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277676828",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202707352",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "156007168",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265407673",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16017905",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218619818",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277621810",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "214707977",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "127325665",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248225254",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279002109",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272749781",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259557406",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "224771397",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16299141",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52192105",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "201701924",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268353742",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268996245",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245380565",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270729550",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261242432",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276690369",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "8507616",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275508733",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "211481885",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271478611",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "208548740",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245261274",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247428494",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265721316",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3411796",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52186623",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278595703",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256944555",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279416075",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269241852",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209082597",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "228898154",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268701482",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276327520",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264555756",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277096553",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235573740",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247576261",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270512688",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6672908",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249594813",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "64872989",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250164102",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1897847",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "286246824",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56175276",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231914042",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274308529",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250032957",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218571116",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "167217708",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6833406",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "243964635",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16889062",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202577873",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259317078",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5291934",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247795146",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269465391",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252601062",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274883411",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218977401",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "28973428",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245385409",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220072053",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "234753275",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269259832",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "214692088",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "10482362",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "51739221",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258486964",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "219559375",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "215928196",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "209094968",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5201925",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272812117",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264563844",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259060410",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "213228394",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "17400045",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269677579",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276408686",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256318704",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233329781",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246824231",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245576164",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261537287",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "240262978",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275754078",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "11598600",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5837849",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "17048224",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3356463",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1697424",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "11043607",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "15641534",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272937561",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "201125161",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261339534",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218581127",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "637993",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277380759",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272928067",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269029566",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247256636",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268661925",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53727965",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267822884",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "230285035",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269619921",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "226263929",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56357454",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276551318",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278171199",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "34734682",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235899407",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265043454",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258047830",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270899274",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276838074",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235271338",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261069962",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271640394",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "215763844",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53228510",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272973902",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "3643526",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255995352",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259836938",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "240070963",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256652320",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "22939330",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

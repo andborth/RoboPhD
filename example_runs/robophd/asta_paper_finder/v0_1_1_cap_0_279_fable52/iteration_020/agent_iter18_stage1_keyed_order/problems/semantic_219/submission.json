@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_219",
+    "results": [
+      {
+        "paper_id": "258170300",
+        "markdown_evidence": "RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment ... Generative foundation models are susceptible to implicit biases that can arise from extensive unsupervised training data. Such biases can produce suboptimal samples, skewed outcomes, and unfairness, with potentially serious consequences. Consequently, aligning these models with human ethics and preferences is an essential step toward ensuring their responsible and effective deployment in real-world applications. Prior research has primarily employed Reinforcement Learning from Human Feedback (RLHF) to address this problem, where generative models are fine-tuned with RL algorithms guided by a human-feedback-informed reward model. However, the inefficiencies and instabilities associated with RL algorithms frequently present substantial obstacles to the successful alignment, necessitating the development of a more robust and streamlined approach. To this end, we introduce a new framework, Reward rAnked FineTuning (RAFT), designed to align generative models effectively. ... Conversely, RAFT iteratively learns from the induced best-of-K policy, thereby improving the model. \n\nWe also note a distinct feature of RAFT that the data filtering is based on reward ranking instead of the absolute reward value, making RAFT less sensitive to the reward scale. ... Compared to the popular PPO algorithm, RAFT is easy to implement and tune with a simple parameter configuration, and typically converges more robustly and faster than the DRL approach PPO because of the SFT-like training feature. Another notable distinction between RAFT and the on-policy PPO is the decoupling of data generation and fine-tuning processes. ... A clear and elegant interpretation of RAFT is that the model iteratively learns from the induced best-of-K policy (Nakano et al., 2021;Cobbe et al., 2021), which samples K responses and selects the one with the highest reward as the final output. ... In comparison, RRHF involves a diverse range of sources to generate data, and then finetune the model on the high-reward subset of these collected samples, while our primary focus lies in the online generated samples of the trained model itself, consistent with the setup of RL, where the behavior policy used to collect data also improves along the line."
+      },
+      {
+        "paper_id": "260438790",
+        "markdown_evidence": "Scaling Relationship on Learning Mathematical Reasoning with Large Language Models ... Mathematical reasoning is a challenging task for large language models (LLMs), while the scaling relationship of it with respect to LLM capacity is under-explored. In this paper, we investigate how the pre-training loss, supervised data amount, and augmented data amount influence the reasoning performances of a supervised LLM. We find that pre-training loss is a better indicator of the model's performance than the model's parameter count. We apply supervised fine-tuning (SFT) with different amounts of supervised data and empirically find a log-linear relation between data amount and model performance, and we find better models improve less with enlarged supervised datasets. To augment more data samples for improving model performances without any human effort, we propose to apply Rejection sampling Fine-Tuning (RFT). RFT uses supervised models to generate and collect correct reasoning paths as augmented fine-tuning datasets. ... Combining rejection sampling samples from multiple Rejection Sampling Fine-tuning The SFT model π obtains the ability to perform zero-shot chainof-thought reasoning, and we use π to generate more correct reasoning paths r ij to supply the training dataset. ... Thirdly, we want to leverage the model itself to generate more supervised data to reinforce its reasoning ability and analyze the scaling relationship of the augmented data amount. We apply rejection sampling on SFT models to sample and select correct reasoning paths as augmented dataset (Uesato et al., 2022;Zhu et al., 2023). ... However, the reasoning paths sampled from one single SFT model can be logically non-diverse. Therefore, we expect to further improve the mathematical reasoning performance by leveraging rejection sampled reasoning paths aggregated from different models. We denote two final datasets as D ′ U13B and D ′ U33B , which are aggregated from rejection sampling different models ... We have stated that it is expensive to apply RFT k = 100 on 33B models and it needs a temperate grid search to achieve an improvement compared to SFT. However fine-tuning on D ′ U13B has similar rejection sampling computational cost compared with sampling 100 times on 33B and achieve better performance."
+      },
+      {
+        "paper_id": "266163375",
+        "markdown_evidence": "Beyond Human Data: Scaling Self-Training for Problem-Solving with Language Models ... Fine-tuning language models~(LMs) on human-generated data remains a prevalent practice. However, the performance of such models is often limited by the quantity and diversity of high-quality human data. In this paper, we explore whether we can go beyond human data on tasks where we have access to scalar feedback, for example, on math problems where one can verify correctness. To do so, we investigate a simple self-training method based on expectation-maximization, which we call ReST$^{EM}$, where we (1) generate samples from the model and filter them using binary feedback, (2) fine-tune the model on these samples, and (3) repeat this process a few times. Testing on advanced MATH reasoning and APPS coding benchmarks using PaLM-2 models, we find that ReST$^{EM}$ scales favorably with model size and significantly surpasses fine-tuning only on human data. Overall, our findings suggest self-training with feedback can substantially reduce dependence on human-generated data. ... • Rejection Sampling Fine-tuning (RFT) (Yuan et al., 2023) improves reasoning performance on GSM8K and corresponds to running a single generate (E-step) and improve (M-step) of ReST  . ... Generate (E-step): The language model generates multiple output samples for each input context. Then, we filter these samples using a binary reward to collect the training dataset. ... Given a initial policy (e.g., pre-trained LM), ReST  iteratively applies Generate and Improve steps to update the policy. • Improve (M-step): In the  ℎ iteration, we use the new dataset D  from Generate step to fine-tune the policy   . To mitigate task-specific over-fitting, we minimize drift from the base model by always fine tuning the base pretrained language model. ... We also perform ablation studies to investigate the effect of number of model-generated solutions, training problems, and iterations for ReST  fine-tuning. Overall, our findings suggest self-training with feedback as a promising approach to reduce dependence on human data."
+      },
+      {
+        "paper_id": "268063628",
+        "markdown_evidence": "Arithmetic Control of LLMs for Diverse User Preferences: Directional Preference Alignment with Multi-Objective Rewards ... Fine-grained control over large language models (LLMs) remains a significant challenge, hindering their adaptability to diverse user needs. While Reinforcement Learning from Human Feedback (RLHF) shows promise in aligning LLMs, its reliance on scalar rewards often limits its ability to capture diverse user preferences in real-world applications. To address this limitation, we introduce the Directional Preference Alignment (DPA) framework. Unlike the scalar-reward RLHF, DPA incorporates multi-objective reward modeling to represent diverse preference profiles. Additionally, DPA models user preferences as directions (i.e., unit vectors) in the reward space to achieve user-dependent preference control. Our method involves training a multi-objective reward model and then fine-tuning the LLM with a preference-conditioned variant of Rejection Sampling Finetuning (RSF), an RLHF method adopted by Llama 2. This method enjoys a better performance trade-off across various reward objectives. ... Rejection sampling finetuning (RSF) is proposed in (Dong et al., 2023a;Yuan et al., 2023;Gulcehre et al., 2023) with different variants, but essentially, they learn from the positive samples selected by a learned reward model. ... In light of the above limitations, we resort to an alternative approach, Rejection Sampling Fine-tuning (RSF) (Dong et al., 2023a;Yuan et al., 2023;Gulcehre et al., 2023), a RLHF algorithm used in the Llama 2 project (Touvron et al., 2023), with appealing simplicity, stability, and comparable reward gains. ... Software, Hardware and Hyperparameters We use PyTorch (Paszke et al., 2019) with Hugging-Face's TRL framework (von Werra et al., 2020) for all fine-tuning experiments across t = 0, . . . , T . All experiments are conducted on 8x A6000 GPUs. The training cost of each DPA iteration is about 60 GPU hours. ... To resolve this, we train a SteerLM model on D 2 (a half of UltraFeedback) that can generate responses conditioned on both user prompt x (sampled from D 1 ) and reward objectives r 1 , r 2 . We use this model for rejection sampling in iteration t = 1 to obtain π θ 1 (for each prompt, we generate 80 responses for diverse reward combinations  (r 1 , r 2 ))."
+      },
+      {
+        "paper_id": "277857120",
+        "markdown_evidence": "Exploring Expert Failures Improves LLM Agent Tuning ... Large Language Models (LLMs) have shown tremendous potential as agents, excelling at tasks that require multiple rounds of reasoning and interactions. Rejection Sampling Fine-Tuning (RFT) has emerged as an effective method for finetuning LLMs as agents: it first imitates expert-generated successful trajectories and further improves agentic skills through iterative fine-tuning on successful, self-generated trajectories. However, since the expert (e.g., GPT-4) succeeds primarily on simpler subtasks and RFT inherently favors simpler scenarios, many complex subtasks remain unsolved and persistently out-of-distribution (OOD). Upon investigating these challenging subtasks, we discovered that previously failed expert trajectories can often provide valuable guidance, e.g., plans and key actions, that can significantly improve agent exploration efficiency and acquisition of critical skills. Motivated by these observations, we propose Exploring Expert Failures (EEF), which identifies beneficial actions from failed expert trajectories and integrates them into the training dataset. Potentially harmful actions are meticulously excluded to prevent contamination of the model learning process. ... To develop lightweight specialized agents, researchers commonly employ Rejection Sampling Fine-Tuning (RFT) (Touvron et al., 2023;Yuan et al., 2023;Xi et al., 2024), which fine-tunes models using only environment-validated positive expert and synthesized trajectories. Initially, an expert model (e.g., GPT-4 (Achiam et al., 2023)) generates trajectories for each subtask. A smaller model then undergoes supervised fine-tuning (SFT) on only the positive expert trajectories. The fine-tuned model explores further, collecting additional successful trajectories to augment the training dataset. ... Rejection Sampling Fine-Tuning (RFT). RFT (Yuan et al., 2023) is a training paradigm that begins with expert demonstrations and then iteratively refines the learned policy through exploration. ... We select the best model from all iterations. \n\nFor the Webshop dataset, we evaluate two variants of our method: \"EEF GPT-4\" and \"EEF Preprint. Baselines Our baselines can be categorized into three types. The first type includes models without fine-tuning, specifically GPT-3 Turbo and GPT-4."
+      },
+      {
+        "paper_id": "276647059",
+        "markdown_evidence": "Self-rewarding correction for mathematical reasoning ... We study self-rewarding reasoning large language models (LLMs), which can simultaneously generate step-by-step reasoning and evaluate the correctness of their outputs during the inference time-without external feedback. This integrated approach allows a single model to independently guide its reasoning process, offering computational advantages for model deployment. We particularly focus on the representative task of self-correction, where models autonomously detect errors in their responses, revise outputs, and decide when to terminate iterative refinement loops. To enable this, we propose a two-staged algorithmic framework for constructing self-rewarding reasoning models using only self-generated data. In the first stage, we employ sequential rejection sampling to synthesize long chain-of-thought trajectories that incorporate both self-rewarding and self-correction mechanisms. Fine-tuning models on these curated data allows them to learn the patterns of self-rewarding and self-correction. In the second stage, we further enhance the models' ability to assess response accuracy and refine outputs through reinforcement learning with rule-based signals. Experiments with Llama-3 and Qwen-2.5 demonstrate that our approach surpasses intrinsic self-correction capabilities and achieves performance comparable to systems that rely on external reward models. ... Then we fine-tune the LLMs using standard SFT pipeline to maximize: \n\nIn practice, however, we observe that the multi-task training can lead to stability issue and can slightly hurt the first-round performance. To mitigate this issue, we also train on the correct attempt a 1 for the samples in D IFT 3 . ... We employ a rejection sampling approach, similar to STaR (Zelikman et al., 2022) and RAFT (Dong et al., 2023), where we generate a large amount of self-correction trajectories and only preserve the desired trajectories. ... Self-rewarding signal sampling: For each prompt and initial response, we further sample N 2 = 8 selfevaluations and keep only one evaluation result that is the same as the ground truth. ... In view of this, we sequentially prompt the base model and generate different steps separately. Then, we combine them into long CoT trajectories that incorporate both self-rewarding and self-correction patterns."
+      },
+      {
+        "paper_id": "270123876",
+        "markdown_evidence": "Xwin-LM: Strong and Scalable Alignment Practice for LLMs ... In this work, we present Xwin-LM, a comprehensive suite of alignment methodologies for large language models (LLMs). This suite encompasses several key techniques, including supervised finetuning (SFT), reward modeling (RM), rejection sampling finetuning (RS), and direct preference optimization (DPO). The key components are as follows: (1) Xwin-LM-SFT, models initially finetuned with high-quality instruction data; (2) Xwin-Pair, a large-scale, multi-turn preference dataset meticulously annotated using GPT-4; (3) Xwin-RM, reward models trained on Xwin-Pair, developed at scales of 7B, 13B, and 70B parameters; (4) Xwin-Set, a multiwise preference dataset in which each prompt is linked to 64 unique responses generated by Xwin-LM-SFT and scored by Xwin-RM; (5) Xwin-LM-RS, models finetuned with the highest-scoring responses from Xwin-Set; (6) Xwin-LM-DPO, models further optimized on Xwin-Set using the DPO algorithm. Our evaluations on AlpacaEval and MT-bench demonstrate consistent and significant improvements across the pipeline, demonstrating the strength and scalability of Xwin-LM. The repository https://github.com/Xwin-LM/Xwin-LM will be continually updated to foster community research. ... Step 3: Rejection Sampling (RS) finetuning.For each prompt, we generate multiple responses from the fine-tuned model obtained in Step 1, and subsequently finetune models using the responses with the highest RM scores. ... Step 1: Supervised Fine-Tuning (SFT).We first finetune a pretrained Llama-2 on a demonstration dataset in a supervised fashion to obtain an initially aligned model. ... We conduct a preliminary investigation using Xwin-LM-RS-7B with half of the entire rejection sam-pling dataset.\n\nInfluence of the rank of selected samples.The top panel of Fig. 6 demonstrates that models trained with higher-ranked samples consistently achieve superior performance, corroborating the precision of our RM in ranking candidate responses. ... 3.The three scales of Xwin-RMs are all capable of effectively selecting high-quality responses.Although the training data for RM includes only responses from the 70B SFT policy, Xwin-RMs also perform well on the 7B and 13B models, further demonstrating their generalizability.Additionally, while the smaller 7B RM can also select good answers for policies of varying scales, it"
+      },
+      {
+        "paper_id": "268889631",
+        "markdown_evidence": "AutoWebGLM: A Large Language Model-based Web Navigating Agent ... Large language models (LLMs) have fueled many intelligent web agents, but most existing ones perform far from satisfying in real-world web navigation tasks due to three factors: (1) the complexity of HTML text data (2) versatility of actions on webpages, and (3) task difficulty due to the open-domain nature of the web. In light of these challenges, we develop the open AutoWebGLM based on ChatGLM3-6B. AutoWebGLM can serve as a powerful automated web navigation agent that outperform GPT-4. Inspired by human browsing patterns, we first design an HTML simplification algorithm to represent webpages with vital information preserved succinctly. We then employ a hybrid human-AI method to build web browsing data for curriculum training. Finally, we bootstrap the model by reinforcement learning and rejection sampling to further facilitate webpage comprehension, browser operations, and efficient task decomposition by itself. For comprehensive evaluation, we establish a bilingual benchmark---AutoWebBench---for real-world web navigation tasks. We evaluate AutoWebGLM across diverse web navigation benchmarks, demonstrating its potential to tackle challenging tasks in real environments. Related code, model, and data are released at https://github.com/THUDM/AutoWebGLM. ... The methodology of Rejection Sampling Finetuning (RFT) [41] employs a supervised learning model to generate and collect accurate reasoning paths, subsequently utilized as an augmented finetuning dataset. ... Subsequently, we retain samples based on the following criteria: • From all  iterations of sampling, we select data where the model completed the tasks from 1 to -1 times. If  SFT answered all iterations correctly, we consider it devoid of training value and incapable of providing practical negative examples. ... Our model addresses extant LLM limitations and simplifies webpages by effectively controlling HTML text length and handling the web's open-domain nature. We strategically employ curriculum learning, reinforcement learning, and rejection sampling finetuning to enhance webpage comprehension and browser operation learning. ... During the SFT phase, we set the learning rate to 1e-5 with a batch size of 32. In the DPO stage, we sample the complex task dataset 20 times. After the filtering process, we build a contractional dataset of approximately 13k."
+      },
+      {
+        "paper_id": "276776226",
+        "markdown_evidence": "The First Few Tokens Are All You Need: An Efficient and Effective Unsupervised Prefix Fine-Tuning Method for Reasoning Models ... Improving the reasoning capabilities of large language models (LLMs) typically requires supervised fine-tuning with labeled data or computationally expensive sampling. We introduce Unsupervised Prefix Fine-Tuning (UPFT), which leverages the observation of Prefix Self-Consistency -- the shared initial reasoning steps across diverse solution trajectories -- to enhance LLM reasoning efficiency. By training exclusively on the initial prefix substrings (as few as 8 tokens), UPFT removes the need for labeled data or exhaustive sampling. Experiments on reasoning benchmarks show that UPFT matches the performance of supervised methods such as Rejection Sampling Fine-Tuning, while reducing training time by 75% and sampling cost by 99%. Further analysis reveals that errors tend to appear in later stages of the reasoning process and that prefix-based training preserves the model's structural knowledge. This work demonstrates how minimal unsupervised fine-tuning can unlock substantial reasoning gains in LLMs, offering a scalable and resource-efficient alternative to conventional approaches. ... Recent inquiry has introduced approaches such as Rejection Sampling Fine-Tuning (RFT; Yuan et al. 2023) and Self-Taught Reasoner (STaR; Zelikman et al. 2022) to leverage model-generated solutions for iterative self-improvement, often requiring multiple candidate responses and subsequent filtering or verification steps. ... Table 2 presents the results for the unsupervised sampling setting, where the data is not filtered based on the correctness of the extracted answer. We compare these outcomes to those obtained using conventional SFT (Ouyang et al., 2022), which fine-tunes models on training data without any self-improvement or test-time verification. \n\nUPFT demonstrates superior performance compared to SFT in unsupervised fine-tuning. UPFT consistently outperforms conventional SFT across various self-training datasets and backbone models under the unsupervised sampling setting. ... These selected, correct reasoning trajectories are then used to fine-tune the base model via SFT. Given the inherent resemblance of this selection process to reject sampling, this methodology is also entitled with Rejected Fine-Tuning (RFT)."
+      },
+      {
+        "paper_id": "270620157",
+        "markdown_evidence": "Self-play with Execution Feedback: Improving Instruction-following Capabilities of Large Language Models ... One core capability of large language models (LLMs) is to follow natural language instructions. However, the issue of automatically constructing high-quality training data to enhance the complex instruction-following abilities of LLMs without manual annotation remains unresolved. In this paper, we introduce AutoIF, the first scalable and reliable method for automatically generating instruction-following training data. AutoIF transforms the validation of instruction-following data quality into code verification, requiring LLMs to generate instructions, the corresponding code to check the correctness of the instruction responses, and unit test samples to verify the code's correctness. Then, execution feedback-based rejection sampling can generate data for Supervised Fine-Tuning (SFT) and Reinforcement Learning from Human Feedback (RLHF) training. AutoIF achieves significant improvements across three training algorithms, SFT, Offline DPO, and Online DPO, when applied to the top open-source LLMs, Qwen2 and LLaMA3, in self-alignment and strong-to-weak distillation settings. Our code is publicly available at https://github.com/QwenLM/AutoIF. ... At the query level, we randomly select 16 ShareGPT samples for each instruction and perform Response Rejection Sampling with K=8.For instruction following verification, we adhere to the two standards mentioned in the text.Finally, for query quality verification, we filter for consistency using a threshold of 8. ... Supervised Fine-tuning (SFT).Given (x i , y i ) ∈ D final , we apply the standard Supervised Finetuning (SFT) objective on the base model P with parameters θ: ... 3, we set the generation temperature to 0.8 and allow the SFT model to generate K responses through self-sampling for each training sample, forming a response set {R 1 , . ... In this paper, we have fully presented the seed instruction set used by AUTOIF in the Appendix.All concatenated queries are sourced from the publicly available ShareGPT dataset and have undergone multiple steps of quality filtering.Therefore, our method strives to minimize potential safety and ethical risks as much as possible.However, during the rejection sampling process,"
+      },
+      {
+        "paper_id": "276482419",
+        "markdown_evidence": "Enhancing Cognition and Explainability of Multimodal Foundation Models with Self-Synthesized Data ... Large Multimodal Models (LMMs), or Vision-Language Models (VLMs), have shown impressive capabilities in a wide range of visual tasks. However, they often struggle with fine-grained visual reasoning, failing to identify domain-specific objectives and provide justifiable explanations for their predictions. To address the above challenge, we propose a novel visual rejection sampling framework to improve the cognition and explainability of LMMs using self-synthesized data. Specifically, visual fine-tuning requires images, queries, and target answers. Our approach begins by synthesizing interpretable answers that include human-verifiable visual features. These features are based on expert-defined concepts, and carefully selected based on their alignment with the image content. After each round of fine-tuning, we apply a reward model-free filtering mechanism to select the highest-quality interpretable answers for the next round of tuning. ... After the initial round of fine-tuning with explainable visual query-answer pairs, the LMMs have significantly improved their ability to generate reasonable explanations. This improvement allows us to leverage the current fine-tuned model to generate new data for subsequent training rounds. ... Rejection sampling, also known as Best-of-N, is an inference-time strategy that generates multiple candidates and selects the best one for further tuning (Touvron et al., 2023;Stiennon et al., 2020). In our work, we adapt this idea for visual fine-tuning to iteratively improve LMM performance. ... In the field of LLMs, self-generated data has become a powerful tool for enhancing model performance (Liu et al., 2024d). Researchers have explored various techniques, such as rejection sampling (Touvron et al., 2023;Dubey et al., 2024), self-rewarding (Yuan et al., 2024), and selfplay (Chen et al., 2024c), enabling models to improve using synthetic data. ... Using these concepts, we prompt the LMM to rewrite them into textual answers that explain the label. These answers are used for the first round of fine-tuning. \n\n2. Reward Model-Free Rejection Sampling: After the initial fine-tuning, the model can generate synthetic answers, which can be used for next-round fine-tuning, but their quality still varies."
+      },
+      {
+        "paper_id": "278997072",
+        "markdown_evidence": "Can LLMs Deceive CLIP? Benchmarking Adversarial Compositionality of Pre-trained Multimodal Representation via Text Updates ... While pre-trained multimodal representations (e.g., CLIP) have shown impressive capabilities, they exhibit significant compositional vulnerabilities leading to counterintuitive judgments. We introduce Multimodal Adversarial Compositionality (MAC), a benchmark that leverages large language models (LLMs) to generate deceptive text samples to exploit these vulnerabilities across different modalities and evaluates them through both sample-wise attack success rate and group-wise entropy-based diversity. To improve zero-shot methods, we propose a self-training approach that leverages rejection-sampling fine-tuning with diversity-promoting filtering, which enhances both attack success rate and sample diversity. Using smaller language models like Llama-3.1-8B, our approach demonstrates superior performance in revealing compositional vulnerabilities across various multimodal representations, including images, videos, and audios."
+      },
+      {
+        "paper_id": "271051300",
+        "markdown_evidence": "Variational Best-of-N Alignment ... Best-of-N (BoN) is a popular and effective algorithm for aligning language models to human preferences. The algorithm works as follows: at inference time, N samples are drawn from the language model, and the sample with the highest reward, as judged by a reward model, is returned as the output. Despite its effectiveness, BoN is computationally expensive; it reduces sampling throughput by a factor of N. To make BoN more efficient at inference time, one strategy is to fine-tune the language model to mimic what BoN does during inference. To achieve this, we derive the distribution induced by the BoN algorithm. We then propose to fine-tune the language model to minimize backward KL divergence to the BoN distribution. Our approach is analogous to mean-field variational inference and, thus, we term it variational BoN (vBoN). To the extent this fine-tuning is successful and we end up with a good approximation, we have reduced the inference cost by a factor of N. Our experiments on controlled generation and summarization tasks show that BoN is the most effective alignment method, and our variational approximation to BoN achieves the closest performance to BoN and surpasses models fine-tuned using the standard KL-constrained RL objective. ... Variational Best-of-N (on the right) approximates this process via fine-tuning. The goal is to ensure that sampling a single string from the fine-tuned model produces a result equivalent to applying Best-of-N . ... Language models are pre-trained on large corpora to model a distribution over natural language text.1 Beyond their initial pre-training, they are often additionally fine-tuned on domain-specific data through a process called supervised fine-tuning (SFT). ... A common alignment-via-inference method is the Best-of-N (BoN ; Stiennon et al., 2020) algorithm. As such, it does not require any fine-tuning of the language model. The algorithm is straightforward: One draws N samples from the reference model and returns the text that achieves the highest reward among those N samples. ... • BoN -SFT: Perhaps the most straightforward way to approximate BoN distribution is to fine-tune the model to maximize the likelihood of the samples taken with BoN algorithm. Unfortunately, we find that SFT is incapable of achieving a good trade-off between achieving high rewards and low KL divergence, see App."
+      },
+      {
+        "paper_id": "278905330",
+        "markdown_evidence": "Continuous Self-Improvement of Large Language Models by Test-time Training with Verifier-Driven Sample Selection ... Learning to adapt pretrained language models to unlabeled, out-of-distribution data is a critical challenge, as models often falter on structurally novel reasoning tasks even while excelling within their training distribution. We introduce a new framework called VDS-TTT - Verifier-Driven Sample Selection for Test-Time Training to efficiently address this. We use a learned verifier to score a pool of generated responses and select only from high ranking pseudo-labeled examples for fine-tuned adaptation. Specifically, for each input query our LLM generates N candidate answers; the verifier assigns a reliability score to each, and the response with the highest confidence and above a fixed threshold is paired with its query for test-time training. We fine-tune only low-rank LoRA adapter parameters, ensuring adaptation efficiency and fast convergence. Our proposed self-supervised framework is the first to synthesize verifier driven test-time training data for continuous self-improvement of the model. Experiments across three diverse benchmarks and three state-of-the-art LLMs demonstrate that VDS-TTT yields up to a 32.29% relative improvement over the base model and a 6.66% gain compared to verifier-based methods without test-time training, highlighting its effectiveness and efficiency for on-the-fly large language model adaptation."
+      },
+      {
+        "paper_id": "273403421",
+        "markdown_evidence": "POROver: Improving Safety and Reducing Overrefusal in Large Language Models with Overgeneration and Preference Optimization ... Achieving both high safety and high usefulness simultaneously in large language models has become a critical challenge in recent years.Models often exhibit unsafe behavior or adopt an overly cautious approach leading to frequent overrefusal of benign prompts, which reduces their usefulness. A major factor underlying these behaviors is how the models are finetuned and aligned, particularly the nature and extent of the data used.In this work, we examine how overgenerating finetuning data with advanced teacher models (e.g., GPT-4o)-covering both general-purpose and toxic prompts-affects safety and usefulness in instruction-following language models.Additionally, we present POROver, an alignment strategy designed for models that are highly safe but prone to overrefusal. ... We note that instruction finetuning requires one response per instruction. Our overgeneration procedure involves generating multiple completions for each instruction and is typically followed by selecting one based on a specific criterion, referred to as rejection sampling. In this work, we explore automated, LLM-based criteria to ensure scalability. ... Instruction finetuning, the process where models are trained on specific task instructions in a supervised fashion, significantly enhances a model's performance in zero-shot settings (Ouyang et al., 2022;Chung et al., 2022). In instruction finetuning, advanced language models often serve as \"teachers\" to generate training data for smaller \"student\" models (Taori et al., 2023). ... While random selection and rejection sampling may appear similar at first glance, our results reveal that rejection sampling effectively identifies safer operating points while preserving model usefulness, avoiding unnecessary trade-offs between safety and usefulness. ... Comparing random selection against teacher model-based rejection sampling criteria, we can see that teacher modelbased criteria effectively identifies safer operating points while avoiding unnecessary usefulness trade-offs. For instance, ArmoRM-helpfulness criterion increases the models safety 5.65% while improving the F1-score by 1.02% in OR-Bench."
+      },
+      {
+        "paper_id": "276647376",
+        "markdown_evidence": "Self-Training Elicits Concise Reasoning in Large Language Models ... Chain-of-thought (CoT) reasoning has enabled large language models (LLMs) to utilize additional computation through intermediate tokens to solve complex tasks. However, we posit that typical reasoning traces contain many redundant tokens, incurring extraneous inference costs. Upon examination of the output distribution of current LLMs, we find evidence on their latent ability to reason more concisely, relative to their default behavior. To elicit this capability, we propose simple fine-tuning methods which leverage self-generated concise reasoning paths obtained by best-of-N sampling and few-shot conditioning, in task-specific settings. Our combined method achieves a 30% reduction in output tokens on average, across five model families on GSM8K and MATH, while maintaining average accuracy. By exploiting the fundamental stochasticity and in-context learning capabilities of LLMs, our self-training approach robustly elicits concise reasoning on a wide range of models, including those with extensive post-training. ... We believe that incorporating concise reasoning supervision or rewards in training pipelines can be beneficial for model efficiency, especially for 'thinking' models with lengthy internal reasoning. \n\nLightweight fine-tuning for concise reasoning elicitation In this paper, we focused on standard fine-tuning based on self-generated samples. ... Length reduction is transferred through finetuning. As shown in Figure 7, fine-tuning with shorter rationales results in shorter model outputs, showing a strong correlation between test and train-ing lengths. We note that the length of test outputs (incorrect and correct) are longer than the length of training samples (only correct) on average. ... Our joint FS-GPT4o-BoN method achieves the greatest reduction across all models, maintaining relative accuracy across different model sizes, especially in the largest 8B model. 3 presents qualitative examples of reasoning paths generated by the model before and after fine-tuning with our method. ... While direct few-shot prompting with our prompts achieved comparable length reduction to fine-tuning on single-path few-shot generations, it incurred a slight accuracy loss. Critically, finetuning enabled us to incorporate BoN sampling and sample augmentation, leading to significantly greater length reduction without sacrificing accuracy."
+      },
+      {
+        "paper_id": "278789552",
+        "markdown_evidence": "AdaSTaR: Adaptive Data Sampling for Training Self-Taught Reasoners ... Self-Taught Reasoners (STaR), synonymously known as Rejection sampling Fine-Tuning (RFT), is an integral part of the training pipeline of self-improving reasoning Language Models (LMs). The self-improving mechanism often employs random observation (data) sampling. However, this results in trained observation imbalance; inefficiently over-training on solved examples while under-training on challenging ones. In response, we introduce Adaptive STaR (AdaSTaR), a novel algorithm that rectifies this by integrating two adaptive sampling principles: (1) Adaptive Sampling for Diversity: promoting balanced training across observations, and (2) Adaptive Sampling for Curriculum: dynamically adjusting data difficulty to match the model's evolving strength. Across six benchmarks, AdaSTaR achieves best test accuracy in all instances (6/6) and reduces training FLOPs by an average of 58.6% against an extensive list of baselines. These improvements in performance and efficiency generalize to different pre-trained LMs and larger models, paving the way for more efficient and effective self-improving LMs."
+      },
+      {
+        "paper_id": "271270574",
+        "markdown_evidence": "DART-Math: Difficulty-Aware Rejection Tuning for Mathematical Problem-Solving ... Solving mathematical problems requires advanced reasoning abilities and presents notable challenges for large language models. Previous works usually synthesize data from proprietary models to augment existing datasets, followed by instruction tuning to achieve top-tier results. However, our analysis of these datasets reveals severe biases towards easy queries, with frequent failures to generate any correct response for the most challenging queries. Hypothesizing that difficult queries are crucial to learn complex reasoning, we propose Difficulty-Aware Rejection Tuning (DART), a method that allocates difficult queries more trials during the synthesis phase, enabling more extensive training on difficult samples. Utilizing DART, we have created new datasets for mathematical problem-solving that focus more on difficult queries and are substantially smaller than previous ones. Remarkably, our synthesis process solely relies on a 7B-sized open-weight model, without reliance on the commonly used proprietary GPT-4. ... This method of response sampling is known as rejection sampling, and the subsequent fine-tuning process is referred to as rejection tuning, which is widely employed to enhance the mathematical problem-solving abilities of LLMs (Yuan et al., 2023;Yu et al., 2024;Singh et al., 2023;Xu et al., 2024). ... A prevalent method of data augmentation is to sample multiple responses to given queries from a strong model and filter out the incorrect ones. This method, known as rejection tuning, ensures the high quality of the augmented thought steps and yields competitive performance (Yuan et al., 2023;Yu et al., 2024;Singh et al., 2023). ... Our approach typically requires more sampling trials than vanilla rejection sampling to generate a dataset of comparable size because difficult queries often need more samples to secure the required number of correct responses. Despite this, it is crucial to point out that our overall training cost does not exceed that of vanilla instruction tuning. ... This indicates effective generalization of our approach. These improvements over the VRT baselines demonstrate the effectiveness of the proposed difficulty-aware rejection sampling. We note that DART-Math does not greatly boost the relatively simple, in-domain GSM8K benchmark."
+      },
+      {
+        "paper_id": "276409273",
+        "markdown_evidence": "RoseRAG: Robust Retrieval-augmented Generation with Small-scale LLMs via Margin-aware Preference Optimization ... Large language models (LLMs) have achieved impressive performance but face high computational costs and latency, limiting their deployment in resource-constrained settings. In contrast, small-scale LLMs (SLMs) are more efficient yet struggle to capture evolving real-world knowledge. Retrieval-augmented generation (RAG) helps by integrating external knowledge, but imperfect retrieval can introduce distracting noise that misleads SLMs. We propose RoseRAG, a robust RAG framework for SLMs via Margin-aware Preference Optimization. RoseRAG employs multi-turn prompting for detailed reasoning, rejection sampling for high-quality explanations, and contrastive preference selection to refine responses by maximizing the likelihood gap between preferred and non-preferred outputs. By integrating these components into a margin-aware optimization process, RoseRAG robustly enhances the accuracy and reliability of SLMs for RAG applications. Extensive experiments on three open-domain question answering benchmarks indicate that our innovative RoseRAG surpasses state-of-the-art baselines significantly. ... On the other hand, Fine-tuning-based strategies (Yoran et al., 2024;Wei et al., 2025) aim to improve retrieval robustness by training models on curated, denoised datasets using supervised finetuning (SFT). ... • We propose a multi-turn prompting strategy cou-pled with rejection sampling to generate and filter robust reasoning rationales, for boosting the quality of preference data. \n\n• We design a contrastive preference data selection scheme to maximize the margin between chosen and rejected responses, leading to more discriminative and generalizable model behavior. ... On HotPotQA, rejection sampling improves both the Exact Match and F1 scores significantly. Specifically, the EM score increases from 0.33 to 0.41, and the F1 score rises from 0.37 to 0.46. This demon-  strates that rejection sampling enables the model to generate more accurate and contextually relevant responses by filtering out spurious rationales. ... In contrast, ORPO (Hong et al., 2024) is a monolithic approach that integrates preference alignment directly into the supervised fine-tuning (SFT) phase, thereby obviating the need for a separate reference model."
+      },
+      {
+        "paper_id": "276575612",
+        "markdown_evidence": "Finding the Sweet Spot: Preference Data Construction for Scaling Preference Optimization ... Iterative data generation and model retraining are widely used to align large language models (LLMs). It typically involves a policy model to generate on-policy responses and a reward model to guide training data selection. Direct Preference Optimization (DPO) further enhances this process by constructing preference pairs of chosen and rejected responses. In this work, we aim to \\emph{scale up} the number of on-policy samples via repeated random sampling to improve alignment performance. Conventional practice selects the sample with the highest reward as chosen and the lowest as rejected for DPO. However, our experiments reveal that this strategy leads to a \\emph{decline} in performance as the sample size increases. To address this, we investigate preference data construction through the lens of underlying normal distribution of sample rewards. We categorize the reward space into seven representative points and systematically explore all 21 ($C_7^2$) pairwise combinations. ... They have shown that increasing the number of samples improves the solve rate with a simple best-of-N strategy (Amini et al., 2024) and a powerful reward. Specifically, improvements in the performance of these models in mathematical problems have been achieved by repeatedly sampling potential solutions by ma-nipulating temperatures. ... As we have emphasized, we are given sufficient sample budgets. The SFT model is Llama-3-8B-Instruct. We report the results in Table 4. To save some computation and evaluation costs, we only train and evaluate 11 models. ... We evaluate our proposed preference data construction method by comparing it with the conventional approach, where the chosen response is selected as the one with the highest reward and the rejected response is the one with the lowest reward among five samples. \n\nFor our method, we begin by sampling 5 responses per prompt. ... construction strategy using the Skywork reward model to ensure its general applicability. We adopt Llama-3-8B-Instruct as the SFT model and record the results of AlpacaEval 2 in Figure 7. We can see that model performance improves as the number of samples increases before reaching a plateau, which confirms that our strategy is robust across different reward models."
+      },
+      {
+        "paper_id": "274965527",
+        "markdown_evidence": "A Systematic Examination of Preference Learning through the Lens of Instruction-Following ... Preference learning is a widely adopted post-training technique that aligns large language models (LLMs) to human preferences and improves specific downstream task capabilities. In this work we systematically investigate how specific attributes of preference datasets affect the alignment and downstream performance of LLMs in instruction-following tasks. We use a novel synthetic data generation pipeline to generate 48,000 unique instruction-following prompts with combinations of 23 verifiable constraints that enable fine-grained and automated quality assessments of model responses. With our synthetic prompts, we use two preference dataset curation methods - rejection sampling (RS) and Monte Carlo Tree Search (MCTS) - to obtain pairs of (chosen, rejected) responses. Then, we perform experiments investigating the effects of (1) the presence of shared prefixes between the chosen and rejected responses, (2) the contrast and quality of the chosen, rejected responses and (3) the complexity of the training prompts. Our experiments reveal that shared prefixes in preference pairs, as generated by MCTS, provide marginal but consistent improvements and greater stability across challenging training configurations. High-contrast preference pairs generally outperform low-contrast pairs; however, combining both often yields the best performance by balancing diversity and learning efficiency. Additionally, training on prompts of moderate difficulty leads to better generalization across tasks, even for more complex evaluation scenarios, compared to overly challenging prompts. Our findings provide actionable insights into optimizing preference data curation for instruction-following tasks, offering a scalable and effective framework for enhancing LLM training and alignment."
+      },
+      {
+        "paper_id": "274965054",
+        "markdown_evidence": "Inference-Aware Fine-Tuning for Best-of-N Sampling in Large Language Models ... Recent studies have indicated that effectively utilizing inference-time compute is crucial for attaining better performance from large language models (LLMs). In this work, we propose a novel inference-aware fine-tuning paradigm, in which the model is fine-tuned in a manner that directly optimizes the performance of the inference-time strategy. We study this paradigm using the simple yet effective Best-of-N (BoN) inference strategy, in which a verifier selects the best out of a set of LLM-generated responses. We devise the first imitation learning and reinforcement learning~(RL) methods for BoN-aware fine-tuning, overcoming the challenging, non-differentiable argmax operator within BoN. We empirically demonstrate that our BoN-aware models implicitly learn a meta-strategy that interleaves best responses with more diverse responses that might be better suited to a test-time input -- a process reminiscent of the exploration-exploitation trade-off in RL. ... In this section we address the following questions: (1) Can we quantify the co-scaling relationship between the BoN number of samples  and temperature , enabling joint optimization of these parameters? (2) Do inference-aware fine-tuning methods (SFT and RL) enhance the effectiveness of BoN sampling? (3) Do these improvements generalize across problem domains and BoN settings? ... BoN-aware supervised fine-tuning. We first evaluate the BoN and pass@ performance of offline SFT methods, including BoN-SFT with various  ′ , and base SFT ( ′ = 1), with results shown in Figure 4. We find that base SFT significantly degrades upon the base model, indicating that it causes overfitting or lack of generalization. ... Another useful approach that can be combined with chain-of-thought is Best-of-N rejection sampling (Charniak and Johnson, 2005;Stiennon et al., 2020), which is our focus in this work. In Best-of-N, we generate multiple candidate outputs from an LLM and select the best output. ... By contrast, our work focuses on inference-aware fine-tuning that directly optimizes for Best-of-N performance, instead of an intermediate capability that be used at test-time. \n\nTo make an LLM amenable to test-time scaling, techniques like STaR (Zelikman et al., 2022) or ReST EM (Singh et al., 2023) have been employed to fine-tune the model using on-policy data."
+      },
+      {
+        "paper_id": "267682216",
+        "markdown_evidence": "RS-DPO: A Hybrid Rejection Sampling and Direct Preference Optimization Method for Alignment of Large Language Models ... Reinforcement learning from human feedback (RLHF) has been extensively employed to align large language models with user intent. However, proximal policy optimization (PPO) based RLHF is occasionally unstable requiring significant hyperparameter finetuning, and computationally expensive to maximize the estimated reward during alignment. Recently, direct preference optimization (DPO) is proposed to address those challenges. However, DPO relies on contrastive responses generated from human annotator and alternative LLM, instead of the policy model, limiting the effectiveness of the RLHF. In this paper, we addresses both challenges by systematically combining rejection sampling (RS) and DPO. Our proposed method, RS-DPO, initiates with the development of a supervised fine-tuned policy model (SFT). A varied set of k responses per prompt are sampled directly from the SFT model. RS-DPO identifies pairs of contrastive samples based on their reward distribution. Finally, we apply DPO with the contrastive samples to align the model to human preference. ... Reward model training uses ranked answers from D RM to estimate the preference distribution p as written in Equation 2 (Bradley and Terry, 1952). \n\nFigure 1: The pipeline of RS-DPO. Our proposed method systematically combines rejection sampling (RS) and direct preference optimization (DPO). ... LLaMa2 (Touvron et al., 2023) adopts several rounds of rejection sampling to select the best samples from k model-generated samples for fine-tuning before PPO in order to boost the model performance. ... (Santacroce et al., 2023) proposed a combined strategy to merge SFT and reward models as well as in PPO with LoRA selection in order to reduce latency and memory footprint. (Dong et al., 2023;Gulcehre et al., 2023) used reward model to select ranked high-reward good samples to supervise fine-tune the models and iteratively repeating this process yield good results. ... Rejection Sampling: This method utilizes only the response with the highest reward as y w for each prompt x and performs 1-step SFT using samples (x, y w ). \n\nPPO: This method dynamically generates responses y for a batch of prompts and employs a reward model for their assessment. Subsequently, it maximizes the cumulative reward during RLHF training."
+      },
+      {
+        "paper_id": "245329531",
+        "markdown_evidence": "WebGPT: Browser-assisted question-answering with human feedback ... We fine-tune GPT-3 to answer long-form questions using a text-based web-browsing environment, which allows the model to search and navigate the web. By setting up the task so that it can be performed by humans, we are able to train models on the task using imitation learning, and then optimize answer quality with human feedback. To make human evaluation of factual accuracy easier, models must collect references while browsing in support of their answers. We train and evaluate our models on ELI5, a dataset of questions asked by Reddit users. Our best model is obtained by fine-tuning GPT-3 using behavior cloning, and then performing rejection sampling against a reward model trained to predict human preferences. This model's answers are preferred by humans 56% of the time to those of our human demonstrators, and 69% of the time to the highest-voted answer from Reddit. ... Rejection sampling (best-of-n). We sampled a fixed number of answers (4, 16 or 64) from either the BC model or the RL model (if left unspecified, we used the BC model), and selected the one that was ranked highest by the reward model. ... In evaluating our approach, we focused on three \"WebGPT\" models, each of which was trained with behavior cloning followed by rejection sampling against a reward model of the same size: a 760M best-of-4 model, a 13B best-of-16 model and a 175B best-of-64 model. ... • RL requires hyperparameter tuning, whereas rejection sampling does not. \n\nThe combination of RL and rejection sampling also fails to offer much benefit over rejection sampling alone. One possible reason for this is that RL and rejection sampling are optimizing against the same reward model, which can easily be overoptimized (especially by RL, as noted above). ... We also conducted experiments to investigate how model performance varied with the size of the dataset, the number of model parameters, and the number of samples used for rejection sampling. Since human evaluations can be noisy and expensive, we used the score of a 175B \"validation\" reward model (trained on a separate dataset split) for these experiments."
+      },
+      {
+        "paper_id": "276161183",
+        "markdown_evidence": "The Best Instruction-Tuning Data are Those That Fit ... High-quality supervised fine-tuning (SFT) data are crucial for eliciting strong capabilities from pretrained large language models (LLMs). Typically, instructions are paired with multiple responses sampled from other LLMs, which are often out of the distribution of the target model to be fine-tuned. This, at scale, can lead to diminishing returns and even hurt the models'performance and robustness. We propose **GRAPE**, a novel SFT framework that accounts for the unique characteristics of the target model. For each instruction, it gathers responses from various LLMs and selects the one with the highest probability measured by the target model, indicating that it aligns most closely with the target model's pretrained distribution; it then proceeds with standard SFT training. We first evaluate GRAPE with a controlled experiment, where we sample various solutions for each question in UltraInteract from multiple models and fine-tune commonly used LMs like LLaMA3.1-8B, Mistral-7B, and Qwen2.5-7B on GRAPE-selected data. GRAPE significantly outperforms strong baselines, including distilling from the strongest model with an absolute gain of up to 13.8%, averaged across benchmarks, and training on 3x more data with a maximum performance improvement of 17.3%. GRAPE's strong performance generalizes to realistic settings. We experiment with the post-training data used for Tulu3 and Olmo-2. ... Among them, using K-center greedy sampling to select embedding-based facility locations has been proven especially effective for instruction fine-tuning of LLMs Bhatt et al. ... Remains As shown in Table 3, GRAPE-selected responses further boost the performance. Given that batch sampling from a strong model introduces minimal latency (Zhong et al., 2024;Zhou et al., 2024e), this result positions GRAPE as a practical and efficient data curation strategy-achieving strong results with just a single generator and no additional engineering overhead. ... We introduce GRAPE, a surprisingly simple yet effective methodology to enhance supervised fine-tuning (SFT) by customizing the training data for the base model. ... We conduct controlled experiments using UltraInteract-SFT to test whether selecting responses aligned with a base model's distribution improves fine-tuning outcomes more than relying on stronger generators or scaling data size."
+      },
+      {
+        "paper_id": "278318689",
+        "markdown_evidence": "Expert of Experts Verification and Alignment (EVAL) Framework for Large Language Models Safety in Gastroenterology ... Large language models generate plausible text responses to medical questions, but inaccurate responses pose significant risks in medical decision-making. Grading LLM outputs to determine the best model or answer is time-consuming and impractical in clinical settings; therefore, we introduce EVAL (Expert-of-Experts Verification and Alignment) to streamline this process and enhance LLM safety for upper gastrointestinal bleeding (UGIB). We evaluated OpenAI’s GPT-3.5/4/4o/o1-preview, Anthropic’s Claude-3-Opus, Meta’s LLaMA-2 (7B/13B/70B), and Mistral AI’s Mixtral (7B) across 27 configurations, including zero-shot baseline, retrieval-augmented generation, and supervised fine-tuning. EVAL uses similarity-based ranking and a reward model trained on human-graded responses for rejection sampling. Among the employed similarity metrics, Fine-Tuned ColBERT achieved the highest alignment with human performance across three separate datasets (ρ = 0.81–0.91). The reward model replicated human grading with 87.9% of cases across temperature settings and significantly improved accuracy through rejection sampling by 8.36% overall. EVAL offers scalable potential to assess accuracy for high-stakes medical decision-making. ... This serves as a form of self-filtering, allowing the reward model to capture and filter out suboptimal answers before they reach the end user. ... Across all regimes, including a large portion of temperature that LLM model already has a high accuracy, rejection sampling improves the overall accuracy by 9.39% in answers produced by RAG-GPT-4 and 8.36% in answers produced by SFT-GPT-4o (Table 2)."
+      },
+      {
+        "paper_id": "274280905",
+        "markdown_evidence": "Self-Generated Critiques Boost Reward Modeling for Language Models ... Reward modeling is crucial for aligning large language models (LLMs) with human preferences, especially in reinforcement learning from human feedback (RLHF). However, current reward models mainly produce scalar scores and struggle to incorporate critiques in a natural language format. We hypothesize that predicting both critiques and the scalar reward would improve reward modeling ability. Motivated by this, we propose Critic-RM, a framework that improves reward models using self-generated critiques without extra supervision. Critic-RM employs a two-stage process: generating and filtering high-quality critiques, followed by joint fine-tuning on reward prediction and critique generation. Experiments across benchmarks show that Critic-RM improves reward modeling accuracy by 3.7%-7.3% compared to standard reward models and LLM judges, demonstrating strong performance and data efficiency. Additional studies further validate the effectiveness of generated critiques in rectifying flawed reasoning steps with 2.5%-3.2% gains in improving reasoning accuracy. ... For critique generation, we set the temperature τ = 0.9 and sample N = 10 candidate critiques for each response. For the critique filtering, we set K = 2 to select top-2 responses. For model fine-tuning, we use the Adam optimizer (Kingma and Ba, 2014) with the learning rate 2e-6, weight decay 0.1 and dropout 0.1. ... On the contrary, the reward model r ψ is often observed with overfitting issues when fine-tuning with more than one round. To resolve this issue, we design a dynamic weight schedule approach, where we add an additional weight λ(t) on Equation 5, which is relevant to the training step t, for balancing between these two objectives as ... With this in mind, we design a generate-then-filter framework to create high-quality supervision signals for critique model training. ... Then, we only retain top-K ranked critiques as \n\nIn this way, we can preserve the critiques with the highest quality identified by the model itself. \n\nFinal Loss for Critique Generation. From the previous step, we augment the training set D sub with self-identified high-quality critiques, denoted as D sub = {(x, y + , y − , Z + , Z − )}."
+      },
+      {
+        "paper_id": "276079713",
+        "markdown_evidence": "Spend Wisely: Maximizing Post-Training Gains in Iterative Synthetic Data Boostrapping ... Modern foundation models often undergo iterative ``bootstrapping''in their post-training phase: a model generates synthetic data, an external verifier filters out low-quality samples, and the high-quality subset is used for further fine-tuning. Over multiple iterations, the model performance improves, raising a crucial question: How should the total budget for generation and training be allocated across iterations to maximize final performance? In this work, we develop a theoretical framework for analyzing budget allocation strategies. Specifically, we show that constant policies fail to converge with high probability, while increasing policies -- particularly exponential growth policies -- exhibit significant theoretical advantages. Experiments on image denoising with diffusion probabilistic models and math reasoning with large language models show that both exponential and polynomial growth policies consistently outperform constant policies, with exponential policies often providing more stable performance. ... A common paradigm for leveraging synthetic data employs an iterative bootstrapping process (Zelikman et al., 2022;Trung et al., 2024): the model generates synthetic data, rewards or verifiers are used to filter and select highquality data, and the model is then fine-tuned on selected data. This process is repeated iteratively to fully improve performance. ... This iterative approach generates additional training data using synthetic samples, with the rewardguided selection process ensuring its quality. The selected samples are then used to further enhance the model's generative performance (Feng et al., 2024). ... Supervised fine-tuning is a critical stage in training large language models (LLM). ... Algorithm 1 Iterative learning with synthetic data 1: Input: An initial generative model f (•; θ (0) ), a reward model R, and a policy π : {n t } t with a termination time T . 2: Output: A fine-tuned generative model f (•; θ (T ) ). \n\n3: for t ← 0 to T − 1 do 4: \n\nInitialize selected synthetic dataset D t = ∅."
+      },
+      {
+        "paper_id": "261031028",
+        "markdown_evidence": "Reinforced Self-Training (ReST) for Language Modeling ... Reinforcement learning from human feedback (RLHF) can improve the quality of large language model's (LLM) outputs by aligning them with human preferences. We propose a simple algorithm for aligning LLMs with human preferences inspired by growing batch reinforcement learning (RL), which we call Reinforced Self-Training (ReST). Given an initial LLM policy, ReST produces a dataset by generating samples from the policy, which are then used to improve the LLM policy using offline RL algorithms. ReST is more efficient than typical online RLHF methods because the training dataset is produced offline, which allows data reuse. While ReST is a general approach applicable to all generative learning settings, we focus on its application to machine translation. Our results show that ReST can substantially improve translation quality, as measured by automated metrics and human evaluation on machine translation benchmarks in a compute and sample-efficient manner. ... Specifically, our Reinforced Self-Training (ReST) method includes two loops: in the inner loop (Improve), we improve the policy on a fixed dataset and in the outer loop (Grow), we grow the dataset by sampling from the latest policy (see Figure 1). ... If we were to sample from policies {   } ≥1 , the average reward of the generated samples would be increasing (shown in grey in Figure 2). As sampling from a policy in the Grow step is computationally expensive, after each such step we perform several Improve steps. ... For example, consider a model that generates image from a textual description, in this case, the distribution of text inputs can be sampled from a language model (). \n\nSubsequently, the Improve steps use D  to fine-tune the policy   . Note that we keep the original dataset in the training mixture to ensure that the policies do not diverge. ... Figure 2 | ReST algorithm. Top: \n\nAt Improve steps I=1,I=2,I=3, the dataset from the initial policy is filtered with thresholds  1 <  2 <  3 and a sequence of policies   1 ,   2 ,   3 are finetuned. Bottom: If we were to sample from those policies (grey), the quality of samples would increase. In practice, only the final policy   3 is used to generate the next dataset D  ."
+      },
+      {
+        "paper_id": "270285630",
+        "markdown_evidence": "ReST-MCTS*: LLM Self-Training via Process Reward Guided Tree Search ... Recent methodologies in LLM self-training mostly rely on LLM generating responses and filtering those with correct output answers as training data. This approach often yields a low-quality fine-tuning training set (e.g., incorrect plans or intermediate reasoning). In this paper, we develop a reinforced self-training approach, called ReST-MCTS*, based on integrating process reward guidance with tree search MCTS* for collecting higher-quality reasoning traces as well as per-step value to train policy and reward models. ReST-MCTS* circumvents the per-step manual annotation typically used to train process rewards by tree-search-based reinforcement learning: Given oracle final correct answers, ReST-MCTS* is able to infer the correct process rewards by estimating the probability this step can help lead to the correct answer. These inferred rewards serve dual purposes: they act as value targets for further refining the process reward model and also facilitate the selection of high-quality traces for policy model self-training. ... Similar to most Reinforcement Learning (RL) problems, LLM self-training requires a reward signal. Most existing reinforced self-improvement approaches (e.g., STaR [4], RFT [5], ReST EM [6], V-STaR [7]) assume to have access to a ground-truth reward model (labels from supervised dataset, or a pre-trained reward model). These approaches use an LLM to generate multiple samples for each question, and assume the one that leads to high reward (correct solution) is the high-quality sample, and later train on these samples (hence self-training). Such procedures can be effective in improving LLM performance, in some cases solving reasoning tasks that the base LLM cannot otherwise solve [8; 9; 10]. ... In this paper, we propose ReST-MCTS * , self-training both policy and process reward model by high-quality samples generated by reward guided tree search. ... A key aspect of our method is being able to automatically generate per-step labels for training per-step reward models, by performing a sufficient number of rollouts. This labeling process effectively filters out the subset of samples with the highest quality, without requiring additional human intervention."
+      },
+      {
+        "paper_id": "276903685",
+        "markdown_evidence": "From Captions to Rewards (CaReVL): Leveraging Large Language Model Experts for Enhanced Reward Modeling in Large Vision-Language Models ... Aligning large vision-language models (LVLMs) with human preferences is challenging due to the scarcity of fine-grained, high-quality, and multimodal preference data without human annotations. Existing methods relying on direct distillation often struggle with low-confidence data, leading to suboptimal performance. To address this, we propose (CaReVL), a novel method for preference reward modeling by reliably using both high- and low-confidence data. First, a cluster of auxiliary expert models (textual reward models) innovatively leverages image captions as weak supervision signals to filter high-confidence data. The high-confidence data are then used to fine-tune the LVLM. Second, low-confidence data are used to generate diverse preference samples using the fine-tuned LVLM. These samples are then scored and selected to construct reliable chosen-rejected pairs for further training. (CaReVL) achieves performance improvements over traditional distillation-based methods on VL-RewardBench and MLLM-as-a-Judge benchmark, demonstrating its effectiveness. ... First, highconfidence data are collected by filtering GPT-4o (OpenAI et al., 2024a) judgments using auxiliary expert models, all of which are caption-guided textual reward models. The resulting high-confidence data are then used for supervised fine-tuning (SFT). Second, the abandoned low-confidence data are refined and transformed into usable training data. ... Removing Best-to-Worse negative sampling here means that rejected samples are randomly selected from incorrect samples. \n\nRemoving Best-to-Worse negative sampling degrades General and Hallucination accuracy significantly. ... To fully use relabeled samples of low-confidence data, we use a multi-dimensional scoring mechanism to automatically evaluate the quality of the samples and also design a Best-to-Worse negative sampling strategy, which generates efficient chosenrejected training pairs. ... By rejecting such nuanced cases, Strategy4 includes more challenging negative samples, thereby providing more prosperous negative signals for training. The results in Figure 3 demonstrate the effectiveness of the Best-to-Worst negative sampling strategy."
+      },
+      {
+        "paper_id": "260775436",
+        "markdown_evidence": "A Novel Self-training Approach for Low-resource Speech Recognition ... In this paper, we propose a self-training approach for automatic speech recognition (ASR) for low-resource settings. While self-training approaches have been extensively developed and evaluated for high-resource languages such as English, their applications to low-resource languages like Punjabi have been limited, despite the language being spoken by millions globally. The scarcity of annotated data has hindered the development of accurate ASR systems, especially for low-resource languages (e.g., Punjabi and M\\=aori languages). To address this issue, we propose an effective self-training approach that generates highly accurate pseudo-labels for unlabeled low-resource speech. Our experimental analysis demonstrates that our approach significantly improves word error rate, achieving a relative improvement of 14.94% compared to a baseline model across four real speech datasets. Further, our proposed approach reports the best results on the Common Voice Punjabi dataset. ... We start with a very strict (0.5) threshold and then with each iteration of self-training, we gradually relax the filtration threshold. Afterwards, we fine-tune an entirely new model using a combination of labeled and pseudo-labeled datasets. ... Although it is time-consuming to pseudo-label the entire unlabeled dataset, it would give us more high-quality filtered pseudo-labels for finetuning. Secondly, since the XLSR-53 model does not show any improvement over multiple continued fine-tuning phases, we find that fine-tuning a new model from pre-trained XLSR-53 model produces the best results. ... Secondly, since the XLSR-53 model does not show any improvement over multiple continued fine-tuning phases, we find that fine-tuning a new model from pre-trained XLSR-53 model produces the best results. Therefore, rather than continuing fine-tuning like in IPL, in every iteration, we fine-tune an entirely new model. ... In the paper, we propose a self-training approach to leverage the available large unlabeled audio data. We adopt a pretrained self-supervised crosslingual wav2vec 2.0 model (XLSR-53) [17] as our seed model to generate pseudo-labels across multiple iterations."
+      },
+      {
+        "paper_id": "276725054",
+        "markdown_evidence": "LLM Post-Training: A Deep Dive Into Reasoning Large Language Models ... Large Language Models (LLMs) have transformed the natural language processing landscape and brought to life diverse applications. Pretraining on vast web-scale data has laid the foundation for these models, yet the research community is now increasingly shifting focus toward post-training techniques to achieve further breakthroughs. While pretraining provides a broad linguistic foundation, post-training methods enable LLMs to refine their knowledge, improve reasoning, enhance factual accuracy, and align more effectively with user intents and ethical considerations. Fine-tuning, reinforcement learning, and test-time scaling have emerged as critical strategies for optimizing LLMs performance, ensuring robustness, and improving adaptability across various real-world tasks. This survey provides a systematic exploration of post-training methodologies, analyzing their role in refining LLMs beyond pretraining, addressing key challenges such as catastrophic forgetting, reward hacking, and inference-time trade-offs. We highlight emerging directions in model alignment, scalable adaptation, and inference-time reasoning, and outline future research directions. ... Best-of-N (BoN) [235] search generates N candidate outputs (usually via sampling) and then picks the best one according to a chosen criterion (e.g., a reward model or the model's own likelihood) [236,237,238]. Conceptually, this is an application of rejection sampling: one draws multiple samples and rejects all but the top-rated result. ... These filtered responses are then blended with additional datasets to produce a new, larger corpus for Supervised Fine-Tuning. Rejection sampling ensures that only high-quality outputs are used for further training, enhancing the model's overall performance and reliability. ... 5.4, CoT format data have also been used for SFT and are shown to help reshape the model responses to be more step-by-step. \n\nFine-tuning models to revise answers sequentially allows them to build on previous attempts, improving accuracy over time. ... Works like InstructGPT [58] illustrate how supervised preference data is critical before reward model training and RL updates begin."
+      },
+      {
+        "paper_id": "273403896",
+        "markdown_evidence": "A Survey on Data Synthesis and Augmentation for Large Language Models ... The success of Large Language Models (LLMs) is inherently linked to the availability of vast, diverse, and high-quality data for training and evaluation. However, the growth rate of high-quality data is significantly outpaced by the expansion of training datasets, leading to a looming data exhaustion crisis. This underscores the urgent need to enhance data efficiency and explore new data sources. In this context, synthetic data has emerged as a promising solution. Currently, data generation primarily consists of two major approaches: data augmentation and synthesis. This paper comprehensively reviews and summarizes data generation techniques throughout the lifecycle of LLMs, including data preparation, pre-training, fine-tuning, instruction-tuning, preference alignment, and applications. Furthermore, We discuss the current constraints faced by these methods and investigate potential pathways for future development and research. ... Based on the observation that the model performance has a log-linear relation versus the supervised data, reject sampling fine-tuning (RFT) [242] utilizes the LLM's capabilities to generate and compile accurate reasoning trajectories as an augmented dataset. Similarly, Self-Translate-Train [170] capitalizes on the LLM's translation prowess to produce synthetic training datasets in the desired target language, subsequently employing this self-generated data for fine-tuning. On the other hand, another category of methods synthesizes new samples based on existing seed data. ... Based on the self-instruct, Code Llama-Instruct [174] are enhanced through fine-tuning on a combination of proprietary instructional data and synthetic self-instruct dataset which is crafted by prompting Llama 2 for coding issues and Code Llama for corresponding unit tests and solutions. \n\nIterative Self-Improvement. ... Utilizing CoT examples as a guide, the LLM generates high-confidence CoT reasoning paths which serve as the final training samples to be fed back to the model for fine-tuning [81]. In addition, STaR [248] improves the LLM itself by augmenting a finetuning dataset using rationalization and justifying ground-truth answers to problems the model failed to solve."
+      },
+      {
+        "paper_id": "269790973",
+        "markdown_evidence": "NIFTY Financial News Headlines Dataset ... We introduce and make publicly available the NIFTY Financial News Headlines dataset, designed to facilitate and advance research in financial market forecasting using large language models (LLMs). This dataset comprises two distinct versions tailored for different modeling approaches: (i) NIFTY-LM, which targets supervised fine-tuning (SFT) of LLMs with an auto-regressive, causal language-modeling objective, and (ii) NIFTY-RL, formatted specifically for alignment methods (like reinforcement learning from human feedback (RLHF)) to align LLMs via rejection sampling and reward modeling. Each dataset version provides curated, high-quality data incorporating comprehensive metadata, market indices, and deduplicated financial news headlines systematically filtered and ranked to suit modern LLM frameworks. We also include experiments demonstrating some applications of the dataset in tasks like stock price movement and the role of LLM embeddings in information acquisition/richness. The NIFTY dataset along with utilities (like truncating prompt's context length systematically) are available on Hugging Face at https://huggingface.co/datasets/raeidsaqur/NIFTY. ... Each JSON-object line of the D LM contain high-quality, processed (one-turn) conversational query, where a query x q comprises of a prompt x p and a response x r , i.e., x q = (x p ; x r ).Thus, this dataset samples can be used for supervised fine-tuning (SFT) of a pretrained LM policy using the language modeling objective.Similarly, the NIFTY-RL dataset compiles a preferences"
+      },
+      {
+        "paper_id": "247084374",
+        "markdown_evidence": "Self-Training: A Survey ... Semi-supervised algorithms aim to learn prediction functions from a small set of labeled observations and a large set of unlabeled observations. Because this framework is relevant in many applications, they have received a lot of interest in both academia and industry. Among the existing techniques, self-training methods have undoubtedly attracted greater attention in recent years. These models are designed to find the decision boundary on low density regions without making additional assumptions about the data distribution, and use the unsigned output score of a learned classifier, or its margin, as an indicator of confidence. The working principle of self-training algorithms is to learn a classifier iteratively by assigning pseudo-labels to the set of unlabeled training samples with a margin greater than a certain threshold. The pseudo-labeled examples are then used to enrich the labeled training data and to train a new classifier in conjunction with the labeled training set. In this paper, we present self-training methods for binary and multi-class classification; as well as their variants and two related approaches, namely consistency-based approaches and transductive learning. We examine the impact of significant self-training features on various methods, using different general and image classification benchmarks, and we discuss our ideas for future research in self-training. To the best of our knowledge, this is the first thorough and complete survey on this subject. ... Initially, during the Grow phase, the language model policy, originally a supervised policy, generates multiple output predictions for each context, thereby enriching the training dataset. Subsequently, in the Improve stage, the expanded dataset undergoes ranking and filtering using a scoring function. The language model then undergoes fine-tuning on the refined dataset using an offline reinforcement learning objective, with the potential for repeating this process with an increasing filtering threshold. The resultant policy from this iterative process is subsequently employed in the following Grow phase."
+      },
+      {
+        "paper_id": "267069315",
+        "markdown_evidence": "West-of-N: Synthetic Preferences for Self-Improving Reward Models ... The success of reinforcement learning from human feedback (RLHF) in language model alignment is strongly dependent on the quality of the underlying reward model. In this paper, we present a novel approach to improve reward model quality by generating synthetic preference data, thereby augmenting the training dataset with on-policy, high-quality preference pairs. Motivated by the promising results of Best-of-N sampling strategies in language model training, we extend their application to reward model training. This results in a self-training strategy to generate preference pairs by selecting the best and worst candidates in a pool of responses to a given query. Empirically, we find that this approach improves the performance of any reward model, with an effect comparable to the addition of a similar quantity of human preference data. This work opens up new avenues of research for improving RLHF for language model alignment, by offering synthetic preference generation as a solution to reward modeling challenges. ... We use default training data splits. West-of-N sampling. Sampling for West-of-N is carried out from the SFT or latest RL-finetuned policy at a temperature of 0.7. When using a pointwise base reward model, finding best-and worstof-N responses within a set of N candidate responses involves scoring all of these and selecting the highest-and lowest-scored generations. ... Performance gains are observed both in terms of accuracy on held-out human preference data, but more importantly, translate to higher model quality after Best-of-N sampling or RL-finetuning. Gains achieved with self-training are greater when the base reward model is of higher quality, as pseudolabels are then less noisy (following Theorem 4.1). ... In practice, Best-of-N strategies steer the output distribution towards high-reward generations (Gulcehre et al., 2023), which has been shown to improve the performance of language models trained with supervised finetuning (Touvron et al., 2023;Dubey et al., 2024), or with contrastive, ranking or calibration losses (Liu et al., 2023;Yuan et al., 2023). ... We first finetune the policy model on human summaries (TL;DR) or on positive responses within preference pairs. The supervised-finetuned (SFT) model is then used for response sampling with a temperature of 0.7, and as starting point for RL."
+      },
+      {
+        "paper_id": "270764507",
+        "markdown_evidence": "Efficacy of Language Model Self-Play in Non-Zero-Sum Games ... Game-playing agents like AlphaGo have achieved superhuman performance through self-play, which is theoretically guaranteed to yield optimal policies in competitive games. However, most language tasks are partially or fully cooperative, so it is an open question whether techniques like self-play can effectively be used to improve language models. We empirically investigate this question in a negotiation game setting known as Deal or No Deal (DoND). Crucially, the objective in DoND can be modified to produce a fully cooperative game, a strictly competitive one, or anything in between. We finetune language models in self-play over multiple rounds of filtered behavior cloning in DoND for each of these objectives and evaluate them in self-play and in collaboration with humans. We find that language models improve substantially in self-play, achieving 14-17x higher scores in task reward after finetuning. Further, the trained models generalize to both cooperation and competition with humans, scoring 2.5-6x higher than base models. We view these results as an early promising sign for language model self-play in cooperative settings, despite a lack of theoretical guarantees. ... While model scores improved in the earliest iterations of self-play finetuning, performance plateaued and even declined much earlier than in the experiments without initial training on task-specific data. ... ▷ Obtain dialogues and rewards: 8:\n\nAppend R 1 and R 2 to R If early stopping criteria met then break 21: end for Because this approach filters out games which receive a below-average score, it requires a sufficiently capable model to \"get off the ground.\" ... Because our goal is to analyze the effects of self-play on language model behavior, we do not prompt our models with few-shot example dialogues or finetune them on task-specific data; doing so helps us avoid biasing models toward specific patterns of behavior.We then iteratively finetune these models over many rounds of self-play. ... All models were finetuned using the OpenAI API, with parameters n_epochs=3, batch_size=1, and learning_rate_multiplier=8.For model inference, we generated outputs with temperature=1.These parameters were all default values chosen by the OpenAI API, except for the learning rate multiplier, which defaults to 2."
+      },
+      {
+        "paper_id": "271064489",
+        "markdown_evidence": "PEER: Expertizing Domain-Specific Tasks with a Multi-Agent Framework and Tuning Methods ... In domain-specific applications, GPT-4, augmented with precise prompts or Retrieval-Augmented Generation (RAG), shows notable potential but faces the critical tri-lemma of performance, cost, and data privacy. High performance requires sophisticated processing techniques, yet managing multiple agents within a complex workflow often proves costly and challenging. To address this, we introduce the PEER (Plan, Execute, Express, Review) multi-agent framework. This systematizes domain-specific tasks by integrating precise question decomposition, advanced information retrieval, comprehensive summarization, and rigorous self-assessment. Given the concerns of cost and data privacy, enterprises are shifting from proprietary models like GPT-4 to custom models, striking a balance between cost, security, and performance. We developed industrial practices leveraging online data and user feedback for efficient model tuning. This study provides best practice guidelines for applying multi-agent systems in domain-specific problem-solving and implementing effective agent tuning strategies. Our empirical studies, particularly in the financial question-answering domain, demonstrate that our approach achieves 95.0% of GPT-4's performance, while effectively managing costs and ensuring data privacy. ... Rejection sampling, as used in LLaMA2 (Touvron et al., 2023), involves generating samples from a pre-trained model and filtering based on quality criteria to retain only high-quality examples. Unlike direct offline supervised fine-tuning (SFT), rejection sampling automates initial filtering to reduce low-quality samples before human annotation. In our iterative training process, rejection sampling boosts performance post offline dataset training."
+      },
+      {
+        "paper_id": "276450087",
+        "markdown_evidence": "The Self-Improvement Paradox: Can Language Models Bootstrap Reasoning Capabilities without External Scaffolding? ... Self-improving large language models (LLMs) -- i.e., to improve the performance of an LLM by fine-tuning it with synthetic data generated by itself -- is a promising way to advance the capabilities of LLMs while avoiding extensive supervision. Existing approaches to self-improvement often rely on external supervision signals in the form of seed data and/or assistance from third-party models. This paper presents Crescent -- a simple yet effective framework for generating high-quality synthetic question-answer data in a fully autonomous manner. Crescent first elicits the LLM to generate raw questions via a bait prompt, then diversifies these questions leveraging a rejection sampling-based self-deduplication, and finally feeds the questions to the LLM and collects the corresponding answers by means of majority voting. We show that Crescent sheds light on the potential of true self-improvement with zero external supervision signals for math reasoning; in particular, Crescent-generated question-answer pairs suffice to (i) improve the reasoning capabilities of an LLM while preserving its general performance (especially in the 0-shot setting); and (ii) distil LLM knowledge to weaker models more effectively than existing methods based on seed-dataset augmentation."
+      },
+      {
+        "paper_id": "275358199",
+        "markdown_evidence": "Reasoning-Enhanced Self-Training for Long-Form Personalized Text Generation ... Personalized text generation requires a unique ability of large language models (LLMs) to learn from context that they often do not encounter during their standard training. One way to encourage LLMs to better use personalized context for generating outputs that better align with the user's expectations is to instruct them to reason over the user's past preferences, background knowledge, or writing style. To achieve this, we propose Reasoning-Enhanced Self-Training for Personalized Text Generation (REST-PG), a framework that trains LLMs to reason over personal data during response generation. REST-PG first generates reasoning paths to train the LLM's reasoning abilities and then employs Expectation-Maximization Reinforced Self-Training to iteratively train the LLM based on its own high-reward outputs. We evaluate REST-PG on the LongLaMP benchmark, consisting of four diverse personalized long-form text generation tasks. ... The underlying idea is that samples result-ing in higher rewards should have a larger impact on the loss. This approach ensures that the model learn more from high-reward examples, helping it generate high-quality, personalized responses. ... This again emphasizes the importance of hyper-parameter tuning for this approach. \n\nThe results of the experiments on varying the number of training iterations are reported in Figure 11. This figure suggests that, similar to the test set, increasing the number of iterations leads to improved performance for both ReST-EM and REST-PG. ... These indicate that supervised fine-tuning on the generated reasoning-enhancement data from a larger model only statistically significantly improves performance on LongLaMP-3. However, there is a performance drop on the rest of the tasks, with the model performing worse than the SFT on average across all datasets, where on LongLaMP-2 this drop is statistically significant. ... Since LLMs have been shown to effectively handle multiple tasks concurrently, we train a single model on all datasets. Following Singh et al. (2024), the models are trained for T = 3 iterations, generating m = 32 outputs for each input during the expectation step with temperature γ = 0.7 using Nucleus Sampling (Holtzman et al., 2020), unless otherwise specified."
+      },
+      {
+        "paper_id": "220048587",
+        "markdown_evidence": "Do you have the right scissors? Tailoring Pre-trained Language Models via Monte-Carlo Methods ... It has been a common approach to pre-train a language model on a large corpus and fine-tune it on task-specific data. In practice, we observe that fine-tuning a pre-trained model on a small dataset may lead to over- and/or under-estimate problem. In this paper, we propose MC-Tailor, a novel method to alleviate the above issue in text generation tasks by truncating and transferring the probability mass from over-estimated regions to under-estimated ones. Experiments on a variety of text generation datasets show that MC-Tailor consistently and significantly outperforms the fine-tuning approach. ... We find that MC-Tailor significantly reduces Rev-PPLs than fine-tuning baseline in data sets of different sizes, from Ontonotes-mz with only 7k training samples to relatively large Switchboard data set with more than 200k samples. ... Improved from Sequential Monte Carlo, ERS can efficiently generate samples with high diversity. \n\nRejection Sampling By applying RS, we first generate a batch of samples from P Model , and then rejecting some samples by rejection ratio 1 − 1 max(γ(x),1) . ... To mitigate the above shortcomings of finetuning, we propose MC-Tailor, which generates samples from a modified sample distribution. MC-Tailor is composed of a ratio estimator, which detects over-and under-estimate regions of model distributions, and the Early Rejection Sampling algorithm (ERS), which accelerates sampling while ensuring sample quality. ... Specifically, given a pre-trained GPT-2 model, to generate sentences of email domain, we always need to fine-tune the GPT-2 on a small set of email domain corpus. \n\nHowever, we argue that to get desired sentence outputs, fine-tuning PLM on a specific domain dataset is not necessarily the best, especially when the fine-tuning dataset is of a small size."
+      },
+      {
+        "paper_id": "272593475",
+        "markdown_evidence": "Semi-Supervised Reward Modeling via Iterative Self-Training ... Reward models (RM) capture the values and preferences of humans and play a central role in Reinforcement Learning with Human Feedback (RLHF) to align pretrained large language models (LLMs). Traditionally, training these models relies on extensive human-annotated preference data, which poses significant challenges in terms of scalability and cost. To overcome these limitations, we propose Semi-Supervised Reward Modeling (SSRM), an approach that enhances RM training using unlabeled data. Given an unlabeled dataset, SSRM involves three key iterative steps: pseudo-labeling unlabeled examples, selecting high-confidence examples through a confidence threshold, and supervised finetuning on the refined dataset. Across extensive experiments on various model configurations, we demonstrate that SSRM significantly improves reward models without incurring additional labeling costs. Notably, SSRM can achieve performance comparable to models trained entirely on labeled data of equivalent volumes. Overall, SSRM substantially reduces the dependency on large volumes of human-annotated data, thereby decreasing the overall cost and time involved in training effective reward models. ... To overcome these limitations, alternative approaches like Rejection Sampling Finetuning (RSF) (Dong et al., 2023;Gulcehre et al., 2023;Yuan et al., 2024b) have emerged. RSF learns from high-quality examples chosen by a reward model, then SFT on them. ... To differentiate from supervised finetuning (SFT), which refers to finetuning for general instruction following, we term supervised finetuning on preference data as supervised reward modeling (SRM). At the end, we use SRM to train the reward model ... For a preset confidence threshold s, we only retain the pseudo-labeled data with confidence above the threshold, which are then combined with the labeled data to form the new training set for the current iteration, denoted as D t . \n\nModel update Following the dataset construction, we perform another round of SRM on D t to get the updated model. ... The performance of the SSRM-enhanced model improves consistently as the amount of labeled data increases. Notably, when half of the dataset is labeled, the SSRM model's performance nearly matches that achieved by finetuning on a fully supervised dataset."
+      },
+      {
+        "paper_id": "271903621",
+        "markdown_evidence": "Importance Weighting Can Help Large Language Models Self-Improve ... Large language models (LLMs) have shown remarkable capability in numerous tasks and applications. However, fine-tuning LLMs using high-quality datasets under external supervision remains prohibitively expensive. In response, LLM self-improvement approaches have been vibrantly developed recently. The typical paradigm of LLM self-improvement involves training LLM on self-generated data, part of which may be detrimental and should be filtered out due to the unstable data quality. While current works primarily employs filtering strategies based on answer correctness, in this paper, we demonstrate that filtering out correct but with high distribution shift extent (DSE) samples could also benefit the results of self-improvement. Given that the actual sample distribution is usually inaccessible, we propose a new metric called DS weight to approximate DSE, inspired by the Importance Weighting methods. ... This formula typically includes generating reasoning thoughts and answers on unsupervised datasets, filtering data, and fine-tuning models on the selfgenerated data (Huang et al. 2023a). It is regarded as an attractive approach for LLMs to self-supervise by utilizing unlabeled data without external supervision. \n\nThe primary challenge of utilizing self-generated data is the variability in data quality. While high-quality samples can enhance the model's reasoning abilities, there are low-quality samples that may detrimentally affect performance (Li and Qiu 2023). For example, an incorrectly generated answer could mislead the model. Therefore, a good filtering strategy is decisive for effective self-improvement. ... To alleviate this problem, many works are committed to investigating the self-improvement ability of LLMs (Shinn et al. 2023;Madaan et al. 2023;Vernikos et al. 2024). Among them, fine-tuning the LLM on self-generated data appears as one of the most promising way (Gülc ¸ehre et al. ... 2023) use pre-trained models to evaluate the self-generated samples. Intervened by external supervision, their filtering results are usually more comprehensive and meticulous. Following that, we also implement a variant of LMSI for reference, the RM-filter. RM-filter uses a pre-trained reward model to score the generated data, as GENIE (Yehudai et al."
+      },
+      {
+        "paper_id": "258865735",
+        "markdown_evidence": "Language Model Self-improvement by Reinforcement Learning Contemplation ... Large Language Models (LLMs) have exhibited remarkable performance across various natural language processing (NLP) tasks. However, fine-tuning these models often necessitates substantial supervision, which can be expensive and time-consuming to obtain. This paper introduces a novel unsupervised method called LanguageModel Self-Improvement by Reinforcement Learning Contemplation (SIRLC) that improves LLMs without reliance on external labels. Our approach is grounded in the observation that it is simpler for language models to assess text quality than to generate text. Building on this insight, SIRLC assigns LLMs dual roles as both student and teacher. As a student, the LLM generates answers to unlabeled questions, while as a teacher, it evaluates the generated text and assigns scores accordingly. The model parameters are updated using reinforcement learning to maximize the evaluation score. We demonstrate that SIRLC can be applied to various NLP tasks, such as reasoning problems, text generation, and machine translation. ... [2023] samples diverse reasoning paths and selects the most consistent answer by marginalizing out the sampled paths. LMSI Huang et al. [2022a] employs the self-consistency method to generate high-quality answers, which are then used to fine-tune LLMs. ... In SIRLC, we formulate the LLM fine-tuning problem as an MDP, analogous to the one described above, with the reward function derived from self-evaluation results. To simplify the notation, we use o ∼ M(q) to represent the autoregressive sampling of a complete answer o from the language model M, based on the input question q. ... These pseudo-labelled examples are then utilized to enhance the initial model training RoyChowdhury et al. [2019], Chen et al. [2021], He et al. [2020]. In recent years Huang et al. \n\n[2022a], self-training has been employed to fine-tune large-scale language models such as PaLM Chowdhery et al. ... Our experiments encompass the following topics: (1) comparison of the proposed method with baseline methods on various NLP tasks (Section 6.2); (2) the generalization ability of the LLM on unseen datasets after fine-tuning using the proposed method (Section 6.3); and (3) the application of the proposed method to different sizes of language models (Section 6.3)."
+      },
+      {
+        "paper_id": "276107223",
+        "markdown_evidence": "Self-Improving Transformers Overcome Easy-to-Hard and Length Generalization Challenges ... Large language models often struggle with length generalization and solving complex problem instances beyond their training distribution. We present a self-improvement approach where models iteratively generate and learn from their own solutions, progressively tackling harder problems while maintaining a standard transformer architecture. Across diverse tasks including arithmetic, string manipulation, and maze solving, self-improving enables models to solve problems far beyond their initial training distribution-for instance, generalizing from 10-digit to 100-digit addition without apparent saturation. We observe that in some cases filtering for correct self-generated examples leads to exponential improvements in out-of-distribution performance across training rounds. Additionally, starting from pretrained models significantly accelerates this self-improvement process for several tasks. Our results demonstrate how controlled weak-to-strong curricula can systematically teach a model logical extrapolation without any changes to the positional embeddings, or the model architecture."
+      },
+      {
+        "paper_id": "254823489",
+        "markdown_evidence": "Constitutional AI: Harmlessness from AI Feedback ... As AI systems become more capable, we would like to enlist their help to supervise other AIs. We experiment with methods for training a harmless AI assistant through self-improvement, without any human labels identifying harmful outputs. The only human oversight is provided through a list of rules or principles, and so we refer to the method as 'Constitutional AI'. The process involves both a supervised learning and a reinforcement learning phase. In the supervised phase we sample from an initial model, then generate self-critiques and revisions, and then finetune the original model on revised responses. In the RL phase, we sample from the finetuned model, use a model to evaluate which of the two samples is better, and then train a preference model from this dataset of AI preferences. We then train with RL using the preference model as the reward signal, i.e. we use 'RL from AI Feedback' (RLAIF). As a result we are able to train a harmless but non-evasive AI assistant that engages with harmful queries by explaining its objections to them. Both the SL and RL methods can leverage chain-of-thought style reasoning to improve the human-judged performance and transparency of AI decision making. ... We then trained SL-CAI models by finetuning a pre-trained model on the harmlessness revisions and helpfulness samples. We trained for one epoch, using a constant learning rate of 0.5 relative to the pre-training learning rate, and batch size 1024 sequences. ... They are randomly sampled at each revision step of each red team prompt. \n\nIn addition, we found that the language model sometimes becomes confused about its point of view-for example, it may generate a critique where it's supposed to generate a revision, or vice versa. ... Furthermore, in order to retain helpfulness as much as possible, we sampled responses from the helpful RLHF model on a set of helpfulness prompts collected from crowdworkers, and included these in the finetuning. The main results are presented in Section 3.3, where these models are referred to as 'SL-CAI'. ... The main results are presented in Section 3.3, where these models are referred to as 'SL-CAI'. \n\nIn Section 3.5, we also discuss a simpler alternative whereby we skip the critique step and sample the revision directly, but we use the critiqued revisions throughout the rest of the paper."
+      },
+      {
+        "paper_id": "53080148",
+        "markdown_evidence": "Resampled Priors for Variational Autoencoders ... We propose Learned Accept/Reject Sampling (LARS), a method for constructing richer priors using rejection sampling with a learned acceptance function. This work is motivated by recent analyses of the VAE objective, which pointed out that commonly used simple priors can lead to underfitting. As the distribution induced by LARS involves an intractable normalizing constant, we show how to estimate it and its gradients efficiently. We demonstrate that LARS priors improve VAE performance on several standard datasets both when they are learned jointly with the rest of the model and when they are fitted to a pretrained model. Finally, we show that LARS can be combined with existing methods for defining flexible priors for an additional boost in performance. ... Thus, training a VAE with a resampled prior only requires evaluating the resampled prior density on samples from the variational posterior as well as generating a modest number of samples from the proposal to update the moving average estimate of Z as described above. Crucially, we never need to perform accept/reject sampling during training. \n\nHierarchical models. ... Our approach is orthogonal to most existing approaches for making priors more expressive and can be easily combined with them by using them as proposals for the sampler. The price we pay for richer priors is iterative sampling, which can require rejecting a large number of proposals before accepting one. ... The density induced by Lars can be seen as a special instance of the product-ofexperts architecture (PoE, (Hinton, 2000)) with two experts. However, while sampling from PoE models is generally difficult as it requires MCMC algorithms, our approach yields exact independent samples because of its close relationship to classical rejection sampling. ... It is competitive with other approaches that enrich the prior can be efficiently combined with the ones that support efficient sampling, such as flows. Lars can also be applied post hoc to already trained models and its learned acceptance function effectively ranks samples from the proposal by visual quality."
+      },
+      {
+        "paper_id": "267617275",
+        "markdown_evidence": "V-STaR: Training Verifiers for Self-Taught Reasoners ... Common self-improvement approaches for large language models (LLMs), such as STaR, iteratively fine-tune LLMs on self-generated solutions to improve their problem-solving ability. However, these approaches discard the large amounts of incorrect solutions generated during this process, potentially neglecting valuable information in such solutions. To address this shortcoming, we propose V-STaR that utilizes both the correct and incorrect solutions generated during the self-improvement process to train a verifier using DPO that judges correctness of model-generated solutions. This verifier is used at inference time to select one solution among many candidate solutions. Running V-STaR for multiple iterations results in progressively better reasoners and verifiers, delivering a 4% to 17% test accuracy improvement over existing self-improvement and verification approaches on common code generation and math reasoning benchmarks with LLaMA2 models. ... SFT: Standard fine-tuning (Eq. 1) on training data without any self-improvement or test-time verification. 2. STaR † : Bootstrapping a generator by sampling k = 16 completions per query for 3 iterations, see §2.1. ... Rejection Sampling Fine-tuning (RFT; Yuan et al., 2023) first fine-tunes a pretrained LM on the training dataset D SFT to obtain G. For each problem x i , k solutions are sampled { ŷi,j ∼ G(y|x i )} k j=1 and similar to STaR, only correct generated solutions (z = 1) are kept. ... Self-training and self-improvement. One family of methods, beginning with STaR (Zelikman et al., 2022), reinforced self-training (Gulcehre et al., 2023), and rejection fine-tuning (Yuan et al., 2023), relies on solutions generated by the LLM to update itself. These methods fine-tune the model on generated solutions that yield a correct answer. ... The de facto approach for such tasks with causal language models is supervised fine-tuning (SFT) with the negative log-likelihood objective on the training data: \n\nwhere G is also referred to as generator in reasoning tasks. LLMs can be used to generate high quality chain-of-thought rationales or solutions for a range of tasks."
+      },
+      {
+        "paper_id": "277627967",
+        "markdown_evidence": "PaMi-VDPO: Mitigating Video Hallucinations by Prompt-Aware Multi-Instance Video Preference Learning ... Direct Preference Optimization (DPO) helps reduce hallucinations in Video Multimodal Large Language Models (VLLMs), but its reliance on offline preference data limits adaptability and fails to capture true video-response misalignment. We propose Video Direct Preference Optimization (VDPO), an online preference learning framework that eliminates the need for preference annotation by leveraging video augmentations to generate rejected samples while keeping responses fixed. However, selecting effective augmentations is non-trivial, as some clips may be semantically identical to the original under specific prompts, leading to false rejections and disrupting alignment. To address this, we introduce Prompt-aware Multi-instance Learning VDPO (PaMi-VDPO), which selects augmentations based on prompt context. Instead of a single rejection, we construct a candidate set of augmented clips and apply a close-to-far selection strategy, initially ensuring all clips are semantically relevant while then prioritizing the most prompt-aware distinct clip. This allows the model to better capture meaningful visual differences, mitigating hallucinations, while avoiding false rejections, and improving alignment. ... In this section, we briefly review how existing approaches leverage direct preference optimization (DPO) to improve the performance of multimodal large language models (MLLMs), especially for mitigating hallucinations. Supervised Fine-tuning (SFT). ... For fair comparison, we also train the backbone using the same data by the supervised fine-tuning (SFT) and the standard DPO. The standard DPO requires the chosen and rejected response pairs for each data sample. ... 5 suggest that prompt-dependent high-similarity augmentations can reduce false-rejected samples, but manually selecting these augmentations via human curation or LLM-based filtering is costly. ... 3 (b), VDPO models trained with high-similarity augmentations outperform those using low-similarity augmentations. This is because highsimilarity augmentations generate subtle yet distinguishable negative samples, forcing the model to focus on fine-grained video-response misalignment. For example, D-Clip achieves a +3.5% improvement in hallucination benchmarks."
+      },
+      {
+        "paper_id": "275921450",
+        "markdown_evidence": "BoKDiff: best-of-K diffusion alignment for target-specific 3D molecule generation ... Abstract Motivation Structure-based drug design (SBDD) leverages the 3D structure of target proteins to guide therapeutic development. While generative models like diffusion models and geometric deep learning show promise in ligand design, challenges such as limited protein–ligand data and poor alignment reduce their effectiveness. We introduce BoKDiff, a domain-adapted framework inspired by alignment strategies in large language and vision models that combines multi-objective optimization with Best-of-K alignment to enhance ligand generation. Results Built on DecompDiff, BoKDiff generates diverse ligands and ranks them using a weighted score based on QED, SA, and docking metrics. To overcome alignment issues, we reposition each ligand’s center of mass to match its docking pose, enabling more accurate sub-component extraction. We further incorporate a Best-of-N (BoN) sampling strategy to select optimal candidates without model fine-tuning. BoN achieves QED > 0.6, SA > 0.75, and over 35% success rate. ... Denoting p g (y | w, x) as the conditional distribution for a given input x under parameter w, and considering a training input distribution D, the objective is expressed as: \n\nRAFT: Reward rAnked FineTuning \n\nWe exploit the Reward rAnked FineTuning (RAFT) [5] approach, which combines sample ranking based on rewards with supervised fine-tuning (SFT). ... Instead of curating a high-reward dataset by selecting the bestof-K samples and fine-tuning the model based on this dataset, an alternative approach skips the fine-tuning step entirely by directly selecting the best sample from N generated samples. ... Furthermore, RAFT [5] proposed a reward-ranked fine-tuning approach that reduces memory and computational demands while remaining effective. This method selects high-reward samples to iteratively update the model's parameters, progressively improving its performance. ... We initialized our approach using the best-trained checkpoint of the DecompDiff model. This checkpoint was first employed to generate samples and perform the preliminary steps described earlier. For fine-tuning, we constructed a high-reward dataset during the training process and reloaded the checkpoint with this curated data."
+      },
+      {
+        "paper_id": "275788884",
+        "markdown_evidence": "Condor: Enhance LLM Alignment with Knowledge-Driven Data Synthesis and Refinement ... The quality of Supervised Fine-Tuning (SFT) data plays a critical role in enhancing the conversational capabilities of Large Language Models (LLMs). However, as LLMs become more advanced, the availability of high-quality human-annotated SFT data has become a significant bottleneck, necessitating a greater reliance on synthetic training data. In this work, we introduce Condor, a novel two-stage synthetic data generation framework that incorporates World Knowledge Tree and Self-Reflection Refinement to produce high-quality SFT data at scale. Our experimental results demonstrate that a base model fine-tuned on only 20K Condor-generated samples achieves superior performance compared to counterparts. The additional refinement stage in Condor further enables iterative self-improvement for LLMs at various scales (up to 72B), validating the effectiveness of our approach. Furthermore, our investigation into the scaling for synthetic data in post-training reveals substantial unexplored potential for performance improvements, opening promising avenues for future research. ... Reinforced Self-Training (ReST) (Gulcehre et al., 2023) achieves self-iteration by generating multiple outputs, scoring them with a reward model, and fine-tuning the LLM using the highestscoring samples. ... In this paper, we propose Condor, a two-stage data synthesis engine to generate high quality data for supervised fine-tuning. Extensive experiments demonstrate that with the high quality data generated by Condor, the performance of the fine-tuned model surpasses many existing methods and the official RLHF models using a small amount of synthetic data. ... LLaMA3.1-8B Condor Refine InternLM2.5-7B Condor Refine Qwen2.5-7B Condor Refine Qwen2.5-14B Condor Refine Qwen2.5-32B Condor Refine Fine-Tuning (SFT). Moreover, the internet is increasingly inundated with synthetic data of varying quality, making it ever more difficult to construct and filter higher-quality training data for LLMs. ... We use xTuner (Contributors, 2023b) for training, set the initial learning rate to 2e-5 and train for 3 epochs in all experiments. Unless specifically stated, we start training from the base model and compare it with the RLHF model. \n\nEvaluation Settings. We use OpenCompass (Contributors, 2023a) and employ greedy inference to evaluate all models."
+      },
+      {
+        "paper_id": "278910789",
+        "markdown_evidence": "HS-STAR: Hierarchical Sampling for Self-Taught Reasoners via Difficulty Estimation and Budget Reallocation ... Self-taught reasoners (STaRs) enhance the mathematical reasoning abilities of large language models (LLMs) by leveraging self-generated responses for self-training. Recent studies have incorporated reward models to guide response selection or decoding, aiming to obtain higher-quality data. However, they typically allocate a uniform sampling budget across all problems, overlooking the varying utility of problems at different difficulty levels. In this work, we conduct an empirical study and find that problems near the boundary of the LLM's reasoning capability offer significantly greater learning utility than both easy and overly difficult ones. To identify and exploit such problems, we propose HS-STaR, a Hierarchical Sampling framework for Self-Taught Reasoners. Given a fixed sampling budget, HS-STaR first performs lightweight pre-sampling with a reward-guided difficulty estimation strategy to efficiently identify boundary-level problems. Subsequently, it dynamically reallocates the remaining budget toward these high-utility problems during a re-sampling phase, maximizing the generation of valuable training data. Extensive experiments across multiple reasoning benchmarks and backbone LLMs demonstrate that HS-STaR significantly outperforms other baselines without requiring additional sampling budget."
+      },
+      {
+        "paper_id": "273162433",
+        "markdown_evidence": "Learning to Better Search with Language Models via Guided Reinforced Self-Training ... While language models have shown remarkable performance across diverse tasks, they still encounter challenges in complex reasoning scenarios. Recent research suggests that language models trained on linearized search traces toward solutions, rather than solely on the final solutions, exhibit improved generalization, despite the search traces being potentially noisy or suboptimal. However, relying on such imperfect traces can result in inefficient use of test-time compute. To address this, we propose guided reinforced self-training (Guided-ReST), a fine-tuning algorithm designed to improve the model's capability for effective search during inference. The key insight behind Guided-ReST is that optimal solutions can serve as valuable step-by-step landmarks to guide the model's search process. Based on this insight, we introduce a novel data generation method that seamlessly incorporates optimal solutions into the model's search procedure, enabling the generation of high-quality search traces. ... One approach is reinforced self-training (ReST) [47,7,33], which fine-tunes the model on successful examples drawn from its self-generated responses via supervised learning: \n\nwhere R denotes the terminal reward function that evaluates the quality of the responses and τ denotes the threshold parameter. ... In this subsection, we introduce a novel fine-tuning algorithm, called guided reinforced self-training (Guided-ReST), which seamlessly incorporates optimal solutions into the model's search process for data generation and effectively distills improved search behaviors into the model. ... [42] first introduce the concept of training a sequence model to imitate expert MCTS policy search traces, primarily to enhance imitation learning. More recent studies have shifted focus toward directly improving search capabilities by training language models on these traces and fine-tuning them with self-generated data [14,5]. ... For Guided-ReST, we generate a single search trace for each problem using 200K training examples and fine-tune the model for two epochs, repeating this procedure for three iterations. For PPO, we fine-tune the model on 200K training examples for two epochs. We adopt an outcome reward function that assigns 1 for success and 0 otherwise."
+      },
+      {
+        "paper_id": "267682220",
+        "markdown_evidence": "Selective Reflection-Tuning: Student-Selected Data Recycling for LLM Instruction-Tuning ... Instruction tuning is critical to large language models (LLMs) for achieving better instruction following and task adaptation capabilities but its success heavily relies on the training data quality. Many recent methods focus on improving the data quality but often overlook the compatibility of the data with the student model being finetuned. This paper introduces Selective Reflection-Tuning, a novel paradigm that synergizes a teacher LLM's reflection and introspection for improving existing data quality with the data selection capability of the student LLM, to automatically refine existing instruction-tuning data. This teacher-student collaboration produces high-quality and student-compatible instruction-response pairs, resulting in sample-efficient instruction tuning and LLMs of superior performance. ... The quality of instruction tuning (Wei et al., 2022;Chen et al., 2023a;Mishra et al., 2022;Chung et al., 2022;Zhang et al., 2023;Liu et al., 2023a) data is paramount to the LLM being fine-tuned, i.e., the student model. There is a growing trend and demand for the community to automatically improve the quality of instruction tuning data. ... The involvement of the student model makes it possible to build high-quality and student-compatible instruction-response data. However, the main limitation of this method is that the data samples selected by different student models are different, thus the statistics (IFD scores and r-IFD scores) need to be calculated again for different student models. ... In each phase, the teacher model generates the updated version of instructions or responses based on some given specific criteria {c ins,1 , ..., c ins,k } 1 , then the student model judges if the updates are beneficial to it based on difficulty (IFD) or feasibility (reverse-IFD). Finally, these selectively improved samples can be used for the final instruction tuning. ... These approaches typically do not account for the inherent randomness and potential degradation associated with the generative models' output, leading to an oversight in how the student model responds to these \"improved\" data samples. Thus a mechanism for the student model to selectively integrate these enhancements has been notably absent."
+      },
+      {
+        "paper_id": "272707652",
+        "markdown_evidence": "Qwen2.5-Math Technical Report: Toward Mathematical Expert Model via Self-Improvement ... In this report, we present a series of math-specific large language models: Qwen2.5-Math and Qwen2.5-Math-Instruct-1.5B/7B/72B. The core innovation of the Qwen2.5 series lies in integrating the philosophy of self-improvement throughout the entire pipeline, from pre-training and post-training to inference: (1) During the pre-training phase, Qwen2-Math-Instruct is utilized to generate large-scale, high-quality mathematical data. (2) In the post-training phase, we develop a reward model (RM) by conducting massive sampling from Qwen2-Math-Instruct. This RM is then applied to the iterative evolution of data in supervised fine-tuning (SFT). With a stronger SFT model, it's possible to iteratively train and update the RM, which in turn guides the next round of SFT data iteration. On the final SFT model, we employ the ultimate RM for reinforcement learning, resulting in the Qwen2.5-Math-Instruct. (3) Furthermore, during the inference stage, the RM is used to guide sampling, optimizing the model's performance. ... We adopt an iterative approach that leverages rejection sampling, guided by reward modeling and annotated answers, to incrementally enhance the quality of responses (Yuan et al., 2023). At each iteration, the current best model is deployed to generate multiple reasoning pathways for the given problems, expanding the pool of candidate solutions. ... In post-training, we train a reward model on massive sampling from previous models and apply it to the iterative evolution of data in supervised fine-tuning. The better mathematical models trained from this enhancement lead to a more robust reward model, Qwen2.5-Math-RM. Then, we use this reward model in reinforcement learning and best-of-N sampling during inference. ... Second, we train a math-specific reward model Qwen2-Math-RM, derived from Qwen2-Math-72B, to create the Qwen2-Math-Instruct models. This reward model is used to construct Supervised Fine-Tuning (SFT) data through Rejection Sampling (Yuan et al., 2023). ... The queries for reinforcement learning training are selected from the reward model's training set. We leverage supervised fine-tuning models with varying sizes to resample 8 responses for each query, with each response classified as either correct or incorrect by comparing it to the gold-standard answer."
+      },
+      {
+        "paper_id": "276449919",
+        "markdown_evidence": "STaR-SQL: Self-Taught Reasoner for Text-to-SQL ... Generating step-by-step\"chain-of-thought\"rationales has proven effective for improving the performance of large language models on complex reasoning tasks. However, applying such techniques to structured tasks, such as text-to-SQL, remains largely unexplored. In this paper, we introduce Self-Taught Reasoner for text-to-SQL (STaR-SQL), a novel approach that reframes SQL query generation as a reasoning-driven process. Our method prompts the LLM to produce detailed reasoning steps for SQL queries and fine-tunes it on rationales that lead to correct outcomes. Unlike traditional methods, STaR-SQL dedicates additional test-time computation to reasoning, thereby positioning LLMs as spontaneous reasoners rather than mere prompt-based agents. To further scale the inference process, we incorporate an outcome-supervised reward model (ORM) as a verifier, which enhances SQL query accuracy. Experimental results on the challenging Spider benchmark demonstrate that STaR-SQL significantly improves text-to-SQL performance, achieving an execution accuracy of 86.6%. This surpasses a few-shot baseline by 31.6% and a baseline fine-tuned to predict answers directly by 18.0%. ... Intuitively, correct queries should stem from higher-quality rationales, so we only retain those correct rationales. However, under these conditions, models tend to over-sample solutions for simpler queries while under-sampling solutions for more complex queries, a phenomenon known as tail narrowing (Ding et al., 2024). ... For correct initial responses, we directly add them to the training set. \n\nWe then form a new dataset, D SFT , and perform supervised fine-tuning (SFT) of the generator π θ using the negative log-likelihood objective: ... We then form a new dataset, D SFT , and perform supervised fine-tuning (SFT) of the generator π θ using the negative log-likelihood objective: \n\nwhere X is the concatenation of the question Q and the schema S, i.e., X = (Q, S). \n\nThe newly fine-tuned generator is used in subsequent iterations. ... We conduct an ablation study to evaluate three key components of our framework: (a) the use of intermediate rationales (step-by-step reasoning), (b) the best-of-N sampling strategy during inference, and (c) the verifier-based ranking compared to a self-consistency (majority voting) baseline."
+      },
+      {
+        "paper_id": "255417608",
+        "markdown_evidence": "Reinforced Sample Selection for Graph Neural Networks Transfer Learning ... Graph neural networks (GNNs) have become a practical paradigm for learning graph-structured data, which can generate node representations by recursively aggregating information from neighbor nodes. Recent works utilize self-supervised tasks to learn transferable knowledge from source domain graphs and improve the GNNs performance on target domain graphs. However, there are considerable low-quality and incorrect-labeled graphs in the source domain, which leads to the negative transfer problem in target domain graphs. To tackle this challenge, we propose RSS-GNN, a reinforced sample selection for GNNs transfer learning. The critical insight is that RSS-GNN attempts to use reinforcement learning (RL) to guide transfer learning and narrow the graph divergence between the source and the target domain. We leverage a selection distribution generator (SDG) to produce the probability for each graph and select high-quality graphs to train GNNs. We innovatively designed a reward mechanism to measure the quality of the selection process and employ the policy gradient to update SDG parameters. Extensive experiments demonstrate that our approach can be compatible with various GNNs frameworks and yields superior performance compared to state-of-the-art methods."
+      },
+      {
+        "paper_id": "270392099",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276395023",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262081475",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278959690",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272593122",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270067914",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267035293",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273403435",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273497081",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254043997",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277626733",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263334090",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277786703",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273695348",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14487343",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "14653298",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "16596291",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53047267",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262826717",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271328406",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260316224",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235436277",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256503945",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270703542",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265659186",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276107488",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276394505",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "54441474",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246241043",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276421875",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253801790",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271290198",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218889774",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270067815",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "10756562",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270813112",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257833805",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260180629",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "26521920",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "119141234",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273821291",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6908591",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "59523670",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258866126",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273901642",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258236120",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278339436",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273502823",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270213066",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221266253",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246630624",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275788183",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "8034938",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237635378",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252564202",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "11133003",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249151749",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276618155",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252561958",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251385226",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235306393",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271931247",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "239998651",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252992904",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271963324",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268385111",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273654642",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277043102",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275213063",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277667305",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265659062",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267759615",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253080328",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231933578",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276903531",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276336915",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270560673",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276978735",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254877310",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267740713",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273798221",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273374930",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276580100",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278911448",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273850283",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269457506",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247762790",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259950998",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246426909",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269293529",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256415971",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259267196",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276409183",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276422244",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268987536",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277321567",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271744975",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264770810",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267657535",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272146630",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277667553",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270210257",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276576272",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266693165",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267657622",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276812945",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278535426",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270067669",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278740246",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268723859",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "53741848",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277787083",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268358368",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273098893",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276929320",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270199543",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273507434",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232061659",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270764869",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273228469",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279119432",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267028678",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264820275",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266999081",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220045392",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258959321",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258959274",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267200238",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247387389",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268379549",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "202660943",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269449456",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269137358",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269983755",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268512826",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261076515",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273228170",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265158181",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273225808",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272463773",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273163255",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268536974",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267499597",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274982737",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275570168",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276647709",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278090901",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276908893",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268041745",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "256630979",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275757090",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "220249851",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273403604",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270226583",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277622193",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266725672",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276813716",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276422443",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270560527",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272146685",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278501392",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266312608",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277857081",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265457248",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270620658",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273228296",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270211000",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248118878",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272398154",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "218971783",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273233896",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270123646",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "221665105",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272770433",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274437570",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271431928",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266335848",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270122967",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276812801",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269982611",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267027728",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259211821",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "237416585",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257019561",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277781062",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270560471",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267782636",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277940820",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275757345",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274981934",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277066387",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272397963",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

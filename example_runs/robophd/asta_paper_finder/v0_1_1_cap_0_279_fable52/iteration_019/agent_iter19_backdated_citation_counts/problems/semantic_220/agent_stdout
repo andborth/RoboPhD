@@ -1,0 +1,51 @@
+[semantic_220] score_type=semantic_f1 query='What papers discuss the use of transformer architecture in 3d video generation'
+  plan: kw=['transformer 3d video generation', 'transformer based video synthesis', '3d aware video generation transformer', 'attention mechanism video generation', 'video diffusion transformer architecture', 'spatiotemporal transformer 3d generation', 'transformer neural rendering dynamic scenes', '3d scene video synthesis deep learning', 'generative transformer 4d content', 'vision transformer video prediction', 'transformer 3d object motion generation', 'dynamic 3d scene generation transformer', 'temporal attention 3d video synthesis', 'transformer point cloud video generation', 'autoregressive transformer video generation', 'transformer novel view video synthesis', 'multi view video generation transformer', 'transformer volumetric video generation'] titles=['VDT: General-purpose Video Diffusion Transformers via Mask Modeling', 'Latte: Latent Diffusion Transformer for Video Generation', 'Scalable Diffusion Models with Transformers', 'GAIA-1: A Generative World Model for Autonomous Driving', 'VideoGPT: Video Generation using VQ-VAE and Transformers', 'Phenaki: Variable Length Video Generation From Open Domain Textual Description']
+  criteria:
+1. Transformer architecture (weight 0.35): The paper must use or discuss a transformer architecture, including attention mechanisms.
+2. 3D video generation (weight 0.45): The paper must address 3D video generation or synthesis of dynamic 3D content.
+3. Relation between transformer and 3D video generation (weight 0.20): The paper must explicitly apply the transformer architecture to the 3D video generation task, not merely mention both.
+  tool search_paper_by_title failed: TimeoutError: 
+  retrieval: 1718 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 80, 80, 80, 80, 80, 80, 80, 80, 1, 1, 1, 1, 1, 0]) t=189s
+  tool get_paper_batch failed: ToolError: Paper 98bc8e8614dfadd25eb44e3028e91d1ed5fa0467 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper 98bc8e8614dfadd25eb44e3028e91d1ed5fa0467 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper 98bc8e8614dfadd25eb44e3028e91d1ed5fa0467 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  graded 320/320 t=380s
+  extra tranche: good1=97 graded 200/200 est>=2: 45 est3: 13 t=384s
+  tool get_citations failed: TimeoutError: 
+  snowball: seeds=10 answered=10 neighbours=804 multi-linked=112 selected=120 t=524s
+  snowball: graded 115/115 of 120 est>=2: 3 est3: 1 took 94s t=618s
+  snowball+ skipped: more=120 est3=1 t=618s
+  est. grades: 3=55 2=90 1=383 other=107
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 67/80 papers t=721s
+  regraded 80/80 t=726s
+  submitted 250 papers
+  round2: near=24 repaired=18 miss=11 miss_filled=1 t=897s
+  round2: rejudged 11/11; upgraded=0 t=900s
+  wave B: criterion passages for 105/130 lower-ranked papers t=900s
+  stage2: full=19 all-criteria=19 of 80
+  head check skipped: full-in-head=16 t=900s
+  provenance: FFFFFFFFFFFFFFFFFFFSSSSSSSSSSSSSSssSSssSSSSSSSSSSSSssssssssssSSSSSSSSUXXXXXXXXXXXXXXXXSSSSSSSSSSSUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXUUUXUUUUUUUUUUUXXXXXXXXXXUUUXXXXXXXUUUUUUXXXXXXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXUUU
+  s1 est grade: 3333333333333222222333333333333333333333333333333333333333333222222222222222222222222222222222222222222222222222222222222222222222222222222222222111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 0 0 0 0 1 1 1 2 2 2 2 0 0 0 1 1 1 0 0 0 0 1 1 1 2 2 2 2 2 2 3 3 5 2 0 3 4 2 0 0 0 0 1 1 1 1 2 2 2 3 3 3 3 3 3 4 4 4 7 1 0 0 0 0 1 2 2 3 3 3 3 3 3 3 3 3 3 4 4 4 4 6 5 5 1 0 0 1 1 1 2 1 2 2 3 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 3 4 4 4 4 4 4 4 4 4 5 5 5 1 0 0 6 0 0 0 1 1 1 2 2 2 3 3 3 4 4 4 4 5 -1 -1 -1 -1 0 1 2 3 4 4 5 -1 -1 -1 0 0 0 0 2 3 3 3 4 4 4 10 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 4 4 4 4 4 4 4 4 4 4 0 0 0
+  evidence: with criterion passages 173/250
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 247518928 Look Outside the Room: Synthesizing A Consistent Long-Term 3D Scene Video from A
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 277435410 CoGen: 3D Consistent Video Generation via Adaptive Conditioning for Autonomous D
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 278783081 Interspatial Attention for Efficient 4D Human Video Generation
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 274437436 World-consistent Video Diffusion with Explicit 3D Modeling
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276938107 Reangle-A-Video: 4D Video Generation as Video-to-Video Translation
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 272524273 DriveScape: Towards High-Resolution Controllable Multi-View Driving Video Genera
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 239050004 AniFormer: Data-driven 3D Animation with Transformer
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 271710215 GLDiTalker: Speech-Driven 3D Facial Animation with Graph Latent Diffusion Transf
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 270123462 OccSora: 4D Occupancy Generation Models as World Simulators for Autonomous Drivi
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 237513692 Neural Human Performer: Learning Generalizable Radiance Fields for Human Perform
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 277467477 Learning 3D-Gaussian Simulators from RGB Videos
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 277112813 Cafe-Talk: Generating 3D Talking Face Animation with Multimodal Coarse- and Fine
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 274515068 4Real-Video: Learning Generalizable Photo-Realistic 4D Video Diffusion
+    2.00 s1=0.87 s2=([3, 3, 3], 3) 272831774 360-degree Human Video Generation with 4D Diffusion Transformer
+    2.00 s1=0.87 s2=([3, 3, 3], 3) 270062471 Human4DiT: Free-view Human Video Generation with 4D Diffusion Transformer
+  submitted 250 papers
+  done in 900s; tool failures={'search_paper_by_title': 1, 'get_paper_batch': 8, 'get_citations': 1, 'snippet_search': 20}

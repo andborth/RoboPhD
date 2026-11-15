@@ -1,0 +1,1 @@
+State-of-the-art papers focusing on sampling mechanisms at LLM inference time, including mechanisms like majority voting and reward model scoring in the context of sample selection.

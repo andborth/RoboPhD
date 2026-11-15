@@ -1,0 +1,47 @@
+[semantic_226] score_type=semantic_f1 query='Show me research on the long video description. Here, long videos are defined as those with a duration of at least several minutes.'
+  plan: kw=['long video description generation', 'dense video captioning', 'long form video understanding', 'movie description dataset', 'minute long video captioning', 'hierarchical video captioning', 'dense event captioning in videos', 'audio description for movies', 'video paragraph generation', 'temporal event localization and captioning', 'long video text generation benchmark', 'multimodal large language model video captioning', 'streaming video captioning', 'narrative video summarization', 'egocentric long video understanding', 'video storytelling generation', 'untrimmed video captioning', 'coherent multi sentence video description'] titles=['Movie Description', 'A Dataset for Movie Description', 'Dense-Captioning Events in Videos', 'MovieChat: From Dense Token to Sparse Memory for Long Video Understanding', 'Video-LLaMA: An Instruction-tuned Audio-Visual Language Model for Video Understanding', 'Streaming Dense Video Captioning']
+  criteria:
+1. Video description task (weight 0.45): The paper must address generating natural language descriptions or captions for video content.
+2. Long video duration (weight 0.35): The paper must focus on long videos lasting at least several minutes rather than short clips.
+3. Relation between description and long videos (weight 0.20): The paper must explicitly generate descriptions for long videos, connecting the captioning task to long-duration content.
+  tool snippet_search failed: TimeoutError: 
+  retrieval: 1526 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 100, 100, 100, 100, 100, 100, 100, 64, 100, 100, 100, 100, 100, 100, 100, 100, 80, 80, 80, 0, 80, 80, 80, 80, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) t=174s
+  graded 320/320 t=211s
+  extra tranche: good1=55 graded 200/200 est>=2: 9 est3: 6 t=216s
+  tool get_paper failed: TimeoutError: 
+  snowball: seeds=10 answered=10 neighbours=827 multi-linked=104 selected=120 t=357s
+  snowball: graded 115/115 of 120 est>=2: 7 est3: 7 took 94s t=451s
+  snowball+ skipped: more=120 est3=7 t=451s
+  est. grades: 3=62 2=9 1=357 other=207
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 67/80 papers t=553s
+  regraded 80/80 t=558s
+  submitted 250 papers
+  round2: near=30 repaired=24 miss=9 miss_filled=1 t=783s
+  round2: rejudged 12/12; upgraded=6 t=785s
+  wave B: criterion passages for 66/130 lower-ranked papers t=785s
+  stage2: full=37 all-criteria=37 of 80
+  head check skipped: full-in-head=16 t=785s
+  provenance: FFFFFFFFFFFFFFFFFFFFFFFFFfffffFFFFFFFSSSSSSSSSSSsSSSSSSSSsSsSSSssSsssSsssSSSSSSUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXSUUUUUUUUXXXXXXXXXXXXXXXXXXXXXUUUUUUUXXXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU
+  s1 est grade: 3333333333333333333333333333332221111333333333333333333333333333333332222221111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 2 2 2 3 3 8 -1 -1 0 0 1 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 4 0 0 0 0 1 1 2 2 -1 0 4 0 1 1 3 4 3 5 11 -1 0 3 3 3 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 3 3 3 3 3 5 3 3 4 4 4 4 4 7 4 5 5 5 10 -1 -1 -1 -1 0 0 1 1 1 1 2 2 2 3 3 3 3 3 3 3 4 4 4 4 4 4 4 4 4 5 -1 -1 -1 -1 0 0 0 1 2 2 3 4 5 -1 0 1 1 2 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+  evidence: with criterion passages 134/250
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276741160 LongCaptioning: Unlocking the Power of Long Video Caption Generation in Large Mu
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 273964017 StoryTeller: Improving Long Video Description through Global Audio-Visual Charac
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 267759646 Video ReCap: Recursive Captioning of Hour-Long Videos
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 257804730 AutoAD: Movie Description in Context
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 50779527 Video Storytelling: Textual Summaries for Events
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276575523 Fine-Grained Captioning of Long Videos through Scene Graph Consolidation
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 236459892 Hierarchical Context-aware Network for Dense Video Event Captioning
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 278032911 TimeSoccer: An End-to-End Multimodal Large Language Model for Soccer Commentary 
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 1026139 Dense-Captioning Events in Videos
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 274422721 LongVALE: Vision-Audio-Language-Event Benchmark Towards Time-Aware Omni-Modal Pe
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 218571077 Text Synopsis Generation for Egocentric Videos
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 214427672 An Efficient Framework for Dense Video Captioning
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 277243029 NarrAD: Automatic Generation of Audio Descriptions for Movies with Rich Narrativ
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 195886481 Activitynet 2019 Task 3: Exploring Contexts for Dense Captioning Events in Video
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 277468066 Shot-by-Shot: Film-Grammar-Aware Training-Free Audio Description Generation
+  submitted 250 papers
+  done in 786s; tool failures={'snippet_search': 40, 'get_paper': 1}

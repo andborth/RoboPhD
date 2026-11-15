@@ -1,0 +1,52 @@
+[semantic_226] score_type=semantic_f1 query='Show me research on the long video description. Here, long videos are defined as those with a duration of at least several minutes.'
+  plan: kw=['long video description generation', 'dense video captioning long videos', 'minutes long video understanding', 'long form video captioning', 'movie description dataset', 'hour long video summarization', 'long video temporal grounding captioning', 'video paragraph generation', 'detailed video description model', 'narrative video captioning', 'long video language model', 'streaming video captioning', 'multi-event video description', 'long video question answering', 'egocentric long video understanding', 'video storytelling generation', 'vision language model long video', 'dense temporal event captioning'] titles=['A Dataset for Movie Description', 'Movie Description', 'Dense-Captioning Events in Videos', 'MovieChat: From Dense Token to Sparse Memory for Long Video Understanding', 'Video-ChatGPT: Towards Detailed Video Understanding via Large Vision and Language Models', 'Streaming Dense Video Captioning']
+  criteria:
+1. Video description task (weight 0.40): The paper must address generating natural language descriptions or captions for video content.
+2. Long video focus (weight 0.40): The paper must focus on long videos lasting at least several minutes rather than short clips.
+3. Relation between description and long video (weight 0.20): The paper must explicitly apply description generation to the long video setting, addressing challenges of length.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool search_paper_by_title failed: TimeoutError: 
+  retrieval: 1552 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 80, 80, 0, 80, 80, 80, 80, 80, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1]) t=230s
+  tool get_paper_batch failed: ToolError: Paper 2850df536dfc15e34d66a7ae67bf676b8d0ca283 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper 2850df536dfc15e34d66a7ae67bf676b8d0ca283 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper 2850df536dfc15e34d66a7ae67bf676b8d0ca283 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  graded 320/320 t=391s
+  extra tranche stopped after first 96: est>=2 0 est3 0
+  extra tranche: good1=41 graded 96/200 est>=2: 0 est3: 0 t=392s
+  snowball: seeds=10 answered=10 neighbours=878 multi-linked=119 selected=120 t=454s
+  snowball: graded 107/107 of 120 est>=2: 11 est3: 8 took 63s t=518s
+  snowball+ skipped: more=120 est3=8 t=518s
+  est. grades: 3=43 2=9 1=312 other=159
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 70/80 papers t=622s
+  regraded 80/80 t=632s
+  submitted 250 papers
+  round2: near=30 repaired=26 miss=6 miss_filled=2 t=815s
+  round2: rejudged 12/12; upgraded=1 t=818s
+  wave B: criterion passages for 85/130 lower-ranked papers t=818s
+  stage2: full=30 all-criteria=30 of 80
+  head check skipped: full-in-head=16 t=818s
+  provenance: FFFFFFFFFFFFFFFfffffFFFFFFFFFFSSSSSSSSSSSSSSsSSSSsSsSsssSSSSSSSSSSSSSSSSSUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXXXXXSSSSSSSUUUUXXXXXXUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU
+  s1 est grade: 3333333333333333333211111111113333333333333333333333332222222211111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 0 0 0 0 0 0 0 1 1 1 1 2 2 6 -1 -1 -1 12 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 2 2 -1 1 0 0 2 -1 0 4 3 -1 -1 -1 1 2 2 0 0 2 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 4 3 3 3 3 3 3 3 4 4 4 4 6 6 11 11 14 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 0 0 0 1 1 3 3 3 6 11 -1 0 0 0 1 1 1 1 1 1 2 2 3 3 3 3 3 3 3 3 3 3 3 3 4 5 12 12 15 -1 -1 -1 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+  evidence: with criterion passages 157/250
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276741160 LongCaptioning: Unlocking the Power of Long Video Caption Generation in Large Mu
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276575523 Fine-Grained Captioning of Long Videos through Scene Graph Consolidation
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 267759646 Video ReCap: Recursive Captioning of Hour-Long Videos
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 1026139 Dense-Captioning Events in Videos
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 50779527 Video Storytelling: Textual Summaries for Events
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 218571077 Text Synopsis Generation for Egocentric Videos
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 278032911 TimeSoccer: An End-to-End Multimodal Large Language Model for Soccer Commentary 
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 277243029 NarrAD: Automatic Generation of Audio Descriptions for Movies with Rich Narrativ
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 274422721 LongVALE: Vision-Audio-Language-Event Benchmark Towards Time-Aware Omni-Modal Pe
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 245106643 Cross-Domain Modality Fusion for Dense Video Captioning
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 235254062 Towards Diverse Paragraph Captioning for Untrimmed Videos
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 225590482 Context Aware Video Caption Generation with Consecutive Differentiable Neural Co
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 261388303 A latent topic-aware network for dense video captioning
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 274305802 DistinctAD: Distinctive Audio Description Generation in Contexts
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 258049025 SoccerNet-Caption: Dense Video Captioning for Soccer Broadcasts Commentaries
+  submitted 250 papers
+  done in 818s; tool failures={'search_papers_by_relevance': 1, 'snippet_search': 25, 'search_paper_by_title': 1, 'get_paper_batch': 5}

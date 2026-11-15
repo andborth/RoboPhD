@@ -1,0 +1,55 @@
+[semantic_174] score_type=semantic_f1 query='Are there generative retrieval methods that can handle new documents and add them to the trained retrieval model?'
+  plan: kw=['generative retrieval new documents', 'differentiable search index incremental indexing', 'document identifier generation retrieval', 'autoregressive document retrieval model', 'dynamic corpus generative retrieval', 'incremental learning generative retrieval', 'updating index generative retrieval model', 'DSI differentiable search index', 'generative document retrieval emerging documents', 'index construction neural retrieval', 'sequence to sequence passage retrieval', 'docid generation retrieval transformer', 'continual learning document indexing', 'adding documents trained retriever', 'DSI++ updating documents', 'generative retrieval scalability large corpus', 'memorization corpus neural index', 'catastrophic forgetting retrieval index update'] titles=['Transformer Memory as a Differentiable Search Index', 'DSI++: Updating Transformer Memory with New Documents', 'Autoregressive Search Engines: Generating Substrings as Document Identifiers', 'Autoregressive Entity Retrieval', 'A Neural Corpus Indexer for Document Retrieval', 'IncDSI: Incrementally Updatable Document Retrieval']
+  criteria:
+1. Generative retrieval method (weight 0.40): The paper must present a generative or autoregressive retrieval method, such as a differentiable search index that generates document identifiers.
+2. Handling new documents (weight 0.40): The paper must address adding or indexing new documents not seen during initial training.
+3. Updating trained model (weight 0.20): The paper must connect generative retrieval with updating or extending an already trained retrieval model rather than retraining from scratch.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  retrieval: 1412 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 100, 100, 100, 100, 100, 0, 100, 100, 0, 100, 100, 100, 100, 100, 100, 52, 80, 0, 80, 80, 80, 0, 80, 80, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) t=235s
+  tool get_paper_batch failed: ToolError: Paper 36d6c11ff6246f723d5a8d69e76d1deb90bc2264 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper 36d6c11ff6246f723d5a8d69e76d1deb90bc2264 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: TimeoutError: 
+  graded 320/320 t=636s
+  extra tranche skipped: good1=12 extra=200 t=636s
+  tool get_paper failed: RuntimeError: tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable
+  tool get_paper failed: RuntimeError: tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable
+  tool get_paper failed: RuntimeError: tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable
+  snowball: seeds=8 answered=6 neighbours=158 multi-linked=32 selected=120 t=776s
+  snowball: graded 116/116 of 120 est>=2: 1 est3: 1 took 98s t=873s
+  snowball+ skipped: more=9 est3=1 t=873s
+  est. grades: 3=9 2=4 1=117 other=306
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 24/30 papers t=944s
+  regraded 30/30 t=946s
+  submitted 250 papers
+  round2: near=11 repaired=8 miss=4 miss_filled=0 t=1100s
+  round2: rejudged 3/3; upgraded=1 t=1101s
+  wave B: criterion passages for 80/100 lower-ranked papers t=1101s
+  stage2: full=7 all-criteria=7 of 30
+  head check skipped: full-in-head=7 t=1101s
+  provenance: FFFFFFFSSsSSSSSSSSSSSSSSSSUUUXSSSsUUUXXXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXUXUXXXXXUXUUXUUUUUUUUXUUUUUUUUUUUUUUXXXXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU
+  s1 est grade: 3333321333322211111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  retrieval rank (x100): 0 0 0 0 0 0 0 0 0 3 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 -1 0 3 0 -1 0 1 2 -1 -1 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 5 6 8 -1 -1 1 -1 0 1 8 0 1 1 1 1 2 2 2 -1 0 1 1 1 1 2 2 2 2 2 2 2 2 3 10 -1 -1 -1 3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2
+  evidence: with criterion passages 104/250
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 261277063 Continual Learning for Generative Retrieval over Dynamic Corpora
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 254854290 DSI++: Updating Transformer Memory with New Documents
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 259991824 IncDSI: Incrementally Updatable Document Retrieval
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 279595044 MoM: Continual Generative Retrieval via Mixture of Memories
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 280147891 PromptDSI: Prompt-Based Rehearsal-Free Continual Learning for Document Retrieval
+    2.00 s1=0.87 s2=([3, 3, 3], 3) 258967398 Exploring the Practicality of Generative Retrieval on Dynamic Corpora
+    2.00 s1=0.60 s2=([3, 3, 3], 3) 268032853 CorpusBrain++: A Continual Generative Pre-Training Framework for Knowledge-Inten
+    1.05 s1=1.00 s2=([3, 3, 1], 1) 264305656 Auto Search Indexer for End-to-End Document Retrieval
+    1.01 s1=1.00 s2=([3, 1, 1], 1) 276963528 Translational Generative Retrieval via Potential Query Generation
+    1.01 s1=1.00 s2=([3, 1, 1], 1) 255879096 DynamicRetriever: A Pre-trained Model-based IR System Without an Explicit Index
+    0.93 s1=1.00 s2=([0, 1, 1], 0) 270562446 PromptDSI: Prompt-based Rehearsal-free Instance-wise Incremental Learning for Do
+    0.91 s1=0.87 s2=([3, 3, 1], 1) 278032939 Replication and Exploration of Generative Retrieval over Dynamic Corpora
+    0.87 s1=0.87 s2=([3, 1, 1], 1) 262465393 Model-enhanced Vector Index
+    0.83 s1=0.87 s2=([3, 0, 0], 0) 276618151 Hierarchical corpus encoder: Fusing generative retrieval and dense indices
+    0.65 s1=0.60 s2=([3, 3, 1], 1) 277502553 Real-time Ad retrieval via LLM-generative Commercial Intention for Sponsored Sea
+  submitted 250 papers
+  done in 1102s; tool failures={'search_papers_by_relevance': 7, 'snippet_search': 23, 'get_paper_batch': 10, 'get_paper': 4}

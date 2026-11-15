@@ -1,0 +1,55 @@
+[semantic_77] score_type=semantic_f1 query='Could you recommend research that evaluates the performance decline in various language models, like BLOOM, under 4-bit integer columnar weight-only quantization?'
+  plan: kw=['4-bit integer weight-only quantization', 'post-training quantization large language models', 'column-wise weight quantization transformers', 'BLOOM model quantization evaluation', 'performance degradation quantized language models', 'low-bit quantization LLM accuracy', 'INT4 weight-only inference', 'per-channel weight quantization', 'quantization aware compression large models', 'accuracy drop neural network quantization', 'GPTQ quantization transformer models', 'memory efficient LLM inference quantization', '4-bit integer precision deep learning', 'columnar quantization weight matrices', 'zero-shot evaluation quantized LLMs', 'OPT BLOOM GPT quantization benchmark', 'weight-only PTQ perplexity degradation', 'quantization robustness billion parameter models'] titles=['GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers', 'LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale', 'SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models', 'The case for 4-bit precision: k-bit Inference Scaling Laws', 'ZeroQuant: Efficient and Affordable Post-Training Quantization for Large-Scale Transformers', 'AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration']
+  criteria:
+1. 4-bit integer weight-only quantization (weight 0.40): The paper must apply or study 4-bit integer weight-only quantization (quantizing only the weights, not activations, to 4-bit precision), ideally in a column-wise/per-channel manner.
+2. Performance decline evaluation (weight 0.35): The paper must evaluate or measure the performance decline, accuracy degradation, or quality loss introduced by the quantization.
+3. Large language models such as BLOOM (weight 0.25): The paper must concern large language models, with examples like BLOOM, OPT, or GPT.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  retrieval: 1454 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 46, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 6, 20, 100, 80, 80, 80, 80, 80, 80, 80, 80, 1, 1, 1, 1, 1, 1, 1, 1]) t=181s
+  tool get_paper_batch failed: ToolError: Paper c042addaa1ce29f3aa9c13f2ee4724d83af8edaa is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper c042addaa1ce29f3aa9c13f2ee4724d83af8edaa is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: TimeoutError: 
+  graded 320/320 t=432s
+  extra tranche: good1=108 graded 200/200 est>=2: 28 est3: 7 t=437s
+  tool get_citations failed: TimeoutError: 
+  tool get_citations failed: TimeoutError: 
+  tool get_paper failed: TimeoutError: 
+  snowball: seeds=10 answered=9 neighbours=336 multi-linked=58 selected=120 t=577s
+  snowball: graded 118/118 of 120 est>=2: 15 est3: 3 took 34s t=611s
+  snowball+ skipped: more=120 est3=3 t=611s
+  est. grades: 3=49 2=102 1=216 other=271
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 67/80 papers t=705s
+  regraded 80/80 t=710s
+  submitted 250 papers
+  round2: near=30 repaired=19 miss=13 miss_filled=0 t=896s
+  round2: rejudged 8/8; upgraded=1 t=897s
+  wave B: criterion passages for 116/130 lower-ranked papers t=897s
+  stage2: full=5 all-criteria=5 of 80
+  head check skipped: full-in-head=5 t=897s
+  provenance: FFFffSSSSSSSSSssSSSSSSSSSSSSSSSSSssssSSSSSSsSssSSSSSsSSSSSSSsXXXXXXXSSSSSSsSSUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXsSssSSSSSSUUXXXUXXUUUUUUUUUUUUUUUUUXXXXXXXXUUUXXUUUXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXUU
+  s1 est grade: 3333233333333333333333333333333333333333333333333322222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 1 3 3 0 0 0 0 0 0 0 1 2 3 5 1 2 2 2 0 0 0 0 0 0 1 1 1 1 2 2 2 4 4 5 -1 1 2 0 1 1 1 6 0 3 4 2 0 0 0 0 3 1 2 0 0 1 2 0 4 4 4 4 8 -1 -1 -1 0 0 0 1 0 3 3 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 3 3 3 3 4 4 4 4 4 5 5 5 5 7 9 11 -1 -1 -1 -1 4 0 3 3 1 2 2 2 1 2 0 3 3 4 4 1 4 4 0 0 0 0 0 0 0 0 0 1 1 1 2 2 2 2 2 3 4 4 4 -1 -1 -1 -1 0 1 2 5 8 1 1 2 4 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 4 4 4 4 4 4 4 5 7 -1 -1 0 1
+  evidence: with criterion passages 183/250
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 261049460 FineQuant: Unlocking Efficiency with Fine-Grained Weight-Only Quantization for L
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 268357772 What Makes Quantization for Large Language Model Hard? An Empirical Study from t
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 274131812 BitMoD: Bit-serial Mixture-of-Datatype LLM Acceleration
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 266164062 EasyQuant: An Efficient Data-free Quantization Algorithm for LLMs
+    2.00 s1=0.77 s2=([3, 3, 3], 3) 258180013 LUT-GEMM: Quantized Matrix Multiplication based on LUTs for Efficient Inference 
+    1.04 s1=1.00 s2=([3, 3, 1], 1) 272694046 Exploring the Trade-Offs: Quantization Methods, Task Difficulty, and Model Size 
+    1.03 s1=1.00 s2=([1, 3, 3], 1) 258947018 ZeroQuant-V2: Exploring Post-training Quantization in LLMs from Comprehensive St
+    1.03 s1=1.00 s2=([1, 3, 3], 1) 268709609 Exploring Post-training Quantization in LLMs from Comprehensive Study to Low Ran
+    1.03 s1=1.00 s2=([1, 3, 3], 1) 253237200 GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformer
+    1.03 s1=1.00 s2=([1, 3, 3], 1) 267095435 OWQ: Outlier-Aware Weight Quantization for Efficient Fine-Tuning and Inference o
+    1.03 s1=1.00 s2=([1, 3, 3], 1) 261557634 Norm Tweaking: High-performance Low-bit Quantization of Large Language Models
+    1.03 s1=1.00 s2=([1, 3, 3], 1) 270062537 CLAQ: Pushing the Limits of Low-Bit Post-Training Quantization for LLMs
+    1.03 s1=1.00 s2=([1, 3, 3], 1) 269484717 When Quantization Affects Confidence of Large Language Models?
+    1.03 s1=1.00 s2=([1, 3, 3], 1) 273507478 Pyramid Vector Quantization for LLMs
+    1.03 s1=1.00 s2=([1, 3, 3], 1) 273969923 ASER: Activation Smoothing and Error Reconstruction for Large Language Model Qua
+  submitted 250 papers
+  done in 898s; tool failures={'search_papers_by_relevance': 3, 'get_paper_batch': 14, 'get_citations': 2, 'get_paper': 1, 'snippet_search': 29}

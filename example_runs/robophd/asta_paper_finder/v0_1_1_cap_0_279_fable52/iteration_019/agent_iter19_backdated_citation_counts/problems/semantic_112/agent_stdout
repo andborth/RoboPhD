@@ -1,0 +1,53 @@
+[semantic_112] score_type=semantic_f1 query='Could you please provide some references to work on multi-document summarization?'
+  plan: kw=['multi-document summarization', 'abstractive multi-document summarization', 'extractive summarization multiple documents', 'neural multi-document summarization', 'query-focused multi-document summarization', 'graph-based multi-document summarization', 'multi-news summarization dataset', 'summarizing document clusters', 'sentence extraction news summarization', 'transformer based document summarization', 'hierarchical summarization long documents', 'redundancy reduction summarization', 'update summarization multiple sources', 'opinion summarization reviews', 'topic-based multi-document summarization', 'MMR maximal marginal relevance summarization', 'pretrained language models summarization', 'coverage and salience summarization'] titles=['Multi-News: A Large-Scale Multi-Document Summarization Dataset and Abstractive Hierarchical Model', 'Generating Wikipedia by Summarizing Long Sequences', 'Hierarchical Transformers for Multi-Document Summarization', 'Graph-based Neural Multi-Document Summarization', 'Abstractive Multi-Document Summarization via Phrase Selection and Merging', 'Leveraging Graph to Improve Abstractive Multi-Document Summarization']
+  criteria:
+1. Summarization task (weight 0.40): The paper must address automatic summarization, producing a condensed summary of textual input.
+2. Multi-document setting (weight 0.60): The paper must handle multiple input documents rather than summarizing a single document.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool search_paper_by_title failed: TimeoutError: 
+  retrieval: 1665 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 0, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 37, 0, 80, 80, 80, 80, 80, 80, 80, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1]) t=217s
+  tool get_paper_batch failed: ToolError: Paper d302efd47c9a99ae16a77caee3b37a5e4361c341 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper b1dfe914dce8cf7089faf27048a84d145f8705a3 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper b1dfe914dce8cf7089faf27048a84d145f8705a3 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  graded 320/320 t=527s
+  extra tranche: good1=181 graded 200/200 est>=2: 74 est3: 73 t=531s
+  tool get_citations failed: TimeoutError: 
+  snowball: seeds=10 answered=10 neighbours=1028 multi-linked=170 selected=120 t=672s
+  snowball: graded 115/115 of 120 est>=2: 45 est3: 44 took 66s t=738s
+  snowball+: graded 117/117 of 120 est>=2: 47 est3: 45 took 3s t=741s
+  est. grades: 3=339 2=8 1=312 other=93
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 70/80 papers t=813s
+  regraded 80/80 t=817s
+  submitted 250 papers
+  round2: near=5 repaired=3 miss=1 miss_filled=0 t=920s
+  round2: rejudged 0/0; upgraded=0 t=920s
+  wave B: criterion passages for 61/130 lower-ranked papers t=920s
+  stage2: full=74 all-criteria=74 of 80
+  head check skipped: full-in-head=16 t=920s
+  provenance: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFSSSSSUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  s1 est grade: 3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333
+  retrieval rank (x100): 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 5 3 3 3 3 3 3 3 3 3 3 5 5 3 4 4 4 4 4 4 4 4 4 4 4 4 8 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 6 4 4 4 4 6 5
+  evidence: with criterion passages 130/250
+    2.00 s1=1.00 s2=([3, 3], 3) 174799390 Multi-News: A Large-Scale Multi-Document Summarization Dataset and Abstractive H
+    2.00 s1=1.00 s2=([3, 3], 3) 218718706 Leveraging Graph to Improve Abstractive Multi-Document Summarization
+    2.00 s1=1.00 s2=([3, 3], 3) 247519084 PRIMERA: Pyramid-based Masked Sentence Pre-training for Multi-document Summariza
+    2.00 s1=1.00 s2=([3, 3], 3) 6532096 Graph-based Neural Multi-Document Summarization
+    2.00 s1=1.00 s2=([3, 3], 3) 52053741 Adapting the Neural Encoder-Decoder Framework from Single to Multi-Document Summ
+    2.00 s1=1.00 s2=([3, 3], 3) 226283949 Abstractive Multi-Document Summarization via Joint Learning with Single-Document
+    2.00 s1=1.00 s2=([3, 3], 3) 259108204 Absformer: Transformer-based Model for Unsupervised Multi-Document Abstractive S
+    2.00 s1=1.00 s2=([3, 3], 3) 170079112 Hierarchical Transformers for Multi-Document Summarization
+    2.00 s1=1.00 s2=([3, 3], 3) 8377315 Abstractive Multi-Document Summarization via Phrase Selection and Merging
+    2.00 s1=1.00 s2=([3, 3], 3) 220633461 SummPip: Unsupervised Multi-Document Summarization with Sentence Graph Compressi
+    2.00 s1=1.00 s2=([3, 3], 3) 248780330 Discriminative Marginalized Probabilistic Neural Method for Multi-Document Summa
+    2.00 s1=1.00 s2=([3, 3], 3) 239768911 SgSum:Transforming Multi-document Summarization into Sub-graph Selection
+    2.00 s1=1.00 s2=([3, 3], 3) 266362657 Shaping Political Discourse using multi-source News Summarization
+    2.00 s1=1.00 s2=([3, 3], 3) 263320200 SDbQfSum: Query‐focused summarization framework based on diversity and text sema
+    2.00 s1=1.00 s2=([3, 3], 3) 220045815 Multi-Granularity Interaction Network for Extractive and Abstractive Multi-Docum
+  submitted 250 papers
+  done in 920s; tool failures={'search_papers_by_relevance': 5, 'snippet_search': 13, 'search_paper_by_title': 1, 'get_paper_batch': 18, 'get_citations': 1}

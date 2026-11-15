@@ -1,0 +1,50 @@
+[semantic_140] score_type=semantic_f1 query="papers studying LLMs' abilities of generating new research ideas in NLP"
+  plan: kw=['LLM research idea generation', 'large language models scientific ideation', 'automatic hypothesis generation NLP', 'novel research idea generation language models', 'creativity of large language models research', 'AI generated research proposals evaluation', 'LLM brainstorming scientific hypotheses', 'machine generated novel ideas NLP', 'research ideation agents language models', 'automated scientific discovery LLM', 'evaluating novelty of LLM ideas', 'human versus LLM research ideas', 'idea generation benchmark large language models', 'LLM driven scientific creativity', 'generating research questions NLP models', 'autonomous AI scientist idea generation', 'LLM assisted research idea brainstorming', 'feasibility novelty LLM generated hypotheses'] titles=['Can LLMs Generate Novel Research Ideas? A Large-Scale Human Study with 100+ NLP Researchers', 'ResearchAgent: Iterative Research Idea Generation over Scientific Literature with Large Language Models', 'The AI Scientist: Towards Fully Automated Open-Ended Scientific Discovery', 'Large Language Models are Zero Shot Hypothesis Proposers', 'SciMON: Scientific Inspiration Machines Optimized for Novelty', 'Scideator: Human-LLM Scientific Idea Generation Grounded in Research-Paper Facet Recombination']
+  criteria:
+1. LLM idea generation (weight 0.45): The paper must study large language models generating or proposing new research ideas, hypotheses, or research questions.
+2. NLP research domain (weight 0.30): The paper must situate the idea generation in NLP research or evaluate it with NLP researchers or NLP tasks.
+3. Evaluation of generated ideas (weight 0.25): The paper must evaluate the quality, novelty, or feasibility of the generated ideas.
+  tool snippet_search failed: TimeoutError: 
+  retrieval: 1661 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 21, 100, 100, 100, 100, 100, 100, 35, 80, 0, 80, 80, 80, 80, 80, 80, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1]) t=180s
+  tool get_paper_batch failed: ToolError: Papers 4ac9bc1afdde81dc66fbb8f87a753d78287bc397, be76b8a2456b10a1693f9d411517afe1908dbdfd are newer than the date cutoff of 2025-06-01 and are not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper be76b8a2456b10a1693f9d411517afe1908dbdfd is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper 4ac9bc1afdde81dc66fbb8f87a753d78287bc397 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  graded 320/320 t=522s
+  extra tranche stopped after first 96: est>=2 1 est3 0
+  extra tranche: good1=52 graded 96/200 est>=2: 1 est3: 0 t=524s
+  snowball: seeds=5 answered=5 neighbours=412 multi-linked=23 selected=120 t=525s
+  snowball: graded 118/118 of 120 est>=2: 8 est3: 2 took 93s t=618s
+  snowball+ skipped: more=120 est3=2 t=618s
+  est. grades: 3=6 2=55 1=77 other=396
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 53/71 papers t=723s
+  regraded 71/71 t=728s
+  submitted 250 papers
+  round2: near=20 repaired=8 miss=18 miss_filled=2 t=868s
+  round2: rejudged 5/5; upgraded=0 t=870s
+  wave B: criterion passages for 28/34 lower-ranked papers t=870s
+  stage2: full=3 all-criteria=3 of 71
+  head check skipped: full-in-head=3 t=870s
+  provenance: FFFSsSsSSSSSSSSSSSSSSSssSSSSSSsSSSSSSSSSSSSSSSSSSSSSSSssSSsSSSSSSSSssSSUUUUUUUUXXXXXUUXUUUUUUUUXXUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXUUUUUUUUUUUUUUUXUUUUUUUUUUUUUUUUUXXXXXXXUXUUUUUUUUUUUUUUXXXXXXXUUUUUUUUUUUUUUUUUUXXXXXXXXXXXUUUUUUUUUUUXXXXUUUUU
+  s1 est grade: 3323333222222222222222222222222222222222222222222222222211211122211121111111111111111111111111111111111111111111111111111111111111111111110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  retrieval rank (x100): 0 0 0 0 5 1 5 0 0 0 0 0 0 0 1 0 0 0 0 1 1 0 -1 -1 1 0 0 1 1 3 9 0 0 0 1 1 3 0 0 0 0 0 1 2 3 0 1 0 1 1 1 1 1 1 -1 5 0 0 -1 0 0 1 0 0 1 0 0 9 3 1 3 0 1 1 0 0 0 1 2 4 5 5 10 -1 0 3 -1 0 2 0 1 1 1 2 2 3 4 1 2 0 0 0 0 0 2 0 0 0 0 1 1 1 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 3 5 -1 -1 -1 -1 0 0 0 0 0 0 0 0 0 1 1 1 1 2 2 -1 0 0 0 0 0 1 1 1 1 1 1 1 2 2 2 2 2 3 3 3 3 8 12 -1 0 -1 0 0 0 0 0 1 1 1 1 1 1 2 2 3 3 5 4 -1 -1 -1 -1 0 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 -1 -1 -1 -1 0 1 1 1 1 1 2 2 2 2 3 3 3 -1 -1 0 0 0 0 0
+  evidence: with criterion passages 83/250
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 272463952 Can LLMs Generate Novel Research Ideas? A Large-Scale Human Study with 100+ NLP 
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 258841365 SciMON: Scientific Inspiration Machines Optimized for Novelty
+    2.00 s1=0.80 s2=([3, 3, 3], 3) 273695165 SciPIP: An LLM-based Scientific Paper Idea Proposer
+    1.01 s1=1.00 s2=([3, 1, 1], 1) 273532791 Literature Meets Data: A Synergistic Approach to Hypothesis Generation
+    1.01 s1=1.00 s2=([3, 1, 1], 1) 272753410 PersonaFlow: Designing LLM-Simulated Expert Perspectives for Enhanced Research I
+    1.00 s1=1.00 s2=([3, 0, 3], 0) 269748457 How AI Processing Delays Foster Creativity: Exploring Research Question Co-Creat
+    0.97 s1=1.00 s2=([1, 1, 1], 1) 276482776 MLGym: A New Framework and Benchmark for Advancing AI Research Agents
+    0.84 s1=0.80 s2=([3, 1, 3], 1) 272550708 Can Large Language Models Unlock Novel Scientific Research Ideas?
+    0.84 s1=0.80 s2=([3, 1, 3], 1) 273482546 Nova: An Iterative Planning and Search Approach to Enhance Novelty and Diversity
+    0.84 s1=0.80 s2=([3, 1, 3], 1) 271957477 MLR-Copilot: Autonomous Machine Learning Research based on Large Language Models
+    0.84 s1=0.80 s2=([3, 1, 3], 1) 283910439 IdeaBench: Benchmarking Large Language Models for Research Idea Generation
+    0.84 s1=0.80 s2=([3, 1, 3], 1) 277955969 AI Idea Bench 2025: AI Research Idea Generation Benchmark
+    0.84 s1=0.80 s2=([3, 1, 3], 1) 265128781 Large Language Models are Zero Shot Hypothesis Proposers
+    0.84 s1=0.80 s2=([3, 1, 3], 1) 272827497 Human-LLM Compound System for Scientific Ideation through Facet Recombination an
+    0.84 s1=0.80 s2=([3, 1, 3], 1) 277856996 Sparks of Science: Hypothesis Generation Using Structured Paper Data
+  submitted 250 papers
+  done in 870s; tool failures={'snippet_search': 23, 'get_paper_batch': 11}

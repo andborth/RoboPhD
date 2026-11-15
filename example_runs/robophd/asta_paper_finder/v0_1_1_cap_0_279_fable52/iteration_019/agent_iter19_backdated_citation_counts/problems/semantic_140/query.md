@@ -1,0 +1,1 @@
+papers studying LLMs' abilities of generating new research ideas in NLP

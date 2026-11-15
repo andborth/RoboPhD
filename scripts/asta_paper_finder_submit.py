@@ -129,6 +129,10 @@ AGENT_MODELS = [
     "gpt-5.4-2026-03-05",
     "claude-haiku-4-5-20251001",
     "claude-sonnet-4-6",
+    # v0_1_1: the first submission calling Opus, GPT-5.5 and Gemini.
+    "claude-opus-4-8",
+    "gpt-5.5",
+    "gemini-3.1-pro-preview",
 ]
 
 # Official-judging cost projection, printed before eval. Calibrated on
@@ -373,6 +377,27 @@ SUBMISSIONS = [
         # shipped v0_0_9 run, the per-sample isolation wrapper (cad0f713) and
         # the fable-5.1 / opus-5.5 engine registrations have landed. This is the first
         # official PFB run under the isolation wrapper.
+    ),
+    Submission(
+        name="v0_1_1_cap_0_279_fable52",
+        agent_rel_path="agents/iter20_year_steered_expansion/agent.py",
+        model_arg="none",
+        # Run robophd-asta_paper_finder-023 (FABLE-5.2-evolved; luna no-prose
+        # training judge, full objective, full solver menu), winner
+        # iter20_year_steered_expansion (Elo 1567, 3 rounds; iter11 1560).
+        # Internal test 0.48537 @ $0.23080/query on the stock GPT-4o capped
+        # basis, against the board's top entry v0_0_9_cap_0_355_fable at
+        # 0.44025 @ $0.278579 official (0.4383 internal): projected to
+        # Pareto-dominate it on both axes.
+        # Models (six handles, three providers): gpt-5.4-mini,
+        # gpt-5.4-2026-03-05, gpt-5.5, claude-opus-4-8, claude-sonnet-4-6,
+        # gemini-3.1-pro-preview. The first PFB submission to call Opus,
+        # GPT-5.5 or Gemini, so AGENT_MODELS gains all three.
+        # Judge-cost projection: 250 papers/semantic query at 1,808
+        # chars/paper evidence (2.4x v0_0_9's 765), so expect the high end of
+        # the per-paper band, roughly $190-230 judge + ~$62 agent.
+        # Version v0_1_1: --model-menu and the fable-5.2 engine registration
+        # landed since v0_1_0.
     ),
 ]
 

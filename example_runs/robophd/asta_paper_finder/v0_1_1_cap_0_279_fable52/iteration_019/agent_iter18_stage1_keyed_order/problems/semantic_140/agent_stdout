@@ -1,0 +1,55 @@
+[semantic_140] score_type=semantic_f1 query="papers studying LLMs' abilities of generating new research ideas in NLP"
+  plan: kw=['LLM research idea generation', 'large language models scientific hypothesis generation', 'automated research ideation NLP', 'creative idea generation language models', 'novelty of LLM generated ideas', 'AI co-scientist idea generation', 'human expert evaluation LLM ideas', 'LLM brainstorming research questions', 'machine generated scientific hypotheses evaluation', 'language models novel ideas NLP research', 'autonomous research agents idea generation', 'evaluating creativity of large language models', 'LLM assisted scientific discovery', 'generating research proposals with LLMs', 'ideation capabilities foundation models', 'novelty feasibility assessment generated ideas', 'LLM scientific creativity benchmark', 'can language models produce novel research ideas'] titles=['Can LLMs Generate Novel Research Ideas? A Large-Scale Human Study with 100+ NLP Researchers', 'ResearchAgent: Iterative Research Idea Generation over Scientific Literature with Large Language Models', 'Large Language Models are Zero Shot Hypothesis Proposers', 'SciMON: Scientific Inspiration Machines Optimized for Novelty', 'The AI Scientist: Towards Fully Automated Open-Ended Scientific Discovery', 'Towards Large Language Models as Copilots for Theorem Proving']
+  criteria:
+1. Research idea generation (weight 0.40): The paper must study the generation of new research ideas, hypotheses, or research proposals.
+2. Large language models (weight 0.30): The paper must involve large language models as the generators of ideas.
+3. NLP domain focus (weight 0.30): The paper must situate the idea generation in NLP research or evaluate it with NLP researchers.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  retrieval: 1681 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 100, 100, 26, 100, 100, 100, 100, 100, 100, 100, 100, 44, 100, 100, 100, 100, 80, 80, 0, 80, 80, 80, 80, 80, 1, 1, 1, 1, 1, 1, 1, 0]) t=179s
+  graded 320/320 t=275s
+  extra tranche stopped after first 96: est>=2 7 est3 0
+  extra tranche: good1=75 graded 96/200 est>=2: 7 est3: 0 t=277s
+  tool get_paper failed: RuntimeError: tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable
+  tool get_paper failed: TimeoutError: 
+  snowball: seeds=10 answered=10 neighbours=666 multi-linked=35 selected=120 t=417s
+  tool get_paper_batch failed: ToolError: Papers de28e4cbee455fba136072a0f922c49698b0fb58, 8111293cbde870ae432deb98bdad2b4dc6e70644 are newer than the date cutoff of 2025-06-01 and are not allowed to be requested
+  tool get_paper_batch failed: ToolError: Papers cc68fb1680a48580ff30ff28e131da328abf0f53, f15f2fa356b48abd7689f3f6ab7889ef22eca3a8 are newer than the date cutoff of 2025-06-01 and are not allowed to be requested
+  tool get_paper_batch failed: ToolError: Papers 760040c6041f18d683e447650c89f4b1ecf27201, 5341310e43b4ff567ceb7949f151464aebff358d, 87e044b0cb5e43d630972afaf925af032efa61bd are newer than the date cutoff of 2025-06-01 and are not allowed to 
+  snowball: graded 107/107 of 120 est>=2: 7 est3: 1 took 64s t=482s
+  snowball+ skipped: more=120 est3=1 t=482s
+  est. grades: 3=12 2=77 1=276 other=158
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 59/80 papers t=588s
+  regraded 80/80 t=592s
+  submitted 250 papers
+  round2: near=22 repaired=13 miss=21 miss_filled=1 t=758s
+  round2: rejudged 7/7; upgraded=1 t=759s
+  wave B: criterion passages for 90/117 lower-ranked papers t=759s
+  stage2: full=3 all-criteria=3 of 80
+  head check skipped: full-in-head=3 t=759s
+  provenance: FFFSSSSSSsSSSSSSSSSssSSSSSSSssSSSSssSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSUUUXXXXXXSSsSSSSSSSSSUUUUUUUUUUUUXXXXXXXUUUUUUUXXUUUXXUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXUUUUUUUUUXXXXUUUUUUUUUUUUXXXXXXXXXXXXXUUXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU
+  s1 est grade: 3323333333333222222222222222222222222222222222222222222222222222222222222222222222222222211111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 0 0 1 0 0 0 1 9 0 0 0 0 0 0 1 1 2 7 -1 0 0 0 0 0 0 0 3 -1 1 2 0 0 3 9 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 1 1 1 2 2 2 3 3 4 4 6 -1 1 2 3 0 1 2 2 0 0 0 0 0 0 0 0 0 1 2 2 2 2 3 3 3 3 4 -1 -1 -1 -1 -1 0 0 1 1 2 2 3 7 -1 0 0 1 -1 -1 0 0 0 0 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 6 6 -1 -1 -1 0 1 2 2 2 2 2 2 3 3 3 3 -1 0 0 0 0 1 1 1 1 1 2 2 3 3 3 3 3 3 3 3 3 4 6 -1 -1 -1 1 2 4 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2
+  evidence: with criterion passages 150/250
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 272463952 Can LLMs Generate Novel Research Ideas? A Large-Scale Human Study with 100+ NLP 
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 272827497 Human-LLM Compound System for Scientific Ideation through Facet Recombination an
+    2.00 s1=0.80 s2=([3, 3, 3], 3) 258841365 SciMON: Scientific Inspiration Machines Optimized for Novelty
+    1.04 s1=1.00 s2=([3, 3, 1], 1) 273532791 Literature Meets Data: A Synergistic Approach to Hypothesis Generation
+    1.04 s1=1.00 s2=([3, 3, 1], 1) 273186404 IdeaSynth: Iterative Research Idea Development Through Evolving and Composing Id
+    1.02 s1=1.00 s2=([3, 3, 0], 1) 269748457 How AI Processing Delays Foster Creativity: Exploring Research Question Co-Creat
+    1.02 s1=1.00 s2=([3, 3, 0], 1) 280053600 PersonaFlow: Boosting Research Ideation with LLM-Simulated Expert Personas
+    1.02 s1=1.00 s2=([3, 3, 0], 1) 272753410 PersonaFlow: Designing LLM-Simulated Expert Perspectives for Enhanced Research I
+    1.01 s1=1.00 s2=([3, 1, 1], 1) 286224975 Scideator: Human-LLM Scientific Idea Generation Grounded in Research-Paper Facet
+    1.00 s1=1.00 s2=([1, 3, 1], 1) 276482776 MLGym: A New Framework and Benchmark for Advancing AI Research Agents
+    0.97 s1=1.00 s2=([1, 1, 1], 1) 273695178 AAAR-1.0: Assessing AI's Potential to Assist Research
+    0.97 s1=1.00 s2=([1, 1, 1], 1) 276235403 Transforming Science with Large Language Models: A Survey on AI-assisted Scienti
+    0.96 s1=1.00 s2=([1, 3, 0], 0) 272525411 Towards Automated Machine Learning Research
+    0.84 s1=0.80 s2=([3, 1, 3], 1) 273901331 Exploring Scientific Hypothesis Generation with Mamba
+    0.84 s1=0.80 s2=([3, 3, 1], 1) 273821167 Improving Scientific Hypothesis Generation with Knowledge Grounded Large Languag
+  submitted 250 papers
+  done in 760s; tool failures={'search_papers_by_relevance': 5, 'snippet_search': 28, 'get_paper': 2, 'get_paper_batch': 3}

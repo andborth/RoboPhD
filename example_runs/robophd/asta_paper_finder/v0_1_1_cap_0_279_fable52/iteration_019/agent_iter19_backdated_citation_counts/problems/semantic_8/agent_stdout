@@ -1,0 +1,53 @@
+[semantic_8] score_type=semantic_f1 query='What papers use decoupled workers in distributed RL system?'
+  plan: kw=['decoupled workers distributed reinforcement learning', 'distributed deep reinforcement learning architecture', 'actor learner separation reinforcement learning', 'distributed RL scalable training system', 'IMPALA importance weighted actor learner', 'Ape-X distributed experience replay', 'asynchronous advantage actor critic distributed', 'decoupled acting and learning RL', 'scalable distributed actor critic framework', 'replay buffer distributed reinforcement learning', 'throughput distributed RL training workers', 'SEED RL centralized inference architecture', 'Gorila general reinforcement learning architecture', 'parallel rollout workers policy learning', 'distributed experience collection reinforcement learning', 'GPU accelerated distributed reinforcement learning', 'massively parallel reinforcement learning system', 'decoupled inference and training deep RL'] titles=['IMPALA: Scalable Distributed Deep-RL with Importance Weighted Actor-Learner Architectures', 'Distributed Prioritized Experience Replay', 'SEED RL: Scalable and Efficient Deep-RL with Accelerated Central Inference', 'Massively Parallel Methods for Deep Reinforcement Learning', 'Asynchronous Methods for Deep Reinforcement Learning', 'Acme: A Research Framework for Distributed Reinforcement Learning']
+  criteria:
+1. Decoupled workers (weight 0.40): The paper must describe decoupling or separating workers such as actors and learners, so that experience generation is decoupled from policy learning.
+2. Distributed RL system (weight 0.35): The paper must present a distributed reinforcement learning system or architecture with multiple machines or processes.
+3. Relation between decoupled workers and distributed RL (weight 0.25): The paper must explicitly use decoupled workers as part of its distributed RL design, not merely mention both separately.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  retrieval: 1715 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 100, 100, 13, 19, 100, 2, 100, 100, 84, 4, 100, 100, 100, 100, 100, 100, 80, 80, 80, 80, 80, 80, 80, 80, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1]) t=174s
+  tool get_paper_batch failed: ToolError: Paper fbe87e98a8af72f5bb401893b82df92355c0e97f is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper ecf0fc5a2cf259d180729f1e787b90bd3ef70481 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: ToolError: Paper ecf0fc5a2cf259d180729f1e787b90bd3ef70481 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  graded 320/320 t=485s
+  extra tranche: good1=79 graded 200/200 est>=2: 17 est3: 16 t=488s
+  tool get_paper failed: RuntimeError: tool call failed: ToolError: Error executing tool get_paper: 'NoneType' object is not iterable
+  tool get_citations failed: TimeoutError: 
+  snowball: seeds=10 answered=9 neighbours=764 multi-linked=48 selected=120 t=628s
+  snowball: hydration timed out with 98/105 papers
+  snowball: graded 108/108 of 120 est>=2: 7 est3: 6 took 132s t=760s
+  snowball+ skipped: more=120 est3=6 t=760s
+  est. grades: 3=88 2=15 1=206 other=319
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 56/80 papers t=837s
+  regraded 80/80 t=842s
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  round2: near=19 repaired=11 miss=19 miss_filled=3 t=1015s
+  round2: rejudged 2/2; upgraded=2 t=1016s
+  wave B: criterion passages for 73/130 lower-ranked papers t=1016s
+  stage2: full=38 all-criteria=38 of 80
+  head check skipped: full-in-head=16 t=1016s
+  provenance: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFffffffSSSSSSSSSSSSSSSSSssXXXXXXXXSSSSSSssSSssSSSSSSsSSSsUUUUUUUUUUUXXUUXUUUXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXUUUUUUUXUUXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXX
+  s1 est grade: 3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333222222222222222111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 2 2 2 2 2 2 3 4 4 4 4 4 0 0 0 0 1 1 2 0 0 0 0 0 1 1 1 1 1 4 4 4 4 10 14 13 15 -1 -1 0 1 1 1 1 2 3 4 0 1 3 3 0 0 0 0 1 1 3 0 1 3 4 1 0 0 0 0 0 1 2 2 2 2 4 12 1 2 11 0 1 1 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 5 5 5 5 6 6 7 13 14 15 15 16 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 1 1 1 2 1 2 2 -1 1 1 3 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 3
+  evidence: with criterion passages 132/250
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 3645060 IMPALA: Scalable Distributed Deep-RL with Importance Weighted Actor-Learner Arch
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 269939818 An Efficient Distributed Reinforcement Learning Architecture for Long-Haul Commu
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 8577212 Massively Parallel Methods for Deep Reinforcement Learning
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 248693126 Efficient Distributed Framework for Collaborative Multi-Agent Reinforcement Lear
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 273501605 DistRL: An Asynchronous Distributed Reinforcement Learning Framework for On-Devi
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 3463260 Distributed Prioritized Experience Replay
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 271936562 Demo:SCDRL: Scalable and Customized Distributed Reinforcement Learning System
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 265220813 A Software-Hardware Co-Optimized Toolkit for Deep Reinforcement Learning on Hete
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 251733951 QuaRL: Quantization for Fast and Environmentally Sustainable Reinforcement Learn
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 279071008 AReaL: A Large-Scale Asynchronous Reinforcement Learning System for Language Rea
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 3521972 Unicorn: Continual Learning with a Universal, Off-policy Agent
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276647593 Highly Parallelized Reinforcement Learning Training with Relaxed Assignment Depe
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 267938484 Scalable Volt-VAR Optimization using RLlib-IMPALA Framework: A Reinforcement Lea
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 233219860 Podracer architectures for scalable Reinforcement Learning
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 220546016 Meta-Gradient Reinforcement Learning with an Objective Discovered Online
+  submitted 250 papers
+  done in 1017s; tool failures={'search_papers_by_relevance': 1, 'get_paper_batch': 14, 'get_paper': 1, 'get_citations': 1, 'snippet_search': 15}

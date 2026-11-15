@@ -1,0 +1,54 @@
+[semantic_57] score_type=semantic_f1 query='Could you recommend a study that explores how language models are not robust to the surface form editing when testing commonsense knowledge?'
+  plan: kw=['language model robustness commonsense knowledge', 'surface form editing commonsense probing', 'prompt sensitivity commonsense reasoning', 'paraphrase robustness language models knowledge', 'commonsense knowledge probing language models', 'lexical variation commonsense question answering', 'pretrained models negated prompts robustness', 'consistency language models factual knowledge', 'perturbation sensitivity commonsense benchmarks', 'testing commonsense knowledge in LLMs', 'surface form competition multiple choice', 'spurious correlations commonsense reasoning datasets', 'word order rephrasing commonsense evaluation', 'knowledge probing prompt reformulation', 'brittleness neural language models reasoning', 'evaluating factual knowledge BERT prompts', 'negation handling commonsense language models', 'robustness to input perturbations question answering'] titles=['How Can We Know What Language Models Know?', 'Negated and Misprimed Probes for Pretrained Language Models: Birds Can Talk, But Cannot Fly', 'Language Models as Knowledge Bases?', "Surface Form Competition: Why the Highest Probability Answer Isn't Always Right", 'oLMpics - On what Language Model Pre-training Captures', 'Measuring and Improving Consistency in Pretrained Language Models']
+  criteria:
+1. Language model robustness (weight 0.30): The paper must study the robustness or sensitivity of language models to changes in input, showing that model predictions are not stable.
+2. Surface form editing (weight 0.30): The paper must involve editing or altering the surface form of inputs such as paraphrasing, rephrasing, negation, word order or lexical changes.
+3. Commonsense knowledge testing (weight 0.30): The paper must test or probe commonsense knowledge or commonsense reasoning in language models.
+4. Relation between editing and commonsense robustness (weight 0.10): The paper must explicitly connect surface form editing to the robustness of commonsense knowledge testing, not merely mention both separately.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  retrieval: 1775 candidates from 18 kw / 8 snippet queries (sizes [100, 76, 100, 100, 100, 100, 100, 100, 100, 23, 100, 100, 30, 100, 100, 100, 100, 100, 79, 79, 0, 80, 0, 80, 80, 80, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) t=211s
+  tool get_paper_batch failed: ToolError: Paper d4b02a2ce5b07f99290d7aa157df3df2b8e07b93 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: TimeoutError: 
+  tool get_paper_batch failed: TimeoutError: 
+  graded 320/320 t=550s
+  extra tranche stopped after first 96: est>=2 3 est3 0
+  extra tranche: good1=25 graded 96/200 est>=2: 3 est3: 0 t=554s
+  snowball: seeds=9 answered=9 neighbours=449 multi-linked=28 selected=120 t=616s
+  snowball: graded 115/115 of 120 est>=2: 2 est3: 0 took 94s t=710s
+  snowball+ skipped: more=120 est3=0 t=710s
+  est. grades: 3=9 2=21 1=220 other=281
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 58/71 papers t=850s
+  regraded 71/71 t=855s
+  submitted 250 papers
+  round2: near=9 repaired=7 miss=13 miss_filled=1 t=1059s
+  round2: rejudged 4/4; upgraded=2 t=1060s
+  wave B: criterion passages for 110/130 lower-ranked papers t=1060s
+  stage2: full=12 all-criteria=12 of 71
+  head check skipped: full-in-head=12 t=1060s
+  provenance: FFFFFFFFFFFFSSSSSsSSssSSSSSsSSsSsSSssSSSSssSSSsSSSSsssSsssSsSSSSsSsUUUUUUUUSsssUUUXUUUUUUXXXXXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXXXXXUUUXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  s1 est grade: 3333332222113323222222222222222211111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 0 0 1 2 0 1 2 0 0 2 0 0 0 1 2 9 0 0 3 3 2 0 0 0 0 4 1 1 -1 0 3 1 1 -1 -1 0 0 1 2 3 3 0 0 1 -1 1 1 1 2 -1 -1 -1 1 3 4 5 0 3 1 1 1 2 3 0 5 0 0 0 1 1 1 2 2 0 3 3 3 0 0 1 3 0 1 2 2 2 3 4 -1 -1 -1 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 4 7 6 9 9 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 1 2 3 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 3 4 4 5 5 8 11 11 12 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+  evidence: with criterion passages 169/250
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 208310123 Evaluating Commonsense in Pre-trained Language Models
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 276408140 HellaSwag-Pro: A Large-Scale Bilingual Benchmark for Evaluating the Robustness o
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 259847451 Negated Complementary Commonsense using Large Language Models
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 221865854 RICA: Evaluating Robust Inference Capabilities Based on Commonsense Axioms
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 267406922 Examining Consistency of Visual Commonsense Reasoning based on Person Grounding
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 264438886 This is not a Dataset: A Large Negation Benchmark to Challenge Large Language Mo
+    2.00 s1=0.93 s2=([3, 3, 3, 3], 3) 218486778 The Sensitivity of Language Models and Humans to Winograd Schema Perturbations
+    2.00 s1=0.80 s2=([3, 3, 3, 3], 3) 252531660 Can Large Language Models Truly Understand Prompts? A Case Study with Negated Pr
+    2.00 s1=0.73 s2=([3, 3, 3, 3], 3) 252693146 Understanding Prior Bias and Choice Paralysis in Transformer-based Language Repr
+    2.00 s1=0.73 s2=([3, 3, 3, 3], 3) 270560449 RUPBench: Benchmarking Reasoning Under Perturbations for Robustness Evaluation i
+    2.00 s1=0.60 s2=([3, 3, 3, 3], 3) 218486812 Birds Have Four Legs?! NumerSense: Probing Numerical Commonsense Knowledge of Pr
+    2.00 s1=0.60 s2=([3, 3, 3, 3], 3) 254043914 GPT-Neo for commonsense reasoning-a theoretical and practical lens
+    1.03 s1=1.00 s2=([3, 1, 3, 1], 1) 277667371 Who Benchmarks the Benchmarks? Towards Comprehensive Evaluation of Commonsense R
+    1.00 s1=1.00 s2=([1, 1, 3, 1], 1) 233231245 “I’m Not Mad”: Commonsense Implications of Negation and Contradiction
+    0.93 s1=0.93 s2=([1, 1, 3, 1], 1) 264438931 CRoW: Benchmarking Commonsense Reasoning in Real-World Tasks
+  submitted 250 papers
+  done in 1061s; tool failures={'search_papers_by_relevance': 6, 'snippet_search': 40, 'get_paper_batch': 13}

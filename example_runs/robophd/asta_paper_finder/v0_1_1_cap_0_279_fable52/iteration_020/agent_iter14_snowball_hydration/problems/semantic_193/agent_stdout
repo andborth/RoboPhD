@@ -1,0 +1,55 @@
+[semantic_193] score_type=semantic_f1 query='Adaptive query expansion with LLMs, focusing on papers published on or after 2023'
+  plan: kw=['adaptive query expansion large language models', 'LLM-based query reformulation retrieval', 'generative query expansion dense retrieval', 'query expansion pseudo relevance feedback LLM', 'zero-shot query expansion generative models', 'document expansion neural retrieval', 'prompt-based query rewriting information retrieval', 'query generation retrieval augmented models', 'HyDE hypothetical document embeddings', 'Query2Doc expansion with language models', 'GPT query expansion ranking', 'adaptive retrieval query refinement', 'conversational query reformulation LLM', 'knowledge-driven query expansion neural', 'term expansion sparse retrieval language models', 'context-aware query augmentation search', 'retrieval effectiveness LLM generated terms', 'self-adaptive expansion open-domain question answering'] titles=['Query2doc: Query Expansion with Large Language Models', 'Precise Zero-Shot Dense Retrieval without Relevance Labels', 'Generative Relevance Feedback with Large Language Models', 'Query Expansion by Prompting Large Language Models', 'Large Language Models Know Your Contextual Search Intent: A Prompting Framework for Conversational Search', 'Corpus-Steered Query Expansion with Large Language Models']
+  criteria:
+1. Query expansion technique (weight 0.35): The paper must focus on query expansion, reformulation, or augmentation methods for information retrieval.
+2. LLM usage (weight 0.30): The paper must use large language models or generative models to perform the expansion.
+3. Adaptive mechanism (weight 0.20): The paper must present an adaptive, dynamic, or context-aware aspect of the expansion process.
+4. Retrieval application (weight 0.15): The paper must apply the method to a retrieval or search task.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_paper_by_title failed: TimeoutError: 
+  retrieval: 1750 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 100, 100, 100, 100, 100, 100, 89, 1, 100, 100, 100, 100, 100, 100, 100, 100, 80, 80, 78, 80, 79, 80, 80, 80, 1, 1, 1, 0, 1, 1, 0]) t=202s
+  tool get_paper_batch failed: ToolError: Paper d4b02a2ce5b07f99290d7aa157df3df2b8e07b93 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: TimeoutError: 
+  tool get_paper_batch failed: TimeoutError: 
+  graded 320/320 t=540s
+  extra tranche stopped after first 96: est>=2 10 est3 2
+  extra tranche: good1=85 graded 96/200 est>=2: 10 est3: 2 t=542s
+  tool get_paper failed: TimeoutError: 
+  tool get_citations failed: TimeoutError: 
+  snowball: seeds=10 answered=10 neighbours=355 multi-linked=61 selected=120 t=682s
+  snowball: graded 40/40 of 120 est>=2: 10 est3: 6 took 33s t=715s
+  snowball+ skipped: more=120 est3=6 t=715s
+  est. grades: 3=29 2=76 1=200 other=151
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 88/110 papers t=889s
+  regraded 110/110 t=896s
+  submitted 250 papers
+  round2: near=30 repaired=12 miss=20 miss_filled=0 t=1152s
+  round2: rejudged 5/5; upgraded=1 t=1154s
+  wave B: criterion passages for 93/130 lower-ranked papers t=1154s
+  stage2: full=33 all-criteria=33 of 110
+  provenance: FFFFFFFFffffFFFFFFFFFFfFFFFFFfFFFSSSSSSsssSSSSSSSSSSsSSSSSSSSSSSSSSSSSSSssSSSSsSXXSSSSUUUXsSsSsUUUUUUUUUUUUUUXXXUUUUUUUUUUUUXXSSSSSSSsSUUUUUUUUUUUUUUUUUUUXXXUXXXUUUUXXXUUUUUUUUUUXXXXSsSSsSUXXSUUUUUUUUUUUXXXXXXXXXXSUUUXUUXUUUUUUUUUXXXUUUUUXXUUUUXXXXXX
+  s1 est grade: 3333333333332222222222222222222213333333332222222222222222222223222222222211222111322211113222211111111111111111111111111111113333222221111111111111111111111111111111111111111111111122222111121111111111111111111112111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 0 0 0 0 1 3 3 8 -1 -1 0 0 0 0 0 0 0 0 0 3 -1 0 0 0 0 0 1 3 2 2 2 1 2 2 0 0 2 5 7 -1 0 0 0 0 0 0 0 0 1 2 4 0 0 0 0 0 0 0 1 2 0 1 0 0 0 0 0 0 1 1 3 7 0 1 0 2 3 1 4 -1 1 0 0 0 0 1 1 3 3 1 3 0 6 0 0 0 0 1 2 2 2 2 2 2 2 2 3 3 3 -1 0 0 0 0 1 1 1 1 1 2 2 3 3 3 0 1 1 2 1 2 1 3 1 0 0 0 0 0 0 1 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 1 3 3 -1 0 1 2 2 3 3 3 0 1 1 1 1 1 2 2 2 3 3 3 3 4 2 3 1 0 4 1 0 3 3 0 0 0 0 1 1 1 1 2 2 2 2 3 3 3 3 3 4 4 -1 -1 -1 0 0 1 3 -1 0 0 3 1 1 0 0 1 1 1 2 3 3 3 -1 0 0 1 1 2 3 3 1 1 1 2 3 3 3 5 -1 -1
+  evidence: with criterion passages 179/250
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 268041808 Corpus-Steered Query Expansion with Large Language Models
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 270379887 Progressive Query Expansion for Retrieval Over Cost-constrained Data Sources
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 261395843 Context Aware Query Rewriting for Text Rankers using LLM
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 270357287 CHIQ: Contextual History Enhancement for Improving Query Rewriting in Conversati
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 264145935 Enhancing Conversational Search: Large Language Model-Aided Informative Query Re
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 277628182 IterQR: An Iterative Framework for LLM-based Query Rewrite in e-Commercial Searc
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 274150408 DMQR-RAG: Diverse Multi-Query Rewriting for RAG
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 272694569 GenCRF: Generative Clustering and Reformulation Framework for Enhanced Intent-Dr
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 278535467 IterKey: Iterative Keyword Generation with LLMs for Enhanced Retrieval Augmented
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 268681494 QueryExplorer: An Interactive Query Generation Assistant for Search and Explorat
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 267751469 Ask Optimal Questions: Aligning Large Language Models with Retriever's Preferenc
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 277627044 VALUE: Value-Aware Large Language Model for Query Rewriting via Weighted Trie in
+    2.00 s1=0.87 s2=([3, 3, 3, 3], 3) 266977456 Exploring the Best Practices of Query Expansion with Large Language Models
+    2.00 s1=0.87 s2=([3, 3, 3, 3], 3) 273404056 Knowledge-Aware Query Expansion with Large Language Models for Textual and Relat
+    2.00 s1=0.87 s2=([3, 3, 3, 3], 3) 276118168 Leveraging Query Expansion and Reformulation for Image Retrieval With Large Lang
+  submitted 250 papers
+  done in 1155s; tool failures={'search_papers_by_relevance': 2, 'search_paper_by_title': 1, 'get_paper_batch': 13, 'get_paper': 1, 'get_citations': 1, 'snippet_search': 41}

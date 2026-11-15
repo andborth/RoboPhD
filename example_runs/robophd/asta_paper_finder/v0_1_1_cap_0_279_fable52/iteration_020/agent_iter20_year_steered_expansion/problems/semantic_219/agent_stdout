@@ -1,0 +1,58 @@
+[semantic_219] score_type=semantic_f1 query='Show me research on rejection sampling finetuning.'
+  plan: kw=['rejection sampling fine-tuning language models', 'best-of-n sampling supervised finetuning', 'RAFT reward ranked finetuning', 'self-improvement with rejected samples', 'iterative rejection sampling training', 'reward model filtered data finetuning', 'rejection sampling alignment LLM', 'sampling and filtering reasoning finetuning', 'self-training with sampled completions', 'expert iteration language model reasoning', 'STaR self-taught reasoner', 'bootstrapping reasoning from model samples', 'best-of-n distillation alignment', 'reward guided sample selection training', 'rejection sampling RLHF alternative', 'data filtering high reward responses', 'rejection sampling finetuning math reasoning', 'ReST reinforced self-training', 'offline sampling based preference optimization', 'quality filtered synthetic data finetuning'] titles=['RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment', 'Reinforced Self-Training (ReST) for Language Modeling', 'STaR: Bootstrapping Reasoning With Reasoning', 'Statistical Rejection Sampling Improves Preference Optimization', 'Llama 2: Open Foundation and Fine-Tuned Chat Models', 'Scaling Relationship on Learning Mathematical Reasoning with Large Language Models']
+  criteria:
+1. Rejection sampling technique (weight 0.50): The paper must use rejection sampling, that is, sampling multiple candidate outputs and selecting or filtering a subset (e.g. best-of-n, reward-ranked, correctness-filtered) to use as training data.
+2. Fine-tuning (weight 0.30): The paper must fine-tune a model (typically supervised fine-tuning) on the selected samples, rather than merely using sampling at inference.
+3. Relation between rejection sampling and finetuning (weight 0.20): The paper must explicitly combine rejection sampling with fine-tuning, using selected samples as the training signal for the model.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_paper_by_title failed: TimeoutError: 
+  tool search_paper_by_title failed: TimeoutError: 
+  retrieval: 1995 candidates from 20 kw / 8 snippet queries (sizes [100, 100, 9, 100, 100, 100, 100, 1, 100, 100, 100, 100, 4, 100, 100, 100, 20, 100, 100, 100, 80, 80, 80, 80, 80, 80, 80, 80, 1, 0, 0, 1, 1, 1, 1, 1]) t=201s
+  tool get_paper_batch failed: ToolError: Paper 6bcb38b96d78b448511a94831567bdd7442aa458 is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  tool get_paper_batch failed: TimeoutError: 
+  tool get_paper_batch failed: TimeoutError: 
+  graded 320/320 t=513s
+  extra tranche stopped after first 96: est>=2 4 est3 3
+  extra tranche: good1=44 graded 96/200 est>=2: 4 est3: 3 t=515s
+  tool get_paper failed: TimeoutError: 
+  tool get_citations failed: TimeoutError: 
+  tool get_paper failed: TimeoutError: 
+  snowball: seeds=10 answered=9 neighbours=616 multi-linked=94 selected=120 t=655s
+  snowball: hydration timed out with 81/96 papers
+  snowball: graded 103/103 of 120 est>=2: 7 est3: 7 took 132s t=787s
+  snowball+ skipped: more=120 est3=7 t=787s
+  est. grades: 3=47 2=8 1=199 other=265
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 62/65 papers t=890s
+  regraded 65/65 t=894s
+  submitted 250 papers
+  round2: near=5 repaired=2 miss=3 miss_filled=0 t=1009s
+  round2: rejudged 0/0; upgraded=0 t=1009s
+  wave B: criterion passages for 82/91 lower-ranked papers t=1017s
+  stage2: full=35 all-criteria=35 of 65
+  head check skipped: full-in-head=16 t=1017s
+  provenance: FFFFFFFFFFFFFFFFFFFFFFFFffffFFFFFFFSssSSssssSSSSSSSSSSSsSSSSSSsUUUXssUUUUUUUUUUUUUUUUUXXXXXXXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXUUUUUXXXXXXXUUUUUUXXXXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXUUX
+  s1 est grade: 3333333333333333333333333333222221133333333333333333332221111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 2 2 3 3 4 15 0 0 0 1 2 0 0 0 -1 -1 1 3 4 -1 -1 -1 0 0 0 0 1 1 1 2 0 0 0 3 0 0 1 0 1 0 -1 0 2 2 3 4 4 1 0 0 0 0 0 0 0 0 0 0 0 1 1 1 2 2 3 3 3 5 12 -1 -1 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 4 4 -1 -1 0 0 0 0 1 3 4 -1 12 -1 -1 -1 0 0 0 1 1 2 3 3 3 5 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 4 4 4 5 6 8 12 12 15 16 17 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 1 2 4
+  evidence: with criterion passages 144/250
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 270285630 ReST-MCTS*: LLM Self-Training via Process Reward Guided Tree Search
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 260438790 Scaling Relationship on Learning Mathematical Reasoning with Large Language Mode
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 266163375 Beyond Human Data: Scaling Self-Training for Problem-Solving with Language Model
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276079350 BRiTE: Bootstrapping Reinforced Thinking Process to Enhance Language Model Reaso
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 259950998 Llama 2: Open Foundation and Fine-Tuned Chat Models
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 257019561 Learning Math Reasoning from Self-Sampled Correct and Partially-Correct Solution
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 277857120 Exploring Expert Failures Improves LLM Agent Tuning
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276482419 Enhancing Cognition and Explainability of Multimodal Foundation Models with Self
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 268063628 Arithmetic Control of LLMs for Diverse User Preferences: Directional Preference 
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 271064489 PEER: Expertizing Domain-Specific Tasks with a Multi-Agent Framework and Tuning 
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 271270574 DART-Math: Difficulty-Aware Rejection Tuning for Mathematical Problem-Solving
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276421621 Crowd Comparative Reasoning: Unlocking Comprehensive Evaluations for LLM-as-a-Ju
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 264451639 SuperHF: Supervised Iterative Learning from Human Feedback
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 271244611 LLM-based Frameworks for API Argument Filling in Task-Oriented Conversational Sy
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 251371461 Learning New Skills after Deployment: Improving open-domain internet-driven dial
+  submitted 250 papers
+  done in 1018s; tool failures={'search_papers_by_relevance': 2, 'search_paper_by_title': 2, 'get_paper_batch': 8, 'get_paper': 2, 'get_citations': 1, 'snippet_search': 12}

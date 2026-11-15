@@ -1,0 +1,49 @@
+[semantic_152] score_type=semantic_f1 query='State-of-the-art papers focusing on sampling mechanisms at LLM inference time, including mechanisms like majority voting and reward model scoring in the context of sample selection.'
+  plan: kw=['LLM inference time sampling mechanisms', 'majority voting large language models', 'reward model scoring sample selection', 'best-of-n sampling language models', 'self-consistency chain of thought', 'test-time compute scaling reasoning', 'sampling decoding strategies language models', 'verifier reranking generated candidates', 'temperature sampling diverse generation', 'answer aggregation multiple samples', 'outcome reward model reranking', 'process reward model verification', 'repeated sampling inference scaling', 'candidate selection language model outputs', 'weighted majority voting reasoning', 'sample and rank generation', 'nucleus sampling top-p decoding', 'test time scaling sample selection'] titles=['Self-Consistency Improves Chain of Thought Reasoning in Language Models', 'Training Verifiers to Solve Math Word Problems', 'Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters', 'Large Language Monkeys: Scaling Inference Compute with Repeated Sampling', "Let's Verify Step by Step", 'Solving math word problems with process- and outcome-based feedback']
+  criteria:
+1. Inference-time sampling mechanisms (weight 0.40): The paper must focus on sampling mechanisms applied at LLM inference/test time to produce multiple candidate outputs for selection.
+2. Majority voting (weight 0.30): The paper must discuss majority voting (or self-consistency style answer aggregation) as a sample selection mechanism.
+3. Reward model scoring (weight 0.30): The paper must discuss reward model scoring or verifier-based reranking for selecting among sampled outputs.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  retrieval: 1952 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 80, 80, 80, 80, 80, 80, 80, 80, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) t=181s
+  graded 320/320 t=279s
+  extra tranche: good1=126 graded 200/200 est>=2: 31 est3: 2 t=284s
+  snowball: seeds=10 answered=10 neighbours=681 multi-linked=124 selected=120 t=315s
+  snowball: graded 120/120 of 120 est>=2: 21 est3: 3 took 93s t=409s
+  snowball+ skipped: more=120 est3=3 t=409s
+  est. grades: 3=21 2=157 1=204 other=258
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 75/80 papers t=541s
+  regraded 80/80 t=546s
+  submitted 250 papers
+  round2: near=23 repaired=18 miss=5 miss_filled=0 t=755s
+  round2: rejudged 8/8; upgraded=3 t=757s
+  wave B: criterion passages for 100/130 lower-ranked papers t=757s
+  stage2: full=31 all-criteria=31 of 80
+  head check skipped: full-in-head=16 t=757s
+  provenance: FFFFFFFFFFFfFFFFFFFFFFFFFFFFFFFSSSSSssssSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSsUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXSSSSSSUUUUUUXXXUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXUUUUUUUUUUUUUUUUUUUUUUUUXXXX
+  s1 est grade: 3333333333332222222222222222222333333333222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222111111111111111111111111111111111111111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 0 0 0 0 0 0 0 0 3 14 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2 3 3 9 5 0 1 1 0 1 0 1 1 2 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 7 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 5 4 4 4 4 4 4 4 4 4 4 5 8 12 13 13 13 18 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 0 0 1 1 1 1 7 16 4 1 1 1 2 2 0 0 0 1 1 1 1 1 1 1 1 1 1 2 2 3 3 4 4 5 8 10 10 13 13 -1 -1 -1 -1 -1 0 0 0 0 0 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 4 4
+  evidence: with criterion passages 175/250
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 271601023 Inference Scaling Laws: An Empirical Analysis of Compute-Optimal Inference for L
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276249402 Optimizing Temperature for Language Models with Multi-Sample Inference
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 254017497 Solving math word problems with process- and outcome-based feedback
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 259370847 Making Language Models Better Reasoners with Step-Aware Verifier
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 267617275 V-STaR: Training Verifiers for Self-Taught Reasoners
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 277467695 When To Solve, When To Verify: Compute-Optimal Problem Solving and Generative Ve
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 278714789 Is PRM Necessary? Problem-Solving RL Implicitly Induces PRM Capability in LLMs
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 278394558 Putting the Value Back in RL: Better Test-Time Scaling by Unifying LLM Reasoners
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 278000696 Lightweight Latent Verifiers for Efficient Meta-Generation Strategies
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 258865395 GRACE: Discriminator-Guided Chain-of-Thought Reasoning
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 271310246 Learning Goal-Conditioned Representations for Language Reward Models
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 267027728 ReFT: Reasoning with Reinforced Fine-Tuning
+    2.00 s1=0.80 s2=([3, 3, 3], 3) 276259248 Bag of Tricks for Inference-time Computation of LLM Reasoning
+    2.00 s1=0.80 s2=([3, 3, 3], 3) 271963324 Generative Verifiers: Reward Modeling as Next-Token Prediction
+    2.00 s1=0.80 s2=([3, 3, 3], 3) 276250232 VersaPRM: Multi-Domain Process Reward Model via Synthetic Reasoning Data
+  submitted 250 papers
+  done in 757s; tool failures={'search_papers_by_relevance': 4, 'snippet_search': 29}

@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_214",
+    "results": [
+      {
+        "paper_id": "259308873",
+        "markdown_evidence": "Preference Ranking Optimization for Human Alignment ... Large language models (LLMs) often contain misleading content, emphasizing the need to align them with human values to ensure secure AI systems. Reinforcement learning from human feedback (RLHF) has been employed to achieve this alignment. However, it encompasses two main drawbacks: (1) RLHF exhibits complexity, instability, and sensitivity to hyperparameters in contrast to SFT. (2) Despite massive trial-and-error, multiple sampling is reduced to pair-wise contrast, thus lacking contrasts from a macro perspective. In this paper, we propose Preference Ranking Optimization (PRO) as an efficient SFT algorithm to directly fine-tune LLMs for human alignment. PRO extends the pair-wise contrast to accommodate preference rankings of any length. By iteratively contrasting candidates, PRO instructs the LLM to prioritize the best response while progressively ranking the rest responses. ... Figure 3 presents the impact of various expansion strategies on the effectiveness of PRO after expanding sequences of different lengths. Our observations are as follows: \n\nLonger ranking, better results: Overall, longer ranking sequences generally lead to improved performance for most strategies, as longer rankings embrace more candidates. ... Subsequently, The policy LLM goes through direct fine-tuning (maximum likelihood) on this data, resulting in a model denoted as π SFT . \n\n(2) Reward Model (RM) Training where π SFT is utilized by prompts x to generate pairs of responses, which are then denoted by human labelers as a more favored answer y 1 against the other one y 2 , i.e. ... LLM to experience repetitive trialand-error rather than directly aligning it to human preference. Hence, Supervised Fine-Tuning (SFT) is expected as the possibility of more direct optimization to replace RLHF. \n\nSFT initially serves as only a warm-up process for RLHF, where the best candidates are selected to tune LLMs to intimate human-preferred data. ... Better added responses, better results: If a single model is used to generate additional responses, supplementing one response is sufficient when the quality is average, such as with Alpaca, adding more responses provides limited improvement. However, when the quality of responses is high, as with ChatGPT, adding more responses leads to consistent performance gains."
+      },
+      {
+        "paper_id": "278339126",
+        "markdown_evidence": "Long-Short Chain-of-Thought Mixture Supervised Fine-Tuning Eliciting Efficient Reasoning in Large Language Models ... Recent advances in large language models have demonstrated that Supervised Fine-Tuning (SFT) with Chain-of-Thought (CoT) reasoning data distilled from large reasoning models (e.g., DeepSeek R1) can effectively transfer reasoning capabilities to non-reasoning models. However, models fine-tuned with this approach inherit the\"overthinking\"problem from teacher models, producing verbose and redundant reasoning chains during inference. To address this challenge, we propose Long-Short Chain-of-Thought Mixture Supervised Fine-Tuning (LS-Mixture SFT), which combines long CoT reasoning dataset with their short counterparts obtained through structure-preserved rewriting. Our experiments demonstrate that models trained using the LS-Mixture SFT method, compared to those trained with direct SFT, achieved an average accuracy improvement of 2.3% across various benchmarks while substantially reducing model response length by approximately 47.61%. ... The s1K-1.1 dataset used for training s1.1-32B has an average text length (including system prompt, question and model response) of 29,667.49 tokens. ... 2) Mixture Supervised Fine-Tuning: Non-reasoning LLM is been supervised fine-tuned on mixture datasets. 3) Inference-time Balanced Thinking: The fine-tuned model is designed to employ a balanced thinking mode that lies between detailed and brief when generating reasoning responses to queries. ... Specifically, the average response length of incorrect examples is approximately 3.58 times longer than the correct part. This finding suggests that when the model is uncertain or unable to produce an accurate answer, it tends to generate more unhelpful text. \n\n6 Related Work bilities of large language models. ... Following the previous stage that yields the short reasoning dataset D short , we proceed to completely randomly merge it with the original long reasoning dataset D long , creating a new mixed dataset D mix : \n\nThis mixture dataset D mix is then utilized to perform supervised fine-tuning on a non-reasoning LLM M aiming to eliciting its efficient reasoning."
+      },
+      {
+        "paper_id": "272988100",
+        "markdown_evidence": "Balancing Cost and Effectiveness of Synthetic Data Generation Strategies for LLMs ... As large language models (LLMs) are applied to more use cases, creating high quality, task-specific datasets for fine-tuning becomes a bottleneck for model improvement. Using high quality human data has been the most common approach to unlock model performance, but is prohibitively expensive in many scenarios. Several alternative methods have also emerged, such as generating synthetic or hybrid data, but the effectiveness of these approaches remain unclear, especially in resource-constrained scenarios and tasks that are not easily verified. To investigate this, we group various synthetic data generation strategies into three representative categories -- Answer Augmentation, Question Rephrase and New Question -- and study the performance of student LLMs trained under various constraints, namely seed instruction set size and query budget. We demonstrate that these strategies are not equally effective across settings. Notably, the optimal data generation strategy depends strongly on the ratio between the available teacher query budget and the size of the seed instruction set. ... Answer Augmentation generates a diverse set of responses to the seed instructions, varying in reasoning paths, lexical choices and semantic content. We perform Chain-of-Thought prompting with our teacher model π T and use temperature sampling (T ) to increase response variety (Wei et al., 2022). ... In Section 5.2, we show how cost-effectiveness relationships apply across various tasks, along with the optimal data generation strategy shifting between low and high BR settings. We reconsider the choice of π S and assess if our cost-effectiveness results hold for a different student model. ... As we see fine-tuning Mistral 7B, this transition occurs at BR of 12, aligning with our medium resource scenario (1,000 seed instructions) using Llama 2 7B, where the optimal BR fell between 8 and 26. These results reinforce the generalizability of our cost-effectiveness findings across different model architectures and sizes. ... Since our teacher models π T produce incorrect responses for a portion of instructions in D synth , the training process inevitably incorporates noisy and erroneous answers. We examine whether verifying the synthetic responses from π T with correct answers improves the effectiveness of D synth when fine-tuning π S ."
+      },
+      {
+        "paper_id": "226226515",
+        "markdown_evidence": "SMRTer Chatbots: Improving Non-Task-Oriented Dialog with Simulated Multi-Reference Training ... Non-task-oriented dialog models suffer from poor quality and non-diverse responses. To overcome limited conversational data, we apply Simulated Multiple Reference Training (SMRT; Khayrallah et al., 2020), and use a paraphraser to simulate multiple responses per training prompt. We find SMRT improves over a strong Transformer baseline as measured by human and automatic quality scores and lexical diversity. We also find SMRT is comparable to pretraining in human evaluation quality, and outperforms pretraining on automatic quality and lexical diversity, without requiring related-domain dialog data. ... Discussion It can be hard to find dialog corpora that are large, domain relevant, and in-language. \n\nUnlike pretraining, SMRT incorporates nondialog data. PRISM was trained to translate, and leveraged as a paraphrase model using zero-shot translation. It is not trained to generate dialog, yet we still leverage it to improve a chatbot. \n\nThe paraphraser is trained on less data (∼ 100 million sentences pairs, with ∼ 17 million English sentences) than is used for OpenSubtitles pretraining (∼ 200 million turns-all in English), thus competitive performance is not a result of more data. ... note that smaller corpora have lower lexical diversity and topic coverage, leading to models with poor quality non-diverse responses. Pretraining on larger data may improve performance, but requires a large dialog corpus in the right language and related domain. \n\nWe leverage Simulated Multiple Reference Training (SMRT; Khayrallah et al., 2020) to overcome sparse dialog data. ... Maximum Mutual Information (MMI) decoding, (1−λ) log p(y|x)+λ log p(x|y), is commonly used in dialog to increase response diversity (Li et al., 2016), however we did not find it helpful in our experiments. Following MMI-bidi, we rerank a 100-best list with a reverse model.8 When comparing both models with MMI, we find human prefer SMRT to the baseline, see Table 9."
+      },
+      {
+        "paper_id": "274776642",
+        "markdown_evidence": "InverseCoder: Self-improving Instruction-Tuned Code LLMs with Inverse-Instruct ... Recent advancements in open-source code large language models (LLMs) have been driven by fine-tuning on the data generated from powerful closed-source LLMs, which are expensive to obtain. This paper explores whether it is possible to use a fine-tuned open-source model to generate additional data to augment its instruction-tuning dataset. We make two observations: (1) A code snippet can serve as the response to different instructions. (2) Instruction-tuned code LLMs perform better at translating code into instructions than the reverse. Based on these observations, we propose Inverse-Instruct, a data augmentation technique that uses a fine-tuned LLM to generate additional instructions of code responses from its own training dataset. The additional instruction-response pairs are added to the original dataset, and a stronger code LLM can be obtained by fine-tuning on the augmented dataset. We empirically validate Inverse-Instruct on a range of open-source code models (e.g. CodeLlama-Python and DeepSeek-Coder) and benchmarks (e.g., HumanEval(+), MBPP(+), DS-1000 and MultiPL-E), showing it consistently improves the base models."
+      },
+      {
+        "paper_id": "276287289",
+        "markdown_evidence": "Selective Self-to-Supervised Fine-Tuning for Generalization in Large Language Models ... Fine-tuning Large Language Models (LLMs) on specific datasets is a common practice to improve performance on target tasks. However, this performance gain often leads to overfitting, where the model becomes too specialized in either the task or the characteristics of the training data, resulting in a loss of generalization. This paper introduces Selective Self-to-Supervised Fine-Tuning (S3FT), a fine-tuning approach that achieves better performance than the standard supervised fine-tuning (SFT) while improving generalization. S3FT leverages the existence of multiple valid responses to a query. By utilizing the model's correct responses, S3FT reduces model specialization during the fine-tuning stage. S3FT first identifies the correct model responses from the training set by deploying an appropriate judge. Then, it fine-tunes the model using the correct model responses and the gold response (or its paraphrase) for the remaining samples. The effectiveness of S3FT is demonstrated through experiments on mathematical reasoning, Python programming and reading comprehension tasks. The results show that standard SFT can lead to an average performance drop of up to $4.4$ on multiple benchmarks, such as MMLU and TruthfulQA. In contrast, S3FT reduces this drop by half, i.e. $2.5$, indicating better generalization capabilities than SFT while performing significantly better on the fine-tuning tasks."
+      },
+      {
+        "paper_id": "275787902",
+        "markdown_evidence": "From Drafts to Answers: Unlocking LLM Potential via Aggregation Fine-Tuning ... Scaling data and model size has been proven effective for boosting the performance of large language models. In addition to training-time scaling, recent studies have revealed that increasing test-time computational resources can further improve performance. In this work, we introduce Aggregation Fine-Tuning (AFT), a supervised finetuning paradigm where the model learns to synthesize multiple draft responses, referred to as proposals, into a single, refined answer, termed aggregation. At inference time, a propose-and-aggregate strategy further boosts performance by iteratively generating proposals and aggregating them. Empirical evaluations on benchmark datasets show that AFT-trained models substantially outperform standard SFT. Notably, an AFT model, fine-tuned from Llama3.1-8B-Base with only 64k data, achieves a 41.3% LC win rate on AlpacaEval 2, surpassing significantly larger LLMs such as Llama3.1-405B-Instruct and GPT4. By combining sequential refinement and parallel sampling, the propose-and-aggregate framework scales inference-time computation in a flexible manner. ... On-policy proposals are obtained by leveraging in-context learning (ICL) with demonstrations, prompting the base LLM to generate multiple responses for a given query (Lin et al., 2024). Since these proposals are sampled from the same LLM that will be fine-tuned, they are referred to as on-policy proposals. ... The evaluation results for downstream tasks are summarized in Table 3 (MMLU, ARC-cA, and StrategyQA) and Figure 5 (GSM8K and IFEval). AFT models demonstrate comparable performance to the SFT baseline on MMLU while consistently improving outcomes in reasoning tasks such as ARC-c and StrategyQA. ... Supervised Fine-tuning of LLMs. Supervised finetuning plays a pivotal role in enhancing the instructionfollowing ability of LLM (Li et al., 2023b;Zheng et al., 2023;Liu et al., 2024b;Ouyang et al., 2022a;Qin et al., 2024b;Jiang et al., 2024;Zhou et al., 2023b). ... Drawing inspiration from the mixture-of-agents (MoA) framework (Wang et al., 2024a), which aggregates diverse outputs from multiple LLMs, we propose to treat aggregation itself as a general-purpose inference process for instruction following. This leads to a new supervised training framework, which we term aggregation fine-tuning (AFT)."
+      },
+      {
+        "paper_id": "277750158",
+        "markdown_evidence": "InverseCoder: Self-improving Instruction-Tuned Code LLMs with Inverse-Instruct ... Recent advancements in open-source code large language models (LLMs) have been driven by fine-tuning on the data generated from powerful closed-source LLMs, which are expensive to obtain. This paper explores whether it is possible to use a fine-tuned open-source model to generate additional data to augment its instruction-tuning dataset. We make two observations: (1) A code snippet can serve as the response to different instructions. (2) Instruction-tuned code LLMs perform better at translating code into instructions than the reverse. Based on these observations, we propose Inverse-Instruct, a data augmentation technique that uses a fine-tuned LLM to generate additional instructions of code responses from its own training dataset. The additional instruction-response pairs are added to the original dataset, and a stronger code LLM can be obtained by fine-tuning on the augmented dataset. We empirically validate Inverse-Instruct on a range of open-source code models (e.g. CodeLlama-Python and DeepSeek-Coder) and benchmarks (e.g., HumanEval(+), MBPP(+), DS-1000 and MultiPL-E), showing it consistently improves the base models."
+      },
+      {
+        "paper_id": "273707173",
+        "markdown_evidence": "SelfCodeAlign: Self-Alignment for Code Generation ... Instruction tuning is a supervised fine-tuning approach that significantly improves the ability of large language models (LLMs) to follow human instructions. We propose SelfCodeAlign, the first fully transparent and permissive pipeline for self-aligning code LLMs without extensive human annotations or distillation. SelfCodeAlign employs the same base model for inference throughout the data generation process. It first extracts diverse coding concepts from high-quality seed snippets to generate new tasks. It then samples multiple responses per task, pairs each with test cases, and validates them in a sandbox environment. Finally, passing examples are selected for instruction tuning. In our primary experiments, we use SelfCodeAlign with CodeQwen1.5-7B to generate a dataset of 74k instruction-response pairs. Finetuning on this dataset leads to a model that achieves a 67.1 pass@1 on HumanEval+, surpassing CodeLlama-70B-Instruct despite being ten times smaller. Across all benchmarks, this finetuned model consistently outperforms the original version trained with OctoPack, the previous state-of-the-art method for instruction tuning without human annotations or distillation. Additionally, we show that SelfCodeAlign is effective across LLMs of various sizes, from 3B to 33B, and that the base models can benefit more from alignment with their own data distribution. We further validate each component's effectiveness in our pipeline, showing that SelfCodeAlign outperforms both direct distillation from GPT-4o and leading GPT-3.5-based distillation methods, such as OSS-Instruct and Evol-Instruct. ... • Passes only: pair each instruction with a passing response. First, we can observe that random pairing performs worse than using only passing examples, both when data sizes are aligned and when they scale up by 1.8⇥. Meanwhile, the \"Failure only\" setting results in the worst performance where we deliberately use failing responses for each instruction. ... The SelfCodeAlign pipeline samples multiple responses for an instruction and each response is equipped with self-generated test cases. Responses with failing tests are filtered out and each instruction will be paired with a randomly selected passing response."
+      },
+      {
+        "paper_id": "267740312",
+        "markdown_evidence": "Smaller Language Models are capable of selecting Instruction-Tuning Training Data for Larger Language Models ... Instruction-tuning language models has become a crucial step in aligning them for general use. Typically, this process involves extensive training on large datasets, incurring high training costs. In this paper, we introduce a novel training data selection based on the learning percentage of the samples. We assert that current language models possess the capability to autonomously select high-quality training data, leading to comparable or improved performance compared to training on the entire dataset. Our experiments span different-sized models, revealing that this characteristic holds for models ranging from 1B (small) to 13B (large) in size. Moreover, we demonstrate an interesting finding that the data hardness transfers across model sizes, and a smaller 350M model can effectively curate high-quality training data with hard samples for a larger 13B model, resulting in an equally or superior instruction-tuned model compared to training on the complete dataset. Utilizing open-sourced OPT and Llama-2 models up to 13B in size, two publicly available instruction-tuning training datasets and evaluated by both automatic metrics&humans, our paper introduces a novel approach to training data selection, showcasing a more efficient alternative. ... Additionally, we train another Llama-2 7B model on full Alpaca-Data. In this human evaluation, participants are asked to provide an instruction, after which both models generate a response. Participants are then prompted to choose the better response, or if both responses were perceived as equal. ... Instruction tuning empowers large language models (LLMs) to generalize to novel tasks and instills an instruction-following characteristic, marking the initial stride towards aligning them for general use (Sanh et al., 2022;Wei et al., 2022Wei et al., , 2021;;Chung et al., 2022;Wei et al., 2022)."
+      },
+      {
+        "paper_id": "277313450",
+        "markdown_evidence": "1.4 Million Open-Source Distilled Reasoning Dataset to Empower Large Language Model Training ... The AM-DeepSeek-R1-Distilled is a large-scale dataset with thinking traces for general reasoning tasks, composed of high-quality and challenging reasoning problems. These problems are collected from a multitude of open-source datasets, subjected to semantic deduplication and meticulous cleaning to eliminate test set contamination. All responses within the dataset are distilled from reasoning models (predominantly DeepSeek-R1) and have undergone rigorous verification procedures. Mathematical problems are validated by checking against reference answers, code problems are verified using test cases, and other tasks are evaluated with the aid of a reward model. The AM-Distill-Qwen-32B model, which was trained through only simple Supervised Fine-Tuning (SFT) using this batch of data, outperformed the DeepSeek-R1-Distill-Qwen-32B model on four benchmarks: AIME2024, MATH-500, GPQA-Diamond, and LiveCodeBench. ... We obtained responses to prompts via two ways: filtering existing responses and creating new responses. For prompts with existing responses, we retained the original response if it can pass reference-answer or test-case verification. For data without reasoning chains, we generated new responses using DeepSeek-R1. ... SFT process, with carefully selected data, can effectively improve the performance of the model, as evidenced by the significant improvement of DeepSeek-R1 over its counterpart. This not only highlights the importance of data selection in SFT but also further validates the positive impact of well-executed SFT on enhancing a model's reasoning ability. ... This dataset is mainly used to enhance the reasoning capabilities of large language models (LLMs). We have not carried out a thorough filtering of the harmful instructions or responses within it. We require developers to use only the open-sourced code, data, model, and any other artifacts generated through this project for research purposes. ... These models solely utilized distilled data with reasoning chains for Supervised Fine-Tuning (SFT), yet they achieved outstanding results on diverse benchmarks. In the training pipeline of DeepSeek-R1, compared with DeepSeek-R1-Zero, 800,000 selected entries of data were used for SFT."
+      },
+      {
+        "paper_id": "270560271",
+        "markdown_evidence": "GenQA: Generating Millions of Instructions from a Handful of Prompts ... Most public instruction finetuning datasets are relatively small compared to the closed source datasets used to train industry models. To study questions about finetuning at scale, such as curricula and learning rate cooldown schedules, there is a need for industrial-scale datasets. However, this scale necessitates a data generation process that is almost entirely automated. In this work, we study methods for generating large instruction datasets from a single prompt. With little human oversight, we get LLMs to write diverse sets of instruction examples ranging from simple completion tasks to complex multi-turn dialogs across a variety of subject areas. When finetuning a Llama-3 8B base model, our dataset meets or exceeds both WizardLM and Ultrachat on both knowledge-intensive leaderboard tasks as well as conversational evaluations. We release our dataset, the\"generator\"prompts that created it, and our finetuned model checkpoints. ... GenQA is an instruction dataset written autonomously by an LLM without conditioning on human questions or using complex multi-stage pipelines.Beyond the obvious uses of the public GenQA samples to improve performance of open source models, we hope that the methods in this paper can serve as a Swiss army knife for easily creating datasets for other domains.Our experiments ... Here, we study how to apply the idea of generator prompts to create random question/answer pairs.We consider several different prompt types in order of increasing complexity.Then, we rigorously study the level of diversity these prompts produce. ... The quality and diversity of training data are crucial to instruction tuning.Unfortunately, it can be difficult to induce an LLM to produce a large amount of diverse content.Here, we introduce generator prompts.We then study the best way to formulate these prompts by quantifying the level of data diversity they yield. ... We hypothesize that the output diversity produced when using a generator prompt comes from several sources.First, by explicitly creating a list, in the above example we guarantee that there will always be at least 100 candidates, and that these candidates are unique (assuming the LLM followed the provided directions).Second, the process of creating the list requires many"
+      },
+      {
+        "paper_id": "268512826",
+        "markdown_evidence": "Scaling Data Diversity for Fine-Tuning Language Models in Human Alignment ... Alignment with human preference prevents large language models (LLMs) from generating misleading or toxic content while requiring high-cost human feedback. Assuming resources of human annotation are limited, there are two different ways of allocating considered: more diverse PROMPTS or more diverse RESPONSES to be labeled. Nonetheless, a straightforward comparison between their impact is absent. In this work, we first control the diversity of both sides according to the number of samples for fine-tuning, which can directly reflect their influence. We find that instead of numerous prompts, more responses but fewer prompts better trigger LLMs for human alignment. Additionally, the concept of diversity for prompts can be more complex than responses that are typically quantified by single digits. ... Longer response rankings and more prompts are both beneficial, but their effects are different.Generally, with an equal quantity of annotations, extending each ranking of responses leads to better enhancement compared to expanding prompts, regardless of the backbones used or the values of N.These outcomes are highlighted in red bold within each grid, where scores in the lower ... (2023b) allocate more resources to the prompt collection to maximize its diversity while featuring only two responses per prompt.Conversely, some works introduce finegrained distinctions to LLMs by incorporating listwise comparisons among responses, or dynamically sampling better candidates for SFT (Yuan et al., 2023b;Dong et al., 2023;Song et al., 2023a), also leading to ... Large Language Models (LLMs) have gained widespread recognition for their proficiency in many domains, including instruction following, intimation and knowledge utilization (Brown et al., 2020;Chung et al., 2022;Muennighoff et al., 2022;Wei et al., 2022;Wang et al., 2022a;Zhou et al., 2022;Von Oswald et al., 2023;Dai et al., 2023;Yang et al., 2023a;Zhong et al., 2023;Schick et ... Despite their promising potential, large language models carry the risk of generating toxic or offensive content without human alignment.One approach that has gained considerable attention in addressing this issue is Reinforcement Learning from Human Feedback (RLHF) (Stiennon et al., 2020;Ouyang et al., 2022;Bai et al., 2022a;Zhu et al., 2023a,b;Yu et al., 2023).For instance,"
+      },
+      {
+        "paper_id": "276774295",
+        "markdown_evidence": "CrowdSelect: Synthetic Instruction Data Selection with Multi-LLM Wisdom ... Distilling advanced Large Language Models' instruction-following capabilities into smaller models using a selected subset has become a mainstream approach in model training. While existing synthetic instruction data selection strategies rely mainly on single-dimensional signals (i.e., reward scores, model perplexity), they fail to capture the complexity of instruction-following across diverse fields. Therefore, we investigate more diverse signals to capture comprehensive instruction-response pair characteristics and propose three foundational metrics that leverage Multi-LLM wisdom, informed by (1) diverse LLM responses and (2) reward model assessment. Building upon base metrics, we propose CrowdSelect, an integrated metric incorporating a clustering-based approach to maintain response diversity. Our comprehensive experiments demonstrate that our foundation metrics consistently improve performance across 4 base models on MT-bench and Arena-Hard. ... Best-answer setting outperforms both Random and Top5-random approaches, indicating that responses with higher reward scores provide better quality data for distillation. This consistent performance across individual metrics establishes strong foundation for further improvements through integration. ... The overall pipeline of our CROWDSELECT, which innovatively leverages metrics calculated from multiple facets of instructions using pre-collected synthesized responses from various LLMs and their corresponding reward model scores. We enhance data selection through clustering for diversity and metric combination to explore the method's potential. ... In recent years, Large Language Models (LLMs) (Achiam et al., 2023;Jaech et al., 2024;Team et al., 2024;Guo et al., 2025)  Figure 1: A demonstration of instruction tuning with selected synthetic instruction-response pairs. ... The difficulty score C dif is defined as the negative mean of all model response scores for a given instruction, calculated as follows: \n\nHigher difficulty indicates more challenging instructions. This metric is particularly well-suited for fine-tuning on reasoning tasks, e.g. mathematics and planning, where the goal is often to improve performance on complex problems."
+      },
+      {
+        "paper_id": "276449636",
+        "markdown_evidence": "LongPO: Long Context Self-Evolution of Large Language Models through Short-to-Long Preference Optimization ... Large Language Models (LLMs) have demonstrated remarkable capabilities through pretraining and alignment. However, superior short-context LLMs may underperform in long-context scenarios due to insufficient long-context alignment. This alignment process remains challenging due to the impracticality of human annotation for extended contexts and the difficulty in balancing short- and long-context performance. To address these challenges, we introduce LongPO, that enables short-context LLMs to self-evolve to excel on long-context tasks by internally transferring short-context capabilities. LongPO harnesses LLMs to learn from self-generated short-to-long preference data, comprising paired responses generated for identical instructions with long-context inputs and their compressed short-context counterparts, respectively. This preference reveals capabilities and potentials of LLMs cultivated during short-context alignment that may be diminished in under-aligned long-context scenarios. ... As illustrated in Figure 4, LongPO consistently outperforms both SFT variants in long-context performance (RULER-NIAH) throughout the training process. This substantial improvement underscores the efficacy of our shortto-long preference approach in enhancing long-context capabilities. \n\nEffectiveness of short-to-long constraint. ... Given the inability of SFT to leverage preference data, we apply it to the instructions paired with chosen responses. \n\nLongPO exhibits superior performance over SFT and DPO. The experimental results, illustrated in Table 1, reveal consistent and substantial performance gains (10 to 20+ points) of LongPO over SFT and DPO across a diverse range of long-context tasks. ... Aligning Large Language Models (LLMs) with human preferences and values has been crucial to unlocking their full potential from large-scale pretraining. The typical alignment process begins with Supervised Finetuning (SFT) on annotated instruction-response pairs. ... This performance gap can be attributed primarily to the scarcity of high-quality, large-scale long-context training data. The dearth of such data is particularly impactful for larger LLMs, given the established scaling laws in language model training."
+      },
+      {
+        "paper_id": "271693587",
+        "markdown_evidence": "FANNO: Augmenting High-Quality Instruction Data with Open-Sourced LLMs Only ... Instruction fine-tuning stands as a crucial advancement in leveraging large language models (LLMs) for enhanced task performance. However, the annotation of instruction datasets has traditionally been expensive and laborious, often relying on manual annotations or costly API calls of proprietary LLMs. To address these challenges, we introduce FANNO, a fully autonomous, open-sourced framework that revolutionizes the annotation process without the need for pre-existing annotated data. Utilizing a Mistral-7b-instruct model, FANNO efficiently produces diverse and high-quality datasets through a structured process involving document pre-screening, instruction generation, and response generation. Experiments on Open LLM Leaderboard and AlpacaEval benchmark show that the FANNO can generate high-quality data with diversity and complexity for free, comparable to human-annotated or cleaned datasets like Alpaca-GPT4-Cleaned. ... From the result in Table 6, an intriguing finding is that direct responses from the model, which contains a substantial presence of illusions, outperformed document-based ones, particularly in the TruthfulQA task. This might suggest that providing human-like and consistent responses, even with false data, can also improve the model's capabilities during SFT. ... Table 15: Prompt for Faithfulness Evaluation (Li et al., 2024) Below is an instruction from an user and a candidate answer. Let's think step by step. Evaluate whether or not the answer is a good example of how AI Assistant should respond to the user's instruction. ... Previous work (Zhou et al., 2023;Liu et al., 2023b) has explored the diversity, complexity, and fidelity of instructions that enhance large models' capabilities. We further investigate the truthfulness of responses to instructions, noting that responses often seem accurate but contain illusions and fabricated information, potentially affecting instruction fine-tuning. ... This dataset contains English Instruction-Following Data generated by GPT-4 using Alpaca prompts for fine-tuning LLMs. It encompasses 52,002 instruction-following samples, the same as Alpaca-52k."
+      },
+      {
+        "paper_id": "276161183",
+        "markdown_evidence": "The Best Instruction-Tuning Data are Those That Fit ... High-quality supervised fine-tuning (SFT) data are crucial for eliciting strong capabilities from pretrained large language models (LLMs). Typically, instructions are paired with multiple responses sampled from other LLMs, which are often out of the distribution of the target model to be fine-tuned. This, at scale, can lead to diminishing returns and even hurt the models'performance and robustness. We propose **GRAPE**, a novel SFT framework that accounts for the unique characteristics of the target model. For each instruction, it gathers responses from various LLMs and selects the one with the highest probability measured by the target model, indicating that it aligns most closely with the target model's pretrained distribution; it then proceeds with standard SFT training. We first evaluate GRAPE with a controlled experiment, where we sample various solutions for each question in UltraInteract from multiple models and fine-tune commonly used LMs like LLaMA3.1-8B, Mistral-7B, and Qwen2.5-7B on GRAPE-selected data. ... We conduct controlled experiments using UltraInteract-SFT to test whether selecting responses aligned with a base model's distribution improves fine-tuning outcomes more than relying on stronger generators or scaling data size. This setup-focused on verifiable tasks in coding, logic, and math-isolates the effect of distribution matching. ... The solutions are generated using different models or follow varying styles depending on the specific needs. This naturally leads to a situation where a single instruction with multiple responses becomes a readily available resource. GRAPE therefore leverages these pre-existing response candidates to tailor training dataset that better aligns with the base model's distribution. ... We introduce GRAPE, a surprisingly simple yet effective methodology to enhance supervised fine-tuning (SFT) by customizing the training data for the base model. The key idea is to find a response, among a candidate pool, for each instruction x i that aligns closely with the base model's pretrained distribution π θ0 . ... Hypothesis: Supervised Fine-tuning Benefits From Data That Better Matches Base Distribution The base distribution of pre-trained language models-shaped by extensive training on vast and diverse datasets-is inherently robust and generalizable (Brown et al., 2020;Saunshi et al., 2021)."
+      },
+      {
+        "paper_id": "268385144",
+        "markdown_evidence": "CodeUltraFeedback: An LLM-as-a-Judge Dataset for Aligning Large Language Models to Coding Preferences ... Evaluating the alignment of large language models (LLMs) with user-defined coding preferences is a challenging endeavor that requires a deep assessment of LLMs’ outputs. Existing methods and benchmarks rely primarily on automated metrics and static analysis tools, which often fail to capture the nuances of user instructions and LLM outputs. To address this gap, we introduce the LLM-as-a-Judge evaluation framework and present CodeUltraFeedback, a comprehensive dataset for assessing and improving LLM alignment with coding preferences. CodeUltraFeedback consists of 10,000 coding instructions, each annotated with four responses generated from a diverse pool of 14 LLMs. These responses are annotated using GPT-3.5 as a judge, with both ranking-based scores and detailed textual feedback across five distinct coding preferences. Our analysis reveals that responses from GPT-3.5 and GPT-4 are consistently rated higher than those from open-weight models, underscoring substantial alignment gaps between closed- and open-weight LLMs. In turn, we explore the usage of CodeUltraFeedback as feedback data to fine-tune and align CodeLlama-7B-Instruct using supervised fine-tuning (SFT) and reinforcement learning from AI feedback (RLAIF) with direct preference optimization (DPO). ... During code generation, one principle, corresponding to the coding preference of the sample, is randomly chosen per LLM and appended to the instruction in an input prompt to guide the generation. This strategy helps the LLMs generate responses that potentially align with the requirements of the coding preferences. ... By including models that encompass diverse pre-training and instruction-tuning phases, our dataset captures a wide spectrum of response generation behaviors. ... In turn, we explore preference tuning of a small model, CodeLlama-7B-Instruct [38] using CodeUltraFeedback with supervised fine-tuning (SFT) and RLAIF with DPO [35,48]. ... Ratings are assigned on a scale from 1 to 10, facilitating nuanced assessments of LLM alignment. We generate reference responses using GPT-3.5 and GPT-4 and use both models as judges. The single-grading prompt templates are listed in Appendix Section A.1. \n\nTraining Details. We use HuggingFace TRL [22] to implement SFT and DPO with QLoRA [10] for efficient fine-tuning."
+      },
+      {
+        "paper_id": "272524245",
+        "markdown_evidence": "Selective Self-Rehearsal: A Fine-Tuning Approach to Improve Generalization in Large Language Models ... Fine-tuning Large Language Models (LLMs) on specific datasets is a common practice to improve performance on target tasks. However, this performance gain often leads to overfitting, where the model becomes too specialized in either the task or the characteristics of the training data, resulting in a loss of generalization. This paper introduces Selective Self-Rehearsal (SSR), a fine-tuning approach that achieves performance comparable to the standard supervised fine-tuning (SFT) while improving generalization. SSR leverages the fact that there can be multiple valid responses to a query. By utilizing the model's correct responses, SSR reduces model specialization during the fine-tuning stage. SSR first identifies the correct model responses from the training set by deploying an appropriate LLM as a judge. Then, it fine-tunes the model using the correct model responses and the gold response for the remaining samples. The effectiveness of SSR is demonstrated through experiments on the task of identifying unanswerable queries across various datasets. ... Supervised Fine-Tuning (SFT) typically relies on gold responses for training. However, for instruction-tuned models, we observe two key issues: 1) many model responses, while differing from gold responses, are still satisfactory, and 2) the distribution of gold responses often diverges significantly from the model's own response distribution. For example, consider the example in Table 1. The base model, Mistral-7B-Instruct-v0.2, assigns a log probability of −109.9 to the gold answer. When prompted with the same question, the model generated prediction has the same information as gold, but its log probability is −2.4. ... This results in improving the overall modified recall, even for out-of-domain datasets. It is interesting to note that we are computing recall w.r.t. the gold answers that have been used to train the SFT model. The base and SSR models never see the gold responses but still achieve better generative recall than SFT. ... However, this approach is not without its limitations, as the LLM's judgments can be prone to errors. We list the prompts used with mistral-instruct-v2 to generate the base model responses. For the sake of consistency and fair comparison, the same prompts are used for fine-tuning using SFT and SSR techniques."
+      },
+      {
+        "paper_id": "261558535",
+        "markdown_evidence": "Making Large Language Models Better Reasoners with Alignment ... Reasoning is a cognitive process of using evidence to reach a sound conclusion. The reasoning capability is essential for large language models (LLMs) to serve as the brain of the artificial general intelligence agent. Recent studies reveal that fine-tuning LLMs on data with the chain of thought (COT) reasoning process can significantly enhance their reasoning capabilities. However, we find that the fine-tuned LLMs suffer from an \\textit{Assessment Misalignment} problem, i.e., they frequently assign higher scores to subpar COTs, leading to potential limitations in their reasoning abilities. To address this problem, we introduce an \\textit{Alignment Fine-Tuning (AFT)} paradigm, which involves three steps: 1) fine-tuning LLMs with COT training data; 2) generating multiple COT responses for each question, and categorizing them into positive and negative ones based on whether they achieve the correct answer; 3) calibrating the scores of positive and negative responses given by LLMs with a novel constraint alignment loss. ... In addition, our pilot experiments (Section 3) find that after the same VFT process, the LLMs with better reasoning performance can give a more reasonable assessment to different COTs. Therefore, we hypothesize that we can improve the reasoning ability of LLMs by alleviating the assessment misalignment problem caused by VFT. ... Figure 1: Perplexity of different answers given by the vanilla fine-tuning (VFT) LLM, where LLM assigns a lower perplexity to the incorrect candidate answer compared to the correct candidate answer. ... The prompting methods do not change the model parameters, which is very convenient and practical. In this paper, we focus on the fine-tuning methods and find that traditional vanilla chain-of-thought fine-tuned LLMs suffer from an assessment misalignment problem, which hinders their reasoning ability. ... Baselines We compare our AFT with the following baselines: 1) VFT: the vanilla fine-tuning (VFT) method that simply trains LLMs with the reference COT using the MLE loss, which is the most widely used training strategy; 2) RFT:  Metrics We use the accuracy to measure the model performance."
+      },
+      {
+        "paper_id": "276408221",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267682216",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276235411",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265042961",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258840897",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482188",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270123045",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268363404",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268364003",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277667729",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265659379",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270123745",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267740368",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265456564",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271768943",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272694062",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275570770",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273351188",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264288970",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278959688",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247762790",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274859701",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276421395",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273185840",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "289323859",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278789552",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275324127",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270391432",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260438790",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273993770",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "290093396",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273403502",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273404125",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266725672",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271909651",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274965054",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270123695",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276408588",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270285630",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482293",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279071229",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269982993",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278905330",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271039322",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268819437",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260887200",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274060371",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272764421",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270620157",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273746824",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263672058",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269790973",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273025760",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276647059",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275515626",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278000156",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276317832",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276395023",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273502020",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267657805",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269983203",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267751429",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268358368",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269430362",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274789093",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270559381",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "245329531",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271693577",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274860095",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280651816",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272987142",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276094070",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269983774",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267782585",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275789078",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267311664",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265221318",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277502243",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273375177",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258059818",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267617275",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271212654",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278714924",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279071298",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271516167",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273403480",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278904450",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269009666",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273707330",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273345361",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279469036",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273345132",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274281286",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273963027",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265308687",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259164815",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267069315",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268510590",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258822910",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276782338",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272753259",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "255096269",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278886359",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277667536",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277857496",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267740352",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271270568",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276742026",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268933100",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270062858",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "246426909",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274776325",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271212576",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270869992",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276929198",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270703238",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262084244",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273186314",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261696976",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273502627",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269983560",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276408985",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271432135",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258298159",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269362443",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269982174",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258352678",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260334759",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258179434",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272146685",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482662",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266573855",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254854009",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264405937",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278995864",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265157588",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276482424",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274859439",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259375779",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271243992",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263605624",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271860164",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248887839",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276617916",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270702747",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269293667",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267365346",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261394412",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267412495",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253018554",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "248118878",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276235588",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266348323",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271571167",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272146630",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271709606",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "285615172",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277857120",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276409265",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276742134",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267740713",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272397963",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276647376",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277763620",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273655084",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270711124",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263830318",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268532324",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276409183",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274930771",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267938597",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262064568",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269502676",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278501491",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272423492",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267616740",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276580584",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269157280",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278823265",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267682220",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277940545",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278534954",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274965394",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273233434",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270703315",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268363364",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277043102",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260315864",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277994333",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273532304",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "254877310",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272911245",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272600239",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258179256",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277857361",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272463773",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276724734",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278740779",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267061218",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277941517",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276317685",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268032872",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277468006",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275458682",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275342712",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272525276",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "261076515",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273233184",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266551413",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267522839",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267335080",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267547917",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274437139",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259950998",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271571434",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274610753",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268536974",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259108263",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275994686",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268032247",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265457248",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251371539",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274597039",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259937133",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251197051",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268041354",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270703662",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276776226",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268819349",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273228296",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

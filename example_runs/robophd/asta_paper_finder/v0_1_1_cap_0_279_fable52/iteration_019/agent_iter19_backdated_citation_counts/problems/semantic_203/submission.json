@@ -1,0 +1,1007 @@
+{
+  "output": {
+    "query_id": "semantic_203",
+    "results": [
+      {
+        "paper_id": "266573952",
+        "markdown_evidence": "Q-Align: Teaching LMMs for Visual Scoring via Discrete Text-Defined Levels ... The explosion of visual content available online underscores the requirement for an accurate machine assessor to robustly evaluate scores across diverse types of visual contents. While recent studies have demonstrated the exceptional potentials of large multi-modality models (LMMs) on a wide range of related fields, in this work, we explore how to teach them for visual rating aligned with human opinions. Observing that human raters only learn and judge discrete text-defined levels in subjective studies, we propose to emulate this subjective process and teach LMMs with text-defined rating levels instead of scores. The proposed Q-Align achieves state-of-the-art performance on image quality assessment (IQA), image aesthetic assessment (IAA), as well as video quality assessment (VQA) tasks under the original LMM structure. With the syllabus, we further unify the three tasks into one model, termed the OneAlign. In our experiments, we demonstrate the advantage of the discrete-level-based syllabus over direct-score-based variants for LMMs. Our code and the pre-trained weights are released at https://github.com/Q-Future/Q-Align. ... The quality of the video is bad. \n\nRate the aesthetics of this picture. \n\nHow is the aesthetics of this image? \n\nCan you rate the aesthetics of this picture? \n\nPlease evaluate the aesthetics of the image. \n\nThe aesthetics of the image is fair. \n\nThe aesthetics of the image is poor. \n\nThe aesthetics of the image is bad. \n\nThe aesthetics of the image is good. \n\nVideos are fed into LMMs as a sequence of images, with sample rate as 1fps. they still fall short on accurately predicting scores that are consistent with human preferences. ... mixing multiple datasets) together, making it challenging to train a unified model for different situations. \n\nIn contrast, recently emerging large multi-modality models (LMMs) have shown very strong background knowledge on a wide range of visual and language disciplines. ... Some recent investigations have discussed the possibilities for adopting Large Multimodality Models (LMMs) for visual scoring. Namely, the Q-Bench (Wu et al., 2023e) proposes a binary softmax strategy, enabling LMMs to predict quantifiable quality scores by extracting the softmax pooling result on logits of two frequent tokens (good/poor)."
+      },
+      {
+        "paper_id": "273849976",
+        "markdown_evidence": "VQA2: Visual Question Answering for Video Quality Assessment ... The advent and proliferation of large multi-modal models (LMMs) have introduced new paradigms to computer vision, transforming various tasks into a unified visual question answering framework. Video Quality Assessment (VQA), a classic field in low-level visual perception, focused initially on quantitative video quality scoring. However, driven by advances in LMMs, it is now progressing toward more holistic visual quality understanding tasks. Recent studies in the image domain have demonstrated that Visual Question Answering (VQA) can markedly enhance low-level visual quality evaluation. Nevertheless, related work has not been explored in the video domain, leaving substantial room for improvement. To address this gap, we introduce the VQA² Instruction Dataset-the first visual question answering instruction dataset that focuses on video quality assessment. This dataset consists of 3 subsets and covers various video types, containing 157,755 instruction question-answer pairs. Then, leveraging this foundation, we present the VQA² series models. The VQA² series models interleave visual and motion tokens to enhance the perception of spatial-temporal quality details in videos. ... With the invention and rise of large multi-modal models (LMMs) [1,14,33,64], the domain of computer vision pertaining to video has entered a new era. Visual Question Answering (VQA) [2], a pivotal tool for modality alignment, is widely employed in LMM applications. ... Furthermore, it holds promise in the image/video generation domain as effective guidance for refining local generation details [27]. \n\nConcurrently, most video quality assessment models focus solely on video quality scoring [36]; however, they entirely lack the capability to understand and analyze quality details, resulting in significant deficiencies in model versatility. ... The quality of this video is [Level]. driven evaluations that outperform traditional score-based methods. AesExpert [20] builds expert-level aesthetic foundational models by assembling a rich corpus of image aesthetic critique datasets. ... video quality assessment\" on small-scale data rather than the large-scale pretraining typically used to construct foundation models in comprehensive LMMs."
+      },
+      {
+        "paper_id": "272986636",
+        "markdown_evidence": "Q-Bench-Video: Benchmark the Video Quality Understanding of LMMs ... With the rising interest in research on Large Multi-modal Models (LMMs) for video understanding, many studies have emphasized general video comprehension capabilities, neglecting the systematic exploration into video quality understanding. To address this oversight, we introduce Q-Bench-Video in this paper, a new benchmark specifically designed to evaluate LMMs' proficiency in discerning video quality. a) To ensure video source diversity, Q-Bench-Video encompasses videos from natural scenes, AI-generated content (AIGC), and computer graphics (CG). b) Building on the traditional multiple-choice questions format with the Yes-or-No and What-How categories, we include Open-ended questions to better evaluate complex scenarios. Additionally, we incorporate the video pair quality comparison question to enhance comprehensiveness. c) Beyond the traditional Technical, Aesthetic, and Temporal distortions, we have expanded our evaluation aspects to include the dimension of AIGC distortions, which addresses the increasing demand for video generation. Finally, we collect a total of 2,378 question-answer pairs and test them on 12 open-source & 5 proprietary LMMs. ... The rapid advancement of Large Multi-modal Models (LMMs) in recent years [4, 28-30, 53, 57, 68] has showcased their remarkable perception and cognitive abilities across various multimodal benchmarks for images [9,33,35,47,63]. ... This enables a more thorough analysis of LMMs' ability to discern video quality across diverse scenarios. We further introduce a new evaluation dimension specifically tailored to assess distortions related to AIGC, which are increasingly prominent in video generation tasks. ... Given the sensitivity of temporal quality to the frame number, we ensure fairness in comparisons by standardizing the input to uniformly sample 16 frames. For Image LMMs, the frame number is 8. Specifically, for single videos, we sample 16 frames uniformly from each video. ... As the field progresses, newer methods begin incorporating considerations for both temporal dynamics and aesthetic qualities, leading to a more holistic approach to video quality analysis [3,12,43,45,60]. Moreover, the evolution of large-scale models has further revolutionized VQA methodologies."
+      },
+      {
+        "paper_id": "278171750",
+        "markdown_evidence": "LMME3DHF: Benchmarking and Evaluating Multimodal 3D Human Face Generation with LMMs ... The rapid advancement in generative artificial intelligence have enabled the creation of 3D human faces (HFs) for applications including media production, virtual reality, security, healthcare, and game development, etc. However, assessing the quality and realism of these AI-generated 3D human faces remains a significant challenge due to the subjective nature of human perception and innate perceptual sensitivity to facial features. To this end, we conduct a comprehensive study on the quality assessment of AI-generated 3D human faces. We first introduce Gen3DHF, a large-scale benchmark comprising 2,000 videos of AI-Generated 3D Human Faces along with 4,000 Mean Opinion Scores (MOS) collected across two dimensions, i.e., quality and authenticity, 2,000 distortion-aware saliency maps and distortion descriptions. Based on Gen3DHF, we propose LMME3DHF, a Large Multimodal Model (LMM)-based metric for Evaluating 3DHF capable of quality and authenticity score prediction, distortion-aware visual question answering, and distortion-aware saliency prediction. ... More recently, Contrastive Language-Image Pre-training (CLIP) [60] has been employed as a backbone for quality assessment tasks, leveraging its powerful multimodal representations to better align generated content with human-perceived semantics. Meanwhile, the rise of video large multimodal models introduces semantic-aware quality assessment, where models pre-trained on vision-language tasks jointly analyze visual fidelity and textual descriptions and particularly excel in visual question-answering. ... (2) Quantitative score regression: The model uses the final hidden states from the LMM to perform a regression task, predicting numerical scores for both quality and authenticity dimensions. This dual-output design ensures that the model can deliver both interpretive and quantitative assessments of AI-generated 3D HF content. ... During instruction tuning, the model is trained using language loss, guiding it to generate quality-level predictions and distortion category classifications. Quality Regression Fine-Tuning. To enable continuous quality score prediction, we implement a quality regression module. This module takes the last hidden states from the LLM as input and outputs precise predicted scores."
+      },
+      {
+        "paper_id": "275994015",
+        "markdown_evidence": "AGAV-Rater: Adapting Large Multimodal Model for AI-Generated Audio-Visual Quality Assessment ... Many video-to-audio (VTA) methods have been proposed for dubbing silent AI-generated videos. An efficient quality assessment method for AI-generated audio-visual content (AGAV) is crucial for ensuring audio-visual quality. Existing audio-visual quality assessment methods struggle with unique distortions in AGAVs, such as unrealistic and inconsistent elements. To address this, we introduce AGAVQA-3k, the first large-scale AGAV quality assessment dataset, comprising $3,382$ AGAVs from $16$ VTA methods. AGAVQA-3k includes two subsets: AGAVQA-MOS, which provides multi-dimensional scores for audio quality, content consistency, and overall quality, and AGAVQA-Pair, designed for optimal AGAV pair selection. We further propose AGAV-Rater, a LMM-based model that can score AGAVs, as well as audio and music generated from text, across multiple dimensions, and selects the best AGAV generated by VTA methods to present to the user. AGAV-Rater achieves state-of-the-art performance on AGAVQA-3k, Text-to-Audio, and Text-to-Music datasets. Subjective tests also confirm that AGAV-Rater enhances VTA performance and user experience. The dataset and code is available at https://github.com/charlotte9524/AGAV-Rater. ... VALOR (Liu et al., 2024a) is a Vision-Audio-Language Omni-peRception pretraining model that projects vision, language, and audio into a shared common space, enabling alignment across vision-language, audio-language, and audiovisual-language domains. All three models align video and audio at the semantic level, so we fine-tune them on the AGAVQA-MOS subset. ... Overall A/V quality mainly focuses on the overall perceptual experience of the audio and video, including audio quality, A/V content consistency, and A/V temporal synchronization. ... Since music aesthetic quality assessment is heavily influenced by personal preferences and the subject's taste in different music styles, it is difficult to achieve objective evaluation. ... • A large-scale AGAV quality assessment dataset AGAVQA-3k. It labels AGAVs' quality in two ways: multi-dimensional numerical scores and the optimal AGAV pair. • A novel LMM-based AGAV quality assessment model, AGAV-Rater. It can predict multi-dimensional quality scores for AGAVs, TTA, and TTM, and assist VTA methods in selecting the optimal AGAV samples."
+      },
+      {
+        "paper_id": "274992509",
+        "markdown_evidence": "An Ensemble Approach to Short-form Video Quality Assessment Using Multimodal LLM ... The rise of short-form videos, characterized by diverse content, editing styles, and artifacts, poses substantial challenges for learning-based blind video quality assessment (BVQA) models. Multimodal large language models (MLLMs), renowned for their superior generalization capabilities, present a promising solution. This paper focuses on effectively leveraging a pretrained MLLM for short-form video quality assessment, regarding the impacts of pre-processing and response variability, and insights on combining the MLLM with BVQA models. We first investigated how frame pre-processing and sampling techniques influence the MLLM’s performance. Then, we introduced a lightweight learning-based ensemble method that adaptively integrates predictions from the MLLM and state-of-the-art BVQA models. Our results demonstrated superior generalization performance with the proposed ensemble approach. Furthermore, the analysis of content-aware ensemble weights highlighted that some video characteristics are not fully represented by existing BVQA models, revealing potential directions to improve BVQA models further. ... Despite sharing similar local artifacts, the short-form video contains more edited content and demonstrates a significantly higher mean opinion score (MOS). However, the learning-based model generates similar predictions for both videos, ultimately underestimating the quality of the short-form video. ... These videos exhibit a wide range of content, compositions, and editing styles. While they enhance viewer engagement, their diversity presents substantial challenges for blind video quality assessment (BVQA) research. ... Multimodal large language models (MLLMs) have recently experienced explosive growth, demonstrating enhanced generalization capabilities with better content understanding and proficiency in various multitasking domains [17]- [22]. Several studies have concentrated on benchmarking or proposing MLLM models for quality assessment. ... The resulting numerous outputs are aggregated to produce a score, with the average serving as the MLLM's final prediction qp. In the content-aware ensemble method, only the image features from the vision encoder are employed. A learned weight α is calculated to ensemble the predictions qp from the MLLM with the predictions q l from the learning-based models."
+      },
+      {
+        "paper_id": "276776493",
+        "markdown_evidence": "GRADEO: Towards Human-Like Evaluation for Text-to-Video Generation via Multi-Step Reasoning ... Recent great advances in video generation models have demonstrated their potential to produce high-quality videos, bringing challenges to effective evaluation. Unlike human evaluation, existing automated evaluation metrics lack highlevel semantic understanding and reasoning capabilities for video, thus making them infeasible and unexplainable. To fill this gap, we curate GRADEO-Instruct, a multi-dimensional T2V evaluation instruction tuning dataset, including 3.3k videos from over 10 existing video generation models and multi-step reasoning assessments converted by 16k human annotations. We then introduce GRADEO, one of the first specifically designed video evaluation models, which grades AI-generated videos for explainable scores and assessments through multi-step reasoning. Experiments show that our method aligns better with human evaluations than existing methods. Furthermore, our benchmarking reveals that current video generation models struggle to produce content that aligns with human reasoning and complex real-world scenarios. ... Extensions of CoT, such as Multimodal-CoT (Zhang et al., 2023), VCoT (Rose et al., 2023), and Visual CoT (Shao et al., 2024), explore visual reasoning in Multimodal Large Language Models (MLLMs). ... Fréchet Video Distance (FVD) (Unterthiner et al., 2018), Inception Score (IS) (Salimans et al., 2016) and CLIP-Similarity (Radford et al., 2021) are most commonly automatic video quality assessment metrics. ... For each pair, one video has a higher score than  the other. The accuracy of preference judgments, i.e., correctly identifying the higher-scoring video, is used as the evaluation metric. \n\nBaselines. On the test dataset, we primarily selecte current state-of-the-art image and video multimodal large language models. ... Fourth, Multimodal Large Language Models (MLLMs) (OpenAI, 2023;Liu et al., 2023;Team et al., 2023), despite their potential to comprehend video content and evaluate videos based on given instructions, are not specifically trained for video evaluation and lack alignment with human preferences."
+      },
+      {
+        "paper_id": "277451869",
+        "markdown_evidence": "HOIGen-1M: A Large-scale Dataset for Human-Object Interaction Video Generation ... Text-to-video (T2V) generation has made tremendous progress in generating complicated scenes based on texts. However, human-object interaction (HOI) often cannot be precisely generated by current T2V models due to the lack of large-scale videos with accurate captions for HOI. To address this issue, we introduce HOIGen-1M, the first large-scale dataset for HOI Generation, consisting of over one million high-quality videos collected from diverse sources. In particular, to guarantee the high quality of videos, we first design an efficient framework to automatically curate HOI videos using the powerful multimodal large language models (MLLMs), and then the videos are further cleaned by human annotators. Moreover, to obtain accurate textual captions for HOI videos, we design a novel video description method based on a Mixture-of-Multimodal-Experts (MoME) strategy that not only generates expressive captions but also eliminates the hallucination by individual MLLM. Further-more, due to the lack of an evaluation framework for gen-erated HOI videos, we propose two new metrics to assess the quality of generated videos in a coarse-to-fine manner. ... Aesthetics Score. Video aesthetic scores are a key factor in determining the visual quality of videos. To ensure highquality videos, we utilize the Laion Aesthetic Predictor * to assess the visual appeal of videos. ... However, these videos are of varying quality and most of them contain non-HOI content. Therefore, to filter high-quality HOI videos from such a vast corpus, we adopt a data processing pipeline that is introduced as follows. \n\nMetadata. We initially analyze video metadata, including duration, resolution, and frames per second (FPS). ... To eliminate hallucinations generated by large models in video descriptions, we propose a Mixture-of-Multimodal-Experts Strategy (MoME) to detect hallucinations and then fuse the characteristics of different MLLM to correct them. ... It exhibits three main features: 1) Large scale: HOIGen-1M curates over 1M video clips and all videos contain manually verified HOI, which is sufficient for training T2V models. 2) High quality: HOIGen-1M is strictly selected from the aspects of mete attribute, aesthetics, temporal consistency, motion difference, and MLLM assessment."
+      },
+      {
+        "paper_id": "277780108",
+        "markdown_evidence": "Aligning Anime Video Generation with Human Feedback ... Anime video generation faces significant challenges due to the scarcity of anime data and unusual motion patterns, leading to issues such as motion distortion and flickering artifacts, which result in misalignment with human preferences. Existing reward models, designed primarily for real-world videos, fail to capture the unique appearance and consistency requirements of anime. In this work, we propose a pipeline to enhance anime video generation by leveraging human feedback for better alignment. Specifically, we construct the first multi-dimensional reward dataset for anime videos, comprising 30k human-annotated samples that incorporating human preferences for both visual appearance and visual consistency. Based on this, we develop AnimeReward, a powerful reward model that employs specialized vision-language models for different evaluation dimensions to guide preference alignment. Furthermore, we introduce Gap-Aware Preference Optimization (GAPO), a novel training method that explicitly incorporates preference gaps into the optimization process, enhancing alignment performance and efficiency. ... We define the visual appeal score to assess the fundamental quality of video generation. Previous studies utilized aesthetic score models trained on real-world datasets such as LAION-5B [30]. ... More recent studies [19,38,41] have collected large-scale video preference datasets and trained Vision-Language Models (VLMs) as video reward models. ... In the human preference comparisons, our alignment model achieves a significantly higher win rate than both the  Baseline and SFT models, exceeding 60%. Although the SFT model is trained on the highest-scoring winning samples, its generated video quality does not improve; instead, its win rate is even lower than that of the Baseline model. ... In contrast, visual consistency emphasizes the alignment between text and video, image and video, and the consistency of character identities. We hired 6 annotators to annotate the dataset, rating each video on a scale from 1 to 5, with 5 representing the highest quality. The final preference score for each dimension was obtained by averaging the scores across all annotators."
+      },
+      {
+        "paper_id": "274822628",
+        "markdown_evidence": "VideoDPO: Omni-Preference Alignment for Video Diffusion Generation ... Recent progress in generative diffusion models has greatly advanced text-to-video generation. While text-to-video models trained on large-scale, diverse datasets can produce varied outputs, these generations often deviate from user preferences, highlighting the need for preference alignment on pre-trained models. Although Direct Preference Optimization (DPO) [42] has demonstrated significant improvements in language and image generation [52], we pioneer its adaptation to video diffusion models and propose a VideoDPO pipeline by making several key adjustments. Unlike previous image alignment methods that focus solely on either (i) visual quality or (ii) semantic alignment between text and videos, we comprehensively consider both dimensions and construct a preference score accordingly, which we term the OmniScore. We design a pipeline to automatically collect preference pair data based on the proposed OmniScore and discover that re-weighting these pairs based on the score significantly impacts overall preference alignment. Our experiments demonstrate substantial improvements in both visual quality and semantic alignment, ensuring that no preference aspect is neglected. Code and data are available at https://videodpo.github.io/. ... Aesthetic Quality . We evaluate the artistic and beauty value perceived by humans towards each video frame using the LAION aesthetic predictor [24]. ... Visual quality includes the clarity and richness of detail within each frame, i.e., intra-frame quality, and the smoothness and coherence between frames, i.e., inter-frame motion and consistency. Semantic alignment, on the other hand, focuses on whether the generated video accurately follows the text prompt. ... Using a foundational vision-language model, this score measures how accurately the video reflects the text and captures the user's intent. ... To evaluate semantic alignment and visual quality, we analyze intra-frame aspects, examining image fidelity and aesthetic appeal to ensure each frame aligns well with the prompt. Additionally, for inter-frame analysis, we assess temporal consistency, focusing on whether the background and main foreground objects remain coherent across frames."
+      },
+      {
+        "paper_id": "258832533",
+        "markdown_evidence": "Towards Explainable In-the-Wild Video Quality Assessment: A Database and a Language-Prompted Approach ... The proliferation of in-the-wild videos has greatly expanded the Video Quality Assessment (VQA) problem. Unlike early definitions that usually focus on limited distortion types, VQA on in-the-wild videos is especially challenging as it could be affected by complicated factors, including various distortions and diverse contents. Though subjective studies have collected overall quality scores for these videos, how the abstract quality scores relate with specific factors is still obscure, hindering VQA methods from more concrete quality evaluations (e.g. sharpness of a video). To solve this problem, we collect over two million opinions on 4,543 in-the-wild videos on 13 dimensions of quality-related factors, including in-capture authentic distortions (e.g. motion blur, noise, flicker), errors introduced by compression and transmission, and higher-level experiences on semantic contents and aesthetic issues (e.g. ... Inspired by the analysis, we propose the Multi-Axis Video Quality Assessor (MaxVQA), a language-prompted VQA approach that learns from comprehensive opinions in the Maxwell to jointly predict specific quality factors and overall quality, via integrating the vision-language foundation model CLIP [38] with FAST-VQA [56], the recent state-of-the-art VQA model for in-the-wild videos. Specifically, the MaxVQA first fuses CLIP visual features with FAST-VQA features to enhance the perception on low-level textures and temporal variations. It then compares the cosine similarity between the visual features and the textual features of a pair of dimension-specific prompts, so as to predict quality score for each dimension. ... 8, we show the joint distributions of video resolution (long edge, or max value between height and width) and video duration (number of frames divided by framerate), showing that the videos collected in the Maxwell database are in multiple resolution, and with various length, demonstrating the diversity of the constructed database. \n\nA.1.2 Distributions of Factor Scores. ... To ensure the diversity of annotated videos, we collect them from large video databases [20,44] and finally sub-sample 4,543 videos [47] that aligns with the distribution of the candidate set for annotation. The resolution of these videos ranges from 240P to 1080P, with an average duration 9s."
+      },
+      {
+        "paper_id": "276976352",
+        "markdown_evidence": "Vision-Language Model Guided Semi-supervised Learning for No-Reference Video Quality Assessment ... Perceptual assessment of user-generated content videos is an important problem that impacts viewing experience of millions of users. Current no-reference video quality assessment (NR-VQA) algorithms require a large amount of human annotated videos. In this work, we address this problem by specifically designing a dual-model based Semi-supervised Learning (SSL) method for NR-VQA. The first model is based on a popular vision-language model namely CLIP, where we adapt the visual encoder to capture high-level semantic quality information through quality-relevant text prompts. A second model learns complementary low-level spatio-temporal quality using a 3D vision transformer and video fragments. We enable intelligent knowledge transfer between the high-level vision-language and low-level vision-transformer model to pseudo-label the unlabelled videos. Our unified model outperforms existing state-of-the-art SSL methods for VQA across popular VQA databases including inter-database settings."
+      },
+      {
+        "paper_id": "270688037",
+        "markdown_evidence": "VideoScore: Building Automatic Metrics to Simulate Fine-grained Human Feedback for Video Generation ... The recent years have witnessed great advances in video generation. However, the development of automatic video metrics is lagging significantly behind. None of the existing metric is able to provide reliable scores over generated videos. The main barrier is the lack of large-scale human-annotated dataset. In this paper, we release VideoFeedback, the first large-scale dataset containing human-provided multi-aspect score over 37.6K synthesized videos from 11 existing video generative models. We train VideoScore (initialized from Mantis)based on VideoFeedback to enable automatic video quality assessment. Experiments show that the Spearman’s correlation betweenVideoScore and humans can reach 77.1 on VideoFeedback-test, beating the prior best metrics by about 50 points. Further result onother held-out EvalCrafter, GenAI-Bench, and VBench show that VideoScore has consistently much higher correlation with humanjudges than other metrics. ... A recent work VideoPhy (Bansal et al., 2024) follows VIEScore (Ku et al., 2023) prompt large multi-modal models like Gemini (Reid et al., 2024) and GPT-4o (Achiam et al., 2023) to provide quality assessment. However, our later study shows that these multimodal language models also achieve very low agreement with human raters. ... Common methods involve the use of FVD (Unterthiner et al., 2018) and CLIP (Radford et al., 2021a) to evaluate the quality of frames and the text-frames alignment respectively. However, other aspects like subject consistency, temporal consistency, factual consistency cannot be captured by these metrics. ... We take label prediction accuracy and Spearman's ρ in each dimension as evaluation indicators. For a specific aspect in the this set (e.g. Visual Quality), we use the predicted score from the same aspect to measure the performance for baselines and our models. ... To compare with our evaluator model, we selected two categories of video quality metrics. The first category relies on statistical or neural features for evaluation. These metrics typically assess a single video dimension such as temporal consistency, and then yield a numerical value."
+      },
+      {
+        "paper_id": "275336983",
+        "markdown_evidence": "Multilevel Semantic-Aware Model for AI-Generated Video Quality Assessment ... The rapid development of diffusion models has greatly advanced AI-generated videos in terms of length and consistency recently, yet assessing AI-generated videos still remains challenging. Previous approaches have often focused on User-Generated Content(UGC), but few have targeted AI-Generated Video Quality Assessment methods. In this work, we introduce MSA-VQA, a Multilevel Semantic-Aware Model for AI-Generated Video Quality Assessment, which leverages CLIP-based semantic supervision and cross-attention mechanisms. Our hierarchical framework analyzes video content at three levels: frame, segment, and video. We propose a Prompt Semantic Supervision Module using text encoder of CLIP to ensure semantic consistency between videos and conditional prompts. Additionally, we propose the Semantic Mutation-aware Module to capture subtle variations between frames. Extensive experiments demonstrate our method achieves state-of-the-art results. ... The integration of these multi-level features, along with the custom loss functions employed for model training, is thoroughly described in Section II-D. \n\nA. Data Augmentation 1) Frame-Level: In the domain of video quality assessment (VQA), evaluation granularity is pivotal for precision. We employ frame-level data augmentation to enhance video quality analysis, treating each frame as a fundamental unit for detailed assessment. Our approach converts video-level quality scores to a frame-specific score by distributing the overall video quality scores across its frames, enriching each frame with the video's quality indicators. ... In current mainstream text-based video generation models, prompts are encoded by CLIP's text encoder and then fed into the diffusion model as semantic information to guide video generation. We observed that for AI-Generated video quality assessment, the greater the semantic difference between a video's content and the conditional prompt used for its generation, the lower its quality score."
+      },
+      {
+        "paper_id": "277622044",
+        "markdown_evidence": "Video-Bench: Human-Aligned Video Generation Benchmark ... Video generation assessment is essential for ensuring that generative models produce visually realistic, high-quality videos while aligning with human expectations. Current video generation benchmarks fall into two main categories: traditional benchmarks, which use metrics and embeddings to evaluate generated video quality across multiple dimensions but often lack alignment with human judgments; and large language model (LLM)-based benchmarks, though capable of human-like reasoning, are constrained by a limited understanding of video quality metrics and cross-modal consistency. To address these challenges and establish a benchmark that better aligns with human preferences, this paper introduces Video-Bench, a comprehensive benchmark featuring a rich prompt suite and extensive evaluation dimensions. This benchmark represents the first attempt to systematically leverage MLLMs across all dimensions relevant to video generation assessment in generative models. By incorporating few-shot scoring and chain-of-query techniques, Video-Bench provides a structured, scalable approach to generated video evaluation. Experiments on advanced models including Sora demonstrate that Video-bench achieve superior alignment with human preferences across all dimensions. ... A reliable benchmark should be based on a comprehensive understanding of human preferences for video content: humans tend to prefer videos that are more aligned with input conditions such as color and scene descriptions (i.e., high video-condition alignment), and those that demonstrate better aesthetic quality and temporal consistency (i.e., high video quality). ... ② Aesthetic Quality Beyond technical considerations, the aesthetic quality of generated frames is evaluated to determine if they meet aesthetic standards and align with human perceptual expectations. This involves assessing artistic appeal, composition, and overall visual coherence to ensure that the generated content is both visually pleasing and naturally harmonious. ... Straight-forward prompting a multimodal language model (MLLM) to rate a video can present significant challenges due to the distinct complexities of video- condition alignment (Sec. ... Building on this foundation, we propose a systematic MLLM-based framework to enhance the model's capability to directly comprehend video content and evaluate its quality."
+      },
+      {
+        "paper_id": "274281347",
+        "markdown_evidence": "AIGV-Assessor: Benchmarking and Evaluating the Perceptual Quality of Text-to-Video Generation with LMM ... The rapid advancement of large multimodal models (LMMs) has led to the rapid expansion of artificial intelligence generated videos (AIGVs), which highlights the pressing need for effective video quality assessment (VQA) models designed specifically for AIGVs. Current VQA models generally fall short in accurately assessing the perceptual quality of AIGVs due to the presence of unique distortions, such as unrealistic objects, unnatural movements, or inconsistent visual elements. To address this challenge, we first present AIGVQA-DB, a large-scale dataset comprising 36,576 AIGVs generated by 15 advanced text-to-video models using 1,048 diverse prompts. With these AIGVs, a systematic annotation pipeline including scoring and ranking processes is devised, which collects 370k expert ratings to date. Based on AIGVQA-DB, we further introduce AIGV-Assessor, a novel VQA model that leverages spatiotemporal features and LMM frameworks to capture the intricate quality attributes of AIGVs, thereby accurately predicting precise video quality scores and video pair preferences. ... Static quality assesses the clarity, sharpness, color accuracy, and overall aesthetic appeal of the frames when viewed as standalone images. Temporal smoothness evaluates the temporal coherence of video frames and the absence of temporal artifacts such as flickering or jittering. ... By obtaining a rough quality level, the model can more accurately predict numerical scores in later evaluations. (2) Regression score output: the model uses the final hidden states from the LLM to perform a regression task, outputting numerical quality scores for the video from four different dimensions. ... Equipped with the dataset, we propose AIGV-Assessor, a large multimodal model-based (LMM-based) VQA method for AIGVs, which reformulates the quality regression task into an interactive question-and-answer (Q&A) framework and leverages the powerful multimodal representation capabilities of LMMs to provide accurate and robust quality assessments. ... This is done through two projection modules that map the spatial and temporal visual features respectively into the language space. The mapped visual tokens are aligned with text tokens, enabling the model to query the video content in a multimodal fashion. \n\nFeature Fusion and Quality Regression."
+      },
+      {
+        "paper_id": "272968818",
+        "markdown_evidence": "Emu3: Next-Token Prediction is All You Need ... While next-token prediction is considered a promising path towards artificial general intelligence, it has struggled to excel in multimodal tasks, which are still dominated by diffusion models (e.g., Stable Diffusion) and compositional approaches (e.g., CLIP combined with LLMs). In this paper, we introduce Emu3, a new suite of state-of-the-art multimodal models trained solely with next-token prediction. By tokenizing images, text, and videos into a discrete space, we train a single transformer from scratch on a mixture of multimodal sequences. Emu3 outperforms several well-established task-specific models in both generation and perception tasks, surpassing flagship models such as SDXL and LLaVA-1.6, while eliminating the need for diffusion or compositional architectures. Emu3 is also capable of generating high-fidelity video via predicting the next token in a video sequence. We simplify complex multimodal model designs by converging on a singular focus: tokens, unlocking great potential for scaling both during training and inference. ... 4) Finally, we assess the aesthetic quality of each clip using the LAION-AI aesthetic predictor 1 . We sample three frames and get three scores for each clip, and clips whose lowest score is smaller than 5 are discarded. \n\nWe caption the filtered video clips using a video captioner trained based on our image captioner. The training data is initially labeled by GPT-4V [64]. For each video clip, we sample eight frames and create a detailed prompt for GPT-4V to describe both the content and motion within these frames. ... Our results provide strong evidence that next-token prediction can serve as a powerful paradigm for multimodal models, scaling beyond language models and delivering state-of-the-art performance across multimodal tasks. By simplifying complex model designs and focusing solely on tokens, it unlocks significant potential for scaling both during training and inference. ... The model continues training with the next token prediction task using standard cross-entropy loss; however, supervision is applied exclusively to the vision tokens. For the image data in QFT, we select diverse high-quality sources and filtered them based on the average of three popular preference scores: HPSv2.1 [90], MPS [105], and the LAION Aesthetics score [43]."
+      },
+      {
+        "paper_id": "272915419",
+        "markdown_evidence": "AIGC-VQA: A Holistic Perception Metric for AIGC Video Quality Assessment ... With the development of generative models, such as the diffusion model, and auto-regressive model, AI-generated content (AIGC) is experiencing an explosive growth. Moreover, existing quality metrics extracted from fixed pre-trained models struggle to align accurately with human perception. There is an urgent need for an adaptive metric capable of gauging the multiple critical factors (i.e., technical quality, aesthetic quality, and video-text alignment) related to quality within AIGC videos, to provide quality assessment and guide optimization of generative models. In this work, we propose a holistic metric for AIGC video quality assessment, termed AIGC-VQA, which contains three functional branches for the cooperation on technical, aesthetic, and video-text alignment aspects in AIGC videos. Specifically, to efficiently transfer the knowledge of image-text alignment to the video-text alignment, we introduce the spatial-temporal adapter to exploit the pre-trained prior from a large-scale image-text model and achieve the temporal knowledge adaptation. Besides, we propose a divide-and-conquer training strategy for progressive cooperation on multiple branches. Due to the holistic perception ability, our proposed AIGC-VQA obtains state-of-the-art results on the T2VQA-DB dataset."
+      },
+      {
+        "paper_id": "274776853",
+        "markdown_evidence": "COEF-VQ: Cost-Efficient Video Quality Understanding through a Cascaded Multimodal LLM Framework ... Recently, with the emergence of recent Multimodal Large Language Model (MLLM) technology, it has become possible to exploit its video understanding capability on different classification tasks. In practice, we face the difficulty of huge requirements for GPU resource if we need to deploy MLLMs online. In this paper, we propose COEF-VQ, a novel cascaded MLLM framework designed to enhance video quality understanding on the short-video platform while optimizing computational efficiency. Our approach integrates an entropy-based pre-filtering stage, where a lightweight model assesses uncertainty and selectively filters cases before passing them to the more computationally intensive MLLM for final evaluation. By prioritizing high-uncertainty samples for deeper analysis, our framework significantly reduces GPU usage while maintaining the strong classification performance of a full MLLM deployment. To demonstrate the effectiveness of COEF-VQ, we deploy this new framework onto the video management platform (VMP) at the short-video platform, and perform a series of detailed experiments on two in-house tasks related to video quality understanding. ... Here, it assigns a preliminary classification score based on the likelihood of the video containing domain-specific content (such as potentially harmful content). To prioritize informative and ambiguous samples, we propose an entropy-based filtering criterion in our cascade structure. We compute the entropy score H, defined as: \n\nwhere   represents the predicted probability for class  in an class classification task. ... Recent progress in cutting-edge Multimodal Large Language Models (MLLMs), such as GPT-4V [1], GPT-4o [1], Gemini [20], and Claude-3.5, highlight their impressive adaptability across diverse vision tasks, including single-image, multi-image, and video analysis. ... Video-LLaMA [25] proposes a multimodal framework that empowers Large Language Models (LLMs) with the capability of understanding both visual and auditory content in the video. VILA [9] examined effective pretraining strategies to adapt LLMs for vision-related tasks."
+      },
+      {
+        "paper_id": "270285854",
+        "markdown_evidence": "ShareGPT4Video: Improving Video Understanding and Generation with Better Captions ... We present the ShareGPT4Video series, aiming to facilitate the video understanding of large video-language models (LVLMs) and the video generation of text-to-video models (T2VMs) via dense and precise captions. The series comprises: 1) ShareGPT4Video, 40K GPT4V annotated dense captions of videos with various lengths and sources, developed through carefully designed data filtering and annotating strategy. 2) ShareCaptioner-Video, an efficient and capable captioning model for arbitrary videos, with 4.8M high-quality aesthetic videos annotated by it. 3) ShareGPT4Video-8B, a simple yet superb LVLM that reached SOTA performance on three advancing video benchmarks. To achieve this, taking aside the non-scalable costly human annotators, we find using GPT4V to caption video with a naive multi-frame or frame-concatenation input strategy leads to less detailed and sometimes temporal-confused results. ... To validate the effectiveness of our ShareCaptioner-Video in the video captioning task and further support the development of the video generation domain, we utilized it to annotate a large volume of aesthetically appealing videos.Specifically, we meticulously collect and process 4.8 million video clips, totaling approximately 3000 hours, from three sources: MixKit [43], ... Large video-language models.The vision-language community has recently made significant advancements in the field of large image-language models [36,35,37,10,13,11,58,59,2,72,33].These models typically employ three core components: a visual encoder for extracting visual features, a connector to bridge the visual and language modalities, and a large language model (LLM) to ... Selection of Data Sources.To serve both video understanding and video generation tasks, we consider the aesthetic quality and content complexity of videos during our collection process.We first consider Panda-70M [12], a high-resolution video dataset sourced from YouTube, featuring clips ranging in one minute.This open-domain source covers diverse areas such as wildlife, ... In this study, we aim to address the challenge of lacking high-quality video-caption data for large video-language models (LVLMs) and text-to-video models (T2VMs).We develop ShareGPT4Video, a high-quality video-caption dataset, and ShareCaptioner-Video, an advanced and versatile model in the video-language"
+      },
+      {
+        "paper_id": "270095387",
+        "markdown_evidence": "I see you: teacher analytics with GPT-4 vision-powered observational assessment ... This preliminary study explores how GPT-4 Vision (GPT-4V) technology can be integrated into teacher analytics through observational assessment, aiming to improve reflective teaching practice. Our study develops a Video-based Automatic Assessment System (VidAAS) powered by GPT-4V. This approach uses Generative Artificial Intelligence (GenAI) to provide detailed insights into classroom dynamics. Our study encompasses various methods with multiple steps: a comprehensive literature review, prototype development of the VidAAS, and usability testing with in-service teachers. The study findings reveal that VidAAS demonstrates high accuracy in evaluating skills in the behavioral (psychomotor) domain and offers comprehensive explanations for each assessment. While showing promise in these areas, the system also indicates potential for further enhancement in processing speed and refinement in assessing cognitive and affective domains. ... We have developed the web-based application of VidAAS using advanced deep-learning models and Python libraries.The VidAAS employs video language models (VLMs) to understand and evaluate video content.The architecture unfolds in three stages: 1) Video Processing, 2) Evaluation, and 3) User Interface Design.First, Video Processing is critical as it involves interpreting the ... The advancement of Vision Language Models (VLMs) has marked a significant milestone in deep learning-merging language and visual processing capabilities.VLMs, such as CLIP (Radford et al., 2021), Flamingo (Alayrac et al., 2022), BLIP-2 (Li et al., 2023), and LLaVA (Liu et al., 2023a(Liu et al., , 2023b) ) have evidenced this wave in multimodal data analytics.CLIP utilizes ... To conduct usability tests and demonstrate the effectiveness of VidAAS, we have created video-prompt pair sheets.These pairs include videos selected for observational assessment and corresponding rubric prompts tailored to each video.Researchers carefully selected videos needed for observational assessment and assessment rubric prompts matching the videos.Details of the ... The third step of the application (Figure 4) is 'Summarize and get results.'Given the challenge of understanding extensive analysis from GPT-4, this step provides users with a concise summary of the information and scores based on the evaluation rubric.We employ GPT-4 and prompt"
+      },
+      {
+        "paper_id": "276079933",
+        "markdown_evidence": "Inference-Time Text-to-Video Alignment with Diffusion Latent Beam Search ... The remarkable progress in text-to-video diffusion models enables the generation of photorealistic videos, although the content of these generated videos often includes unnatural movement or deformation, reverse playback, and motionless scenes. Recently, an alignment problem has attracted huge attention, where we steer the output of diffusion models based on some measure of the content's goodness. Because there is a large room for improvement of perceptual quality along the frame direction, we should address which metrics we should optimize and how we can optimize them in the video generation. In this paper, we propose diffusion latent beam search with lookahead estimator, which can select a better diffusion latent to maximize a given alignment reward at inference time. We then point out that improving perceptual video quality with respect to alignment to prompts requires reward calibration by weighting existing metrics. This is because when humans or vision language models evaluate outputs, many previous metrics to quantify the naturalness of video do not always correlate with the evaluation. ... Aesthetic Quality This criterion evaluates compositional rules, color harmony, and overall artistic merit on a per-frame basis. Concretely, for each frame i in a video, we extract a CLIP image embedding c image i using the CLIP ViT-L/14 model [71]. We then feed c image i into the LAION aesthetic predictor [50], which assigns a raw rating r i ∈ [0, 10]. ... Text-Video Consistency This measure captures how closely a generated video's content aligns with its text prompt. We employ ViCLIP [52], a model pre-trained on a 10M video-text dataset and fine-tuned to handle temporal relationships, to embed both the video frames and the text. ... Like other generative models, such as large language models, text-to-video models, and their inference-time search, may inherit and amplify biases present in the training data due to the misalignment. ... When evaluating outputs using capable vision language models [13,14] or human raters, many previous metrics for quantifying video naturalness do not always correlate with them. Optimal reward design for measuring perceptual quality highly depends on the degree of dynamics described in evaluation prompts."
+      },
+      {
+        "paper_id": "276725298",
+        "markdown_evidence": "Displaying Fear, Sadness, and Joy in Public: Schizophrenia Vloggers' Video Narration of Emotion and Online Care-Seeking ... Individuals with severe mental illnesses (SMI), particularly schizophrenia, experience complex and intense emotions frequently. They increasingly turn to vlogging as an authentic medium for emotional disclosure and online support-seeking. While previous research has primarily focused on text-based disclosure, little is known about how people construct narratives around emotions and emotional experiences through video blogs. Our study analyzed 401 YouTube videos created by schizophrenia vloggers, revealing that vloggers disclosed their fear, sadness, and joy through verbal narration by explicit expressions or storytelling. Visually, they employed various framing styles, including Anonymous, Talk-to-Camera, and In-the-Moment approaches, along with diverse visual narration techniques. Notably, we uncovered a concerning 'visual appeal disparity' in audience engagement, with visually appealing videos receiving significantly more views, likes, and comments. This study discusses the role of video-sharing platforms in emotional expression and offers design implications for fostering online care-seeking for emotionally vulnerable populations. ... Based on LLaVa's binary assessment of the keyframes, we could finally quantify the aesthetic features for each video using the mean value of the binary outputs of all the keyframes for each feature. For example, a video getting a score of 0.5 for its brightness means that 50% of the keyframes were assessed as bright by LLaVa. ... Leveraging the advancement of AI technologies, especially Multimodal Large Language Models, we automatically extract both visual features from videos and verbal features from video transcripts and comments. ... Video content allows for a multifaceted expression of emotions through visuals, speech, and human audio. We untangled both the emotional narratives delivered in verbal narration and visual storytelling frames. ... We employed a Multimodal LLM, LLaVa-1.6 7 (an open-sourced model with demonstrated potential for automated video annotation [45,47]) for the annotation. Based on the qualitative codebook, we experimented with LLM annotations of 11 features that reflect the visual appeal (e.g., innovative and craftsmanship)."
+      },
+      {
+        "paper_id": "268531411",
+        "markdown_evidence": "Subjective-Aligned Dataset and Metric for Text-to-Video Quality Assessment ... With the rapid development of generative models, AI-Generated Content (AIGC) has exponentially increased in daily lives. Among them, Text-to-Video (T2V) generation has received widespread attention. Though many T2V models have been released for generating high perceptual quality videos, there is still lack of a method to evaluate the quality of these videos quantitatively. To solve this issue, we establish the largest-scale Text-to-Video Quality Assessment DataBase (T2VQA-DB) to date. The dataset is composed of 10,000 videos generated by 9 different T2V models, along with each video's corresponding mean opinion score. Based on T2VQA-DB, we propose a novel transformer-based model for subjective-aligned Text-to-Video Quality Assessment (T2VQA). The model extracts features from text-video alignment and video fidelity perspectives, then it leverages the ability of a large language model to give the prediction score. Experimental results show that T2VQA outperforms existing T2V metrics and SOTA video quality assessment models. Quantitative analysis indicates that T2VQA is capable of giving subjective-align predictions, validating its effectiveness. The dataset and code are available at https://github.com/QMME/T2VQA. ... They either only consider the text-video alignment or don't analyze the temporal domain information within video frames. The VQA models have higher scores, indicating that video fidelity heavily affects the assessment of text-generated video quality. ... The features are fused through a cross-attention module, then they are fed into a frozen Large Language Model (LLM) to regress the predicted score. We train and test T2VQA as well as other VQA models on T2VQA-DB. ... [8,9,23,66,69,72,73] are works for the evaluation of enhanced videos and digital humans. DOVER [52] proposes to view the quality assessment problem from technical and aesthetic perspectives, while BVQI [50] and MaxVQA [51] integrate text prompts (e.g., good, bad) into VQA. ... We use Sim-pleVQA [41], BVQA [24], FAST-VQA [49], DOVER [52], and T2VQA to predict their quality. Fig. 7 presents the prompts, video frames, and model predictions on the three examples, and Tab. 3 lists the models' predictions and MOSs. Results show that T2VQA has more subjective-aligned predictions. Fig. 7a shows an example with a relatively high score."
+      },
+      {
+        "paper_id": "276724975",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276161410",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277824736",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274859476",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275820437",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272915670",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269362040",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276903146",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269149019",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267027512",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273707151",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268253570",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277452743",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269149486",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275544366",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276742090",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278788692",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272988360",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260315872",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269302577",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277322595",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257766298",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267406242",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265149704",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268033140",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275470492",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275789161",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271310039",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277066252",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270214363",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272998335",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276557770",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270094637",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268513482",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275757186",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "262824606",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271038834",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "214098075",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271956910",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276259016",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274280915",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "51891921",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275515848",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259847783",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "263139349",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274150456",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274859339",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274423488",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229678083",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273162259",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267626875",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278129926",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278904944",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278740908",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "5604327",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277452052",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "247424638",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "279154674",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271710020",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270199408",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "40054810",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272561622",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277182474",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273035027",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273157978",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268652921",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275212626",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270870627",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265033115",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278769725",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271923960",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275757647",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273532769",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269188089",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271064936",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266551317",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258582564",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275019350",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270560334",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277435628",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269005185",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266435847",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277621299",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277349201",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "1953411",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "231881875",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274131119",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275114725",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276938156",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278032911",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "286673906",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276961000",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "32047811",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278420793",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272704132",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276618359",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233132268",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277104332",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275119516",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265506207",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278032873",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274723472",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270759701",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267035023",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "244460724",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275931952",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278326974",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271397399",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274131631",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "260735961",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271570974",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269430328",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274763116",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250408249",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269362062",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "235651130",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "252815842",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271843557",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257219237",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271329356",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "232478955",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265466214",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271719914",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268820223",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265498612",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278531582",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270619444",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265608767",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277313371",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277321624",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269293730",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258762479",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276765405",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268008903",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275606522",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272525391",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "15021983",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "56249835",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "6019168",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "253420423",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265212670",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276885050",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273707294",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272689173",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274581666",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "269605631",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266374742",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266998720",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274788642",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257632345",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274581469",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273821419",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277114047",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278481621",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268857167",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270258348",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275820361",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273233646",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270923961",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264451640",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278231576",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275458288",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "266174413",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267301631",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277271795",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "265149820",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275931972",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "280420653",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278208017",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274515174",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268091168",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271231424",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271947039",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271550891",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "257378482",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273654830",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "7714465",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271543810",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274762875",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258417939",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276249840",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277488603",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "272434819",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "275825002",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268588104",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "281902470",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274981713",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "249734261",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271046467",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "274192282",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273902459",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278715233",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276235835",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "267028095",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268457324",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "214774347",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276161633",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271064734",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "250279885",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277207661",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "215733719",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271855655",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "277350030",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273021489",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "278714523",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "264172222",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270357632",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "46982879",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "270737653",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273229103",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273227920",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273784255",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "29379230",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "229147809",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "251268919",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "276241834",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "58143038",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "52047653",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "68246697",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "233432113",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "271498484",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268546319",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "273681602",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "259915806",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "268723859",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      },
+      {
+        "paper_id": "258194282",
+        "markdown_evidence": "(evidence omitted — beyond scored depth, never judged)"
+      }
+    ]
+  }
+}

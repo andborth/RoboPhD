@@ -1,0 +1,52 @@
+[semantic_219] score_type=semantic_f1 query='Show me research on rejection sampling finetuning.'
+  plan: kw=['rejection sampling finetuning', 'rejection sampling fine-tuning language models', 'best-of-n sampling fine-tuning', 'reinforced self-training RL alignment', 'RAFT reward ranked finetuning', 'iterative best-of-n distillation', 'self-improvement via sampling LLM', 'statistical rejection sampling preference optimization', 'RLHF rejection sampling data generation', 'reward model filtered supervised finetuning', 'self-taught reasoner bootstrapping rationales', 'expert iteration language model reasoning', 'sampling and filtering synthetic training data', 'best-of-n reranking for alignment', 'rejection sampling for mathematical reasoning', 'reward guided sample selection finetuning', 'ReST reinforced self training', 'high quality sample selection instruction tuning'] titles=['RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment', 'Reinforced Self-Training (ReST) for Language Modeling', 'Statistical Rejection Sampling Improves Preference Optimization', 'STaR: Bootstrapping Reasoning With Reasoning', 'Scaling Relationship on Learning Mathematical Reasoning with Large Language Models', 'Training Language Models to Follow Instructions with Human Feedback']
+  criteria:
+1. Rejection sampling technique (weight 0.50): The paper must use rejection sampling (or best-of-n / reward-filtered sample selection) to select high-quality generated samples.
+2. Finetuning models (weight 0.30): The paper must fine-tune a model on the selected samples.
+3. Relation between rejection sampling and finetuning (weight 0.20): The paper must explicitly combine rejection sampling with finetuning rather than mention them separately.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_paper_by_title failed: TimeoutError: 
+  retrieval: 1365 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 100, 82, 9, 7, 100, 100, 0, 100, 48, 100, 100, 32, 22, 100, 100, 100, 80, 0, 0, 0, 0, 80, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]) t=266s
+  tool get_paper_batch failed: TimeoutError: 
+  tool get_paper_batch failed: TimeoutError: 
+  graded 320/320 t=392s
+  extra tranche: good1=29 graded 200/200 est>=2: 7 est3: 6 t=396s
+  snowball: seeds=10 answered=10 neighbours=987 multi-linked=210 selected=120 t=518s
+  snowball: graded 119/119 of 120 est>=2: 1 est3: 1 took 63s t=582s
+  snowball+ skipped: more=120 est3=1 t=582s
+  est. grades: 3=30 2=7 1=214 other=388
+  submitted 250 papers
+  criterion snippets: 43/48 papers t=652s
+  regraded 48/48 t=656s
+  submitted 250 papers
+  round2: near=9 repaired=5 miss=2 miss_filled=1 t=802s
+  round2: rejudged 3/3; upgraded=1 t=804s
+  wave B: criterion passages for 78/96 lower-ranked papers t=804s
+  stage2: full=21 all-criteria=21 of 48
+  head check skipped: full-in-head=16 t=804s
+  provenance: FFFFFFFFFFFFfffFFFFffSSSSSssSSSSssSSSsSSSSSsSsssXXXUUUUUUUUUUUUUXXXXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXUUUUUXUXXXXXUUUUXXXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXUUXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXUXXXXXXX
+  s1 est grade: 3333333333333332221113333333333333332222111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 0 0 0 0 0 0 0 1 2 2 3 3 3 1 0 2 0 4 4 2 0 0 1 1 4 4 0 0 2 2 5 9 1 0 0 3 3 0 1 0 1 4 0 3 5 5 -1 3 3 0 0 0 0 0 0 1 1 2 2 2 2 3 5 4 4 4 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 4 4 4 4 4 4 4 4 5 5 -1 -1 -1 -1 -1 0 0 0 1 1 -1 2 3 3 4 4 -1 0 0 1 1 3 5 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 7 3 3 3 3 3 3 3 3 3 3 3 3 3 3 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 6 4 4 4 5 5 5 5 5 9 8 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 4 -1 -1 -1 -1 -1 -1
+  evidence: with criterion passages 123/250
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 258170300 RAFT: Reward rAnked FineTuning for Generative Foundation Model Alignment
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 260438790 Scaling Relationship on Learning Mathematical Reasoning with Large Language Mode
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 266163375 Beyond Human Data: Scaling Self-Training for Problem-Solving with Language Model
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 268063628 Arithmetic Control of LLMs for Diverse User Preferences: Directional Preference 
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 277857120 Exploring Expert Failures Improves LLM Agent Tuning
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276647059 Self-rewarding correction for mathematical reasoning
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 270123876 Xwin-LM: Strong and Scalable Alignment Practice for LLMs
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 268889631 AutoWebGLM: A Large Language Model-based Web Navigating Agent
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276776226 The First Few Tokens Are All You Need: An Efficient and Effective Unsupervised P
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 270620157 Self-play with Execution Feedback: Improving Instruction-following Capabilities 
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 276482419 Enhancing Cognition and Explainability of Multimodal Foundation Models with Self
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 278997072 Can LLMs Deceive CLIP? Benchmarking Adversarial Compositionality of Pre-trained 
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 271051300 Variational Best-of-N Alignment
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 278905330 Continuous Self-Improvement of Large Language Models by Test-time Training with 
+    2.00 s1=1.00 s2=([3, 3, 3], 3) 273403421 POROver: Improving Safety and Reducing Overrefusal in Large Language Models with
+  submitted 250 papers
+  done in 804s; tool failures={'search_papers_by_relevance': 3, 'snippet_search': 30, 'search_paper_by_title': 1, 'get_paper_batch': 2}

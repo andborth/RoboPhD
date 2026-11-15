@@ -1,0 +1,1 @@
+Compare the performance and advantages of LSTMs versus basic RNNs (vanilla RNNs) on NLP tasks. What evidence shows that LSTMs perform better than basic RNNs, and what are the key reasons for any performance differences?

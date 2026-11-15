@@ -1,0 +1,52 @@
+[semantic_152] score_type=semantic_f1 query='State-of-the-art papers focusing on sampling mechanisms at LLM inference time, including mechanisms like majority voting and reward model scoring in the context of sample selection.'
+  plan: kw=['LLM inference time sampling strategies', 'test time compute scaling language models', 'majority voting self consistency decoding', 'reward model scoring sample selection', 'best of n sampling reranking', 'verifier guided answer selection LLM', 'sampling and ranking text generation', 'self consistency chain of thought', 'candidate generation answer aggregation', 'outcome reward model reranking', 'process reward model step verification', 'repeated sampling inference scaling', 'decoding strategies large language models', 'temperature sampling diverse candidates', 'weighted majority vote reasoning', 'test time sample selection mechanisms', 'generation then selection LLM reasoning', 'minimum bayes risk decoding LLM'] titles=['Self-Consistency Improves Chain of Thought Reasoning in Language Models', 'Training Verifiers to Solve Math Word Problems', "Let's Verify Step by Step", 'Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters', 'Large Language Monkeys: Scaling Inference Compute with Repeated Sampling', 'Solving math word problems with process- and outcome-based feedback']
+  criteria:
+1. Inference-time sampling mechanisms (weight 0.40): The paper must focus on sampling mechanisms applied at LLM inference time for generating and selecting among candidate outputs.
+2. Majority voting (weight 0.25): The paper must discuss majority voting or self-consistency over sampled outputs for selecting the final answer.
+3. Reward model scoring (weight 0.25): The paper must discuss reward model scoring or verifier-based ranking for selecting among sampled candidates.
+4. State-of-the-art focus (weight 0.10): The paper must present original state-of-the-art methods or empirical results rather than being a general survey.
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  tool search_papers_by_relevance failed: TimeoutError: 
+  retrieval: 1903 candidates from 18 kw / 8 snippet queries (sizes [100, 100, 64, 100, 26, 100, 85, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 80, 80, 80, 80, 80, 80, 80, 80, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1]) t=153s
+  graded 320/320 t=251s
+  extra tranche: good1=119 graded 200/200 est>=2: 39 est3: 3 t=254s
+  tool get_citations failed: TimeoutError: 
+  snowball: seeds=10 answered=10 neighbours=536 multi-linked=81 selected=120 t=395s
+  tool get_paper_batch failed: ToolError: Paper bf76cb3bd7a54c60138f9523ffb462a486c4807b is newer than the date cutoff of 2025-06-01 and is not allowed to be requested
+  snowball: graded 119/119 of 120 est>=2: 19 est3: 0 took 94s t=489s
+  snowball+ skipped: more=120 est3=0 t=489s
+  est. grades: 3=16 2=161 1=177 other=285
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  tool snippet_search failed: TimeoutError: 
+  criterion snippets: 74/80 papers t=613s
+  regraded 80/80 t=620s
+  submitted 250 papers
+  tool snippet_search failed: TimeoutError: 
+  round2: near=30 repaired=24 miss=5 miss_filled=0 t=870s
+  round2: rejudged 9/9; upgraded=3 t=872s
+  wave B: criterion passages for 113/130 lower-ranked papers t=872s
+  stage2: full=29 all-criteria=29 of 80
+  head check skipped: full-in-head=16 t=872s
+  provenance: FFFFFFFFfFFFffffFFFFFFFFFFFFFSSSsSsSsSSSSsssSSSSSSSSSSSSSSsSSSSSSSSSSSSSSSSUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXSSSSSUUXXUUXXUUUUUXXXUUUUUUUUUUUUUUUUXXXXXXXXXXXXXXUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU
+  s1 est grade: 3333333332222222222222222222233333332222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222221111111111111111111111111111111111111111111111111111111111111111111111111
+  retrieval rank (x100): 0 0 0 0 0 1 1 2 3 1 2 2 3 4 4 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 4 0 3 2 1 2 0 4 7 3 2 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 5 4 4 4 4 4 4 4 4 4 4 4 4 4 7 7 11 10 13 11 18 16 -1 -1 -1 -1 -1 -1 -1 0 0 0 0 0 1 2 3 3 1 1 4 -1 0 0 0 1 1 3 4 4 0 0 0 1 1 1 2 2 2 2 2 2 2 2 3 3 3 4 4 5 7 11 18 18 -1 -1 -1 -1 -1 -1 0 2 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2
+  evidence: with criterion passages 187/250
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 271601023 Inference Scaling Laws: An Empirical Analysis of Compute-Optimal Inference for L
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 277467423 Do We Truly Need So Many Samples? Multi-LLM Repeated Sampling Efficiently Scales
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 254017497 Solving math word problems with process- and outcome-based feedback
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 277467695 When To Solve, When To Verify: Compute-Optimal Problem Solving and Generative Ve
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 261031079 GraphReason: Enhancing Reasoning Capabilities of Large Language Models through A
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 267617275 V-STaR: Training Verifiers for Self-Taught Reasoners
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 278887057 Optimal Policy Minimum Bayesian Risk
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 278714789 Is PRM Necessary? Problem-Solving RL Implicitly Induces PRM Capability in LLMs
+    2.00 s1=1.00 s2=([3, 3, 3, 3], 3) 278000696 Lightweight Latent Verifiers for Efficient Meta-Generation Strategies
+    2.00 s1=0.83 s2=([3, 3, 3, 3], 3) 276094621 ZebraLogic: On the Scaling Limits of LLMs for Logical Reasoning
+    2.00 s1=0.83 s2=([3, 3, 3, 3], 3) 277321871 MCTS-RAG: Enhancing Retrieval-Augmented Generation with Monte Carlo Tree Search
+    2.00 s1=0.83 s2=([3, 3, 3, 3], 3) 276079559 Reward-Guided Speculative Decoding for Efficient LLM Reasoning
+    2.00 s1=0.83 s2=([3, 3, 3, 3], 3) 276409139 Investigating Inference-time Scaling for Chain of Multi-modal Thought: A Prelimi
+    2.00 s1=0.83 s2=([3, 3, 3, 3], 3) 276421992 Demystifying Multilingual Chain-of-Thought in Process Reward Modeling
+    2.00 s1=0.83 s2=([3, 3, 3, 3], 3) 276107088 Rollout Roulette: A Probabilistic Inference Approach to Inference-Time Scaling o
+  submitted 250 papers
+  done in 873s; tool failures={'search_papers_by_relevance': 3, 'get_citations': 1, 'get_paper_batch': 1, 'snippet_search': 30}
