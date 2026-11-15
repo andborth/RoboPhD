@@ -10,7 +10,8 @@ contents.
 The cap was set at the price of the board's top entry, our `v0_0_9_cap_0_355_fable`
 (0.440 @ $0.279), so evolution had to win on score at that price. It does, on both axes:
 
-> **Official 0.501 @ $0.232**, against the incumbent's **0.440 @ $0.279**.
+> **Official 0.501 @ $0.232**, against the incumbent's **0.440 @ $0.279**. It also
+> dominates the frontier entry at **0.432 @ $0.251**.
 
 ## Official result (2026-11-15)
 
@@ -20,6 +21,7 @@ The cap was set at the price of the board's top entry, our `v0_0_9_cap_0_355_fab
 | --- | --- | --- |
 | **v0_1_1_cap_0_279_fable52** | **0.50140 ± 0.01755** | **$0.23231 ± 0.00588** |
 | v0_0_9_cap_0_355_fable | 0.44025 ± 0.01790 | $0.278579 ± 0.009930 |
+| v0_0_9_cap_0_355_opus5 | 0.43177 ± 0.01797 | $0.250635 ± 0.0089 |
 
 | Per type | This agent | v0_0_9_cap_0_355_fable |
 | --- | --- | --- |
@@ -28,8 +30,13 @@ The cap was set at the price of the board's top entry, our `v0_0_9_cap_0_355_fab
 | metadata_f1 (35) | **0.4706** | 0.3483 |
 | **Overall** | **0.50140** | 0.44025 |
 
-- **Dominance:** +0.061 on score and $0.046/query (17%) cheaper. The incumbent is no longer
-  Pareto-optimal.
+- **Dominance:** it Pareto-dominates two frontier entries, both ours:
+  - `v0_0_9_cap_0_355_fable` (0.440 @ $0.279), the top of the board: +0.061 on score and
+    $0.046/query (17%) cheaper.
+  - `v0_0_9_cap_0_355_opus5` (0.432 @ $0.251): +0.070 on score and $0.018/query (7%)
+    cheaper.
+
+  Neither is Pareto-optimal any longer; this entry replaces both on the frontier.
 - **Internal→official:** +0.016 (0.48537 → 0.50140), above the −0.055 to +0.010 range of
   our earlier PFB submissions. Every score type rose, so uncapped judging did not cost this
   agent anything.
