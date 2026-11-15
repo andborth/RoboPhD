@@ -141,10 +141,13 @@ AGENT_MODELS = [
 #   v0_0_8  $117 judge / 194 x 203.5 = 39.5K verdicts ≈ $0.0030/paper (750 chars/paper)
 #   v0_0_9c063 $197 judge / 194 x 250 = 48.5K verdicts ≈ $0.00407/paper (747 chars)
 #   v0_0_9c355 $206 judge / 194 x 250 = 48.5K verdicts ≈ $0.00426/paper (765 chars)
+#   v0_1_1c279 $207 judge / 194 x 250 = 48.5K verdicts ≈ $0.00426/paper (1,808 chars)
 # v0_0_9c063 rules out the obvious model: its evidence is 3 chars/paper
 # shorter than v0_0_8's and it still billed at v0_0_7's rate, so per-paper
 # cost does NOT track evidence length — 976, 747 and 765 chars/paper all
-# land in a $0.0040-0.0043 band.
+# land in a $0.0040-0.0043 band. v0_1_1c279 is the strongest point: 2.4x
+# v0_0_9c355's evidence per paper, the same $0.00426/paper, and judge INPUT
+# tokens 46.5M against c355_fable's 45.5M (+2%) over the same 48,500 papers.
 #
 # The printed figure is NOT a ceiling, and as of 2026-08-07 it is not a floor
 # either. print_cost_projection computes SEMANTIC_TEST_QUERIES x
@@ -387,15 +390,18 @@ SUBMISSIONS = [
         # iter20_year_steered_expansion (Elo 1567, 3 rounds; iter11 1560).
         # Internal test 0.48537 @ $0.23080/query on the stock GPT-4o capped
         # basis, against the board's top entry v0_0_9_cap_0_355_fable at
-        # 0.44025 @ $0.278579 official (0.4383 internal): projected to
-        # Pareto-dominate it on both axes.
+        # 0.44025 @ $0.278579 official (0.4383 internal).
+        # Official (2026-11-15, commit 553b0a11): 0.50140 ± 0.01755 @
+        # $0.23231/query, Pareto-dominating both v0_0_9_cap_0_355_fable and
+        # v0_0_9_cap_0_355_opus5 (0.43177 @ $0.250635). Internal->official
+        # +0.016. Spend $206.78 judge + $62.03 agent = $268.80, 9h08m.
         # Models (six handles, three providers): gpt-5.4-mini,
         # gpt-5.4-2026-03-05, gpt-5.5, claude-opus-4-8, claude-sonnet-4-6,
         # gemini-3.1-pro-preview. The first PFB submission to call Opus,
         # GPT-5.5 or Gemini, so AGENT_MODELS gains all three.
-        # Judge-cost projection: 250 papers/semantic query at 1,808
-        # chars/paper evidence (2.4x v0_0_9's 765), so expect the high end of
-        # the per-paper band, roughly $190-230 judge + ~$62 agent.
+        # Judge cost: 250 papers/semantic query at 1,808 chars/paper evidence
+        # (2.4x v0_0_9's 765) still billed $0.00426/paper, inside the band
+        # (see the calibration block above JUDGE_COST_PER_PAPER_USD).
         # Version v0_1_1: --model-menu and the fable-5.2 engine registration
         # landed since v0_1_0.
     ),
