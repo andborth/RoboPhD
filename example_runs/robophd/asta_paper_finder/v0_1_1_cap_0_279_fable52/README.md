@@ -157,6 +157,31 @@ stage1_keyed_order (18) → backdated_citation_counts (19) → **year_steered_ex
 | Leaderboard | [AstaBench PaperFindingBench leaderboard](https://allenai-asta-bench-leaderboard.hf.space/literature-understanding#h-paperfindingbench-leaderboard) |
 | Tarball | `v0_1_1_cap_0_279_fable52.tar.gz` |
 
+Agent description for the form (draft):
+
+> Evolved by RoboPhD with Claude Fable 5.2 as the evolution (but not a solver)
+> model, under a \$0.279/query training cost cap on solver spend. The cap was set
+> at exactly the price of the board's top entry, so evolution had to win on score
+> at a price already known to be competitive. It came in at \$0.232/query.
+>
+> The agent routes each query by type, and a Claude Opus 4.8 planner turns every
+> request into a plan. For semantic queries, the plan's keyword and body-text
+> snippet searches run in parallel and their results are fused. The benchmark's
+> grading criteria are hidden at query time, so the planner infers and weights
+> its own. GPT-5.4-mini rates every candidate against each criterion, and grades a
+> second tranche when the first proves rich. The agent then follows citations in
+> both directions from the papers that satisfy every criterion, grading first the
+> papers linked to several of them. GPT-5.4 re-judges up to 80 of the strongest
+> candidates. Each submitted paper carries verbatim passages from its body.
+>
+> For named-paper queries, the planner proposes real titles, GPT-5.5 and Gemini
+> 3.1 Pro give independent readings of what the request refers to, and Opus 4.8
+> picks the paper or papers from the pooled candidates. For metadata queries, the
+> planner writes a structured spec that deterministic filters apply, using
+> citation counts back-dated to the benchmark's cutoff. For year-bounded
+> requests, each search is also issued once per requested year, which steers the
+> year-less search tool toward those years.
+
 ## Reproduce
 
 ```bash
