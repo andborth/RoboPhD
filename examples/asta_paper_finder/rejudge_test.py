@@ -657,17 +657,15 @@ async def run_pass(samples, judge, judge_prompt, cache_path, args):
 # Judge-call token model, for the --dry-run cost estimate only. Nothing here
 # feeds a recorded number; the real cost comes from the eval's own usage.
 #
-# Calibrated against the one fully-measured official run, v0_0_7: the upstream
-# report puts it at ~1,000 input / 165 output tokens per verdict on 976
-# chars/paper of evidence, and the submit script records $192 of judge spend
-# over 194 x 250 = 48,500 verdicts. A 700-token scaffold (instructions +
-# criteria, everything that is not the evidence itself) reproduces that $192
-# to within 1%; 750 overshoots by 4%.
-_JUDGE_SCAFFOLD_TOKENS = 700
-_CHARS_PER_TOKEN = 4
-# Output is near-constant per verdict: 165 measured on the stock prose prompt,
-# and no-prose cut output tokens 65% (2026-07-23 study).
-_JUDGE_OUTPUT_TOKENS = {"stock": 165, "no-prose": round(165 * 0.35)}
+# Fitted to the eight official runs' per-call judge usage
+# (scripts/pfb_judge_cost_table.py): input tokens per call ≈ 592 + chars/4.94
+# of evidence (r = 0.99 across 1,450-2,523 chars/paper), output 152-187 on the
+# stock prose prompt. The scaffold is everything that is not the evidence
+# itself (instructions + criteria).
+_JUDGE_SCAFFOLD_TOKENS = 592
+_CHARS_PER_TOKEN = 4.94
+# no-prose cut output tokens 65% (2026-07-23 study).
+_JUDGE_OUTPUT_TOKENS = {"stock": 180, "no-prose": round(180 * 0.35)}
 
 
 def _estimate_judge_cost(to_judge_evidence, judge: str, judge_prompt: str) -> float:

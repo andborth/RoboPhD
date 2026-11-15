@@ -271,6 +271,9 @@ what search ranks first, which is recency-biased.
   vs 976), so expect **~\$140–175** — below v0_0_7's actual \$192. Note the
   submit script's built-in projection assumes a flat 250 papers/query and
   will print a higher number (~\$219); it overestimates for this agent.
+  *(Correction, 2026-11-15: measured from the official logs, evidence was
+  1,450 vs 2,523 chars/paper, not 750 vs 976; the conclusion stands. See
+  `scripts/pfb_judge_cost_table.py`.)*
 - **No self-pacing**: unlike v0_0_7's agent (SOFT_DEADLINE 1300 /
   TAIL_DEADLINE 1550), this one has **no deadline constants at all**, no
   per-call timeouts, and swallows tool exceptions. Its runtime comes from

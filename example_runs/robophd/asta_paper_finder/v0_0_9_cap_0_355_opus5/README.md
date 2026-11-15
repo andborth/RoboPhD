@@ -365,6 +365,11 @@ The flat-rate-under-the-250-cap model continues to hold, and evidence length
 continues not to predict it: 765 chars/paper here billed at essentially the same
 rate as 747 chars for `cap_0_063` and 976 for v0_0_7.
 
+*(Correction, 2026-11-15: measured from the official logs, these runs shipped
+1,778, 1,808 and 2,523 chars/paper, and judge cost per call does track
+evidence length. v0_0_7 matched the per-paper rate only because 13% of its
+papers needed no judge call. See `scripts/pfb_judge_cost_table.py`.)*
+
 ## Reproduce
 
 ```bash

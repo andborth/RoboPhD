@@ -288,6 +288,12 @@ v0_0_8's \$0.0030, despite near-identical evidence length. Evidence length alone
 does not predict the judge bill; the submit script's \$0.0040 ceiling was the
 better estimator.
 
+*(Correction, 2026-11-15: measured from the official logs, evidence was 1,808
+chars/paper against v0_0_8's 1,450, not near-identical (747 vs 750), and judge
+cost per call does track evidence length. v0_0_8's lower rate per submitted
+paper also reflects the 20% of its papers that needed no judge call. See
+`scripts/pfb_judge_cost_table.py`.)*
+
 The pre-submission risk list held up well. Risk 1 (`specific_f1` is the metric
 to watch) was the right thing to name and it came through at **zero drift** —
 the failure that cost v0_0_8 −0.250 did not recur. Risk 2 (uncapped official

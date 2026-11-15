@@ -437,13 +437,12 @@ def test_nothing_to_judge_costs_nothing():
 
 
 def test_the_token_model_reproduces_the_one_measured_official_run():
-    """Calibration guard. The scaffold constant was fitted to v0_0_7: $192 of
-    judge spend over 194 x 250 verdicts at 976 chars/paper, per the submit
-    script's cost table and the upstream report's token counts. If a later
-    edit moves _JUDGE_SCAFFOLD_TOKENS or the chars-per-token ratio, this is
-    what says the estimate no longer matches reality.
+    """Calibration guard against v0_0_7's official log: $192 of judge spend
+    over 42,110 judge calls at 2,523 chars/paper of evidence
+    (scripts/pfb_judge_cost_table.py). If a later edit moves the token
+    constants, this is what says the estimate no longer matches reality.
     """
-    evidence = ["x" * 976] * (194 * 250)
+    evidence = ["x" * 2523] * 42110
     cost = rt._estimate_judge_cost(evidence, "openai/gpt-4o-2024-11-20", "stock")
     assert cost == pytest.approx(192.0, rel=0.05), (
         f"model predicts ${cost:.0f} against the measured $192 for v0_0_7; "

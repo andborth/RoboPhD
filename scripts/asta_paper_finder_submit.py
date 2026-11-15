@@ -32,9 +32,8 @@ submission is ready for manual upload via the HF Spaces leaderboard form.
 Cost / time (full test split, 267 queries). Judge spend dominates — it
 was 98.7% of the v0_0_8 bill and 93.4% of v0_0_9's — and it scales with
 how much the agent ships, not with the agent's own price. Measured points
-(--max-samples 6 unless noted; chars/paper is the mean length of the
-markdown_evidence field over every paper submitted for a semantic query in
-the official log):
+(--max-samples 6 unless noted; chars/paper and $/paper from
+scripts/pfb_judge_cost_table.py, $/paper per SUBMITTED semantic paper):
 
     v0_0_7_cap_0_06_fable    $192 judge + $15 agent    ~19 hr
         2,523 chars/paper, 250 papers/semantic query,
@@ -59,13 +58,11 @@ cut the judge bill too, which is the term that actually matters. Wall
 clock is unscored officially, so duration buys evidence quality, not
 points.
 
-Evidence LENGTH does not predict the per-paper rate across the full-list
-runs: 1,546 to 2,523 chars/paper all bill at $0.0040-0.0043, and the
-longest evidence (v0_0_7) billed lowest. v0_0_8 is the only run outside
-that band, and it differs on both list length and evidence length, so it
-cannot separate the two. Project from the measured band below, not from a
-length comparison; a pre-run estimate of ~$145 built that way came in $52
-under.
+Cost per judge CALL tracks evidence length (input tokens per call ≈ 592 +
+chars/4.94); the rate per submitted paper also depends on how many papers
+need a call, since papers already known Perfect or cached skip the judge
+(v0_0_7 and v0_0_8 had 13% and 20% such papers). See the calibration block
+below JUDGE_COST_PER_PAPER_USD.
 
 Official judging is UNCAPPED (every submitted paper, no top-K cap),
 billed to OPENAI_API_KEY during the eval — internal capped+cached
@@ -142,22 +139,24 @@ AGENT_MODELS = [
 ]
 
 # Official-judging cost projection, printed before eval. Calibrated on the
-# completed official runs rather than an internal capped estimate. Judge $ is
-# the GPT-4o bill from each official log; papers are those submitted for the
-# 194 semantic queries; chars/paper is the mean markdown_evidence length over
-# those papers (the docstring's cost table uses the same basis):
-#   v0_0_7      $192.00 / 48,500 papers = $0.00396/paper (2,523 chars)
-#   v0_0_8      $117.09 / 39,471 papers = $0.00297/paper (1,450 chars)
-#   v0_0_9c063o $197.32 / 47,534 papers = $0.00415/paper (1,808 chars)
-#   v0_0_9c355o $206.38 / 48,489 papers = $0.00426/paper (1,778 chars)
-#   v0_0_9c355f $203.61 / 48,316 papers = $0.00421/paper (1,699 chars)
-#   v0_0_9c063f $201.92 / 48,500 papers = $0.00416/paper (1,734 chars)
-#   v0_1_0c063  $194.27 / 48,500 papers = $0.00401/paper (1,546 chars)
-#   v0_1_1c279  $206.78 / 48,500 papers = $0.00426/paper (1,807 chars)
-# Per-paper cost does NOT track evidence length: every full-list run lands in
-# a $0.0040-0.0043 band across 1,546-2,523 chars/paper, and the longest
-# evidence (v0_0_7) billed lowest. (Earlier revisions of this block quoted
-# 747-976 chars/paper on a basis that the official logs do not reproduce.)
+# completed official runs; scripts/pfb_judge_cost_table.py recomputes every
+# figure here from their logs:
+#
+#   run          chars/paper  judged/submitted  $/judge call  judge $
+#   v0_0_8          1,450     31,587/39,471       0.00371     117.09
+#   v0_1_0c063      1,546     48,441/48,500       0.00401     194.27
+#   v0_0_9c355f     1,699     48,255/48,316       0.00422     203.61
+#   v0_0_9c063f     1,734     48,443/48,500       0.00417     201.92
+#   v0_0_9c355o     1,778     48,424/48,489       0.00426     206.38
+#   v0_1_1c279      1,807     48,438/48,500       0.00427     206.78
+#   v0_0_9c063o     1,808     47,469/47,534       0.00416     197.32
+#   v0_0_7          2,523     42,110/48,500       0.00456     192.00
+#
+# Cost per call tracks evidence length. Per SUBMITTED paper the full-list
+# runs sit in a $0.0040-0.0043 band, but that hides it: v0_0_7 looks cheapest
+# only because 13% of its papers skipped the judge. (Earlier revisions said
+# cost does not track evidence length, from 747-976 chars/paper figures the
+# logs do not reproduce.)
 #
 # The printed figure is neither a ceiling nor a floor.
 # print_cost_projection computes SEMANTIC_TEST_QUERIES x
@@ -174,9 +173,10 @@ AGENT_MODELS = [
 # re-run, the submitted entry, billed $201.92. Wall-clock pressure moves this
 # number, so the band is wider than the per-paper rate alone suggests.
 #
-# It over-predicts hard when the agent ships SHORT LISTS (~$219 printed against
-# $117 actual for v0_0_8 at 203.5 papers/query). Budget a full-250 agent from
-# the measured $0.0039-0.0043 band, not from the printed number.
+# It over-predicts hard when the agent ships SHORT LISTS (v0_0_8 at 203.5
+# papers/query: ~$219 total printed under the then-$0.0042 constant, $209
+# today, against $117 actual judge). Budget a full-250 agent from the
+# measured $0.0039-0.0043/submitted-paper band, not from the printed number.
 JUDGE_COST_PER_PAPER_USD = 0.0040
 SEMANTIC_TEST_QUERIES = 194
 PAPERS_PER_SEMANTIC_QUERY = 250
