@@ -161,7 +161,7 @@ Agent description for the form (draft):
 
 > Evolved by RoboPhD with Claude Fable 5.2 as the evolution (but not a solver)
 > model, under a \$0.279/query training cost cap on solver spend. The cap was set
-> at exactly the price of the board's top entry, so evolution had to win on score
+> at exactly the price of the board's top entry (a prior RoboPhD submission), so evolution had to win on score
 > at a price already known to be competitive. It came in at \$0.232/query.
 >
 > The agent routes each query by type, and a Claude Opus 4.8 planner turns every
