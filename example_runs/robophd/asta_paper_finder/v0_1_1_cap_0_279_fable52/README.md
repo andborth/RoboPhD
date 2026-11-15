@@ -145,7 +145,7 @@ stage1_keyed_order (18) → backdated_citation_counts (19) → **year_steered_ex
   capped, 267 queries. `test_results.rejudge_openai_gpt-5.6-luna_noprose.*` is the same
   submissions rejudged on the training judge.
 
-## Submission form (draft)
+## Submission form metadata
 
 | Field | Value |
 | --- | --- |
@@ -157,7 +157,7 @@ stage1_keyed_order (18) → backdated_citation_counts (19) → **year_steered_ex
 | Leaderboard | [AstaBench PaperFindingBench leaderboard](https://allenai-asta-bench-leaderboard.hf.space/literature-understanding#h-paperfindingbench-leaderboard) |
 | Tarball | `v0_1_1_cap_0_279_fable52.tar.gz` |
 
-Agent description for the form (draft):
+Agent description as submitted on the form (2026-11-15):
 
 > Evolved by RoboPhD with Claude Fable 5.2 as the evolution (but not a solver)
 > model, under a \$0.279/query training cost cap on solver spend. The cap was set
