@@ -38,13 +38,11 @@ The cap was set at the price of the board's top entry, our `v0_0_9_cap_0_355_fab
 
   Neither is Pareto-optimal any longer; this entry replaces both on the frontier.
 - **Internal→official:** +0.016 (0.48537 → 0.50140), above the −0.055 to +0.010 range of
-  our earlier PFB submissions. Every score type rose, so uncapped judging did not cost this
-  agent anything.
+  our earlier PFB submissions. 
 - **Clean run:** all 267 queries scored; no tool-init failures and no tool calls that
   exhausted their retries (10 HTTP 429s, all retried by the harness).
-- **Spend:** $206.78 judge (46.5M input / 9.1M output GPT-4o tokens, $0.00426/paper over
-  194 semantic queries × 250 papers) + $62.03 agent = **$268.80**, in 9h08m at
-  `--max-samples 6`.
+- **Spend:** $206.78 judge + $62.03 agent = **$268.80**
+- **Time** 9h08m
 
 ## Internal result
 
