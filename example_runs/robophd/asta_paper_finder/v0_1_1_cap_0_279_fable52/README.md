@@ -141,7 +141,8 @@ stage1_keyed_order (18) → backdated_citation_counts (19) → **year_steered_ex
   session that produced the winner.
 - `checkpoint.json` and `final_report.md` are the full run record.
 - `test_results.json` (+ `.per_problem.json`) is the internal held-out eval: stock GPT-4o,
-  capped, original pass (267 rows, one of which never ran).
+  capped, original pass (267 rows, one of which never ran). `test_results.merged.*` is the
+  267-query result quoted above, with that row replaced by its re-run.
   `test_results.rejudge_openai_gpt-5.6-luna_noprose.*` is the same submissions rejudged on
   the training judge; its `.merged.*` files are the 267-query result.
 - `test_results.tool_init_rerun.*` is the re-run of the remaining query, judged by luna and
@@ -201,9 +202,9 @@ judge (250 papers per semantic query, uncapped) + $62.03 agent.
 `semantic_236` failed at tool initialization on the internal pass, so the agent never ran
 on it. It was re-run once on 2026-11-15 with the same agent, menu and cap, and judged by
 both judges: 0.6179 on stock GPT-4o and 0.6677 on luna, at $0.285
-(`test_results.tool_init_rerun.*`). The internal results above include it. The original
-266 rows alone, with this query counted as 0, give 0.48537 @ $0.23080 on GPT-4o
-(`test_results.json`); on luna the 266 give 0.50968.
+(`test_results.tool_init_rerun.*`). The internal results above include it
+(`test_results.merged.json`). The original 266 rows alone, with this query counted as 0,
+give 0.48537 @ $0.23080 on GPT-4o (`test_results.json`); on luna the 266 give 0.50968.
 
 This affects the internal eval only. The official run had no such failure: all 267 queries
 ran and were scored, so the official result needs no correction.

@@ -396,13 +396,15 @@ SUBMISSIONS = [
         # Run robophd-asta_paper_finder-023 (FABLE-5.2-evolved; luna no-prose
         # training judge, full objective, full solver menu), winner
         # iter20_year_steered_expansion (Elo 1567, 3 rounds; iter11 1560).
-        # Internal test 0.48537 @ $0.23080/query on the stock GPT-4o capped
+        # Internal test 0.48769 @ $0.23186/query on the stock GPT-4o capped
         # basis, against the board's top entry v0_0_9_cap_0_355_fable at
-        # 0.44025 @ $0.278579 official (0.4383 internal).
+        # 0.44025 @ $0.278579 official (0.4383 internal). That is all 267
+        # queries: semantic_236 failed at tool start-up on the original pass
+        # (0.48537 @ $0.23080 with it as 0) and was re-run on 2026-11-15.
         # Official (2026-11-15, commit 553b0a11): 0.50140 ± 0.01755 @
         # $0.23231/query, Pareto-dominating both v0_0_9_cap_0_355_fable and
         # v0_0_9_cap_0_355_opus5 (0.43177 @ $0.250635). Internal->official
-        # +0.016. Spend $206.78 judge + $62.03 agent = $268.80, 9h08m.
+        # +0.014. Spend $206.78 judge + $62.03 agent = $268.80, 9h08m.
         # Models (six handles, three providers): gpt-5.4-mini,
         # gpt-5.4-2026-03-05, gpt-5.5, claude-opus-4-8, claude-sonnet-4-6,
         # gemini-3.1-pro-preview. The first PFB submission to call Opus,
