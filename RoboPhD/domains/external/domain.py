@@ -447,12 +447,13 @@ class ExternalEvaluatorDomain(DomainInterface):
                 return result_entry
 
             except Exception as e:
-                # An infrastructure abort must leave this function: scoring
-                # it 0 here is exactly the unfair loss it exists to prevent.
-                # (Rate-limit errors re-raised above are NOT let through
-                # here and still end as a 0 -- pre-existing behaviour, left
-                # unchanged by this edit.)
-                if is_infrastructure_error(e):
+                # Both aborts must leave this function: scoring the sample
+                # 0 here is exactly the unfair loss they exist to prevent.
+                # Until 2026-11 this catch-all (added 2026-02-25) swallowed
+                # the rate-limit re-raise above (added 2026-03-20), so an
+                # exhausted rate limit ended as a silent 0 and the
+                # EvalRateLimitError conversion below never fired.
+                if is_rate_limit_error(e) or is_infrastructure_error(e):
                     raise
                 self.logger.error(f"Unexpected error for {problem_id}: {e}")
                 return {

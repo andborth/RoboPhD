@@ -87,6 +87,48 @@ def test_domain_aborts_the_batch_and_writes_no_result_for_the_sample():
     assert len(all_dirs) > len(result_dirs)
 
 
+def test_domain_aborts_on_an_exhausted_rate_limit():
+    """eval_utils documents that a rate-limit error which outlasts the
+    evaluator's own retries crashes the run. The per-sample wrapper's outer
+    catch-all used to swallow it and return a 0 instead."""
+    from RoboPhD.eval_utils import EvalRateLimitError, get_eval_counters
+
+    class RateLimitError(Exception):   # matched by class name, as openai/litellm's are
+        pass
+
+    def evaluator(candidate, example, *, problem_dir=None):
+        if example["id"] == "b":
+            raise RateLimitError("429")
+        return 1.0, {}
+
+    before = get_eval_counters()["rate_limits"]
+    d, sampled, tmp = _domain(evaluator)
+    with pytest.raises(EvalRateLimitError, match="429"):
+        d.run_evaluation(sampled, tmp / "agent", tmp / "out",
+                         {"agent_id": "ag", "max_workers": 1, "eval_timeout": 30})
+    assert get_eval_counters()["rate_limits"] == before + 1
+    assert not (tmp / "out" / "evaluation.json").exists()
+
+
+def test_domain_aborts_on_a_rate_limit_in_the_cause_chain():
+    class RateLimitError(Exception):
+        pass
+
+    def evaluator(candidate, example, *, problem_dir=None):
+        if example["id"] == "b":
+            try:
+                raise RateLimitError("429")
+            except RateLimitError as e:
+                raise RuntimeError("LLM call failed") from e
+        return 1.0, {}
+
+    from RoboPhD.eval_utils import EvalRateLimitError
+    d, sampled, tmp = _domain(evaluator)
+    with pytest.raises(EvalRateLimitError):
+        d.run_evaluation(sampled, tmp / "agent", tmp / "out",
+                         {"agent_id": "ag", "max_workers": 1, "eval_timeout": 30})
+
+
 def test_domain_still_scores_ordinary_evaluator_errors_zero():
     """Only the named abort escapes; any other evaluator exception keeps
     the existing score-0 behaviour."""
