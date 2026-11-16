@@ -1177,14 +1177,26 @@ TOOL_INIT_BUDGET_SECONDS = 20.0               # no new attempt past this
 # Either way the sample is never left as a silent 0.
 TOOL_INIT_FAILED_KEY = "tool_init_failed"
 # Set alongside TOOL_INIT_FAILED_KEY when the failure is one a later attempt
-# cannot change (the ValueError the in-sample retry refuses to retry: a
-# missing ASTA_TOOL_KEY, or a tool listing that does not match what
-# astabench expects). Training still aborts on it; the test-side re-run
+# cannot change (the bare ValueError the in-sample retry refuses to retry:
+# a missing ASTA_TOOL_KEY, or a tool listing that does not match what
+# astabench expects; see _is_permanent_tool_init_error). Training still aborts on it; the test-side re-run
 # skips it, because re-running would only wait and fail again.
 TOOL_INIT_PERMANENT_KEY = "tool_init_permanent"
 # Parent-side only: popped and logged in __call__, never persisted (the
 # framework warns about list-valued diagnostics it has to drop).
 TOOL_INIT_RETRY_CAUSES_KEY = "tool_init_retry_causes"
+
+
+def _is_permanent_tool_init_error(exc: BaseException) -> bool:
+    """Whether a start-up failure is one a later attempt cannot change.
+
+    astabench raises a bare ValueError for a missing ASTA_TOOL_KEY and for
+    an unexpected or missing tool in the server's listing. The test is the
+    EXACT class, not isinstance: json.JSONDecodeError, UnicodeDecodeError
+    and pydantic's ValidationError all subclass ValueError, and those mean
+    a garbled server response, which is transient and must be retried.
+    """
+    return type(exc) is ValueError
 
 
 def _tool_init_cause(exc: BaseException) -> str:
@@ -1210,10 +1222,11 @@ def _build_tools_with_retry(
     attempt recovered from (empty on a clean start). When every attempt
     fails, raises RuntimeError naming each attempt's cause.
 
-    ValueError is never retried: upstream raises it for a missing
-    ASTA_TOOL_KEY and for an unexpected/missing tool in the server's
-    listing, neither of which a second attempt can change. Everything else
-    is retried, including connection errors that astabench's per-call
+    A bare ValueError is never retried (see _is_permanent_tool_init_error):
+    upstream raises it for a missing ASTA_TOOL_KEY and for an
+    unexpected/missing tool in the server's listing, neither of which a
+    second attempt can change. Everything else is retried, ValueError
+    subclasses included, including connection errors that astabench's per-call
     wrapper classifies as non-retryable (a failed DNS lookup is the one
     cause observed so far).
     """
@@ -1223,9 +1236,9 @@ def _build_tools_with_retry(
     for attempt in range(1, TOOL_INIT_MAX_ATTEMPTS + 1):
         try:
             tools = build(sample_id)
-        except ValueError:
-            raise
         except Exception as e:
+            if _is_permanent_tool_init_error(e):
+                raise
             causes.append(_tool_init_cause(e))
             delay = (
                 TOOL_INIT_BACKOFF_SECONDS[
@@ -1814,7 +1827,7 @@ class PaperFinderEvaluator:
             return 0.0, {
                 "error.md": f"tool init failed: {type(e).__name__}: {e}",
                 TOOL_INIT_FAILED_KEY: True,
-                TOOL_INIT_PERMANENT_KEY: isinstance(e, ValueError),
+                TOOL_INIT_PERMANENT_KEY: _is_permanent_tool_init_error(e),
                 "sample_id": str(example.id),
                 "score_type": (example.metadata or {}).get("score_type"),
                 "eval_wall_clock_seconds": _elapsed_seconds(_t0),

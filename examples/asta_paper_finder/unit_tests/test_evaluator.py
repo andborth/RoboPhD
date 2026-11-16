@@ -1856,7 +1856,7 @@ def test_evaluate_marks_tool_init_failure_instead_of_a_bare_zero():
     tail = EVALUATOR_SRC.split("_build_tools_with_retry(example.id)", 1)[1][:900]
     assert "TOOL_INIT_FAILED_KEY: True" in tail
     # A ValueError (the one class the retry refuses) is flagged permanent.
-    assert "TOOL_INIT_PERMANENT_KEY: isinstance(e, ValueError)" in tail
+    assert "TOOL_INIT_PERMANENT_KEY: _is_permanent_tool_init_error(e)" in tail
     assert '"sample_id": str(example.id)' in tail
 
 
@@ -1927,3 +1927,40 @@ def test_training_abort_says_when_the_failure_is_a_configuration_error(ev_mod):
     with pytest.raises(EvalInfrastructureError) as ei:
         ev._handle_tool_init_outcome(score, {**diag, "tool_init_permanent": False})
     assert "configuration error" not in str(ei.value)
+
+
+def test_only_a_bare_valueerror_is_permanent(ev_mod):
+    """astabench's configuration errors are bare ValueErrors. Subclasses
+    that mean a garbled server response are transient: they must be
+    retried in the sample, re-run on the test path, and never reported to
+    the operator as something resuming cannot fix."""
+    import json
+    import pydantic
+
+    class M(pydantic.BaseModel):
+        x: int
+
+    try:
+        M(x="not an int")
+    except pydantic.ValidationError as e:
+        validation_error = e
+    transient = [
+        json.JSONDecodeError("Expecting value", "<html>", 0),
+        UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte"),
+        validation_error,
+        RuntimeError("x"),
+        _dns_group(),
+    ]
+    for exc in transient:
+        assert not ev_mod._is_permanent_tool_init_error(exc), type(exc).__name__
+    assert ev_mod._is_permanent_tool_init_error(ValueError("ASTA_TOOL_KEY is not set"))
+
+
+def test_tool_init_retries_valueerror_subclasses(ev_mod):
+    import json
+    clk = _FakeClock()
+    build, calls = _flaky_build([json.JSONDecodeError("Expecting value", "<html>", 0)])
+    tools, causes = ev_mod._build_tools_with_retry(
+        "semantic_1", build=build, sleep=clk.sleep, clock=clk.clock)
+    assert tools == ["tools-for-semantic_1"] and len(calls) == 2
+    assert "JSONDecodeError" in causes[0]

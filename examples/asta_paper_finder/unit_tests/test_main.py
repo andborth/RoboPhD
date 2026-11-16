@@ -1554,7 +1554,10 @@ def test_rerun_retries_in_rounds_then_reports_what_is_left(main_mod, caplog):
     assert out.per_example_scores == [0.6, 0.0]
     assert out.per_example_diagnostics[0]["tool_init_reruns"] == 2
     assert out.per_example_diagnostics[1]["tool_init_failed"] is True
-    assert any("INCOMPLETE" in r.message and "'b'" in r.message for r in caplog.records)
+    final = [r.message for r in caplog.records if "INCOMPLETE" in r.message]
+    assert len(final) == 1 and "'b'" in final[0]
+    assert "1 still failing after 3 re-run round(s)" in final[0]
+    assert "configuration error" not in final[0]
 
 
 def test_rerun_skips_configuration_errors(main_mod, caplog):
@@ -1578,7 +1581,11 @@ def test_rerun_skips_configuration_errors(main_mod, caplog):
     assert all(d["tool_init_failed"] for d in out.per_example_diagnostics)
     msgs = [r.message for r in caplog.records]
     assert any("configuration error" in m and "not re-running" in m for m in msgs)
-    assert any("INCOMPLETE" in m for m in msgs)
+    final = [m for m in msgs if "INCOMPLETE" in m]
+    assert len(final) == 1
+    # No round ran, so the summary line must not claim any did.
+    assert "re-run round" not in final[0]
+    assert "2 configuration error(s), not re-run" in final[0]
 
 
 def test_rerun_mixes_transient_and_permanent(main_mod):

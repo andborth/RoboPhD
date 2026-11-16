@@ -333,10 +333,12 @@ def _rerun_tool_init_failures(run_eval, dataset, eval_result, evaluator, *,
         )
 
     had_timeouts = eval_result.had_timeouts
+    rounds_run = 0
     for round_no, wait in enumerate(waits, 1):
         failed = _retryable()
         if not failed:
             break
+        rounds_run = round_no
         logger.warning(
             "Tool start-up failed for %d test sample(s) (agent never ran): "
             "%s. Re-run round %d/%d in %.0fs.",
@@ -358,12 +360,20 @@ def _rerun_tool_init_failures(run_eval, dataset, eval_result, evaluator, *,
 
     still = _failed()
     if still:
+        n_perm = sum(1 for i in still if diags[i].get(TOOL_INIT_PERMANENT_KEY))
+        n_transient = len(still) - n_perm
+        parts = []
+        if n_transient:
+            parts.append(
+                f"{n_transient} still failing after {rounds_run} re-run round(s)"
+            )
+        if n_perm:
+            parts.append(f"{n_perm} configuration error(s), not re-run")
         logger.error(
-            "Tool start-up STILL failing for %d test sample(s) after %d "
-            "re-run round(s) (%d of them configuration errors, not "
-            "re-run): %s. They are recorded as score 0 and counted "
-            "in test_tool_init_failed_samples; this test is INCOMPLETE.",
-            len(still), len(waits), len(permanent),
+            "Tool start-up never succeeded for %d test sample(s) (%s): %s. "
+            "They are recorded as score 0 and counted in "
+            "test_tool_init_failed_samples; this test is INCOMPLETE.",
+            len(still), "; ".join(parts),
             [diags[i].get("sample_id") for i in still],
         )
 
