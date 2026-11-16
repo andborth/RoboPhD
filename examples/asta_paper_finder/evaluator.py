@@ -1150,6 +1150,97 @@ def _build_tools(sample_id: str):
     return _wrap_tools_for_provenance(tools)
 
 
+# Tool start-up retry. `_build_tools` opens ONE connection to the Asta MCP
+# server per sample (we run each sample in its own subprocess; the official
+# task builds the tools once per eval, so it cannot lose a single sample
+# here). That handshake has no retry upstream: astabench's retry wrapper is
+# installed on the tools it returns, not on the listing call. From
+# 2026-10-19 on, every internal test lost 1-7 of 267 samples to it, scored
+# 0 before the solver ran.
+#
+# The retry is deliberately SHORT. The subprocess kill clock is already
+# running here and agents are told they have (eval_timeout - 30) // 60
+# minutes, so the only time that is guaranteed to be nobody's is the 30 s
+# between that and the kill at eval_timeout - 30. A sample that is still
+# failing after this is not scored: see TOOL_INIT_FAILED_KEY.
+TOOL_INIT_MAX_ATTEMPTS = 4
+TOOL_INIT_BACKOFF_SECONDS = (2.0, 4.0, 8.0)   # sleep before attempt 2, 3, 4
+TOOL_INIT_BUDGET_SECONDS = 20.0               # no new attempt past this
+
+# Diagnostics marker for "every start-up attempt failed; the agent never
+# ran". It is set inside the per-sample subprocess and acted on in the
+# parent (PaperFinderEvaluator.__call__):
+#   - training: raise EvalInfrastructureError, which aborts the run with no
+#     score and no cached result for the sample (resume re-evaluates it);
+#   - test (abort_on_tool_init_failure=False): return the marked row so
+#     main.py can re-run exactly these samples after the rest finish.
+# Either way the sample is never left as a silent 0.
+TOOL_INIT_FAILED_KEY = "tool_init_failed"
+# Parent-side only: popped and logged in __call__, never persisted (the
+# framework warns about list-valued diagnostics it has to drop).
+TOOL_INIT_RETRY_CAUSES_KEY = "tool_init_retry_causes"
+
+
+def _tool_init_cause(exc: BaseException) -> str:
+    """One-line root cause of a start-up failure.
+
+    str() of the anyio ExceptionGroup is "unhandled errors in a TaskGroup
+    (1 sub-exception)", which hides whether it was DNS, a refused
+    connection or a server error; the leaves name it.
+    """
+    return _tool_failure_summary(exc) or f"{type(exc).__name__}: {exc}"
+
+
+def _build_tools_with_retry(
+    sample_id: str,
+    *,
+    build=None,
+    sleep=time.sleep,
+    clock=time.monotonic,
+) -> tuple[list, list[str]]:
+    """`_build_tools` with a bounded retry. Returns (tools, failed_causes).
+
+    `failed_causes` lists the cause of each failed attempt that a later
+    attempt recovered from (empty on a clean start). When every attempt
+    fails, raises RuntimeError naming each attempt's cause.
+
+    ValueError is never retried: upstream raises it for a missing
+    ASTA_TOOL_KEY and for an unexpected/missing tool in the server's
+    listing, neither of which a second attempt can change. Everything else
+    is retried, including connection errors that astabench's per-call
+    wrapper classifies as non-retryable (a failed DNS lookup is the one
+    cause observed so far).
+    """
+    build = build or _build_tools
+    start = clock()
+    causes: list[str] = []
+    for attempt in range(1, TOOL_INIT_MAX_ATTEMPTS + 1):
+        try:
+            tools = build(sample_id)
+        except ValueError:
+            raise
+        except Exception as e:
+            causes.append(_tool_init_cause(e))
+            delay = (
+                TOOL_INIT_BACKOFF_SECONDS[
+                    min(attempt - 1, len(TOOL_INIT_BACKOFF_SECONDS) - 1)
+                ]
+                if attempt < TOOL_INIT_MAX_ATTEMPTS else None
+            )
+            if delay is None or (clock() - start) + delay > TOOL_INIT_BUDGET_SECONDS:
+                raise RuntimeError(
+                    f"{len(causes)} attempt(s) failed: " + " | ".join(causes)
+                ) from e
+            logger.warning(
+                "tool init attempt %d/%d failed for %s (%s); retrying in %.0fs",
+                attempt, TOOL_INIT_MAX_ATTEMPTS, sample_id, causes[-1], delay,
+            )
+            sleep(delay)
+        else:
+            return tools, causes
+    raise AssertionError("unreachable")  # pragma: no cover
+
+
 def _import_candidate_solver(agent_code: str) -> Any:
     """Materialize candidate agent.py into a temp module and return its
     @solver factory function (must be exported as `make_solver`).
@@ -1228,6 +1319,7 @@ class PaperFinderEvaluator:
         cost_per_error: float | None = None,
         persist_full_evidence: bool = False,
         model_menu: tuple[str, ...] | None = None,
+        abort_on_tool_init_failure: bool = True,
     ):
         # Hard requirement: every provider key the registry references
         # must be set, even if the seed only uses one. Evolution can
@@ -1359,6 +1451,12 @@ class PaperFinderEvaluator:
         # describes to evolution sessions; main.py flips it on the test
         # evaluator alone, where evolution never reads the output.
         self.persist_full_evidence = persist_full_evidence
+        # What to do when a sample's tool start-up fails every retry (the
+        # agent never ran). True (training): raise EvalInfrastructureError
+        # so the run aborts instead of recording an unfair 0. False (test,
+        # set by main.py): return the row marked TOOL_INIT_FAILED_KEY so
+        # the caller can re-run just those samples.
+        self.abort_on_tool_init_failure = abort_on_tool_init_failure
 
     # -- Construction helpers -------------------------------------------------
 
@@ -1377,6 +1475,7 @@ class PaperFinderEvaluator:
             "subprocess_isolation": self.subprocess_isolation,
             "persist_full_evidence": self.persist_full_evidence,
             "model_menu": self.model_menu,
+            "abort_on_tool_init_failure": self.abort_on_tool_init_failure,
         }
         base.update(overrides)
         return PaperFinderEvaluator(**base)
@@ -1467,8 +1566,36 @@ class PaperFinderEvaluator:
 
     def __call__(self, candidate: dict, example, *, problem_dir=None) -> tuple[float, dict]:
         if self.subprocess_isolation:
-            return self._evaluate_via_subprocess(candidate, example)
-        return self.evaluate(candidate, example, problem_dir=problem_dir)
+            score, diagnostics = self._evaluate_via_subprocess(candidate, example)
+        else:
+            score, diagnostics = self.evaluate(candidate, example, problem_dir=problem_dir)
+        return self._handle_tool_init_outcome(score, diagnostics)
+
+    def _handle_tool_init_outcome(self, score: float, diagnostics: dict) -> tuple[float, dict]:
+        """Parent-side handling of the tool start-up outcome of one sample.
+
+        Runs in the engine process (the retry itself runs in the sample's
+        subprocess, whose log output is discarded), so this is where a
+        recovered retry becomes visible in the console log and where an
+        unrecovered one aborts the run.
+        """
+        sid = diagnostics.get("sample_id") or "?"
+        causes = diagnostics.pop(TOOL_INIT_RETRY_CAUSES_KEY, None)
+        if causes:
+            logger.warning(
+                "tool start-up for %s needed %d retr%s (harness-side; the "
+                "agent had not started): %s",
+                sid, len(causes), "y" if len(causes) == 1 else "ies",
+                " | ".join(causes),
+            )
+        if diagnostics.get(TOOL_INIT_FAILED_KEY) and self.abort_on_tool_init_failure:
+            from RoboPhD.eval_utils import EvalInfrastructureError
+            raise EvalInfrastructureError(
+                f"{sid}: {diagnostics.get('error.md')}. The Asta MCP tools "
+                "could not be obtained, so the agent never ran on this "
+                "sample and no score was recorded for it."
+            )
+        return score, diagnostics
 
     def _evaluate_via_subprocess(self, candidate: dict, example) -> tuple[float, dict]:
         """Run one evaluation in a fresh Python subprocess.
@@ -1668,10 +1795,16 @@ class PaperFinderEvaluator:
         _judge_normalize.reset()
 
         try:
-            tools = _build_tools(example.id)
+            tools, tool_init_failures = _build_tools_with_retry(example.id)
         except Exception as e:
+            # Never left as a silent 0: __call__ in the parent either
+            # aborts the run (training) or hands this marked row to the
+            # test path to be re-run. sample_id / score_type identify it.
             return 0.0, {
                 "error.md": f"tool init failed: {type(e).__name__}: {e}",
+                TOOL_INIT_FAILED_KEY: True,
+                "sample_id": str(example.id),
+                "score_type": (example.metadata or {}).get("score_type"),
                 "eval_wall_clock_seconds": _elapsed_seconds(_t0),
             }
 
@@ -1713,6 +1846,9 @@ class PaperFinderEvaluator:
             log, example, captured.getvalue()
         )
         diagnostics["eval_wall_clock_seconds"] = _elapsed_seconds(_t0)
+        if tool_init_failures:
+            diagnostics["tool_init_retries"] = len(tool_init_failures)
+            diagnostics[TOOL_INIT_RETRY_CAUSES_KEY] = tool_init_failures
         return score, diagnostics
 
     # -- Result extraction ---------------------------------------------------

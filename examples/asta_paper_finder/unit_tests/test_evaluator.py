@@ -65,7 +65,7 @@ def _registry_model_ids() -> frozenset:
 def _bare_evaluator(ev_mod, *, apply_cost_penalty=True,
                     min_cost_threshold=0.10, cost_per_error=0.02,
                     persist_full_evidence=False, allowed_model_ids=None,
-                    model_menu=None):
+                    model_menu=None, abort_on_tool_init_failure=True):
     """Instance without running __init__ (no provider keys needed).
 
     allowed_model_ids defaults to the unrestricted set (no --model-menu)."""
@@ -79,6 +79,7 @@ def _bare_evaluator(ev_mod, *, apply_cost_penalty=True,
     ev.cost_per_error = cost_per_error
     # Default False mirrors the constructor: the frozen TRAINING behaviour.
     ev.persist_full_evidence = persist_full_evidence
+    ev.abort_on_tool_init_failure = abort_on_tool_init_failure
     ev.total_eval_cost = 0.0
     ev.total_judge_cost = 0.0
     ev._cost_lock = threading.Lock()
@@ -1730,3 +1731,185 @@ def test_off_menu_rule_survives_a_costing_failure(ev_mod, monkeypatch):
     score, diag = ev._extract_score_and_diagnostics(log, _fake_sample(ev_mod), "")
     assert score == 0.0
     assert diag["off_menu_models"] == ["openai/gpt-5.4-2026-03-05"]
+
+
+# -- Tool start-up retry ------------------------------------------------------
+
+def _dns_group():
+    """The start-up failure as observed: an anyio TaskGroup ExceptionGroup
+    whose str() hides a failed DNS lookup."""
+    import httpx
+    return ExceptionGroup(
+        "unhandled errors in a TaskGroup",
+        [httpx.ConnectError("[Errno 8] nodename nor servname provided, or not known")],
+    )
+
+
+class _FakeClock:
+    def __init__(self):
+        self.now = 0.0
+        self.sleeps = []
+
+    def clock(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+def _flaky_build(failures, clk=None, attempt_seconds=0.0):
+    """A `build` that raises each item of `failures` in turn, then succeeds."""
+    calls = []
+
+    def build(sample_id):
+        calls.append(sample_id)
+        if clk is not None:
+            clk.now += attempt_seconds
+        if len(calls) <= len(failures):
+            raise failures[len(calls) - 1]
+        return ["tools-for-" + sample_id]
+
+    return build, calls
+
+
+def test_tool_init_clean_start_is_a_single_call(ev_mod):
+    clk = _FakeClock()
+    build, calls = _flaky_build([])
+    tools, causes = ev_mod._build_tools_with_retry(
+        "semantic_1", build=build, sleep=clk.sleep, clock=clk.clock)
+    assert tools == ["tools-for-semantic_1"] and causes == []
+    assert len(calls) == 1 and clk.sleeps == []
+
+
+def test_tool_init_retry_recovers_and_names_the_cause(ev_mod):
+    clk = _FakeClock()
+    build, calls = _flaky_build([_dns_group()])
+    tools, causes = ev_mod._build_tools_with_retry(
+        "semantic_1", build=build, sleep=clk.sleep, clock=clk.clock)
+    # Same tool set a clean first attempt would have returned.
+    assert tools == ["tools-for-semantic_1"]
+    assert calls == ["semantic_1", "semantic_1"]
+    assert clk.sleeps == [ev_mod.TOOL_INIT_BACKOFF_SECONDS[0]]
+    # The leaf, not "unhandled errors in a TaskGroup (1 sub-exception)".
+    assert len(causes) == 1
+    assert "ConnectError" in causes[0] and "nodename nor servname" in causes[0]
+    assert "TaskGroup" not in causes[0]
+
+
+def test_tool_init_gives_up_after_max_attempts(ev_mod):
+    clk = _FakeClock()
+    build, calls = _flaky_build([_dns_group()] * 10)
+    with pytest.raises(RuntimeError) as ei:
+        ev_mod._build_tools_with_retry(
+            "specific_8", build=build, sleep=clk.sleep, clock=clk.clock)
+    assert len(calls) == ev_mod.TOOL_INIT_MAX_ATTEMPTS
+    assert f"{ev_mod.TOOL_INIT_MAX_ATTEMPTS} attempt(s) failed" in str(ei.value)
+    assert "nodename nor servname" in str(ei.value)
+    # No sleep after the final attempt.
+    assert len(clk.sleeps) == ev_mod.TOOL_INIT_MAX_ATTEMPTS - 1
+
+
+def test_tool_init_stops_when_the_time_budget_is_spent(ev_mod):
+    """Slow failures must not eat the subprocess kill margin: once the
+    next sleep would cross the budget, no further attempt is made."""
+    clk = _FakeClock()
+    slow = ev_mod.TOOL_INIT_BUDGET_SECONDS  # one attempt uses the whole budget
+    build, calls = _flaky_build([_dns_group()] * 10, clk=clk, attempt_seconds=slow)
+    with pytest.raises(RuntimeError, match=r"1 attempt\(s\) failed"):
+        ev_mod._build_tools_with_retry(
+            "semantic_1", build=build, sleep=clk.sleep, clock=clk.clock)
+    assert len(calls) == 1 and clk.sleeps == []
+
+
+def test_tool_init_never_waits_past_the_budget(ev_mod):
+    """Worst case with instant failures: total sleep stays inside the budget."""
+    assert sum(ev_mod.TOOL_INIT_BACKOFF_SECONDS[: ev_mod.TOOL_INIT_MAX_ATTEMPTS - 1]) \
+        <= ev_mod.TOOL_INIT_BUDGET_SECONDS
+
+
+def test_tool_init_does_not_retry_configuration_errors(ev_mod):
+    """Upstream raises ValueError for a missing key or an unexpected tool
+    listing; a second attempt cannot change either."""
+    clk = _FakeClock()
+    build, calls = _flaky_build([ValueError("ASTA_TOOL_KEY is not set")])
+    with pytest.raises(ValueError, match="ASTA_TOOL_KEY"):
+        ev_mod._build_tools_with_retry(
+            "semantic_1", build=build, sleep=clk.sleep, clock=clk.clock)
+    assert len(calls) == 1 and clk.sleeps == []
+
+
+def test_tool_init_retry_fits_the_guaranteed_kill_margin(ev_mod):
+    """Agents are told (eval_timeout - 30) // 60 minutes and the subprocess
+    is killed at eval_timeout - 30, so 30 s is the only time that is
+    guaranteed not to be the agent's. The retry must stay inside it."""
+    sleeps = ev_mod.TOOL_INIT_BACKOFF_SECONDS[: ev_mod.TOOL_INIT_MAX_ATTEMPTS - 1]
+    assert sum(sleeps) < 30
+    assert ev_mod.TOOL_INIT_BUDGET_SECONDS < 30
+
+
+def test_evaluate_marks_tool_init_failure_instead_of_a_bare_zero():
+    """The in-subprocess evaluate path must use the retrying wrapper and
+    mark an unrecovered failure, with the sample id, so the parent can
+    abort (training) or re-run (test) rather than keep a silent 0."""
+    assert "_build_tools_with_retry(example.id)" in EVALUATOR_SRC
+    tail = EVALUATOR_SRC.split("_build_tools_with_retry(example.id)", 1)[1][:900]
+    assert "TOOL_INIT_FAILED_KEY: True" in tail
+    assert '"sample_id": str(example.id)' in tail
+
+
+def _failed_row():
+    return 0.0, {"error.md": "tool init failed: RuntimeError: 3 attempt(s) failed: dns",
+                 "tool_init_failed": True, "sample_id": "semantic_229"}
+
+
+def test_training_evaluator_aborts_on_unrecovered_tool_init(ev_mod):
+    """Training default: no score is returned for a sample the agent never
+    ran on; the framework's infrastructure abort is raised instead."""
+    from RoboPhD.eval_utils import EvalInfrastructureError, is_infrastructure_error
+    ev = _bare_evaluator(ev_mod)
+    with pytest.raises(EvalInfrastructureError) as ei:
+        ev._handle_tool_init_outcome(*_failed_row())
+    assert "semantic_229" in str(ei.value) and "never ran" in str(ei.value)
+    assert is_infrastructure_error(ei.value)
+
+
+def test_test_evaluator_returns_the_marked_row_for_rerun(ev_mod):
+    ev = _bare_evaluator(ev_mod, abort_on_tool_init_failure=False)
+    score, diag = ev._handle_tool_init_outcome(*_failed_row())
+    assert score == 0.0 and diag["tool_init_failed"] is True
+
+
+def test_recovered_retry_is_logged_in_the_parent_and_not_persisted(ev_mod, caplog):
+    """The retry runs in the sample's subprocess, whose log is discarded;
+    the parent must log it. The causes list is popped so the framework is
+    never handed a list-valued diagnostic it would drop with a warning."""
+    import logging
+    ev = _bare_evaluator(ev_mod)
+    with caplog.at_level(logging.WARNING, logger=ev_mod.__name__):
+        score, diag = ev._handle_tool_init_outcome(0.4, {
+            "sample_id": "semantic_7", "tool_init_retries": 1,
+            "tool_init_retry_causes": ["ConnectError: nodename nor servname"],
+        })
+    assert score == 0.4
+    assert diag == {"sample_id": "semantic_7", "tool_init_retries": 1}
+    assert any("semantic_7" in r.message and "nodename" in r.message
+               and "agent had not started" in r.message for r in caplog.records)
+
+
+def test_clean_sample_passes_through_untouched(ev_mod, caplog):
+    ev = _bare_evaluator(ev_mod)
+    d = {"sample_id": "semantic_1", "agent_stdout": "x"}
+    assert ev._handle_tool_init_outcome(0.7, d) == (0.7, d)
+    assert not caplog.records
+
+
+def test_call_routes_every_path_through_the_tool_init_handler():
+    src = EVALUATOR_SRC.split("    def __call__(self, candidate", 1)[1].split("    def ", 1)[0]
+    assert "return self._handle_tool_init_outcome(score, diagnostics)" in src
+    assert src.count("return ") == 1
+
+
+def test_with_overrides_carries_abort_on_tool_init_failure():
+    body = EVALUATOR_SRC.split("    def with_overrides(", 1)[1].split("    def ", 1)[0]
+    assert '"abort_on_tool_init_failure": self.abort_on_tool_init_failure' in body

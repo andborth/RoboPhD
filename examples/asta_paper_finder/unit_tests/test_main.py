@@ -1471,3 +1471,147 @@ def test_cap_help_states_it_changes_scoring_without_claiming_a_size():
     assert "no measured score change" not in text
     assert "empirically unaffected" not in text
     assert "CHANGES THE SCORE" in text
+
+
+def _er(scores, diags, **kw):
+    from RoboPhD.api import EvalResult
+    return EvalResult(
+        mean_score=sum(scores) / len(scores), total_score=sum(scores),
+        num_examples=len(scores), per_example_scores=list(scores),
+        per_example_diagnostics=list(diags), had_timeouts=False, **kw)
+
+
+_FAILED = {"error.md": "tool init failed: RuntimeError: dns",
+           "tool_init_failed": True}
+
+
+def test_rerun_only_touches_samples_that_never_started(main_mod):
+    """Only rows carrying the evaluator's marker are re-run; a sample that
+    ran and scored 0, or errored for another reason, is left alone."""
+    data = [{"id": "a"}, {"id": "b"}, {"id": "c"}, {"id": "d"}]
+    first = _er([0.5, 0.0, 0.0, 0.0], [
+        {"sample_id": "a"},
+        {"sample_id": "b", **_FAILED},
+        {"sample_id": "c"},                                   # genuine 0
+        {"sample_id": "d", "error.md": "subprocess timed out after 1770s"},
+    ])
+    calls, sleeps = [], []
+
+    def run_eval(subset):
+        calls.append([e["id"] for e in subset])
+        return _er([0.8], [{"sample_id": "b"}])
+
+    out = main_mod._rerun_tool_init_failures(
+        run_eval, data, first, evaluator=object(), sleep=sleeps.append)
+    assert calls == [["b"]]
+    assert sleeps == [main_mod.TOOL_INIT_RERUN_WAITS_SECONDS[0]]
+    assert out.per_example_scores == [0.5, 0.8, 0.0, 0.0]
+    assert out.per_example_diagnostics[1] == {"sample_id": "b", "tool_init_reruns": 1}
+    assert out.per_example_diagnostics[3]["error.md"].startswith("subprocess timed out")
+    assert out.total_score == pytest.approx(1.3)
+    assert out.mean_score == pytest.approx(1.3 / 4)
+    assert out.num_examples == 4
+
+
+def test_rerun_is_a_no_op_on_a_clean_test(main_mod):
+    data = [{"id": "a"}]
+    first = _er([0.5], [{"sample_id": "a"}])
+
+    def run_eval(subset):
+        raise AssertionError("must not re-run anything")
+
+    out = main_mod._rerun_tool_init_failures(
+        run_eval, data, first, evaluator=object(),
+        sleep=lambda s: (_ for _ in ()).throw(AssertionError("must not sleep")))
+    assert out.per_example_scores == [0.5] and out.mean_score == 0.5
+
+
+def test_rerun_retries_in_rounds_then_reports_what_is_left(main_mod, caplog):
+    """A sample that keeps failing is retried each round with a longer
+    wait, then left marked so the summary reports the test as incomplete."""
+    import logging
+    data = [{"id": "a"}, {"id": "b"}]
+    first = _er([0.0, 0.0], [{"sample_id": "a", **_FAILED},
+                             {"sample_id": "b", **_FAILED}])
+    rounds, sleeps = [], []
+
+    def run_eval(subset):
+        rounds.append([e["id"] for e in subset])
+        # 'a' recovers in round 2; 'b' never does.
+        out_s, out_d = [], []
+        for e in subset:
+            if e["id"] == "a" and len(rounds) == 2:
+                out_s.append(0.6); out_d.append({"sample_id": "a"})
+            else:
+                out_s.append(0.0); out_d.append({"sample_id": e["id"], **_FAILED})
+        return _er(out_s, out_d)
+
+    with caplog.at_level(logging.ERROR, logger=main_mod.logger.name):
+        out = main_mod._rerun_tool_init_failures(
+            run_eval, data, first, evaluator=object(), sleep=sleeps.append)
+    assert rounds == [["a", "b"], ["a", "b"], ["b"]]
+    assert sleeps == list(main_mod.TOOL_INIT_RERUN_WAITS_SECONDS)
+    assert out.per_example_scores == [0.6, 0.0]
+    assert out.per_example_diagnostics[0]["tool_init_reruns"] == 2
+    assert out.per_example_diagnostics[1]["tool_init_failed"] is True
+    assert any("INCOMPLETE" in r.message and "'b'" in r.message for r in caplog.records)
+
+
+def test_rerun_uses_the_evaluators_aggregate(main_mod):
+    """The merged mean must come from the same aggregator the first pass
+    used, not a bare mean."""
+    class Ev:
+        def aggregate(self, rows):
+            return 42.0, f"agg over {len(rows)}"
+
+    data = [{"id": "a"}]
+    first = _er([0.0], [{"sample_id": "a", **_FAILED}])
+    out = main_mod._rerun_tool_init_failures(
+        lambda subset: _er([0.9], [{"sample_id": "a"}]),
+        data, first, evaluator=Ev(), sleep=lambda s: None)
+    assert out.mean_score == 42.0 and out.aggregate_explanation == "agg over 1"
+    assert out.total_score == pytest.approx(0.9)
+
+
+def test_test_evaluator_defers_tool_init_failures_to_the_rerun():
+    """main.py must build the TEST evaluator with the abort switched off
+    (no per-sample cache on the test path) and route every test eval
+    through the re-run helper."""
+    assert "abort_on_tool_init_failure=False" in MAIN_SRC
+    assert MAIN_SRC.count("_rerun_tool_init_failures(\n") >= 2
+    assert MAIN_SRC.count("eval_result = _rerun_tool_init_failures(") == 2
+
+
+def test_write_test_results_reports_tool_init_health(main_mod, tmp_path):
+    """Retried, re-run and still-failed samples are each counted in the
+    summary and flagged per problem."""
+    import json
+    from types import SimpleNamespace
+    eval_result = SimpleNamespace(
+        per_example_diagnostics=[
+            {"sample_id": "semantic_1", "score_type": "semantic_f1"},
+            {"sample_id": "semantic_2", "score_type": "semantic_f1",
+             "tool_init_retries": 1},
+            {"sample_id": "semantic_3", "score_type": "semantic_f1",
+             "tool_init_reruns": 2},
+            {"sample_id": "specific_8", "score_type": "specific_f1", **_FAILED},
+        ],
+        per_example_scores=[0.5, 0.4, 0.3, 0.0],
+        num_examples=4, mean_score=0.3, total_score=1.2,
+        aggregate_explanation="",
+    )
+    summary_path, per_problem_path = main_mod._write_test_results(
+        eval_result, SimpleNamespace(total_eval_cost=0.0), tmp_path, "best",
+        "test_results.json", scoring_mode={},
+    )
+    summary = json.loads(summary_path.read_text())
+    assert summary["test_tool_init_retried_samples"] == 1
+    assert summary["test_tool_init_rerun_samples"] == 1
+    assert summary["test_tool_init_failed_samples"] == 1
+    rows = {r["sample_id"]: r for r in json.loads(per_problem_path.read_text())}
+    assert (rows["semantic_1"]["tool_init_retries"], rows["semantic_1"]["tool_init_reruns"],
+            rows["semantic_1"]["tool_init_failed"]) == (0, 0, False)
+    assert rows["semantic_2"]["tool_init_retries"] == 1
+    assert rows["semantic_3"]["tool_init_reruns"] == 2
+    assert rows["specific_8"]["tool_init_failed"] is True
+    assert rows["specific_8"]["error"].startswith("tool init failed")

@@ -40,7 +40,7 @@ try:
     from .config_manager import ConfigManager, ConfigSource
     from .report_generator import ReportGenerator, is_continuous_scoring
     from .deep_focus_evolution_manager import DeepFocusEvolutionManager
-    from .eval_utils import EvalRateLimitError, get_eval_counters
+    from .eval_utils import EvalInfrastructureError, EvalRateLimitError, get_eval_counters
     from .elo_reachability import (
         assess_reachability,
         calculate_elo_updates,
@@ -67,7 +67,7 @@ except ImportError:
     from RoboPhD.report_generator import ReportGenerator, is_continuous_scoring
     from RoboPhD.deep_focus_evolution_manager import DeepFocusEvolutionManager
     from RoboPhD.domains.base import SampledProblems
-    from RoboPhD.eval_utils import EvalRateLimitError, get_eval_counters
+    from RoboPhD.eval_utils import EvalInfrastructureError, EvalRateLimitError, get_eval_counters
     from RoboPhD.elo_reachability import (
         assess_reachability,
         calculate_elo_updates,
@@ -2302,6 +2302,17 @@ class ParallelAgentResearcher:
                 print(f"\n❌ RATE LIMIT EXCEEDED - Aborting research run")
                 print(f"   Agent: {agent_id}")
                 print(f"   Error: {e}")
+                raise
+
+            except EvalInfrastructureError as e:
+                # The sample never ran, so it has no score and no cached
+                # result: --resume re-evaluates it, and the samples that
+                # finished this round replay from the eval-result cache.
+                print(f"\n❌ EVAL INFRASTRUCTURE FAILURE - Aborting research run")
+                print(f"   Agent: {agent_id}")
+                print(f"   Error: {e}")
+                print(f"   No score was recorded for the affected sample. "
+                      f"Resume with --resume once the cause is cleared.")
                 raise
 
             except Exception as e:

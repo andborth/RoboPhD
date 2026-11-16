@@ -25,7 +25,10 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ..base import DomainInterface, EvaluationResult, SampledProblems
 from RoboPhD.candidate_utils import extract_candidate, materialize_candidate
-from RoboPhD.eval_utils import EvalRateLimitError, is_rate_limit_error, PeakRSSSampler, record_eval_event
+from RoboPhD.eval_utils import (
+    EvalInfrastructureError, EvalRateLimitError, is_infrastructure_error,
+    is_rate_limit_error, PeakRSSSampler, record_eval_event,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -343,7 +346,10 @@ class ExternalEvaluatorDomain(DomainInterface):
                         candidate, example, problem_dir=problem_dir
                     )
                 except Exception as e:
-                    if is_rate_limit_error(e):
+                    # Both abort the run rather than score this sample 0;
+                    # nothing is written to problem_dir, so the eval-result
+                    # cache has no entry and --resume re-evaluates it.
+                    if is_rate_limit_error(e) or is_infrastructure_error(e):
                         raise
                     self.logger.error(f"Evaluator failed on {problem_id}: {e}")
                     score = 0.0
@@ -441,6 +447,13 @@ class ExternalEvaluatorDomain(DomainInterface):
                 return result_entry
 
             except Exception as e:
+                # An infrastructure abort must leave this function: scoring
+                # it 0 here is exactly the unfair loss it exists to prevent.
+                # (Rate-limit errors re-raised above are NOT let through
+                # here and still end as a 0 -- pre-existing behaviour, left
+                # unchanged by this edit.)
+                if is_infrastructure_error(e):
+                    raise
                 self.logger.error(f"Unexpected error for {problem_id}: {e}")
                 return {
                     "question_id": problem_id,
@@ -520,11 +533,15 @@ class ExternalEvaluatorDomain(DomainInterface):
                             for f in not_done:
                                 f.cancel()
                             raise EvalRateLimitError(str(e)) from e
+                        if is_infrastructure_error(e):
+                            for f in not_done:
+                                f.cancel()
+                            raise EvalInfrastructureError(str(e)) from e
                         raise
                     results.append(result_entry)
                     score_sum += result_entry["score"]
                 remaining = not_done
-        except EvalRateLimitError:
+        except (EvalRateLimitError, EvalInfrastructureError):
             executor.shutdown(wait=False, cancel_futures=True)
             raise
         finally:

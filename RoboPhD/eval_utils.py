@@ -134,6 +134,41 @@ def is_rate_limit_error(exc: BaseException) -> bool:
     return False
 
 
+class EvalInfrastructureError(Exception):
+    """Raised by an evaluator when a sample could not be evaluated for a
+    reason outside the candidate, and the candidate never ran on it.
+
+    Same reasoning as EvalRateLimitError: scoring the sample 0 would give
+    the agent an unfair loss on a problem it never attempted, the 0 would
+    be written to result.json and replayed from the eval-result cache every
+    time that agent met the problem again, and one such loss can change
+    which agent wins a round. So the run aborts instead. No result is
+    written for the sample, which means --resume re-evaluates it while the
+    samples that did finish replay from the cache.
+
+    Evaluators should raise this only after their own bounded retry, and
+    only when the candidate has provably not started (so a re-run is not a
+    second draw).
+    """
+    pass
+
+
+def is_infrastructure_error(exc: BaseException) -> bool:
+    """Whether `exc` is (or was raised from) an EvalInfrastructureError.
+
+    Matched by class name through the MRO and the cause chain, like
+    is_rate_limit_error, so it still matches when an example imports this
+    module under a different name than the framework did.
+    """
+    for cls in type(exc).__mro__:
+        if cls.__name__ == "EvalInfrastructureError":
+            return True
+    chained = exc.__cause__ or exc.__context__
+    if chained and chained is not exc:
+        return is_infrastructure_error(chained)
+    return False
+
+
 def retry_on_rate_limit(fn, max_retries=5, base_delay=0.5):
     """Call fn(), retrying with exponential backoff on rate limit errors.
 
@@ -395,6 +430,10 @@ def run_parallel_eval(
                         for f in not_done:
                             f.cancel()
                         raise EvalRateLimitError(str(e)) from e
+                    if is_infrastructure_error(e):
+                        for f in not_done:
+                            f.cancel()
+                        raise EvalInfrastructureError(str(e)) from e
                     logger.warning(f"Evaluator error on example {idx}: {e}")
                     score, diag = 0.0, {"error": str(e)}
                 score_map[idx] = score
@@ -421,7 +460,7 @@ def run_parallel_eval(
                     mean_cost = sum(agent_costs) / len(agent_costs)
                     msg += f", running mean cost: ${mean_cost:.4f}"
                 logger.info(msg)
-    except EvalRateLimitError:
+    except (EvalRateLimitError, EvalInfrastructureError):
         executor.shutdown(wait=False, cancel_futures=True)
         raise
     finally:

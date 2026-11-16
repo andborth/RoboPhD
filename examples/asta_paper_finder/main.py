@@ -35,6 +35,7 @@ import os
 import re
 import sys
 import tempfile
+import time
 import uuid
 from pathlib import Path
 
@@ -278,6 +279,99 @@ def _read_checkpoint_max_workers(resume_dir: Path) -> int | None:
     return best
 
 
+# Waits before each re-run round of test samples whose tool start-up failed
+# every in-sample retry. Lenient on purpose: unlike the in-sample retry,
+# these waits are outside any sample's clock, so they cost only wall time.
+TOOL_INIT_RERUN_WAITS_SECONDS = (30.0, 120.0, 300.0)
+
+
+def _rerun_tool_init_failures(run_eval, dataset, eval_result, evaluator, *,
+                              waits=TOOL_INIT_RERUN_WAITS_SECONDS,
+                              sleep=time.sleep):
+    """Re-run the test samples that never started, and merge them in.
+
+    `run_eval(subset)` evaluates the same candidate on a list of examples
+    and returns an EvalResult. A sample is re-run only when its diagnostics
+    carry the evaluator's TOOL_INIT_FAILED_KEY marker, i.e. the harness
+    could not obtain the Asta tools and the agent's solver was never
+    invoked. Because the agent did not run, the re-run is that sample's
+    FIRST evaluation, not a second draw; samples that did run (including
+    ones that timed out or errored for any other reason) are never touched.
+
+    Up to len(waits) rounds, sleeping waits[i] before round i. Samples
+    still failing after the last round keep their marked score-0 row, and
+    _write_test_results reports them as test_tool_init_failed_samples so
+    the summary cannot pass for a clean run.
+    """
+    import dataclasses
+    from evaluator import TOOL_INIT_FAILED_KEY
+
+    scores = list(eval_result.per_example_scores or [])
+    diags = [dict(d or {}) for d in (eval_result.per_example_diagnostics or [])]
+    if len(scores) != len(dataset) or len(diags) != len(dataset):
+        # test_repeats > 1 or a truncated result: index mapping is not 1:1.
+        logger.warning(
+            "Tool-init re-run skipped: %d results for %d samples",
+            len(scores), len(dataset),
+        )
+        return eval_result
+
+    def _failed():
+        return [i for i, d in enumerate(diags) if d.get(TOOL_INIT_FAILED_KEY)]
+
+    had_timeouts = eval_result.had_timeouts
+    for round_no, wait in enumerate(waits, 1):
+        failed = _failed()
+        if not failed:
+            break
+        logger.warning(
+            "Tool start-up failed for %d test sample(s) (agent never ran): "
+            "%s. Re-run round %d/%d in %.0fs.",
+            len(failed), [diags[i].get("sample_id") for i in failed],
+            round_no, len(waits), wait,
+        )
+        sleep(wait)
+        sub = run_eval([dataset[i] for i in failed])
+        sub_scores = list(sub.per_example_scores or [])
+        sub_diags = list(sub.per_example_diagnostics or [])
+        if len(sub_scores) != len(failed) or len(sub_diags) != len(failed):
+            logger.warning("Tool-init re-run returned a mismatched result; stopping")
+            break
+        had_timeouts = had_timeouts or sub.had_timeouts
+        for i, sc, dg in zip(failed, sub_scores, sub_diags):
+            dg = dict(dg or {})
+            dg["tool_init_reruns"] = round_no
+            scores[i], diags[i] = sc, dg
+
+    still = _failed()
+    if still:
+        logger.error(
+            "Tool start-up STILL failing for %d test sample(s) after %d "
+            "re-run round(s): %s. They are recorded as score 0 and counted "
+            "in test_tool_init_failed_samples; this test is INCOMPLETE.",
+            len(still), len(waits), [diags[i].get("sample_id") for i in still],
+        )
+
+    # Same aggregation run_parallel_eval applied to the first pass.
+    aggregator = getattr(evaluator, "aggregate", None)
+    if aggregator is not None:
+        mean_score, explanation = aggregator(
+            [{"score": scores[i], **diags[i]} for i in range(len(scores))]
+        )
+    else:
+        mean_score = sum(scores) / len(scores) if scores else 0.0
+        explanation = ""
+    return dataclasses.replace(
+        eval_result,
+        mean_score=mean_score,
+        total_score=sum(scores),
+        per_example_scores=scores,
+        per_example_diagnostics=diags,
+        had_timeouts=had_timeouts,
+        aggregate_explanation=explanation,
+    )
+
+
 def _write_test_results(
     eval_result,
     evaluator,
@@ -342,6 +436,12 @@ def _write_test_results(
             "eval_wall_clock_seconds": diag.get("eval_wall_clock_seconds"),
             "usage": usage or None,
             "error": _trunc(err),
+            # Tool start-up bookkeeping (all 0/False on a clean start):
+            # in-sample retries that recovered; re-run round in which the
+            # sample finally started; and whether it never started at all.
+            "tool_init_retries": diag.get("tool_init_retries") or 0,
+            "tool_init_reruns": diag.get("tool_init_reruns") or 0,
+            "tool_init_failed": bool(diag.get("tool_init_failed")),
         })
 
     # Persist per-problem diagnostics the way training iterations do
@@ -400,6 +500,19 @@ def _write_test_results(
             # aggregator returns mean_raw with no annotation). Populated
             # if a future test mode opts into a non-default aggregator.
             "aggregate_explanation": getattr(eval_result, "aggregate_explanation", ""),
+            # Tool start-up health. retried = recovered inside the sample;
+            # rerun = never started on the first pass and was re-run after
+            # it (the agent had not run, so this is not a second draw);
+            # failed = still never started, scored 0 -> test is incomplete.
+            "test_tool_init_retried_samples": sum(
+                1 for r in per_problem if r["tool_init_retries"]
+            ),
+            "test_tool_init_rerun_samples": sum(
+                1 for r in per_problem if r["tool_init_reruns"]
+            ),
+            "test_tool_init_failed_samples": sum(
+                1 for r in per_problem if r["tool_init_failed"]
+            ),
             **scoring_mode,
         }, f, indent=2)
 
@@ -1287,8 +1400,14 @@ def main():
     # any depth (rejudge_test.py --uncapped / --from-eval-log). Training
     # keeps the trimming, because evolution reads those diagnostics and
     # background.md states the omission-marker contract to it.
+    # abort_on_tool_init_failure is False on the TEST evaluator only: a test
+    # eval has no per-sample result cache, so aborting at sample 250 of 267
+    # would discard the agent spend on the other 249. Instead the samples
+    # whose tool start-up failed (the agent never ran on them) are re-run
+    # after the rest finish -- see _rerun_tool_init_failures.
     test_evaluator = evaluator.with_overrides(
-        apply_cost_penalty=False, persist_full_evidence=True
+        apply_cost_penalty=False, persist_full_evidence=True,
+        abort_on_tool_init_failure=False,
     )
 
     # Resolve --max-workers once, applied to BOTH the training engine
@@ -1359,19 +1478,24 @@ def main():
                 raise SystemExit(str(e))
             candidate = {"agent.py": (agent_dir / "agent.py").read_text()}
             logger.info(f"Evaluating named agent: {args.eval_agent} from {agent_dir}")
-            eval_result = eval_candidate(
-                evaluator=test_evaluator,
-                dataset=test_data,
-                candidate=candidate,
-                config=test_eval_config,
-            )
+            def _run_test(data):
+                return eval_candidate(
+                    evaluator=test_evaluator,
+                    dataset=data,
+                    candidate=candidate,
+                    config=test_eval_config,
+                )
         else:
-            eval_result = eval_run(
-                evaluator=test_evaluator,
-                dataset=test_data,
-                experiment_dir=args.resume,
-                config=test_eval_config,
-            )
+            def _run_test(data):
+                return eval_run(
+                    evaluator=test_evaluator,
+                    dataset=data,
+                    experiment_dir=args.resume,
+                    config=test_eval_config,
+                )
+        eval_result = _rerun_tool_init_failures(
+            _run_test, test_data, _run_test(test_data), test_evaluator
+        )
 
         logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
         results_filename = _test_results_filename(
@@ -1534,11 +1658,15 @@ def main():
             )
             test_data = [s.model_dump() for s in load_paper_finder("test")]
             logger.info(f"Test evaluation: {len(test_data)} samples")
-            eval_result = eval_candidate(
-                evaluator=test_evaluator,
-                dataset=test_data,
-                candidate=result.best_candidate,
-                config=test_eval_config,
+            def _run_test(data):
+                return eval_candidate(
+                    evaluator=test_evaluator,
+                    dataset=data,
+                    candidate=result.best_candidate,
+                    config=test_eval_config,
+                )
+            eval_result = _rerun_tool_init_failures(
+                _run_test, test_data, _run_test(test_data), test_evaluator
             )
             logger.info(f"Test score: {eval_result.mean_score:.3f} ({eval_result.num_examples} samples)")
             summary_path, per_problem_path = _write_test_results(
