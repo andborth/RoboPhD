@@ -66,9 +66,9 @@ Internal held-out eval: stock GPT-4o judge, capped, 267 queries.
   The other 23 zeros are genuine; 13 of them are queries the predecessor also scored 0 on.
 - **Spend:** agent $61.62, judge $73.78 (capped, shared cache).
 - **Training-judge basis:** rejudged with the luna no-prose training judge (capped,
-  canonical ordering), the agent scores 0.50968 on 266 queries
-  (`test_results.rejudge_openai_gpt-5.6-luna_noprose.json`). That is the comparison basis
-  for this run's model-menu ablations, not a leaderboard number.
+  canonical ordering), the agent scores 0.51027 on 267 queries
+  (`test_results.rejudge_openai_gpt-5.6-luna_noprose.merged.json`). That is the comparison
+  basis for this run's model-menu ablations, not a leaderboard number.
 
 ## Architecture of `iter20_year_steered_expansion`
 
@@ -143,7 +143,8 @@ stage1_keyed_order (18) → backdated_citation_counts (19) → **year_steered_ex
 - `checkpoint.json` and `final_report.md` are the full run record.
 - `test_results.json` (+ `.per_problem.json`) is the internal held-out eval: stock GPT-4o,
   capped, 267 queries. `test_results.rejudge_openai_gpt-5.6-luna_noprose.*` is the same
-  submissions rejudged on the training judge.
+  submissions rejudged on the training judge; its `.merged.*` files are the 267-query
+  result (see the note at the end).
 
 ## Submission form metadata
 
@@ -193,3 +194,13 @@ caffeinate -i python scripts/asta_paper_finder_submit.py --only v0_1_1_cap_0_279
 
 Re-running the same command resumes an interrupted eval-set. Measured spend: $206.78
 judge (250 papers per semantic query, uncapped) + $62.03 agent.
+
+## Note: re-run of `semantic_236`
+
+`semantic_236` failed at tool initialization on the internal pass, so the agent never ran
+on it. It was re-run once on 2026-11-15 with the same agent, menu and cap, and judged by
+luna: 0.6677 at $0.285 (`test_results.tool_init_rerun.*`). The luna score above includes
+it; the other 266 rows alone give 0.50968. The GPT-4o internal table is the original pass.
+
+This affects the internal eval only. The official run had no such failure: all 267 queries
+ran and were scored, so the official result needs no correction.
