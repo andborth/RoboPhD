@@ -304,7 +304,7 @@ def _rerun_tool_init_failures(run_eval, dataset, eval_result, evaluator, *,
     the summary cannot pass for a clean run.
     """
     import dataclasses
-    from evaluator import TOOL_INIT_FAILED_KEY
+    from evaluator import TOOL_INIT_FAILED_KEY, TOOL_INIT_PERMANENT_KEY
 
     scores = list(eval_result.per_example_scores or [])
     diags = [dict(d or {}) for d in (eval_result.per_example_diagnostics or [])]
@@ -319,9 +319,22 @@ def _rerun_tool_init_failures(run_eval, dataset, eval_result, evaluator, *,
     def _failed():
         return [i for i, d in enumerate(diags) if d.get(TOOL_INIT_FAILED_KEY)]
 
+    def _retryable():
+        # A configuration error cannot change between rounds; re-running
+        # it would only spend the waits and fail again.
+        return [i for i in _failed() if not diags[i].get(TOOL_INIT_PERMANENT_KEY)]
+
+    permanent = [i for i in _failed() if diags[i].get(TOOL_INIT_PERMANENT_KEY)]
+    if permanent:
+        logger.error(
+            "Tool start-up failed with a configuration error for %d test "
+            "sample(s); not re-running them: %s",
+            len(permanent), diags[permanent[0]].get("error.md"),
+        )
+
     had_timeouts = eval_result.had_timeouts
     for round_no, wait in enumerate(waits, 1):
-        failed = _failed()
+        failed = _retryable()
         if not failed:
             break
         logger.warning(
@@ -347,9 +360,11 @@ def _rerun_tool_init_failures(run_eval, dataset, eval_result, evaluator, *,
     if still:
         logger.error(
             "Tool start-up STILL failing for %d test sample(s) after %d "
-            "re-run round(s): %s. They are recorded as score 0 and counted "
+            "re-run round(s) (%d of them configuration errors, not "
+            "re-run): %s. They are recorded as score 0 and counted "
             "in test_tool_init_failed_samples; this test is INCOMPLETE.",
-            len(still), len(waits), [diags[i].get("sample_id") for i in still],
+            len(still), len(waits), len(permanent),
+            [diags[i].get("sample_id") for i in still],
         )
 
     # Same aggregation run_parallel_eval applied to the first pass.

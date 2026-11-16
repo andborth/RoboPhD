@@ -1557,6 +1557,49 @@ def test_rerun_retries_in_rounds_then_reports_what_is_left(main_mod, caplog):
     assert any("INCOMPLETE" in r.message and "'b'" in r.message for r in caplog.records)
 
 
+def test_rerun_skips_configuration_errors(main_mod, caplog):
+    """A permanent failure (ValueError from tool start-up: missing key or
+    an unexpected tool listing) cannot change between rounds. It must not
+    be re-run or waited on, and must still leave the test marked
+    incomplete."""
+    import logging
+    data = [{"id": "a"}, {"id": "b"}]
+    perm = {**_FAILED, "tool_init_permanent": True}
+    first = _er([0.0, 0.0], [{"sample_id": "a", **perm}, {"sample_id": "b", **perm}])
+
+    def run_eval(subset):
+        raise AssertionError("must not re-run a configuration error")
+
+    with caplog.at_level(logging.ERROR, logger=main_mod.logger.name):
+        out = main_mod._rerun_tool_init_failures(
+            run_eval, data, first, evaluator=object(),
+            sleep=lambda s: (_ for _ in ()).throw(AssertionError("must not wait")))
+    assert out.per_example_scores == [0.0, 0.0]
+    assert all(d["tool_init_failed"] for d in out.per_example_diagnostics)
+    msgs = [r.message for r in caplog.records]
+    assert any("configuration error" in m and "not re-running" in m for m in msgs)
+    assert any("INCOMPLETE" in m for m in msgs)
+
+
+def test_rerun_mixes_transient_and_permanent(main_mod):
+    data = [{"id": "a"}, {"id": "b"}]
+    first = _er([0.0, 0.0], [
+        {"sample_id": "a", **_FAILED, "tool_init_permanent": False},
+        {"sample_id": "b", **_FAILED, "tool_init_permanent": True},
+    ])
+    calls = []
+
+    def run_eval(subset):
+        calls.append([e["id"] for e in subset])
+        return _er([0.7], [{"sample_id": "a"}])
+
+    out = main_mod._rerun_tool_init_failures(
+        run_eval, data, first, evaluator=object(), sleep=lambda s: None)
+    assert calls == [["a"]]
+    assert out.per_example_scores == [0.7, 0.0]
+    assert out.per_example_diagnostics[1]["tool_init_failed"] is True
+
+
 def test_rerun_uses_the_evaluators_aggregate(main_mod):
     """The merged mean must come from the same aggregator the first pass
     used, not a bare mean."""

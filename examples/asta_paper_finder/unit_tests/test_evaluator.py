@@ -1855,6 +1855,8 @@ def test_evaluate_marks_tool_init_failure_instead_of_a_bare_zero():
     assert "_build_tools_with_retry(example.id)" in EVALUATOR_SRC
     tail = EVALUATOR_SRC.split("_build_tools_with_retry(example.id)", 1)[1][:900]
     assert "TOOL_INIT_FAILED_KEY: True" in tail
+    # A ValueError (the one class the retry refuses) is flagged permanent.
+    assert "TOOL_INIT_PERMANENT_KEY: isinstance(e, ValueError)" in tail
     assert '"sample_id": str(example.id)' in tail
 
 
@@ -1913,3 +1915,15 @@ def test_call_routes_every_path_through_the_tool_init_handler():
 def test_with_overrides_carries_abort_on_tool_init_failure():
     body = EVALUATOR_SRC.split("    def with_overrides(", 1)[1].split("    def ", 1)[0]
     assert '"abort_on_tool_init_failure": self.abort_on_tool_init_failure' in body
+
+
+def test_training_abort_says_when_the_failure_is_a_configuration_error(ev_mod):
+    from RoboPhD.eval_utils import EvalInfrastructureError
+    ev = _bare_evaluator(ev_mod)
+    score, diag = _failed_row()
+    with pytest.raises(EvalInfrastructureError) as ei:
+        ev._handle_tool_init_outcome(score, {**diag, "tool_init_permanent": True})
+    assert "configuration error" in str(ei.value)
+    with pytest.raises(EvalInfrastructureError) as ei:
+        ev._handle_tool_init_outcome(score, {**diag, "tool_init_permanent": False})
+    assert "configuration error" not in str(ei.value)

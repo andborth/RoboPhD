@@ -1176,6 +1176,12 @@ TOOL_INIT_BUDGET_SECONDS = 20.0               # no new attempt past this
 #     main.py can re-run exactly these samples after the rest finish.
 # Either way the sample is never left as a silent 0.
 TOOL_INIT_FAILED_KEY = "tool_init_failed"
+# Set alongside TOOL_INIT_FAILED_KEY when the failure is one a later attempt
+# cannot change (the ValueError the in-sample retry refuses to retry: a
+# missing ASTA_TOOL_KEY, or a tool listing that does not match what
+# astabench expects). Training still aborts on it; the test-side re-run
+# skips it, because re-running would only wait and fail again.
+TOOL_INIT_PERMANENT_KEY = "tool_init_permanent"
 # Parent-side only: popped and logged in __call__, never persisted (the
 # framework warns about list-valued diagnostics it has to drop).
 TOOL_INIT_RETRY_CAUSES_KEY = "tool_init_retry_causes"
@@ -1590,10 +1596,15 @@ class PaperFinderEvaluator:
             )
         if diagnostics.get(TOOL_INIT_FAILED_KEY) and self.abort_on_tool_init_failure:
             from RoboPhD.eval_utils import EvalInfrastructureError
+            permanent = (
+                " This is a configuration error, not a transient one: "
+                "resuming will fail the same way until it is fixed."
+                if diagnostics.get(TOOL_INIT_PERMANENT_KEY) else ""
+            )
             raise EvalInfrastructureError(
                 f"{sid}: {diagnostics.get('error.md')}. The Asta MCP tools "
                 "could not be obtained, so the agent never ran on this "
-                "sample and no score was recorded for it."
+                f"sample and no score was recorded for it.{permanent}"
             )
         return score, diagnostics
 
@@ -1803,6 +1814,7 @@ class PaperFinderEvaluator:
             return 0.0, {
                 "error.md": f"tool init failed: {type(e).__name__}: {e}",
                 TOOL_INIT_FAILED_KEY: True,
+                TOOL_INIT_PERMANENT_KEY: isinstance(e, ValueError),
                 "sample_id": str(example.id),
                 "score_type": (example.metadata or {}).get("score_type"),
                 "eval_wall_clock_seconds": _elapsed_seconds(_t0),
