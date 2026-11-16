@@ -37,7 +37,7 @@ The cap was set at the price of the board's top entry, our `v0_0_9_cap_0_355_fab
     cheaper.
 
   Neither is Pareto-optimal any longer; this entry replaces both on the frontier.
-- **Internal→official:** +0.016 (0.48537 → 0.50140), above the −0.055 to +0.010 range of
+- **Internal→official:** +0.014 (0.48769 → 0.50140), above the −0.055 to +0.010 range of
   our earlier PFB submissions.
 - **Clean run:** all 267 queries scored; no tool-init failures and no tool calls that
   exhausted their retries (10 HTTP 429s, all retried by the harness).
@@ -50,21 +50,20 @@ Internal held-out eval: stock GPT-4o judge, capped, 267 queries.
 
 | | Score | Cost/query |
 | --- | --- | --- |
-| **v0_1_1_cap_0_279_fable52** (internal) | **0.48537** | **$0.23080** |
+| **v0_1_1_cap_0_279_fable52** (internal) | **0.48769** | **$0.23186** |
 | v0_0_9_cap_0_355_fable (internal) | 0.4383 | $0.2780 |
 | v0_0_9_cap_0_355_fable (official) | 0.44025 | $0.278579 |
 
 | Per type | This agent | v0_0_9_cap_0_355_fable |
 | --- | --- | --- |
-| semantic_f1 (193 + 1 failed) | **0.4264** | 0.3715 |
+| semantic_f1 (194) | **0.4274** | 0.3715 |
 | specific_f1 (38) | 0.8202 | **0.8675** |
 | metadata_f1 (35) | **0.4609** | 0.3423 |
-| **Overall** | **0.48537** | 0.4383 |
+| **Overall** | **0.48769** | 0.4383 |
 
-- **Margin:** +0.047 internal on score, and $0.048/query cheaper.
-- **One tool-init failure:** `semantic_236` failed at tool initialization and scores 0.
-  The other 23 zeros are genuine; 13 of them are queries the predecessor also scored 0 on.
-- **Spend:** agent $61.62, judge $73.78 (capped, shared cache).
+- **Margin:** +0.049 internal on score, and $0.046/query cheaper.
+- **Zeros:** 23 queries score 0; 13 of them are queries the predecessor also scored 0 on.
+- **Spend:** agent $61.91, judge $74.15 (capped, shared cache).
 - **Training-judge basis:** rejudged with the luna no-prose training judge (capped,
   canonical ordering), the agent scores 0.51027 on 267 queries
   (`test_results.rejudge_openai_gpt-5.6-luna_noprose.merged.json`). That is the comparison
@@ -101,9 +100,9 @@ filters), with Sonnet 4.6 as the fallback if the plan fails to parse.
   candidates, and Opus 4.8 picks the paper(s).
 - **Metadata:** the plan is a structured spec; the author, citation and venue tools build
   candidates; deterministic filters use citation counts back-dated to the benchmark's
-  cutoff, and Sonnet 4.6 matches venue names. For year-bounded requests (≤4 years), each expansion query is
-  also issued once per requested year with the year appended, which steers the year-less
-  search tool toward those years.
+  cutoff, and Sonnet 4.6 matches venue names and checks any topic the request states. For
+  year-bounded requests (≤4 years), each expansion query is also issued once per requested
+  year with the year appended, which steers the year-less search tool toward those years.
 - **Time budget:** no new tool calls after 21 minutes; the solver cancels itself at 25.5
   minutes, inside the 29-minute limit.
 
@@ -142,9 +141,11 @@ stage1_keyed_order (18) → backdated_citation_counts (19) → **year_steered_ex
   session that produced the winner.
 - `checkpoint.json` and `final_report.md` are the full run record.
 - `test_results.json` (+ `.per_problem.json`) is the internal held-out eval: stock GPT-4o,
-  capped, 267 queries. `test_results.rejudge_openai_gpt-5.6-luna_noprose.*` is the same
-  submissions rejudged on the training judge; its `.merged.*` files are the 267-query
-  result (see the note at the end).
+  capped, original pass (267 rows, one of which never ran).
+  `test_results.rejudge_openai_gpt-5.6-luna_noprose.*` is the same submissions rejudged on
+  the training judge; its `.merged.*` files are the 267-query result.
+- `test_results.tool_init_rerun.*` is the re-run of the remaining query, judged by luna and
+  by GPT-4o (see the note at the end).
 
 ## Submission form metadata
 
@@ -199,8 +200,10 @@ judge (250 papers per semantic query, uncapped) + $62.03 agent.
 
 `semantic_236` failed at tool initialization on the internal pass, so the agent never ran
 on it. It was re-run once on 2026-11-15 with the same agent, menu and cap, and judged by
-luna: 0.6677 at $0.285 (`test_results.tool_init_rerun.*`). The luna score above includes
-it; the other 266 rows alone give 0.50968. The GPT-4o internal table is the original pass.
+both judges: 0.6179 on stock GPT-4o and 0.6677 on luna, at $0.285
+(`test_results.tool_init_rerun.*`). The internal results above include it. The original
+266 rows alone, with this query counted as 0, give 0.48537 @ $0.23080 on GPT-4o
+(`test_results.json`); on luna the 266 give 0.50968.
 
 This affects the internal eval only. The official run had no such failure: all 267 queries
 ran and were scored, so the official result needs no correction.
