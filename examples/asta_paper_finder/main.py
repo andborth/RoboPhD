@@ -62,6 +62,16 @@ from RoboPhD.runner_utils import (
     validate_cost_threshold,
 )
 from RoboPhD.candidate_utils import read_agent_dir
+from frozen_harness import (
+    AGENT_FILENAME,
+    CONFIG_FILENAME,
+    ConfigError,
+    FrozenHarnessEvaluator,
+    HARNESS_SESSION_FILENAME,
+    RUNTIME_KEY as FROZEN_HARNESS_KEY,
+    materialize_session_files,
+    resolve_run_harness,
+)
 from model_menu import (
     check_seed_agents,
     resolve_run_menu,
@@ -940,6 +950,20 @@ def parse_args():
                         "provider family where possible); --seed-runs seeds "
                         "must already comply. Run-immutable. Default: all "
                         "nine handles.")
+    p.add_argument("--frozen-harness", type=str, default=None, metavar="AGENT_DIR",
+                   help="Config-only evolution: freeze the source of the agent "
+                        "in AGENT_DIR and evolve only its settings. The "
+                        "evolvable artifact becomes harness_config.json, "
+                        "holding the agent's module-level model slots (each "
+                        "with a reasoning effort) and its numeric and boolean "
+                        "constants; prompts, other strings and all code are "
+                        "fixed. Enforced, not just documented: candidates "
+                        "contain no code, and the evaluator renders each "
+                        "config into the frozen source itself. The run is "
+                        "seeded with the agent's own settings, which render "
+                        "back to its source byte for byte. Run-immutable; "
+                        "robophd engine only. See frozen_harness.py."
+                        "%(default).0s")
     p.add_argument("--seed-runs", type=str, nargs="+", default=None,
                    metavar="LABEL=RUN_DIR",
                    help="Seed the run from the best-Elo agent of each named "
@@ -1095,6 +1119,16 @@ def main():
         raise SystemExit(
             f"--seed-runs requires the robophd engine; --engine "
             f"{args.engine} optimizes a single candidate."
+        )
+    if args.frozen_harness and args.seed_runs:
+        raise SystemExit(
+            "--frozen-harness cannot be combined with --seed-runs: a frozen "
+            "run is seeded with the frozen agent's own settings."
+        )
+    if args.frozen_harness and args.engine != "robophd":
+        raise SystemExit(
+            f"--frozen-harness requires the robophd engine; --engine "
+            f"{args.engine} is not supported."
         )
     checkpoint_pfb = (
         _read_pfb_runtime_config(Path(args.resume)) if args.resume else {}
@@ -1280,6 +1314,21 @@ def main():
         "evidence_char_cap": evidence_char_cap,
         "model_menu": stored_menu_value(model_menu),
     }
+    # Config-only evolution. The frozen source is the run's identity, so it
+    # is locked like the knobs above (by content hash). The key is written
+    # only for frozen runs: an ordinary run's stored config is unchanged.
+    harness, stored_harness = resolve_run_harness(
+        args.frozen_harness, checkpoint_pfb,
+        resume_dir=Path(args.resume) if args.resume else None,
+    )
+    if harness:
+        resolved_runtime[FROZEN_HARNESS_KEY] = stored_harness
+        _own = harness.config()
+        logger.info(
+            f"Frozen harness: {stored_harness['path']} (sha256 "
+            f"{harness.sha256[:12]}); evolving {len(_own['models'])} model "
+            f"slots and {len(_own['constants'])} constants via {CONFIG_FILENAME}"
+        )
 
     def _build_cost_penalty_table(threshold: float, cpe: float) -> str:
         """Generate the cost-penalty table substituted into background.md.
@@ -1372,6 +1421,16 @@ def main():
             ))
             # Global launch-pacer contract line (empty when pacing is off,
             # so the docs never describe an unenforced constraint).
+            # Config-only evolution (frozen_harness.py); these appear only in
+            # the *_frozen_harness.md documents.
+            .replace("${CONFIG_FILE}", CONFIG_FILENAME)
+            .replace("${HARNESS_FILE}",
+                     f"../../session_tools/{HARNESS_SESSION_FILENAME}")
+            # Under a narrowed menu the session-side check must apply the
+            # same menu the evaluator does.
+            .replace("${HARNESS_TOOL}", "../../session_tools/frozen_harness.py" + (
+                f" --menu {','.join(model_menu)}" if model_menu else ""
+            ))
             .replace("${TOOL_LAUNCH_NOTE}", (
                 f" The harness additionally serializes tool-call LAUNCHES at "
                 f"{args.tool_launch_rate:g}/second per endpoint, shared "
@@ -1389,8 +1448,30 @@ def main():
         # Only under a menu: an unrestricted run's background stays byte-
         # identical to every run before the flag existed.
         background = restrict_background(background, model_menu)
+    if harness:
+        # The artifact is a config, not an agent: replace the objective's
+        # opening statement of what is being evolved (its remaining
+        # paragraphs, on cost and generalization, apply as they stand) and
+        # put the config contract ahead of the task background.
+        _, _, objective_rest = objective.partition("\n\n")
+        objective = _interpolate(
+            (HERE / "objective_frozen_harness.md").read_text().strip()
+        ) + "\n\n" + objective_rest
+        background = _interpolate(
+            (HERE / "background_frozen_harness.md").read_text().strip()
+        ) + "\n\n" + background
 
-    if args.seed_runs:
+    if harness:
+        seed_text = harness.seed_config_text()
+        try:
+            harness.parse_config(seed_text, model_menu)
+        except ConfigError as e:
+            raise SystemExit(
+                f"--frozen-harness: the agent's own settings are not valid "
+                f"under --model-menu {','.join(model_menu or ())}:\n{e}"
+            )
+        seed_agents = {"baseline": {CONFIG_FILENAME: seed_text}}
+    elif args.seed_runs:
         seed_agents = _resolve_seed_runs(args.seed_runs)
         if model_menu:
             check_seed_agents(seed_agents, model_menu)
@@ -1434,6 +1515,11 @@ def main():
         apply_cost_penalty=False, persist_full_evidence=True,
         abort_on_tool_init_failure=False,
     )
+    if harness:
+        # Candidates are configs; both evaluators render one into the frozen
+        # source and score the resulting agent exactly as usual.
+        evaluator = FrozenHarnessEvaluator(evaluator, harness, model_menu)
+        test_evaluator = FrozenHarnessEvaluator(test_evaluator, harness, model_menu)
 
     # Resolve --max-workers once, applied to BOTH the training engine
     # config and the test eval config so --eval-only --resume honors the
@@ -1501,7 +1587,8 @@ def main():
                 _, agent_dir = find_named_agent(Path(args.resume), args.eval_agent)
             except FileNotFoundError as e:
                 raise SystemExit(str(e))
-            candidate = {"agent.py": (agent_dir / "agent.py").read_text()}
+            _artifact = CONFIG_FILENAME if harness else AGENT_FILENAME
+            candidate = {_artifact: (agent_dir / _artifact).read_text()}
             logger.info(f"Evaluating named agent: {args.eval_agent} from {agent_dir}")
             def _run_test(data):
                 return eval_candidate(
@@ -1635,7 +1722,13 @@ def main():
             # and resume): read-only helper scripts for evolution
             # sessions. tool_probe.py gives sessions an agent-identical
             # view of the corpus tools (same cutoff/wrapper stack).
-            session_tools=[str(HERE / "tool_probe.py")],
+            session_tools=[str(HERE / "tool_probe.py")] + (
+                # The frozen source (read-only to sessions) and the tool
+                # that validates and renders a config against it.
+                materialize_session_files(
+                    harness, Path(args.runs_dir) / ".frozen_harness"
+                ) if harness else []
+            ),
             # Persisted into checkpoint.json's task_config every iteration,
             # so the knobs survive any interruption that leaves a resumable
             # checkpoint. On resume this is the same values re-resolved

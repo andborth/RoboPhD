@@ -208,6 +208,68 @@ persist no task config, so pass the run's menu again when re-evaluating them).
 keeps its own copy of the handle list because the submit scripts ship the
 registry alone; `unit_tests/test_model_menu.py` pins the two together.
 
+### Config-only evolution (`--frozen-harness`)
+
+`--frozen-harness AGENT_DIR` freezes the source of an existing agent and evolves
+only its settings. It answers "how far can this harness be moved by re-choosing
+its models and constants, with no change to its code?" — the fixed-scaffold arm
+of a harness-versus-models ablation, where `--model-menu` with a single handle is
+the fixed-model arm.
+
+```bash
+# The winner of the $0.279 run, re-targeted at $0.063 with its code frozen
+python examples/asta_paper_finder/main.py --eval-test-set \
+  --frozen-harness example_runs/robophd/asta_paper_finder/v0_1_1_cap_0_279_fable52/agents/iter20_year_steered_expansion \
+  --cost-threshold 0.063 \
+  --engine-config '{"evolution_model": "fable-5.2"}'
+```
+
+The evolvable artifact becomes `harness_config.json` instead of `agent.py`. Its
+contents are derived from the source by `ast`, never chosen by hand, so the same
+agent always gives the same schema:
+
+| Evolvable | Frozen |
+|---|---|
+| module-level `NAME = <handle>` and `NAME = (<handle>, ...)` — the model in each slot, and how many models a list slot holds | prompts and every other string |
+| a reasoning effort per slot (`null` = the handle's default) | literals inside function bodies |
+| module-level numbers and booleans (`21 * 60` counts as a number) | all code |
+
+For the agent above that is 7 model slots and 22 constants. To see any agent's
+schema: `python examples/asta_paper_finder/frozen_harness.py seed --harness AGENT_DIR`.
+
+It is enforced, not just documented:
+
+- **Candidates hold no code.** A config must be a JSON document with the frozen
+  agent's own key set and each value's own type; anything else scores 0 on every
+  example, with the reason in `error.md`, and the agent is not run.
+- **The evaluator renders the agent itself.** Each config value is written over
+  the right-hand side of its assignment in the frozen source, and that result is
+  scored by the ordinary evaluator. Source in a candidate is never executed.
+- **Rendering is checked by round trip.** The rendered source must read back as
+  the config that was rendered, or it is not evaluated.
+
+The run is seeded with the agent's own settings, and rendering those returns its
+source byte for byte — the starting point is the frozen agent, not a
+reconstruction of it. A slot's effort renders as `with_effort(HANDLE, "high")`, a
+`model_registry` function returning the same model with a different default
+effort, so the code that calls the slot is untouched.
+
+Evolution sessions get the frozen source read-only, plus `frozen_harness.py` as a
+session tool to validate a config or print the agent it produces. To turn a
+finished run's winning config into a standalone `agent.py` (for a submission):
+
+```bash
+python examples/asta_paper_finder/frozen_harness.py --harness AGENT_DIR \
+  render <run>/agents/<winner>/harness_config.json > agent.py
+```
+
+The frozen source is run-immutable by content hash. The run keeps its own copy,
+so `--resume` needs no flag and still works if the original directory has moved;
+a flag naming a different agent is rejected, as is adding the flag to a run that
+started as ordinary evolution. RoboPhD engine only, and not combinable with
+`--seed-runs` (the seed is the frozen agent). With `--model-menu`, the frozen
+agent's own settings must already be on the menu.
+
 ## Model registry
 
 Nine pre-resolved Inspect-AI Model handles live in `model_registry.py` (outside the candidate's `file_mapping`, which only contains `agent.py`), grouped by family into three tiers:
@@ -301,6 +363,8 @@ Gate experiment (2026-07-24, 148 stored iter13 docs, luna+no-prose basis, clip-a
 - `evaluator.py` — `PaperFinderEvaluator`; runs `inspect.eval()` on a 1-sample dataset per evaluation; cost split + iteration aggregator
 - `_eval_worker.py` — subprocess worker (one per evaluation, for inspect.eval parallelism)
 - `model_registry.py` — the nine solver-model handles (not in `file_mapping`)
+- `frozen_harness.py` — config-only evolution (`--frozen-harness`): derives an agent's settings, validates and renders configs, wraps the evaluator; also the session-side `validate` / `render` tool
+- `objective_frozen_harness.md` / `background_frozen_harness.md` — what a frozen run tells evolution in place of "write an agent"
 - `seeds/baseline/agent.py` — minimal `@solver` factory exported as `make_solver`. Demonstrates a tool call, a registry-handle LLM call with an empty-completion guard, and the JSON output schema.
 - `_check_evaluator.py` / `_check_seed.py` — credentialed sanity gates: judge-cache integrity, gold-ID leak scan over the evolution-facing artifacts, synthetic-candidate scorer checks, and a 3-sample live seed run with judge-split assertions.
 - `_check_cache_stress.py` — key-less multi-process stress gate for the safe judge-cache writer (8 subprocesses × 50 updates; the process-level evidence the thread-based unit test can't provide).
