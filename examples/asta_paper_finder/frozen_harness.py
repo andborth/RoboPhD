@@ -474,6 +474,15 @@ class FrozenHarnessEvaluator:
                 "error.md": f"{CONFIG_FILENAME} is not a valid config for the "
                             f"frozen harness; the agent was not run.\n\n{e}"
             }
+        except HarnessError as e:
+            # Not the candidate's doing: the renderer failed on a config that
+            # passed validation. Say so, so the 0 is not read as a bad config.
+            return 0.0, {
+                "error.md": f"The frozen harness could not render this "
+                            f"{CONFIG_FILENAME}, although the config is valid; "
+                            f"the agent was not run. This is a fault in the "
+                            f"harness renderer, not in the config.\n\n{e}"
+            }
         return self._inner({AGENT_FILENAME: agent}, example, problem_dir=problem_dir)
 
     def with_overrides(self, **overrides):

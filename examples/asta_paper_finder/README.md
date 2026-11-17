@@ -248,6 +248,12 @@ It is enforced, not just documented:
 - **Rendering is checked by round trip.** The rendered source must read back as
   the config that was rendered, or it is not evaluated.
 
+One limit: a slot's effort is the default for calls made through that slot, and a
+call that passes its own `reasoning_effort` overrides it. The agent above never
+does, so every slot's effort takes effect. In a harness that hardcodes a per-call
+effort, the slot's effort is ignored for those calls, and neither `validate` nor
+the diagnostics report it.
+
 The run is seeded with the agent's own settings, and rendering those returns its
 source byte for byte — the starting point is the frozen agent, not a
 reconstruction of it. A slot's effort renders as `with_effort(HANDLE, "high")`, a

@@ -393,6 +393,19 @@ def test_evaluator_scores_invalid_config_zero_without_running(small):
     assert inner.calls == []
 
 
+def test_evaluator_explains_a_render_fault(small, monkeypatch):
+    inner = _Inner()
+    ev = fh.FrozenHarnessEvaluator(inner, small)
+
+    def broken(config):
+        raise fh.HarnessError("does not read back")
+    monkeypatch.setattr(small, "render", broken)
+    score, diag = ev({fh.CONFIG_FILENAME: small.seed_config_text()}, {})
+    assert score == 0.0
+    assert "renderer" in diag["error.md"] and "does not read back" in diag["error.md"]
+    assert inner.calls == []
+
+
 def test_candidate_supplied_agent_source_is_never_run(small):
     inner = _Inner()
     ev = fh.FrozenHarnessEvaluator(inner, small)
