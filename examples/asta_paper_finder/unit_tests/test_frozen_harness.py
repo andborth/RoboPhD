@@ -591,14 +591,70 @@ def test_pinned_effort_replaces_a_per_call_effort():
     import model_registry as mr
     seen = []
 
-    async def generate(input, tools, tool_choice, config, **kwargs):
-        seen.append((config.reasoning_effort, config.max_tokens, kwargs))
+    async def generate(input, tools=(), tool_choice=None,
+                       config=GenerateConfig(), cache=False):
+        seen.append((config.reasoning_effort, config.max_tokens, cache))
 
     pinned = mr._pin_effort(generate, "high")
+    low = GenerateConfig(reasoning_effort="low", max_tokens=64)
     asyncio.run(pinned("q"))
-    asyncio.run(pinned("q", config=GenerateConfig(reasoning_effort="low",
-                                                  max_tokens=64), cache=True))
-    assert seen == [("high", None, {}), ("high", 64, {"cache": True})]
+    asyncio.run(pinned("q", config=low, cache=True))
+    asyncio.run(pinned("q", (), None, low))          # config passed positionally
+    assert seen == [("high", None, False), ("high", 64, True), ("high", 64, False)]
+    assert low.reasoning_effort == "low"             # caller's config not mutated
+
+    async def no_config(input):
+        pass
+    with pytest.raises(TypeError):
+        mr._pin_effort(no_config, "high")
+
+
+@requires_keys
+def test_with_effort_never_modifies_a_base_handle():
+    """Including when the effort asked for is the handle's own default, where
+    inspect's get_model cache would hand the base handle back."""
+    import asyncio
+    from inspect_ai.model import GenerateConfig, Model
+    import model_registry as mr
+    for name in mr._HANDLE_IDS:
+        base = getattr(mr, name, None)
+        if base is None:
+            continue
+        efforts = {"low", "high", base.config.reasoning_effort} - {None}
+        for effort in efforts:
+            sibling = mr.with_effort(base, effort)
+            assert sibling is not base
+            assert sibling.config.reasoning_effort == effort
+            assert base.generate.__func__ is Model.generate
+            assert sibling.generate.__name__ == "generate"
+
+    # End to end on a real handle: the pinned sibling overrides a per-call
+    # effort, the base handle still honours it.
+    base = mr.GEMINI_3_1_PRO_PREVIEW
+    sibling = mr.with_effort(base, base.config.reasoning_effort)
+    seen = []
+
+    async def record(self, input, tools, tool_choice, config, *a, **k):
+        seen.append(config.reasoning_effort)
+        raise _Stop
+
+    class _Stop(Exception):
+        pass
+
+    def effort_reaching_the_provider(handle):
+        original = Model._generate
+        Model._generate = record
+        try:
+            asyncio.run(handle.generate(
+                "q", config=GenerateConfig(reasoning_effort="high")))
+        except _Stop:
+            pass
+        finally:
+            Model._generate = original
+        return seen.pop()
+
+    assert effort_reaching_the_provider(base) == "high"
+    assert effort_reaching_the_provider(sibling) == "low"
 
 
 @requires_keys

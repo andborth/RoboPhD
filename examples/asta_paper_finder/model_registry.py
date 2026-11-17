@@ -30,6 +30,8 @@ training (see background.md) is computed against the sum of
 agent_cost_usd across whichever models you use.
 """
 
+import functools
+import inspect
 import os
 
 from inspect_ai.model import GenerateConfig, get_model
@@ -229,24 +231,38 @@ def with_effort(handle, effort):
         kwargs = (
             {"api_key": _ANTHROPIC_API_KEY} if name.startswith("CLAUDE_") else {}
         )
+        # memoize=False: get_model caches by (id, config), and a base handle
+        # built at this same effort would otherwise come back here and be
+        # pinned in place, changing every slot that uses it unpinned.
         sibling = get_model(
             _HANDLE_IDS[name],
             config=GenerateConfig(reasoning_effort=effort),
+            memoize=False,
             **kwargs,
         )
+        if sibling is handle:
+            raise RuntimeError("with_effort() must not modify a base handle")
         sibling.generate = _pin_effort(sibling.generate, effort)
         _EFFORT_SIBLINGS[key] = sibling
     return _EFFORT_SIBLINGS[key]
 
 
 def _pin_effort(generate, effort):
-    """Wrap a handle's `generate` so a per-call config cannot change effort."""
+    """Wrap a handle's `generate` so a per-call config cannot change effort.
+
+    The call is bound against `generate`'s own signature, so `config` is
+    found wherever the wrapped function declares it, however it was passed.
+    """
+    signature = inspect.signature(generate)
+    if "config" not in signature.parameters:
+        raise TypeError("generate() has no `config` parameter to pin effort on")
     pinned = GenerateConfig(reasoning_effort=effort)
 
-    async def generate_at_effort(input, tools=[], tool_choice=None,
-                                 config=GenerateConfig(), **kwargs):
-        return await generate(
-            input, tools, tool_choice, config.merge(pinned), **kwargs
-        )
+    @functools.wraps(generate)
+    async def generate_at_effort(*args, **kwargs):
+        bound = signature.bind(*args, **kwargs)
+        config = bound.arguments.get("config") or GenerateConfig()
+        bound.arguments["config"] = config.merge(pinned)
+        return await generate(*bound.args, **bound.kwargs)
 
     return generate_at_effort
