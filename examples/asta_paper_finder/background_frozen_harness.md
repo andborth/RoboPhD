@@ -6,7 +6,7 @@ In this run the agent's source code is fixed. It is the file `${HARNESS_FILE}` (
 
 Two sections, each with a fixed set of keys — the ones in the config you start from. A key can be neither added nor removed.
 
-- `"models"` — one entry per model slot of the frozen agent. A slot is `{"model": <handle>, "effort": <effort>}`. `model` is one of the handle names in the table under "LLM calls" below. `effort` is `null` for that handle's default reasoning, or one of the handle's available overrides from the same table; it applies to every call the frozen agent makes through that slot. A slot whose value is a list holds any number of such entries, including none.
+- `"models"` — one entry per model slot of the frozen agent. A slot is `{"model": <handle>, "effort": <effort>}`. `model` is one of the handle names in the table under "LLM calls" below. `effort` is one of the handle's available overrides from the same table, or `null`. An override applies to every call the frozen agent makes through that slot, replacing any effort the code itself passes on a call. `null` leaves each call as the code has it: the effort the call passes, or the handle's default when it passes none. A slot whose value is a list holds any number of such entries, including none.
 - `"constants"` — one entry per numeric or boolean constant. Each keeps its type: an integer stays an integer, a boolean stays a boolean, and a non-integer number may take any finite value.
 
 Each value replaces the right-hand side of the assignment of the same name at the top level of `${HARNESS_FILE}`. Everything else in that file — prompts and other strings, values written inside functions, and all code — is the same for every candidate.

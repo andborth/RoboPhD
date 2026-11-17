@@ -585,6 +585,22 @@ def test_with_effort_siblings():
         mr.with_effort(object(), "low")
 
 
+def test_pinned_effort_replaces_a_per_call_effort():
+    import asyncio
+    from inspect_ai.model import GenerateConfig
+    import model_registry as mr
+    seen = []
+
+    async def generate(input, tools, tool_choice, config, **kwargs):
+        seen.append((config.reasoning_effort, config.max_tokens, kwargs))
+
+    pinned = mr._pin_effort(generate, "high")
+    asyncio.run(pinned("q"))
+    asyncio.run(pinned("q", config=GenerateConfig(reasoning_effort="low",
+                                                  max_tokens=64), cache=True))
+    assert seen == [("high", None, {}), ("high", 64, {"cache": True})]
+
+
 @requires_keys
 def test_rendered_control_winner_imports_against_the_registry(control):
     import model_registry as mr

@@ -205,13 +205,14 @@ _EFFORT_SIBLINGS = {}
 
 
 def with_effort(handle, effort):
-    """The same model as `handle`, defaulting to reasoning effort `effort`.
+    """The same model as `handle`, with reasoning effort fixed at `effort`.
 
-    Equivalent to passing `config=GenerateConfig(reasoning_effort=effort)`
-    on every call made through the returned handle; a per-call config still
-    overrides it. `effort=None` returns `handle` itself. Usage is recorded
-    under the same model id, so cost accounting and the menu check see no
-    difference.
+    Every call made through the returned handle runs at `effort`, including
+    a call that passes its own `reasoning_effort`: that one field of a
+    per-call config is replaced, the rest of it is kept. `effort=None`
+    returns `handle` itself, leaving each call's own effort (or the
+    handle's default) in force. Usage is recorded under the same model id,
+    so cost accounting and the menu check see no difference.
 
     Only this module's own handles are accepted: it grants no model the
     caller could not already call.
@@ -228,9 +229,24 @@ def with_effort(handle, effort):
         kwargs = (
             {"api_key": _ANTHROPIC_API_KEY} if name.startswith("CLAUDE_") else {}
         )
-        _EFFORT_SIBLINGS[key] = get_model(
+        sibling = get_model(
             _HANDLE_IDS[name],
             config=GenerateConfig(reasoning_effort=effort),
             **kwargs,
         )
+        sibling.generate = _pin_effort(sibling.generate, effort)
+        _EFFORT_SIBLINGS[key] = sibling
     return _EFFORT_SIBLINGS[key]
+
+
+def _pin_effort(generate, effort):
+    """Wrap a handle's `generate` so a per-call config cannot change effort."""
+    pinned = GenerateConfig(reasoning_effort=effort)
+
+    async def generate_at_effort(input, tools=[], tool_choice=None,
+                                 config=GenerateConfig(), **kwargs):
+        return await generate(
+            input, tools, tool_choice, config.merge(pinned), **kwargs
+        )
+
+    return generate_at_effort

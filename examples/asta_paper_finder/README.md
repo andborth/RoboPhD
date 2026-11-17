@@ -231,7 +231,7 @@ agent always gives the same schema:
 | Evolvable | Frozen |
 |---|---|
 | module-level `NAME = <handle>` and `NAME = (<handle>, ...)` — the model in each slot, and how many models a list slot holds | prompts and every other string |
-| a reasoning effort per slot (`null` = the handle's default) | literals inside function bodies |
+| a reasoning effort per slot (`null` = as the code has it) | literals inside function bodies |
 | module-level numbers and booleans (`21 * 60` counts as a number) | all code |
 
 For the agent above that is 7 model slots and 22 constants. To see any agent's
@@ -248,11 +248,12 @@ It is enforced, not just documented:
 - **Rendering is checked by round trip.** The rendered source must read back as
   the config that was rendered, or it is not evaluated.
 
-One limit: a slot's effort is the default for calls made through that slot, and a
-call that passes its own `reasoning_effort` overrides it. The agent above never
-does, so every slot's effort takes effect. In a harness that hardcodes a per-call
-effort, the slot's effort is ignored for those calls, and neither `validate` nor
-the diagnostics report it.
+A slot's effort wins over the frozen code. When it is set, every call through
+that slot runs at it, including a call that passes its own `reasoning_effort`, so
+effort is evolvable even where the harness hardcodes it. `null` leaves each call
+as the code has it. One slot has one effort: if the code calls a slot at several
+hardcoded efforts, setting the slot's effort replaces all of them. (The agent
+above passes no per-call effort.)
 
 The run is seeded with the agent's own settings, and rendering those returns its
 source byte for byte — the starting point is the frozen agent, not a
