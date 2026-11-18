@@ -694,6 +694,28 @@ def test_pinned_effort_replaces_a_per_call_effort():
 
 
 @requires_keys
+def test_claude_efforts_offered_are_the_ones_the_provider_sends():
+    """Which Claude handles take an effort is the provider's decision, made
+    per model generation; the offered efforts must restate it. Asked of the
+    provider's own request-building rule, so an inspect upgrade that changes
+    the answer fails here. (It is an internal of inspect's Anthropic provider:
+    if it is renamed this errors, and the handles need re-checking by hand.)"""
+    from inspect_ai.model import GenerateConfig
+    import model_registry as mr
+    claude = [h for h in MENU if fh.family(h) == "CLAUDE"]
+    assert claude
+    for name in claude:
+        api = getattr(mr, name).api
+        sent = {
+            e: api.effort_from_reasoning_effort(GenerateConfig(reasoning_effort=e))
+            for e in fh.EFFORTS["CLAUDE"]
+        }
+        offered = fh.efforts_for(name)
+        assert {e for e, v in sent.items() if v is not None} == set(offered), name
+        assert all(sent[e] == e for e in offered), name
+
+
+@requires_keys
 def test_with_effort_never_modifies_a_base_handle():
     """Including when the effort asked for is the handle's own default, where
     inspect's get_model cache would hand the base handle back."""
