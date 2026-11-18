@@ -237,6 +237,10 @@ agent always gives the same schema:
 For the agent above that is 7 model slots and 22 constants. To see any agent's
 schema: `python examples/asta_paper_finder/frozen_harness.py seed --harness AGENT_DIR`.
 
+An agent that names its models inline has no slot to set and is refused.
+`frozen_harnesses/` holds copies of such agents with each named model hoisted to a
+module-level slot and nothing else changed, which a test checks byte for byte.
+
 It is enforced, not just documented:
 
 - **Candidates hold no code.** A config must be a JSON document with the frozen
@@ -371,6 +375,7 @@ Gate experiment (2026-07-24, 148 stored iter13 docs, luna+no-prose basis, clip-a
 - `_eval_worker.py` — subprocess worker (one per evaluation, for inspect.eval parallelism)
 - `model_registry.py` — the nine solver-model handles (not in `file_mapping`)
 - `frozen_harness.py` — config-only evolution (`--frozen-harness`): derives an agent's settings, validates and renders configs, wraps the evaluator; also the session-side `validate` / `render` tool
+- `frozen_harnesses/` — copies of archived agents with their inline model names hoisted to module-level slots, for agents `--frozen-harness` would otherwise refuse; see its README
 - `objective_frozen_harness.md` / `background_frozen_harness.md` — what a frozen run tells evolution in place of "write an agent"
 - `seeds/baseline/agent.py` — minimal `@solver` factory exported as `make_solver`. Demonstrates a tool call, a registry-handle LLM call with an empty-completion guard, and the JSON output schema.
 - `_check_evaluator.py` / `_check_seed.py` — credentialed sanity gates: judge-cache integrity, gold-ID leak scan over the evolution-facing artifacts, synthetic-candidate scorer checks, and a 3-sample live seed run with judge-split assertions.

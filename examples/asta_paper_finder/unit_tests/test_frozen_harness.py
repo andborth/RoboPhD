@@ -31,6 +31,16 @@ CONTROL_WINNER = (
     / "v0_1_1_cap_0_279_fable52" / "agents" / "iter20_year_steered_expansion"
 )
 
+# A harness evolution wrote with its models named inline has no slot to
+# re-render. A slotted copy hoists each named model to a module-level slot and
+# changes nothing else: (slotted copy, the agent it was made from).
+SLOTTED = {
+    TASK_DIR / "frozen_harnesses" / "iter16_feedcast_slotted": (
+        REPO_ROOT / "example_runs" / "robophd" / "asta_paper_finder"
+        / "v0_1_0_cap_0_063_fable51" / "agents" / "iter16_feedcast"
+    ),
+}
+
 requires_keys = pytest.mark.skipif(
     not (os.environ.get("ANTHROPIC_API_KEY")
          or os.environ.get("ANTHROPIC_API_KEY_FOR_ROBOPHD")),
@@ -72,6 +82,65 @@ def small():
 
 def _cfg(h):
     return json.loads(h.seed_config_text())
+
+
+# ---------------------------------------------------------------------------
+# Slotted copies of agents that name their models inline
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("slotted_dir", SLOTTED, ids=lambda p: p.name)
+def test_slotted_copy_is_the_original_with_models_hoisted(slotted_dir):
+    """Undoing the hoist must give back the original agent byte for byte."""
+    original = (SLOTTED[slotted_dir] / "agent.py").read_text()
+    slotted = (slotted_dir / "agent.py").read_text()
+    slots = fh.Harness(slotted).config()["models"]
+
+    lines = slotted.splitlines(keepends=True)
+    first = next(i for i, l in enumerate(lines) if l.split(" = ")[0] in slots)
+    block = lines[first:first + len(slots)]
+    assert [l.split(" = ")[0] for l in block] == list(slots)
+    handle_of = {l.split(" = ")[0]: l.split(" = ")[1].strip() for l in block}
+    assert handle_of == {k: v["model"] for k, v in slots.items()}
+    # The block is: blank line, one comment line, the slot assignments.
+    assert lines[first - 2] == "\n" and lines[first - 1].startswith("# ")
+    undone = "".join(lines[:first - 2] + lines[first + len(slots):])
+    for slot, handle in handle_of.items():
+        undone, uses = re.subn(rf"\b{slot}\b", handle, undone)
+        assert uses == 1, f"{slot} should stand in for exactly one call site"
+    assert undone == original
+
+
+@pytest.mark.parametrize("slotted_dir", SLOTTED, ids=lambda p: p.name)
+def test_slotted_copy_leaves_no_model_named_in_code(slotted_dir):
+    """Every model the agent calls is a slot, so none is beyond the config."""
+    source = (slotted_dir / "agent.py").read_text()
+    tree = ast.parse(source)
+    slot_values = {
+        id(n) for stmt in tree.body if isinstance(stmt, ast.Assign)
+        for n in ast.walk(stmt.value)
+    }
+    inline = [n.id for n in ast.walk(tree)
+              if isinstance(n, ast.Name) and n.id in MENU
+              and id(n) not in slot_values]
+    assert inline == []
+
+
+def test_feedcast_slotted_schema():
+    h = fh.load_harness(TASK_DIR / "frozen_harnesses" / "iter16_feedcast_slotted")
+    cfg = h.config()
+    assert {k: v["model"] for k, v in cfg["models"].items()} == {
+        "GRADE_MODEL": "GPT_5_4_MINI",
+        "HEAD_RERANK_MODEL": "GPT_5_4",
+        "SEMANTIC_PLAN_MODEL": "GPT_5_4_MINI",
+        "SPECIFIC_PLAN_MODEL_A": "GPT_5_4",
+        "SPECIFIC_PLAN_MODEL_B": "CLAUDE_SONNET_4_6",
+        "SPECIFIC_PICK_MODEL": "GPT_5_4",
+        "METADATA_PLAN_MODEL": "GPT_5_4",
+        "TOPIC_FILTER_MODEL": "GPT_5_4_MINI",
+    }
+    assert all(v["effort"] is None for v in cfg["models"].values())
+    assert len(cfg["constants"]) == 35
+    assert h.render(h.parse_config(h.seed_config_text())) == h.source
 
 
 # ---------------------------------------------------------------------------
