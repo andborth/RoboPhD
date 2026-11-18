@@ -1329,6 +1329,12 @@ def main():
             f"{harness.sha256[:12]}); evolving {len(_own['models'])} model "
             f"slots and {len(_own['constants'])} constants via {CONFIG_FILENAME}"
         )
+        if harness.frozen_models:
+            logger.warning(
+                f"Frozen harness: the code also names "
+                f"{', '.join(harness.frozen_models)} outside any model slot. "
+                f"Calls to those are frozen code; no config can change them."
+            )
 
     def _build_cost_penalty_table(threshold: float, cpe: float) -> str:
         """Generate the cost-penalty table substituted into background.md.

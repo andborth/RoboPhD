@@ -113,16 +113,19 @@ def test_slotted_copy_is_the_original_with_models_hoisted(slotted_dir):
 @pytest.mark.parametrize("slotted_dir", SLOTTED, ids=lambda p: p.name)
 def test_slotted_copy_leaves_no_model_named_in_code(slotted_dir):
     """Every model the agent calls is a slot, so none is beyond the config."""
-    source = (slotted_dir / "agent.py").read_text()
-    tree = ast.parse(source)
-    slot_values = {
-        id(n) for stmt in tree.body if isinstance(stmt, ast.Assign)
-        for n in ast.walk(stmt.value)
-    }
-    inline = [n.id for n in ast.walk(tree)
-              if isinstance(n, ast.Name) and n.id in MENU
-              and id(n) not in slot_values]
-    assert inline == []
+    assert fh.load_harness(slotted_dir).frozen_models == ()
+
+
+def test_models_named_outside_a_slot_are_reported_as_frozen(small):
+    # solve() calls GPT_5_4_MINI directly.
+    assert small.frozen_models == ("GPT_5_4_MINI",)
+    # A module-level value that is not a slot does not make its handles
+    # settings, whatever it looks like.
+    by_role = SMALL.replace(
+        "DEPTH = 3", 'BY_ROLE = {"judge": GPT_5_4}\nDEPTH = 3', 1)
+    h = fh.Harness(by_role)
+    assert "BY_ROLE" not in h.config()["models"]
+    assert h.frozen_models == ("GPT_5_4", "GPT_5_4_MINI")
 
 
 def test_feedcast_slotted_schema():

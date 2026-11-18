@@ -228,6 +228,12 @@ class Harness:
                 f"would shadow the registry function slot efforts render to"
             )
 
+    @property
+    def frozen_models(self) -> tuple[str, ...]:
+        """Handles the code names outside any slot. No config can change
+        them: they are part of the frozen code, not settings."""
+        return tuple(sorted(self._pinned))
+
     # -- the config this harness defines ------------------------------------
 
     def config(self) -> dict:
