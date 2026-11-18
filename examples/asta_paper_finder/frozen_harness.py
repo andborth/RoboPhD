@@ -55,13 +55,21 @@ HARNESS_SESSION_FILENAME = "harness_agent.py"
 RUNTIME_KEY = "frozen_harness"
 EFFORT_FN = "with_effort"
 
-# Per-call reasoning options by provider family: background.md's handle
-# table, "Reasoning options" column. A unit test pins the two together.
+# Reasoning efforts a slot may set: background.md's handle table, "Available
+# overrides" column. A unit test pins the two together. They go by provider
+# family, except for a handle on which the provider ignores the setting: an
+# effort there would be a setting that changes nothing, so none is offered.
 EFFORTS = {
     "GPT": ("low", "medium", "high"),
     "CLAUDE": ("low", "medium", "high"),
     "GEMINI": ("low", "high"),
 }
+EFFORT_IGNORED = frozenset({"CLAUDE_HAIKU_4_5"})
+
+
+def efforts_for(handle: str) -> tuple[str, ...]:
+    """The efforts a slot holding `handle` may set, besides null."""
+    return () if handle in EFFORT_IGNORED else EFFORTS[family(handle)]
 
 
 class HarnessError(ValueError):
@@ -294,11 +302,13 @@ class Harness:
                     f'({", ".join(allowed)})'
                 )
                 return None
-            options = EFFORTS[family(model)]
+            options = efforts_for(model)
             if effort is not None and effort not in options:
+                offered = (f'null for its default, or one of: {", ".join(options)}'
+                           if options else "it takes null only")
                 problems.append(
                     f'{where}: effort {effort!r} is not available on {model} '
-                    f'(null for its default, or one of: {", ".join(options)})'
+                    f'({offered})'
                 )
                 return None
             return {"model": model, "effort": effort}

@@ -392,7 +392,19 @@ def test_efforts_match_background_table():
     table = {h: tuple(re.findall(r'"(\w+)"', opts)) for h, opts in rows if h in MENU}
     assert set(table) == set(MENU)
     for handle, options in table.items():
-        assert fh.EFFORTS[fh.family(handle)] == options, handle
+        assert fh.efforts_for(handle) == options, handle
+    assert fh.EFFORT_IGNORED <= set(MENU)
+
+
+@pytest.mark.parametrize("effort", ["low", "medium", "high"])
+def test_no_effort_is_offered_where_the_provider_ignores_it(small, effort):
+    """Haiku 4.5 runs the same at any effort, so a config may not set one."""
+    cfg = _cfg(small)
+    cfg["models"]["PLAN"] = {"model": "CLAUDE_HAIKU_4_5", "effort": effort}
+    with pytest.raises(fh.ConfigError, match="CLAUDE_HAIKU_4_5 .it takes null only"):
+        small.parse_config(json.dumps(cfg))
+    cfg["models"]["PLAN"]["effort"] = None
+    assert small.parse_config(json.dumps(cfg))["models"]["PLAN"]["effort"] is None
 
 
 # ---------------------------------------------------------------------------

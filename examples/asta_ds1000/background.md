@@ -81,7 +81,7 @@ The following model handles are available, imported from `model_registry`. Price
 | `GPT_5_4_MINI` | 0.75 | 4.50 | `"none"` | `"low"`, `"medium"`, `"high"` |
 | `GPT_5_4` | 2.50 | 15.00 | `"none"` | `"low"`, `"medium"`, `"high"` |
 | `GPT_5_5` | 5.00 | 30.00 | model-managed | `"low"`, `"medium"`, `"high"` |
-| `CLAUDE_HAIKU_4_5` | 1.00 | 5.00 | `"none"` | `"low"`, `"medium"`, `"high"` |
+| `CLAUDE_HAIKU_4_5` | 1.00 | 5.00 | `"none"` | none: `reasoning_effort` has no effect on this handle |
 | `CLAUDE_SONNET_4_6` | 3.00 | 15.00 | `"none"` | `"low"`, `"medium"`, `"high"` |
 | `CLAUDE_OPUS_4_8` | 5.00 | 25.00 | model-managed | `"low"`, `"medium"`, `"high"` |
 | `GEMINI_3_1_FLASH_LITE` | 0.45 | 2.70 | `"low"` | `"low"`, `"high"` |
