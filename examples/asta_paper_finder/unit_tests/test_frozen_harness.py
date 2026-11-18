@@ -677,6 +677,17 @@ def test_with_effort_siblings():
         mr.with_effort(object(), "low")
 
 
+@requires_keys
+def test_with_effort_refuses_a_handle_that_ignores_effort():
+    import model_registry as mr
+    assert fh.EFFORT_IGNORED and mr._EFFORT_IGNORED == fh.EFFORT_IGNORED
+    for name in fh.EFFORT_IGNORED:
+        base = getattr(mr, name)
+        with pytest.raises(ValueError, match="no reasoning-effort setting"):
+            mr.with_effort(base, "low")
+        assert mr.with_effort(base, None) is base
+
+
 def test_pinned_effort_replaces_a_per_call_effort():
     import asyncio
     from inspect_ai.model import GenerateConfig
@@ -732,7 +743,7 @@ def test_with_effort_never_modifies_a_base_handle():
     import model_registry as mr
     for name in mr._HANDLE_IDS:
         base = getattr(mr, name, None)
-        if base is None:
+        if base is None or name in fh.EFFORT_IGNORED:
             continue
         efforts = {"low", "high", base.config.reasoning_effort} - {None}
         for effort in efforts:

@@ -206,6 +206,12 @@ if ACTIVE_MENU is not None:
 _EFFORT_SIBLINGS = {}
 
 
+# Handles on which the provider ignores `reasoning_effort`. Restated in
+# model_menu.EFFORT_IGNORED (this module imports nothing from the example);
+# a unit test holds the two equal.
+_EFFORT_IGNORED = frozenset({"CLAUDE_HAIKU_4_5"})
+
+
 def with_effort(handle, effort):
     """The same model as `handle`, with reasoning effort fixed at `effort`.
 
@@ -217,7 +223,8 @@ def with_effort(handle, effort):
     so cost accounting and the menu check see no difference.
 
     Only this module's own handles are accepted: it grants no model the
-    caller could not already call.
+    caller could not already call. A handle on which the provider ignores
+    reasoning effort is refused rather than pinned to no effect.
     """
     if effort is None:
         return handle
@@ -226,6 +233,11 @@ def with_effort(handle, effort):
     )
     if name is None:
         raise ValueError("with_effort() takes a model_registry handle")
+    if name in _EFFORT_IGNORED:
+        raise ValueError(
+            f"{name} has no reasoning-effort setting: the provider ignores "
+            f"it, so a handle pinned at {effort!r} would run as {name} does"
+        )
     key = (name, effort)
     if key not in _EFFORT_SIBLINGS:
         kwargs = (

@@ -46,7 +46,7 @@ import sys
 from functools import lru_cache
 from pathlib import Path
 
-from model_menu import MENU, family
+from model_menu import EFFORT_IGNORED, MENU, family
 
 CONFIG_FILENAME = "harness_config.json"
 AGENT_FILENAME = "agent.py"
@@ -64,7 +64,6 @@ EFFORTS = {
     "CLAUDE": ("low", "medium", "high"),
     "GEMINI": ("low", "high"),
 }
-EFFORT_IGNORED = frozenset({"CLAUDE_HAIKU_4_5"})
 
 
 def efforts_for(handle: str) -> tuple[str, ...]:
