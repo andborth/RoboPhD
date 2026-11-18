@@ -1,10 +1,9 @@
 # Slotted harnesses for `--frozen-harness`
 
 `--frozen-harness` evolves an agent's module-level model slots and constants and
-nothing else. A model the code names inline, at a call site, is frozen code that
-no config can change. An agent that names every model that way has no slot at all
-and `frozen_harness.py` refuses it ("the harness has no module-level model
-slot"); one that names only some that way runs with those models frozen.
+nothing else. A model the code names inline, at a call site, would be one no
+config could change, so `frozen_harness.py` refuses an agent that names any model
+outside a slot.
 
 Each directory here is a copy of such an agent with one change: every
 `model_registry` handle named in the code is hoisted to a module-level slot, one
@@ -22,8 +21,8 @@ one that names a model (`# papers re-judged per-criterion by GPT-5.4`) describes
 the seed config, not whatever a config puts in that slot.
 
 `unit_tests/test_frozen_harness.py` holds each copy to this: undoing the hoist
-must reproduce the original agent byte for byte, and the harness must report no
-model named outside a slot. To add a copy, hoist the handles under a one-line comment
+must reproduce the original agent byte for byte, and the harness must accept the
+copy. To add a copy, hoist the handles under a one-line comment
 directly after the `model_registry` import and register the pair in that test's
 `SLOTTED` table.
 

@@ -66,7 +66,7 @@ SMALL = textwrap.dedent('''\
 
     async def solve():
         limit = 30
-        return await GPT_5_4_MINI.generate(PROMPT)
+        return await PLAN.generate(PROMPT)
 ''')
 
 
@@ -113,19 +113,9 @@ def test_slotted_copy_is_the_original_with_models_hoisted(slotted_dir):
 @pytest.mark.parametrize("slotted_dir", SLOTTED, ids=lambda p: p.name)
 def test_slotted_copy_leaves_no_model_named_in_code(slotted_dir):
     """Every model the agent calls is a slot, so none is beyond the config."""
-    assert fh.load_harness(slotted_dir).frozen_models == ()
-
-
-def test_models_named_outside_a_slot_are_reported_as_frozen(small):
-    # solve() calls GPT_5_4_MINI directly.
-    assert small.frozen_models == ("GPT_5_4_MINI",)
-    # A module-level value that is not a slot does not make its handles
-    # settings, whatever it looks like.
-    by_role = SMALL.replace(
-        "DEPTH = 3", 'BY_ROLE = {"judge": GPT_5_4}\nDEPTH = 3', 1)
-    h = fh.Harness(by_role)
-    assert "BY_ROLE" not in h.config()["models"]
-    assert h.frozen_models == ("GPT_5_4", "GPT_5_4_MINI")
+    # The harness refuses a source that names a model anywhere else, so
+    # loading it is the check.
+    fh.load_harness(slotted_dir)
 
 
 def test_feedcast_slotted_schema():
@@ -279,14 +269,32 @@ def test_round_trip_check_is_type_strict(small, monkeypatch):
         small.render(small.parse_config(json.dumps(cfg)))
 
 
-def test_handle_used_by_frozen_code_stays_imported(small):
+def test_rendered_import_is_exactly_the_models_the_config_uses(small):
     cfg = _cfg(small)
     cfg["models"]["PLAN"] = {"model": "GPT_5_5", "effort": None}
-    cfg["models"]["PANEL"] = [{"model": "GPT_5_5", "effort": None}]
+    cfg["models"]["PANEL"] = [{"model": "GEMINI_3_5_FLASH", "effort": None}]
     out = small.render(small.parse_config(json.dumps(cfg)))
     imp = next(s for s in ast.parse(out).body if isinstance(s, ast.ImportFrom))
-    # solve() calls GPT_5_4_MINI directly; that is frozen code.
-    assert {a.name for a in imp.names} == {"GPT_5_4_MINI", "GPT_5_5"}
+    assert {a.name for a in imp.names} == {"GPT_5_5", "GEMINI_3_5_FLASH"}
+
+
+@pytest.mark.parametrize("old, new, named", [
+    # in a function body
+    ("await PLAN.generate(PROMPT)", "await GPT_5_4_MINI.generate(PROMPT)",
+     "GPT_5_4_MINI on line "),
+    # in a module-level value that is not a slot, whatever it looks like
+    ("DEPTH = 3", 'BY_ROLE = {"judge": GPT_5_4}\nDEPTH = 3', "GPT_5_4 on line 7"),
+    # as a default argument
+    ("async def solve():", "async def solve(m=CLAUDE_OPUS_4_8):",
+     "CLAUDE_OPUS_4_8 on line "),
+])
+def test_a_model_named_outside_a_slot_is_refused(old, new, named):
+    """Every model the agent calls must be a setting: one named anywhere
+    else would be a model no config could change."""
+    assert SMALL.count(old) == 1
+    with pytest.raises(fh.HarnessError, match="outside a module-level model slot") as e:
+        fh.Harness(SMALL.replace(old, new))
+    assert named in str(e.value)
 
 
 def test_render_handles_non_ascii_before_a_value():

@@ -237,12 +237,11 @@ agent always gives the same schema:
 For the agent above that is 7 model slots and 22 constants. To see any agent's
 schema: `python examples/asta_paper_finder/frozen_harness.py seed --harness AGENT_DIR`.
 
-A model the code names anywhere but a slot is frozen code: no config can change
-it. An agent with no slot at all is refused. One with slots and inline names as
-well is accepted, with the inline models frozen, and the run says so at startup
-(`Harness.frozen_models` lists them). `frozen_harnesses/` holds copies of agents
-with every named model hoisted to a module-level slot and nothing else changed,
-which a test checks byte for byte.
+Every model the agent calls must be a slot. An agent that names a model anywhere
+else, such as inline at a call site, is refused with the names and lines, since
+that would be a model no config could change. `frozen_harnesses/` holds copies of
+such agents with every named model hoisted to a module-level slot and nothing
+else changed, which a test checks byte for byte.
 
 It is enforced, not just documented:
 

@@ -208,13 +208,22 @@ class Harness:
             )
         self._imported = [a.name for a in self._import.names]
 
+        # Every model the agent calls must be a setting. A handle named
+        # anywhere but a slot would be a model no config can change, in a
+        # run whose claim is that the models are what evolves.
         slot_nodes = {id(n) for v in self._nodes.values() for n in ast.walk(v)}
-        # Handles the frozen code names directly (outside any slot) must stay
-        # imported whatever the config says.
-        self._pinned = {
-            n.id for n in ast.walk(tree)
+        inline = sorted(
+            (n.lineno, n.id) for n in ast.walk(tree)
             if isinstance(n, ast.Name) and n.id in MENU and id(n) not in slot_nodes
-        }
+        )
+        if inline:
+            raise HarnessError(
+                "the harness names a model outside a module-level model slot ("
+                + ", ".join(f"{name} on line {line}" for line, name in inline)
+                + "); every model it calls must be a slot. Hoist each to a "
+                "module-level `NAME = HANDLE` assignment and name the slot at "
+                "the call site"
+            )
         if not any(k != "constant" for k in self._kinds.values()):
             raise HarnessError("the harness has no module-level model slot")
         if EFFORT_FN not in self._imported and any(
@@ -227,12 +236,6 @@ class Harness:
                 f"the harness defines or uses its own `{EFFORT_FN}`, which "
                 f"would shadow the registry function slot efforts render to"
             )
-
-    @property
-    def frozen_models(self) -> tuple[str, ...]:
-        """Handles the code names outside any slot. No config can change
-        them: they are part of the frozen code, not settings."""
-        return tuple(sorted(self._pinned))
 
     # -- the config this harness defines ------------------------------------
 
@@ -393,7 +396,7 @@ class Harness:
             if not unchanged:
                 edits.append((self._nodes[name], self._value_src(name, value)))
 
-        used = set(self._pinned)
+        used = set()
         needs_effort = False
         for value in config["models"].values():
             for slot in (value if isinstance(value, list) else [value]):
