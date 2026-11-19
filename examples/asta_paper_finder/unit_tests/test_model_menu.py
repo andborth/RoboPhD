@@ -166,6 +166,18 @@ def test_resume_of_a_run_that_predates_the_flag():
     assert _resolve("GPT_5_4", {}, resume=True, eval_only=True) == ("GPT_5_4",)
 
 
+def test_effort_ignored_is_the_handles_the_table_gives_no_override():
+    """EFFORT_IGNORED restates the table: the rows whose overrides cell
+    quotes no effort value are exactly that set."""
+    rows = re.findall(
+        r"^\| `([A-Z0-9_]+)` \|[^|]*\|[^|]*\|[^|]*\|([^|]*)\|$", BACKGROUND, re.M
+    )
+    overrides = {h: re.findall(r'"(\w+)"', cell) for h, cell in rows if h in mm.MENU}
+    assert set(overrides) == set(mm.MENU)
+    assert {h for h, opts in overrides.items() if not opts} == mm.EFFORT_IGNORED
+    assert mm.EFFORT_IGNORED
+
+
 # --- background.md rewrite ----------------------------------------------------
 
 def test_full_menu_leaves_background_untouched():

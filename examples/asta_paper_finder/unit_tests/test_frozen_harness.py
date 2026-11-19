@@ -297,6 +297,31 @@ def test_a_model_named_outside_a_slot_is_refused(old, new, named):
     assert named in str(e.value)
 
 
+@pytest.mark.parametrize("old, new, message", [
+    # the module itself, handles then reached as attributes
+    ("PLAN = CLAUDE_OPUS_4_8", "import model_registry\nPLAN = CLAUDE_OPUS_4_8",
+     "a second way (line 5)"),
+    ("PLAN = CLAUDE_OPUS_4_8", "import model_registry as mr\nPLAN = CLAUDE_OPUS_4_8",
+     "a second way (line 5)"),
+    ("PLAN = CLAUDE_OPUS_4_8", "import os, model_registry\nPLAN = CLAUDE_OPUS_4_8",
+     "a second way (line 5)"),
+    # a second from-import, inside a function
+    ("limit = 30", "from model_registry import GPT_5_5 as m\n    limit = 30",
+     "a second way (line "),
+    # every name at once
+    ("from model_registry import (GPT_5_4, GPT_5_4_MINI,\n"
+     "                            CLAUDE_OPUS_4_8)",
+     "from model_registry import *", "with `*`"),
+])
+def test_only_the_one_import_reaches_the_registry(old, new, message):
+    """A handle reached through any other import would carry a name the slot
+    check does not see."""
+    assert SMALL.count(old) == 1
+    with pytest.raises(fh.HarnessError) as e:
+        fh.Harness(SMALL.replace(old, new))
+    assert message in str(e.value)
+
+
 def test_render_handles_non_ascii_before_a_value():
     src = SMALL.replace("DEPTH = 3", "DEPTH = 3  # — depth —").replace(
         '"""A small harness."""', '"""A småll härness — ünïcode."""'
@@ -677,10 +702,23 @@ def test_with_effort_siblings():
         mr.with_effort(object(), "low")
 
 
+def test_registry_restates_the_menus_effort_ignored_set():
+    """model_registry cannot import model_menu, so it holds its own copy.
+    Read from source: importing the registry needs provider keys."""
+    tree = ast.parse((TASK_DIR / "model_registry.py").read_text())
+    (value,) = [
+        s.value for s in tree.body
+        if isinstance(s, ast.Assign)
+        and [getattr(t, "id", None) for t in s.targets] == ["_EFFORT_IGNORED"]
+    ]
+    assert ast.unparse(value).startswith("frozenset(")
+    assert frozenset(ast.literal_eval(value.args[0])) == fh.EFFORT_IGNORED
+    assert fh.EFFORT_IGNORED
+
+
 @requires_keys
 def test_with_effort_refuses_a_handle_that_ignores_effort():
     import model_registry as mr
-    assert fh.EFFORT_IGNORED and mr._EFFORT_IGNORED == fh.EFFORT_IGNORED
     for name in fh.EFFORT_IGNORED:
         base = getattr(mr, name)
         with pytest.raises(ValueError, match="no reasoning-effort setting"):

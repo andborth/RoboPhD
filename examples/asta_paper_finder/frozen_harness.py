@@ -200,6 +200,29 @@ class Harness:
                 f"import ...` in the harness, found {len(imports)}"
             )
         self._import = imports[0]
+        # That one import is the only way in: through any other, a handle
+        # is reachable under a name the slot check below does not see.
+        other = sorted(
+            n.lineno for n in ast.walk(tree)
+            if n is not self._import and (
+                isinstance(n, ast.ImportFrom)
+                and (n.module or "").split(".")[0] == "model_registry"
+                or isinstance(n, ast.Import)
+                and any(a.name.split(".")[0] == "model_registry" for a in n.names)
+            )
+        )
+        if other:
+            raise HarnessError(
+                "the harness imports model_registry a second way (line "
+                + ", ".join(map(str, other))
+                + "); its one module-level `from model_registry import ...` "
+                "must be the only import of that module"
+            )
+        if any(a.name == "*" for a in self._import.names):
+            raise HarnessError(
+                "the harness imports model_registry with `*`; it must import "
+                "each name it uses"
+            )
         if any(a.asname for a in self._import.names):
             raise HarnessError(
                 "the harness imports a model_registry name under an alias; "

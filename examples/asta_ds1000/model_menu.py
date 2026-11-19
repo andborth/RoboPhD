@@ -68,9 +68,8 @@ def family(handle: str) -> str:
 
 
 # Handles on which the provider ignores `reasoning_effort`: a call runs the
-# same at any value. background.md's handle table lists no override for them.
-# A model_registry that pins effort holds its own copy (it cannot import
-# this module).
+# same at any value. background.md's handle table lists no override for
+# exactly these, which a unit test checks.
 EFFORT_IGNORED = frozenset({"CLAUDE_HAIKU_4_5"})
 
 
